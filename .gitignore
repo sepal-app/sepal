@@ -37,3 +37,5 @@ projects/**/pom.xml
 
 # Calva VS Code Extension
 .calva/output-window/output.calva-repl
+
+.envrc

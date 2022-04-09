@@ -1,0 +1,10 @@
+{:sepal.database.interface/db
+ {:dbname #env DB_NAME
+  :dbtype "postgresql"
+  :host #env DB_HOST
+  :password #env DB_PASSWORD
+  :port #env DB_PORT
+  :user #env DB_USER}
+
+ :sepal.app.server/server
+ {:port #or [#env PORT 3000]}}

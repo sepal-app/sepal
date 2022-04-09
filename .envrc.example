@@ -1,0 +1,7 @@
+export DB_NAME=
+export DB_HOST=
+export DB_PASSWORD=
+export DB_PORT=
+export DB_USER=
+
+export COOKIE_SECRET=
