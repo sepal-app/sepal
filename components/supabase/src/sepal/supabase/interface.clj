@@ -1,0 +1,1 @@
+(ns sepal.supabase.interface)

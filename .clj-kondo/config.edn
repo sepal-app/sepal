@@ -1,0 +1,3 @@
+{:linters {:refer-all {:exclude []}
+           :unused-binding {:exclude-destructured-as true}}
+ :lint-as {rum.core/defc clj-kondo.lint-as/def-catch-all}}

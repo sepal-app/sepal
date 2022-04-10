@@ -6,21 +6,25 @@
 
                                 ;; Components
                                 "components/config/src"
-                                "components/database/src"]
+                                "components/database/src"
+                                "components/supabase/src"]
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
                                aero/aero {:mvn/version "1.1.6"}
+                               camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
                                com.github.seancorfield/honeysql {:mvn/version "2.2.868"}
                                com.github.seancorfield/next.jdbc {:mvn/version "1.2.780"}
+                               hato/hato {:mvn/version "0.8.2"}
+                               integrant/integrant {:mvn/version "0.8.0"}
+                               integrant/repl {:mvn/version "0.3.2"}
                                info.sunng/ring-jetty9-adapter {:mvn/version "0.17.0"
                                                                ;; uses slf4j 2.x which doesn't seem to behave well
                                                                ;; with logback 1.2.3
                                                                :exclusions [org.slf4j/slf4j-api]}
-                               integrant/integrant {:mvn/version "0.8.0"}
-                               integrant/repl {:mvn/version "0.3.2"}
                                metosin/malli {:mvn/version "0.8.4"}
                                metosin/reitit {:mvn/version "0.5.17"}
                                metosin/ring-http-response {:mvn/version "0.9.3"}
+                               net.clojars.kelveden/ring-jwt {:mvn/version "2.4.0"}
                                org.postgresql/postgresql {:mvn/version "42.3.3"}
                                ring/ring-defaults {:mvn/version "0.3.3"}
                                rum/rum {:mvn/version "0.12.9"
@@ -34,7 +38,8 @@
             :test {:main-opts ["-m" "kaocha.runner"]
                    :extra-paths ["bases/app/test"
                                  "components/config/test"
-                                 "components/database/test"]
+                                 "components/database/test"
+                                 "components/supabase/test"]
                    :extra-deps {com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                 lambdaisland/kaocha {:mvn/version "1.64.1010"}}}
 

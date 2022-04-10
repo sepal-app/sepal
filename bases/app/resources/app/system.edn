@@ -6,5 +6,13 @@
   :port #env DB_PORT
   :user #env DB_USER}
 
+ :sepal.supabase.interface.auth/auth
+ {:api-key #env SUPABASE_API_KEY
+  :url #env SUPABASE_URL}
+
  :sepal.app.server/server
- {:port #or [#env PORT 3000]}}
+ {:port #or [#env PORT 3000]
+  :cookie-secret #env COOKIE_SECRET
+  :jwt-secret #env SUPABASE_JWT_SECRET
+  :global-context {:db #ig/ref :sepal.database.interface/db
+                   :supabase #ig/ref :sepal.supabase.interface.auth/auth}}}
