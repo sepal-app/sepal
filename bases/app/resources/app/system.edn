@@ -15,4 +15,16 @@
   :cookie-secret #env COOKIE_SECRET
   :jwt-secret #env SUPABASE_JWT_SECRET
   :global-context {:db #ig/ref :sepal.database.interface/db
-                   :supabase #ig/ref :sepal.supabase.interface.auth/auth}}}
+                   :supabase #ig/ref :sepal.supabase.interface.auth/auth}}
+
+ :sepal.app.migrations/migratus
+ {:store                :database
+  :migration-dir        "bases/app/resources/app/migrations"
+  :migration-table-name "schema_migrations"
+  :db {:datasource #ig/ref :sepal.database.interface/db
+       ;; :classname "org.postgresql.Driver"
+       ;; :subprotocol "postgresql"
+       ;; :subname #join ["//" #env DB_HOST ":" #env DB_PORT "/" #env DB_NAME]
+       ;; :user #env DB_USER
+       ;; :password #env DB_PASSWORD
+       }}}
