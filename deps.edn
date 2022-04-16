@@ -6,8 +6,7 @@
 
                                 ;; Components
                                 "components/config/src"
-                                "components/database/src"
-                                "components/supabase/src"]
+                                "components/database/src"]
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
                                aero/aero {:mvn/version "1.1.6"}
@@ -26,7 +25,6 @@
                                metosin/reitit {:mvn/version "0.5.17"}
                                metosin/ring-http-response {:mvn/version "0.9.3"}
                                migratus/migratus {:mvn/version "1.3.0"}
-                               net.clojars.kelveden/ring-jwt {:mvn/version "2.4.0"}
                                org.postgresql/postgresql {:mvn/version "42.3.3"}
                                ring/ring-defaults {:mvn/version "0.3.3"}
                                rum/rum {:mvn/version "0.12.9"
@@ -40,8 +38,7 @@
             :test {:main-opts ["-m" "kaocha.runner"]
                    :extra-paths ["bases/app/test"
                                  "components/config/test"
-                                 "components/database/test"
-                                 "components/supabase/test"]
+                                 "components/database/test"]
                    :extra-deps {com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                 lambdaisland/kaocha {:mvn/version "1.64.1010"}}}
 

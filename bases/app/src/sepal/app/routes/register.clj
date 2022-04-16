@@ -1,4 +1,4 @@
-(ns sepal.app.routes.login
+(ns sepal.app.routes.register
   (:require [honey.sql :as sql]
             [next.jdbc :as jdbc]
             [ring.util.http-response :refer [found see-other]]
@@ -7,8 +7,8 @@
 
 (defc page-content [& {:keys [error form-values]}]
   [:div
-   [:h2 {:class "text-2xl"} "Login"]
-   [:form {:method "post" :action "/login"}
+   [:h2 {:class "text-2xl"} "Create an account"]
+   [:form {:method "post" :action "/register"}
     [:fieldset {:class "flex flex-col"}
      (html/anti-forgery-field)
      [:input {:type "email"
@@ -24,16 +24,16 @@
   (-> (html/root-template
        {:content (page-content :error error :form-values form-values)})))
 
-(defn verify-password [db email password]
-  (let [stmt (-> {:select :*
-                  :from :public.user
-                  :where [:and
-                          [:= :email email]
-                          [[:= :password
-                            [:'crypt password :password]]]]}
-                 (sql/format {:pretty true}))]
-    (-> (jdbc/execute! db stmt)
-        (first))))
+(defn create-account [db email password]
+  (let [stmt (-> {:insert-into [:public.user]
+                  :values [{:email email
+                            :password [:crypt password [:gen_salt "bf"]]}]
+                  :returning [:*]}
+                 (sql/format))]
+    (try
+      (jdbc/execute! db stmt)
+      (catch Exception e
+        {:error {:message (ex-message e)}}))))
 
 (defn user->session [user]
   ;; use (java.time.Instant/ofEpochMilli (:login-time session)) to get the login
@@ -41,17 +41,18 @@
   (-> (select-keys user [:user/id :user/email])
       (assoc :login-time (inst-ms (java.time.Instant/now)))))
 
-(defn handler [{:keys [context flash params request-method]}]
-  (let [{:keys [db]} context
+(defn handler [{:keys [flash params request-method] :as req}]
+  (let [{:keys [context]} req
+        {:keys [db]} context
         {:keys [email password]} params]
     (if (= request-method :post)
-      (let [user (verify-password db email password)
-            error (when-not user {:message "Invalid password"})
+      (let [user (create-account db email password)
+            error (:error user)
             session (when-not error (user->session user))]
         (if-not error
           (-> (found "/")
               (assoc :session session))
-          (-> (see-other "/login")
+          (-> (see-other "/register")
               (assoc :flash {:error error
                              :email email}))))
       (-> (page :error (get-in flash [:error :message])

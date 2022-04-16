@@ -4,20 +4,24 @@
             [ring.adapter.jetty9 :as jetty]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults secure-site-defaults]]
             [ring.middleware.session.cookie :refer [cookie-store]]
+            [sepal.app.middleware :as middleware]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
-            [sepal.app.middleware :as middleware]))
+            [sepal.app.routes.register :as register]))
+
+(defn root-handler [request]
+  {:status 200
+   :headers {"content-type" "text/plain"}
+   :body "hi"})
 
 (def routes
-  [["/" {:handler (fn [_]
-                    {:status 200
-                     :headers {"content-type" "text/plain"}
-                     :body "hi"})
-         :middleware [[middleware/require-claims-middleware]]}]
+  [["/" {:handler root-handler
+         :middleware [[middleware/require-viewer-middleware]]}]
+   ["/register" {:handler #(register/handler %)}]
    ["/login" {:handler #(login/handler %)}]
    ["/logout" {:handler #(logout/handler %)}]])
 
-(defn default-router-options [{:keys [global-context cookie-secret jwt-secret]}]
+(defn default-router-options [{:keys [global-context cookie-secret]}]
   {:data {:middleware [[middleware/exception-middleware]
                        ;; TODO: Use secure-site-defaults in production
                        [wrap-defaults (-> site-defaults
@@ -26,7 +30,6 @@
                                           ;; (assoc-in [:session :store] (cookie-store {:key cookie-secret}))
                                           (assoc-in [:session :store]
                                                     (cookie-store {:key (.getBytes cookie-secret)})))]
-                       [middleware/wrap-jwt {:secret jwt-secret}]
                        [middleware/wrap-context global-context]]}})
 
 (defmethod ig/init-key ::server [_ cfg]

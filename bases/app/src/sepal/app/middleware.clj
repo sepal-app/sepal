@@ -1,8 +1,8 @@
 (ns sepal.app.middleware
   (:require [ring.util.http-response :refer [found]]
-            [reitit.ring.middleware.exception :as exception]
-            [ring.middleware.token :as token])
-  (:import [com.auth0.jwt.exceptions JWTDecodeException TokenExpiredException]))
+            [next.jdbc :as jdbc]
+            [honey.sql :as sql]
+            [reitit.ring.middleware.exception :as exception]))
 
 (defn wrap-context [handler global-context]
   (fn [request]
@@ -10,35 +10,22 @@
         (assoc :context global-context)
         handler)))
 
-;; TODO: we're using the helpers from ring-jwt but not the middleware it
-;; provides b/c it wasn't flexible enough with how it handled expired tokens.
-;; Conider using the com.auth0.jwt functions directly instead of going through
-;; ring-jwt
-(defn wrap-jwt [handler {:keys [secret]}]
-  (fn [request]
-    (if-let [token (-> request :session :access-token)]
-      (try
-        (let [claims (token/decode token {:alg :HS256
-                                          :secret secret})]
-          (-> request
-              (assoc :claims claims)
-              handler))
-        (catch JWTDecodeException e
-          (println (str "Error decoding JWT token: " (ex-message e)))
-          (handler request))
-        (catch TokenExpiredException e
-          ;; TODO: refresh token
-          (println (ex-message e))
-          (handler request)))
-      (handler request))))
-
-(defn require-claims-middleware
+(defn require-viewer-middleware
   "Redirects to /login if there are no valid claims in the request."
   [handler]
-  (fn [{:keys [claims] :as request}]
-    (if claims
-      (handler request)
-      (found "/login"))))
+  (fn [{:keys [context session] :as request}]
+    (let [{:keys [db]} context
+          user-id (:user/id session)
+          stmt (-> {:select [:*]
+                    :from :public.user
+                    :where [:= :id user-id]}
+                   (sql/format))
+          viewer (jdbc/execute-one! db stmt)]
+      (if viewer
+        (-> request
+            (assoc :viewer viewer)
+            handler)
+        (found "/login")))))
 
 (defn exception-handler [message exception request]
   {:status 500
