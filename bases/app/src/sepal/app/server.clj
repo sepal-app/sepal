@@ -33,7 +33,12 @@
     ["/:id" {:middleware [[middleware/require-org-membership-middleware]]}
      ["/" {:name :org-detail
            :handler org/detail-handler}]
-     ["/edit" {:name :org-edit}]]]])
+     ["/edit" {:name :org-edit}]
+     ["/accession" {:name :accession}]
+     ["/taxon" {:name :taxon
+                :handler (fn [_] {:status 200 :body "taxon"})}]
+     ["/location" {:name :location}]
+     ["/media" {:name :media}]]]])
 
 (defn default-router-options [{:keys [global-context cookie-secret]}]
   {:data {:middleware [[middleware/exception-middleware]

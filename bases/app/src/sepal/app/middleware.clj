@@ -1,8 +1,9 @@
 (ns sepal.app.middleware
   (:require [honey.sql :as sql]
-            [reitit.core :as r]
             [next.jdbc :as jdbc]
+            [reitit.core :as r]
             [reitit.ring.middleware.exception :as exception]
+            [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]))
 
 ;; (ns-unalias *ns* 'found)
