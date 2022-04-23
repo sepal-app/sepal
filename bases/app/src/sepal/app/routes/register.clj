@@ -3,14 +3,15 @@
             [next.jdbc :as jdbc]
             [ring.util.http-response :refer [found see-other]]
             [rum.core :as rum :refer [defc]]
-            [sepal.app.html :as html]))
+            [sepal.app.html :as html]
+            [sepal.app.ui.form :refer [anti-forgery-field]]))
 
 (defc page-content [& {:keys [error form-values]}]
   [:div
    [:h2 {:class "text-2xl"} "Create an account"]
    [:form {:method "post" :action "/register"}
     [:fieldset {:class "flex flex-col"}
-     (html/anti-forgery-field)
+     (anti-forgery-field)
      [:input {:type "email"
               :name "email"
               :value (:email form-values)}]
@@ -31,7 +32,7 @@
                   :returning [:*]}
                  (sql/format))]
     (try
-      (jdbc/execute! db stmt)
+      (jdbc/execute-one! db stmt)
       (catch Exception e
         {:error {:message (ex-message e)}}))))
 

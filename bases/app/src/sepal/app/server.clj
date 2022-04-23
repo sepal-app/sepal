@@ -1,25 +1,39 @@
 (ns sepal.app.server
   (:require [integrant.core :as ig]
+            [reitit.core :as r]
             [reitit.ring :as ring]
             [ring.adapter.jetty9 :as jetty]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults secure-site-defaults]]
             [ring.middleware.session.cookie :refer [cookie-store]]
+            [sepal.app.http-response :refer [found]]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
+            [sepal.app.routes.org.handlers :as org]
             [sepal.app.routes.register :as register]))
 
-(defn root-handler [request]
-  {:status 200
-   :headers {"content-type" "text/plain"}
-   :body "hi"})
-
 (def routes
-  [["/" {:handler root-handler
+  [["/" {:name :root
+         :handler #(found (::r/router %) :org-index)
          :middleware [[middleware/require-viewer-middleware]]}]
-   ["/register" {:handler #(register/handler %)}]
-   ["/login" {:handler #(login/handler %)}]
-   ["/logout" {:handler #(logout/handler %)}]])
+   ["/register" {:name :register
+                 :handler #(register/handler %)}]
+   ["/login" {:name :login
+              :handler #(login/handler %)}]
+   ["/logout" {:name :logout
+               :handler #(logout/handler %)}]
+
+   ["/org" {:middleware [[middleware/require-viewer-middleware]]}
+    ["" {:name :org-index
+         :handler org/index-handler}]
+    ["/new" {:name :org-new
+             :handler org/new-handler}]
+    ["/create" {:name :org-create
+                :handler org/create-handler}]
+    ["/:id" {:middleware [[middleware/require-org-membership-middleware]]}
+     ["/" {:name :org-detail
+           :handler org/detail-handler}]
+     ["/edit" {:name :org-edit}]]]])
 
 (defn default-router-options [{:keys [global-context cookie-secret]}]
   {:data {:middleware [[middleware/exception-middleware]
@@ -35,7 +49,8 @@
 (defmethod ig/init-key ::server [_ cfg]
   (-> routes
       (ring/router (default-router-options cfg))
-      (ring/ring-handler (ring/create-default-handler) {:inject-match? false})
+      (ring/ring-handler (ring/create-default-handler) ; {:inject-match? false}
+                         )
       (jetty/run-jetty {:port (:port cfg)
                         :join? false})))
 

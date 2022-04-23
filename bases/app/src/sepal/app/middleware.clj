@@ -1,8 +1,11 @@
 (ns sepal.app.middleware
-  (:require [ring.util.http-response :refer [found]]
+  (:require [honey.sql :as sql]
+            [reitit.core :as r]
             [next.jdbc :as jdbc]
-            [honey.sql :as sql]
-            [reitit.ring.middleware.exception :as exception]))
+            [reitit.ring.middleware.exception :as exception]
+            [sepal.app.http-response :refer [found see-other]]))
+
+;; (ns-unalias *ns* 'found)
 
 (defn wrap-context [handler global-context]
   (fn [request]
@@ -13,7 +16,7 @@
 (defn require-viewer-middleware
   "Redirects to /login if there are no valid claims in the request."
   [handler]
-  (fn [{:keys [context session] :as request}]
+  (fn [{:keys [context ::r/router session] :as request}]
     (let [{:keys [db]} context
           user-id (:user/id session)
           stmt (-> {:select [:*]
@@ -25,7 +28,21 @@
         (-> request
             (assoc :viewer viewer)
             handler)
-        (found "/login")))))
+        (found router :login)))))
+
+(defn organization-member? [db organization-id user-id]
+  (-> db
+      (jdbc/execute-one! ["select is_organization_member(?::int, ?::int)"
+                          organization-id
+                          user-id])
+      :is_organization_member))
+
+(defn require-org-membership-middleware [handler]
+  (fn [{:keys [context path-params ::r/router viewer] :as request}]
+    (let [{:keys [db]} context]
+      (if (organization-member? db (:id path-params) (:user/id viewer))
+        (handler request)
+        (see-other router :root)))))
 
 (defn exception-handler [message exception request]
   {:status 500

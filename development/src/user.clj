@@ -10,4 +10,5 @@
                                 (ig/load-namespaces cfg)
                                 (ig/prep cfg)))))
 
+(add-tap println)
 (prep-app)
