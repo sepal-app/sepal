@@ -15,14 +15,13 @@
     (jdbc/execute! db stmt)))
 
 (defn handler [{:keys [context ::r/router session viewer] :as req}]
-  ;; TODO: find the users' organizations and if we don't have a default
-  ;; organization set in the cookie then
   (if (:organization session)
-    (found router :org-detail {:id (-> session :organization :id)})
+    (found router :org-detail {:org-id (-> session :organization :organization/id)})
     (let [{:keys [db]} context
-          orgs (get-user-organizations db (:user/id viewer))]
-      (if (seq orgs)
+          user-orgs (get-user-organizations db (:user/id viewer))
+          org (first user-orgs)]
+      (if org
         ;; TODO: create a view to allow the user to select an organization that
         ;; posts back here
-        (found router :org-detail {:id (-> orgs first :organization/id)})
+        (found router :org-detail {:org-id (:organization/id org)})
         (found router :org-new)))))

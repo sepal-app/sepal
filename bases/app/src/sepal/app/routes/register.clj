@@ -4,7 +4,9 @@
             [ring.util.http-response :refer [found see-other]]
             [rum.core :as rum :refer [defc]]
             [sepal.app.html :as html]
-            [sepal.app.ui.form :refer [anti-forgery-field]]))
+            [sepal.app.ui.form :refer [anti-forgery-field]]
+            [sepal.user.interface :as user.interface]
+            [sepal.validation.interface :refer [error?]]))
 
 (defc page-content [& {:keys [error form-values]}]
   [:div
@@ -25,16 +27,16 @@
   (-> (html/root-template
        {:content (page-content :error error :form-values form-values)})))
 
-(defn create-account [db email password]
-  (let [stmt (-> {:insert-into [:public.user]
-                  :values [{:email email
-                            :password [:crypt password [:gen_salt "bf"]]}]
-                  :returning [:*]}
-                 (sql/format))]
-    (try
-      (jdbc/execute-one! db stmt)
-      (catch Exception e
-        {:error {:message (ex-message e)}}))))
+;; (defn create-account [db email password]
+;;   (let [stmt (-> {:insert-into [:public.user]
+;;                   :values [{:email email
+;;                             :password [:crypt password [:gen_salt "bf"]]}]
+;;                   :returning [:*]}
+;;                  (sql/format))]
+;;     (try
+;;       (jdbc/execute-one! db stmt)
+;;       (catch Exception e
+;;         {:error {:message (ex-message e)}}))))
 
 (defn user->session [user]
   ;; use (java.time.Instant/ofEpochMilli (:login-time session)) to get the login
@@ -47,14 +49,13 @@
         {:keys [db]} context
         {:keys [email password]} params]
     (if (= request-method :post)
-      (let [user (create-account db email password)
-            error (:error user)
-            session (when-not error (user->session user))]
-        (if-not error
+      (let [result (user.interface/create! db {:email email :password password})
+            _ (tap> (str "register user: " result))]
+        (if-not (error? result)
           (-> (found "/")
-              (assoc :session session))
+              (assoc :session (user->session result)))
           (-> (see-other "/register")
-              (assoc :flash {:error error
+              (assoc :flash {:error result
                              :email email}))))
       (-> (page :error (get-in flash [:error :message])
                 :form-values {:email (:email flash)})

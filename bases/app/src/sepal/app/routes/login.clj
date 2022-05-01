@@ -82,7 +82,6 @@
       (let [user (verify-password db email password)
             error (when-not user {:message "Invalid password"})
             session (when-not error (user->session user))]
-        (tap> (str "register session: " session))
         (if-not error
           (-> (found router :root)
               (assoc :session session))

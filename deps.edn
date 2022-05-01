@@ -6,7 +6,11 @@
 
                                 ;; Components
                                 "components/config/src"
-                                "components/database/src"]
+                                "components/database/src"
+                                "components/organization/src"
+                                "components/taxon/src"
+                                "components/user/src"
+                                "components/validation/src"]
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
                                aero/aero {:mvn/version "1.1.6"}
@@ -38,7 +42,11 @@
             :test {:main-opts ["-m" "kaocha.runner"]
                    :extra-paths ["bases/app/test"
                                  "components/config/test"
-                                 "components/database/test"]
+                                 "components/database/test"
+                                 "components/organization/test"
+                                 "components/taxon/test"
+                                 "components/user/test"
+                                 "components/validation/test"]
                    :extra-deps {com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                 lambdaisland/kaocha {:mvn/version "1.64.1010"}}}
 

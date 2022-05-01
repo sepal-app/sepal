@@ -16,7 +16,6 @@
   ([router name-or-path]
    (found router name-or-path nil))
   ([router name-or-path args]
-   (tap> (str "found: " name-or-path))
    (http/found (->path router name-or-path args))))
 
 (defn see-other

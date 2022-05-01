@@ -10,7 +10,8 @@
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
             [sepal.app.routes.org.handlers :as org]
-            [sepal.app.routes.register :as register]))
+            [sepal.app.routes.register :as register]
+            [sepal.app.routes.taxon.handlers :as taxon]))
 
 (def routes
   [["/" {:name :root
@@ -30,15 +31,20 @@
              :handler org/new-handler}]
     ["/create" {:name :org-create
                 :handler org/create-handler}]
-    ["/:id" {:middleware [[middleware/require-org-membership-middleware]]}
+    ["/:org-id" {:middleware [[middleware/require-org-membership-middleware]]}
      ["/" {:name :org-detail
            :handler org/detail-handler}]
      ["/edit" {:name :org-edit}]
-     ["/accession" {:name :accession}]
-     ["/taxon" {:name :taxon
-                :handler (fn [_] {:status 200 :body "taxon"})}]
-     ["/location" {:name :location}]
-     ["/media" {:name :media}]]]])
+     ["/accession" {:name :accession-index}]
+
+     ["/taxon"
+      ["" {:name :taxon-index
+           :handler taxon/index-handler}]
+      ;; ["/:id" {:name :taxon-index
+      ;;      :handler taxon/index-handler}]
+      ]
+     ["/location" {:name :location-index}]
+     ["/media" {:name :media-index}]]]])
 
 (defn default-router-options [{:keys [global-context cookie-secret]}]
   {:data {:middleware [[middleware/exception-middleware]

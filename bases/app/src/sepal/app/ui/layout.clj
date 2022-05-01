@@ -6,7 +6,6 @@
 (defn sepal-logo []
   "Sepal")
 
-
 (defn mobile-sidebar [& {:keys [items]}]
   [:div {:class "fixed inset-0 flex z-40 md:hidden"
          :role "dialog"
@@ -39,8 +38,7 @@
            :x-transition:enter-end "opacity-100"
            :x-transition:leave "transition-opacity ease-in-out duration-300"
            :x-transition:leave-start "opacity-100"
-           :x-transition:leave-end "opacity-0"
-           }
+           :x-transition:leave-end "opacity-0"}
      [:button {:type "button"
                :class "ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                :x-on:click "showMobileSidebar = ! showMobileSidebar"}
@@ -65,7 +63,7 @@
        [:div
         [:img {:class "inline-block h-10 w-10 rounded-full",
                :src "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-               :alt "" }]]
+               :alt ""}]]
        [:div {:class "ml-3"}
         [:p {:class "text-base font-medium text-gray-700 group-hover:text-gray-900"} "Tom Cook"]
         [:p {:class "text-sm font-medium text-gray-500 group-hover:text-gray-700"} "View profile"]]]]]]
@@ -95,15 +93,14 @@
 
 (defn default-sidebar-items [& {:keys [router org]}]
   [(sidebar-item :href  "#" :label "Activity" :icon (user-icon))
-   (sidebar-item :href (->path router :taxon {:id (:organization/id org)})
+   (sidebar-item :href (->path router :taxon-index {:org-id (:organization/id org)})
                  :label "Taxa" :icon (user-icon))
-   (sidebar-item :href (->path router :accession {:id (:organization/id org)})
+   (sidebar-item :href (->path router :accession-index {:org-id (:organization/id org)})
                  :label "Accessions" :icon (user-icon))
-   (sidebar-item :href (->path router :location {:id (:organization/id org)})
+   (sidebar-item :href (->path router :location-index {:org-id (:organization/id org)})
                  :label "Locations" :icon (user-icon))
-   (sidebar-item :href (->path router :media {:id (:organization/id org)})
+   (sidebar-item :href (->path router :media-index {:org-id (:organization/id org)})
                  :label "Media" :icon (user-icon))])
-
 
 (defn static-sidebar [& {:keys [items router user]}]
   [:div {:class "hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0"}

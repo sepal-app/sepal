@@ -1,10 +1,12 @@
 (ns sepal.app.middleware
-  (:require [honey.sql :as sql]
+  (:require [clojure.pprint :as pp]
+            [honey.sql :as sql]
             [next.jdbc :as jdbc]
             [reitit.core :as r]
             [reitit.ring.middleware.exception :as exception]
             [sepal.app.html :as html]
-            [sepal.app.http-response :refer [found see-other]]))
+            [sepal.app.http-response :refer [found see-other]]
+            [sepal.organization.interface :as org.i]))
 
 ;; (ns-unalias *ns* 'found)
 
@@ -39,18 +41,24 @@
       :is_organization_member))
 
 (defn require-org-membership-middleware [handler]
-  (fn [{:keys [context path-params ::r/router viewer] :as request}]
-    (let [{:keys [db]} context]
-      (if (organization-member? db (:id path-params) (:user/id viewer))
-        (handler request)
+  (fn [{:keys [context path-params ::r/router session viewer] :as request}]
+    (let [{:keys [db]} context
+          org-id (:org-id path-params)]
+      (if (organization-member? db org-id (:user/id viewer))
+        (-> request
+            (assoc-in [:session :organization] (org.i/get-by-id db org-id))
+            (handler))
         (see-other router :root)))))
 
-(defn exception-handler [message exception request]
-  {:status 500
-   :body {:message message
-          :exception (.getClass exception)
-          :data (ex-data exception)
-          :uri (:uri request)}})
+(defn exception-handler [message exception _request]
+  (as-> [:div
+         [:h1 {:class "text-xl"} message]
+         [:pre
+          (with-out-str
+            (pp/pprint exception))]] $
+    (html/root-template :content $)
+    (html/render-html $)
+    (assoc $ :status 500)))
 
 (def exception-middleware
   (exception/create-exception-middleware
@@ -69,10 +77,4 @@
      ::exception/default (partial exception-handler "default")
 
        ;; print stack-traces for all exceptions
-     ::exception/wrap (fn [handler e request]
-                        (println "ERROR" (pr-str (:uri request)))
-                        (tap> e)
-                        (tap> (ex-message e))
-                        (tap> (ex-data e))
-                        (tap> (ex-cause e))
-                        (handler e request))})))
+     ::exception/wrap (partial exception-handler "wrap")})))

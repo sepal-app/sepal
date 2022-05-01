@@ -2,5 +2,9 @@
  {:tests [{:id :unit
            :test-paths ["bases/app"
                         "components/config/test"
-                        "components/database/test"]
+                        "components/database/test"
+                        "components/organization/test"
+                        "components/taxon/test"
+                        "components/user/test"
+                        "components/validation/test"]
            :ns-patterns [".*-test"]}]}

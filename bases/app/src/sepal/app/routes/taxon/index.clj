@@ -1,4 +1,4 @@
-(ns sepal.app.routes.org.detail
+(ns sepal.app.routes.taxon.index
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.ui.layout :as layout]
@@ -8,7 +8,7 @@
   [:div
    (table/table)])
 
-(defn page [& {:keys [org router viewer]}]
+(defn page [& {:keys [org router taxa viewer]}]
   (as-> (page-content) $
     (layout/page-layout :content $
                         :router router
@@ -17,6 +17,9 @@
     (html/root-template :content $)))
 
 (defn handler [{:keys [::r/router session viewer]}]
-  (let [org (:organization session)]
-    (-> (page :org org :router router :user viewer)
+  (tap> (str "taxon idnex handler"))
+  (let [org (:organization session)
+        ;; TODO: get the taxa for the organization
+        taxa []]
+    (-> (page :org org :router router :taxa taxa :user viewer)
         (html/render-html))))
