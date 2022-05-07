@@ -1,14 +1,12 @@
 (ns sepal.app.middleware
   (:require [clojure.pprint :as pp]
-            [honey.sql :as sql]
             [next.jdbc :as jdbc]
             [reitit.core :as r]
             [reitit.ring.middleware.exception :as exception]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
-            [sepal.organization.interface :as org.i]))
-
-;; (ns-unalias *ns* 'found)
+            [sepal.organization.interface :as org.i]
+            [sepal.user.interface :as user.i]))
 
 (defn wrap-context [handler global-context]
   (fn [request]
@@ -22,11 +20,7 @@
   (fn [{:keys [context ::r/router session] :as request}]
     (let [{:keys [db]} context
           user-id (:user/id session)
-          stmt (-> {:select [:*]
-                    :from :public.user
-                    :where [:= :id user-id]}
-                   (sql/format))
-          viewer (jdbc/execute-one! db stmt)]
+          viewer (user.i/get-by-id db user-id)]
       (if viewer
         (-> request
             (assoc :viewer viewer)
@@ -38,10 +32,10 @@
       (jdbc/execute-one! ["select is_organization_member(?::int, ?::int)"
                           organization-id
                           user-id])
-      :is_organization_member))
+      :is-organization-member))
 
 (defn require-org-membership-middleware [handler]
-  (fn [{:keys [context path-params ::r/router session viewer] :as request}]
+  (fn [{:keys [context path-params ::r/router viewer] :as request}]
     (let [{:keys [db]} context
           org-id (:org-id path-params)]
       (if (organization-member? db org-id (:user/id viewer))
@@ -50,7 +44,8 @@
             (handler))
         (see-other router :root)))))
 
-(defn exception-handler [message exception _request]
+(defn exception-handler [message exception _request & rest]
+  (tap> (str "exception-handler rest: " rest))
   (as-> [:div
          [:h1 {:class "text-xl"} message]
          [:pre
@@ -77,4 +72,14 @@
      ::exception/default (partial exception-handler "default")
 
        ;; print stack-traces for all exceptions
-     ::exception/wrap (partial exception-handler "wrap")})))
+     ::exception/wrap (fn [_handler e request]
+                        (exception-handler "wrap" e request)
+                        ;; (println "ERROR" (pr-str (:uri request)))
+                        ;; (tap> e)
+                        ;; (tap> (ex-message e))
+                        ;; (tap> (ex-data e))
+                        ;; (tap> (ex-cause e))
+                        ;; (handler e request)
+                        )
+     ;; (partial exception-handler "wrap")
+     })))

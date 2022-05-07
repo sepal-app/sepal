@@ -8,12 +8,11 @@
   [:div
    (table/table)])
 
-(defn page [& {:keys [org router viewer]}]
+(defn page [& {:keys [org router]}]
   (as-> (page-content) $
     (layout/page-layout :content $
                         :router router
-                        :org org
-                        :user viewer)
+                        :org org)
     (html/root-template :content $)))
 
 (defn handler [{:keys [::r/router session viewer]}]

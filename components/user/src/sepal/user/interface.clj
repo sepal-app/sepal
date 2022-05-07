@@ -1,8 +1,17 @@
 (ns sepal.user.interface
   (:require [next.jdbc :as jdbc]
+            [next.jdbc.sql :as jdbc.sql]
             [honey.sql :as sql]
             [sepal.user.interface.spec :as spec]
             [sepal.validation.interface :refer [invalid? validation-error]]))
+
+(defn parse-int [v]
+  (if-not (int? v)
+    (Integer/parseInt v)
+    v))
+
+(defn get-by-id [db id]
+  (jdbc.sql/get-by-id db :public.user (parse-int id)))
 
 (defn create! [db data]
   (cond

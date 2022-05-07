@@ -19,7 +19,9 @@
 (defn handler [{:keys [::r/router context flash params request-method viewer] :as req}]
   (if (= request-method :post)
     (let [{:keys [db]} context
-          data (select-keys params [:name :short-name :abbreviation])
+          data (-> params
+                   (select-keys [:name :short-name :abbreviation])
+                   (assoc :created-by (:user/id viewer)))
           ;; TODO: create the user and assign the role in the same transaction
           org (org.i/create! db data)
           error (:error org)

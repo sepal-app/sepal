@@ -93,16 +93,16 @@
 
 (defn default-sidebar-items [& {:keys [router org]}]
   [(sidebar-item :href  "#" :label "Activity" :icon (user-icon))
-   (sidebar-item :href (->path router :taxon-index {:org-id (:organization/id org)})
+   (sidebar-item :href (->path router :taxon/root {:org-id (:organization/id org)})
                  :label "Taxa" :icon (user-icon))
-   (sidebar-item :href (->path router :accession-index {:org-id (:organization/id org)})
+   (sidebar-item :href (->path router :accession/root {:org-id (:organization/id org)})
                  :label "Accessions" :icon (user-icon))
-   (sidebar-item :href (->path router :location-index {:org-id (:organization/id org)})
+   (sidebar-item :href (->path router :location/root {:org-id (:organization/id org)})
                  :label "Locations" :icon (user-icon))
-   (sidebar-item :href (->path router :media-index {:org-id (:organization/id org)})
+   (sidebar-item :href (->path router :media/root {:org-id (:organization/id org)})
                  :label "Media" :icon (user-icon))])
 
-(defn static-sidebar [& {:keys [items router user]}]
+(defn static-sidebar [& {:keys [items]}]
   [:div {:class "hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0"}
    ;; Sidebar component, swap this element with another sidebar if you like
    [:div {:class "flex-1 flex flex-col min-h-0 border-r border-gray-200 bg-white"}
@@ -126,14 +126,10 @@
         [:p {:class "text-sm font-medium text-gray-700 group-hover:text-gray-900"} "Tom Cook"]
         [:p {:class "text-xs font-medium text-gray-500 group-hover:text-gray-700"} "View profile"]]]]]]])
 
-(defn page-layout [& {:keys [content org router user]}]
+(defn page-layout [& {:keys [content org router]}]
   [:div {:x-data "{ showMobileSidebar: false }"}
-   (mobile-sidebar :items (default-sidebar-items :router router :org org)
-                   :user user
-                   :router router)
-   (static-sidebar :items (default-sidebar-items :router router :org org)
-                   :user user
-                   :router router)
+   (mobile-sidebar :items (default-sidebar-items :router router :org org))
+   (static-sidebar :items (default-sidebar-items :router router :org org))
    [:div {:class "md:pl-64 flex flex-col flex-1"}
     [:div {:class "sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-gray-100"}
      [:button {:type "button"
@@ -143,7 +139,5 @@
       (icons/outline-menu)]]
     [:main {:class "flex-1"}
      [:div {:class "py-6"}
-      [:div {:class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
-       [:h1 {:class "text-2xl font-semibold text-gray-900"} "Dashboard"]]
-      [:div {:class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
+      [:div {:class "mx-auto px-4 sm:px-6 md:px-12"}
        content]]]]])

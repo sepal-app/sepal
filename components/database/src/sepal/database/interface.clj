@@ -1,7 +1,11 @@
 (ns sepal.database.interface
   (:require [clojure.data.json :as json]
+            [camel-snake-kebab.core :as csk]
+            [honey.sql]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as jdbc.result-set]
+            [next.jdbc.sql :as jdbc.sql]
             [next.jdbc.date-time]
             [next.jdbc.prepare :as prepare]
             [next.jdbc.result-set :as rs])
@@ -12,12 +16,56 @@
 ;; read all db date times as java.time.Instant
 (next.jdbc.date-time/read-as-instant)
 
+(def jdbc-options
+  (-> jdbc/snake-kebab-opts
+      ;; override the column-fn b/c the default behavior of ->snake_case is to
+      ;; turn :s3-bucket into s_3_bucket
+      (assoc :column-fn (fn [v]
+                          (csk/->snake_case v :separator \-)))
+      ;; override the builder-fn b/c the default behavior of ->kebab-case is to
+      ;; turn :s3_bucket into s-3-bucket
+      (assoc :builder-fn (fn [rs opts]
+                           (jdbc.result-set/as-modified-maps
+                            rs
+                            (assoc opts
+                                   :label-fn
+                                   (fn [v]
+                                     (csk/->kebab-case v :separator \_))))))))
+
 (defmethod ig/init-key ::db [_ cfg]
-  (jdbc/get-datasource cfg))
+  (jdbc/with-options
+    (jdbc/get-datasource cfg)
+    jdbc-options))
 
 (defmethod ig/halt-key! ::db [_ db]
   ;; TODO: If we add a connection pool then we'll need to close it here.
   )
+
+(defn query
+  "A helper to build execute queries against a table"
+  [db table & {:keys [columns join-by offset limit order-by where]}]
+  (let [params (cond-> {:select (or columns [:*])
+                        :from [table]}
+                 where
+                 (assoc :where where)
+
+                 join-by
+                 (assoc :join-by join-by)
+
+                 order-by
+                 (assoc :order-by order-by)
+
+                 offset
+                 (assoc :offset offset)
+
+                 limit
+                 (assoc :limit limit)
+
+                 :always
+                 honey.sql/format)]
+    (tap> params)
+    (jdbc.sql/query db params)))
+
 (defn ->pgobject
   "Transforms Clojure data to a PGobject that contains the data as
   JSON. PGObject type defaults to `jsonb` but can be changed via
