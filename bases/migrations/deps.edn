@@ -1,0 +1,36 @@
+{:paths ["src" "resources"]
+ :deps {poly/database {:local/root "../../components/database"}
+
+        aero/aero {:mvn/version "1.1.6"}
+        clj-postgresql/clj-postgresql {:mvn/version "0.7.0"
+                                       :exclusions [joda-time/joda-time]}
+        org.clojure/data.json {:mvn/version "2.4.0"}
+        com.github.seancorfield/next.jdbc {:mvn/version "1.3.834"}
+        org.postgresql/postgresql {:mvn/version "42.5.0"}
+        org.clojure/tools.cli {:mvn/version "1.0.214"}
+        migratus/migratus {:mvn/version "1.4.4"}
+        ;; needed by migratus
+        ;; com.fzakaria/slf4j-timbre {:mvn/version "0.3.21"}
+        }
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {}}
+
+           :migrate {:exec-fn sepal.migrations.interface/cli
+                     ;; :extra-paths ["components/migrations/src"
+                     ;;               "components/migrations/resources"]
+                     :extra-paths ["bases/migrations/src"
+                                   "bases/migrations/resources"]
+                     :exec-args {:profile :local
+                                 :migratus {:migration-dir "app/migrations"}}
+
+                     :extra-deps {aero/aero {:mvn/version "1.1.6"}
+                                  clj-postgresql/clj-postgresql {:mvn/version "0.7.0"
+                                       :exclusions [joda-time/joda-time]}
+                                  org.postgresql/postgresql {:mvn/version "42.5.0"}
+                                  org.clojure/tools.cli {:mvn/version "1.0.214"}
+                                  migratus/migratus {:mvn/version "1.4.4"}
+                                  ;; needed by migratus
+                                  com.fzakaria/slf4j-timbre {:mvn/version "0.3.21"}}}
+           }
+
+ }

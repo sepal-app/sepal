@@ -4,9 +4,13 @@
                                 "bases/app/src"
                                 "bases/app/resources"
 
+                                "bases/migrations/src"
+                                "bases/migrations/resources"
+
                                 ;; Components
                                 "components/config/src"
                                 "components/database/src"
+                                "components/database/resources"
                                 "components/organization/src"
                                 "components/taxon/src"
                                 "components/user/src"
@@ -15,6 +19,7 @@
 
                                aero/aero {:mvn/version "1.1.6"}
                                camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
+                               org.clojure/data.json {:mvn/version "2.4.0"}
                                com.github.seancorfield/honeysql {:mvn/version "2.2.868"}
                                com.github.seancorfield/next.jdbc {:mvn/version "1.2.780"}
                                com.fzakaria/slf4j-timbre {:mvn/version "0.3.21"} ;; needed by migratus
@@ -28,7 +33,7 @@
                                metosin/malli {:mvn/version "0.8.4"}
                                metosin/reitit {:mvn/version "0.5.17"}
                                metosin/ring-http-response {:mvn/version "0.9.3"}
-                               migratus/migratus {:mvn/version "1.3.0"}
+                               migratus/migratus {:mvn/version "1.4.4"}
                                org.postgresql/postgresql {:mvn/version "42.3.3"}
                                ring/ring-defaults {:mvn/version "0.3.3"}
                                rum/rum {:mvn/version "0.12.9"
@@ -49,6 +54,12 @@
                                  "components/validation/test"]
                    :extra-deps {com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                 lambdaisland/kaocha {:mvn/version "1.64.1010"}}}
+
+           ;; clojure -M:migrate
+           ;; To run for a specific profile run e.g. clojure -X:migrate :profile :test
+           :migrate {:exec-fn sepal.migrations.cli/migrate
+                     :exec-args {:profile :local}
+                     :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
                    :deps {polyfy/polylith
