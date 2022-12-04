@@ -1,18 +1,20 @@
-{:sepal.database.interface/db
- {:dbname #env DB_NAME
-  :dbtype "postgresql"
-  :host #env DB_HOST
-  :password #env DB_PASSWORD
-  :port #env DB_PORT
-  :user #env DB_USER}
+{:sepal.app.core/routes
+ {}
 
- :sepal.app.server/server
- {:port #or [#env PORT 3000]
-  :cookie-secret #env COOKIE_SECRET
-  :global-context {:db #ig/ref :sepal.database.interface/db}}
+ :sepal.app.html/tags
+ {:router #ig/ref :sepal.app.core/router}
+
+ :sepal.app.core/liana
+ {:profile :local
+  :router/routes #ig/ref :sepal.app.core/routes
+  :selmer/template-path "app/templates"
+  :db/spec #include "database/config.edn"}
+
+ :sepal.app.core/router
+ {:liana #ig/ref :sepal.app.core/liana}
 
  :sepal.app.migrations/migratus
  {:store                :database
   :migration-dir        "bases/app/resources/app/migrations"
   :migration-table-name "schema_migrations"
-  :db {:datasource #ig/ref :sepal.database.interface/db}}}
+  :db/spec  #include "database/config.edn"}}
