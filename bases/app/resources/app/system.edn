@@ -1,20 +1,23 @@
-{:sepal.app.core/routes
- {}
+{
+ ;; :sepal.app.core/routes
+ ;; {}
 
- :sepal.app.html/tags
- {:router #ig/ref :sepal.app.core/router}
+ ;; :sepal.app.routes.register.core/routes {}
 
- :sepal.app.core/liana
- {:profile :local
-  :router/routes #ig/ref :sepal.app.core/routes
-  :selmer/template-path "app/templates"
-  :db/spec #include "database/config.edn"}
 
- :sepal.app.core/router
- {:liana #ig/ref :sepal.app.core/liana}
+ :sepal.database.interface/pool
+ {:db-spec #include "database/config.edn"}
 
- :sepal.app.migrations/migratus
- {:store                :database
-  :migration-dir        "bases/app/resources/app/migrations"
-  :migration-table-name "schema_migrations"
-  :db/spec  #include "database/config.edn"}}
+ :sepal.database.interface/db
+ {:connectable #ig/ref :sepal.database.interface/pool}
+
+ :sepal.app.server/jetty
+ {:handler #ig/ref :sepal.app.ring/app
+  ;; :routes {"/register" (ig/ref :sepal.app.routes.register.core/routes)}
+  }
+
+ :sepal.app.ring/app
+ {:cookie-secret "1234567890123456"
+  :context {:db #ig/ref :sepal.database.interface/db}
+  :ring-defaults #or [#profile {:local :site
+                                :default :secure-site}]}}

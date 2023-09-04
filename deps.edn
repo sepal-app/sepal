@@ -1,49 +1,42 @@
-{:aliases  {:dev {:extra-paths ["development/src"
-
-                                ;; Bases
-                                "bases/app/src"
-                                "bases/app/resources"
-
-                                "bases/migrations/src"
-                                "bases/migrations/resources"
+{:paths []
+ :aliases  {:dev {:extra-paths ["development/src"
 
                                 ;; Components
-                                "components/config/src"
-                                "components/database/src"
-                                "components/database/resources"
+                                ;; "components/config/src"
+                                ;; "components/database/src"
+                                ;; "components/database/resources"
+                                "components/manifest/src"
                                 "components/organization/src"
                                 "components/taxon/src"
                                 "components/user/src"
                                 "components/validation/src"]
+
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
-                               liana/liana  {:local/root "../../liana"}
-                               ;; liana/liana {:git/url "https://github.com/brettatoms/liana"
-                               ;;              ;; :git/sha "22fe6fe46bbee5c678d7d81bcbbd46d83be98a75"
-                               ;;              ;; :git/tag "v0.2.15-alpha"
-                               ;;              ;; :deps/root "projects/poly"
-                               ;;              }
-                               aero/aero {:mvn/version "1.1.6"}
-                               camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
+                               poly/app-base {:local/root "bases/app"}
+                               poly/migrations-base {:local/root "bases/migrations"}
+
+                               poly/config {:local/root "components/config"}
+                               poly/database {:local/root "components/database"}
+                               poly/error {:local/root "components/error"}
+                               poly/manifest {:local/root "components/manifest"}
+                               poly/organization {:local/root "components/organization"}
+                               poly/taxon {:local/root "components/taxon"}
+                               poly/test {:local/root "components/test"}
+                               poly/user {:local/root "components/user"}
+                               poly/validation {:local/root "components/validation"}
+
+                               camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
+                               cljfmt/cljfmt {:mvn/version "0.9.2"}
+                               ;; hato/hato {:mvn/version "0.8.2"}
+                               integrant/integrant {:mvn/version "0.8.1"}
+                               integrant/repl {:mvn/version "0.3.3"}
+                               metosin/reitit-dev {:mvn/version "0.7.0-alpha5"}
                                org.clojure/data.json {:mvn/version "2.4.0"}
-                               com.github.seancorfield/honeysql {:mvn/version "2.2.868"}
-                               com.github.seancorfield/next.jdbc {:mvn/version "1.2.780"}
-                               com.fzakaria/slf4j-timbre {:mvn/version "0.3.21"} ;; needed by migratus
-                               hato/hato {:mvn/version "0.8.2"}
-                               integrant/integrant {:mvn/version "0.8.0"}
-                               integrant/repl {:mvn/version "0.3.2"}
-                               info.sunng/ring-jetty9-adapter {:mvn/version "0.17.0"
-                                                               ;; uses slf4j 2.x which doesn't seem to behave well
-                                                               ;; with logback 1.2.3
-                                                               :exclusions [org.slf4j/slf4j-api]}
-                               metosin/malli {:mvn/version "0.8.4"}
-                               metosin/reitit {:mvn/version "0.5.17"}
-                               metosin/ring-http-response {:mvn/version "0.9.3"}
-                               migratus/migratus {:mvn/version "1.4.4"}
-                               org.postgresql/postgresql {:mvn/version "42.3.3"}
-                               ring/ring-defaults {:mvn/version "0.3.3"}
-                               rum/rum {:mvn/version "0.12.9"
-                                        :exclusions [cljsjs/react cljsjs/react-dom]}}
+                               org.clojure/tools.cli {:mvn/version "1.0.219"}
+                               org.clojure/tools.deps {:mvn/version "0.18.1354"}
+                               org.clojure/tools.namespace {:mvn/version "1.4.4"}
+                               org.jsoup/jsoup {:mvn/version "1.16.1"}}
 
                   ;; OmitStackTraceInFastThrow add stacktraces when running in a
                   ;; repl that might otherwise have been optimized out, see
@@ -58,18 +51,19 @@
                                  "components/taxon/test"
                                  "components/user/test"
                                  "components/validation/test"]
-                   :extra-deps {com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
-                                lambdaisland/kaocha {:mvn/version "1.64.1010"}}}
+                   :extra-deps {poly/test {:local/root "components/test"}
+                                com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
+                                lambdaisland/kaocha {:mvn/version "1.85.1342"}}}
 
            ;; clojure -M:migrate
            ;; To run for a specific profile run e.g. clojure -X:migrate :profile :test
-           :migrate {:exec-fn sepal.migrations.cli/migrate
-                     :exec-args {:profile :local}
-                     :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
+            :migrate {:exec-fn sepal.migrations.cli/cli
+                      :exec-args {:profile :local}
+                      :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
                    :deps {polyfy/polylith
                           {:git/url "https://github.com/polyfy/polylith"
-                           :git/sha "e874e809aa9d3cecaa0540376bd2875f99b37372"
-                           :git/tag "v0.2.14-alpha"
+                           :git/sha "a1581ccc87009127f2151579b826258dd57e3077"
+                           :git/tag "v0.2.17-alpha"
                            :deps/root "projects/poly"}}}}}

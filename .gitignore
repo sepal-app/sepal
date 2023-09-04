@@ -39,3 +39,11 @@ projects/**/pom.xml
 .calva/output-window/output.calva-repl
 
 .envrc
+
+manifest.edn
+# Ignore the digested static files
+*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].*
+
+node_modules/
+# bases/app/node_modules
+.clj-kondo/

@@ -1,4 +1,4 @@
 {:paths ["src" "resources"]
- :deps {aero/aero {:mvn/version "1.1.6"}}
+ :deps {babashka/fs {:mvn/version "0.4.19"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}
