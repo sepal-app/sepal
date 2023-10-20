@@ -7,6 +7,10 @@
   [_opts _tag value]
   (ig/ref value))
 
+(defmethod aero/reader 'resource
+  [_opts _tag value]
+  (io/resource value))
+
 (defn read-config [config-file opts]
-  (-> (io/resource config-file)
-      (aero/read-config opts)))
+  (some-> (io/resource config-file)
+          (aero/read-config opts)))

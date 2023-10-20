@@ -1,21 +1,19 @@
 (ns sepal.app.routes.org.detail
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
-            [sepal.app.ui.layout :as layout]
-            [sepal.app.ui.table :as table]))
+            [sepal.app.ui.page :as page]))
+
 
 (defn page-content []
-  [:div
-   (table/table)])
+  [:div "TODO:"])
 
-(defn page [& {:keys [org router]}]
-  (as-> (page-content) $
-    (layout/page-layout :content $
-                        :router router
-                        :org org)
-    (html/root-template :content $)))
+(defn render [& {:keys [router]}]
+  (-> (page/page :router router
+                 :page-title "Dashboard"
+                 :content (page-content))
+      (html/render-html)))
 
-(defn handler [{:keys [::r/router session viewer]}]
-  (let [org (:organization session)]
-    (-> (page :org org :router router :user viewer)
-        (html/render-html))))
+
+(defn handler [{:keys [context ::r/router]}]
+  (let [{:keys [db]} context]
+    (render :router router)))

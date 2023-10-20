@@ -1,5 +1,6 @@
 (ns sepal.app.ui.page
-  (:require [sepal.app.ui.sidebar :as sidebar]))
+  (:require [sepal.app.ui.sidebar :as sidebar]
+            [sepal.app.ui.base :as base]))
 
 (defn page-wrapper [& {:keys [router content]}]
   [:div {:x-data "{showMobileSidebar: false}"}
@@ -24,18 +25,18 @@
      [:main {:class "flex-1"}
       [:div {:class "py-6"}
        [:div {:class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
-        content
-        ]]]]]])
+        content]]]]]])
 
 (defn page [& {:keys [content page-title page-title-buttons router]}]
-  (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
-                          [:div {:class "sm:flex sm:items-center h-10"}
-                           [:div {:class "sm:flex-auto"}
-                            [:h1 {:class "text-xl font-semibold text-gray-900"}
-                             page-title]]
+  (-> (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
+                              [:div {:class "sm:flex sm:items-center h-10"}
+                               [:div {:class "sm:flex-auto"}
+                                [:h1 {:class "text-xl font-semibold text-gray-900"}
+                                 page-title]]
 
-                           [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex-none"}
-                            page-title-buttons]]
-                          [:div {:class "mt-8"}
-                           content]]
-                :router router))
+                               [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex-none"}
+                                page-title-buttons]]
+                              [:div {:class "mt-8"}
+                               content]]
+                    :router router)
+      (base/html)))

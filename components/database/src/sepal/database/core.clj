@@ -49,14 +49,19 @@
 (defmethod ig/halt-key! ::db.i/db [_ db]
   (-> db jdbc/get-datasource .close))
 
-(defn execute! [db stmt]
+(defn execute! [db stmt opts]
   (let [stmt (if (map? stmt)
-               (honey.sql/format stmt)
+               (honey.sql/format stmt opts)
                stmt)]
-    (jdbc/execute! db stmt)))
+    (jdbc/execute! db stmt opts)))
 
-(defn execute-one! [db stmt]
+(defn execute-one! [db stmt opts]
   (let [stmt (if (map? stmt)
-               (honey.sql/format stmt)
+               (honey.sql/format stmt opts)
                stmt)]
-    (jdbc/execute-one! db stmt)))
+    (jdbc/execute-one! db stmt opts)))
+
+(defn exists?
+  [db stmt]
+  (-> (execute-one! db {:select [[[:exists stmt]]]})
+      :exists))
