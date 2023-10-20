@@ -1,9 +1,7 @@
-{
- ;; :sepal.app.core/routes
+{;; :sepal.app.core/routes
  ;; {}
 
  ;; :sepal.app.routes.register.core/routes {}
-
 
  :sepal.database.interface/pool
  {:db-spec #include "database/config.edn"}
@@ -19,5 +17,7 @@
  :sepal.app.ring/app
  {:cookie-secret "1234567890123456"
   :context {:db #ig/ref :sepal.database.interface/db}
-  :ring-defaults #or [#profile {:local :site
-                                :default :secure-site}]}}
+  :reload-per-request? #profile {:local true
+                                 :default false}
+  :ring-defaults #profile {:local :site
+                           :default :secure-site}}}

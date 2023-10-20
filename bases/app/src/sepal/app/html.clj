@@ -1,16 +1,40 @@
 (ns sepal.app.html
-  (:require [rum.core :as rum :refer [defc]]))
+  (:require [babashka.fs :as fs]
+            [clojure.java.io :as io]
+            [clojure.string :as s]
+            [rum.core :as rum]
+            [sepal.manifest.interface :as manifest.i]))
 
-(defn root-template [& {:keys [content]}]
-  [:html {:lang "en" :class "h-full bg-gray-100"}
-   [:head
-    [:meta {:charset "UTF-8"}]
-    [:meta {:name "viewerport"
-            :content "width=device-width, initial-scale=1.0"}]
-    [:script {:src "https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"}]
-    [:script {:defer true
-              :src "https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"}]]
-   [:body {:class "h-full"} content]])
+
+(def static-resource-folder "app/static")
+
+(defn attr [& classes]
+  (->> classes
+       flatten
+       (mapv name)
+       (s/join " ")))
+
+;; TODO: We need a debug mode to control when the regular file is returned and
+;; when the digest file is returned is returned
+
+(defn static-url [static-file]
+  (let [static-file-resource (str (fs/path static-resource-folder static-file))
+        manifest (some-> static-file-resource
+                         (io/resource)
+                         (fs/parent)
+                         (manifest.i/manifest))]
+
+    (->> (if-let [f (get manifest (fs/file-name static-file))]
+           ;; The files in the manifest are only file names so return the file
+           ;; relative to the parent of the static file.
+           (fs/path (fs/parent static-file) f)
+           static-file)
+         ;; TODO: This actually needs access to the router to see the URL where
+         ;; the static asset path is mapped...or we just assum "/static" unless its passed
+         ;; (fs/path static-resource-folder)
+         (fs/path "/static")
+         (str))))
+
 
 (defn html-response [body]
   {:status 200

@@ -1,25 +1,17 @@
 (ns sepal.app.http-response
-  (:require [reitit.core :as r]
-            [ring.util.http-response :as http]))
+  (:require [ring.util.http-response :as http]
+            [sepal.app.router :as router]))
 
-(defn ->path
-  ([router name-or-path]
-   (->path router name-or-path nil))
-  ([router name-or-path args]
-   (if (string? name-or-path)
-     name-or-path
-     (-> router
-         (r/match-by-name name-or-path args)
-         (r/match->path)))))
+;; TODO: move to router ns?
 
 (defn found
   ([router name-or-path]
    (found router name-or-path nil))
   ([router name-or-path args]
-   (http/found (->path router name-or-path args))))
+   (http/found (router/url-for router name-or-path args))))
 
 (defn see-other
   ([router name-or-path]
    (see-other router name-or-path nil))
   ([router name-or-path args]
-   (http/see-other (->path router name-or-path args))))
+   (http/see-other (router/url-for router name-or-path args))))
