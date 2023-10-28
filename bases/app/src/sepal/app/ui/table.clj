@@ -1,4 +1,6 @@
-(ns sepal.app.ui.table)
+(ns sepal.app.ui.table
+  (:require [lambdaisland.uri :as uri]
+            [sepal.app.ui.icons.heroicons :as icon]))
 
 (defn table
   "A table component.
@@ -22,55 +24,111 @@
          [:td {:class "whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8"}
           ((:cell col) row)])])]])
 
-;; (defn table2 [& {:keys [columns]}]
-;;   [:div {:class "px-4 sm:px-6 lg:px-8"}
-;;    [:div {:class "sm:flex sm:items-center"}
-;;     [:div {:class "sm:flex-auto"}
-;;      [:h1 {:class "text-xl font-semibold text-gray-900"} "Users"]
-;;      [:p {:class "mt-2 text-sm text-gray-700"}
-;;       "A list of all the users in your account including their name, title, email and role."]]
-;;     [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex-none"}
-;;      [:button {:type "button"
-;;                :class "inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"}
-;;       "Add user"]]]
-;;    [:div {:class "mt-8 flex flex-col"}
-;;     [:div {:class "-my-2 -mx-4 sm:-mx-6 lg:-mx-8"}
-;;      [:div {:class "inline-block min-w-full py-2 align-middle"}
-;;       [:div {:class "shadow-sm ring-1 ring-black ring-opacity-5"}
-;;        [:table {:class "min-w-full border-separate"
-;;                 :style "border-spacing: 0"}
-;;         [:thead {:class "bg-gray-50"}
-;;          [:tr
-;;           [:th {:scope "col"
-;;                 :class "sticky top-0 z-10 border-b border-gray-300 bg-gray-50 bg-opacity-75 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8"}
-;;            "Name"]
-;;           [:th {:scope "col"
-;;                 :class "sticky top-0 z-10 hidden border-b border-gray-300 bg-gray-50 bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:table-cell"} "Title"]
-;;           [:th {:scope "col"
-;;                 :class "sticky top-0 z-10 hidden border-b border-gray-300 bg-gray-50 bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter lg:table-cell"}
-;;            "Email"]
-;;           [:th {:scope "col"
-;;                 :class "sticky top-0 z-10 border-b border-gray-300 bg-gray-50 bg-opacity-75 px-3 py-3.5 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter"}
-;;            "Role"]
-;;           [:th {:scope "col"
-;;                 :class "sticky top-0 z-10 border-b border-gray-300 bg-gray-50 bg-opacity-75 py-3.5 pr-4 pl-3 backdrop-blur backdrop-filter sm:pr-6 lg:pr-8"}
-;;            [:span {:class "sr-only"}
-;;             "Edit"]]]]
-;;         [:tbody {:class "bg-white"}
-;;          [:tr
-;;           [:td {:class "whitespace-nowrap border-b border-gray-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8"}
-;;            "Lindsay Walton"]
-;;           [:td {:class "whitespace-nowrap border-b border-gray-200 px-3 py-4 text-sm text-gray-500 hidden sm:table-cell"}
-;;            "Front-end Developer"]
-;;           [:td {:class "whitespace-nowrap border-b border-gray-200 px-3 py-4 text-sm text-gray-500 hidden lg:table-cell"}
-;;            "lindsay.walton@example.com"]
-;;           [:td {:class "whitespace-nowrap border-b border-gray-200 px-3 py-4 text-sm text-gray-500"}
-;;            "Member"]
-;;           [:td {:class "relative whitespace-nowrap border-b border-gray-200 py-4 pr-4 pl-3 text-right text-sm font-medium sm:pr-6 lg:pr-8"}
-;;            [:a {:href "#"
-;;                 :class "text-indigo-600 hover:text-indigo-900"}
-;;             "Edit"
-;;             [:span {:class "sr-only"}
-;;              ", Lindsay Walton"]]]]
-;;          ;; "<!-- More people... -->"
-;;          ]]]]]]])
+(defn card-table
+  ([table]
+   (card-table table nil))
+  ([table paginator]
+   [:div {:class "flow-root"}
+    [:div {:class "-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8"}
+     [:div {:class "inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8"}
+      [:div {:class "overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg"}
+       table
+       paginator]]]]))
+
+
+
+(defn- page-button [& {:keys [active? label href]}]
+  [:a {:href href
+       :class (cond->> "relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                active?
+                (str " z-10 bg-blue-50 border-blue-500 text-blue-600 r")
+                :always
+                (str " bg-white border-gray-300 text-gray-500 hover:bg-gray-50"))}
+   label])
+
+
+(defn paginator [& {:keys [current-page page-size total href]
+                     :or {total 0
+                          href "#"}
+                     :as args}]
+  (let [page-start (if (zero? total)
+                     0
+                     (-> current-page
+                         (- 1)
+                         (* page-size)
+                         (+ 1)))
+        page-href (fn [page] (-> href (uri/parse)
+                                 (uri/assoc-query :page page)
+                                 (uri/uri-str)))
+        num-pages (int (Math/ceil (/ total page-size)))
+        page-end (if (or (= current-page num-pages)
+                         (zero? total))
+                   total
+                   (+ page-start page-size))
+        previous-page-href (if (= current-page 1)
+                             "#"
+                             (page-href (- current-page 1)))
+        next-page-href (if (= current-page num-pages)
+                         "#"
+                         (page-href (+ current-page 1)))
+        buttons (cond
+                  ;; If there are fewer than 5 pages, just build that many
+                  (< num-pages 6)
+                  [:div (for [page (range 1 (inc num-pages))]
+                          (page-button :label page
+                                       :active? (= current-page page)
+                                       :href (page-href page)))]
+                  ;; There are more than 5 pages of results, make sure we don't
+                  ;; have negative page buttons for small current pages
+                  (< current-page 4)
+                  [:div (for [page (range 1 6)]
+                          (page-button :label page
+                                       :active? (= current-page page)
+                                       :href (page-href page)))]
+                  :else
+                  [:div (for [page (range (- current-page 2) (+ current-page 3))]
+                          (page-button :label page
+                                       :active? (= current-page page)
+                                       :href (page-href page)))])]
+
+    [:div {:class "bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"}
+     [:div {:class "flex-1 flex justify-between sm:hidden"}
+      [:a {:href previous-page-href
+           :class "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"}
+       "Previous"]
+      [:a {:href next-page-href
+           :class "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"}
+       "Next"]]
+     [:div {:class "hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"}
+      [:div
+       [:p {:class "text-sm text-gray-700"}
+        "Showing "
+        [:span {:class "font-medium"} page-start]
+        " to "
+        [:span {:class "font-medium"} page-end]
+        " of "
+        [:span {:class "font-medium"} total]
+        " results"]]
+      [:div
+       [:nav {:class "relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+              :aria-label "Pagination"}
+        [:a {:href (page-href 1)
+             :class "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"}
+         [:span {:class "sr-only"}
+          "First"]
+         (icon/backwards-left)]
+        [:a {:href previous-page-href
+             :class "relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"}
+         [:span {:class "sr-only"}
+          "Previous"]
+         (icon/chevron-left)]
+        buttons
+        [:a {:href next-page-href
+             :class "relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"}
+         [:span {:class "sr-only"} "Next"]
+         (icon/chevron-right)]
+        [:a {:href (page-href num-pages)
+             :class "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"}
+         [:span {:class "sr-only"}
+          "Last"]
+         (icon/backwards-right)]]]]]))

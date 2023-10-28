@@ -1,4 +1,5 @@
 (ns sepal.database.core
+  (:refer-clojure :exclude [count])
   (:require [camel-snake-kebab.core :as csk]
             [honey.sql]
             [integrant.core :as ig]
@@ -65,3 +66,11 @@
   [db stmt]
   (-> (execute-one! db {:select [[[:exists stmt]]]})
       :exists))
+
+(defn count
+  [db stmt opts]
+  (-> (execute-one! db
+                    {:select [[[:count :*]]]
+                     :from [[stmt :c]]}
+                    opts)
+      :count))

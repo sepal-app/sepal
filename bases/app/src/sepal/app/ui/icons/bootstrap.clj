@@ -7,7 +7,7 @@
   [:svg
    {:xmlns "http://www.w3.org/2000/svg"
     :fill "currentColor"
-    :class (str color " group-hover:text-gray-500 mr-4 flex-shrink-0")
+    :class (str color " group-hover:text-gray-500 flex-shrink-0")
     :viewBox "0 0 16 16"
     :width size
     :height size}

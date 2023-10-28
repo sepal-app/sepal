@@ -1,6 +1,5 @@
 (ns sepal.app.ui.base
-  (:require [sepal.app.ui.tailwind :as tw]
-            [sepal.app.html :as html]))
+  (:require [sepal.app.html :as html]))
 
 (defn html [content & {:keys [title]}]
   [:html
@@ -14,5 +13,5 @@
             :href (html/static-url "css/main.min.css")}]
     [:script {:type "module"
               :src (html/static-url "js/shared.min.js")}]]
-   [:body {:class (tw/->attr :h-full)}
+   [:body {:class "h-full"}
     content]])

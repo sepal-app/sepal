@@ -23,8 +23,7 @@
               :always
               (s/join " "))}
    (when icon
-     [:div
-      {:class "mr-3"}
+     [:div {:class "mr-3"}
       icon])
    text])
 

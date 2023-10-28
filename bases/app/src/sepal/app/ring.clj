@@ -8,7 +8,7 @@
             [reitit.ring]
             [reitit.ring.coercion :as coercion]
             [reitit.ring.middleware.dev :as dev]
-            ;; [reitit.ring.middleware.exception :as exception]
+            [reitit.ring.middleware.exception :as exception]
             [reitit.ring.middleware.multipart :as multipart]
             [reitit.ring.middleware.muuntaja :as muuntaja]
             ;; [reitit.ring.middleware.parameters :as parameters]
@@ -20,7 +20,8 @@
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
             [sepal.app.routes.org.core :as org]
-            [sepal.app.routes.register.core :as register]))
+            [sepal.app.routes.register.core :as register]
+            [sepal.app.routes.taxon.core :as taxon]))
 
 
 (defn routes []
@@ -43,7 +44,8 @@
    ["/forgot_password" {:name :auth/forgot-pasword
                         ;; :handler #(logout/handler %)
                         }]
-   ["/org" (org/routes)]])
+   ["/org" (org/routes)]
+   ["/taxon" (taxon/routes)]])
 
 (def error-handlers
   {:not-found (constantly {:status 404

@@ -1,4 +1,5 @@
 (ns sepal.database.interface
+  (:refer-clojure :exclude [count])
   (:require [integrant.core :as ig]
             [next.jdbc :as jdbc]
             [next.jdbc.date-time]
@@ -21,6 +22,12 @@
 
 (defn exists? [db stmt]
   (core/exists? db stmt))
+
+(defn count
+  ([db stmt]
+   (count db stmt nil))
+  ([db stmt opts]
+   (core/count db stmt opts)))
 
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction [~sym (core/->next-jdbc ~transactable) ~opts]

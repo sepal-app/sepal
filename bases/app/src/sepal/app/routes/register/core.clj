@@ -1,6 +1,6 @@
 (ns sepal.app.routes.register.core
   (:require [sepal.app.routes.register.index :as index]))
 
-(def routes
+(defn routes []
   ["" {:name :register/index
-       :handler #(index/handler %)}])
+       :handler #'index/handler}])

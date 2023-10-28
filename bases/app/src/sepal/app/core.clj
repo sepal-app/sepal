@@ -5,7 +5,6 @@
             [reitit.ring :as r.ring]
             [sepal.app.http-response :as http]
             [sepal.app.middleware :as middleware]
-            [sepal.app.routes.dashboard :as dashboard]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
             ;; [sepal.app.routes.org.handlers :as org]
@@ -26,9 +25,6 @@
 ;;               :handler #(login/handler %)}]
 ;;    ["/logout" {:name :auth/logout
 ;;                :handler #(logout/handler %)}]
-
-;;    ["/dashboard" {:name :dashboard
-;;                   :handler #(dashboard/handler %)}]
 
 ;;    ["/forgot_password" {:name :auth/forgot-pasword
 ;;                         ;; :handler #(logout/handler %)
