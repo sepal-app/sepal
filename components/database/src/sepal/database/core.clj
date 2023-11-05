@@ -3,12 +3,18 @@
   (:require [camel-snake-kebab.core :as csk]
             [honey.sql]
             [integrant.core :as ig]
+            [malli.transform :as mt]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as jdbc.connection]
             [next.jdbc.result-set :as jdbc.result-set]
             [sepal.database.honeysql :as honeysql]
             [sepal.database.postgresql :as postgresql])
   (:import [com.zaxxer.hikari HikariDataSource]))
+
+(def transformer
+  (mt/transformer
+   mt/strip-extra-keys-transformer
+   {:name :db}))
 
 (def default-jdbc-options
   (-> jdbc/snake-kebab-opts

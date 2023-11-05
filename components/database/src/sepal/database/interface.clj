@@ -8,6 +8,8 @@
 ;; read all db date times as java.time.Instant
 (next.jdbc.date-time/read-as-instant)
 
+(def transformer core/transformer)
+
 (defn execute!
   ([db stmt]
    (core/execute! db stmt {}))
