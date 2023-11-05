@@ -2,6 +2,7 @@
   (:require [lambdaisland.uri :as uri]
             [reitit.core :as r]
             [sepal.app.html :as html]
+            [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
@@ -13,7 +14,7 @@
 (defn search-field [q]
   [:div {:class "flex flex-row"}
    [:input {:name "q"
-            :class "spl-input"
+            :class "spl-input w-96"
             :type "search"
             :value q
             :placeholder "Search..."}]
@@ -46,9 +47,9 @@
 
 (defn create-button [& {:keys [org router]}]
   [:a {:class (html/attr "inline-flex" "items-center" "justify-center" "rounded-md"
-                         "border" "border-transparent" "bg-indigo-600" "px-4" "py-2"
-                         "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-indigo-700"
-                         "focus:outline-none" "focus:ring-2" "focus:ring-indigo-500"
+                         "border" "border-transparent" "bg-green-700" "px-4" "py-2"
+                         "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
+                         "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
        :href (url-for router :org/taxa-new {:org-id (:organization/id org)})}
    "Create"])
@@ -84,7 +85,8 @@
                                       :total total)
                       :table-actions (search-field (-> href uri/query-map :q)))])
 
-(defn handler [& {:keys [context query-params ::r/router uri]}]
+
+(defn handler [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
         org (:current-organization context)
         ;; TODO: validate page and page size
@@ -105,15 +107,20 @@
                                       :offset offset
                                       :order-by [:name]) )]
 
-    (-> (page/page :router router
-                   :page-title "Taxa"
-                   :page-title-buttons (create-button :router router
-                                                      :org org)
-                   :content (page-content :rows rows
-                                          :page-num page-num
-                                          :page-size page-size
-                                          :router router
-                                          :href (uri/uri-str {:path uri
-                                                              :query (uri/map->query-string query-params)})
-                                          :total total))
-        (html/render-html))))
+    (if (= (get headers "accept") "application/json")
+      (json/json-response (for [taxon rows]
+                       {:name (:taxon/name taxon)
+                        :id (:taxon/id taxon)
+                        :author (:taxon/author taxon)}))
+      (-> (page/page :router router
+                     :page-title "Taxa"
+                     :page-title-buttons (create-button :router router
+                                                        :org org)
+                     :content (page-content :rows rows
+                                            :page-num page-num
+                                            :page-size page-size
+                                            :router router
+                                            :href (uri/uri-str {:path uri
+                                                                :query (uri/map->query-string query-params)})
+                                            :total total))
+          (html/render-html)))))

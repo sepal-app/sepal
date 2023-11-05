@@ -31,9 +31,8 @@
          :middleware [[middleware/require-viewer]]}]
 
    ;; See sepal.app.html/static-url for accessing static assets
-   ["/static/{*path}" {:name :static-files
-                       :handler (reitit.ring/create-resource-handler {:parameter :path
-                                                                      :root "app/static"})}]
+   ["/assets/*" {:name :static-files
+                       :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
    ;; ["/favicon.ico" {:get {:handler (fn [_] {:status 200 :body ""})}}]
    ["/register" (register/routes)]
    ["/login" {:name :auth/login

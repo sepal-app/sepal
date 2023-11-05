@@ -10,8 +10,10 @@
     [:meta {:name "description" :content ""}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
     [:link {:rel "stylesheet"
-            :href (html/static-url "css/main.min.css")}]
+            :href (html/static-url "css/main.css")}]
     [:script {:type "module"
-              :src (html/static-url "js/shared.min.js")}]]
-   [:body {:class "h-full"}
+              :src (html/static-url "js/shared.js")}]]
+   [:body {:class "h-full"
+           :hx-ext "alpine-morph"
+           :hx-swap "morph"}
     content]])
