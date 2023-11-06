@@ -25,7 +25,7 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params path-params request-method ::r/router viewer]}]
+(defn handler [{:keys [context params path-params request-method ::r/router]}]
   (let [{:keys [db]} context
         ;; org (:organization session)
         ;; org (:current-organization context)
@@ -54,8 +54,7 @@
               (assoc :flash {:error error
                              :values params}))))
 
-      (-> (render :org org
-                  :router router
-                  :user viewer
-                  :taxon taxon
-                  :values values)))))
+      (render :org org
+              :router router
+              :taxon taxon
+              :values values))))

@@ -6,6 +6,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [next.jdbc.types :as jdbc.types]
             [sepal.database.interface :as db.i]
+            [sepal.taxon.core :as core]
             [sepal.taxon.interface.spec :as spec]))
 
 (defn- db-> [data]
@@ -27,27 +28,9 @@
   (->> (apply db.i/execute! db :taxon params)
        (map db->)))
 
-(defn create!
-  [db data]
-  ;; TODO: Create auditing event
-  ;; TODO: Validate data against spec/CreateTaxon
-  (try
-    (let [data (m/coerce spec/CreateTaxon data)]
-      (jdbc.sql/insert! db
-                        :taxon
-                        (->db data)
-                        {:return-keys true}))
-    (catch Exception e
-      {:error {:message (ex-message e)}})))
+
+(defn create! [db data]
+  (core/create! db data))
 
 (defn update! [db id data]
-  (try
-    (let [data (m/coerce spec/UpdateTaxon data db.i/transformer)
-          row (jdbc.sql/update! db
-                                :taxon
-                                data
-                                {:id id}
-                                {:return-keys 1})]
-      (m/coerce spec/Taxon row db.i/transformer))
-    (catch Exception e
-      {:error {:message (ex-message e)}})))
+  (core/update! db id data))
