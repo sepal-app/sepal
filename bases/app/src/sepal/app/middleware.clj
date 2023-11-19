@@ -50,6 +50,8 @@
                                  [:= :o.id organization-id]]}))
 
 (defn require-org-membership [handler path-param-key]
+  ;; TODO: This redirects to root but maybe we should return a 404 or 403 or
+  ;; something.
   (fn [{:keys [context path-params ::r/router viewer] :as request}]
     (let [{:keys [db]} context
           org-id (Long/parseLong (get path-params path-param-key))
@@ -58,7 +60,41 @@
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org )
+              ;; TODO: Remove current-organization
               (assoc-in [:context :current-organization] org)
+              (assoc-in [:context :organization] org)
+              (handler)))
+        (http/see-other router :root)))))
+
+(defn resource-loader
+  "Accept a getter function and a path param key load resource and assoc it in the
+  request context under the :resource key."
+  [handler getter path-param-key]
+
+  (fn [{:keys [context path-params] :as request}]
+    (let [{:keys [db]} context
+          resource-id (Long/parseLong (get path-params path-param-key))
+          resource (getter db resource-id)]
+      (-> request
+          (assoc-in [:context :resource] resource)
+          (handler)))))
+
+(defn require-resource-org-membership
+  "Require a user to be a member of the organization that owns the resource."
+  [handler organization-id-key]
+  (fn [{:keys [context ::r/router viewer] :as request}]
+    (let [{:keys [db resource]} context
+          org-id (get resource organization-id-key)
+          org (find-user-org db (:user/id viewer) org-id)]
+      ;; TODO: This redirects to root but maybe we should return a 404 or 403 or
+      ;; something.
+      (if (some? org)
+        (binding [g/*organization* org]
+          (-> request
+              (assoc-in [:session :organization] org )
+              ;; TODO: Remove current-organization
+              (assoc-in [:context :current-organization] org)
+              (assoc-in [:context :organization] org)
               (handler)))
         (http/see-other router :root)))))
 

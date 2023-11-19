@@ -70,7 +70,7 @@
 
 (defn exists?
   [db stmt]
-  (-> (execute-one! db {:select [[[:exists stmt]]]})
+  (-> (execute-one! db {:select [[[:exists stmt]]]} {})
       :exists))
 
 (defn count

@@ -19,6 +19,7 @@
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
+            [sepal.app.routes.accession.core :as accession]
             [sepal.app.routes.org.core :as org]
             [sepal.app.routes.register.core :as register]
             [sepal.app.routes.taxon.core :as taxon]))
@@ -43,6 +44,8 @@
    ["/forgot_password" {:name :auth/forgot-pasword
                         ;; :handler #(logout/handler %)
                         }]
+
+   ["/accession" (accession/routes)]
    ["/org" (org/routes)]
    ["/taxon" (taxon/routes)]])
 

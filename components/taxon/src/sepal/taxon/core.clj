@@ -33,5 +33,5 @@
                                 {:id id}
                                 {:return-keys 1})]
       (m/coerce spec/Taxon result db.i/transformer))
-    (catch Exception e
-      (ex-data e))))
+    (catch Exception ex
+      (error.i/ex->error ex))))
