@@ -1,4 +1,4 @@
-(ns sepal.app.routes.taxon.index
+(ns sepal.app.routes.accession.index
   (:require [lambdaisland.uri :as uri]
             [reitit.core :as r]
             [sepal.app.html :as html]
@@ -33,26 +33,26 @@
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
                          "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
-       :href (url-for router :org/taxa-new {:org-id (:organization/id org)})}
+       :href (url-for router :org/accessions-new {:org-id (:organization/id org)})}
    "Create"])
 
 (defn table-columns [router]
-  [{:name "Name"
+  [{:name "Code"
     :cell (fn [t] [:a {:href (url-for router
-                                      :taxon/detail
-                                      {:id (:taxon/id t)})
+                                      :accession/detail
+                                      {:id (:accession/id t)})
                        :class "spl-link"}
-                   (:taxon/name t)])}
-   {:name "Author"
-    :cell :taxon/author}
-   {:name "Rank"
-    :cell :taxon/rank}
+                   (:accession/code t)])}
+   #_{:name "Author"
+    :cell :accession/author}
+   #_{:name "Rank"
+    :cell :accession/rank}
    #_{:name "Parent"
     :cell (fn [t] [:a {:href (url-for router
-                                      :taxon/detail
-                                      {:id (:taxon/id t)})
+                                      :accession/detail
+                                      {:id (:accession/id t)})
                        :class "spl-link"}
-                   (:taxon/name t)])}
+                   (:accession/name t)])}
    ])
 
 (defn table [& {:keys [rows page-num href page-size router total]}]
@@ -72,7 +72,7 @@
                                          :router router
                                          :rows rows
                                          :total total)
-                         :page-title "Taxa"
+                         :page-title "Accessions"
                          :page-title-buttons (create-button :router router
                                                             :org org)
                          :table-actions (search-field (-> href uri/query-map :q))
@@ -89,28 +89,29 @@
         page-num (or (when page (Integer/parseInt page)) 1)
         offset (* page-size (- page-num 1))
         stmt {:select [:t.*]
-              :from [[:public.taxon :t]]
+              :from [[:public.accession :t]]
               :where [:and
                       [:= :organization_id (:organization/id org)]
                       (if q
-                        [:ilike :name (format "%%%s%%" q)]
+                        [:ilike :code (format "%%%s%%" q)]
                         :true)]}
         total (db.i/count db stmt)
         ;; TODO: Can we use jdbc datafy/nav to eager load the parent
         ;;
-        ;; TODO: Use taxon.i/find or something to coerce to Taxonkj
+        ;; TODO: Use accession.i/find or something to coerce to Accessionkj
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:name]) )]
+                                      :order-by [:code]) )]
 
     (tap> (str "rows: " rows))
 
     (if (= (get headers "accept") "application/json")
-      (json/json-response (for [taxon rows]
-                       {:name (:taxon/name taxon)
-                        :id (:taxon/id taxon)
-                        :author (:taxon/author taxon)}))
+      ;; TODO: json response
+      (json/json-response (for [accession rows]
+                       {:name (:accession/name accession)
+                        :id (:accession/id accession)
+                        :author (:accession/author accession)}))
       (render :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :org org

@@ -1,25 +1,14 @@
 {:paths []
- :aliases  {:dev {:extra-paths ["development/src"
-
-                                ;; Components
-                                ;; "components/config/src"
-                                ;; "components/database/src"
-                                ;; "components/database/resources"
-                                "components/manifest/src"
-                                "components/organization/src"
-                                "components/taxon/src"
-                                "components/user/src"
-                                "components/validation/src"]
-
+ :aliases  {:dev {:extra-paths ["development/src"]
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
                                poly/app-base {:local/root "bases/app"}
                                poly/migrations-base {:local/root "bases/migrations"}
 
+                               poly/accession {:local/root "components/accession"}
                                poly/config {:local/root "components/config"}
                                poly/database {:local/root "components/database"}
                                poly/error {:local/root "components/error"}
-                               poly/manifest {:local/root "components/manifest"}
                                poly/organization {:local/root "components/organization"}
                                poly/taxon {:local/root "components/taxon"}
                                poly/test {:local/root "components/test"}
@@ -31,7 +20,7 @@
                                ;; hato/hato {:mvn/version "0.8.2"}
                                integrant/integrant {:mvn/version "0.8.1"}
                                integrant/repl {:mvn/version "0.3.3"}
-                               metosin/reitit-dev {:mvn/version "0.7.0-alpha5"}
+                               metosin/reitit-dev {:mvn/version "0.7.0-alpha7"}
                                org.clojure/data.json {:mvn/version "2.4.0"}
                                org.clojure/tools.cli {:mvn/version "1.0.219"}
                                org.clojure/tools.deps {:mvn/version "0.18.1354"}

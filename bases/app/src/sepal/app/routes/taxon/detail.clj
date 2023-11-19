@@ -5,8 +5,7 @@
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.page :as page]
-            [sepal.taxon.interface :as taxon.i]
-            [sepal.organization.interface :as org.i]))
+            [sepal.taxon.interface :as taxon.i]))
 
 (defn page-content [& {:keys [errors org router taxon values]}]
   (taxon.form/form :action (url-for router :taxon/detail {:id (:taxon/id taxon)})
@@ -25,36 +24,30 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params path-params request-method ::r/router]}]
-  (let [{:keys [db]} context
-        ;; org (:organization session)
-        ;; org (:current-organization context)
-        taxon-id (-> path-params :id Integer/parseInt)
-        ;; error (:error taxon)
-        taxon (taxon.i/get-by-id db taxon-id)
-        org (org.i/get-by-id db (:taxon/organization-id taxon))
-        parent (when (:taxon/parent-id taxon)
-                 (taxon.i/get-by-id db (:taxon/parent-id taxon)))
+(defn handler [{:keys [context params request-method ::r/router]}]
+  (let [{:keys [db organization resource]} context
+        parent (when (:taxon/parent-id resource)
+                 (taxon.i/get-by-id db (:taxon/parent-id resource)))
         error nil
-        values (merge {:id (:taxon/id taxon)
-                       :name (:taxon/name taxon)
-                       :rank (:taxon/rank taxon)
+        values (merge {:id (:taxon/id resource)
+                       :name (:taxon/name resource)
+                       :rank (:taxon/rank resource)
                        :parent-id (:taxon/id parent)
                        :parent-name (:taxon/name parent)}
                       params)]
 
     (case request-method
       :post
-      (let [taxon (taxon.i/update! db taxon-id params)]
+      (let [result (taxon.i/update! db (:taxon/id resource) params)]
         ;; TODO: handle errors
         (if-not error
-          (http/found router :taxon/detail {:org-id (-> org :organization/id str)
-                                            :id (:taxon/id taxon)})
+          (http/found router :taxon/detail {:org-id (-> organization :organization/id str)
+                                            :id (:taxon/id resource)})
           (-> (http/found router :taxon/detail)
               (assoc :flash {:error error
                              :values params}))))
 
-      (render :org org
+      (render :org organization
               :router router
-              :taxon taxon
+              :taxon resource
               :values values))))

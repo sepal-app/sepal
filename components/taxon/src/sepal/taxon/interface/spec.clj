@@ -38,6 +38,7 @@
    [:taxon/rank {:decode/db csk/->snake_case_keyword}
     rank]
    [:taxon/author [:maybe author]]
+   [:taxon/name name]
    [:taxon/parent-id [:maybe parent-id]]
    [:taxon/organization-id organization-id]])
 

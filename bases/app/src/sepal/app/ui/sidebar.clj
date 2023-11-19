@@ -15,7 +15,7 @@
               (concat ["text-gray-900 bg-gray-100"])
 
               (not current)
-              (concat ["text-gray-600 hover:bg-gray-50 hover:text-gray-900"])
+              (concat ["text-gray-700 hover:bg-gray-50 hover:text-gray-900"])
 
               (nil? href)
               (concat ["pointer-events-none"])
@@ -26,9 +26,6 @@
      [:div {:class "mr-3"}
       icon])
    text])
-
-(comment
-  ())
 
 
 (defn static [& {:keys []}]
@@ -46,33 +43,33 @@
          (:organization/name g/*organization*)])]
      [:nav {:class "mt-5 flex-1 px-2 bg-white space-y-1"}
       (static-sidebar-item "Activity"
-                           :href (url-for g/*router* :org/activity)
+                           :href (url-for g/*router* :org/activity {:org-id (:organization/id g/*organization*)})
                            :icon (heroicons/outline-clock)
                            :current? false)
       (static-sidebar-item "Accessions"
-                           :href (url-for g/*router* :org/accessions)
+                           :href (url-for g/*router* :org/accessions {:org-id (:organization/id g/*organization*)})
                            :icon (heroicons/outline-rectangle-group )
                            :current? false)
       (static-sidebar-item "Items"
-                           :href (url-for g/*router* :org/items)
+                           :href (url-for g/*router* :org/items {:org-id (:organization/id g/*organization*)})
                            :icon (heroicons/outline-tag)
                            :current? false)
       (static-sidebar-item "Taxa"
-                           :href (url-for g/*router* :org/taxa {:org-id 3})
+                           :href (url-for g/*router* :org/taxa {:org-id (:organization/id g/*organization*)})
                            :icon (bootstrap/flower1)
                            :current? false)
       (static-sidebar-item "Locations"
-                           :href (url-for g/*router* :org/locations)
+                           :href (url-for g/*router* :org/locations {:org-id (:organization/id g/*organization*)})
                            :icon (heroicons/outline-map-pin)
                            :current? false)
       (static-sidebar-item "Media"
-                           :href (url-for g/*router* :org/media)
+                           :href (url-for g/*router* :org/media {:org-id (:organization/id g/*organization*)})
                            :icon (heroicons/outline-photo)
                            :current? false)]]
     [:div
      {:x-data "{expanded: false}"
       :role "region"
-      :class "flex-shrink-0 flex border-t border-gray-200"}
+      :class "flex-shrink-0 flex border-t border-gray-200 bg-green-50/50"}
      [:button
       {:x-on:click "expanded = !expanded"
        :aria-expanded "expanded"

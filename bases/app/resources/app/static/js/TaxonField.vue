@@ -6,7 +6,6 @@ const props = defineProps(["url", "taxonId", "initialValue"])
 const select = ref()
 
 function renderParent(item, escape) {
-    console.log(item)
     return item.text
         ? `<div>${escape(item.text)}</div>`
         : `<div>${escape(item.name)} ${escape(item.author ?? "")}</div>`
@@ -15,7 +14,7 @@ function renderParent(item, escape) {
 onMounted(() => {
     const options = props.initialValue ? [JSON.parse(props.initialValue)] : []
 
-    this._ts = new TomSelect(select.value, {
+    new TomSelect(select.value, {
         itemClass: "sm:text-sm bg-white",
         maxItems: 1,
         openOnFocus: false,
@@ -32,15 +31,7 @@ onMounted(() => {
             })
                 .then((response) => response.json())
                 // remove the current taxon from the complete list
-                .then((data) => {
-                    console.log("---")
-                    console.log(data)
-                    console.log(data[0].id.toString())
-                    console.log(props.taxonId)
-                    const d = data.filter((t) => t.id.toString() !== props.taxonId)
-                    console.log("filtered: ", d)
-                    return d
-                })
+                .then((data) => data.filter((t) => t.id.toString() !== props.taxonId))
                 .then(callback)
                 .catch((e) => {
                     console.error(e)
