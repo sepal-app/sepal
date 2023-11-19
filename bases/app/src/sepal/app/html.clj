@@ -1,12 +1,9 @@
 (ns sepal.app.html
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
+            [clojure.data.json :as json]
             [clojure.string :as s]
-            [rum.core :as rum]
-            [sepal.manifest.interface :as manifest.i]))
-
-
-(def static-resource-folder "app/static")
+            [rum.core :as rum]))
 
 (defn attr [& classes]
   (->> classes
@@ -14,32 +11,42 @@
        (mapv name)
        (s/join " ")))
 
-;; TODO: We need a debug mode to control when the regular file is returned and
-;; when the digest file is returned is returned
+;; The resource path for the built static files
+(def static-dist-folder "app/dist")
 
+;; The source folder of the static assets.
+(def static-resource-folder "resources/app/static")
+
+;; The root url path for the static assets
+(def static-root "/")
+
+
+;; TODO: We need to cache the manifest instead of parsing it on every request
+;; similar to how manifest.i handled it.
 (defn static-url [static-file]
-  (let [static-file-resource (str (fs/path static-resource-folder static-file))
-        manifest (some-> static-file-resource
+  (let [manifest (some-> (str static-dist-folder fs/file-separator "manifest.json")
                          (io/resource)
-                         (fs/parent)
-                         (manifest.i/manifest))]
+                         (slurp)
+                         (json/read-str))
+        static-file-path (str static-resource-folder fs/file-separator static-file)
+        path (get-in manifest [static-file-path "file"])]
+    (str static-root path)))
 
-    (->> (if-let [f (get manifest (fs/file-name static-file))]
-           ;; The files in the manifest are only file names so return the file
-           ;; relative to the parent of the static file.
-           (fs/path (fs/parent static-file) f)
-           static-file)
-         ;; TODO: This actually needs access to the router to see the URL where
-         ;; the static asset path is mapped...or we just assum "/static" unless its passed
-         ;; (fs/path static-resource-folder)
-         (fs/path "/static")
-         (str))))
-
+;; TODO: This uses fs/glob to get the filename with the hash and will probably
+;; be slow. We need to memoize this in production.
+(defn image-url [f]
+  (let [f "jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg"
+        [head ext] (fs/split-ext f)
+        asset-path (fs/path (io/resource static-dist-folder) "assets")
+        pattern (str head "-*." ext)
+        abs-path (-> (fs/glob asset-path pattern)
+                     (first))]
+    (str "assets/" (fs/file-name abs-path))))
 
 (defn html-response [body]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body body})
+   :body (str "<!DOCTYPE html>\n" body)})
 
 (defn render-html [html]
   (-> html

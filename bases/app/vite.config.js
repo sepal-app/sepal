@@ -25,6 +25,7 @@ export default defineConfig({
                 "resources/app/static/js/accession_form.ts",
                 "resources/app/static/js/taxon_form.ts",
                 "resources/app/static/css/main.css",
+                "resources/app/static/img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg",
             ],
         },
     },

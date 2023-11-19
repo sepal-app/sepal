@@ -15,14 +15,4 @@
         rum/rum {:mvn/version "0.12.11"
                  :exclusions [cljsjs/react cljsjs/react-dom]}}
  :aliases {:test {:extra-paths ["test"]
-                  :extra-deps {}}
-           :static/build {:exec-fn sepal.manifest.interface/cli
-                          :exec-args {:command :build
-                                      :args ["app/static/js"
-                                             "app/static/css"
-                                             "app/static/img"]}}
-           :static/clean {:exec-fn sepal.manifest.interface/cli
-                          :exec-args {:command :clean
-                                      :args ["app/static/js"
-                                             "app/static/css"
-                                             "app/static/img"]}}}}
+                  :extra-deps {}}}}

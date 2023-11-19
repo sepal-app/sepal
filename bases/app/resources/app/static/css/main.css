@@ -1,31 +1,34 @@
-@import "@uppy/core/dist/style.min.css";
-@import "@uppy/dashboard/dist/style.min.css";
-@import "tom-select/dist/css/tom-select.min.css";
+/* @import "@uppy/core/dist/style.min.css"; */
+/* @import "@uppy/dashboard/dist/style.min.css"; */
+@import "tom-select/dist/css/tom-select.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer components {
-  .spl-input {
-    @apply block px-2 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6;
-  }
-  .spl-label {
-    @apply block text-sm font-medium leading-6 text-gray-900;
-  }
-  .spl-select {
-    @apply bg-white block rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6;
-  }
-  .spl-alert-success {
-    @apply pointer-events-auto flex items-center justify-between gap-x-6 bg-green-600 px-6 py-2.5 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-3.5 min-w-[33%] text-center;
-  }
-  .spl-alert-error {
-    @apply pointer-events-auto flex items-center justify-between gap-x-6 bg-red-600 px-6 py-2.5 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-3.5 min-w-[33%] text-center;
-  }
-  .spl-ts-select {
-    @apply p-0;
-  }
-  .spl-link {
-    @apply underline-offset-4 hover:text-blue-600 hover:underline decoration-solid;
-  }
+    .spl-input {
+        @apply block px-2 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6;
+    }
+    .spl-label {
+        @apply block text-sm font-medium leading-6 text-gray-900;
+    }
+    .spl-select {
+        @apply bg-white block rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6;
+    }
+    .spl-alert-success {
+        @apply pointer-events-auto flex items-center justify-between gap-x-6 bg-green-600 px-6 py-2.5 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-3.5 min-w-[33%] text-center;
+    }
+    .spl-alert-error {
+        @apply pointer-events-auto flex items-center justify-between gap-x-6 bg-red-600 px-6 py-2.5 sm:rounded-xl sm:py-3 sm:pl-4 sm:pr-3.5 min-w-[33%] text-center;
+    }
+    /* .spl-ts-select { */
+    /*     @apply p-0; */
+    /* } */
+    .spl-tom-select {
+        @apply mt-1 block w-full text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md;
+    }
+    .spl-link {
+        @apply underline-offset-4 hover:text-blue-600 hover:underline decoration-solid;
+    }
 }
