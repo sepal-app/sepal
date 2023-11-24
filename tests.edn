@@ -1,6 +1,7 @@
 #kaocha/v1
  {:tests [{:id :unit
            :test-paths ["bases/app"
+                        "components/aws-s3/test"
                         "components/config/test"
                         "components/database/test"
                         "components/organization/test"

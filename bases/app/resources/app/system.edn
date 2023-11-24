@@ -14,9 +14,25 @@
   ;; :routes {"/register" (ig/ref :sepal.app.routes.register.core/routes)}
   }
 
+ :sepal.aws-s3.interface/credentials-provider
+ {:access-key-id #env AWS_ACCESS_KEY_ID
+  :secret-access-key #env AWS_SECRET_ACCESS_KEY}
+
+ :sepal.aws-s3.interface/s3-presigner
+ {:endpoint-override #env AWS_S3_ENDPOINT
+  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
+
+ :sepal.aws-s3.interface/s3-client
+ {:endpoint-override #env AWS_S3_ENDPOINT
+  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
+
  :sepal.app.ring/app
  {:cookie-secret "1234567890123456"
-  :context {:db #ig/ref :sepal.database.interface/db}
+  :context {:db #ig/ref :sepal.database.interface/db
+            :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
+            :s3-client #ig/ref :sepal.aws-s3.interface/s3-client
+            :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
+            :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
   :reload-per-request? #profile {:local true
                                  :default false}
   :ring-defaults #profile {:local :site

@@ -2,6 +2,7 @@
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.create :as accession.create]
             [sepal.app.routes.accession.index :as accession.index]
+            [sepal.app.routes.media.index :as media.index]
             [sepal.app.routes.org.create :as create]
             [sepal.app.routes.org.detail :as detail]
             [sepal.app.routes.org.index :as index]
@@ -20,6 +21,8 @@
     ["/" {:name :org/detail
           :handler #'detail/handler}]
 
+    ["/media" {:name :org/media
+               :handler #'media.index/handler}]
     #_["/activity/" {:name :taxon/index
                    :handler #'activity.index/handler}]
     #_["/accession/" {:name :taxon/index
