@@ -5,7 +5,7 @@ import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
 import * as htmx from "htmx.org"
 
-window.html = htmx
+window.htmx = htmx
 window.Alpine = Alpine
 
 Alpine.plugin(collapse)

@@ -1,7 +1,8 @@
 (ns sepal.aws-s3.core
-  (:require [clojure.string :as s])
+  (:require [camel-snake-kebab.core :as csk]
+            [camel-snake-kebab.extras :as cske]
+            [clojure.string :as s])
   (:import [java.net URI]
-           [java.time Duration]
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
@@ -46,13 +47,13 @@
 
   If an md5 is provided it should be base64 encoded.
   "
-  [bucket key content-type & {:keys [duration md5 presigner]
-                              :or {duration (Duration/ofHours 8)}}]
-  (let [builder (doto (PutObjectRequest/builder)
-                  (.bucket bucket)
-                  (.key key)
-                  (.contentType (s/lower-case content-type)))
-        builder (if md5 (.contentMD5 builder md5) builder)
+  [bucket key content-type & {:keys [duration md5 presigner metadata]}]
+  (let [builder (cond-> (doto (PutObjectRequest/builder)
+                          (.bucket bucket)
+                          (.key key)
+                          (.contentType (s/lower-case content-type)))
+                  md5 (.contentMD5 md5)
+                  metadata (.metadata (cske/transform-keys csk/->kebab-case-string metadata)))
         obj-req (.build builder)
         presigned-req (-> (PutObjectPresignRequest/builder)
                           (.signatureDuration duration)

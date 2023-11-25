@@ -27,7 +27,8 @@
               :class "absolute inset-0 focus:outline-none"}]]])
 
 (defn media-list [& {:keys [images]}]
-  [:ul {:class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
+  [:ul {:id "media-list"
+        :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
                           "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
    (for [image images]
      (media-item :image image))])
@@ -52,7 +53,9 @@
                       :signing-url "/media/s3" ;; TODO: Lookup in router
                       :organization-id (:organization/id org)
                       :trigger "#upload-button"}]
-    (media-list :images images)]
+    (media-list :images images)
+    [:div {:id "upload-success-forms"
+           :class "hidden"}]]
    [:script {:type "module"
              :src (html/static-url "js/media.ts")}]])
 
@@ -67,11 +70,16 @@
 
 (defn handler [& {:keys [context headers query-params ::r/router request-method uri] :as _request}]
   (let [{:keys [current-organization imgix-media-domain media-upload-bucket s3-client]} context
+        ;; TODO: Get the objects from the medial table
         s3-objects (aws-s3.i/list-objects s3-client
                                           media-upload-bucket
                                           (format "organization_id=%s/"
                                                   (:organization/id current-organization)))
-        images (mapv #(thumbnail-url imgix-media-domain (:key %)) s3-objects)]
+        fetch-metadata (fn [key]
+                         (-> (aws-s3.i/head-object s3-client media-upload-bucket key)
+                             (assoc :key key)))
+        images (mapv #(thumbnail-url imgix-media-domain (:key %)) s3-objects)
+        metadata (doall (pmap #(fetch-metadata (:key %)) s3-objects))]
 
     (case request-method
       :post

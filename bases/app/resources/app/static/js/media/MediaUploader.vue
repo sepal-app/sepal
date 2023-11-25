@@ -15,7 +15,8 @@ const form = ref()
 onMounted(() => {
     new Uppy({
         logger: {
-            debug: (...args) => console.log("DEBUG: ", ...args),
+            // debug: (...args) => console.log("DEBUG: ", ...args),
+            debug: (...args) => {},
             warn: (...args) => console.log("WARN: ", ...args),
             error: (...args) => console.log("ERROR: ", ...args),
         },
@@ -27,37 +28,43 @@ onMounted(() => {
         })
         .use(AwsS3, {
             async getUploadParameters(file, options) {
-                const response = await fetch(props.signingUrl, {
-                    method: "POST",
+                // The signing url returns an html form that gets prepended the
+                // the children of #upload-success-forms. We then get the upload
+                // parameters from the input values of the form. On
+                // 'upload-success' we submit these to create the media records
+                // in the database.
+                await htmx.ajax("POST", props.signingUrl, {
+                    target: "#upload-success-forms",
+                    swap: "afterbegin",
                     headers: {
-                        accept: "application/json",
                         "X-CSRF-Token": props.antiForgeryToken,
                     },
-                    body: new URLSearchParams({
+                    values: {
                         filename: file.name,
                         contentType: file.type,
+                        size: file.size,
+                        fileId: file.id,
                         organizationId: props.organizationId,
-                    }),
-                    signal: options?.signal,
+                    },
                 })
-
-                if (!response.ok)
-                    throw new Error("Unsuccessful request", { cause: response })
-
-                // Parse the JSON response.
-                const data = await response.json()
-
-                // Return an object in the correct shape.
+                const formId = file.id.replace(/\//g, "_")
+                const form = document.querySelector(
+                    `#upload-success-forms form#${formId}`,
+                )
+                const values = htmx.values(form)
                 return {
-                    method: data.method,
-                    url: data.url,
+                    method: values.s3Method,
+                    url: values.s3Url,
                     fields: {}, // For presigned PUT uploads, this should be left empty.
-                    // Provide content type header required by S3
                     headers: {
-                        "Content-Type": file.type,
+                        "content-type": values.contentType,
                     },
                 }
             },
+        })
+        .on("upload-success", (file, response) => {
+            const formId = file.id.replace(/\//g, "_")
+            htmx.trigger(`form#${formId}`, "submit")
         })
 })
 </script>

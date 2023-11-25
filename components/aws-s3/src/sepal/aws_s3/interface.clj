@@ -4,13 +4,15 @@
   (:import [java.time Duration]))
 
 (defn presign-put-url
-  [bucket key content-type & {:keys [duration md5 presigner]
-                              :or {duration (Duration/ofHours 8)}}]
+  [bucket key content-type & {:keys [duration md5 metadata presigner]
+                              :or {duration (Duration/ofHours 8)
+                                   metadata {}}}]
   (core/presign-put-url bucket
                         key
                         content-type
                         :duration duration
                         :md5 md5
+                        :metadata metadata
                         :presigner presigner))
 
 (defn list-objects [client bucket prefix]

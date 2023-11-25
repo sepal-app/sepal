@@ -43,7 +43,10 @@
                      (first))]
     (str "assets/" (fs/file-name abs-path))))
 
-(defn html-response [body]
+;; TODO: This should be cleaned up b/c we don't want always want the doctype.
+;; Also the "render" methods do more than render.
+
+(defn response [body]
   {:status 200
    :headers {"content-type" "text/html"}
    :body (str "<!DOCTYPE html>\n" body)})
@@ -51,4 +54,9 @@
 (defn render-html [html]
   (-> html
       (rum/render-static-markup)
-      (html-response)))
+      (response)))
+
+(defn render-partial [html]
+  {:status 200
+   :headers {"content-type" "text/html"}
+   :body (rum/render-static-markup html)})
