@@ -47,3 +47,6 @@ manifest.edn
 node_modules/
 # bases/app/node_modules
 .clj-kondo/
+
+
+bases/app/resources/app/dist/

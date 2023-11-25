@@ -11,7 +11,7 @@
   [& {:keys [columns rows]}]
   [:table {:class "min-w-full border-separate"
            :style {:border-spacing 0}}
-   [:thead {:class "bg-gray-50"}
+   [:thead {:class "bg-slate-200"}
     [:tr
      (for [col columns]
        [:th {:scope "col"

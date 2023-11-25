@@ -22,9 +22,11 @@
         [:path {:stroke-linecap "round"
                 :stroke-linejoin= "round"
                 :d "M4 6h16M4 12h16M4 18h16"}]]]]
-     [:main {:class "flex-1"}
+     [:main {:id "page-main"
+             :class "flex-1"}
       [:div {:class "py-6"}
-       [:div {:class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
+       [:div {:id "page-wrapper-content"
+              :class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
         content]]]]]])
 
 (defn page [& {:keys [content page-title page-title-buttons router]}]
