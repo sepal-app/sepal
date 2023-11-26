@@ -13,7 +13,7 @@
             :href (html/static-url "css/main.css")}]
     [:script {:type "module"
               :src (html/static-url "js/shared.js")}]]
-   [:body {:class "h-full"
+   [:body {:class "h-full bg-slate-50"
            :hx-ext "alpine-morph"
            :hx-swap "morph"}
     content]])
