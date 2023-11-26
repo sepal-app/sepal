@@ -8,8 +8,7 @@
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
             ;; [sepal.app.routes.org.handlers :as org]
-            [sepal.app.routes.register.index :as register]
-            [sepal.app.routes.taxon.handlers :as taxon]))
+            [sepal.app.routes.register.index :as register]))
 
 
 ;; TODO: This can all be removed

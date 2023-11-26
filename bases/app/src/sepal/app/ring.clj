@@ -18,6 +18,7 @@
             [sepal.app.http-response :as http-response]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
+            [sepal.app.routes.location.core :as location]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
             [sepal.app.routes.media.core :as media]
@@ -47,6 +48,7 @@
                         }]
 
    ["/accession" (accession/routes)]
+   ["/location" (location/routes)]
    ["/org" (org/routes)]
    ["/taxon" (taxon/routes)]
    ["/media" (media/routes)]])

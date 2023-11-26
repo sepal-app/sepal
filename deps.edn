@@ -10,6 +10,7 @@
                                poly/config {:local/root "components/config"}
                                poly/database {:local/root "components/database"}
                                poly/error {:local/root "components/error"}
+                               poly/location {:local/root "components/location"}
                                poly/organization {:local/root "components/organization"}
                                poly/taxon {:local/root "components/taxon"}
                                poly/test {:local/root "components/test"}
@@ -42,6 +43,7 @@
                                  "components/config/test"
                                  "components/database/test"
                                  "components/error/test"
+                                 "components/location/test"
                                  "components/organization/test"
                                  "components/taxon/test"
                                  "components/test/test"

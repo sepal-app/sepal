@@ -37,14 +37,38 @@
            :value value
            :type "hidden"}])
 
-(defn select-field [& {:keys [id label name value options]}]
+(defn textarea-field [& {:keys [errors id label name required value]}]
   [:div {:class "mb-4"}
    [:label {:for name
-            :class "block text-sm font-medium text-gray-700"} label
+            :class "spl-label"
+            :_class "block text-sm font-medium text-gray-700"}
+    label
     [:div  {:class "mt-1"}
-     [:select {:name name
-               :id id
-               :value value
-               :class "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"}
+     [:textarea {:name name
+              :id id
+              :required (or required false)
+              :value value
+              :type (or type "text")
+              :class "spl-input"
+              :_class "px-4 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-md border-gray-300 rounded-md"}]
+     (when errors
+       [:ul {:class "errors"}
+        (for [error errors]
+          [:li {:class "text-red-600"} error])])]]]
+  )
+
+#_(defn select-field [& {:keys [id label name value options attrs]}]
+  (tap> (str "attrs: " attrs))
+  [:div {:class "mb-4"}
+   [:label {:for name
+            :class "spl-label"} label
+    [:div  {:class "mt-1"}
+     [:select (merge {:name name
+                      :id id
+                      :value value
+                      ;; :class "spl-tom-select mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      :class "spl-tom-select"
+                      }
+                     attrs)
       (for [option options]
-        [:option option])]]]])
+        option)]]]])

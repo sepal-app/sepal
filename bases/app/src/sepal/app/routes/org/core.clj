@@ -3,6 +3,8 @@
             [sepal.app.routes.accession.create :as accession.create]
             [sepal.app.routes.accession.index :as accession.index]
             [sepal.app.routes.media.index :as media.index]
+            [sepal.app.routes.location.index :as location.index]
+            [sepal.app.routes.location.create :as location.create]
             [sepal.app.routes.org.create :as create]
             [sepal.app.routes.org.detail :as detail]
             [sepal.app.routes.org.index :as index]
@@ -20,6 +22,11 @@
    ["/:org-id" {:middleware [[middleware/require-org-membership :org-id]]}
     ["/" {:name :org/detail
           :handler #'detail/handler}]
+
+    ["/locations" {:name :org/locations
+               :handler #'location.index/handler}]
+    ["/locations/new" {:name :org/locations-new
+                  :handler #'location.create/handler}]
 
     ["/media" {:name :org/media
                :handler #'media.index/handler}]
