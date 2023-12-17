@@ -1,6 +1,10 @@
-import TomSelect from "tom-select"
-import { createApp } from "vue"
+import Alpine from "alpinejs"
+import * as htmx from "htmx.org"
 
-import TaxonField from "./TaxonField.vue"
+import TaxonField from "./TaxonField"
 
-const app = createApp({}).component("taxon-field", TaxonField).mount("#accession-form")
+window.htmx = htmx
+
+document.addEventListener("alpine:init", () => {
+    Alpine.directive("taxon-field", TaxonField)
+})

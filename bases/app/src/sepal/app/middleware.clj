@@ -42,11 +42,11 @@
 (defn find-user-org [db user-id organization-id]
   ;; TODO: coerce to and malli Organization schema
   (db.i/execute-one! db {:select :o.*
-                         :from [[:public.organization :o]]
+                         :from [[:organization :o]]
                          :join [[:organization_user :ou]
-                                [:= :ou.user_id  user-id]]
+                                [:= :ou.user_id user-id]]
                          :where [:and
-                                 [:= :ou.id organization-id]
+                                 [:= :ou.organization_id organization-id]
                                  [:= :o.id organization-id]]}))
 
 (defn require-org-membership [handler path-param-key]

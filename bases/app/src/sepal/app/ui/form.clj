@@ -12,20 +12,42 @@
            :id "__anti-forgery-token"
            :value *anti-forgery-token*}])
 
+(defn field [& {:keys [errors label input name]}]
+  ;; TODO: try to get the name from the input attributes
+  [:div {:for name
+         :class "mb-4"}
+   [:label {:for name
+            :class "spl-label"}
+    label
+    [:div {:class "mt-1"}
+     input
+
+     (when errors
+       [:ul {:class "errors"}
+        (for [error errors]
+          [:li {:class "text-red-600"} error])])]]])
+
 (defn input-field [& {:keys [id label name required type value errors]}]
-  [:div {:class "mb-4"}
+  (field :errors errors
+         :name name
+         :label label
+         :input [:input {:name name
+                         :id id
+                         :required (or required false)
+                         :value value
+                         :type (or type "text")
+                         :class "spl-input"
+                         :_class "px-4 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-md border-gray-300 rounded-md"}])
+  #_[:div {:class "mb-4"}
+   #_(label :for name
+          :label label
+          :field)
    [:label {:for name
             :class "spl-label"
             :_class "block text-sm font-medium text-gray-700"}
     label
-    [:div  {:class "mt-1"}
-     [:input {:name name
-              :id id
-              :required (or required false)
-              :value value
-              :type (or type "text")
-              :class "spl-input"
-              :_class "px-4 py-2 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-md border-gray-300 rounded-md"}]
+    [:div {:class "mt-1"}
+
      (when errors
        [:ul {:class "errors"}
         (for [error errors]

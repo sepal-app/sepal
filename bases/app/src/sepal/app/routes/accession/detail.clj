@@ -12,17 +12,18 @@
 
 (defn page-content [& {:keys [errors org router accession values]}]
   (accession.form/form :action (url-for router :accession/detail {:id (:accession/id accession)})
-                   :errors errors
-                   :org org
-                   :router router
-                   :values values))
+                       :errors errors
+                       :org org
+                       :router router
+                       :values values))
 
 (defn render [& {:keys [errors org router accession taxon values]}]
   (-> (page/page :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :accession accession
-                                        :values values)
+                                        :values values
+                                        :taxon taxon)
                  :page-title (str (:accession/code accession) " - " (:taxon/name taxon))
                  :router router)
       (html/render-html)))

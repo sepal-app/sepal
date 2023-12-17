@@ -21,6 +21,7 @@
             [sepal.app.routes.location.core :as location]
             [sepal.app.routes.login :as login]
             [sepal.app.routes.logout :as logout]
+            [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
             [sepal.app.routes.org.core :as org]
             [sepal.app.routes.register.core :as register]
@@ -49,6 +50,7 @@
 
    ["/accession" (accession/routes)]
    ["/location" (location/routes)]
+   ["/material" (material/routes)]
    ["/org" (org/routes)]
    ["/taxon" (taxon/routes)]
    ["/media" (media/routes)]])

@@ -21,8 +21,9 @@ export default defineConfig({
                 dir: "resources/app/dist",
             },
             input: [
-                "resources/app/static/js/shared.js",
+                "resources/app/static/js/alpine.js",
                 "resources/app/static/js/accession_form.ts",
+                "resources/app/static/js/material_form.ts",
                 "resources/app/static/js/taxon_form.ts",
                 "resources/app/static/js/media.ts",
                 "resources/app/static/css/main.css",

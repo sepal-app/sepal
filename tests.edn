@@ -6,6 +6,7 @@
                         "components/config/test"
                         "components/database/test"
                         "components/location/test"
+                        "components/material/test"
                         "components/organization/test"
                         "components/taxon/test"
                         "components/user/test"

@@ -1,26 +1,26 @@
-(ns sepal.app.routes.accession.create
+(ns sepal.app.routes.material.create
   (:require [reitit.core :as r]
-            [sepal.accession.interface :as accession.i]
+            [sepal.material.interface :as material.i]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
             [sepal.app.router :refer [url-for]]
-            [sepal.app.routes.accession.form :as accession.form]
+            [sepal.app.routes.material.form :as material.form]
             [sepal.app.ui.page :as page]
             [sepal.error.interface :as error.i]))
 
 (defn page-content [& {:keys [errors values router org]}]
-  (accession.form/form :action (url-for router :org/accession-new {:org-id (:organization/id org)})
-                   :errors errors
-                   :org org
-                   :router router
-                   :values values))
+  (material.form/form :action (url-for router :org/material-new {:org-id (:organization/id org)})
+                      :errors errors
+                      :org org
+                      :router router
+                      :values values))
 
-(defn render [& {:keys [errors org router values ]}]
+(defn render [& {:keys [errors org router values]}]
   (-> (page/page :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :values values)
-                 :page-title "Create accession"
+                 :page-title "Create material"
                  :router router)
       (html/render-html)))
 
@@ -30,13 +30,14 @@
     (case request-method
       :post
       (let [data (-> params
-                     ;; (assoc :rank :genus)
+                     ;; TODO: Use the rank
+                     (assoc :rank :genus)
                      (assoc :organization-id (:organization/id org)))
-            result (accession.i/create! db data)]
+            result (material.i/create! db data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
-          (see-other router :accession/detail {:id (:accession/id result)})
-          (-> (found router :org/accession-new {:org-id (:organization/id org)})
+          (see-other router :material/detail {:id (:material/id result)})
+          (-> (found router :org/material-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 

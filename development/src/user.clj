@@ -4,6 +4,8 @@
             [integrant.repl.state :as ir.state]
             [sepal.config.interface :as config]))
 
+(set! *warn-on-reflection* true)
+
 (add-tap println)
 
 (def ^:dynamic *system*)
@@ -15,9 +17,9 @@
   ([profile]
    (ir/set-prep! (fn []
                    (let [cfg (-> "app/system.edn"
-                                  (config/read-config {:profile profile}))]
-                         (ig/load-namespaces cfg)
-                         (ig/prep cfg))))))
+                                 (config/read-config {:profile profile}))]
+                     (ig/load-namespaces cfg)
+                     (ig/prep cfg))))))
 (defn go
   ([]
    (go :local))

@@ -70,8 +70,7 @@
                                                             :org org)
                          :table-actions (search-field (-> href uri/query-map :q))
                          :router router)
-   (html/render-html)))
-
+      (html/render-html)))
 
 (defn handler [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
@@ -86,19 +85,25 @@
               :where [:and
                       [:= :organization_id (:organization/id org)]
                       (if q
-                        [:ilike :name (format "%%%s%%" q)]
+                        [:or
+                         [:ilike :name (format "%%%s%%" q)]
+                         [:ilike :code (format "%%%s%%" q)]]
                         :true)]}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:name]) )]
+                                      :order-by [:name]))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [location rows]
                             {:name (:location/name location)
+                             :text (format "%s (%s)"
+                                           (:location/code location)
+                                           (:location/name location))
                              :id (:location/id location)
-                             :author (:location/author location)}))
+                             :code (:location/code location)
+                             :description (:location/description location)}))
       (render :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :org org

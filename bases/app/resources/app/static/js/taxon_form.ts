@@ -1,5 +1,6 @@
 import TomSelect from "tom-select"
-import { createApp } from "vue"
-import TaxonField from "./TaxonField.vue"
+import TaxonField from "./TaxonField"
 
-const app = createApp({}).component("taxon-field", TaxonField).mount("#taxon-form")
+document.addEventListener("alpine:init", () => {
+    Alpine.directive("taxon-field", TaxonField)
+})

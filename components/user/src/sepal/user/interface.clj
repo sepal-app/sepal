@@ -1,9 +1,10 @@
 (ns sepal.user.interface
-  (:require [next.jdbc :as jdbc]
+  (:require [honey.sql :as sql]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
-            [honey.sql :as sql]
+            [sepal.user.core :as core]
             [sepal.user.interface.spec :as spec]
-            [sepal.validation.interface :refer [invalid? validation-error]]))
+            [sepal.validation.interface :refer [invalid? validate]]))
 
 (defn parse-int [v]
   (if-not (int? v)
@@ -13,18 +14,18 @@
 (defn get-by-id [db id]
   (jdbc.sql/get-by-id db :public.user (parse-int id)))
 
+(defn exists? [db id-or-email]
+  (core/exists? db id-or-email))
+
 (defn create! [db data]
   (cond
     (invalid? spec/CreateUser data)
-    (validation-error spec/CreateUser data)
+    (validate spec/CreateUser data)
 
     :else
-    (let [data (assoc data :password [:crypt () (:password data) [:gen_salt "bf"]])
+    (let [data (assoc data :password [:crypt (:password data) [:gen_salt "bf"]])
           stmt (-> {:insert-into [:public.user]
                     :values [data]
                     :returning [:*]}
                    (sql/format))]
-      (try
-        (jdbc/execute-one! db stmt)
-        (catch Exception e
-          [{:message (ex-message e)}])))))
+      (jdbc/execute-one! db stmt))))
