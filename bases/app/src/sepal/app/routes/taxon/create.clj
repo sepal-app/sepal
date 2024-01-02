@@ -5,8 +5,10 @@
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.page :as page]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.activity :as taxon.activity]))
 
 (defn page-content [& {:keys [errors values router org]}]
   (taxon.form/form :action (url-for router :org/taxa-new {:org-id (:organization/id org)})
@@ -15,7 +17,7 @@
                    :router router
                    :values values))
 
-(defn render [& {:keys [errors org router values ]}]
+(defn render [& {:keys [errors org router values]}]
   (-> (page/page :content (page-content :errors errors
                                         :org org
                                         :router router
@@ -24,7 +26,14 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params request-method ::r/router]}]
+(defn create! [db created-by data]
+  (db.i/with-transaction [tx db]
+    (let [result (taxon.i/create! tx data)]
+      (when-not (error.i/error? result)
+        (taxon.activity/create! tx taxon.activity/created created-by result))
+      result)))
+
+(defn handler [{:keys [context params request-method viewer ::r/router]}]
   (let [{:keys [db]} context
         org (:current-organization context)]
     (case request-method
@@ -33,7 +42,7 @@
                      ;; TODO: Use the rank
                      (assoc :rank :genus)
                      (assoc :organization-id (:organization/id org)))
-            result (taxon.i/create! db data)]
+            result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
           (see-other router :taxon/detail {:id (:taxon/id result)})

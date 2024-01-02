@@ -42,21 +42,6 @@
                                      (:location-code values)
                                      (:location-name values))])]))
 
-    #_(let [url (url-for router :org/accessions {:org-id (:organization/id org)})]
-        (form/field :label "Accession"
-                    :name "accession-id"
-                    :input (accession-field :url url)))
-
-    #_(form/field :label "Accession"
-                  :for "accession-id"
-                  :input [:accession-field {:url (url-for router :org/taxa {:org-id (:organization/id org)})
-                                            :accession-id (:id values)
-                                            :name "accession-id"
-                                            :value (:accession-id values)
-                                            :initial-value (format "{\"id\": %s, \"name\": \"%s\"}"
-                                                                   (:accession-id values)
-                                                                   (:accession-name values))}])
-
     (button/button :type "submit" :text "Save")]
 
    [:script {:type "module"

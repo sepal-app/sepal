@@ -8,14 +8,14 @@
            [org.postgresql.util PGobject]))
 
 (defn ->pgobject
-  "Transforms Clojure data to a PGobject that contains the data as
-  JSON. PGObject type defaults to `jsonb` but can be changed via
-  metadata key `:pgtype`"
-  [x]
-  (let [pgtype (or (:pgtype (meta x)) "jsonb")]
-    (doto (PGobject.)
-      (.setType pgtype)
-      (.setValue (json/write-str x)))))
+  "Create a PGobject"
+  [type value]
+  (doto (PGobject.)
+    (.setType (name type))
+    (.setValue value)))
+
+(defn ->jsonb [value]
+  (->pgobject :jsonb (json/write-str value)))
 
 (extend-protocol p/Datafiable
   org.postgresql.util.PGobject
@@ -32,12 +32,12 @@
     ;; Convert a map to a json pgobject
     clojure.lang.IPersistentMap
     (set-parameter [m ^PreparedStatement s i]
-      (.setObject s i (->pgobject m)))
+      (.setObject s i (->jsonb m)))
 
     ;; Convert a vector to a json pgobject
     clojure.lang.IPersistentVector
     (set-parameter [v ^PreparedStatement s i]
-      (.setObject s i (->pgobject v))))
+      (.setObject s i (->jsonb v))))
 
   ;; Convert a PGobject to Clojure data on read
   (extend-protocol rs/ReadableColumn

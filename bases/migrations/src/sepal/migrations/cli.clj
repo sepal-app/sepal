@@ -15,7 +15,8 @@
      :db {:connection conn}}))
 
 
-(defn migrate [{:keys [profile] :or {profile :local}}]
+(defn migrate [{:keys [profile]
+                :or {profile :local}}]
   (migratus/migrate (get-config profile)))
 
 (defn cli [args]

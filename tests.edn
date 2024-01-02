@@ -2,6 +2,7 @@
  {:tests [{:id :unit
            :test-paths ["bases/app"
                         "components/accession/test"
+                        "components/activity/test"
                         "components/aws-s3/test"
                         "components/config/test"
                         "components/database/test"

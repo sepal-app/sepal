@@ -2,8 +2,6 @@
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
-            [sepal.app.routes.taxon.form :as taxon.form]
-            [sepal.app.routes.taxon.index :as taxon.index]
             [sepal.app.ui.button :as button]
             [sepal.app.ui.form :as form]))
 
@@ -25,7 +23,7 @@
     (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
       (form/field :label "Taxon"
                   :for "taxon-id"
-                  :input [:select {:x-taxon-field (json/write-str {:url url})
+                  :input [:select {:x-taxon-field (json/js {:url url})
                                    :name "taxon-id"}
                           (when (:taxon-id values)
                             [:option {:value (:taxon-id values)}

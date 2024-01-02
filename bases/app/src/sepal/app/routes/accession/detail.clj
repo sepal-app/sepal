@@ -1,13 +1,14 @@
 (ns sepal.app.routes.accession.detail
   (:require [reitit.core :as r]
             [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.ui.page :as page]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.organization.interface :as org.i]
             [sepal.taxon.interface :as taxon.i]))
 
 (defn page-content [& {:keys [errors org router accession values]}]
@@ -28,7 +29,14 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params path-params request-method ::r/router]}]
+(defn update! [db accession-id updated-by data]
+  (db.i/with-transaction [tx db]
+    (let [result (accession.i/update! tx accession-id data)]
+      (when-not (error.i/error? result)
+        (accession.activity/create! tx accession.activity/updated updated-by result))
+      result)))
+
+(defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         values (merge {:id (:accession/id resource)
@@ -39,7 +47,7 @@
 
     (case request-method
       :post
-      (let [result (accession.i/update! db (:accession/id resource) params)]
+      (let [result (update! db (:accession/id resource) (:user/id viewer) params)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :accession/detail {:org-id (-> organization :organization/id str)

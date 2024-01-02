@@ -35,8 +35,6 @@
        table
        paginator]]]]))
 
-
-
 (defn- page-button [& {:keys [active? label href]}]
   [:a {:href href
        :class (cond->> "relative inline-flex items-center px-4 py-2 border text-sm font-medium"
@@ -46,11 +44,10 @@
                 (str " bg-white border-gray-300 text-gray-500 hover:bg-gray-50"))}
    label])
 
-
 (defn paginator [& {:keys [current-page page-size total href]
-                     :or {total 0
-                          href "#"}
-                     :as args}]
+                    :or {total 0
+                         href "#"}
+                    :as _args}]
   (let [page-start (if (zero? total)
                      0
                      (-> current-page

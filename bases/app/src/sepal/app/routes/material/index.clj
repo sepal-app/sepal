@@ -37,16 +37,32 @@
    "Create"])
 
 (defn table-columns [router]
-  [{:name "Name"
-    :cell (fn [l] [:a {:href (url-for router
-                                      :material/detail
-                                      {:id (:material/id l)})
-                       :class "spl-link"}
-                   (:material/name l)])}
-   {:name "Code"
-    :cell :material/code}
-   {:name "Description"
-    :cell :material/description}])
+  [{:name "Code"
+    :cell (fn [row] [:a {:href (url-for router
+                                        :material/detail
+                                        {:id (:material/id row)})
+                         :class "spl-link"}
+                     (:material/code row)])}
+   {:name "Accession"
+    :cell (fn [row] [:a {:href (url-for router
+                                        :accession/detail
+                                        {:id (:accession/id row)})
+                         :class "spl-link"}
+                     (:accession/code row)])}
+   {:name "Taxon"
+    ;; TODO: Show the taxon parent on hover
+    :cell (fn [row] [:a {:href (url-for router
+                                        :taxon/detail
+                                        {:id (:taxon/id row)})
+                         :class "spl-link"}
+                     (:taxon/name row)])}
+   {:name "Location"
+    ;; TODO: Show the full location name on hover
+    :cell (fn [row] [:a {:href (url-for router
+                                        :location/detail
+                                        {:id (:location/id row)})
+                         :class "spl-link"}
+                     (:location/code row)])}])
 
 (defn table [& {:keys [rows page-num href page-size router total]}]
   [:div {:class "w-full"}
@@ -80,12 +96,14 @@
          :or {page-size default-page-size}} query-params
         page-num (or (when page (Integer/parseInt page)) 1)
         offset (* page-size (- page-num 1))
-        stmt {:select [:m.*]
+        stmt {:select [:*]
               :from [[:material :m]]
               :join [[:accession :a]
                      [:= :a.id :m.accession_id]
                      [:taxon :t]
-                     [:= :t.id :a.taxon_id]]
+                     [:= :t.id :a.taxon_id]
+                     [:location :l]
+                     [:= :l.id :m.location_id]]
               :where [:and
                       [:= :m.organization_id (:organization/id org)]
                       (if q
@@ -95,7 +113,7 @@
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [[:created_at :desc]]))]
+                                      :order-by [[:m.created_at :desc]]))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [material rows]

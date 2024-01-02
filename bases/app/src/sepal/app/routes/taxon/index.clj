@@ -48,12 +48,11 @@
    {:name "Rank"
     :cell :taxon/rank}
    #_{:name "Parent"
-    :cell (fn [t] [:a {:href (url-for router
-                                      :taxon/detail
-                                      {:id (:taxon/id t)})
-                       :class "spl-link"}
-                   (:taxon/name t)])}
-   ])
+      :cell (fn [t] [:a {:href (url-for router
+                                        :taxon/detail
+                                        {:id (:taxon/id t)})
+                         :class "spl-link"}
+                     (:taxon/name t)])}])
 
 (defn table [& {:keys [rows page href page-size router total]}]
   [:div {:class "w-full"}
@@ -78,7 +77,6 @@
                          :table-actions (search-field (-> href uri/query-map :q))
                          :router router)
       (html/render-html)))
-
 
 (def Params
   [:map

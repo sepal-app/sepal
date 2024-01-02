@@ -9,7 +9,7 @@
 
 (defn rank->pg-enum [rank]
   (when (some? rank)
-    (jdbc.types/as-other rank )))
+    (jdbc.types/as-other rank)))
 
 (defn create! [db data]
   ;; TODO: Create auditing event
@@ -28,10 +28,10 @@
   (try
     (let [data (m/coerce spec/UpdateTaxon data db.i/transformer)
           result (jdbc.sql/update! db
-                                :taxon
-                                data
-                                {:id id}
-                                {:return-keys 1})]
+                                   :taxon
+                                   data
+                                   {:id id}
+                                   {:return-keys 1})]
       (m/coerce spec/Taxon result db.i/transformer))
     (catch Exception ex
       (error.i/ex->error ex))))

@@ -38,22 +38,17 @@
 
 (defn table-columns [router]
   [{:name "Code"
-    :cell (fn [t] [:a {:href (url-for router
-                                      :accession/detail
-                                      {:id (:accession/id t)})
-                       :class "spl-link"}
-                   (:accession/code t)])}
-   #_{:name "Author"
-    :cell :accession/author}
-   #_{:name "Rank"
-    :cell :accession/rank}
-   #_{:name "Parent"
-    :cell (fn [t] [:a {:href (url-for router
-                                      :accession/detail
-                                      {:id (:accession/id t)})
-                       :class "spl-link"}
-                   (:accession/name t)])}
-   ])
+    :cell (fn [row] [:a {:href (url-for router
+                                        :accession/detail
+                                        {:id (:accession/id row)})
+                         :class "spl-link"}
+                     (:accession/code row)])}
+   {:name "Taxon"
+    :cell (fn [row] [:a {:href (url-for router
+                                        :taxon/detail
+                                        {:id (:taxon/id row)})
+                         :class "spl-link"}
+                     (:taxon/name row)])}])
 
 (defn table [& {:keys [rows page href page-size router total]}]
   [:div {:class "w-full"}

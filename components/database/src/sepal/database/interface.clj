@@ -1,14 +1,19 @@
 (ns sepal.database.interface
   (:refer-clojure :exclude [count])
   (:require [integrant.core :as ig]
+            [malli.core :as m]
             [next.jdbc :as jdbc]
             [next.jdbc.date-time]
-            [sepal.database.core :as core]))
+            [sepal.database.core :as core]
+            [sepal.database.postgresql :as pg]))
 
 ;; read all db date times as java.time.Instant
 (next.jdbc.date-time/read-as-instant)
 
 (def transformer core/transformer)
+
+(defn coerce [spec data]
+  (m/coerce spec data transformer))
 
 (defn execute!
   ([db stmt]
@@ -32,9 +37,11 @@
    (core/count db stmt opts)))
 
 (defmacro with-transaction [[sym transactable opts] & body]
-  `(jdbc/with-transaction [~sym (core/->next-jdbc ~transactable) ~opts]
-     (let [~sym (jdbc/with-options connectable ~sym)]
-       ~@body)))
+  `(jdbc/with-transaction+options [~sym ~transactable ~opts]
+     ~@body))
+
+(defn ->jsonb [value]
+  (pg/->jsonb value))
 
 (defmethod ig/init-key ::db [_ {:keys [connectable jdbc-options]}]
   (core/init-db :connectable connectable

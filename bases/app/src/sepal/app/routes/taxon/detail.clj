@@ -5,7 +5,10 @@
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.page :as page]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.database.interface :as db.i]
+            [sepal.error.interface :as error.i]
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.activity :as taxon.activity]))
 
 (defn page-content [& {:keys [errors org router taxon values]}]
   (taxon.form/form :action (url-for router :taxon/detail {:id (:taxon/id taxon)})
@@ -24,11 +27,17 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params request-method ::r/router]}]
+(defn update! [db taxon-id updated-by data]
+  (db.i/with-transaction [tx db]
+    (let [result (taxon.i/update! tx taxon-id data)]
+      (when-not (error.i/error? result)
+        (taxon.activity/create! tx taxon.activity/updated updated-by result))
+      result)))
+
+(defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         parent (when (:taxon/parent-id resource)
                  (taxon.i/get-by-id db (:taxon/parent-id resource)))
-        error nil
         values (merge {:id (:taxon/id resource)
                        :name (:taxon/name resource)
                        :rank (:taxon/rank resource)
@@ -38,13 +47,13 @@
 
     (case request-method
       :post
-      (let [result (taxon.i/update! db (:taxon/id resource) params)]
+      (let [result (update! db (:taxon/id resource) (:user/id viewer) params)]
         ;; TODO: handle errors
-        (if-not error
+        (if-not (error.i/error? result)
           (http/found router :taxon/detail {:org-id (-> organization :organization/id str)
                                             :id (:taxon/id resource)})
           (-> (http/found router :taxon/detail)
-              (assoc :flash {:error error
+              (assoc :flash {:error result
                              :values params}))))
 
       (render :org organization

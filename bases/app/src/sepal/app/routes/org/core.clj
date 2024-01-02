@@ -2,6 +2,7 @@
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.create :as accession.create]
             [sepal.app.routes.accession.index :as accession.index]
+            [sepal.app.routes.activity.index :as activity.index]
             [sepal.app.routes.location.create :as location.create]
             [sepal.app.routes.location.index :as location.index]
             [sepal.app.routes.material.create :as material.create]
@@ -25,26 +26,29 @@
     ["/" {:name :org/detail
           :handler #'detail/handler}]
 
+    ["/activity" {:name :org/activity
+                  :handler #'activity.index/handler}]
+
     ["/locations" {:name :org/locations
-               :handler #'location.index/handler}]
+                   :handler #'location.index/handler}]
     ["/locations/new" {:name :org/locations-new
-                  :handler #'location.create/handler}]
+                       :handler #'location.create/handler}]
 
     ["/material" {:name :org/material
                   :handler #'material.index/handler}]
     ["/materials/new" {:name :org/materials-new
-                  :handler #'material.create/handler}]
+                       :handler #'material.create/handler}]
 
     ["/media" {:name :org/media
                :handler #'media.index/handler}]
     #_["/activity/" {:name :taxon/index
-                   :handler #'activity.index/handler}]
+                     :handler #'activity.index/handler}]
     #_["/accession/" {:name :taxon/index
-                    :handler #'accession.index/handler}]
+                      :handler #'accession.index/handler}]
     #_["/item/" {:name :taxon/index
-               :handler #'item.index/handler}]
+                 :handler #'item.index/handler}]
     ["/taxa" {:name :org/taxa
-               :handler #'taxon.index/handler}]
+              :handler #'taxon.index/handler}]
     ["/taxa/new" {:name :org/taxa-new
                   :handler #'taxon.create/handler}]
 
@@ -54,4 +58,4 @@
                         :handler #'accession.create/handler}]
 
     #_["/location/" {:name :location/index
-                   :handler #'taxon.index/handler}]]])
+                     :handler #'taxon.index/handler}]]])

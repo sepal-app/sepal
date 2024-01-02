@@ -18,21 +18,20 @@
     (int? v) v
     (string? v) (Integer/parseInt v)
     (nil? v) v
-    :else (int v )))
+    :else (int v)))
 
 (def CreateAccession
   [:map {:closed true}
    [:code code]
    [:taxon-id {:optional true
-                :decode/db coerce-int}
+               :decode/db coerce-int}
     [:maybe taxon-id]]
    [:organization-id {:decode/db coerce-int}
     organization-id]])
-
 
 (def UpdateAccession
   (mu/optional-keys
    [:map {:closed true}
     [:code code]
     [:taxon-id {:decode/db coerce-int}
-     [:maybe taxon-id] ]]))
+     [:maybe taxon-id]]]))

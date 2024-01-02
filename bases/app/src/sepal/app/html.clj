@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.data.json :as json]
             [clojure.string :as s]
-            [rum.core :as rum]))
+            [huff2.core :as huff]))
 
 (defn attr [& classes]
   (->> classes
@@ -19,7 +19,6 @@
 
 ;; The root url path for the static assets
 (def static-root "/")
-
 
 ;; TODO: We need to cache the manifest instead of parsing it on every request
 ;; similar to how manifest.i handled it.
@@ -53,10 +52,10 @@
 
 (defn render-html [html]
   (-> html
-      (rum/render-static-markup)
+      (huff/html)
       (response)))
 
 (defn render-partial [html]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (rum/render-static-markup html)})
+   :body (huff/html html)})

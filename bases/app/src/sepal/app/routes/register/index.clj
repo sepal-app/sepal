@@ -108,21 +108,19 @@
       :post
       (cond
         (validation.i/invalid? RegisterForm params)
-        (do
-          (-> (http/see-other router :register/index)
-              (flash/set-field-errors (validation.i/validate RegisterForm params))))
+        (-> (http/see-other router :register/index)
+            (flash/set-field-errors (validation.i/validate RegisterForm params)))
 
         (user.i/exists? db email)
-        (do
-          (-> (http/see-other router :register/index)
-              (flash/error "User already exists")))
+        (-> (http/see-other router :register/index)
+            (flash/error "User already exists"))
 
         :else
-        (do
-          (let [user (user.i/create! db {:email email :password password})
-                session (session/user->session user)]
-            (-> (http/see-other router :root)
-                (assoc :session session)))))
+        (let [user (user.i/create! db {:email email :password password})
+              session (session/user->session user)]
+          (tap> (str "user: " user))
+          (-> (http/see-other router :root)
+              (assoc :session session))))
 
       ;; else
       (render :next ""

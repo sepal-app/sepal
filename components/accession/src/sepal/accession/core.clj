@@ -26,10 +26,10 @@
   (try
     (let [data (m/coerce spec/UpdateAccession data db.i/transformer)
           result (jdbc.sql/update! db
-                                :accession
-                                data
-                                {:id id}
-                                {:return-keys 1})]
+                                   :accession
+                                   data
+                                   {:id id}
+                                   {:return-keys 1})]
       (m/coerce spec/Accession result db.i/transformer))
     (catch Exception ex
       (error.i/ex->error ex))))

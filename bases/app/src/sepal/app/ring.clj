@@ -65,7 +65,7 @@
           ;;:validate spec/validate ;; enable spec validation for route data
           ;;:reitit.spec/wrap spell/closed ;; strict top-level validation
           :coercion (reitit.coercion.malli/create
-                     { ;; set of keys to include in error messages
+                     {;; set of keys to include in error messages
                       :error-keys #{#_:type :coercion :in :schema :value :errors :humanized #_:transformed}
                       ;; schema identity function (default: close all map schemas)
                       :compile mu/closed-schema
@@ -77,7 +77,7 @@
                       :options nil})
           :muuntaja m/instance
           ;; The middleware are called top to bottom
-          :middleware [ ;; query-params & form-params, last I checked (reitit 0.7.0) this just wrapped
+          :middleware [;; query-params & form-params, last I checked (reitit 0.7.0) this just wrapped
                        ;; ring.middleware.params/wrap-params but its not using the keywordize params
                        ;; so we'll rely on the ring middleware instead
                        ;; parameters/parameters-middleware
@@ -92,7 +92,8 @@
                        ;; exception handling
                        ;; exception/exception-middleware
                        ;; TODO: dev only
-                       stacktrace/wrap-stacktrace
+
+                       stacktrace/wrap-stacktrace-web
                        #_(exception/create-exception-middleware
                           (merge exception/default-handlers
                                  {::exception/default
@@ -116,9 +117,7 @@
 
                        ;; [middleware/wrap-hidden-method]
                        ;; [middleware/wrap-authenticated]
-                       ]}}
-  )
-
+                       ]}})
 (defmethod ig/init-key ::app [_ {:keys [ring-defaults context cookie-secret reload-per-request?]}]
   (let [ring-defaults (-> (case ring-defaults
                             :site ring.defaults/site-defaults

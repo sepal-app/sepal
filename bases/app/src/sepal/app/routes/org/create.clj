@@ -7,7 +7,10 @@
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.page :as page]
+            [sepal.database.interface :as db.i]
+            [sepal.error.interface :as error.i]
             [sepal.organization.interface :as org.i]
+            [sepal.organization.interface.activity :as org.activity]
             [sepal.validation.interface :refer [error?]]))
 
 (defn form [& {:keys [router values]}]
@@ -32,20 +35,25 @@
                                 :values values))
       (html/render-html)))
 
-(defn handler [{:keys [context params request-method viewer ::r/router] :as request}]
-  (tap> "org.create/handler")
+(defn create! [db created-by data]
+  (db.i/with-transaction [tx db]
+    (let [result (org.i/create! tx data)]
+      (when-not (error.i/error? result)
+        (org.activity/create! tx org.activity/created created-by result))
+      result)))
+
+(defn handler [{:keys [context params request-method viewer ::r/router viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
       (let [data (-> params
                      (select-keys [:name :short-name :abbreviation]))
             ;; TODO: create the user and assign the role in the same transaction
-            result (org.i/create! db data)
+            result (create! db (:user/id viewer) data)
             _ou (when-not (error? result) (org.i/assign-role db
                                                              {:organization-id (:organization/id result)
                                                               :user-id (:user/id viewer)
                                                               :role (jdbc.types/as-other "owner")}))]
-        (tap> (str "new org: " result))
         (if-not (error? result)
           (http/found router :org/detail {:org-id (-> result :organization/id str)})
           (-> (http/see-other router :org/create)
@@ -53,6 +61,5 @@
               (assoc-in [:flash :values] data))))
 
       ;; else
-      (render :request request
-              :router router
+      (render :router router
               :values params))))

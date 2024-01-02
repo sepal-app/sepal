@@ -1,7 +1,6 @@
 (ns sepal.app.routes.org.index
-  (:require [sepal.app.html :as html]
-            [reitit.core :as r]
-            [sepal.app.http-response :refer [found]]
+  (:require [reitit.core :as r]
+            [sepal.app.http-response :as http]
             [honey.sql :as sql]
             [next.jdbc :as jdbc]))
 
@@ -16,12 +15,12 @@
 
 (defn handler [{:keys [context ::r/router session viewer] :as req}]
   (if (:organization session)
-    (found router :org-detail {:org-id (-> session :organization :organization/id)})
+    (http/found router :dashboard)
     (let [{:keys [db]} context
           user-orgs (get-user-organizations db (:user/id viewer))
           org (first user-orgs)]
       (if org
         ;; TODO: create a view to allow the user to select an organization that
         ;; posts back here
-        (found router :org-detail {:org-id (:organization/id org)})
-        (found router :org-new)))))
+        (http/found router :org/detail {:org-id (:organization/id org)})
+        (http/found router :org/create)))))
