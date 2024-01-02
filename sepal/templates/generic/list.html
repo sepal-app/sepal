@@ -1,0 +1,33 @@
+{% extends "page.html" %}
+{% import "icons/heroicon.html" as heroicon %}
+
+{% block content %}
+    {% block list_page_lead_content %}
+    {% endblock list_page_lead_content %}
+
+    <form method="get" action="{% block list_page_action %}{% endblock list_page_action %}">
+        <div class="flex justify-between mt-8">
+            <div class="flex flex-row">
+                {{ form.q(class_="spl-input", type="search", placeholder="Search...") }}
+                <button type="button"
+                        class="inline-flex items-center mx-2 px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        onclick="document.getElementById('q').value = null; this.form.submit()">{{ heroicon.outline_x(size=20) }}
+                </button>
+            </div>
+            <div>
+                {{ form.page_size(class_="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md",
+                    onchange="this.form.submit()") }}
+            </div>
+        </div>
+        <div class="mt-4 flex flex-col">
+            <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                        {% block list_page_content %}
+                        {% endblock list_page_content %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock content %}

@@ -1,0 +1,16 @@
+{% extends "page.html" %}
+
+{% block head %}
+    {{ super()  }}
+{% endblock head %}
+
+{% block title %}
+    Sepal - Media
+{% endblock title %}
+
+{% block content %}
+    <img src="{{ m.thumbnail_url() }}"
+         alt="{{ m.title }}"
+         class="pointer-events-none object-cover group-hover:opacity-75"
+    >
+{% endblock content %}

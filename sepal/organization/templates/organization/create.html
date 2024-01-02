@@ -1,0 +1,10 @@
+{% extends "page.html" %}
+{% import "organization/_form.html" as org_form %}
+
+{% block page_title %}
+    Create an organization
+{% endblock page_title %}
+
+{% block content %}
+    {{ org_form.render_organization_form(form, action=url_for('organization.create'), save_button_label="Create organization") }}
+{% endblock content %}

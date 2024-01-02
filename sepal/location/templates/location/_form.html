@@ -1,0 +1,38 @@
+{% import "form/fields.html" as form_fields %}
+
+{% macro render_location_form(form, action, save_button_label="Save") -%}
+    <form method="post" action="{{ action }}">
+        {{ form.csrf_token }}
+        {{ form.organization_id }}
+
+        <div>
+            {{ form.name.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.name(class_="spl-input") }}
+                {{ form_fields.render_field_errors(form.name.errors)  }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            {{ form.code.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.code(class_="spl-input", autocomplete="off") }}
+                {{ form_fields.render_field_errors(form.code.errors)  }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            {{ form.description.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.description(class_="spl-input", autocomplete="off") }}
+                {{ form_fields.render_field_errors(form.description.errors)  }}
+            </div>
+        </div>
+
+        <div class="flex flex-row mt-4 justify-between items-center">
+            <button type="submit"
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >{{ save_button_label }}</button>
+        </div>
+    </form>
+    {%- endmacro %}

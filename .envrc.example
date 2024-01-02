@@ -1,0 +1,5 @@
+. venv/bin/activate
+
+export FLASK_ENV=development
+export FLASK_APP=sepal/app.py
+export SECRET_KEY=1234567890

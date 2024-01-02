@@ -1,0 +1,10 @@
+{% extends "page.html" %}
+{% import "location/_form.html" as location_form %}
+
+{% block page_title %}
+    Create location
+{% endblock page_title %}
+
+{% block content %}
+    {{ location_form.render_location_form(form, action=url_for('location.create'), save_button_label="Create Location") }}
+{% endblock content %}

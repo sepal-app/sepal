@@ -1,0 +1,22 @@
+{% extends "page_wrapper.html" %}
+
+{% block wrapper_content %}
+    <div class="px-4 sm:px-6 lg:px-8 md:py-8">
+        <div class="sm:flex sm:items-center h-10">
+            <div class="sm:flex-auto">
+                <h1 class="text-xl font-semibold text-gray-900">
+                    {% block page_title %}
+                    {% endblock page_title %}
+                </h1>
+            </div>
+            <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                {% block page_title_buttons %}
+                {% endblock page_title_buttons %}
+            </div>
+        </div>
+        <div class="mt-8">
+            {% block content %}
+            {% endblock content %}
+        </div>
+    </div>
+{% endblock wrapper_content %}

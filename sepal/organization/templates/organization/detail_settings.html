@@ -1,0 +1,37 @@
+{% extends "page.html" %}
+{% import "organization/_detail_tabs.html" as detail_tabs %}
+{% import "form/fields.html" as form_fields %}
+
+{% block page_title %}
+  {{ org.name }}
+{% endblock page_title %}
+
+{% block content %}
+    {{ detail_tabs.render_detail_tabs(current='settings', org=org)}}
+    <div class="mt-6">
+        <form method='POST' action={{ url_for("organization.detail_settings", id=org.id) }}>
+            {{ form.csrf_token }}
+
+            <div class="mt-4">
+                {{ form.accession_format.label(class_="spl-label") }}
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    {{ form.accession_format(class_="spl-input") }}
+                    {{ form_fields.render_field_errors(form.accession_format.errors) }}
+                </div>
+            </div>
+
+            <div class="mt-4">
+                {{ form.accession_item_separator.label(class_="spl-label") }}
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    {{ form.accession_item_separator(class_="spl-input") }}
+                    {{ form_fields.render_field_errors(form.accession_item_separator.errors) }}
+                </div>
+            </div>
+
+            <div class="flex flex-row mt-4 justify-between items-center">
+                <button type="submit"
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Save</button>
+            </div>
+        </form>
+    </div>
+{% endblock content %}

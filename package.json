@@ -1,0 +1,40 @@
+{
+  "name": "sepal",
+  "version": "0.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "build:js:shared.js": "esbuild sepal/static/js/shared.js --bundle --minify --format=esm --sourcemap --outfile=sepal/static/js/shared.min.js",
+    "build:js:upload.js": "esbuild sepal/media/templates/media/_upload.js --bundle --minify --format=esm --sourcemap --outfile=sepal/media/templates/media/_upload.min.js",
+    "build:js": "run-s build:js:shared.js build:js:upload.js",
+    "watch:js": "run-p \"build:js:* -- --watch=forever\"",
+    "build:css": "postcss sepal/static/css/main.css -o sepal/static/css/main.min.css --verbose",
+    "watch:css": "run-p \"build:css -- --watch\"",
+    "build": "run-s build:*",
+    "watch": "run-p watch:*"
+  },
+  "author": "",
+  "license": "Proprietary",
+  "dependencies": {
+    "@alpinejs/collapse": "^3.12.1",
+    "@tailwindcss/aspect-ratio": "0.4.2",
+    "@tailwindcss/forms": "0.5.3",
+    "@tailwindcss/line-clamp": "0.4.4",
+    "@tailwindcss/typography": "0.5.9",
+    "@uppy/core": "^3.1.2",
+    "@uppy/dashboard": "^3.3.2",
+    "@uppy/xhr-upload": "^3.1.1",
+    "alpinejs": "3.12.0",
+    "autoprefixer": "10.4.14",
+    "cssnano": "6.0.0",
+    "esbuild": "0.17.14",
+    "htmx.org": "1.8.6",
+    "npm-run-all": "^4.1.5",
+    "postcss": "8.4.21",
+    "postcss-cli": "10.1.0",
+    "postcss-import": "^15.1.0",
+    "prettier": "^2.8.7",
+    "tailwindcss": "3.2.7",
+    "tom-select": "2.1.0"
+  }
+}

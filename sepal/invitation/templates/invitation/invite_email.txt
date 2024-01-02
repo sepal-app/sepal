@@ -1,0 +1,1 @@
+You have invited to join {{ invitation.organization.name }} on Sepal. To accept the invitation please visit {{ url_for("invitation.detail", _external=True, token=invitation.token) }}

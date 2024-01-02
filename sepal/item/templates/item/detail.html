@@ -1,0 +1,10 @@
+{% extends "page.html" %}
+{% import "item/_form.html" as item_form %}
+
+{% block title %}
+    {{ item.code }} - {{ item.accession.code }} - {{ item.accession.taxon.name }}
+{% endblock title %}
+
+{% block content %}
+    {{ item_form.render_item_form(form, action=url_for('item.detail', accession_item_id=item.id), save_button_label="Save") }}
+{% endblock content %}

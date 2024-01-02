@@ -1,0 +1,10 @@
+{% extends "page.html" %}
+{% import "taxon/_form.html" as taxon_form %}
+
+{% block page_title %}
+    Create taxon
+{% endblock page_title %}
+
+{% block content %}
+    {{ taxon_form.render_taxon_form(form, action=url_for('taxon.create'), save_button_label="Create Taxon") }}
+{% endblock content %}

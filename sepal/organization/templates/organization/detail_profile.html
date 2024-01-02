@@ -1,0 +1,14 @@
+{% extends "page.html" %}
+{% import "organization/_form.html" as org_form %}
+{% import "organization/_detail_tabs.html" as detail_tabs %}
+
+{% block page_title %}
+   {{ org.name }}
+{% endblock page_title %}
+
+{% block content %}
+    {{ detail_tabs.render_detail_tabs(current='profile', org=org)}}
+    <div class="mt-6">
+        {{ org_form.render_organization_form(form, action=url_for('organization.detail_profile', id=org.id), save_button_label="Save") }}
+    </div>
+{% endblock content %}

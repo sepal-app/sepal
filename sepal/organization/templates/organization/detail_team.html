@@ -1,0 +1,28 @@
+{% extends "generic/list.html" %}
+{% import "organization/_detail_tabs.html" as detail_tabs %}
+{% import "table.html" as table %}
+
+{% block page_title %}
+   {{ org.name }}
+{% endblock page_title %}
+
+{% block page_title_buttons %}
+    {% if has_permission('INVITE_USER', current_organization) %}
+        <a class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+            href={{ url_for('invitation.create') }}
+        >Invite user</a>
+    {% endif %}
+{% endblock page_title_buttons %}
+
+{% block list_page_lead_content %}
+    {{ detail_tabs.render_detail_tabs(current='team', org=org)}}
+{% endblock list_page_lead_content %}
+
+{% block list_page_form_action %}
+  {{ url_for('organization.detail_team') }}">
+{% endblock list_page_form_action %}
+
+{% block list_page_content %}
+    {{ table.render_table(users, table_columns)  }}
+    {{ paginator }}
+{% endblock list_page_content %}

@@ -1,0 +1,26 @@
+{% extends "generic/list.html" %}
+{% import "icons/heroicon.html" as heroicon %}
+{% import "table.html" as table %}
+
+{% block title %}
+    Sepal - Locations
+{% endblock title %}
+
+{% block page_title %}
+    Locations
+{% endblock page_title %}
+
+{% block page_title_buttons %}
+    <a class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+       href={{ url_for('location.create') }}
+    >Create location</a>
+{% endblock page_title_buttons %}
+
+{% block list_page_form_action %}
+    {{ url_for('location.list') }}">
+{% endblock list_page_form_action %}
+
+{% block list_page_content %}
+    {{ table.render_table(locations, table_columns)  }}
+    {{ paginator }}
+{% endblock list_page_content %}

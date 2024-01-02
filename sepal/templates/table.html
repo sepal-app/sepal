@@ -1,0 +1,36 @@
+{% macro render_table(rows, columns) -%}
+    <table class="min-w-full divide-y divide-gray-300">
+        <thead class="bg-gray-50">
+            <tr>
+                {% for column in columns %}
+                    {% if loop.first %}
+                        {% set class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6" %}
+                    {% elif loop.last %}
+                        {% set class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6" %}
+                        {#% set class="relative py-3.5 pl-3 pr-4 sm:pr-6" %#}
+                    {% else %}
+                        {% set class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900" %}
+                    {% endif %}
+                    <th scope="col" class="{{ class }}">{{  column.title }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+            {% for row in rows %}
+                <tr>
+                    {% for column in columns %}
+                        {% if loop.first %}
+                            {% set class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6" %}
+                        {% elif loop.last %}
+                            {% set class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6" %}
+                            {#% set class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6" %#}
+                        {% else %}
+                            {% set class="whitespace-nowrap px-3 py-4 text-sm text-gray-500" %}
+                        {% endif %}
+                        <td class="{{ class }}">{{  column(row)|safe }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}

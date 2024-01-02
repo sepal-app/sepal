@@ -1,0 +1,42 @@
+{% extends "page.html" %}
+{% import "icons/heroicon.html" as heroicon %}
+
+
+{% block page_title %}
+    Activity
+{% endblock page_title %}
+
+{% block content %}
+<div>
+    <ul role="list" class="divide-y divide-gray-200">
+        {% for event in activity %}
+        <li class="py-4">
+            <div class="flex space-x-3">
+                {% if event.user.avatar_s3_key  %}
+                    <img class="h-6 w-6 rounded-full"
+                        src="{{ event.user.avatar_url(50) }}"
+                        alt="">
+                {% else %}
+                    {{ heroicon.user_circle(size=32) }}
+                {% endif %}
+                <div class="flex-1 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-medium">
+                            {% if event.user.name|length  %}
+                                {{ event.user.name }}
+                            {% else %}
+                               {{ event.user.email }}
+                            {% endif %}
+                        </h3>
+                        <p class="text-sm text-gray-500">{{ event.created_at }}</p>
+                    </div>
+                    <p class="text-sm text-gray-500">{{ descriptions[event.id]|safe }}</p>
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+
+        <!-- More items... -->
+    </ul>
+</div>
+{% endblock content %}

@@ -1,0 +1,10 @@
+<form id="{{ file_id }}"
+      hx-post="{{ url_for('media.create') }}"
+      hx-trigger="submit"
+      hx-target="#media-list"
+      hx-swap="afterbegin"
+>
+    {% for field in form %}
+        {{ field }}
+    {% endfor %}
+</form>

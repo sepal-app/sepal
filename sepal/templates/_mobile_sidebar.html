@@ -1,0 +1,169 @@
+{% import "icons/heroicon.html" as heroicon %}
+{% import "icons/bootstrap.html" as bootstrap %}
+
+{% macro render_mobile_sidebar_item(text, href=None, icon=None, current=False) -%}
+    <!-- bg-gray-100 text-gray-900 group flex items-center px-2 py-2 text-base font-medium rounded-md -->
+    <a href={{ href }}
+       class="{{'text-gray-900 bg-gray-100' if current else 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}} hover:bg-gray-50 hover:text-gray-900 group flex text-base items-center px-2 py-2 font-medium rounded-md {{'pointer-events-none' if not href}}"
+    >
+        {% if icon %}
+            <div class="mr-1">{{ icon }}</div>
+        {% endif %}
+        {{text}}
+    </a>
+{%-  endmacro %}
+
+<div class="relative z-40 md:hidden"
+     role="dialog"
+     aria-modal="true"
+     x-show="showMobileSidebar"
+>
+    <!--
+         Off-canvas menu backdrop, show/hide based on off-canvas menu state.
+
+         Entering: "transition-opacity ease-linear duration-300"
+         From: "opacity-0"
+         To: "opacity-100"
+         Leaving: "transition-opacity ease-linear duration-300"
+         From: "opacity-100"
+         To: "opacity-0"
+    -->
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-75"
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         x-show="showMobileSidebar"
+    ></div>
+    <div class="fixed inset-0 flex z-40">
+        <!--
+             Off-canvas menu, show/hide based on off-canvas menu state.
+
+             Entering: "transition ease-in-out duration-300 transform"
+             From: "-translate-x-full"
+             To: "translate-x-0"
+             Leaving: "transition ease-in-out duration-300 transform"
+             From: "translate-x-0"
+             To: "-translate-x-full"
+        -->
+        <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white"
+             x-transition:enter="transition ease-in-out duration-300 transform"
+             x-transition:enter-start="-translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in-out duration-300 transform"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="-translate-x-full"
+             x-show="showMobileSidebar"
+        >
+            <!--
+                 Close button, show/hide based on off-canvas menu state.
+
+                 Entering: "ease-in-out duration-300"
+                 From: "opacity-0"
+                 To: "opacity-100"
+                 Leaving: "ease-in-out duration-300"
+                 From: "opacity-100"
+                 To: "opacity-0"
+            -->
+            <div class="absolute top-0 right-0 -mr-12 pt-2"
+                 x-transition:enter="ease-in-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-linear duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 x-show="showMobileSidebar"
+            >
+                <button type="button"
+                        class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                     x-on:click="showMobileSidebar=false"
+                >
+                    <span class="sr-only">Close sidebar</span>
+                    <!-- Heroicon name: outline/x -->
+                    <svg class="h-6 w-6 text-white" xmlns=
+                                "http://www.w3.org/2000/svg" fill="none" viewbox=
+                                "0 0 24 24" stroke-width="2" stroke="currentcolor"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin=
+                                              "round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg></button>
+            </div>
+            <div class="flex flex-col flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+                <div class="flex-shrink-0 flex items-center px-4">
+                    <!-- <img class="h-8 w-auto"
+                         src="https://tailwindui.com/img/logos/workflow-logo-indigo-600-mark-gray-800-text.svg"
+                         alt="Workflow"> -->
+                    <h1 class="text-2xl">Sepal</h1>
+                </div>
+                <nav class="flex flex-col grow mt-5 px-2 space-y-1">
+                    {% set href = url_for('activity.list') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Activity", href, heroicon.outline_clock(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+
+                    {% set href = url_for('accession.list') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Accessions", href, heroicon.outline_rectangle_group(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+
+                    {% set href = url_for('item.list') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Items", href, heroicon.outline_tag(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+
+                    {% set href = url_for('taxon.list') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Taxa", href, bootstrap.flower1(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+
+                    {% set href = url_for('location.list') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Locations", href, heroicon.outline_map_pin(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+
+                    {% set href = url_for('media.index') if current_organization else None %}
+                    {% set is_current = True if href == request.path else False %}
+                    {{ render_mobile_sidebar_item("Media", href, heroicon.outline_photo(color="text-gray-500" if current else "text-gray-500"), current=is_current) }}
+                    <!-- Current: "bg-gray-100 text-gray-900", Default: "text-gray-600 hover:bg-gray-50 hover:text-gray-900" -->
+
+                    <div class="flex grow items-end">
+                        {{ render_mobile_sidebar_item("Logout", url_for('auth.logout'), heroicon.arrow_left_on_rectangle(color="text-gray-500")) }}
+                    </div>
+                </nav>
+            </div>
+                {% if session['show_switch_organizations'] == 'true' %}
+                    <a href="{{ url_for('organization.switch') }}"
+                       class="text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:bg-gray-50 hover:text-gray-900 group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+                    >Switch organizations</a>
+                {% endif %}
+            <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+                <a href="{{ url_for("auth.profile") }}" class="flex-shrink-0 group block w-full">
+                    <div class="flex items-center">
+                        <div>
+                            {% if current_user.avatar_s3_key  %}
+                                <img class="inline-block h-9 w-9 rounded-full"
+                                     src="{{ current_user.avatar_url(50)|default('', true)}}"
+                                     alt="">
+                            {% else %}
+                                {{ heroicon.user_circle(size=38) }}
+                            {% endif %}
+                        </div>
+                        <div class="overflow-hidden">
+                            {% if current_user.name %}
+                                <p class="text-md text-ellipsis text-left font-medium text-gray-700 group-hover:text-gray-900  block overflow-hidden">
+                                    {{ current_user.name }}
+                                </p>
+                            {% endif %}
+                            <p class="text-base text-ellipsis text-left font-medium text-gray-700 group-hover:text-gray-900 block overflow-hidden">
+                                {{ current_user.name or current_user.email  }}sasdasdasdasdasd
+                            </p>
+                            <p class="text-sm font-medium text-gray-500 group-hover:text-gray-700">
+                                View profile
+                            </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="flex-shrink-0 w-14">
+            <!-- Force sidebar to shrink to fit close icon -->
+        </div>
+    </div>
+</div>

@@ -1,0 +1,59 @@
+{% extends "page.html" %}
+{% import "form/fields.html" as form_fields %}
+
+{% block title %}
+    Profile
+{% endblock %}
+
+{% macro profile_section(title) -%}
+    <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 sm:pt-5">
+        <div class="text-base font-medium text-gray-900 sm:text-sm sm:text-gray-700"
+        >{{ title }}</div>
+        <div class="mt-1 sm:col-span-2 sm:mt-0">
+            {{ caller() }}
+        </div>
+    </div>
+{%- endmacro  %}
+
+{% block content %}
+    <div>
+        <h1 class="text-2xl mb-4">User Profile</h1>
+        <div class="space-y-6 sm:space-y-5">
+            {% call profile_section("Avatar") %}
+                {% include "auth/_profile_avatar_upload_section.html" %}
+            {% endcall %}
+
+            {% call profile_section("Personal Information") %}
+                <form method="post">
+                    {{ form.csrf_token }}
+                    <input type="hidden" name="action" value="update_profile">
+
+                    <div>
+                        {{ form.name.label(class_="spl-label") }}
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            {{ form.name(class_="spl-input") }}
+                            {{ form_fields.render_field_errors(form.name.errors)  }}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-row mt-4 justify-between items-center">
+                        <button type="submit"
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >Save</button>
+                    </div>
+                </form>
+            {% endcall %}
+
+            {% call profile_section("Reset Password") %}
+                <form method="post">
+                    {{ form.csrf_token }}
+                    <input type="hidden" name="action" value="reset_password">
+                    <button type="submit"
+                            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-700 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >Send password reset email</button>
+                </form>
+            {% endcall %}
+        </div>
+    </div>
+
+{% endblock content %}

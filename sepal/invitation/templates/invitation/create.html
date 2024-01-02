@@ -1,0 +1,35 @@
+{% extends "page.html" %}
+{% import "form/fields.html" as form_fields %}
+{% import "flash_banner.html" as flash_banner %}
+
+{% block page_title %}
+    Invite users to {{org.name}}
+{% endblock page_title %}
+
+{% block content %}
+    <div>
+        <form method='post' action="{{ url_for('invitation.create') }}">
+            {{ form.csrf_token }}
+            {{ form.organization_id }}
+
+            <div class="">
+                {% for entry in form.emails.entries %}
+                    <div class="mb-2">
+                        <div class="flex space-x-2">
+                            {{ entry.email(placeholder="Email", class_="spl-input flex-initial w-96") }}
+                            {{ entry.role(default='read', class_="spl-select flex-none") }}
+                        </div>
+                        {{ form_fields.render_field_errors(entry.errors) }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex flex-row mt-4 justify-between items-center">
+                <button type="submit"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >Send invitations</button>
+            </div>
+        </form>
+    {{ flash_banner.render_flash_banner() }}
+    </div>
+{% endblock content %}

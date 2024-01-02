@@ -1,0 +1,36 @@
+{% import "icons/heroicon.html" as heroicon %}
+
+{% macro render_flash_banner() -%}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="pointer-events-none fixed inset-x-0 bottom-0 sm:flex sm:justify-center sm:px-6 sm:pb-5 lg:px-8">
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                        {% set alert_class = 'spl-alert-error'  %}
+                        {% set icon = heroicon.outline_exclamation_circle(color="text-white") %}
+                    {% else  %}
+                        {% set alert_class = 'spl-alert-success'  %}
+                        {% set icon = heroicon.outline_megaphone(color="text-white") %}
+                    {% endif %}
+
+                    <div class="{{ alert_class }}"
+                         x-data="{ show: true }"
+                         x-show="show"
+                    >
+
+                      <p class="text-sm leading-6 text-white">
+                        <a href="#"><strong class="font-semibold">{{ message }}</strong></a>
+                      </p>
+
+                      <button type="button"
+                              class="-m-1.5 flex-none p-1.5"
+                              x-on:click="show = false" >
+                        <span class="sr-only">Dismiss</span>
+                        {{ heroicon.outline_x(color="text-white") }}
+                      </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+{%- endmacro %}

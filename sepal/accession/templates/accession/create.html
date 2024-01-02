@@ -1,0 +1,10 @@
+{% extends "page.html" %}
+{% import "accession/_form.html" as accession_form %}
+
+{% block page_title %}
+    Create accession
+{% endblock page_title %}
+
+{% block content %}
+    {{ accession_form.render_accession_form(form, action=url_for('accession.create'), save_button_label="Create Accession", last_accession=last_accession) }}
+{% endblock content %}

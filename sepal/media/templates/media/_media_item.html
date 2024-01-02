@@ -1,0 +1,39 @@
+{% import "media/_preview.html" as preview %}
+{% import "icons/heroicon.html" as heroicon %}
+
+<li class="relative"
+    x-data="{showPreview: false}"
+>
+    <div class="group aspect-w-10 aspect-h-7 block w-full overflow-hidden rounded-lg bg-gray-100 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 focus-within:ring-offset-gray-100"
+        x-on:dblclick="showPreview=true"
+    >
+        {% if m.is_image() %}
+            <img src="{{ m.thumbnail_url() }}"
+                 alt="{{ m.title }}"
+                 class="pointer-events-none object-cover group-hover:opacity-75"
+            >
+            <button type="button"
+                    class="absolute inset-0 focus:outline-none"
+            >
+                <span class="sr-only">View details for {{ m.title }}</span>
+            </button>
+        {% else %}
+            <div>Unknown media type</div>
+        {% endif %}
+    </div>
+
+    <p class="pointer-events-none mt-2 block truncate text-sm font-medium text-gray-900">{{ m.title }}</p>
+
+    <div x-show="showPreview">
+        {% call preview.preview(m) %}
+            <div class="flex justify-end mb-4">
+                <div x-on:click="showPreview=false" >
+                    {{ heroicon.outline_x() }}
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <img src={{ m.preview_url() }}>
+            </div>
+        {% endcall %}
+    </div>
+</li>

@@ -1,0 +1,111 @@
+{% import "form/fields.html" as form_fields %}
+
+
+{% macro render_item_form(form, action, save_button_label="Save") -%}
+    <form method="post" action="{{ action }}">
+        {{ form.csrf_token }}
+        {{ form.organization_id }}
+
+        <div>
+            {{ form.code.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.code(class_="spl-input") }}
+                {{ form_fields.render_field_errors(form.code.errors)  }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            {{ form.accession_id.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.accession_id(class_="spl-input spl-ts-select", autocomplete="off") }}
+                {{ form_fields.render_field_errors(form.accession_id.errors)  }}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            {{ form.location_id.label(class_="spl-label") }}
+            <div class="mt-1 relative rounded-md shadow-sm">
+                {{ form.location_id(class_="spl-input spl-ts-select", autocomplete="off") }}
+                {{ form_fields.render_field_errors(form.location_id.errors)  }}
+            </div>
+        </div>
+
+        <div class="flex flex-row mt-4 justify-between items-center">
+            <button type="submit"
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >{{ save_button_label }}</button>
+        </div>
+    </form>
+
+    <script type="module">
+     function renderAccessionOption(item, escape) {
+         return item.text ?
+                `<div>${escape(item.text)}</div>` :
+                `<div>${escape(item.code)} ${escape(item.taxon.name ?? "")}</div>`
+     }
+
+     const accessionField = new TomSelect("#accession_id", {
+         itemClass: "sm:text-sm bg-white",
+         maxItems: 1,
+         openOnFocus: false,
+         optionClass: "sm:text-sm bg-white py-2 px-3",
+         plugins: ['clear_button'],
+         searchField: ['code'],
+         selectOnTab: true,
+         valueField: 'id',
+         load: (query, callback) => {
+             const url = "{{ url_for('accession.list') }}";
+             const params = new URLSearchParams({q: query, page_size: 6})
+             fetch(url + "?" + params.toString(), {
+                 headers: {"Accept": "application/json"}
+             })
+                 .then(response => response.json())
+                 .then(callback)
+                 .catch((e)=>{
+                     console.error(e)
+                     callback();
+                 });
+
+         },
+         render: {
+             option: renderAccessionOption,
+             item: renderAccessionOption
+         }
+     });
+
+     function renderLocationOption(item, escape) {
+         return item.text ?
+                `<div>${escape(item.text)}</div>` :
+                `<div>${escape(item.name)} ${escape(item.code ?? "")}</div>`
+     }
+
+     const locationField = new TomSelect("#location_id", {
+         itemClass: "sm:text-sm bg-white",
+         maxItems: 1,
+         openOnFocus: false,
+         optionClass: "sm:text-sm bg-white py-2 px-3",
+         plugins: ['clear_button'],
+         searchField: ['code', 'name'],
+         selectOnTab: true,
+         valueField: 'id',
+         load: (query, callback) => {
+             const url = "{{ url_for('location.list') }}";
+             const params = new URLSearchParams({q: query, page_size: 6})
+             fetch(url + "?" + params.toString(), {
+                 headers: {"Accept": "application/json"}
+             })
+                 .then(response => response.json())
+                 .then(callback)
+                 .catch((e)=>{
+                     console.error(e)
+                     callback();
+                 });
+
+         },
+         render: {
+             option: renderLocationOption,
+             item: renderLocationOption
+         }
+     });
+    </script>
+{%- endmacro %}

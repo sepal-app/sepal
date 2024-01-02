@@ -1,0 +1,98 @@
+{% import "icons/spinner.html" as spinner %}
+
+<div id="profile-avatar-upload-section">
+    <style>
+        #avatar-upload-spinner {
+            display: none;
+        }
+        .htmx-request #avatar-upload-spinner {
+            display: inline;
+        }
+        .htmx-request #avatar-upload-form-buttons {
+            display: none;
+        }
+    </style>
+
+    <script type="text/javascript">
+        function avatarPreview() {
+            return {
+                previewImageUrl: null,
+                reset: function() {
+                    console.log('RESET')
+                    this.previewImageUrl = null
+                },
+                onAvatarFileChanged: function (ev) {
+                    if (!event.target.files.length) {
+                        return
+                    }
+
+                    const f = event.target.files[0]
+                    const reader = new FileReader()
+                    reader.readAsDataURL(f)
+                    reader.onload = (e) => {
+                        this.previewImageUrl = e.target.result
+                    }
+                }
+            }
+        }
+    </script>
+
+    <div class="flex items-center"
+         x-data="avatarPreview()"
+    >
+        <div class="min-w-100">
+            {% if current_user.avatar_s3_key %}
+                <template x-if="!previewImageUrl">
+                    <img src="{{ current_user.avatar_url(256)|default('') }}"
+                         class="object-cover rounded-full border border-gray-200 min-w-[100px] min-h-[100px] w-[100px] h-[100px] mr-4"
+                    >
+                </template>
+            {% endif %}
+            <template x-if="previewImageUrl">
+                <img x-bind:src="previewImageUrl"
+                    class="object-cover rounded-full border border-gray-200 min-w-[100px] min-h-[100px] w-[100px] h-[100px] mr-4"
+                >
+            </template>
+        </div>
+        <form id="avatar-upload-form"
+              method="post"
+              enctype="multipart/form-data"
+              hx-post="{{ url_for('auth.profile_avatar') }}"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
+              hx-target="#profile-avatar-upload-section"
+              hx-swap="outerHTML"
+              @htmx:after-settle="reset"
+        >
+            <div class2="ml-5 rounded-md border border-gray-300 bg-white py-2 px-3 text-sm font-medium leading-4 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                 x-show="!previewImageUrl"
+            >
+                <label>
+                    <span class="sr-only">Change profile avatar</span>
+                    <input type="file"
+                           name="image"
+                           accept="image/*",
+                           class_="file:border file:border-solid file:rounded-md file:border file:border-gray-300 file:bg-white file:py-2 file:px-3 file:text-sm file:font-medium file:leading-4 file:text-gray-700 file:shadow-sm file:hover:bg-gray-50 file:focus:outline-none file:focus:ring-2 file:focus:ring-indigo-500 file:focus:ring-offset-2",
+                           x-on:change="onAvatarFileChanged"
+                    >
+                </label>
+            </div>
+
+            <div id="avatar-upload-spinner">
+                {{ spinner.spinner(color="text-indigo-600") }}
+            </div>
+
+            <!-- TODO: Not why these show after the swap when the x-show is on the parent div -->
+            <div id="avatar-upload-form-buttons">
+                <button class="inline-flex items-center rounded-md border border-transparent bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        type="reset"
+                        x-on:click="reset()"
+                        x-show="previewImageUrl"
+                >Cancel</button>
+                <button type="submit"
+                        class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        x-show="previewImageUrl"
+                >Save</button>
+            </div>
+        </form>
+    </div>
+</div>

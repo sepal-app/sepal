@@ -1,0 +1,28 @@
+{% macro render_paginator(start_index, end_index, previous_page, next_page, total_count) -%}
+  <nav class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" aria-label="Pagination">
+    <div class="hidden sm:block">
+      <p class="text-sm text-gray-700">
+        Showing
+        <span class="font-medium">{{ start_index }}</span>
+        to
+        <span class="font-medium">{{ end_index }}</span>
+        of
+        <span class="font-medium">{{ total_count }}</span>
+        results
+      </p>
+    </div>
+    <div class="flex-1 flex justify-between sm:justify-end">
+      {% if previous_page %}
+        <button type="submit" name="page" value="{{ previous_page }}"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        >Previous</button>
+      {% endif %}
+      {% if next_page %}
+        <button type="submit" name="page" value="{{ next_page }}"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        >Next</button>
+      {% endif %}
+    </div>
+  </nav>
+
+{% endmacro %}

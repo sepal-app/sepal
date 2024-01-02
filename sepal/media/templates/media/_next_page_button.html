@@ -1,0 +1,14 @@
+{% if next_page_offset %}
+    <button id="next-page-button"
+            hx-get="{{ url_for("media.index") }}"
+            hx-vals='{"offset": "{{ next_page_offset }}"}'
+            hx-target="#media-list"
+            hx-swap="beforeend"
+            hx-swap-oob="true"
+            hx-select-oob="#next-page-button"
+    >
+        Load more {{ next_page_offset }}
+    </button>
+{% else %}
+    <div id="next-page-button"></div>
+{% endif %}

@@ -1,0 +1,13 @@
+{% extends "page.html" %}
+{% import "organization/_detail_tabs.html" as detail_tabs %}
+
+{% block page_title %}
+   {{ org.name }}
+{% endblock page_title %}
+
+{% block content %}
+    {{ detail_tabs.render_detail_tabs(current='billing', org=org)}}
+    <div class="mt-6">
+        TODO
+    </div>
+{% endblock content %}

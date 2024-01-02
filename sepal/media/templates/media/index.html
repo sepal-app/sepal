@@ -1,0 +1,37 @@
+{% extends "page.html" %}
+
+{% block head %}
+    {{ super()  }}
+{% endblock head %}
+
+{% block title %}
+    Sepal - Media
+{% endblock title %}
+
+{% block page_title %}
+  Media
+{% endblock page_title %}
+
+{% block page_title_buttons %}
+    <button id="upload-button"
+            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+    >
+        Upload
+    </button>
+{% endblock page_title_buttons %}
+
+{% block content %}
+    <!-- The #form-list container will hold the forms for any uploaded file so that we can create their media
+         entity on the server after they've been successfully uploaded. -->
+    <div id="form-list" class="hidden"></div>
+
+    <div class="mt-4 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                {% include "media/_media_list.html" %}
+            </div>
+        </div>
+    </div>
+
+    <script type="module">{% include "media/_upload.min.js" %}</script>
+{% endblock content %}
