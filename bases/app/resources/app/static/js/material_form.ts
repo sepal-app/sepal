@@ -1,8 +1,8 @@
 import Alpine from "alpinejs"
 import * as htmx from "htmx.org"
 
-import AccessionField from "./AccessionField"
-import LocationField from "./LocationField"
+import AccessionField from "./AccessionField.ts"
+import LocationField from "./LocationField.ts"
 
 window.htmx = htmx
 

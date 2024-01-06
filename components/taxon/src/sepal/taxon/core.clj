@@ -14,24 +14,24 @@
 (defn create! [db data]
   ;; TODO: Create auditing event
   (try
-    (let [data (-> (m/coerce spec/CreateTaxon data db.i/transformer)
+    (let [data (-> (db.i/coerce spec/CreateTaxon data)
                    (update :rank rank->pg-enum))
           result  (jdbc.sql/insert! db
                                     :taxon
-                                    data
+                                    (db.i/encode spec/CreateTaxon data)
                                     {:return-keys true})]
-      (m/coerce spec/Taxon result db.i/transformer))
+      (db.i/coerce spec/Taxon result))
     (catch Exception ex
       (error.i/ex->error ex))))
 
 (defn update! [db id data]
   (try
-    (let [data (m/coerce spec/UpdateTaxon data db.i/transformer)
+    (let [data (db.i/coerce spec/UpdateTaxon data)
           result (jdbc.sql/update! db
                                    :taxon
-                                   data
+                                   (db.i/encode spec/UpdateTaxon data)
                                    {:id id}
-                                   {:return-keys 1})]
-      (m/coerce spec/Taxon result db.i/transformer))
+                                   {:return-keys true})]
+      (db.i/coerce spec/Taxon result))
     (catch Exception ex
       (error.i/ex->error ex))))

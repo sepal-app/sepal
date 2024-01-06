@@ -1,7 +1,7 @@
 import Alpine from "alpinejs"
 import * as htmx from "htmx.org"
 
-import TaxonField from "./TaxonField"
+import TaxonField from "./TaxonField.ts"
 
 window.htmx = htmx
 

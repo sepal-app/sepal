@@ -6,9 +6,8 @@
 (defn render [& {:keys [page-title-buttons content page-title table-actions router]}]
   (page/page :content [:div
                        [:form {:method "get"
-                               :hx-boost "true"
                                :hx-get " "
-                               :hx-trigger "keyup,change"
+                               :hx-trigger "keyup throttle:200ms,change"
                                :hx-select (str "#" list-container-id)
                                :hx-target (str "#" list-container-id)
                                :hx-push-url "true"

@@ -15,6 +15,9 @@
 (defn coerce [spec data]
   (m/coerce spec data transformer))
 
+(defn encode [spec data]
+  (m/encode spec data transformer))
+
 (defn execute!
   ([db stmt]
    (core/execute! db stmt {}))

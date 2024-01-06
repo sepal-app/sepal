@@ -20,10 +20,17 @@
 ;; The root url path for the static assets
 (def static-root "/")
 
+(def manifest-file-path
+  (str static-dist-folder
+       fs/file-separator
+       ".vite"
+       fs/file-separator
+       "manifest.json"))
+
 ;; TODO: We need to cache the manifest instead of parsing it on every request
 ;; similar to how manifest.i handled it.
 (defn static-url [static-file]
-  (let [manifest (some-> (str static-dist-folder fs/file-separator "manifest.json")
+  (let [manifest (some-> manifest-file-path
                          (io/resource)
                          (slurp)
                          (json/read-str))
@@ -51,9 +58,9 @@
    :body (str "<!DOCTYPE html>\n" body)})
 
 (defn render-html [html]
-  (-> html
-      (huff/html)
-      (response)))
+  (->> html
+       (huff/html)
+       (response)))
 
 (defn render-partial [html]
   {:status 200

@@ -22,6 +22,7 @@ export default defineConfig({
             },
             input: [
                 "resources/app/static/js/alpine.js",
+                "resources/app/static/js/htmx.js",
                 "resources/app/static/js/accession_form.ts",
                 "resources/app/static/js/material_form.ts",
                 "resources/app/static/js/taxon_form.ts",

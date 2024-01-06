@@ -15,9 +15,9 @@
 (defn media-item [& {:keys [url]}]
   [:li {:class "relative"}
    [:div {:class (html/attr "group" "aspect-w-10" "aspect-h-7" "block" "w-full"
-                            "overflow-hidden" "rounded-lg" "bg-gray-100"
+                            "overflow-hidden" "rounded-lg" "bg-gray-100" "shadow-lg"
                             "focus-within:ring-2" "focus-within:ring-indigo-500"
-                            "focus-within:ring-offset-2" "focus-within:ring-offset-gray-100") }
+                            "focus-within:ring-offset-2" "focus-within:ring-offset-gray-100")}
     [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
            :src url}]
     [:button {:type "button"
