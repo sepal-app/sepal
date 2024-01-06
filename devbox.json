@@ -1,0 +1,18 @@
+{
+  "packages": {
+    "clj-kondo":   "latest",
+    "cljfmt":      "latest",
+    "clojure-lsp": "latest",
+    "clojure":     "latest",
+    "glibcLocales": {
+      "version":            "latest",
+      "excluded_platforms": ["aarch64-darwin x86_64-darwin"]
+    },
+    "nodejs":                            "21.0.0",
+    "path:devbox/postgresql#postgresql": "",
+    "google-cloud-sdk":                  "latest"
+  },
+  "include": [
+    "plugin:postgresql"
+  ]
+}

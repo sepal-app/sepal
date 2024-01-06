@@ -1,0 +1,139 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "clj-kondo@latest": {
+      "last_modified": "2023-12-18T02:58:18Z",
+      "resolved": "github:NixOS/nixpkgs/ca16221251951e9c6261a1a2bb4f9389038d3632#clj-kondo",
+      "source": "devbox-search",
+      "version": "2023.12.15",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/1apql115q70zgq1fq35m0hfksdcj95g9-clj-kondo-2023.12.15"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/agcm7dmbf1bqwpfyk8alk89ylksxi85b-clj-kondo-2023.12.15"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/9yw2ixk8afnd1ll1ln0wdnm9sv562a4c-clj-kondo-2023.12.15"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/raj91h8mlmvg23h53b7izff15rsawsh0-clj-kondo-2023.12.15"
+        }
+      }
+    },
+    "cljfmt@latest": {
+      "last_modified": "2023-12-13T22:54:10Z",
+      "resolved": "github:NixOS/nixpkgs/fd04bea4cbf76f86f244b9e2549fca066db8ddff#cljfmt",
+      "source": "devbox-search",
+      "version": "0.11.2",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/5hlzn6f6a1v8qa6qyg36c0cnn8016c9x-cljfmt-0.11.2"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/zrgg4y0l1dw2gjy0pp6xal07w7rkpwbh-cljfmt-0.11.2"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/mq2il7mm16k9fn3ijzj7acpqry87k7wz-cljfmt-0.11.2"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/9wafskdnnzk6nfds8zmchpscq6nyfh4g-cljfmt-0.11.2"
+        }
+      }
+    },
+    "clojure-lsp@latest": {
+      "last_modified": "2023-12-13T22:54:10Z",
+      "resolved": "github:NixOS/nixpkgs/fd04bea4cbf76f86f244b9e2549fca066db8ddff#clojure-lsp",
+      "source": "devbox-search",
+      "version": "2023.08.06-00.28.06",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/h80xshjy4ngrf154lfva03iyik16l3ma-clojure-lsp-2023.08.06-00.28.06"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/r50yqgmhycz6vvrds58l6zfg96yksdjs-clojure-lsp-2023.08.06-00.28.06"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/q3ggang1pix6vlkvsq322xg583myndl5-clojure-lsp-2023.08.06-00.28.06"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/alp6z6iccv4rhssmzv9rm8v5p7zwj91s-clojure-lsp-2023.08.06-00.28.06"
+        }
+      }
+    },
+    "clojure@latest": {
+      "last_modified": "2024-01-02T02:19:20Z",
+      "resolved": "github:NixOS/nixpkgs/63143ac2c9186be6d9da6035fa22620018c85932#clojure",
+      "source": "devbox-search",
+      "version": "1.11.1.1435",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/769z63zz7ygcp8acf0gq7mpkj65sg5iy-clojure-1.11.1.1435"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/ibdl5hq9p88z59pmccx5klpc5b2z2xj5-clojure-1.11.1.1435"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/iip3d8mya4zc02mpv22r9v441snhjlkk-clojure-1.11.1.1435"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/52d4wy877pz9vh5fda4663pgm56qrb8b-clojure-1.11.1.1435"
+        }
+      }
+    },
+    "glibcLocales@latest": {
+      "last_modified": "2023-12-13T22:54:10Z",
+      "resolved": "github:NixOS/nixpkgs/fd04bea4cbf76f86f244b9e2549fca066db8ddff#glibcLocales",
+      "source": "devbox-search",
+      "version": "2.38-27",
+      "systems": {
+        "aarch64-linux": {
+          "store_path": "/nix/store/mlx2srs67sgj8jig4y4i1kkbzg5kz4m0-glibc-locales-2.38-27"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/ghvznirxqkw0f2wnbmgfk7i70igz66b4-glibc-locales-2.38-27"
+        }
+      }
+    },
+    "google-cloud-sdk@latest": {
+      "last_modified": "2023-12-13T22:54:10Z",
+      "resolved": "github:NixOS/nixpkgs/fd04bea4cbf76f86f244b9e2549fca066db8ddff#google-cloud-sdk",
+      "source": "devbox-search",
+      "version": "452.0.1",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/wwdbirshqqhy9ysvdlwqwpshix1nz4g5-google-cloud-sdk-452.0.1"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/38y37i8cwfa64w07mg7j5mjqb8i2y1g0-google-cloud-sdk-452.0.1"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/4n4k61ypksqv5plnp91zx3l746647zcv-google-cloud-sdk-452.0.1"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/fccay4qwfabv0ac20sm13m1axc9bydan-google-cloud-sdk-452.0.1"
+        }
+      }
+    },
+    "nodejs@21.0.0": {
+      "last_modified": "2023-10-21T11:05:41Z",
+      "resolved": "github:NixOS/nixpkgs/44881e03af1c730cbb1d72a4d41274a2c957813a#nodejs_21",
+      "source": "devbox-search",
+      "version": "21.0.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/0bii7gbhm1ap01wik3bvpimj96mg5x9b-nodejs-21.0.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/4ir5dxb84zc41wric6k52bjrl7airzrw-nodejs-21.0.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/gakpbn91pkljsfys8rw35bhb019zws9h-nodejs-21.0.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/3w5mc8ym9lc117z0j701dad7cg69arsz-nodejs-21.0.0"
+        }
+      }
+    }
+  }
+}

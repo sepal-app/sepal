@@ -38,8 +38,6 @@ projects/**/pom.xml
 # Calva VS Code Extension
 .calva/output-window/output.calva-repl
 
-.envrc
-
 manifest.edn
 # Ignore the digested static files
 *-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].*
@@ -50,3 +48,5 @@ node_modules/
 
 
 bases/app/resources/app/dist/
+
+.env.*
