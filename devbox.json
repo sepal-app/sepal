@@ -10,7 +10,8 @@
     },
     "nodejs":                            "21.0.0",
     "path:devbox/postgresql#postgresql": "",
-    "google-cloud-sdk":                  "latest"
+    "google-cloud-sdk":                  "latest",
+    "sqlfluff":                          "2.3.5"
   },
   "include": [
     "plugin:postgresql"

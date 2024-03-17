@@ -1,0 +1,8 @@
+# -*- conf-toml -*-
+[sqlfluff]
+dialect = postgres
+max_line_length = 110
+
+
+[sqlfluff:indentation]
+tab_space_size = 2
