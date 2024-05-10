@@ -1,12 +1,10 @@
 (ns sepal.activity.interface
+  ;; (:refer-clojure :exclude [find])
   (:require [clojure.walk :as walk]
             [malli.core :as m]
-            [malli.experimental.time :as met]
             [malli.registry :as mr]
-            [malli.transform :as mt]
             [malli.util :as mu]
-            [sepal.database.interface :as db.i]
-            [camel-snake-kebab.core :as csk]))
+            [sepal.database.interface :as db.i]))
 
 (defmulti data-schema (fn [type] type))
 
@@ -19,8 +17,7 @@
     ;; TODO: Can we validate this against the data-schema
     ;; multimethod?
     [:map-of :keyword :any]]
-   [:activity/created-at
-    inst?]
+   [:activity/created-at :time/instant]
    [:activity/created-by :int]
    [:activity/organization-id :int]])
 
@@ -40,9 +37,7 @@
 
 (def registry
   (mr/lazy-registry
-   (mr/composite-registry
-    (m/default-schemas)
-    (met/schemas))
+   (m/default-schemas)
    (fn [type registry]
      ;; Create the schema lazily depending on the :type of the activity
      (when-let [ds (data-schema type)]
@@ -58,7 +53,7 @@
     (db.i/execute! db {:insert-into :activity
                        :values [value]})))
 
-(defn find [db]
-  (let [result (db.i/execute! db {:select :* :from :activity})]
-    (mapv #(m/coerce Activity % db.i/transformer)
-          result)))
+#_(defn find [db]
+    (let [result (db.i/execute! db {:select :* :from :activity})]
+      (mapv #(m/coerce Activity % db.i/transformer)
+            result)))

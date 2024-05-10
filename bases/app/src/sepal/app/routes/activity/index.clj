@@ -10,6 +10,7 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.organization.interface.spec :as org.spec]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]))
 
@@ -27,6 +28,18 @@
   (fn [& {:keys [_router activity]}]
     (:activity/type activity))
   :default "DEFAULT")
+
+(defmethod activity-description :organization/created
+  [& {:keys [router activity]}]
+  (tap> (str ":organization/create: " activity))
+
+  (let [{:keys [organization user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " created organization ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :org/detail
+                                                   {:org-id (:organization/id organization)})}
+                                (:organization/name organization)]])))
 
 (defmethod activity-description :accession/created
   [& {:keys [router activity]}]
@@ -140,7 +153,8 @@
                                                   ;; :taxon/author
                                                   ])])
       (mu/assoc :accession [:maybe accession.spec/Accession])
-      (mu/assoc :user [:maybe user.spec/User])))
+      (mu/assoc :user [:maybe user.spec/User])
+      (mu/assoc :organization [:maybe org.spec/Organization])))
 
 (defn get-activity [db page page-size]
   (let [offset (* page-size (- page 1))]
@@ -149,24 +163,26 @@
                                      :acc.*
                                      :u.id
                                      :u.email
+                                     :org.*
                                      [:parent.id :parent__id]
                                      [:parent.name :parent__name]]
                             :from [[:activity :a]]
                             :join-by [:inner [[:public.user :u]
                                               [:= :u.id :a.created_by]]
                                       :left [[:accession :acc]
-                                             [:and
-                                              [:=
-                                               [:->> :a.data "accession-id"]
-                                               [[:cast :acc.id :text]]]]]
+                                             [:=
+                                              [:->> :a.data "accession-id"]
+                                              [[:cast :acc.id :text]]]]
                                       :left [[:taxon :tax]
-                                             [:and
-                                              [:=
-                                               [:->> :a.data "taxon-id"]
-                                               [[:cast :tax.id :text]]]]]
+                                             [:=
+                                              [:->> :a.data "taxon-id"]
+                                              [[:cast :tax.id :text]]]]
                                       :left [[:taxon :parent]
-                                             [:= :parent.id :tax.parent_id]]]
-                            ;; :where [:= :type "accession/created"]
+                                             [:= :parent.id :tax.parent_id]]
+                                      :left [[:organization :org]
+                                             [:=
+                                              [:->> :a.data "organization-id"]
+                                              [[:cast :org.id :text]]]]]
                             :order-by [[:a.created_at :desc]]
                             :offset offset
                             :limit page-size})
@@ -204,7 +220,7 @@
 (defn decode-params [schema params]
   (m/decode schema params params-transformer))
 
-(defn handler [& {:keys [context headers query-params ::r/router uri]}]
+(defn handler [& {:keys [context _headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
         {:keys [page page-size _q] :as params} (decode-params Params query-params)
         activity (get-activity db page page-size)]
