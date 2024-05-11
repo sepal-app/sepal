@@ -1,19 +1,7 @@
 (ns sepal.app.main
   (:require #_[clojure.tools.logging :as log]
-   [malli.experimental.time :as met]
-            [malli.core :as m]
-            [malli.registry :as mr]
-            [sepal.app.system :as system])
+   [sepal.app.system :as system])
   (:gen-class))
-
-;; Make sure we have the malli.experimental.time schemes in the default
-;; registry.
-(mr/set-default-registry!
- (mr/composite-registry
-  (m/default-schemas)
-  (met/schemas)))
-
-(set! *warn-on-reflection* true)
 
 (def default-environment "local")
 
