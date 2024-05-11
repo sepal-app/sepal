@@ -4,7 +4,7 @@
         com.fzakaria/slf4j-timbre {:mvn/version "0.4.0"}
         info.sunng/ring-jetty9-adapter {:mvn/version "0.22.1"}
         lambdaisland/uri {:mvn/version "1.16.134"}
-        metosin/malli {:mvn/version "0.13.0"}
+        metosin/malli {:mvn/version "0.16.1"}
         metosin/reitit {:mvn/version "0.7.0-alpha7"}
         metosin/reitit-middleware {:mvn/version "0.7.0-alpha7"}
         metosin/ring-http-response {:mvn/version "0.9.3"}
