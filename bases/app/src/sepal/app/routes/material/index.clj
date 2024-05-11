@@ -113,7 +113,11 @@
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [[:m.created_at :desc]]))]
+                                      ;; TODO: We either need to add the
+                                      ;; timestamp audit columns to our models
+                                      ;; or join against the activity feed
+                                      ;; :order-by [[:m.created_at :desc]]
+                                      ))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [material rows]

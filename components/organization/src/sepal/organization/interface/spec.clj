@@ -1,13 +1,10 @@
 (ns sepal.organization.interface.spec
-  (:refer-clojure :exclude (name))
-  )
+  (:refer-clojure :exclude [name]))
 
 (def id :int)
 (def name :string)
 (def short-name :string)
 (def abbreviation :string)
-(def created-at :inst)
-
 
 (def CreateOrganization
   [:map
@@ -20,5 +17,4 @@
    [:organization/id id]
    [:organization/name name]
    [:organization/short-name short-name]
-   [:organization/abbreviation abbreviation]
-   [:organization/created-at created-at]])
+   [:organization/abbreviation abbreviation]])
