@@ -1,4 +1,4 @@
-drop schema wfo_plantlist_2023_12 cascade;
+drop schema if exists wfo_plantlist_2023_12 cascade;
 
 create schema wfo_plantlist_2023_12;
 

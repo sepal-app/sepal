@@ -1,4 +1,4 @@
-create extension if not exists "uuid-ossp";  -- noqa: RF05
+create extension if not exists "uuid-ossp";
 --;;
 create extension if not exists plpgsql;
 --;;

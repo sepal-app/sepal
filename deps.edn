@@ -53,9 +53,8 @@
                                 lambdaisland/kaocha {:mvn/version "1.85.1342"}}}
 
            ;; clojure -M:migrate
-           ;; To run for a specific profile run e.g. clojure -X:migrate :profile :test
-            :migrate {:exec-fn sepal.migrations.cli/cli
-                      :exec-args {:profile :local}
+           ;; To run for a specific profile run e.g. clojure -M:migrate --profile test
+            :migrate {:main-opts ["-m" "sepal.migrations.core"] ;; sepal.migrations.core/-main
                       :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]

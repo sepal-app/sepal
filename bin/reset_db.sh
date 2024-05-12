@@ -17,4 +17,4 @@ psql -v ON_ERROR_STOP=1 -h localhost postgres <<-EOSQL
     create extension if not exists pg_trgm;
 EOSQL
 
-clojure -X:migrate :profile ${PROFILE:-:local}
+clojure -M:migrate migrate --profile "${PROFILE:-local}"
