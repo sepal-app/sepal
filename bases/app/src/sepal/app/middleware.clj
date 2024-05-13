@@ -67,17 +67,27 @@
         (http/see-other router :root)))))
 
 (defn resource-loader
-  "Accept a getter function and a path param key load resource and assoc it in the
-  request context under the :resource key."
-  [handler getter path-param-key]
-
-  (fn [{:keys [context path-params] :as request}]
-    (let [{:keys [db]} context
-          resource-id (Long/parseLong (get path-params path-param-key))
-          resource (getter db resource-id)]
+  "Accept a getter function that accepts the request and loads the resource and
+  stores it in the request context under the :resource key. "
+  [handler getter]
+  (fn [request]
+    (let [resource (getter request)]
+      (tap> (str "resource: " resource))
       (-> request
           (assoc-in [:context :resource] resource)
           (handler)))))
+
+(defn default-loader
+  "A default resource loader that accepts a getter, a path param key and an
+  optional loader. The getter accepts the database and the value of the path
+  parm and returns the resource."
+  ([getter path-param-key]
+   (default-loader getter path-param-key identity))
+  ([getter path-param-key coercer]
+   (fn [{:keys [context path-params] :as request}]
+     (let [{:keys [db]} context
+           id (-> path-params path-param-key coercer)]
+       (getter db id)))))
 
 (defn require-resource-org-membership
   "Require a user to be a member of the organization that owns the resource."

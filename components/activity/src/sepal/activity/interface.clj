@@ -2,6 +2,7 @@
   ;; (:refer-clojure :exclude [find])
   (:require [clojure.walk :as walk]
             [malli.core :as m]
+            [malli.experimental.time :as met]
             [malli.registry :as mr]
             [malli.util :as mu]
             [sepal.database.interface :as db.i]))
@@ -37,7 +38,9 @@
 
 (def registry
   (mr/lazy-registry
-   (m/default-schemas)
+   (mr/composite-registry
+    (m/default-schemas)
+    (met/schemas))
    (fn [type registry]
      ;; Create the schema lazily depending on the :type of the activity
      (when-let [ds (data-schema type)]
