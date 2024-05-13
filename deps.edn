@@ -50,7 +50,12 @@
                                  "components/validation/test"]
                    :extra-deps {poly/test {:local/root "components/test"}
                                 com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
-                                lambdaisland/kaocha {:mvn/version "1.85.1342"}}}
+                                lambdaisland/kaocha {:mvn/version "1.89.1380"}
+                                nubank/matcher-combinators {:mvn/version "3.9.1"}
+                                org.clojure/test.check {:mvn/version "1.1.1"}}}
+
+            :test-runner {:main-opts ["-m" "kaocha.runner"]}
+
 
            ;; clojure -M:migrate
            ;; To run for a specific profile run e.g. clojure -M:migrate --profile test

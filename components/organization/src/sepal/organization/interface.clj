@@ -1,9 +1,9 @@
 (ns sepal.organization.interface
-  (:require [next.jdbc :as jdbc]
+  (:require [honey.sql :as sql]
+            [integrant.core :as ig]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
-            [honey.sql :as sql]
-            [sepal.organization.interface.spec :as spec]
-            [sepal.validation.interface :refer [invalid? validate]]))
+            [sepal.organization.core :as core]))
 
 (defn parse-int [v]
   (if-not (int? v)
@@ -14,16 +14,7 @@
   (jdbc.sql/get-by-id db :organization (parse-int id)))
 
 (defn create! [db data]
-  (cond
-    (invalid? spec/CreateOrganization data)
-    (validate spec/CreateOrganization data)
-
-    :else
-    (let [stmt (-> {:insert-into :organization
-                    :values [data]
-                    :returning :*}
-                   (sql/format))]
-      (jdbc/execute-one! db stmt))))
+  (core/create! db data))
 
 (defn assign-role [db data]
   (let [stmt (-> {:insert-into :organization-user
@@ -34,3 +25,6 @@
       (jdbc/execute-one! db stmt)
       (catch Exception e
         {:error {:message (ex-message e)}}))))
+
+(defmethod ig/init-key ::factory [_ args]
+  (core/factory args))

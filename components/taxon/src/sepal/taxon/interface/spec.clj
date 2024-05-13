@@ -4,7 +4,8 @@
             [malli.util :as mu]
             [next.jdbc.types :as jdbc.types]))
 
-(def id :int)
+(def wfo-plantlist-name-id :string)
+(def id [:or :int wfo-plantlist-name-id])
 (def parent-id id)
 (def organization-id :int)
 (def name [:string {:min 1}])
@@ -33,6 +34,10 @@
            :tribe
            :variety])
 
+(defn rank->pg-enum [rank]
+  (when (some? rank)
+    (jdbc.types/as-other rank)))
+
 (def Taxon
   [:map {:closed true}
    [:taxon/id id]
@@ -41,7 +46,8 @@
    [:taxon/author [:maybe author]]
    [:taxon/name name]
    [:taxon/parent-id [:maybe parent-id]]
-   [:taxon/organization-id organization-id]])
+   [:taxon/organization-id [:maybe organization-id]]
+   [:taxon/wfo-plantlist-name-id [:maybe wfo-plantlist-name-id]]])
 
 (defn coerce-int [v]
   (try
@@ -56,10 +62,11 @@
 (def CreateTaxon
   [:map {:closed true}
    [:name name]
-   [:rank {:decode/db csk/->kebab-case-keyword
-           :encode/db (comp jdbc.types/as-other
+   [:rank {:encode/db (comp rank->pg-enum
                             csk/->kebab-case-string)}
-    :string]
+    rank]
+   [:wfo-plantlist-name-id {:optional true}
+    [:maybe wfo-plantlist-name-id]]
    [:parent-id {:optional true
                 :decode/db coerce-int}
     [:maybe parent-id]]
@@ -71,8 +78,12 @@
    [:map {:closed true}
     [:name name]
     [:rank {:decode/db csk/->kebab-case-keyword
-            :encode/db (comp jdbc.types/as-other
+            :encode/db (comp rank->pg-enum
                              csk/->kebab-case-string)}
      rank]
+    [:wfo-plantlist-name-id {:optional true}
+     [:maybe wfo-plantlist-name-id]]
     [:parent-id {:decode/db coerce-int}
+     [:maybe id]]
+    [:organization-id {:decode/db coerce-int}
      [:maybe id]]]))
