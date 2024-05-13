@@ -1,6 +1,12 @@
-{:dbname #env DB_NAME
- :dbtype "postgresql"
- :host #env DB_HOST
- :password #env DB_PASSWORD
- :port #env DB_PORT
- :user #env DB_USER}
+{:dbtype "postgresql"
+ :classname "org.postgresql.Driver"
+ :subprotocol "postgresql"
+ :host #profile {:default  #env PGHOST
+                 :test "localhost"}
+ :port #or [#env PGPORT 5432]
+ :dbname #profile {:default #env PGDATABASE
+                   :test "sepal_test"}
+ :user #profile {:default #env PGUSER
+                 :test "sepal"}
+ :password #profile {:default #env PGPASSWORD
+                     :test "password"}}

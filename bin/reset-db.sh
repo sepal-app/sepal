@@ -3,12 +3,17 @@ set -euo pipefail
 
 # To run this as a different user do `PGUSER=someuser reset_db.sh`
 
+PGUSER=${PGUSER:-sepal}
+PGDATABASE=${PGDATABASE:-sepal}
+PGPASSWORD="password"
+PROFILE=${PROFILE:-local}
+
 psql -v ON_ERROR_STOP=1 -h localhost postgres <<-EOSQL
-    drop database if exists sepal;
-    drop role if exists sepal_user;
-    create role sepal_user with login password 'password';
-    create database sepal owner sepal_user;
-    \c sepal;
+    drop database if exists ${PGDATABASE};
+    drop role if exists ${PGUSER};
+    create role ${PGUSER} with login password '${PGPASSWORD}';
+    create database ${PGDATABASE} owner ${PGUSER};
+    \c ${PGDATABASE};
     create extension if not exists moddatetime;
     create extension if not exists "uuid-ossp";
     create extension if not exists plpgsql;
@@ -17,4 +22,6 @@ psql -v ON_ERROR_STOP=1 -h localhost postgres <<-EOSQL
     create extension if not exists pg_trgm;
 EOSQL
 
-clojure -M:migrate migrate --profile "${PROFILE:-local}"
+# TODO: add  the wfo plant list
+
+clojure -M:migrate migrate -p "${PROFILE}"

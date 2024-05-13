@@ -54,7 +54,7 @@
 
            ;; clojure -M:migrate
            ;; To run for a specific profile run e.g. clojure -M:migrate --profile test
-            :migrate {:main-opts ["-m" "sepal.migrations.core"] ;; sepal.migrations.core/-main
+            :migrate {:main-opts ["-m" "sepal.migrations.core"]
                       :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
