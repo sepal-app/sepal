@@ -1,0 +1,8 @@
+.git
+**/.cpcache
+.devbox
+.env*
+.clj-kondo
+.dir-locals.el
+.lsp
+**/node_modules
