@@ -3,7 +3,6 @@
             ;; [reitit.ring.middleware.exception :as exception]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
-            [sepal.database.interface :as db.i]
             [sepal.organization.interface :as org.i]
             [sepal.user.interface :as user.i]))
 
@@ -39,24 +38,14 @@
               (handler)))
         (http/see-other router :auth/login)))))
 
-(defn find-user-org [db user-id organization-id]
-  ;; TODO: coerce to and malli Organization schema
-  (db.i/execute-one! db {:select :o.*
-                         :from [[:organization :o]]
-                         :join [[:organization_user :ou]
-                                [:= :ou.user_id user-id]]
-                         :where [:and
-                                 [:= :ou.organization_id organization-id]
-                                 [:= :o.id organization-id]]}))
-
 (defn require-org-membership [handler path-param-key]
   ;; TODO: This redirects to root but maybe we should return a 404 or 403 or
   ;; something.
   (fn [{:keys [context path-params ::r/router viewer] :as request}]
     (let [{:keys [db]} context
           org-id (Long/parseLong (get path-params path-param-key))
-          org (find-user-org db (:user/id viewer) org-id)]
-      (if (some? org)
+          org (org.i/get-user-org db (:user/id viewer))]
+      (if (= (:organization/id org) org-id)
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
@@ -95,10 +84,13 @@
   (fn [{:keys [context ::r/router viewer] :as request}]
     (let [{:keys [db resource]} context
           org-id (get resource organization-id-key)
-          org (find-user-org db (:user/id viewer) org-id)]
-      ;; TODO: This redirects to root but maybe we should return a 404 or 403 or
-      ;; something.
-      (if (some? org)
+          org (org.i/get-user-org db (:user/id viewer))]
+      (cond
+        ;; Pass through if the resource doesn't have an organization id
+        (nil? org-id)
+        (handler request)
+
+        (= (:organization/id org) org-id)
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
@@ -106,6 +98,8 @@
               (assoc-in [:context :current-organization] org)
               (assoc-in [:context :organization] org)
               (handler)))
+
+        :else
         (http/see-other router :root)))))
 
 (defn bind-globals [handler]
