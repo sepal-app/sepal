@@ -29,7 +29,7 @@
                   {:id 1234
                    :rank "genus"})))))
 
-(deftest test-create!
+(deftest test-create
   (tf/testing "create!"
     {[::org.i/factory :key/org]
      {:db *db*}}
@@ -48,7 +48,7 @@
                     result))
         (jdbc.sql/delete! db :taxon {:id (:taxon/id result)})))))
 
-(deftest test-update!
+(deftest test-update
   (let [db *db*]
     (tf/testing "update! - org taxon"
       {[::org.i/factory :key/org]

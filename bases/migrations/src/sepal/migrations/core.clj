@@ -35,7 +35,7 @@
 
 (def cli-options
   [["-p" "--profile PROFILE" "The config profile"
-    :default :local
+    :default "local"
     :parse-fn keyword
     :validate [#{:local :development :staging :production :test}
                "Must be one of local, test or production"]]

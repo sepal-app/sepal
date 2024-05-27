@@ -24,8 +24,9 @@ create table name (
 
 \copy name(id, alternative_id, basionym_id, scientific_name, authorship, rank, uninomial, genus, infrageneric_epithet, specific_epithet, infraspecific_epithet, code, reference_id, published_in_year, link) from 'name.tsv' with (format csv, header true, delimiter E'\t');
 
-create index name_id_idx on name (id);
-create index name_scientific_name_trgm_idx on name using gin (scientific gin_trgm_ops);
+create index name_id_idx on wfo_plantlist_2023_12.name (id);
+create index name_scientific_name_tsvector_idx on wfo_plantlist_2023_12.name using gin (to_tsvector('english', scientific_name));
+
 
 create table reference (
   id text,

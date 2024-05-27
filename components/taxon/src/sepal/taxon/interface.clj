@@ -11,5 +11,7 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(defn wfo-id? [id]
+  (core/wfo-id? id))
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

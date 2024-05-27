@@ -1,16 +1,34 @@
 (ns sepal.app.routes.taxon.core
-  (:require [sepal.app.middleware :as middleware]
+  (:require [reitit.core :as r]
+            [sepal.app.globals :as g]
+            [sepal.app.http-response :as http]
+            [sepal.app.middleware :as middleware]
             [sepal.app.routes.taxon.detail :as detail]
+            [sepal.organization.interface :as org.i]
             [sepal.taxon.interface :as taxon.i]))
 
 (def taxon-loader (middleware/default-loader taxon.i/get-by-id :id))
 
+;; TODO This assumes 1 org per user and is temporary until we set the
+;; organization via the subdomain.
+(defn require-viewer-org [handler]
+  (fn [{:keys [context ::r/router viewer] :as request}]
+    (let [{:keys [db]} context
+          org (org.i/get-user-org db (:user/id viewer))]
+      (if (some? org)
+        (binding [g/*organization* org]
+          (-> request
+              (assoc-in [:session :organization] org)
+              ;; TODO: Remove current-organization
+              (assoc-in [:context :current-organization] org)
+              (assoc-in [:context :organization] org)
+              (handler)))
+        (http/see-other router :root)))))
+
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   [middleware/require-org-membership :org-id]
    ["/:id/" {:name :taxon/detail
              :handler #'detail/handler
              :middleware [[middleware/resource-loader taxon-loader]
-                          ;; TODO: Only request org membership if the org is not null
-                          ;; [middleware/require-resource-org-membership :taxon/organization-id]
-                          ]}]])
+                          [middleware/require-resource-org-membership :taxon/organization-id]
+                          require-viewer-org]}]])

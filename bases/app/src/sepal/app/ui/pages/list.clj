@@ -7,7 +7,7 @@
   (page/page :content [:div
                        [:form {:method "get"
                                :hx-get " "
-                               :hx-trigger "keyup throttle:200ms,change"
+                               :hx-trigger "keyup delay:200ms,change"
                                :hx-select (str "#" list-container-id)
                                :hx-target (str "#" list-container-id)
                                :hx-push-url "true"
