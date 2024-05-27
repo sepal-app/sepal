@@ -27,17 +27,18 @@
             [sepal.app.routes.register.core :as register]
             [sepal.app.routes.taxon.core :as taxon]))
 
-
 (defn routes []
   [""
    ["/" {:name :root
          :handler #(http-response/found (::r/router %) :org/index)
          :middleware [[middleware/require-viewer]]}]
 
+   ["/ok" {:name :ok
+           :handler (constantly {:status 204})}]
+
    ;; See sepal.app.html/static-url for accessing static assets
    ["/assets/*" {:name :static-files
-                       :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
-   ;; ["/favicon.ico" {:get {:handler (fn [_] {:status 200 :body ""})}}]
+                 :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
    ["/register" (register/routes)]
    ["/login" {:name :auth/login
               :handler #'login/handler}]
