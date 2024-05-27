@@ -55,10 +55,10 @@
             :test-runner {:main-opts ["-m" "kaocha.runner"]}
 
 
-           ;; clojure -M:migrate
+           ;; clojure -M:migrations
            ;; To run for a specific profile run e.g. clojure -M:migrate --profile test
-            :migrate {:main-opts ["-m" "sepal.migrations.core"]
-                      :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
+            :migrations {:main-opts ["-m" "sepal.migrations.core"]
+                         :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
                    :deps {polyfy/polylith
