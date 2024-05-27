@@ -50,3 +50,5 @@ node_modules/
 bases/app/resources/app/dist/
 
 .env.*
+.rebl
+.dir-locals.el
