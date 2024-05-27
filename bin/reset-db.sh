@@ -19,7 +19,6 @@ psql -v ON_ERROR_STOP=1 -h localhost postgres <<-EOSQL
     create extension if not exists plpgsql;
     create extension if not exists pgcrypto;
     create extension if not exists postgis;
-    create extension if not exists pg_trgm;
 EOSQL
 
 # TODO: add  the wfo plant list
