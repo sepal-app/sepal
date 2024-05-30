@@ -19,6 +19,8 @@ COPY components /dist/components
 COPY bases /dist/bases
 COPY projects /dist/projects
 
+RUN chmod +x /dist/projects/app/run.sh
+
 RUN clojure -P -M:migrations && \
     cd /dist/bases/app && \
     npm install && \
