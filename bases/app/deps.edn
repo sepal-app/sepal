@@ -1,7 +1,8 @@
 {:paths ["src" "resources"]
  :deps {poly/manifest {:local/root "../../components/manifest"}
 
-        com.fzakaria/slf4j-timbre {:mvn/version "0.4.0"}
+        com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}
+        com.taoensso/timbre {:mvn/version "6.5.0"}
         info.sunng/ring-jetty9-adapter {:mvn/version "0.22.1"}
         lambdaisland/uri {:mvn/version "1.16.134"}
         metosin/malli {:mvn/version "0.16.1"}
