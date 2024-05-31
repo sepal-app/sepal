@@ -92,7 +92,7 @@
                     (assoc :connectionInitSql "COMMIT;"))
           url (jdbc.connection/jdbc-url db-spec)]
       (jdbc.connection/->pool HikariDataSource {:jdbcUrl url
-                                                :maxPoolSize max-pool-size}))))
+                                                :maximumPoolSize max-pool-size}))))
 
 (create-ns 'sepal.database.interface)
 (alias 'db.i 'sepal.database.interface)
