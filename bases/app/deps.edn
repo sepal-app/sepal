@@ -1,6 +1,19 @@
 {:paths ["src" "resources"]
- :deps {poly/manifest {:local/root "../../components/manifest"}
+ :deps {poly/accession {:local/root "../../components/accession"}
+        poly/activity {:local/root "../../components/activity"}
+        poly/aws-s3 {:local/root "../../components/aws-s3"}
+        poly/config {:local/root "../../components/config"}
+        poly/database {:local/root "../../components/database"}
+        poly/error {:local/root "../../components/error"}
+        poly/location {:local/root "../../components/location"}
+        poly/material {:local/root "../../components/material"}
+        poly/organization {:local/root "../../components/organization"}
+        poly/taxon {:local/root "../../components/taxon"}
+        poly/test {:local/root "../../components/test"}
+        poly/user {:local/root "../../components/user"}
+        poly/validation {:local/root "../../components/validation"}
 
+        babashka/fs {:mvn/version "0.4.19"}
         com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}
         com.taoensso/timbre {:mvn/version "6.5.0"}
         info.sunng/ring-jetty9-adapter {:mvn/version "0.22.1"}
