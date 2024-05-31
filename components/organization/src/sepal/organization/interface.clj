@@ -13,6 +13,9 @@
 (defn get-by-id [db id]
   (jdbc.sql/get-by-id db :organization (parse-int id)))
 
+(defn get-user-org [db user-id]
+  (core/get-user-org db user-id))
+
 (defn create! [db data]
   (core/create! db data))
 

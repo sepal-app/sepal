@@ -4,6 +4,7 @@
             [malli.generator :as mg]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.database.interface :as db.i]
             [sepal.organization.interface.spec :as spec]
             [sepal.validation.interface :refer [invalid? validate]]))
 
@@ -19,6 +20,16 @@
                     :returning :*}
                    (sql/format))]
       (jdbc/execute-one! db stmt))))
+
+(defn get-user-org [db user-id]
+  ;; TODO: This is assuming one organization per user
+  (some->> (db.i/execute-one! db {:select :o.*
+                                  :from [[:organization :o]]
+                                  :join [[:organization_user :ou]
+                                         [:= :ou.organization_id :o.id]]
+                                  :where [:and
+                                          [:= :ou.user_id user-id]]})
+           (db.i/coerce spec/Organization)))
 
 (create-ns 'sepal.organization.interface)
 (alias 'org.i 'sepal.organization.interface)
