@@ -16,8 +16,6 @@
   ([]
    (get-config :local))
   ([profile]
-   (println (str "profile: " profile))
-
    (config.i/read-config  "migrations/config.edn" {:profile profile})))
 
 (defn usage [options-summary]
@@ -60,8 +58,6 @@
 
       :else
       (let [config (get-config (-> options :profile keyword))]
-        (println (str "config: " config))
-
         (case action
           "pending" (println (migratus/pending-list config))
           "completed" (->> (migratus/completed-list config)
