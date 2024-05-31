@@ -20,7 +20,6 @@
   (let [system-config (config.i/read-config "app/system.edn"
                                             {:profile profile})]
     (ig/load-namespaces system-config)
-    (ig/prep system-config)
     (alter-var-root #'*system* (constantly (ig/init system-config)))))
 
 (defn stop! [system]

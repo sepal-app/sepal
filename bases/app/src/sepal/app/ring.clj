@@ -119,11 +119,16 @@
                        ;; [middleware/wrap-hidden-method]
                        ;; [middleware/wrap-authenticated]
                        ]}})
+
 (defmethod ig/init-key ::app [_ {:keys [ring-defaults context cookie-secret reload-per-request?]}]
   (let [ring-defaults (-> (case ring-defaults
                             :site ring.defaults/site-defaults
                             :secure-site ring.defaults/secure-site-defaults
                             ring.defaults/site-defaults)
+                          ;; Don't redirect http requests to http since we
+                          ;; generally run the app behind a load balancer that
+                          ;; handles that for us
+                          (assoc-in [:security :ssl-redirect] false)
                           ;; Use cookies for storing the session
                           (assoc-in [:session :store]
                                     (cookie-store {:key (.getBytes cookie-secret)})))
