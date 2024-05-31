@@ -12,5 +12,6 @@
                  :test "sepal"}
  :password #profile {:default #env PGPASSWORD
                      :test "password"}
+ :unixSocketPath #env DB_UNIX_SOCKET_PATH
  :socketFactory #env DB_SOCKET_FACTORY
  :cloudSqlInstance #env CLOUD_SQL_INSTANCE}

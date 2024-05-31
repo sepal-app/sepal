@@ -80,15 +80,18 @@
 (defn init-pool [& {:keys [db-spec]}]
   (when db-spec
     (let [db-spec (cond-> db-spec
-                    ;; HikariCP expects :username
-                    (not (:username db-spec))
-                    (assoc :username (:user db-spec))
+                    (empty? (:host db-spec))
+                    (assoc :host nil)
+
+                    (empty? (:port db-spec))
+                    (assoc :port nil)
 
                     ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required in case
                     ;; a default :schema is provided, see https://github.com/brettwooldridge/HikariCP/issues/1369
                     (= (:dbtype db-spec) "postgresql")
-                    (assoc :connectionInitSql "COMMIT;"))]
-      (jdbc.connection/->pool HikariDataSource db-spec))))
+                    (assoc :connectionInitSql "COMMIT;"))
+          url (jdbc.connection/jdbc-url db-spec)]
+      (jdbc.connection/->pool HikariDataSource {:jdbcUrl url}))))
 
 (create-ns 'sepal.database.interface)
 (alias 'db.i 'sepal.database.interface)
