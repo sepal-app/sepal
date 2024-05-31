@@ -50,5 +50,6 @@
   (core/init-db :connectable connectable
                 :jdbc-options jdbc-options))
 
-(defmethod ig/init-key ::pool [_ {:keys [db-spec]}]
-  (core/init-pool :db-spec db-spec))
+(defmethod ig/init-key ::pool [_ {:keys [db-spec max-pool-size]}]
+  (core/init-pool :db-spec db-spec
+                  :max-pool-size (or max-pool-size 10)))

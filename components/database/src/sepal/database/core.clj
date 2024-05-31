@@ -77,7 +77,7 @@
   (honeysql/init)
   (jdbc/with-options connectable (or jdbc-options default-jdbc-options)))
 
-(defn init-pool [& {:keys [db-spec]}]
+(defn init-pool [& {:keys [db-spec max-pool-size]}]
   (when db-spec
     (let [db-spec (cond-> db-spec
                     (empty? (:host db-spec))
@@ -91,7 +91,8 @@
                     (= (:dbtype db-spec) "postgresql")
                     (assoc :connectionInitSql "COMMIT;"))
           url (jdbc.connection/jdbc-url db-spec)]
-      (jdbc.connection/->pool HikariDataSource {:jdbcUrl url}))))
+      (jdbc.connection/->pool HikariDataSource {:jdbcUrl url
+                                                :maxPoolSize max-pool-size}))))
 
 (create-ns 'sepal.database.interface)
 (alias 'db.i 'sepal.database.interface)

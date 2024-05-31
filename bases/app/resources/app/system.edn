@@ -4,7 +4,8 @@
  ;; :sepal.app.routes.register.core/routes {}
 
  :sepal.database.interface/pool
- {:db-spec #include "database/config.edn"}
+ {:db-spec #include "database/config.edn"
+  :max-pool-size #long #or [#env DB_MAX_POOL_SIZE 10]}
 
  :sepal.database.interface/db
  {:connectable #ig/ref :sepal.database.interface/pool}
