@@ -11,7 +11,7 @@
 
  :sepal.app.server/jetty
  {:handler #ig/ref :sepal.app.ring/app
-  :port #or [#env PORT 3000]
+  :port #long #or [#env PORT 3000]
   :join? false
   ;; :routes {"/register" (ig/ref :sepal.app.routes.register.core/routes)}
   }
