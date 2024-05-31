@@ -4,7 +4,6 @@
             [clojure.string :as s])
   (:import [java.net URI]
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
-           [software.amazon.awssdk.regions Region]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
            [software.amazon.awssdk.services.s3.model ListObjectsV2Request]
@@ -35,11 +34,10 @@
   (let [credentials  (AwsBasicCredentials/create access-key-id secret-access-key)]
     (StaticCredentialsProvider/create credentials)))
 
-(defn s3-client [& {:keys [credentials-provider endpoint-override region]}]
+(defn s3-client [& {:keys [credentials-provider endpoint-override]}]
   (cond-> (S3Client/builder)
     credentials-provider  (.credentialsProvider credentials-provider)
     endpoint-override (.endpointOverride (URI. endpoint-override))
-    region (.region (Region/of region))
 
     :always (.build)))
 

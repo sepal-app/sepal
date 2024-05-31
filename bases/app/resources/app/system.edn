@@ -22,13 +22,11 @@
 
  :sepal.aws-s3.interface/s3-presigner
  {:endpoint-override #env AWS_S3_ENDPOINT
-  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider
-  :region #env AWS_S3_REGION}
+  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
  :sepal.aws-s3.interface/s3-client
  {:endpoint-override #env AWS_S3_ENDPOINT
-  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider
-  :region #env AWS_S3_REGION}
+  :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
  :sepal.app.ring/app
  {:cookie-secret "1234567890123456"

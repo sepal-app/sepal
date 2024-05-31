@@ -31,7 +31,6 @@
                      :endpoint-override endpoint-override
                      :credentials-provider credentials-provider))
 
-(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override region]}]
+(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override]}]
   (core/s3-client :credentials-provider credentials-provider
-                  :endpoint-override endpoint-override
-                  :region region))
+                  :endpoint-override endpoint-override))
