@@ -33,14 +33,14 @@
                   ;; https://docs.cider.mx/cider/troubleshooting.html#empty-java-stacktraces
                   :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
 
-            :test {:main-opts ["-m" "kaocha.runner"]
-                   :extra-paths ["bases/app/test"
+            :test {:extra-paths ["bases/app/test"
                                  "components/accession/test"
                                  "components/aws-s3/test"
                                  "components/config/test"
                                  "components/database/test"
                                  "components/error/test"
                                  "components/location/test"
+                                 "components/material/test"
                                  "components/organization/test"
                                  "components/taxon/test"
                                  "components/test/test"
