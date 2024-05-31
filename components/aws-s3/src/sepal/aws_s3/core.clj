@@ -34,10 +34,12 @@
   (let [credentials  (AwsBasicCredentials/create access-key-id secret-access-key)]
     (StaticCredentialsProvider/create credentials)))
 
-(defn s3-client [& {:keys [credentials-provider endpoint-override]}]
+(defn s3-client [& {:keys [credentials-provider endpoint-override region]}]
   (cond-> (S3Client/builder)
     credentials-provider  (.credentialsProvider credentials-provider)
     endpoint-override (.endpointOverride (URI. endpoint-override))
+    region (.region region)
+
     :always (.build)))
 
 (defn presign-put-url
@@ -64,11 +66,10 @@
         .url
         .toString)))
 
-
 (defn list-objects [client bucket prefix]
   (let [req (->  (ListObjectsV2Request/builder)
                  (.bucket bucket)
-                 (.prefix prefix )
+                 (.prefix prefix)
                  (.build))
         resp (-> client
                  (.listObjectsV2 req))]

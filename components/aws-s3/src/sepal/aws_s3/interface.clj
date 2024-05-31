@@ -22,7 +22,6 @@
 (defmethod ig/init-key ::credentials-provider [_ {:keys [access-key-id secret-access-key]}]
   (core/credentials-provider access-key-id secret-access-key))
 
-
 (defmethod ig/init-key ::s3-presigner [_ {:keys [accelerate-mode-enabled
                                                  checksum-validation-enabled
                                                  endpoint-override
@@ -32,7 +31,7 @@
                      :endpoint-override endpoint-override
                      :credentials-provider credentials-provider))
 
-
-(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override]}]
+(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override region]}]
   (core/s3-client :credentials-provider credentials-provider
-                  :endpoint-override endpoint-override))
+                  :endpoint-override endpoint-override
+                  :region region))
