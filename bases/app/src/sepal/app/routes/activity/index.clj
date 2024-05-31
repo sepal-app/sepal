@@ -145,13 +145,12 @@
 
 (def Activity
   (-> activity.i/Activity
-      (mu/assoc :taxon [:maybe taxon.spec/Taxon])
-      (mu/assoc :parent [:maybe (mu/select-keys  taxon.spec/Taxon
+      (mu/assoc :taxon [:maybe taxon.spec/OrganizationTaxon])
+      (mu/assoc :parent [:maybe (mu/select-keys  taxon.spec/OrganizationTaxon
                                                  [:taxon/id
                                                   :taxon/name
-                                                  ;; :taxon/rank
-                                                  ;; :taxon/author
-                                                  ])])
+                                                  :taxon/rank
+                                                  :taxon/author])])
       (mu/assoc :accession [:maybe accession.spec/Accession])
       (mu/assoc :user [:maybe user.spec/User])
       (mu/assoc :organization [:maybe org.spec/Organization])))
