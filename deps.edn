@@ -61,8 +61,4 @@
                          :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
-                   :deps {polyfy/polylith
-                          {:git/url "https://github.com/polyfy/polylith"
-                           :git/sha "a1581ccc87009127f2151579b826258dd57e3077"
-                           :git/tag "v0.2.17-alpha"
-                           :deps/root "projects/poly"}}}}}
+                   :extra-deps {polylith/clj-poly {:mvn/version "0.2.19"}}}}}
