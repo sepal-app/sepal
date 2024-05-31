@@ -86,7 +86,7 @@
 
                     ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required in case
                     ;; a default :schema is provided, see https://github.com/brettwooldridge/HikariCP/issues/1369
-                    (= (:db-type db-spec) "postgresql")
+                    (= (:dbtype db-spec) "postgresql")
                     (assoc :connectionInitSql "COMMIT;"))]
       (jdbc.connection/->pool HikariDataSource db-spec))))
 
