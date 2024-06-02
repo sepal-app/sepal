@@ -55,7 +55,7 @@
                                                               :user-id (:user/id viewer)
                                                               :role (jdbc.types/as-other "owner")}))]
         (if-not (error? result)
-          (http/found router :org/detail {:org-id (-> result :organization/id str)})
+          (http/found router :org/activity {:org-id (-> result :organization/id str)})
           (-> (http/see-other router :org/create)
               (flash/set-field-errors result)
               (assoc-in [:flash :values] data))))
