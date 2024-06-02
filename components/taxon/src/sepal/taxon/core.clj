@@ -1,43 +1,15 @@
 (ns sepal.taxon.core
-  (:require [clojure.string :as s]
-            [integrant.core :as ig]
+  (:require [integrant.core :as ig]
             [malli.core :as m]
             [malli.generator :as mg]
             [malli.transform :as mt]
-            [next.jdbc.result-set :as jdbc.rs]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface.spec :as spec]))
 
-(defn get-wfo-name-by-id [db id]
-  (db.i/execute-one! db
-                     {:select [[[:coalesce :wfo_t.id :wfo_n.id] :id]
-                               [:wfo_n.scientific_name :name]
-                               [:wfo_n.rank :rank]
-                               [:wfo_n.authorship :author]
-                               [:wfo_n.id :wfo_plantlist_name_id]
-                               [:wfo_t.parent_id :parent_id]]
-                      :from [[:wfo_plantlist_current.name :wfo_n]]
-                      :join [[:wfo_plantlist_current.taxon :wfo_t]
-                             [:= :wfo_t.name_id :wfo_n.id]]
-                      :where [:or
-                              [:= :wfo_n.id id]
-                              [:= :wfo_t.id id]]}
-                     {:builder-fn jdbc.rs/as-unqualified-kebab-maps}))
-
-(defn wfo-id? [id]
-  (s/starts-with? id "wfo-"))
-
 (defn get-by-id [db id]
-  (let [result (if (wfo-id? id)
-                 (-> (get-wfo-name-by-id db id)
-                     (assoc :organization-id nil)
-                   ;; namespace the keys with :taxon so that data returned from this
-                   ;; loader has consistent same key
-                     (update-keys #(keyword "taxon" (name %))))
-                 (jdbc.sql/get-by-id db :taxon (parse-long id)))]
-    (tap> (str "result: " result))
+  (let [result (jdbc.sql/get-by-id db :taxon id)]
     (when (some? result)
       (db.i/coerce spec/Taxon result))))
 

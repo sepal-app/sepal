@@ -83,8 +83,11 @@
                     (empty? (:host db-spec))
                     (assoc :host nil)
 
-                    (empty? (:port db-spec))
+                    (= "" (:port db-spec))
                     (assoc :port nil)
+
+                    (empty? (:socketFactory db-spec))
+                    (dissoc :socketFactory)
 
                     ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required in case
                     ;; a default :schema is provided, see https://github.com/brettwooldridge/HikariCP/issues/1369

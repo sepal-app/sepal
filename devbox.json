@@ -11,7 +11,7 @@
     "nodejs":                            "20.12.2",
     "path:devbox/postgresql#postgresql": "",
     "google-cloud-sdk":                  "latest",
-    "sqlfluff":                          "2.3.5"
+    "sqlfluff":                          "3.0.7"
   },
   "include": [
     "plugin:postgresql"

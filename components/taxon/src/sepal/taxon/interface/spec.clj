@@ -18,6 +18,7 @@
            :kingdom
            :order
            :phylum
+           :prole
            :section
            :series
            :species
@@ -25,6 +26,7 @@
            :subfamily
            :subform
            :subgenus
+           :subkingdom
            :subsection
            :subseries
            :subspecies
@@ -38,32 +40,51 @@
   (when (some? rank)
     (jdbc.types/as-other rank)))
 
-(def OrganizationTaxon
+(def Taxon
   [:map {:closed true}
    [:taxon/id id]
    [:taxon/rank {:decode/db csk/->kebab-case-keyword}
     rank]
    [:taxon/author [:maybe author]]
    [:taxon/name name]
+   ;; TODO: If the parent-id is none then use the parent of the taxon that
+   ;; wfo-plantlist-name-id references. What about if we want to set the parent
+   ;; id to something else? Maybe we just don't allow it as long as it
+   ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
    [:taxon/parent-id [:maybe id]]
    [:taxon/organization-id [:maybe organization-id]]
-   [:taxon/wfo-plantlist-name-id [:maybe wfo-plantlist-name-id]]])
+   [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]])
 
-(def WFOTaxon
-  [:map {:closed true}
-   [:taxon/id wfo-plantlist-taxon-id :string]
-   [:taxon/rank {:decode/db csk/->kebab-case-keyword}
-    rank]
-   [:taxon/author [:maybe author]]
-   [:taxon/name name]
-   [:taxon/parent-id [:maybe wfo-plantlist-taxon-id]]
-   [:taxon/organization-id {:optional true} :nil]
-   [:taxon/wfo-plantlist-name-id [:maybe wfo-plantlist-name-id]]])
+;; (def OrganizationTaxon
+;;   [:map {:closed true}
+;;    [:taxon/id id]
+;;    [:taxon/rank {:decode/db csk/->kebab-case-keyword}
+;;     rank]
+;;    [:taxon/author [:maybe author]]
+;;    [:taxon/name name]
+;;    ;; TODO: If the parent-id is none then use the parent of the taxon that
+;;    ;; wfo-plantlist-name-id references. What about if we want to set the parent
+;;    ;; id to something else? Maybe we just don't allow it as long as it
+;;    ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
+;;    [:taxon/parent-id [:maybe id]]
+;;    [:taxon/organization-id [:maybe organization-id]]
+;;    [:taxon/wfo-plantlist-name-id [:maybe wfo-plantlist-name-id]]])
 
-;; A taxon is either going to represent an taxon that is specific to this
-;; organization or it's going to represent a WFO Plant List taxon
-(def Taxon
-  [:or OrganizationTaxon WFOTaxon])
+;; (def WFOTaxon
+;;   [:map {:closed true}
+;;    [:taxon/id wfo-plantlist-taxon-id :string]
+;;    [:taxon/rank {:decode/db csk/->kebab-case-keyword}
+;;     rank]
+;;    [:taxon/author [:maybe author]]
+;;    [:taxon/name name]
+;;    [:taxon/parent-id [:maybe wfo-plantlist-taxon-id]]
+;;    [:taxon/organization-id {:optional true} :nil]
+;;    [:taxon/wfo-plantlist-name-id [:maybe wfo-plantlist-name-id]]])
+
+;; ;; A taxon is either going to represent an taxon that is specific to this
+;; ;; organization or it's going to represent a WFO Plant List taxon
+;; (def Taxon
+;;   [:or OrganizationTaxon WFOTaxon])
 
 (defn coerce-int [v]
   (try

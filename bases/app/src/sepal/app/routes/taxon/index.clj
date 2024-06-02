@@ -45,13 +45,13 @@
   [{:name "Name"
     :cell (fn [t] [:a {:href (url-for router
                                       :taxon/detail
-                                      {:id (:id t)})
+                                      {:id (:taxon/id t)})
                        :class "spl-link"}
-                   (:name t)])}
+                   (:taxon/name t)])}
    {:name "Author"
-    :cell :author}
+    :cell :taxon/author}
    {:name "Rank"
-    :cell :rank}
+    :cell :taxon/rank}
    #_{:name "Parent"
       :cell (fn [t] [:a {:href (url-for router
                                         :taxon/detail
@@ -79,12 +79,23 @@
                          :page-title "Taxa"
                          :page-title-buttons (create-button :router router
                                                             :org org)
-                         :table-actions (search-field (-> href uri/query-map :q))
+                         :table-actions [:<>
+                                         (search-field (-> href uri/query-map :q))
+                                         [:label {:class "ml-8"}
+                                          "Only taxa with accessions"
+                                          ;; TODO: Pass this value in and set it here so
+                                          ;; that it matches the url for form submissions
+                                          [:input {:type "checkbox"
+                                                   :name "accessions-only"
+                                                   :value "1"
+                                                   :class "ml-4"}]]]
                          :router router)
       (html/render-html)))
 
 (def Params
   [:map
+   [:accessions-only {:default false
+                      :decode #(= "1" %)} :boolean]
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]])
@@ -104,59 +115,36 @@
         org (:organization context)
         {:keys [_accessions-only page page-size q] :as params} (decode-params Params query-params)
         offset (* page-size (- page 1))
-        tsquery (when q [:to_tsquery (str q ":*")])
-        t-name-tsvector [:to_tsvector [:raw "'english'"] :t.name]
-        wfo-n-name-tsvector [:to_tsvector [:raw "'english'"] :wfo_n.scientific_name]
-        stmt {:with [[:wfo_taxon {:select [:wfo_t.id
-                                           [:wfo_n.scientific_name :name]
-                                           [:wfo_n.rank :rank]
-                                           [:wfo_n.authorship :author]
-                                           [:wfo_t.parent_id]
-                                           [:wfo_n.id :wfo_plantlist_name_id]
-                                           [(if (seq q)
-                                              [:ts_rank_cd wfo-n-name-tsvector tsquery [:cast 1 :integer]]
-                                              1.0)
-                                            :search-rank]]
-                                  :from [[:wfo_plantlist_current.name :wfo_n]]
-                                  :join-by [:left [[:wfo_plantlist_current.taxon :wfo_t]
-                                                   [:= :wfo_t.name_id :wfo_n.id]]]
-                                  :where [:and
-                                          :true
-                                          (if (seq q)
-                                            [(keyword "@@") wfo-n-name-tsvector tsquery]
-                                            :true)]}]
-                     [:org_taxon {:select [[[:cast :t.id :text] :id]
-                                           :t.name
-                                           [[:cast :t.rank :text] :rank]
-                                           :t.author
-                                           [[:cast :t.parent_id :text] :parent_id]
-                                           :t.wfo_plantlist_name_id
-                                           [(if (seq q)
-                                              [:ts_rank_cd t-name-tsvector tsquery [:cast 1 :integer]]
-                                              1.0)
-                                            :search-rank]]
-                                  :from [[:public.taxon :t]]
-                                  :where [:and
-                                          [:= :t.organization_id (:organization/id org)]
-                                          (if (seq q)
-                                            [(keyword "@@") t-name-tsvector tsquery]
-                                            :true)]}]
-                     [:all_taxon {:union-all [{:select :*
-                                               :from :wfo_taxon}
-                                              {:select :*
-                                               :from :org_taxon}]}]]
-              :select :*
-              :from :all_taxon}
+        stmt {:select [:id
+                       :name
+                       :rank
+                       :author
+                       :parent_id
+                       :wfo_taxon_id_2023_12
+                       [(if (seq q)
+                          [:similarity :name q]
+                          1.0)
+                        :search-rank]]
+              :from [[:public.taxon :t]]
+              :where [:and
+                      [:or
+                       [:= :t.organization_id (:organization/id org)]
+                       [:is :t.organization_id nil]]
+                      (if (seq q)
+                        [:%> :name q]
+                        :true)]}
+        ;; stmt (if-not accessions-only
+        ;;        stmt
+        ;;        (update stmt :join-by #(conj % :inner []))
+        ;;        )
         ;;
         ;; TODO: Do the queries in parallel for faster response
-        total (db.i/count db (-> stmt
-                                 (dissoc :order-by)
-                                 (assoc :select 1)))
-        rows (->> (db.i/execute! db
-                                 (assoc stmt
-                                        :limit page-size
-                                        :offset offset
-                                        :order-by [[:search-rank :desc] [:name :asc]])))]
+        total (db.i/count db (assoc stmt :select 1))
+        ;; ;; TODO: Can we use jdbc datafy/nav to eager load the parent
+        rows (->> (db.i/execute! db (assoc stmt
+                                           :limit page-size
+                                           :offset offset
+                                           :order-by [[:search-rank :desc] [:name :asc]])))]
 
     (tap> (str "rows: " rows))
 
@@ -164,11 +152,12 @@
       (= (get headers "accept") "application/json")
       ;; TODO: Use Taxon json transformer
       (json/json-response (for [taxon rows]
-                            {:text (:name taxon)
-                             :name (:name taxon)
-                             :id (:id taxon)
-                             :author (:author taxon)
-                             :parentId (:parent-id taxon)}))
+                            {:text (:taxon/name taxon)
+                             :name (:taxon/name taxon)
+                             :id (:taxon/id taxon)
+                             :rank (:taxon/rank taxon)
+                             :author (:taxon/author taxon)
+                             :parentId (:taxon/parent-id taxon)}))
 
       :else
       (render :href (uri/uri-str {:path uri

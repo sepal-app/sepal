@@ -27,7 +27,7 @@
         (for [error errors]
           [:li {:class "text-red-600"} error])])]]])
 
-(defn input-field [& {:keys [id label name required type value errors]}]
+(defn input-field [& {:keys [id label name read-only required type value errors]}]
   (field :errors errors
          :name name
          :label label
@@ -35,6 +35,7 @@
                          :id id
                          :required (or required false)
                          :value value
+                         :readonly (or read-only false)
                          :type (or type "text")
                          :autocomplete "off"
                          :class "spl-input"

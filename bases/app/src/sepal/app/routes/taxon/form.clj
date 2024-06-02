@@ -30,43 +30,62 @@
    "tribe"
    "variety"])
 
-(defn form [& {:keys [action errors org router values]}]
-  (tap> (str "values: " values))
+(defn form [& {:keys [action errors org read-only router values]}]
   [:div
    [:form {:action action
            :method "POST"
            :id "taxon-form"}
-
     (form/anti-forgery-field)
+    (form/hidden-field :name "organization-id"
+                       :value (:organization-id values))
+
     (form/input-field :label "Name"
                       :name "name"
                       :require true
+                      :read-only read-only
                       :value (:name values)
                       :errors (:name errors))
 
-    (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
-      (form/field :label "Parent"
-                  :for "parent-id"
-                  :input [:select {:x-taxon-field (json/js {:url url})
-                                   :name "parent-id"
-                                   :autocomplete= "off"}
-                          (when (:parent-id values)
-                            [:option {:value (:parent-id values)}
-                             (:parent-name values)])]))
+    (if read-only
+      (form/input-field :label "Parent"
+                        :name "parent-id"
+                        :require true
+                        :read-only read-only
+                        :value (:parent-name values))
 
-    (form/field :label "Rank"
-                :for "rank"
-                :input [:select {:name "rank"
-                                 :autocomplete= "off"
-                                 :id "taxon-rank"
-                                 :value (:rank values)}
-                        [:<>
-                         (for [rank ranks]
-                           [:option {:value rank
-                                     :selected (when (= (:rank values) rank)
-                                                 "selected")}
-                            rank])]])
+      (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+        (form/field :label "Parent"
+                    :for "parent-id"
+                    ;; :readonly read-only
+                    :input [:select {:x-taxon-field (json/js {:url url})
+                                     :name "parent-id"
+                                     :read-only read-only
+                                     :autocomplete= "off"}
+                            (when (:parent-id values)
+                              [:option {:value (:parent-id values)}
+                               (:parent-name values)])])))
 
+    (if read-only
+      (form/input-field :label "Rank"
+                        :name "rank"
+                        :read-only read-only
+                        :value (:rank values))
+      (form/field :label "Rank"
+                  :for "rank"
+                  :input [:select {:name "rank"
+                                   :autocomplete "off"
+                                   :id "taxon-rank"
+                                   :read-only read-only
+                                   :value (:rank values)}
+                          [:<>
+                           (for [rank ranks]
+                             [:option {:value rank
+                                       :selected (when (= rank (some-> values :rank name))
+                                                   "selected")}
+                              rank])]]))
+
+    ;; TODO: When creating a new taxon we should havea "Create" button to only
+    ;; save when all of the required fields are filled in
     (button/button :type "submit" :text "Save")]
 
    [:script {:type "module"

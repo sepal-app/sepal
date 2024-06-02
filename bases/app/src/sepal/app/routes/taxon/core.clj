@@ -7,7 +7,7 @@
             [sepal.organization.interface :as org.i]
             [sepal.taxon.interface :as taxon.i]))
 
-(def taxon-loader (middleware/default-loader taxon.i/get-by-id :id))
+(def taxon-loader (middleware/default-loader taxon.i/get-by-id :id parse-long))
 
 ;; TODO This assumes 1 org per user and is temporary until we set the
 ;; organization via the subdomain.

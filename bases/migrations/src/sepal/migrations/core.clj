@@ -16,7 +16,14 @@
   ([]
    (get-config :local))
   ([profile]
-   (config.i/read-config  "migrations/config.edn" {:profile profile})))
+   (let [cfg (config.i/read-config "migrations/config.edn" {:profile profile})]
+     ;; Remove any empty values from the :db key.
+     (update cfg :db #(reduce-kv (fn [acc k v]
+                                   (if (some? v)
+                                     (assoc acc k v)
+                                     acc))
+                                 {}
+                                 %)))))
 
 (defn usage [options-summary]
   (->> ["Usage: migratus [action] [options]"

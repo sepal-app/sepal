@@ -1,3 +1,4 @@
 {:store :database
  :migration-dir "migrations/versions"
+ :migration-table-name "public.schema_migrations"
  :db #include "database/config.edn"}

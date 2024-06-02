@@ -180,23 +180,67 @@
         }
       }
     },
-    "sqlfluff@2.3.5": {
-      "last_modified": "2024-03-11T12:11:11Z",
-      "resolved": "github:NixOS/nixpkgs/0fbcc4b2e8571f4af39be41752581ea09dd9ab06#sqlfluff",
+    "sqlfluff@3.0.7": {
+      "last_modified": "2024-05-25T15:35:15Z",
+      "resolved": "github:NixOS/nixpkgs/c5187508b11177ef4278edf19616f44f21cc8c69#sqlfluff",
       "source": "devbox-search",
-      "version": "2.3.5",
+      "version": "3.0.7",
       "systems": {
         "aarch64-darwin": {
-          "store_path": "/nix/store/1mwsrsdwdzhq3bpl7qv1d2vcg2lqqa2r-sqlfluff-2.3.5"
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/g03ny7zxcp6xfdr825j6xbmg3c5dln3p-sqlfluff-3.0.7",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/zq0hxp6h3phf3vvyjp60ybsca83s0mqr-sqlfluff-3.0.7-dist"
+            }
+          ],
+          "store_path": "/nix/store/g03ny7zxcp6xfdr825j6xbmg3c5dln3p-sqlfluff-3.0.7"
         },
         "aarch64-linux": {
-          "store_path": "/nix/store/q61axgaa5gjyhgvrhyd4qzqdnwjs6yd1-sqlfluff-2.3.5"
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/nbif1zmk802symiz6qi6rk3lprgqikkc-sqlfluff-3.0.7",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/zs6d6jrzhalap0pgal3d9kp12r9lrpl5-sqlfluff-3.0.7-dist"
+            }
+          ],
+          "store_path": "/nix/store/nbif1zmk802symiz6qi6rk3lprgqikkc-sqlfluff-3.0.7"
         },
         "x86_64-darwin": {
-          "store_path": "/nix/store/27wr15gdrcv8mhfb9pw0mp99fy1vxq42-sqlfluff-2.3.5"
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ml6ic84b14ssn4k4xydzmkz9wlzmm9cs-sqlfluff-3.0.7",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/88lzdi5azg3acij809kzgvqab34zy6nx-sqlfluff-3.0.7-dist"
+            }
+          ],
+          "store_path": "/nix/store/ml6ic84b14ssn4k4xydzmkz9wlzmm9cs-sqlfluff-3.0.7"
         },
         "x86_64-linux": {
-          "store_path": "/nix/store/m1vhrfm5fji7jk8jhsv97lprsgjdp31d-sqlfluff-2.3.5"
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/h83wwaj1hfj3hvyffd756dqk4nfbcfp6-sqlfluff-3.0.7",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/yxhv34v16jy51fhnzapr9xr2cs2mvkrl-sqlfluff-3.0.7-dist"
+            }
+          ],
+          "store_path": "/nix/store/h83wwaj1hfj3hvyffd756dqk4nfbcfp6-sqlfluff-3.0.7"
         }
       }
     }

@@ -9,7 +9,7 @@
  :dbname #profile {:default #or [#env PGDATABASE "sepal"]
                    :test "sepal_test"}
  :user #profile {:default #env PGUSER
-                 :test "sepal"}
+                 :test #or [#env PGUSER "sepal_test"]}
  :password #profile {:default #env PGPASSWORD
                      :test "password"}
  :unixSocketPath #env DB_UNIX_SOCKET_PATH

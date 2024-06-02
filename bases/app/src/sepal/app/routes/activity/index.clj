@@ -145,8 +145,8 @@
 
 (def Activity
   (-> activity.i/Activity
-      (mu/assoc :taxon [:maybe taxon.spec/OrganizationTaxon])
-      (mu/assoc :parent [:maybe (mu/select-keys  taxon.spec/OrganizationTaxon
+      (mu/assoc :taxon [:maybe taxon.spec/Taxon])
+      (mu/assoc :parent [:maybe (mu/select-keys  taxon.spec/Taxon
                                                  [:taxon/id
                                                   :taxon/name
                                                   :taxon/rank
