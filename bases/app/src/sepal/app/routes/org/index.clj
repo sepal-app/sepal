@@ -22,5 +22,5 @@
       (if org
         ;; TODO: create a view to allow the user to select an organization that
         ;; posts back here
-        (http/found router :org/detail {:org-id (:organization/id org)})
+        (http/found router :org/activity {:org-id (:organization/id org)})
         (http/found router :org/create)))))
