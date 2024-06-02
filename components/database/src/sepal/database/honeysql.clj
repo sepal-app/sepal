@@ -21,5 +21,9 @@
 
 (defn init []
   (honey.sql/register-op! (keyword "@@"))
+  (honey.sql/register-op! :<%)
+  (honey.sql/register-op! :<<%)
+  (honey.sql/register-op! :%>)
+  (honey.sql/register-op! :%>>)
   (honey.sql/register-fn! :-> pg-json-get)
   (honey.sql/register-fn! :->> pg-json-get))
