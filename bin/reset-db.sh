@@ -16,8 +16,9 @@ psql -v ON_ERROR_STOP=1 -h localhost -U "$USER" postgres <<-EOSQL
     grant all privileges on database ${PGDATABASE} to ${PGUSER};
     \c ${PGDATABASE};
     create extension if not exists moddatetime;
-    create extension if not exists plpgsql;
+    create extension if not exists pg_trgm;
     create extension if not exists pgcrypto;
+    create extension if not exists plpgsql;
     create extension if not exists postgis;
 EOSQL
 
