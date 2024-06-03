@@ -3,6 +3,7 @@
             [reitit.core :as r]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
+            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]))
 
@@ -39,15 +40,13 @@
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
 
-(defn page-content [& {:keys [org thumbnail-urls]}]
+(defn page-content [& {:keys [org router thumbnail-urls]}]
   [:div
    [:link {:rel "stylesheet"
-           ;; The media.css file is in the js/ folder b/c vite builds it from
-           ;; the imports in the media.ts file.
-           :href (html/static-url "js/media.css")}]
+           :href (html/static-url "css/media.css")}]
    [:div {:id "media-page"}
     [:media-uploader {:anti-forgery-token *anti-forgery-token*
-                      :signing-url "/media/s3" ;; TODO: Lookup in router
+                      :signing-url (url-for router :media/s3)
                       :organization-id (:organization/id org)
                       :trigger "#upload-button"}]
     (media-list :thumbnail-urls thumbnail-urls)
@@ -79,4 +78,4 @@
 
       (render :thumbnail-urls thumbnail-urls
               :org current-organization
-              :route router))))
+              :router router))))

@@ -15,15 +15,15 @@
       (.nextBytes ba))
     (.toString (BigInteger. 1 ba) 16)))
 
-(defn success-form [& {:keys [fields router]} ]
+(defn success-form [& {:keys [fields router]}]
   [:form {:id (s/replace (:file-id fields) #"\/" "_")
           :hx-post (url-for router :media/uploaded)
           :hx-target "#media-list"
           :hx-swap "afterbegin"}
    (form/anti-forgery-field)
-   (for [[key value] fields]
-     (form/hidden-field :name  (csk/->camelCaseString key)
-                        :value value))])
+   (into [:<>] (for [[key value] fields]
+                 (form/hidden-field :name  (csk/->camelCaseString key)
+                                    :value value)))])
 
 (defn handler [& {:keys [context params ::r/router] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context

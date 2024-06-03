@@ -65,4 +65,4 @@
 (defn render-partial [html]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (huff/html html)})
+   :body (str (huff/html html))})

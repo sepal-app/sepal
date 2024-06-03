@@ -3,6 +3,7 @@ import Uppy from "@uppy/core"
 import AwsS3 from "@uppy/aws-s3"
 import Dashboard from "@uppy/dashboard"
 import { onMounted, ref } from "vue"
+import htmx from "htmx.org"
 
 const props = defineProps([
     "signing-url",
