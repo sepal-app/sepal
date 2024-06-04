@@ -3,6 +3,7 @@
             [reitit.core :as r]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
+            [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]))
@@ -45,10 +46,10 @@
    [:link {:rel "stylesheet"
            :href (html/static-url "css/media.css")}]
    [:div {:id "media-page"}
-    [:media-uploader {:anti-forgery-token *anti-forgery-token*
-                      :signing-url (url-for router :media/s3)
-                      :organization-id (:organization/id org)
-                      :trigger "#upload-button"}]
+    [:div {:x-media-uploader (json/js {:antiForgeryToken *anti-forgery-token*
+                                       :signingUrl (url-for router :media/s3)
+                                       :organizationId (:organization/id org)
+                                       :trigger "#upload-button"})}]
     (media-list :thumbnail-urls thumbnail-urls)
     [:div {:id "upload-success-forms"
            :class "hidden"}]]

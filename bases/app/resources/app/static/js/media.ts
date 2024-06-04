@@ -1,7 +1,6 @@
-import Uppy from "@uppy/core"
-import Dashboard from "@uppy/dashboard"
-import { createApp } from "vue"
-import MediaUploader from "./media/MediaUploader.vue"
-import "flowbite"
+import Alpine from "alpinejs"
+import MediaUploader from "./media/MediaUploader.ts"
 
-const app = createApp({}).component("media-uploader", MediaUploader).mount("#media-page")
+document.addEventListener("alpine:init", () => {
+    Alpine.directive("media-uploader", MediaUploader)
+})

@@ -1,19 +1,12 @@
-<script setup>
 import Uppy from "@uppy/core"
 import AwsS3 from "@uppy/aws-s3"
 import Dashboard from "@uppy/dashboard"
-import { onMounted, ref } from "vue"
 import htmx from "htmx.org"
 
-const props = defineProps([
-    "signing-url",
-    "anti-forgery-token",
-    "trigger",
-    "organization-id",
-])
-const form = ref()
-
-onMounted(() => {
+export default (el, directive, { cleanup, evaluate }) => {
+    const { trigger, antiForgeryToken, signingUrl, organizationId } = evaluate(
+        directive.expression,
+    )
     new Uppy({
         logger: {
             // debug: (...args) => console.log("DEBUG: ", ...args),
@@ -23,7 +16,7 @@ onMounted(() => {
         },
     })
         .use(Dashboard, {
-            trigger: props.trigger,
+            trigger: trigger,
             showProgressDetails: true,
             proudlyDisplayPoweredByUppy: true,
         })
@@ -34,18 +27,18 @@ onMounted(() => {
                 // parameters from the input values of the form. On
                 // 'upload-success' we submit these to create the media records
                 // in the database.
-                await htmx.ajax("POST", props.signingUrl, {
+                await htmx.ajax("POST", signingUrl, {
                     target: "#upload-success-forms",
                     swap: "afterbegin",
                     headers: {
-                        "X-CSRF-Token": props.antiForgeryToken,
+                        "X-CSRF-Token": antiForgeryToken,
                     },
                     values: {
                         filename: file.name,
                         contentType: file.type,
                         size: file.size,
                         fileId: file.id,
-                        organizationId: props.organizationId,
+                        organizationId: organizationId,
                     },
                 })
                 const formId = file.id.replace(/\//g, "_")
@@ -67,5 +60,4 @@ onMounted(() => {
             const formId = file.id.replace(/\//g, "_")
             htmx.trigger(`form#${formId}`, "submit")
         })
-})
-</script>
+}
