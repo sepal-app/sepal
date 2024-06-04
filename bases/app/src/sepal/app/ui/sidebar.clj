@@ -26,7 +26,6 @@
       icon])
    text])
 
-
 (defn static [& {:keys []}]
   [:div
    [:div {:class (html/attr "hidden" "md:flex" "md:w-64" "md:flex-col" "md:fixed" "md:inset-y-0")}
@@ -39,7 +38,7 @@
         "[beta]"]]
       [:div {:class "px-4 pt-2"}
        (when g/*organization*
-         [:a {:href (url-for g/*router* :org/detail {:id (:id g/*organization*)}) }
+         [:a {:href (url-for g/*router* :org/detail {:id (:id g/*organization*)})}
           (:organization/name g/*organization*)])]
       [:nav {:class "mt-5 flex-1 px-2 bg-white space-y-1"}
        (static-sidebar-item "Activity"
@@ -48,7 +47,7 @@
                             :current? false)
        (static-sidebar-item "Accessions"
                             :href (url-for g/*router* :org/accessions {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-rectangle-group )
+                            :icon (heroicons/outline-rectangle-group)
                             :current? false)
        (static-sidebar-item "Material"
                             :href (url-for g/*router* :org/material {:org-id (:organization/id g/*organization*)})
@@ -92,17 +91,17 @@
        [:div {:x-show "expanded"
               :x-collapse ""
               :class "mt-3"}
-        [:a {:href (url-for g/*router* :user/settings)
-             :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
-                               "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
-                               "font-medium" "rounded-md")}
-         "Settings"]
-        (if g/*organization*
-          [:a {:href (url-for g/*router* :organization/switch)
-               :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
-                                 "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
-                                 "font-medium" "rounded-md")}
-           "Switch organizations"])
+        ;; [:a {:href (url-for g/*router* :user/settings)
+        ;;      :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
+        ;;                        "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
+        ;;                        "font-medium" "rounded-md")}
+        ;;  "Settings"]
+        ;; (if g/*organization*
+        ;;   [:a {:href (url-for g/*router* :organization/switch)
+        ;;        :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
+        ;;                          "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
+        ;;                          "font-medium" "rounded-md")}
+        ;;    "Switch organizations"])
         [:a {:href (url-for g/*router* :auth/logout)
              :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
                                "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
