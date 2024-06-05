@@ -26,8 +26,10 @@
 
 (defmulti activity-description
   (fn [& {:keys [_router activity]}]
-    (:activity/type activity))
-  :default "DEFAULT")
+    (:activity/type activity)))
+
+(defmethod activity-description :default [& {:keys []}]
+  nil)
 
 (defmethod activity-description :organization/created
   [& {:keys [router activity]}]
@@ -126,13 +128,16 @@
                 (tap> (str "date: " date))
                 (conj acc
                       [timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
-                       (mapv
-                        (fn [activity]
-                          ;; TODO: On hover show a tooltup with the exact time
-                          ;; in the org's default timezone
-                          (activity-description :router router
-                                                :activity activity))
-                        activity)])))
+                       (reduce (fn [acc cur]
+                                 (if-let [desc (activity-description :router router
+                                                                     :activity cur)]
+                                   (conj acc desc)
+                                   acc)
+                                 ;; TODO: On hover show a tooltup with the exact time
+                                 ;; in the org's default timezone
+                                 )
+                               []
+                               activity)])))
             []
             dates)))
 
