@@ -15,18 +15,17 @@
 
 (defn form [& {:keys [router values]}]
   [:form {:method "post"
-          :action (url-for router :org/create)}
+          :action (url-for router :org/create)
+          :class "flex flex-col gap-2"}
    (form/anti-forgery-field)
    (form/input-field :label "Organization name" :name "name" (:name values))
    (form/input-field :label "Short name" :name "short-name" (:short-name values))
    (form/input-field :label "Abbreviation" :name "abbreviation" (:abbreviation values))
    [:div {:class "flex flex-row mt-4 justify-between items-center"}
+    ;; TODO: After submitting rewrite the history to not allow the back button.
+    ;; Can probably use htmx for this.
     [:button {:type "submit"
-              :class (html/attr "inline-flex" "justify-center" "py-2" "px-4" "border"
-                                "border-transparent" "shadow-sm" "text-sm" "font-medium"
-                                "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
-                                "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
-                                "focus:ring-green-500")}
+              :class "btn btn-primary"}
      "Create organization"]]])
 
 (defn render [& {:keys [router values]}]

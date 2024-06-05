@@ -28,5 +28,7 @@
                          :name "description"
                          :value (:description values)
                          :errors (:description errors))
-
-    (button/button :type "submit" :text "Save")]])
+    [:div {:class "flex flex-row mt-4 justify-between items-center"}
+     [:button {:type "submit"
+               :class "btn btn-primary"}
+      "Save"]]]])

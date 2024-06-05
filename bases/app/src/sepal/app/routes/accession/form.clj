@@ -11,7 +11,8 @@
   [:div
    [:form {:action action
            :method "POST"
-           :id "accession-form"}
+           :id "accession-form"
+           :class "flex flex-col gap-2"}
 
     (form/anti-forgery-field)
     (form/input-field :label "Code"
@@ -24,11 +25,15 @@
       (form/field :label "Taxon"
                   :for "taxon-id"
                   :input [:select {:x-taxon-field (json/js {:url url})
+                                   :class "input input-bordered input-sm"
                                    :name "taxon-id"}
                           (when (:taxon-id values)
                             [:option {:value (:taxon-id values)}
                              (:taxon-name values)])]))
 
-    (button/button :type "submit" :text "Save")]
+    [:div {:class "flex flex-row mt-4 justify-between items-center"}
+     [:button {:type "submit"
+               :class "btn btn-primary"}
+      "Save"]]]
    [:script {:type "module"
              :src (html/static-url "js/accession_form.ts")}]])

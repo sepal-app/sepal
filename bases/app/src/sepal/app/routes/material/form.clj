@@ -26,7 +26,8 @@
       (form/field :label "Accession"
                   :for "accession-id"
                   :input [:select {:x-accession-field (json/write-str {:url url})
-                                   :name "accession-id"}
+                                   :name "accession-id"
+                                   :class "input input-bordered input-sm"}
                           (when (:accession-id values)
                             [:option {:value (:accession-id values)}
                              (:accession-code values)])]))
@@ -35,14 +36,18 @@
       (form/field :label "Location"
                   :for "location-id"
                   :input [:select {:x-location-field (json/write-str {:url url})
-                                   :name "location-id"}
+                                   :name "location-id"
+                                   :class "input input-bordered input-sm"}
                           (when (:location-id values)
                             [:option {:value (:location-id values)}
                              (format "%s (%s)"
                                      (:location-code values)
                                      (:location-name values))])]))
 
-    (button/button :type "submit" :text "Save")]
+    [:div {:class "flex flex-row mt-4 justify-between items-center"}
+     [:button {:type "submit"
+               :class "btn btn-primary"}
+      "Save"]]]
 
    [:script {:type "module"
              :src (html/static-url "js/material_form.ts")}]])

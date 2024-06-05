@@ -34,7 +34,8 @@
   [:div
    [:form {:action action
            :method "POST"
-           :id "taxon-form"}
+           :id "taxon-form"
+           :class "flex flex-col gap-2"}
     (form/anti-forgery-field)
     (form/hidden-field :name "organization-id"
                        :value (:organization-id values))
@@ -45,6 +46,13 @@
                       :read-only read-only
                       :value (:name values)
                       :errors (:name errors))
+
+    (form/input-field :label "Author"
+                      :name "author"
+                      :require true
+                      :read-only read-only
+                      :value (:author values)
+                      :errors (:author errors))
 
     (if read-only
       (form/input-field :label "Parent"
@@ -58,6 +66,7 @@
                     :for "parent-id"
                     ;; :readonly read-only
                     :input [:select {:x-taxon-field (json/js {:url url})
+                                     :class "input input-bordered input-sm"
                                      :name "parent-id"
                                      :read-only read-only
                                      :autocomplete= "off"}
@@ -73,6 +82,7 @@
       (form/field :label "Rank"
                   :for "rank"
                   :input [:select {:name "rank"
+                                   :class "input input-bordered input-sm"
                                    :autocomplete "off"
                                    :id "taxon-rank"
                                    :read-only read-only
@@ -86,7 +96,10 @@
 
     ;; TODO: When creating a new taxon we should havea "Create" button to only
     ;; save when all of the required fields are filled in
-    (button/button :type "submit" :text "Save")]
+    [:div {:class "flex flex-row mt-4 justify-between items-center"}
+     [:button {:type "submit"
+               :class "btn btn-primary"}
+      "Save"]]]
 
    [:script {:type "module"
              :src (html/static-url "js/taxon_form.ts")}]])
