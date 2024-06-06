@@ -1,10 +1,8 @@
-import Alpine from "alpinejs"
-import * as htmx from "htmx.org"
+import Alpine from "./alpine"
+import "./htmx"
 
 import AccessionField from "./AccessionField.ts"
 import LocationField from "./LocationField.ts"
-
-window.htmx = htmx
 
 document.addEventListener("alpine:init", () => {
     Alpine.directive("accession-field", AccessionField)

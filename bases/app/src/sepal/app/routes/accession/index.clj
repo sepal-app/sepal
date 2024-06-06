@@ -94,7 +94,6 @@
         org (:current-organization context)
         {:keys [page page-size q] :as params} (decode-params Params query-params)
         offset (* page-size (- page 1))
-        _ (tap> (str "q: " q))
         stmt {:select [:*]
               :from [[:accession :a]]
               :join [[:taxon :t]

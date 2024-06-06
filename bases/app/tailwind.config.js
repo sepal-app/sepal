@@ -16,9 +16,10 @@ module.exports = {
         },
     },
     plugins: [
-        require("@tailwindcss/typography"),
-        require("@tailwindcss/forms"),
-        require("@tailwindcss/aspect-ratio"),
+        // require("@tailwindcss/typography"),
+        // Tailwind forms conflicts with daisy
+        // require("@tailwindcss/forms"),
+        // require("@tailwindcss/aspect-ratio"),
         require("daisyui"),
     ],
     daisyui: {

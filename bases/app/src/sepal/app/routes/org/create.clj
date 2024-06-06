@@ -13,20 +13,49 @@
             [sepal.organization.interface.activity :as org.activity]
             [sepal.validation.interface :refer [error?]]))
 
-(defn form [& {:keys [router values]}]
-  [:form {:method "post"
-          :action (url-for router :org/create)
-          :class "flex flex-col gap-2"}
-   (form/anti-forgery-field)
-   (form/input-field :label "Organization name" :name "name" (:name values))
-   (form/input-field :label "Short name" :name "short-name" (:short-name values))
-   (form/input-field :label "Abbreviation" :name "abbreviation" (:abbreviation values))
-   [:div {:class "flex flex-row mt-4 justify-between items-center"}
-    ;; TODO: After submitting rewrite the history to not allow the back button.
-    ;; Can probably use htmx for this.
-    [:button {:type "submit"
-              :class "btn btn-primary"}
-     "Create organization"]]])
+(defn form [& {:keys [errors router values]}]
+  (form/form
+   {:method "post"
+    :action (url-for router :org/create)}
+   [:<>
+    (form/anti-forgery-field)
+    (form/field :label "Name"
+                :name "name"
+                :errors (:name errors)
+                :input [:input {:autocomplete "off"
+                                :class "spl-input"
+                                :x-validate.required true
+                                :id "name"
+                                :name "name"
+                                :type "text"
+                                :value (:name values)}])
+
+    (form/field :label "Short name"
+                :name "short-name"
+                :errors (:short-name errors)
+                :input [:input {:autocomplete "off"
+                                :class "spl-input"
+                                :x-validate.required true
+                                :id "short-name"
+                                :name "short-name"
+                                :type "text"
+                                :value (:short-name values)}])
+
+    (form/field :label "Abbreviation"
+                :name "abbreviation"
+                :errors (:abbreviation errors)
+                :input [:input {:autocomplete "off"
+                                :class "spl-input"
+                                :x-validate.required true
+                                :id "abbreviation"
+                                :abbreviation "abbreviation"
+                                :type "text"
+                                :value (:abbreviation values)}])
+
+    [:div {:class "spl-btn-grp mt-4"}
+     ;; TODO: After submitting rewrite the history to not allow the back button.
+     ;; Can probably use htmx for this.
+     (form/button "Create organization")]]))
 
 (defn render [& {:keys [router values]}]
   (-> (page/page :router router

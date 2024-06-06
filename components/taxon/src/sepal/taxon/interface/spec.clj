@@ -99,6 +99,7 @@
 (def CreateTaxon
   [:map {:closed true}
    [:name name]
+   [:author author]
    [:rank {:decode/db csk/->kebab-case-keyword
            :encode/db (comp rank->pg-enum
                             csk/->kebab-case-string)}
@@ -115,6 +116,7 @@
   (mu/optional-keys
    [:map {:closed true}
     [:name name]
+    [:author author]
     [:rank {:decode/db csk/->kebab-case-keyword
             :encode/db (comp rank->pg-enum
                              csk/->kebab-case-string)}

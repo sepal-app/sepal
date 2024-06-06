@@ -1,4 +1,5 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
 set -Eeuxo pipefail
 
 SCHEMA=${SCHEMA:-wfo_plantlist_2023_12}

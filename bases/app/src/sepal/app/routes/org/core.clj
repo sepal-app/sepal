@@ -34,11 +34,10 @@
     ["/locations/new" {:name :org/locations-new
                        :handler #'location.create/handler}]
 
-    ["/material" {:name :org/material
-                  :handler #'material.index/handler}]
+    ["/materials" {:name :org/materials
+                   :handler #'material.index/handler}]
     ["/materials/new" {:name :org/materials-new
                        :handler #'material.create/handler}]
-
     ["/media" {:name :org/media
                :handler #'media.index/handler}]
     #_["/activity/" {:name :taxon/index

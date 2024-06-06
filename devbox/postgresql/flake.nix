@@ -12,7 +12,7 @@
       let pkgs = nixpkgs.legacyPackages.${system};
       in {
         packages = {
-          # Return postgrsql with the postgis extension include.
+          # Return postgresql with the postgis extension include.
           postgresql = pkgs.postgresql_15.withPackages (p: [ p.postgis ]);
         };
 

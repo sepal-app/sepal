@@ -50,7 +50,7 @@
                             :icon (heroicons/outline-rectangle-group)
                             :current? false)
        (static-sidebar-item "Material"
-                            :href (url-for g/*router* :org/material {:org-id (:organization/id g/*organization*)})
+                            :href (url-for g/*router* :org/materials {:org-id (:organization/id g/*organization*)})
                             :icon (heroicons/outline-tag)
                             :current? false)
        (static-sidebar-item "Taxa"

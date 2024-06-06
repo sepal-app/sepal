@@ -9,7 +9,7 @@
             [sepal.error.interface :as error.i]))
 
 (defn page-content [& {:keys [errors values router org]}]
-  (material.form/form :action (url-for router :org/material-new {:org-id (:organization/id org)})
+  (material.form/form :action (url-for router :org/materials-new {:org-id (:organization/id org)})
                       :errors errors
                       :org org
                       :router router
@@ -30,14 +30,12 @@
     (case request-method
       :post
       (let [data (-> params
-                     ;; TODO: Use the rank
-                     (assoc :rank :genus)
                      (assoc :organization-id (:organization/id org)))
             result (material.i/create! db data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
           (see-other router :material/detail {:id (:material/id result)})
-          (-> (found router :org/material-new {:org-id (:organization/id org)})
+          (-> (found router :org/materials-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 

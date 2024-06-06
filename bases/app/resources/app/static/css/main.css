@@ -16,6 +16,10 @@
     @apply bg-white;
 }
 
+.input[aria-invalid="true"] {
+    @apply input-error;
+}
+
 body {
     @apply bg-slate-50 min-h-dvh;
 }
@@ -27,9 +31,13 @@ body {
 
 @layer components {
     .spl-input {
-        @apply block px-2 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6;
+        /* @apply block px-2 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6; */
+        @apply input input-bordered input-sm w-full max-w-xs bg-white;
     }
     .spl-link {
         @apply underline-offset-4 text-blue-600 hover:underline decoration-solid;
+    }
+    .spl-btn-grp {
+        @apply flex flex-row mt-4 justify-between items-center;
     }
 }

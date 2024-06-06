@@ -73,6 +73,7 @@
             values {:id (:taxon/id resource)
                     :name (:taxon/name resource)
                     :rank (:taxon/rank resource)
+                    :author (:taxon/author resource)
                     :organization-id (or (:taxon/organization-id resource)
                                          (:organization/id organization))
                     :parent-id (:taxon/id parent)

@@ -38,10 +38,7 @@
         org (:current-organization context)]
     (case request-method
       :post
-      (let [data (-> params
-                     ;; TODO: Use the rank
-                     (assoc :rank :genus)
-                     (assoc :organization-id (:organization/id org)))
+      (let [data (assoc params :organization-id (:organization/id org))
             result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message

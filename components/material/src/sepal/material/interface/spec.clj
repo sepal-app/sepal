@@ -6,7 +6,7 @@
 (def organization-id :int)
 (def accession-id :int)
 (def location-id :int)
-(def code [:string {:min 2}])
+(def code [:string {:min 1}])
 
 (defn coerce-int [v]
   (cond
