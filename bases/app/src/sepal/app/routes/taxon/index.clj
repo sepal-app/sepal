@@ -123,7 +123,7 @@
                        [:p.name :parent_name]
                        [:t.wfo_taxon_id_2023_12 :wfo_taxon_id_2023_12]
                        [(if (seq q)
-                          [:similarity :name q]
+                          [:similarity :t.name q]
                           1.0)
                         :search-rank]]
               :from [[:public.taxon :t]]
@@ -133,7 +133,7 @@
                        [:= :t.organization_id (:organization/id org)]
                        [:is :t.organization_id nil]]
                       (if (seq q)
-                        [:%> :name q]
+                        [:%> :t.name q]
                         :true)]}
         ;; stmt (if-not accessions-only
         ;;        stmt
@@ -146,7 +146,7 @@
         rows (->> (db.i/execute! db (assoc stmt
                                            :limit page-size
                                            :offset offset
-                                           :order-by [[:search-rank :desc] [:name :asc]])))]
+                                           :order-by [[:search-rank :desc] [:t.name :asc]])))]
 
     (tap> (str "rows: " rows))
 
