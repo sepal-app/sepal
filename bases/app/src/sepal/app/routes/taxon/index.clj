@@ -52,12 +52,12 @@
     :cell :taxon/author}
    {:name "Rank"
     :cell :taxon/rank}
-   #_{:name "Parent"
-      :cell (fn [t] [:a {:href (url-for router
-                                        :taxon/detail
-                                        {:id (:taxon/id t)})
-                         :class "spl-link"}
-                     (:taxon/name t)])}])
+   {:name "Parent"
+    :cell (fn [t] [:a {:href (url-for router
+                                      :taxon/detail
+                                      {:id (:taxon/parent-id t)})
+                       :class "spl-link"}
+                   (:taxon/parent-name t)])}])
 
 (defn table [& {:keys [rows page href page-size router total]}]
   [:div {:class "w-full"}
@@ -115,17 +115,19 @@
         org (:organization context)
         {:keys [_accessions-only page page-size q] :as params} (decode-params Params query-params)
         offset (* page-size (- page 1))
-        stmt {:select [:id
-                       :name
-                       :rank
-                       :author
-                       :parent_id
-                       :wfo_taxon_id_2023_12
+        stmt {:select [[:t.id :id]
+                       [:t.name :name]
+                       [:t.rank :rank]
+                       [:t.author :author]
+                       [:t.parent_id :parent-id]
+                       [:p.name :parent_name]
+                       [:t.wfo_taxon_id_2023_12 :wfo_taxon_id_2023_12]
                        [(if (seq q)
                           [:similarity :name q]
                           1.0)
                         :search-rank]]
               :from [[:public.taxon :t]]
+              :join-by [:left [[:public.taxon :p] [:= :p.id :t.parent_id]]]
               :where [:and
                       [:or
                        [:= :t.organization_id (:organization/id org)]
@@ -157,7 +159,8 @@
                              :id (:taxon/id taxon)
                              :rank (:taxon/rank taxon)
                              :author (:taxon/author taxon)
-                             :parentId (:taxon/parent-id taxon)}))
+                             :parentId (:taxon/parent-id taxon)
+                             :parentName (:taxon/parent-name taxon)}))
 
       :else
       (render :href (uri/uri-str {:path uri
