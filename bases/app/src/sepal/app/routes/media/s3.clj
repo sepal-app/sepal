@@ -40,6 +40,9 @@
                                          key
                                          content-type
                                          :presigner s3-presigner)]
+    ;; This will render a form that will submit to /media/uploaded which will
+    ;; will create the uploaded media item in the database and the result of
+    ;; that form will be inserted into the media by htmx.
     (-> (success-form :fields {:file-id file-id
                                :filename filename
                                :content-type content-type

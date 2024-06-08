@@ -58,6 +58,7 @@ export default (el, directive, { cleanup, evaluate }) => {
         })
         .on("upload-success", (file, response) => {
             const formId = file.id.replace(/\//g, "_")
+            // trigger form that will post to /media/uploaded
             htmx.trigger(`form#${formId}`, "submit")
         })
 }

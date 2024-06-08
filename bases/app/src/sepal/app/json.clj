@@ -5,7 +5,8 @@
   (json/write-str data options))
 
 (defn js
-  "This function is mostly used for passing js object in html attributes"
+  "This function is mostly used for passing a clojure map as a js object in html
+  attributes"
   [data]
   (json/write-str data :escape-slash false))
 
