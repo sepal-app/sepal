@@ -18,7 +18,7 @@
   [:input {:type "hidden"
            :name anti-forgery-field-name
            :id "__anti-forgery-token"
-           :value *anti-forgery-token*}])
+           :value (force *anti-forgery-token*)}])
 
 (defn field-errors [& {:keys [errors]}]
   (when errors

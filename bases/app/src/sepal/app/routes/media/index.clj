@@ -62,7 +62,10 @@
    [:link {:rel "stylesheet"
            :href (html/static-url "css/media.css")}]
    [:div {:id "media-page"}
-    [:div {:x-media-uploader (json/js {:antiForgeryToken *anti-forgery-token*
+    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
+    ;; probably store the antiForgeryToken in a separate element and then that
+    ;; element can be updated with the when we get the signing urls
+    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
                                        :signingUrl (url-for router :media/s3)
                                        :organizationId (:organization/id org)
                                        :trigger "#upload-button"})}]

@@ -4,6 +4,9 @@
 (defn write-str [data & {:as options}]
   (json/write-str data options))
 
+(defn parse-str [data & {:as options}]
+  (json/read-str data options))
+
 (defn js
   "This function is mostly used for passing a clojure map as a js object in html
   attributes"

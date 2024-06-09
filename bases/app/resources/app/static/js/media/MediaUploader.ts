@@ -7,7 +7,7 @@ export default (el, directive, { cleanup, evaluate }) => {
     const { trigger, antiForgeryToken, signingUrl, organizationId } = evaluate(
         directive.expression,
     )
-    new Uppy({
+    const uppy = new Uppy({
         logger: {
             // debug: (...args) => console.log("DEBUG: ", ...args),
             debug: (...args) => {},
@@ -22,25 +22,6 @@ export default (el, directive, { cleanup, evaluate }) => {
         })
         .use(AwsS3, {
             async getUploadParameters(file, options) {
-                // The signing url returns an html form that gets prepended the
-                // the children of #upload-success-forms. We then get the upload
-                // parameters from the input values of the form. On
-                // 'upload-success' we submit these to create the media records
-                // in the database.
-                await htmx.ajax("POST", signingUrl, {
-                    target: "#upload-success-forms",
-                    swap: "afterbegin",
-                    headers: {
-                        "X-CSRF-Token": antiForgeryToken,
-                    },
-                    values: {
-                        filename: file.name,
-                        contentType: file.type,
-                        size: file.size,
-                        fileId: file.id,
-                        organizationId: organizationId,
-                    },
-                })
                 const formId = file.id.replace(/\//g, "_")
                 const form = document.querySelector(
                     `#upload-success-forms form#${formId}`,
@@ -59,6 +40,24 @@ export default (el, directive, { cleanup, evaluate }) => {
         .on("upload-success", (file, response) => {
             const formId = file.id.replace(/\//g, "_")
             // trigger form that will post to /media/uploaded
-            htmx.trigger(`form#${formId}`, "submit")
+            htmx.trigger(`form#${formId}`, "submit").then("DONE")
         })
+
+    uppy.addPreProcessor(async (fileIds) => {
+        const files = fileIds.map((id) => {
+            const f = uppy.getFile(id)
+            return { filename: f.name, contentType: f.type, size: f.size, id: id }
+        })
+
+        // This will populate #upload-success-forms with forms that including
+        // inputs with the signing and when submitted will create the media
+        // items in the database
+        await htmx.ajax("POST", signingUrl, {
+            values: { files, organizationId },
+            target: "#upload-success-forms",
+            headers: {
+                "X-CSRF-Token": antiForgeryToken,
+            },
+        })
+    })
 }
