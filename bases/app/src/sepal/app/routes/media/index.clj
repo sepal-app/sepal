@@ -14,30 +14,24 @@
                 :path (str "/" key)
                 :query (uri/map->query-string {:max-h 300 :max-w 300 :fit "crop"})}))
 
-(defn preview-url [host key]
-  (uri/uri-str {:scheme "https"
-                :host host
-                :path (str "/" key)
-                :query (uri/map->query-string {:max-h 1024 :max-w 1024 :fit "crop"})}))
-
-(defn media-item [& {:keys [item]}]
+(defn media-item [& {:keys [router item]}]
   [:li {:class "relative"}
    [:div {:class (html/attr "group" "aspect-w-10" "aspect-h-7" "block" "w-full"
                             "overflow-hidden" "rounded-lg" "bg-gray-100" "shadow-lg"
                             "focus-within:ring-2" "focus-within:ring-indigo-500"
                             "focus-within:ring-offset-2" "focus-within:ring-offset-gray-100")}
-    [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
-           :src (:thumbnail-url item)}]
-    [:button {:type "button"
-              :x-on:click (str "selected=" (json/js item) "; console.log(" (json/js item) ")")
-              :class "absolute inset-0 focus:outline-none"}]]])
+    [:a {:href (url-for router :media/detail {:id (:media/id item)})
+         :class "inset-0 focus:outline-none"}
+     [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
+            :src (:thumbnail-url item)}]]]])
 
-(defn media-list [& {:keys [media]}]
+(defn media-list [& {:keys [media router]}]
   [:ul {:id "media-list"
         :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
                           "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
    (for [m media]
-     (media-item :item m))])
+     (media-item :item m
+                 :router router))])
 
 (defn title-buttons []
   [:button {:id "upload-button"
@@ -47,15 +41,6 @@
                               "hover:bg-indigo-700" "focus:outline-none" "focus:ring-2"
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
-
-(defn media-preview [& {:keys []}]
-  [:div
-   [:div {:class "absolute top-0 left-0 h-full w-full bg-black opacity-50"
-          :x-on:click "selected=null"}]
-   [:button {:class "absolute top-0 right-0 m-8 text-white"
-             :x-on:click "selected=null"} "Close"]
-   [:div {:class "absolute shadow-lg m-8 w-100 h-100 top-0"}
-    [:img {:x-bind:src "selected['preview-url']"}]]])
 
 (defn page-content [& {:keys [media org router]}]
   [:div {:x-data (json/js {:selected nil})}
@@ -69,9 +54,8 @@
                                        :signingUrl (url-for router :media/s3)
                                        :organizationId (:organization/id org)
                                        :trigger "#upload-button"})}]
-    (media-list :media media)
-    [:template {:x-if "selected"}
-     (media-preview)]
+    (media-list :media media
+                :router router)
     [:div {:id "upload-success-forms"
            :class "hidden"}]]
    [:script {:type "module"
@@ -93,8 +77,8 @@
                                       :where [:= :organization_id (:organization/id current-organization)]
                                       :order-by [[:created-at :desc]]})
                    (mapv #(assoc %
-                                 :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %))
-                                 :preview-url (preview-url imgix-media-domain (:media/s3-key %)))))]
+                                 :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
+    ;; TODO: We need to do infinite scroll here
     (render :media media
             :org current-organization
             :router router)))

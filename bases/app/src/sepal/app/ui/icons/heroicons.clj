@@ -15,8 +15,7 @@
    [:path
     {:fill-rule "evenodd",
      :d "M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z",
-     :clip-rule "evenodd"}]]
-  )
+     :clip-rule "evenodd"}]])
 
 (defn outline-clock [& {:keys [color size]
                         :or {color "text-gray-400"
@@ -68,9 +67,7 @@
    [:path
     {:stroke-linecap "round"
      :stroke-linejoin "round"
-     :d "M6 6h.008v.008H6V6z"}]]
-  )
-
+     :d "M6 6h.008v.008H6V6z"}]])
 
 (defn outline-map-pin [& {:keys [color size]
                           :or {color "text-gray-400"
@@ -94,7 +91,6 @@
      :stroke-linejoin "round"
      :d "M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"}]])
 
-
 (defn outline-photo [& {:keys [color size]
                         :or {color "text-gray-400"
                              size 24}}]
@@ -111,9 +107,7 @@
    [:path
     {:stroke-linecap "round"
      :stroke-linejoin "round"
-     :d "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"}]]
-
-  )
+     :d "M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"}]])
 
 (defn outline-x [& {:keys [color size]
                     :or {color "text-gray-400"
@@ -171,3 +165,25 @@
    [:path {:fill-rule "evenodd"
            :d "M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
            :clip-rule "evenodd"}]])
+
+(defn magnifying-glass []
+  [:svg {:xmlns "http://www.w3.org/2000/svg",
+         :fill "none",
+         :viewBox "0 0 24 24",
+         :stroke-width "1.5",
+         :stroke "currentColor",
+         :class "size-6"}
+   [:path {:stroke-linecap "round",
+           :stroke-linejoin "round",
+           :d "m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6"}]])
+
+(defn outline-folder-arrow-down []
+  [:svg {:xmlns "http://www.w3.org/2000/svg",
+         :fill "none",
+         :viewBox "0 0 24 24",
+         :stroke-width "1.5",
+         :stroke "currentColor",
+         :class "size-6"}
+   [:path {:stroke-linecap "round",
+           :stroke-linejoin "round",
+           :d "m9 13.5 3 3m0 0 3-3m-3 3v-6m1.06-4.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"}]])

@@ -1,10 +1,12 @@
 (ns sepal.app.middleware
   (:require [reitit.core :as r]
-            ;; [reitit.ring.middleware.exception :as exception]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.organization.interface :as org.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i]
+            [sepal.error.interface :as error.i]
+            ;; [reitit.ring.middleware.exception :as exception]
+            [taoensso.timbre :as log]))
 
 (defn wrap-context [handler context]
   (fn [request]
@@ -60,11 +62,18 @@
   stores it in the request context under the :resource key. "
   [handler getter]
   (fn [request]
-    (let [resource (getter request)]
-      (tap> (str "resource: " resource))
-      (-> request
-          (assoc-in [:context :resource] resource)
-          (handler)))))
+    (let [resource (try
+                     (getter request)
+                     (catch Exception e
+                       (log/error e)
+                       (error.i/error :resource-loader/error "Unknown error loading the resource")))]
+      (if-not (error.i/error? resource)
+        (-> request
+            (assoc-in [:context :resource] resource)
+            (handler))
+        {:body "ERROR: There was a problem loading the resource"
+         :status 500
+         :headers {"content-type" "text/html"}}))))
 
 (defn default-loader
   "A default resource loader that accepts a getter, a path param key and an
@@ -89,6 +98,11 @@
         ;; Pass through if the resource doesn't have an organization id
         (nil? org-id)
         (handler request)
+
+        (nil? resource)
+        (do
+          (log/warn "Could not get the org of the resource: No resource found")
+          (handler request))
 
         (= (:organization/id org) org-id)
         (binding [g/*organization* org]

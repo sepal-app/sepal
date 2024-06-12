@@ -3,8 +3,6 @@
             [sepal.app.ui.base :as base]
             [sepal.app.ui.sidebar :as sidebar]))
 
-(def page-content-id "page-wrapper-content")
-
 (defn page-wrapper [& {:keys [router content]}]
   [:div
    [:div {:x-data "{showMobileSidebar: false}"
@@ -23,9 +21,9 @@
                :viewBox "0 0 24 24"
                :stroke-width "2"
                :stroke "currentColor"
-               :aria-hidden= "true"}
+               :aria-hidden "true"}
          [:path {:stroke-linecap "round"
-                 :stroke-linejoin= "round"
+                 :stroke-linejoin "round"
                  :d "M4 6h16M4 12h16M4 18h16"}]]]]
       [:main {:id "page-main"
               :class "flex-1"}
@@ -38,14 +36,15 @@
    [:script {:type "module"
              :src (html/static-url "js/htmx.js")}]])
 
-(defn page [& {:keys [content page-title page-title-buttons router]}]
-  (-> (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
+(defn page [& {:keys [content page-title page-title-buttons router wrapper-attrs]}]
+  (-> (page-wrapper :content [:div (merge {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
+                                          wrapper-attrs)
                               [:div {:class "sm:flex sm:items-center h-10"}
                                [:div {:class "sm:flex-auto"}
                                 [:h1 {:class "text-xl font-semibold text-gray-900"}
                                  page-title]]
 
-                               [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex-none"}
+                               [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
                                 page-title-buttons]]
                               [:div {:class "mt-8"}
                                content]]

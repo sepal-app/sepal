@@ -1,9 +1,10 @@
 (ns sepal.app.routes.media.uploaded
-  (:require [sepal.database.interface :as db.i]
+  (:require [reitit.core :as r]
             [sepal.app.html :as html]
-            [sepal.app.routes.media.index :as index]))
+            [sepal.app.routes.media.index :as index]
+            [sepal.database.interface :as db.i]))
 
-(defn handler [& {:keys [context params viewer] :as _request}]
+(defn handler [& {:keys [context params ::r/router viewer] :as _request}]
   (let [{:keys [db imgix-media-domain]} context
         {filename :filename
          content-type :contentType
@@ -22,7 +23,10 @@
                                                :title filename}]}
                                     {:return-keys true})
 
-                 (assoc :thumbnail-url (index/thumbnail-url imgix-media-domain s3-key)
-                        :preview-url (index/preview-url imgix-media-domain s3-key)))]
-    (->  (index/media-item :item item)
+                 (assoc :thumbnail-url (index/thumbnail-url imgix-media-domain s3-key)))]
+
+    (tap> (str "item: " item))
+
+    (->  (index/media-item :item item
+                           :router router)
          (html/render-partial))))
