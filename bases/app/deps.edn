@@ -7,7 +7,7 @@
         poly/error {:local/root "../../components/error"}
         poly/location {:local/root "../../components/location"}
         poly/material {:local/root "../../components/material"}
-        poly/media {:local/root "components/media"}
+        poly/media {:local/root "../../components/media"}
         poly/organization {:local/root "../../components/organization"}
         poly/taxon {:local/root "../../components/taxon"}
         poly/test {:local/root "../../components/test"}
