@@ -48,7 +48,7 @@
                                 :class "spl-input"
                                 :x-validate.required true
                                 :id "abbreviation"
-                                :abbreviation "abbreviation"
+                                :name "abbreviation"
                                 :type "text"
                                 :value (:abbreviation values)}])
 
