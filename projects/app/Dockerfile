@@ -12,7 +12,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean
 
-RUN curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.17.0/dbmate-linux-amd64 && \
+RUN mkdir bin && \
+    curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.17.0/dbmate-linux-amd64 && \
     chmod +x bin/dbmate
 
 # Copy specific files and directories to avoid any working files we might have
