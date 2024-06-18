@@ -3,7 +3,6 @@
                   :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
 
                                poly/app-base {:local/root "bases/app"}
-                               poly/migrations-base {:local/root "bases/migrations"}
 
                                poly/accession {:local/root "components/accession"}
                                poly/activity {:local/root "components/activity"}
@@ -54,11 +53,9 @@
 
             :test-runner {:main-opts ["-m" "kaocha.runner"]}
 
-
-           ;; clojure -M:migrations
-           ;; To run for a specific profile run e.g. clojure -M:migrate --profile test
-            :migrations {:main-opts ["-m" "sepal.migrations.core"]
-                         :extra-deps {poly/base-migrations {:local/root "bases/migrations"}}}
+            :carve {:extra-deps {io.github.borkdude/carve {:git/url "https://github.com/borkdude/carve"
+                                                           :git/sha "6f0f3bfed7f9615b06e1f285d03def6db9d74e61"}}
+                    :main-opts  ["-m" "carve.main"]}
 
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
                    :extra-deps {polylith/clj-poly {:mvn/version "0.2.19"}}}}}

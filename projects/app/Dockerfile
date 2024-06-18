@@ -12,6 +12,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean
 
+RUN curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.17.0/dbmate-linux-amd64 && \
+    chmod +x bin/dbmate
+
 # Copy specific files and directories to avoid any working files we might have
 # in the root directory that we missed in the .dockerignore
 COPY deps.edn /dist
@@ -21,8 +24,7 @@ COPY projects /dist/projects
 
 RUN chmod +x /dist/projects/app/run.sh
 
-RUN clojure -P -M:migrations && \
-    cd /dist/bases/app && \
+RUN cd /dist/bases/app && \
     npm install && \
     npm run build && \
     cd /dist/projects/app && \
