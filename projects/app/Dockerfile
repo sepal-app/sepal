@@ -19,6 +19,7 @@ RUN mkdir bin && \
 # Copy specific files and directories to avoid any working files we might have
 # in the root directory that we missed in the .dockerignore
 COPY deps.edn /dist
+COPY db /dist/db
 COPY components /dist/components
 COPY bases /dist/bases
 COPY projects /dist/projects
