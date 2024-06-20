@@ -32,9 +32,7 @@
                :class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
          content]]]]]]
    [:script {:type "module"
-             :src (html/static-url "js/alpine.js")}]
-   [:script {:type "module"
-             :src (html/static-url "js/htmx.js")}]])
+             :src (html/static-url "js/page.ts")}]])
 
 (defn page [& {:keys [content page-title page-title-buttons router wrapper-attrs]}]
   (-> (page-wrapper :content [:div (merge {:class "px-4 sm:px-6 lg:px-8 md:py-8"}

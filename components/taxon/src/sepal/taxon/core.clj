@@ -66,6 +66,7 @@
 (defn factory [{:keys [db organization] :as args}]
   ;; TODO: validate the args for required args like organization
   (let [data (-> (mg/generate spec/CreateTaxon)
+                 (dissoc :parent-id)
                  (merge (m/decode spec/CreateTaxon args (mt/strip-extra-keys-transformer)))
                  (assoc :organization-id (:organization/id organization)))
         result (create! db data)]

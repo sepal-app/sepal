@@ -10,7 +10,7 @@
   [:form (merge {:x-data ""
                  :x-validate ""
                  :x-ref "form"
-                 :class "flex-flex-col gap-2"}
+                 :class "flex flex-col gap-2"}
                 attrs)
    children])
 

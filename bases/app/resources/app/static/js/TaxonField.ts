@@ -25,6 +25,7 @@ export default (el, directive, { cleanup, evaluate }) => {
 
     const tomselect = new TomSelect(el, {
         itemClass: "sm:text-sm bg-white",
+        loadingClass: "",
         maxItems: 1,
         openOnFocus: false,
         searchField: [],

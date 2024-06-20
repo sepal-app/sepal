@@ -1,5 +1,21 @@
 (ns sepal.media.interface
-  (:require [sepal.media.core :as core]))
+  (:require [integrant.core :as ig]
+            [sepal.media.core :as core]))
 
 (defn get-by-id [db id]
   (core/get-by-id db id))
+
+(defn get-link [db media-id]
+  (core/get-link db media-id))
+
+(defn create! [db data]
+  (core/create! db data))
+
+(defn link! [db id resource-id resource-type]
+  (core/link! db id resource-id resource-type))
+
+(defn unlink! [db id]
+  (core/unlink! db id))
+
+(defmethod ig/init-key ::factory [_ args]
+  (core/factory args))

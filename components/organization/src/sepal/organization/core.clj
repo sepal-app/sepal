@@ -8,6 +8,10 @@
             [sepal.organization.interface.spec :as spec]
             [sepal.validation.interface :refer [invalid? validate]]))
 
+(defn get-by-id [db id]
+  {:pre [(pos-int? id)]}
+  (jdbc.sql/get-by-id db :organization id))
+
 (defn create! [db data]
   ;; TODO: coerce then encode
   (cond
@@ -30,6 +34,16 @@
                                   :where [:and
                                           [:= :ou.user_id user-id]]})
            (db.i/coerce spec/Organization)))
+
+(defn assign-role! [db data]
+  ;; TODO: validate assign role
+  (try
+    (db.i/execute-one! db
+                       {:insert-into :organization-user
+                        :values [data]
+                        :returning :*})
+    (catch Exception e
+      {:error {:message (ex-message e)}})))
 
 (create-ns 'sepal.organization.interface)
 (alias 'org.i 'sepal.organization.interface)

@@ -8,7 +8,7 @@
 (def ^:dynamic *system* nil)
 
 (defn load-config [config]
-  (config.i/read-config config {:profile test}))
+  (config.i/read-config config {:profile :test}))
 
 (def default-system-config
   {:sepal.database.interface/pool

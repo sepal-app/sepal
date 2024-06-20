@@ -7,7 +7,7 @@ PGUSER=${PGUSER:-sepal}
 PGDATABASE=${PGDATABASE:-sepal}
 PGPASSWORD="password"
 PGPORT=${PGPORT:-5432}
-PROFILE=${PROFILE:-local}
+SKIP_WFO_PLANTLIST=${SKIP_WFO_PLANTLIST:-false}
 
 psql -v ON_ERROR_STOP=1 -h localhost -U "$USER" postgres <<-EOSQL
     drop database if exists ${PGDATABASE};
@@ -22,6 +22,8 @@ PGPASSWORD=
 DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?sslmode=disable"
 
 dbmate --url "$DATABASE_URL" load
-dbmate --url "$DATABASE_URL" migrate
-bin/wfo_plantlist_insert.sh
-bin/wfo_plantlist_to_taxa.sh
+# dbmate --url "$DATABASE_URL" migrate
+if [[ $SKIP_WFO_PLANTLIST != true ]] ; then
+   bin/wfo_plantlist_insert.sh;
+   bin/wfo_plantlist_to_taxa.sh;
+fi

@@ -1,7 +1,8 @@
 (ns sepal.taxon.interface-test
   (:require [clojure.test :as test :refer :all]
-            [matcher-combinators.test :refer [match?]]
             [integrant.core :as ig]
+            [malli.generator :as mg]
+            [matcher-combinators.test :refer [match?]]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
@@ -35,16 +36,16 @@
      {:db *db*}}
     (fn [{:keys [org]}]
       (let [db *db*
-            result (taxon.i/create! db {:name "test"
+            taxon-name (mg/generate [:string {:min 1}])
+            result (taxon.i/create! db {:name taxon-name
                                         :rank :genus
                                         :organization-id (:organization/id org)})]
         (is (not (err.i/error? result)) (err.i/data result))
-        (is (match? {:taxon/id int
-                     :taxon/name "test"
+        (is (match? {:taxon/id pos-int?
+                     :taxon/name taxon-name
                      :taxon/organization-id (:organization/id org)
                      :taxon/rank :genus
-                     :taxon/wfo-plantlist-name-id nil
-                     :taxon/author ""}
+                     :taxon/author nil}
                     result))
         (jdbc.sql/delete! db :taxon {:id (:taxon/id result)})))))
 
@@ -57,35 +58,16 @@
        {:db db
         :organization (ig/ref :key/org)}}
       (fn [{:keys [org taxon]}]
-        (let [result (taxon.i/update! db
-                                      (:taxon/id taxon)
-                                      {:name "test"
-                                       :rank :genus})]
-          (is (not (err.i/error? result)) (err.i/data result))
-          (is (match? {:taxon/id int
-                       :taxon/name "test"
-                       :taxon/organization-id (:organization/id org)
-                       :taxon/rank :genus
-                       :taxon/wfo-plantlist-name-id nil
-                       :taxon/author ""}
-                      result)))))
-
-    (tf/testing "update! - wfo taxon"
-      {[::org.i/factory :key/org]
-       {:db db}}
-      (fn [{:keys [org]}]
-        (let [wfo-id "wfo-1234"
+        (let [taxon-name (mg/generate [:string {:min 1}])
+              taxon-rank :genus
               result (taxon.i/update! db
-                                      wfo-id
-                                      {:name "test"
-                                       :rank :genus
-                                       :organization-id (:organization/id org)})]
+                                      (:taxon/id taxon)
+                                      {:name taxon-name
+                                       :rank taxon-rank})]
           (is (not (err.i/error? result)) (err.i/data result))
-          (is (match? {:taxon/id int
-                       :taxon/name "test"
+          (is (match? {:taxon/id pos-int?
+                       :taxon/name taxon-name
                        :taxon/organization-id (:organization/id org)
                        :taxon/rank :genus
-                       :taxon/wfo-plantlist-name-id wfo-id
-                       :taxon/author ""}
-                      result))
-          (jdbc.sql/delete! db :taxon {:id (:taxon/id result)}))))))
+                       :taxon/author (:taxon/author taxon)}
+                      result)))))))

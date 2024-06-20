@@ -78,10 +78,10 @@
                      (select-keys [:name :short-name :abbreviation]))
             ;; TODO: create the user and assign the role in the same transaction
             result (create! db (:user/id viewer) data)
-            _ou (when-not (error? result) (org.i/assign-role db
-                                                             {:organization-id (:organization/id result)
-                                                              :user-id (:user/id viewer)
-                                                              :role (jdbc.types/as-other "owner")}))]
+            _ou (when-not (error? result) (org.i/assign-role! db
+                                                              {:organization-id (:organization/id result)
+                                                               :user-id (:user/id viewer)
+                                                               :role (jdbc.types/as-other "owner")}))]
         (if-not (error? result)
           (http/found router :org/activity {:org-id (-> result :organization/id str)})
           (-> (http/see-other router :org/create)

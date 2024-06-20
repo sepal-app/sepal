@@ -12,6 +12,7 @@
                                poly/error {:local/root "components/error"}
                                poly/location {:local/root "components/location"}
                                poly/material {:local/root "components/material"}
+                               poly/media {:local/root "components/media"}
                                poly/organization {:local/root "components/organization"}
                                poly/taxon {:local/root "components/taxon"}
                                poly/test {:local/root "components/test"}
@@ -47,10 +48,12 @@
                                  "components/validation/test"]
                    :extra-deps {poly/test {:local/root "components/test"}
                                 com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
+                                com.gfredericks/test.chuck {:mvn/version "0.2.14"}
                                 lambdaisland/kaocha {:mvn/version "1.89.1380"}
                                 nubank/matcher-combinators {:mvn/version "3.9.1"}
                                 org.clojure/test.check {:mvn/version "1.1.1"}}}
 
+            ;; clojure -M:dev:test:test-runner
             :test-runner {:main-opts ["-m" "kaocha.runner"]}
 
             :carve {:extra-deps {io.github.borkdude/carve {:git/url "https://github.com/borkdude/carve"

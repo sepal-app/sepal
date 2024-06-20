@@ -10,8 +10,10 @@
              ::data data}))
 
 (defn ex->error [ex]
-  (let [{:keys [type message data]} (ex-data ex)]
-    (error type message data)))
+  (let [{:keys [type message data] :as exd} (ex-data ex)]
+    (if (seq exd)
+      (error type message data)
+      (error (clojure.core/type ex) (ex-message ex) ex))))
 
 (defn type [err]
   (::type err))

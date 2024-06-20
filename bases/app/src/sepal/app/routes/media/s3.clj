@@ -30,6 +30,8 @@
   (let [{:keys [s3-presigner media-upload-bucket]} context
         {files :files
          organization-id :organizationId} params
+        files (if (sequential? files) files [files])
+        organization-id (parse-long organization-id)
         s3-key-fn (fn [filename]
                     (format "organization_id=%s/%s.%s"
                             organization-id
