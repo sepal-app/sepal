@@ -8,7 +8,7 @@
             [reitit.ring]
             [reitit.ring.coercion :as coercion]
             [reitit.ring.middleware.dev :as dev]
-            [reitit.ring.middleware.exception :as exception]
+            ;; [reitit.ring.middleware.exception :as exception]
             [reitit.ring.middleware.multipart :as multipart]
             [reitit.ring.middleware.muuntaja :as muuntaja]
             ;; [reitit.ring.middleware.parameters :as parameters]

@@ -38,6 +38,7 @@
 
 (defn rank->pg-enum [rank]
   (when (some? rank)
+    #_{:clj-kondo/ignore [:unresolved-var]}
     (jdbc.types/as-other rank)))
 
 (def Taxon

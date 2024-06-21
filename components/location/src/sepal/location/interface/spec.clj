@@ -21,7 +21,7 @@
     (int? v) v
     (string? v) (Integer/parseInt v)
     (nil? v) v
-    :else (int v )))
+    :else (int v)))
 
 (def CreateLocation
   [:map {:closed true}
@@ -30,7 +30,6 @@
    [:description description]
    [:organization-id {:decode/db coerce-int}
     organization-id]])
-
 
 (def UpdateLocation
   (mu/optional-keys

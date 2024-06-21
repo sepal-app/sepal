@@ -2,7 +2,6 @@
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
-            [sepal.app.ui.button :as button]
             [sepal.app.ui.form :as form]))
 
 (def FormValues

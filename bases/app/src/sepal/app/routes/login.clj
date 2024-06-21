@@ -19,7 +19,7 @@
                   [:'crypt password :password]]]]}
        (db.i/execute-one! db)))
 
-(defn send-verification-email [email]
+#_(defn send-verification-email [email]
   ;; See https://app.sendgrid.com/guide/integrate/langs/java
 
 ;;   // using SendGrid's Java Library
@@ -50,9 +50,9 @@
 ;;     }
 ;;   }
 ;; }
-  )
+    )
 
-(defn render [& {:keys [email field-errors invitation next router flash]}]
+(defn render [& {:keys [email #_field-errors invitation next router flash]}]
   (tap> (str "email: " email))
 
   (-> [:div
@@ -83,7 +83,7 @@
           [:div {:class "mt-4"}
            [:a {:href (url-for router :register/index)} "Don't have an account?"]]]
 
-;; TODO: Non field errors
+         ;; TODO: Non field errors
 
           ;; (when error
           ;;   [:div {:class "rounded-md bg-red-50 p-4 text-red-800"

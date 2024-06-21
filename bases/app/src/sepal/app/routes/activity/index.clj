@@ -215,7 +215,7 @@
    [:page-size {:default 25} :int]
    [:q :string]])
 
-(defn handler [& {:keys [context _headers query-params ::r/router uri]}]
+(defn handler [& {:keys [context _headers query-params ::r/router]}]
   (let [{:keys [db]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)]

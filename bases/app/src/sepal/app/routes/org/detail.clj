@@ -3,7 +3,6 @@
             [sepal.app.html :as html]
             [sepal.app.ui.page :as page]))
 
-
 (defn page-content []
   [:div "TODO:"])
 
@@ -13,7 +12,5 @@
                  :content (page-content))
       (html/render-html)))
 
-
-(defn handler [{:keys [context ::r/router]}]
-  (let [{:keys [db]} context]
-    (render :router router)))
+(defn handler [{:keys [::r/router]}]
+  (render :router router))

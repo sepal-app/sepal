@@ -1,6 +1,5 @@
 (ns sepal.app.routes.taxon.detail
-  (:require [malli.error :as me]
-            [reitit.core :as r]
+  (:require [reitit.core :as r]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
@@ -15,7 +14,7 @@
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.validation.interface :as validation.i]))
 
-(defn page-title-buttons [& {:keys [org router taxon]}]
+(defn page-title-buttons [& {:keys [org router]}]
   (dropdown/dropdown "Actions"
                      (dropdown/item (url-for router
                                              :org/taxa-new
@@ -42,8 +41,7 @@
                                         :values values)
                  :page-title (:taxon/name taxon)
                  :page-title-buttons (page-title-buttons :org org
-                                                         :router router
-                                                         :taxon taxon)
+                                                         :router router)
                  :router router)
       (html/render-html)))
 

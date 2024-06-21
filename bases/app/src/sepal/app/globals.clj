@@ -1,7 +1,7 @@
 (ns sepal.app.globals)
 
-(def ^:dynamic *organization*)
-(def ^:dynamic *request*)
-(def ^:dynamic *router*)
-(def ^:dynamic *session*)
-(def ^:dynamic *viewer*)
+(def ^:dynamic *organization* nil)
+(def ^:dynamic *request* nil)
+(def ^:dynamic *router* nil)
+(def ^:dynamic *session* nil)
+(def ^:dynamic *viewer* nil)

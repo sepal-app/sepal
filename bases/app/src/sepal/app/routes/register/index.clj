@@ -9,7 +9,7 @@
    [sepal.app.ui.base :as base]
    [sepal.app.ui.form :as form]
    [sepal.user.interface :as user.i]
-   [sepal.validation.interface :as validation.i :refer [error?]]))
+   [sepal.validation.interface :as validation.i]))
 
 (defn render [& {:keys [_error invitation next request router]}]
   (let [{:keys [params]} request]

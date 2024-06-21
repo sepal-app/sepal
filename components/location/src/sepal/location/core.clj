@@ -17,7 +17,6 @@
                                     :location
                                     data
                                     {:return-keys true})]
-      (tap> (str "data: " data))
       (m/coerce spec/Location result db.i/transformer))
     (catch Exception ex
       (tap> (str "ex: " ex))
@@ -27,10 +26,10 @@
   (try
     (let [data (m/coerce spec/UpdateLocation data db.i/transformer)
           result (jdbc.sql/update! db
-                                :location
-                                data
-                                {:id id}
-                                {:return-keys 1})]
+                                   :location
+                                   data
+                                   {:id id}
+                                   {:return-keys 1})]
       (m/coerce spec/Location result db.i/transformer))
     (catch Exception ex
       (error.i/ex->error ex))))

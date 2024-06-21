@@ -1,10 +1,10 @@
 (ns sepal.app.routes.register-test
   (:require [clojure.test :refer :all]
-            [sepal.app.test.system :refer [*app* ;; *db* *system*
-                                           default-system-fixture]]
-            [sepal.app.routes.register.index :as register]))
+            #_[sepal.app.test.system :refer [*app* ;; *db* *system*
+                                             default-system-fixture]]
+            #_[sepal.app.routes.register.index :as register]))
 
-(use-fixtures :once default-system-fixture)
+#_(use-fixtures :once default-system-fixture)
 
 ;; (deftest register-test
 ;;   (testing "something"

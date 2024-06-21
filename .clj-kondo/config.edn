@@ -1,4 +1,3 @@
-{:linters {:refer-all {:exclude []}
+{:linters {:refer-all {:exclude [clojure.test embraer-api-server.test-utils]}
            :unused-binding {:exclude-destructured-as true}}
- :lint-as {rum.core/defc clj-kondo.lint-as/def-catch-all
-           sepal.database.interface/with-transaction clojure.core/let}}
+ :lint-as {sepal.database.interface/with-transaction clojure.core/let}}

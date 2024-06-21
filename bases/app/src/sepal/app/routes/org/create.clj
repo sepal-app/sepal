@@ -70,7 +70,7 @@
         (org.activity/create! tx org.activity/created created-by result))
       result)))
 
-(defn handler [{:keys [context params request-method viewer ::r/router viewer]}]
+(defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
@@ -78,10 +78,12 @@
                      (select-keys [:name :short-name :abbreviation]))
             ;; TODO: create the user and assign the role in the same transaction
             result (create! db (:user/id viewer) data)
-            _ou (when-not (error? result) (org.i/assign-role! db
-                                                              {:organization-id (:organization/id result)
-                                                               :user-id (:user/id viewer)
-                                                               :role (jdbc.types/as-other "owner")}))]
+            _ou (when-not (error? result)
+                  #_{:clj-kondo/ignore [:unresolved-var]}
+                  (org.i/assign-role! db
+                                      {:organization-id (:organization/id result)
+                                       :user-id (:user/id viewer)
+                                       :role (jdbc.types/as-other "owner")}))]
         (if-not (error? result)
           (http/found router :org/activity {:org-id (-> result :organization/id str)})
           (-> (http/see-other router :org/create)

@@ -60,5 +60,16 @@
                                                            :git/sha "6f0f3bfed7f9615b06e1f285d03def6db9d74e61"}}
                     :main-opts  ["-m" "carve.main"]}
 
+            ;; Run clj-kondo.  Also see ./clj-kondo/config.edn for other configuration settings.
+            ;; clojure -M:clj-kondo
+            :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2024.05.24"}}
+                        :main-opts ["-m" "clj-kondo.main"]}
+
+            ;; clojure -M:cljfmt check|fix components bases projects
+            :cljfmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
+                     :main-opts ["-m" "cljfmt.main"
+                                 "--parallel"
+                                 "--no-remove-consecutive-blank-lines"]}
+
             :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
                    :extra-deps {polylith/clj-poly {:mvn/version "0.2.19"}}}}}

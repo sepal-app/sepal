@@ -1,6 +1,5 @@
 (ns sepal.material.interface
-  (:require [sepal.material.core :as core])
-  )
+  (:require [sepal.material.core :as core]))
 
 (defn get-by-id [db id]
   (core/get-by-id db id))

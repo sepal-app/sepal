@@ -11,38 +11,36 @@
               [:flash :messages]
               #(conj % {:text text :category category}))))
 
-
 (defn error [response text]
   (add-message response text category/error))
 
 #_(defn error-seq
-  "Create a validation-seq from humanized malli validation error.
+    "Create a validation-seq from humanized malli validation error.
 
   A validation-seq is a sequence of list of maps with a message key and optional
   field key and :error metadata key is true.
   "
-  [error]
-  (cond
-    ;; Convert map of field errors into array of maps with keys field and message
-    (map? error)
-    (reduce-kv (fn [acc k v] (conj acc {:field k :messages v})) [] error)
+    [error]
+    (cond
+      ;; Convert map of field errors into array of maps with keys field and message
+      (map? error)
+      (reduce-kv (fn [acc k v] (conj acc {:field k :messages v})) [] error)
 
-    (string? error)
-    {:messages [error]}
+      (string? error)
+      {:messages [error]}
 
-    (nil? error)
-    {:messages nil}
+      (nil? error)
+      {:messages nil}
 
-    ;; Convert sequence of errors into array of maps with a message key
-    (seqable? error)
-    (map error-seq error)))
+      ;; Convert sequence of errors into array of maps with a message key
+      (seqable? error)
+      (map error-seq error)))
 
 (defn set-field-errors
   [response field-errors]
   (assoc-in response
             [:flash :field-errors]
             field-errors))
-
 
 (defn field-error [request field]
   (get-in request [:flash :field-errors field]))

@@ -69,7 +69,7 @@
        [:option {:value material-id}
         material-name])]))
 
-(defn media-link-form [& {:keys [link media org router]}]
+(defn media-link-form [& {:keys [media org router]}]
   (form/form
    {:class "flex flex-row gap-2 items-center"
     :hx-post (url-for router :media/detail.link {:id (:media/id media)})
@@ -179,7 +179,7 @@
                   :org organization
                   :router router)
           ;; TODO: render an error
-          (flash/error "Error: Could not link resource")))
+          (flash/error {} "Error: Could not link resource")))
       :delete
       (let [result (media.i/unlink! db (:media/id resource))]
         (tap> (str "result: " result))
@@ -188,7 +188,7 @@
                   :org organization
                   :router router)
           ;; TODO: render an error
-          (flash/error "Error: Could not unlink resource")))
+          (flash/error {} "Error: Could not unlink resource")))
 
       :get
       (let [link (media.i/get-link db (:media/id resource))]

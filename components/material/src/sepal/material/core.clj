@@ -27,10 +27,10 @@
   (try
     (let [data (m/coerce spec/UpdateMaterial data db.i/transformer)
           result (jdbc.sql/update! db
-                                :material
-                                data
-                                {:id id}
-                                {:return-keys 1})]
+                                   :material
+                                   data
+                                   {:id id}
+                                   {:return-keys 1})]
       (m/coerce spec/Material result db.i/transformer))
     (catch Exception ex
       (error.i/ex->error ex))))
