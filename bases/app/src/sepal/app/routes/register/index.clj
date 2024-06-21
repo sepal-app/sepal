@@ -77,7 +77,7 @@
            (flash/banner (get-in request [:flash :messages]))]
 
           [:div {:class "col-span-2"}
-           [:img {:src (html/image-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
+           [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
                   :class "h-screen w-full object-cover object-center"
                   :alt "login banner"}]]]]
 

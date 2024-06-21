@@ -29,7 +29,8 @@
 
 ;; TODO: We need to cache the manifest instead of parsing it on every request
 ;; similar to how manifest.i handled it.
-(defn static-url [static-file]
+(defn static-url
+  [static-file]
   (let [manifest (some-> manifest-file-path
                          (io/resource)
                          (slurp)
@@ -37,17 +38,6 @@
         static-file-path (str static-resource-folder fs/file-separator static-file)
         path (get-in manifest [static-file-path "file"])]
     (str static-root path)))
-
-;; TODO: This uses fs/glob to get the filename with the hash and will probably
-;; be slow. We need to memoize this in production.
-(defn image-url [f]
-  (let [f "jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg"
-        [head ext] (fs/split-ext f)
-        asset-path (fs/path (io/resource static-dist-folder) "assets")
-        pattern (str head "-*." ext)
-        abs-path (-> (fs/glob asset-path pattern)
-                     (first))]
-    (str "assets/" (fs/file-name abs-path))))
 
 ;; TODO: This should be cleaned up b/c we don't want always want the doctype.
 ;; Also the "render" methods do more than render.
