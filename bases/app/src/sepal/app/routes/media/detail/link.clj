@@ -70,8 +70,6 @@
         material-name])]))
 
 (defn media-link-form [& {:keys [link media org router]}]
-  ;; TODO: When the form is successfully submitted then replace the
-  ;; resource-link-row with response
   (form/form
    {:class "flex flex-row gap-2 items-center"
     :hx-post (url-for router :media/detail.link {:id (:media/id media)})

@@ -1,11 +1,15 @@
 (ns sepal.app.routes.media.detail
   (:require [lambdaisland.uri :as uri]
             [reitit.core :as r]
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.page :as page]))
+            [sepal.app.ui.page :as page]
+            [sepal.aws-s3.interface :as s3.i]
+            [sepal.media.interface :as media.i]))
 
 (defn zoom-view [& {:keys [zoom-url]}]
   [:div {:class "relative z-10"}
@@ -19,7 +23,7 @@
      [:div
       [:img {:src zoom-url}]]]]])
 
-(defn page-title-buttons [& {:keys [dl-url]}]
+(defn page-title-buttons [& {:keys [delete-url dl-url]}]
   [:<>
    [:button {:class "btn"
              :aria-label "Zoom"
@@ -28,7 +32,13 @@
    [:a {:class "btn"
         :href dl-url
         :aria-label "Download"}
-    (heroicons/outline-folder-arrow-down)]])
+    (heroicons/outline-folder-arrow-down)]
+   [:a {:class "btn"
+        :hx-delete delete-url
+        :hx-confirm "Are you sure you want to delete this media?"
+        :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+        :aria-label "Delete"}
+    (heroicons/outline-trash :class "text-error")]])
 
 (defn page-content [& {:keys [media router srcset-urls zoom-url]}]
   [:<>
@@ -55,15 +65,18 @@
                                         :srcset-urls srcset-urls
                                         :zoom-url zoom-url)
                  :page-title (:media/title media)
-                 :page-title-buttons (page-title-buttons :dl-url dl-url)
+                 :page-title-buttons (page-title-buttons :delete-url (url-for router
+                                                                              :media/detail
+                                                                              {:id (:media/id media)})
+                                                         :dl-url dl-url)
                  :router router
                  ;; We have to put the x-data here b/c the zoom var is needed by
                  ;; the zoom button in the page-title-buttons
                  :wrapper-attrs {:x-data (json/js {:zoom false})})
       (html/render-html)))
 
-(defn handler [& {:keys [context ::r/router] :as _request}]
-  (let [{:keys [resource imgix-media-domain]} context
+(defn handler [& {:keys [context request-method ::r/router] :as _request}]
+  (let [{:keys [db organization resource imgix-media-domain s3-client]} context
         srcset-opts {;;:h 2048
                      ;;:w 2048
                      ;; :fit "clip"
@@ -92,9 +105,19 @@
                              :path (str "/" (:media/s3-key resource))
                              :query (uri/map->query-string {:dl (:media/title resource)})})]
 
-    (render :dl-url dl-url
-            :media resource
-            :preview-url preview-url
-            :router router
-            :srcset-urls srcset-urls
-            :zoom-url preview-url)))
+    (case request-method
+      :delete
+      (let [_ (media.i/delete! db (:media/id resource))
+            _ (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))]
+        ;; TODO: handle errors
+        (-> {:status 204
+             :headers {"HX-Redirect" (url-for router
+                                              :org/media
+                                              {:org-id (:organization/id organization)})}}
+            (flash/add-message "Deleted media.")))
+      (render :dl-url dl-url
+              :media resource
+              :preview-url preview-url
+              :router router
+              :srcset-urls srcset-urls
+              :zoom-url preview-url))))

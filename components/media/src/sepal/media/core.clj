@@ -57,6 +57,9 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :public.media {:id id}))
+
 (defn link! [db media-id resource-id resource-type]
   (try
     ;; First we db/coerce the data into a CreateMediaLink to make sure it

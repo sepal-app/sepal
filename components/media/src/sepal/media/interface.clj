@@ -14,6 +14,14 @@
 (defn link! [db id resource-id resource-type]
   (core/link! db id resource-id resource-type))
 
+(defn delete!
+  "Delete a media object from the database.
+
+  This does not delete the object from the remote storage, e.g. s3.
+  "
+  [db id]
+  (core/delete! db id))
+
 (defn unlink! [db id]
   (core/unlink! db id))
 

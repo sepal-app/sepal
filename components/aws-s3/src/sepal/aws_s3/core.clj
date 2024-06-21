@@ -6,8 +6,8 @@
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
-           [software.amazon.awssdk.services.s3.model ListObjectsV2Request]
-           [software.amazon.awssdk.services.s3.model PutObjectRequest]
+           [software.amazon.awssdk.services.s3.model
+            ListObjectsV2Request PutObjectRequest DeleteObjectRequest]
            [software.amazon.awssdk.services.s3.presigner S3Presigner]
            [software.amazon.awssdk.services.s3.presigner.model PutObjectPresignRequest]))
 
@@ -77,3 +77,10 @@
                      :last-modified (.lastModified %)
                      :size (.size %))
           (.contents resp))))
+
+(defn delete-object [client bucket key]
+  (let [req (-> (DeleteObjectRequest/builder)
+                (.bucket bucket)
+                (.key key)
+                (.build))]
+    (.deleteObject client req)))

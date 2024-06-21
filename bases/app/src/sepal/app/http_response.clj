@@ -15,3 +15,6 @@
    (see-other router name-or-path nil))
   ([router name-or-path args]
    (http/see-other (router/url-for router name-or-path args))))
+
+(defn not-found []
+  (http/not-found))

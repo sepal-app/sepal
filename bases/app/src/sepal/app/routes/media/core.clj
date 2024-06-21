@@ -15,7 +15,8 @@
    ["/uploaded" {:name :media/uploaded
                  :handler #'uploaded/handler}]
    ["/:id/" {:name :media/detail
-             :handler #'detail/handler
+             :get #'detail/handler
+             :delete #'detail/handler
              :middleware [[middleware/resource-loader media-loader]
                           [middleware/require-resource-org-membership :media/organization-id]]}]
    ["/:id/link/" {:name :media/detail.link

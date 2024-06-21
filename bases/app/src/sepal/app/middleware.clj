@@ -67,13 +67,19 @@
                      (catch Exception e
                        (log/error e)
                        (error.i/error :resource-loader/error "Unknown error loading the resource")))]
-      (if-not (error.i/error? resource)
-        (-> request
-            (assoc-in [:context :resource] resource)
-            (handler))
+      (cond
+        (error.i/error? resource)
         {:body "ERROR: There was a problem loading the resource"
          :status 500
-         :headers {"content-type" "text/html"}}))))
+         :headers {"content-type" "text/html"}}
+
+        (nil? resource)
+        (http/not-found)
+
+        :else
+        (-> request
+            (assoc-in [:context :resource] resource)
+            (handler))))))
 
 (defn default-loader
   "A default resource loader that accepts a getter, a path param key and an

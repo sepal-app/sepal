@@ -18,6 +18,9 @@
 (defn list-objects [client bucket prefix]
   (core/list-objects client bucket prefix))
 
+(defn delete-object [client bucket key]
+  (core/delete-object client bucket key))
+
 ;; TODO: The credentials-provider component isn't specific to s3
 (defmethod ig/init-key ::credentials-provider [_ {:keys [access-key-id secret-access-key]}]
   (core/credentials-provider access-key-id secret-access-key))
