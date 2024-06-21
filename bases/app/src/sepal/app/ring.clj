@@ -95,15 +95,15 @@
                        ;; TODO: dev only
 
                        stacktrace/wrap-stacktrace-web
-                       #_(exception/create-exception-middleware
-                          (merge exception/default-handlers
-                                 {::exception/default
-                                  ;; ;; TODO: Create a pretty stacktrace formatter
-                                  (fn [exc _r]
-                                    {:status 500
-                                     ;; TODO: Make configurable
-                                     :body (with-out-str
-                                             (stacktrace/print-stack-trace exc))})}))
+                       ;; #_(exception/create-exception-middleware
+                       ;;    (merge exception/default-handlers
+                       ;;           {::exception/default
+                       ;;            ;; ;; TODO: Create a pretty stacktrace formatter
+                       ;;            (fn [exc _r]
+                       ;;              {:status 500
+                       ;;               ;; TODO: Make configurable
+                       ;;               :body (with-out-str
+                       ;;                       (stacktrace/print-stack-trace exc))})}))
 
                        ;; decoding request body
                        muuntaja/format-request-middleware
