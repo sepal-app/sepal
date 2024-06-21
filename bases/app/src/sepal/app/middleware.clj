@@ -14,6 +14,13 @@
         (assoc :context context)
         (handler))))
 
+(defn htmx-request [handler]
+  (fn [{:keys [headers] :as request}]
+    (-> request
+        (assoc :htmx-request?
+               (= (get headers "hx-request") "true"))
+        (handler))))
+
 ;; (defn coerce-response [handler]
 ;;   (fn [request]
 ;;     (let [response (handler request)]

@@ -114,6 +114,7 @@
                        ;; multipart
                        multipart/multipart-middleware
                        [middleware/wrap-context context]
+                       middleware/htmx-request
                        [ring.defaults/wrap-defaults ring-defaults]
 
                        ;; [middleware/wrap-hidden-method]

@@ -1,10 +1,9 @@
 (ns sepal.app.routes.accession.index
   (:require [lambdaisland.uri :as uri]
-            [malli.core :as m]
-            [malli.transform :as mt]
             [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
@@ -80,26 +79,16 @@
    [:page-size {:default 25} :int]
    [:q :string]])
 
-(def params-transformer (mt/transformer
-                         (mt/key-transformer {:decode keyword})
-                         mt/strip-extra-keys-transformer
-                         mt/default-value-transformer
-                         mt/string-transformer))
-
-(defn decode-params [schema params]
-  (m/decode schema params params-transformer))
-
 (defn handler [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
         org (:current-organization context)
-        {:keys [page page-size q] :as params} (decode-params Params query-params)
+        {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [:*]
               :from [[:accession :a]]
               :join [[:taxon :t]
                      [:= :t.id :a.taxon_id]]
               :where [:and
-
                       (if q
                         [:ilike :a.code (format "%%%s%%" q)]
                         :true)]}

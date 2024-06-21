@@ -4,6 +4,7 @@
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]))
@@ -14,8 +15,16 @@
                 :path (str "/" key)
                 :query (uri/map->query-string {:max-h 300 :max-w 300 :fit "crop"})}))
 
-(defn media-item [& {:keys [router item]}]
-  [:li {:class "relative"}
+(defn media-item [& {:keys [router item load-page-on-reveal]}]
+  [:li (cond-> {:class "relative"}
+         (pos-int? load-page-on-reveal)
+         (merge {:hx-get (url-for router
+                                  :org/media
+                                  {:org-id (:media/organization-id item)}
+                                  {:page load-page-on-reveal})
+                 :hx-trigger "revealed"
+                 :hx-target "#media-list"
+                 :hx-swap "beforeend"}))
    [:div {:class (html/attr "group" "aspect-w-10" "aspect-h-7" "block" "w-full"
                             "overflow-hidden" "rounded-lg" "bg-gray-100" "shadow-lg"
                             "focus-within:ring-2" "focus-within:ring-indigo-500"
@@ -25,13 +34,13 @@
      [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
             :src (:thumbnail-url item)}]]]])
 
-(defn media-list [& {:keys [media router]}]
-  [:ul {:id "media-list"
-        :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
-                          "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
-   (for [m media]
-     (media-item :item m
-                 :router router))])
+(defn media-list-items [& {:keys [page media router]}]
+  (map-indexed (fn [idx m]
+                 (media-item :item m
+                             :router router
+                             :load-page-on-reveal (when (= idx (- (count media) 1))
+                                                    (+ 1 page))))
+               media))
 
 (defn title-buttons []
   [:button {:id "upload-button"
@@ -42,7 +51,7 @@
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
 
-(defn page-content [& {:keys [media org router]}]
+(defn page-content [& {:keys [media org page router]}]
   [:div {:x-data (json/js {:selected nil})}
    [:link {:rel "stylesheet"
            :href (html/static-url "css/media.css")}]
@@ -54,31 +63,52 @@
                                        :signingUrl (url-for router :media/s3)
                                        :organizationId (:organization/id org)
                                        :trigger "#upload-button"})}]
-    (media-list :media media
-                :router router)
+    [:ul {:id "media-list"
+          :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
+                            "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
+     (media-list-items :router router
+                       :media media
+                       :page page)]
     [:div {:id "upload-success-forms"
            :class "hidden"}]]
    [:script {:type "module"
              :src (html/static-url "js/media.ts")}]])
 
-(defn render [& {:keys [href org page-num page-size router media total]}]
+(defn render [& {:keys [org page router media]}]
   (-> (page/page :page-title "Media"
                  :page-title-buttons (title-buttons)
                  :content (page-content :org org
+                                        :page page
                                         :media media
                                         :router router)
                  :router router)
       (html/render-html)))
 
-(defn handler [& {:keys [context ::r/router] :as _request}]
+(def Params
+  [:map
+   [:page {:default 1} :int]
+   [:page-size {:default 10} :int]])
+
+(defn handler [& {:keys [context htmx-request? query-params ::r/router] :as _request}]
   (let [{:keys [db current-organization imgix-media-domain]} context
+        {:keys [page page-size]} (params/decode Params query-params)
+        offset (* page-size (- page 1))
         media (->> (db.i/execute! db {:select :*
                                       :from :media
                                       :where [:= :organization_id (:organization/id current-organization)]
+                                      :limit page-size
+                                      :offset offset
                                       :order-by [[:created-at :desc]]})
                    (mapv #(assoc %
                                  :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
-    ;; TODO: We need to do infinite scroll here
-    (render :media media
-            :org current-organization
-            :router router)))
+
+    (if htmx-request?
+      (-> (media-list-items :router router
+                            :media media
+                            :page page)
+          (html/render-partial))
+      ;; (media-list)
+      (render :media media
+              :page page
+              :org current-organization
+              :router router))))

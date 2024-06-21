@@ -1,11 +1,11 @@
 (ns sepal.app.routes.activity.index
   (:require [malli.core :as m]
-            [malli.transform :as mt]
             [malli.util :as mu]
             [reitit.core :as r]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
@@ -215,18 +215,10 @@
    [:page-size {:default 25} :int]
    [:q :string]])
 
-(def params-transformer (mt/transformer
-                         (mt/key-transformer {:decode keyword})
-                         mt/strip-extra-keys-transformer
-                         mt/default-value-transformer
-                         mt/string-transformer))
-
-(defn decode-params [schema params]
-  (m/decode schema params params-transformer))
-
 (defn handler [& {:keys [context _headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
-        {:keys [page page-size _q] :as params} (decode-params Params query-params)
+        {:keys [page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)]
+    ;; TODO: Add an infinite scroll
     (render :activity activity
             :router router)))
