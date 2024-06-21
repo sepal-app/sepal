@@ -19,6 +19,8 @@
     (-> request
         (assoc :htmx-request?
                (= (get headers "hx-request") "true"))
+        (assoc :htmx-boosted?
+               (= (get headers "hx-boosted") "true"))
         (handler))))
 
 ;; (defn coerce-response [handler]

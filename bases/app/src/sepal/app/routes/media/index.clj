@@ -89,7 +89,7 @@
    [:page {:default 1} :int]
    [:page-size {:default 10} :int]])
 
-(defn handler [& {:keys [context htmx-request? query-params ::r/router] :as _request}]
+(defn handler [& {:keys [context htmx-boosted? htmx-request? query-params ::r/router] :as _request}]
   (let [{:keys [db current-organization imgix-media-domain]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -102,7 +102,7 @@
                    (mapv #(assoc %
                                  :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
 
-    (if htmx-request?
+    (if (and htmx-request? (not htmx-boosted?))
       (-> (media-list-items :router router
                             :media media
                             :page page)
