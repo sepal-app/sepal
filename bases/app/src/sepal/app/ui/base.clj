@@ -12,6 +12,5 @@
     [:link {:rel "stylesheet"
             :href (html/static-url "css/main.css")}]]
    [:body {:hx-ext "alpine-morph"
-           :hx-swap "morph"
-           :hx-boost true}
+           :hx-swap "morph"}
     content]])

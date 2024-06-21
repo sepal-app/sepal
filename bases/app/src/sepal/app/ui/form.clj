@@ -45,7 +45,7 @@
          :name name
          :label label
          :input [:input {:autocomplete "off"
-                         :class "spl-input"
+                         :class "input input-bordered input-sm"
                          :id (or id name)
                          :maxlength maxlength
                          :minlength minlength

@@ -7,7 +7,8 @@
   [:div
    [:div {:x-data "{showMobileSidebar: false}"
           :x-cloak true}
-    (sidebar/static :router router)
+    [:div {:hx-boost "true"}
+     (sidebar/static :router router)]
     [:div
      [:div {:class "md:pl-64 flex flex-col flex-1"}
       [:div {:class "sticky top-0 z-10 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-gray-100"}
