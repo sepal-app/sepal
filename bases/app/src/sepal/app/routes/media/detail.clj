@@ -9,6 +9,7 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.aws-s3.interface :as s3.i]
+            [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]))
 
 (defn zoom-view [& {:keys [zoom-url]}]
@@ -108,7 +109,10 @@
     (case request-method
       :delete
       (let [_ (media.i/delete! db (:media/id resource))
-            _ (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))]
+            _ (try
+                (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))
+                (catch Exception ex
+                  (error.i/ex->error ex)))]
         ;; TODO: handle errors
         (-> {:status 204
              :headers {"HX-Redirect" (url-for router

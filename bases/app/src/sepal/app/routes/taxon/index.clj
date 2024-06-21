@@ -139,7 +139,7 @@
                                            :offset offset
                                            :order-by [[:search-rank :desc] [:t.name :asc]])))]
 
-    (tap> (str "rows: " rows))
+    #_(tap> (str "rows: " rows))
 
     (cond
       (= (get headers "accept") "application/json")
