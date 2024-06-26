@@ -60,7 +60,10 @@
              :src (html/static-url "js/media_detail.ts")}]])
 
 (defn render [& {:keys [dl-url media preview-url router srcset-urls zoom-url]}]
-  (-> (page/page :content (page-content :media media
+  ;; We have to put the x-data in the page attrs b/c the zoom var is needed by
+  ;; the zoom button in the page-title-buttons
+  (-> (page/page :attrs {:x-data (json/js {:zoom false})}
+                 :content (page-content :media media
                                         :preview-url preview-url
                                         :router router
                                         :srcset-urls srcset-urls
@@ -70,10 +73,7 @@
                                                                               :media/detail
                                                                               {:id (:media/id media)})
                                                          :dl-url dl-url)
-                 :router router
-                 ;; We have to put the x-data here b/c the zoom var is needed by
-                 ;; the zoom button in the page-title-buttons
-                 :wrapper-attrs {:x-data (json/js {:zoom false})})
+                 :router router)
       (html/render-html)))
 
 (defn handler [& {:keys [context request-method ::r/router] :as _request}]

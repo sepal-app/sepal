@@ -3,7 +3,7 @@
             [sepal.app.ui.base :as base]
             [sepal.app.ui.sidebar :as sidebar]))
 
-(defn page-wrapper [& {:keys [router content]}]
+(defn page-wrapper [& {:keys [content footer router]}]
   [:div
    [:div {:x-data "{showMobileSidebar: false}"
           :x-cloak true}
@@ -31,21 +31,26 @@
        [:div {:class "py-6"}
         [:div {:id "page-wrapper-content"
                :class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
-         content]]]]]]
+         content]]]
+      (when footer
+        [:div {:id "page-footer"}
+         footer])]]]
+
    [:script {:type "module"
              :src (html/static-url "js/page.ts")}]])
 
-(defn page [& {:keys [content page-title page-title-buttons router wrapper-attrs]}]
-  (-> (page-wrapper :content [:div (merge {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
-                                          wrapper-attrs)
-                              [:div {:class "sm:flex sm:items-center h-10"}
-                               [:div {:class "sm:flex-auto"}
-                                [:h1 {:class "text-xl font-semibold text-gray-900"}
-                                 page-title]]
+(defn page [& {:keys [content footer page-title page-title-buttons router attrs]}]
+  (-> [:div (merge {} attrs)
+       (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
+                               [:div {:class "sm:flex sm:items-center h-10"}
+                                [:div {:class "sm:flex-auto"}
+                                 [:h1 {:class "text-xl font-semibold text-gray-900"}
+                                  page-title]]
 
-                               [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
-                                page-title-buttons]]
-                              [:div {:class "mt-8"}
-                               content]]
-                    :router router)
+                                [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
+                                 page-title-buttons]]
+                               [:div {:class "mt-8"}
+                                content]]
+                     :footer footer
+                     :router router)]
       (base/html)))

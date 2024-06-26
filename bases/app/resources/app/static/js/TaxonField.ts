@@ -4,16 +4,15 @@ export default (el, directive, { cleanup, evaluate }) => {
     const { url, exclude } = evaluate(directive.expression)
 
     function load(query, callback) {
+        // We need to clear the options so that previous options don't get
+        // merged with the new ones
+        this.clearOptions()
         const params = new URLSearchParams({ q: query, page_size: 6 })
         fetch(url + "?" + params.toString(), {
             headers: { Accept: "application/json" },
         })
             .then((response) => response.json())
-            .then((data) => {
-                console.log(data)
-                return data
-            })
-            // remove the current taxon from the complete list
+            // remove the current taxon from the completion list
             // TODO: Allow filtering the parent from the taxon
             // .then((data) => data.filter((t) => t.id.toString() == exclude))
             .then(callback)

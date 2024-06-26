@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.taxon.detail :as detail]
+            [sepal.app.routes.taxon.detail.name :as detail-name]
             [sepal.organization.interface :as org.i]
             [sepal.taxon.interface :as taxon.i]))
 
@@ -27,8 +28,12 @@
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   ["/:id/" {:name :taxon/detail
-             :handler #'detail/handler
-             :middleware [[middleware/resource-loader taxon-loader]
-                          [middleware/require-resource-org-membership :taxon/organization-id]
-                          require-viewer-org]}]])
+   ["/:id" {;;:name :taxon/detail
+             ;;:handler #'detail/handler
+            :middleware [[middleware/resource-loader taxon-loader]
+                         [middleware/require-resource-org-membership :taxon/organization-id]
+                         require-viewer-org]}
+    ["/" {:name :taxon/detail
+          :handler #'detail/handler}]
+    ["/name/" {:name :taxon/detail-name
+               :handler #'detail-name/handler}]]])
