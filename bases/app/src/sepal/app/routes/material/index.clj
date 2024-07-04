@@ -107,7 +107,9 @@
               :where [:and
                       [:= :m.organization_id (:organization/id org)]
                       (if q
-                        [:ilike :code (format "%%%s%%" q)]
+                        [:or
+                         [:ilike :m.code (format "%%%s%%" q)]
+                         [:ilike :a.code (format "%%%s%%" q)]]
                         :true)]}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
@@ -123,6 +125,10 @@
       (json/json-response (for [material rows]
                             {:code (:material/code material)
                              :id (:material/id material)
+                             :text (format "%s.%s (%s)"
+                                           (:accession/code material)
+                                           (:material/code material)
+                                           (:taxon/name material))
                              :accession-id (:material/accession-id material)}))
       (render :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})

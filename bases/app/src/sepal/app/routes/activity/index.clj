@@ -123,7 +123,6 @@
         dates (sort #(.isAfter %1 %2) (keys activity-by-date))]
     (reduce (fn [acc date]
               (let [activity (get activity-by-date date)]
-                (tap> (str "date: " date))
                 (conj acc
                       [timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
                        (reduce (fn [acc cur]

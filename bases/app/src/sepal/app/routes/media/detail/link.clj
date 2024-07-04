@@ -7,15 +7,15 @@
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]))
 
 (def resource-types
   [{:label "Accession"
     :value "accession"}
-   ;; TODO: Need to add a MaterialField first
-   #_{:label "Material"
-      :value "material"}
+   {:label "Material"
+    :value "material"}
    {:label "Taxon"
     :value "taxon"}
    {:label "Location"
@@ -58,7 +58,7 @@
         location-name])]))
 
 (defn material-field [& {:keys [org material-name router name id material-id]}]
-  (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+  (let [url (url-for router :org/materials {:org-id (:organization/id org)})]
     [:select {:x-material-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -79,7 +79,7 @@
     (form/field :label "Resource type"
                 :name "resource-type"
                 :input [:select {:name "resource-type"
-                                 :class "select select-bordered select-sm w-full max-w-xs"
+                                 :class "select select-bordered select-sm w-full max-w-xs leading-4"
                                  :autocomplete "off"
                                  :id "resource-type"
                                  :x-validate.required true
@@ -119,20 +119,66 @@
       "Cancel"]
      (form/button {:class "btn btn-sm btn-primary mb-4"}  "Save")]]))
 
-(defn link-anchor [& {:keys [router link]}]
-  (case (:media-link/resource-type link)
-    "accession"
-    [:a {:href (url-for router :accession/detail {:id (:media-link/resource-id link)})}
-     (-> link :media-link/resource :accession/code)]
-    "location"
-    [:a {:href (url-for router :location/detail {:id (:media-link/resource-id link)})}
-     (-> link :media-link/resource :location/name)]
-    "material"
-    [:a {:href (url-for router :material/detail {:id (:media-link/resource-id link)})}
-     (-> link :media-link/resource :material/code)]
-    "taxon"
-    [:a {:href (url-for router :taxon/detail {:id (:media-link/resource-id link)})}
-     (-> link :media-link/resource :taxon/name)]))
+;; (ns-unmap *ns* 'link-text)
+
+(defmulti link-text
+  (fn [_db link]
+    (:media-link/resource-type link)))
+
+(defmethod link-text "accession"
+  [db link]
+  (->> {:select [[[:concat :a.code " (" :t.name ")"] :text]]
+        :from [[:media-link :ml]]
+        :join [[:accession :a]
+               [:= :a.id (:media-link/resource-id link)]
+               [:taxon :t]
+               [:= :t.id :a.taxon-id]]
+        :where [:= :ml.id (:media-link/id link)]}
+       (db.i/execute-one! db)
+       :text))
+
+(defmethod link-text "location"
+  [db link]
+  (->> {:select [[[:concat :l.name " (" :l.code ")"] :text]]
+        :from [[:media-link :ml]]
+        :join [[:location :l]
+               [:= :l.id (:media-link/resource-id link)]]
+        :where [:= :ml.id (:media-link/id link)]}
+       (db.i/execute-one! db)
+       :text))
+
+(defmethod link-text "material"
+  [db link]
+  (->> {:select [[[:concat :a.code "." :m.code " (" :t.name ")"] :text]]
+        :from [[:media-link :ml]]
+        :join [[:material :m]
+               [:= :m.id (:media-link/resource-id link)]
+               [:accession :a]
+               [:= :a.id :m.accession_id]
+               [:taxon :t]
+               [:= :t.id :a.taxon-id]]
+        :where [:= :ml.id (:media-link/id link)]}
+       (db.i/execute-one! db)
+       :text))
+
+(defmethod link-text "taxon"
+  [db link]
+  (->> {:select [[[:concat  :t.name] :text]]
+        :from [[:media-link :ml]]
+        :join [[:taxon :t]
+               [:= :t.id (:media-link/resource-id link)]]
+        :where [:= :ml.id (:media-link/id link)]}
+       (db.i/execute-one! db)
+       :text))
+
+(defn link-anchor [& {:keys [db router link]}]
+  (let [text (link-text db link)
+        url (case (:media-link/resource-type link)
+              "accession" (url-for router :accession/detail {:id (:media-link/resource-id link)})
+              "location" (url-for router :location/detail {:id (:media-link/resource-id link)})
+              "material" (url-for router :material/detail {:id (:media-link/resource-id link)})
+              "taxon" (url-for router :taxon/detail {:id (:media-link/resource-id link)}))]
+    [:a {:href url} text]))
 
 (defn delete-button [& {:keys [media router]}]
   [:btn {:href "#"
@@ -144,14 +190,13 @@
          :alt "Delete"}
    (heroicons/outline-trash :class "size-4")])
 
-(defn render [& {:keys [link media org router]}]
+(defn render [& {:keys [anchor link media org router]}]
   (-> [:div#media-link-root {:x-data (json/js {:editLink false
                                                :resourceType (:media-link/resource-type link)})}
        [:template {:x-if "!editLink"}
         (if link
           [:div {:class "flex flex-row items-center gap-4 my-2"}
-           (link-anchor :link link
-                        :router router)
+           anchor
            (delete-button :media media
                           :router router)]
           [:btn {:href "#"
@@ -191,8 +236,10 @@
           (flash/error {} "Error: Could not unlink resource")))
 
       :get
-      (let [link (media.i/get-link db (:media/id resource))]
-        (render :link link
+      (let [link (media.i/get-link db (:media/id resource))
+            anchor (link-anchor :db db :router router :link link)]
+        (render :anchor anchor
+                :link link
                 :media resource
                 :org organization
                 :router router)))))

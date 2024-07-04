@@ -19,30 +19,11 @@
       (db.i/coerce spec/Media result))))
 
 (defn get-link [db media-id]
-  ;; TODO: We could probably get the linked resource data in a single query but
-  ;; the naive way is fine for now.
-  (when-let [link (some->> {:select :*
-                            :from :media_link
-                            :where [:= :media_id media-id]}
-                           (db.i/execute-one! db)
-                           (db.i/coerce spec/MediaLink))]
-    (case (:media-link/resource-type link)
-      "accession"
-      (assoc link
-             :media-link/resource
-             (accession.i/get-by-id db (:media-link/resource-id link)))
-      "taxon"
-      (assoc link
-             :media-link/resource
-             (taxon.i/get-by-id db (:media-link/resource-id link)))
-      "location"
-      (assoc link
-             :media-link/resource
-             (location.i/get-by-id db (:media-link/resource-id link)))
-      "material"
-      (assoc link
-             :media-ling/resource
-             (material.i/get-by-id db (:media-link/resource-id link))))))
+  (some->> {:select :*
+            :from :media_link
+            :where [:= :media_id media-id]}
+           (db.i/execute-one! db)
+           (db.i/coerce spec/MediaLink)))
 
 (defn get-linked [db resource-type resource-id organization-id opts]
   (let [opts-map (apply hash-map opts)]

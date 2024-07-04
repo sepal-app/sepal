@@ -49,6 +49,7 @@
 
 (def MediaLink
   [:map {:closed true}
+   [:media-link/id id]
    [:media-link/media-id id]
    [:media-link/resource-type {:encode/db csk/->kebab-case-string}
     :string]
