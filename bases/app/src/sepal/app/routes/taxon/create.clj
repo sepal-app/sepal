@@ -2,9 +2,9 @@
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.taxon.form :as taxon.form]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -21,13 +21,8 @@
 
                     :values values)])
 
-(defn page-footer [& {:keys []}]
-  [:div {:class "fixed bottom-0 flex flex-row gap-4 p-4 bg-white shadow w-full"
-         :x-transition:enter "transition-transform ease-out duration-300"
-         :x-transition:enter-start "translate-y-20"
-         :x-transition:enter-end "translate-y-0"
-         :x-show "dirty"}
-   [:button {:class "btn btn-primary"
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
              :x-on:click "$refs.taxonForm.submit()"}
     "Save"]
    [:button {:class "btn btn-secondary"
@@ -40,7 +35,7 @@
                                         :org org
                                         :router router
                                         :values values)
-                 :footer (page-footer)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title "Create taxon"
                  :router router)
       (html/render-html)))

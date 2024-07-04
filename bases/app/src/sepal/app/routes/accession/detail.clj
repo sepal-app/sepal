@@ -6,6 +6,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -18,18 +19,30 @@
                        :router router
                        :values values))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$refs.accessionForm.submit()"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
+             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
+             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
+    "Cancel"]])
+
 (defn render [& {:keys [errors org router accession taxon values]}]
-  (-> (page/page :content (page-content :errors errors
+  (-> (page/page :attrs {:x-data "accessionFormData"}
+                 :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :accession accession
                                         :values values
                                         :taxon taxon)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title (str (:accession/code accession) " - " (:taxon/name taxon))
                  :router router)
       (html/render-html)))
 
-(defn update! [db accession-id updated-by data]
+(defn save! [db accession-id updated-by data]
   (db.i/with-transaction [tx db]
     (let [result (accession.i/update! tx accession-id data)]
       (when-not (error.i/error? result)
@@ -47,7 +60,7 @@
 
     (case request-method
       :post
-      (let [result (update! db (:accession/id resource) (:user/id viewer) params)]
+      (let [result (save! db (:accession/id resource) (:user/id viewer) params)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :accession/detail {:org-id (-> organization :organization/id str)

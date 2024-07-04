@@ -2,9 +2,10 @@
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.ui.page :as page]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.location.form :as location.form]
+            [sepal.app.ui.form :as ui.form]
+            [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
@@ -17,11 +18,21 @@
                       :router router
                       :values values))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$refs.locationForm.submit()"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
+    "Cancel"]])
+
 (defn render [& {:keys [errors org router values]}]
-  (-> (page/page :content (page-content :errors errors
+  (-> (page/page :attrs {:x-data "locationFormData"}
+                 :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :values values)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title "Create location"
                  :router router)
       (html/render-html)))

@@ -6,6 +6,7 @@ document.addEventListener("alpine:init", () => {
     Alpine.data("taxonFormData", () => ({
         dirty: false,
         init() {
+            // TODO: Can we generalize this for any form?
             const selector = "#taxon-form input, #taxon-form select, #taxon-form textarea"
             const inputs = document.querySelectorAll(selector)
             for (const input of inputs) {

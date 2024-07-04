@@ -33,8 +33,6 @@
 
 (defmethod activity-description :organization/created
   [& {:keys [router activity]}]
-  (tap> (str ":organization/create: " activity))
-
   (let [{:keys [organization user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created organization ")
                                [:a {:class "spl-link"

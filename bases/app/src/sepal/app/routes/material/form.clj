@@ -18,7 +18,8 @@
    (form/form
     {:action action
      :method "POST"
-     :id "material-form"}
+     :id "material-form"
+     :x-ref "materialForm"}
     [:<>
      ;; TODO: Add an organization-id field so we don't have to nest the url under the id
      ;;
@@ -60,10 +61,7 @@
                              [:option {:value (:location-id values)}
                               (format "%s (%s)"
                                       (:location-code values)
-                                      (:location-name values))])]))
-
-     [:div {:class "spl-btn-grp mt-4"}
-      (form/button "Save")]])
+                                      (:location-name values))])]))])
 
    [:script {:type "module"
              :src (html/static-url "js/material_form.ts")}]])

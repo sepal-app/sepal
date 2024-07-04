@@ -11,7 +11,8 @@
    (form/form
     {:action action
      :method "POST"
-     :id "accession-form"}
+     :id "accession-form"
+     :x-ref "accessionForm"}
     [:<>
      (form/anti-forgery-field)
      (form/input-field :label "Code"
@@ -31,9 +32,6 @@
                                     :autocomplete "off"}
                            (when (:taxon-id values)
                              [:option {:value (:taxon-id values)}
-                              (:taxon-name values)])]))
-
-     [:div {:class "spl-btn-grp mt-4"}
-      (form/button "Save")]])
+                              (:taxon-name values)])]))])
    [:script {:type "module"
              :src (html/static-url "js/accession_form.ts")}]])

@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.location.form :as location.form]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -17,12 +18,24 @@
                       :router router
                       :values values))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$refs.locationForm.submit()"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
+             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
+             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
+    "Cancel"]])
+
 (defn render [& {:keys [errors org router location values]}]
-  (-> (page/page :content (page-content :errors errors
+  (-> (page/page :attrs {:x-data "locationFormData"}
+                 :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :location location
                                         :values values)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title (:location/name location)
                  :router router)
       (html/render-html)))

@@ -1,14 +1,12 @@
 import Alpine from "alpinejs"
 
-import TaxonField from "./TaxonField.ts"
-
 document.addEventListener("alpine:init", () => {
-    Alpine.data("accessionFormData", () => ({
+    Alpine.data("locationFormData", () => ({
         dirty: false,
         init() {
             // TODO: Can we generalize this for any form?
             const selector =
-                "#accession-form input, #accession-form select, #accession-form textarea"
+                "#location-form input, #location-form select, #location-form textarea"
             const inputs = document.querySelectorAll(selector)
             for (const input of inputs) {
                 input.addEventListener("input", (el) => {
@@ -17,5 +15,4 @@ document.addEventListener("alpine:init", () => {
             }
         },
     }))
-    Alpine.directive("taxon-field", TaxonField)
 })

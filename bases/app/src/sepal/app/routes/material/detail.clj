@@ -5,6 +5,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.material.form :as material.form]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
@@ -18,13 +19,25 @@
                       :router router
                       :values values))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$refs.materialForm.submit()"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
+             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
+             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
+    "Cancel"]])
+
 (defn render [& {:keys [errors org router material accession taxon values]}]
-  (-> (page/page :content (page-content :errors errors
+  (-> (page/page :attrs {:x-data "materialFormData"}
+                 :content (page-content :errors errors
                                         :org org
                                         :router router
                                         :material material
                                         :values values
                                         :taxon taxon)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title (format "%s.%s - %s"
                                      (:accession/code accession)
                                      (:material/code material)

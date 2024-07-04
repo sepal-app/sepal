@@ -4,9 +4,10 @@
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.alert :as alert]
             [sepal.app.ui.dropdown :as dropdown]
-            [sepal.app.routes.taxon.form :as taxon.form]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
@@ -46,13 +47,8 @@
                        :read-only read-only?
                        :values values)])])
 
-(defn page-footer [& {:keys []}]
-  [:div {:class "fixed flex bottom-0 flex-row gap-4 p-4 bg-white shadow-2xl w-full"
-         :x-transition:enter "transition-transform ease-out duration-300"
-         :x-transition:enter-start "translate-y-20"
-         :x-transition:enter-end "translate-y-0"
-         :x-show "dirty"}
-   [:button {:class "btn btn-primary"
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
              :x-on:click "$refs.taxonForm.submit()"}
     "Save"]
    [:button {:class "btn btn-secondary"
@@ -68,7 +64,7 @@
                                         :router router
                                         :taxon taxon
                                         :values values)
-                 :footer (page-footer)
+                 :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title (:taxon/name taxon)
                  :page-title-buttons (page-title-buttons :org org
                                                          :router router)

@@ -67,12 +67,13 @@
            :class "form-control w-full max-w-xs"}
    [:div {:class "label"}
     [:span {:class "label-text"} label]]
-   [:textarea {:name name
+   [:textarea {:autocomplete "off"
+               :name name
                :id id
                :required (or required false)
-               :value value
                :type (or type "text")
-               :class "textarea textarea-bordered"}]
+               :class "textarea textarea-bordered"}
+    value]
 
    (when errors
      [:ul {:class "errors"}
@@ -88,3 +89,11 @@
                     :x-bind:disabled "$refs?.form && !$validate.isComplete($refs.form)"}
                    attrs)
     children]))
+
+(defn footer [& {:keys [buttons]}]
+  [:div {:class "fixed bottom-0 flex flex-row gap-4 p-4 bg-white shadow w-full"
+         :x-transition:enter "transition-transform ease-out duration-300"
+         :x-transition:enter-start "translate-y-20"
+         :x-transition:enter-end "translate-y-0"
+         :x-show "dirty"}
+   [:<> buttons]])
