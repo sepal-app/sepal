@@ -29,6 +29,8 @@
 (defn handler [& {:keys [context params ::r/router] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context
         {files :files
+         link-resource-type :linkResourceType
+         link-resource-id :linkResourceId
          organization-id :organizationId} params
         files (if (sequential? files) files [files])
         organization-id (parse-long organization-id)
@@ -49,6 +51,8 @@
     (->> files
          (mapv #(json/parse-str % {:key-fn csk/->kebab-case-keyword}))
          (mapv #(merge % {:organization-id organization-id
+                          :link-resource-type link-resource-type
+                          :link-resource-id link-resource-id
                           :s3-bucket media-upload-bucket
                           ;; :s3-url (presign-fn %)
                           :s3-key (s3-key-fn (:filename %))

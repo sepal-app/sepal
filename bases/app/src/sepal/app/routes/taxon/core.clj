@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.taxon.detail :as detail]
+            [sepal.app.routes.taxon.detail.media :as detail-media]
             [sepal.app.routes.taxon.detail.name :as detail-name]
             [sepal.organization.interface :as org.i]
             [sepal.taxon.interface :as taxon.i]))
@@ -36,4 +37,6 @@
     ["/" {:name :taxon/detail
           :handler #'detail/handler}]
     ["/name/" {:name :taxon/detail-name
-               :handler #'detail-name/handler}]]])
+               :handler #'detail-name/handler}]
+    ["/media/" {:name :taxon/detail-media
+                :handler #'detail-media/handler}]]])

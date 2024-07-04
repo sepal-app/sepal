@@ -41,9 +41,8 @@
          (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
            (form/field :label "Parent"
                        :name "parent-id"
-                       ;; :readonly read-only
                        :input [:select {:x-taxon-field (json/js {:url url})
-                                        :class "input input-bordered input-sm"
+                                        :class "select select-bordered select-sm w-full max-w-xs px-2"
                                         :name "parent-id"
                                         :id "parent-id"
                                         :x-validate.required true
@@ -61,7 +60,8 @@
          (form/field :label "Rank"
                      :name "rank"
                      :input [:select {:name "rank"
-                                      :class "select select-bordered select-sm w-full max-w-xs"
+                                      :x-rank-field true
+                                      :class "select select-bordered select-sm w-full max-w-xs px-2"
                                       :autocomplete "off"
                                       :id "rank"
                                       :read-only read-only

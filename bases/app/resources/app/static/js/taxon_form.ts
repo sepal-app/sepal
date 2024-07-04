@@ -3,7 +3,6 @@ import TomSelect from "tom-select"
 import TaxonField from "./TaxonField.ts"
 
 document.addEventListener("alpine:init", () => {
-    console.log("taxon_form/alpine:init")
     Alpine.data("taxonFormData", () => ({
         dirty: false,
         init() {
@@ -18,13 +17,13 @@ document.addEventListener("alpine:init", () => {
     }))
 
     Alpine.directive("taxon-field", TaxonField)
-    const rankSelect = document.querySelector("select#rank")
-    if (rankSelect) {
-        new TomSelect("select#rank", {
+
+    Alpine.directive("rank-field", (el, directive) => {
+        new TomSelect(el, {
             itemClass: "sm:text-sm bg-white",
-            optionClass: "sm:text-sm bg-white py-2 px-3",
+            optionClass: "sm:text-sm bg-white py-2 px-2",
             sortField: { field: "text" },
             selectOnTab: true,
         })
-    }
+    })
 })

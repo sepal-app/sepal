@@ -44,6 +44,20 @@
              :media-ling/resource
              (material.i/get-by-id db (:media-link/resource-id link))))))
 
+(defn get-linked [db resource-type resource-id organization-id opts]
+  (let [opts-map (apply hash-map opts)]
+    (some->> {:select :m.*
+              :from [[:public.media :m]]
+              :join [[:media_link :ml]
+                     [:= :ml.media_id :m.id]]
+              :where [:and
+                      [:= :ml.resource_type resource-type]
+                      [:= :ml.resource_id resource-id]
+                      [:= :m.organization_id organization-id]]}
+             (merge opts-map)
+             (db.i/execute! db)
+             (mapv #(db.i/coerce spec/Media %)))))
+
 (defn create! [db data]
   (try
     ;; First we db/coerce the data into a CreateMedia to make sure it

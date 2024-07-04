@@ -8,7 +8,7 @@
             [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.page :as page]
-            ;; [sepal.app.ui.tabs :as tabs]
+            [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
@@ -22,19 +22,18 @@
                                              {:org-id (:organization/id org)})
                                     "Add a taxon")))
 
-#_(defn items [& {:keys [router taxon]}]
-    [{:label "Name"
-      :key :name
-      :href (url-for router :taxon/detail-name {:id (:taxon/id taxon)})}
-     {:label "Media"
-      :key :media
-      :href (url-for router :taxon/detail-media {:id (:taxon/id taxon)})}])
+(defn tab-items [& {:keys [router taxon]}]
+  [{:label "Name"
+    :key :name
+    :href (url-for router :taxon/detail-name {:id (:taxon/id taxon)})}
+   {:label "Media"
+    :key :media
+    :href (url-for router :taxon/detail-media {:id (:taxon/id taxon)})}])
 
 (defn page-content [& {:keys [errors org router taxon values]}]
   [:div {:class "flex flex-col gap-2"}
-   ;; TODO: Enable when we have other tabs ready
-   #_(tabs/tabs :active :name
-                :items (items :router router :taxon taxon))
+   (tabs/tabs :active :name
+              :items (tab-items :router router :taxon taxon))
 
    (let [read-only? (nil? (:taxon/organization-id taxon))]
      [:div

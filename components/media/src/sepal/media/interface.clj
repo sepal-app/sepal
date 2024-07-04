@@ -8,6 +8,9 @@
 (defn get-link [db media-id]
   (core/get-link db media-id))
 
+(defn get-linked [db resource-type resource-id organization-id & opts]
+  (core/get-linked db resource-type resource-id organization-id opts))
+
 (defn create! [db data]
   (core/create! db data))
 

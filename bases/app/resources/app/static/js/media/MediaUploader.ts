@@ -1,12 +1,17 @@
 import Uppy from "@uppy/core"
 import AwsS3 from "@uppy/aws-s3"
 import Dashboard from "@uppy/dashboard"
-import htmx from "htmx.org"
+import "htmx.org"
 
 export default (el, directive, { cleanup, evaluate }) => {
-    const { trigger, antiForgeryToken, signingUrl, organizationId } = evaluate(
-        directive.expression,
-    )
+    const {
+        trigger,
+        antiForgeryToken,
+        signingUrl,
+        organizationId,
+        linkResourceType,
+        linkResourceId,
+    } = evaluate(directive.expression)
     const uppy = new Uppy({
         logger: {
             // debug: (...args) => console.log("DEBUG: ", ...args),
@@ -53,7 +58,7 @@ export default (el, directive, { cleanup, evaluate }) => {
         // inputs with the signing and when submitted will create the media
         // items in the database
         await htmx.ajax("POST", signingUrl, {
-            values: { files, organizationId },
+            values: { files, organizationId, linkResourceType, linkResourceId },
             target: "#upload-success-forms",
             headers: {
                 "X-CSRF-Token": antiForgeryToken,
