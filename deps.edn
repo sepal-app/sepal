@@ -27,8 +27,7 @@
                                org.clojure/tools.cli {:mvn/version "1.0.219"}
                                org.clojure/tools.deps {:mvn/version "0.18.1354"}
                                org.clojure/tools.namespace {:mvn/version "1.4.4"}
-                               ring-refresh/ring-refresh {:mvn/version "0.2.0"}
-                               ring/ring-devel {:mvn/version "1.12.2"}}
+                               ring-refresh/ring-refresh {:mvn/version "0.2.0"}}
 
                   ;; OmitStackTraceInFastThrow add stacktraces when running in a
                   ;; repl that might otherwise have been optimized out, see
