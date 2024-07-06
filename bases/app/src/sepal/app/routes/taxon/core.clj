@@ -29,9 +29,7 @@
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   ["/:id" {;;:name :taxon/detail
-             ;;:handler #'detail/handler
-            :middleware [[middleware/resource-loader taxon-loader]
+   ["/:id" {:middleware [[middleware/resource-loader taxon-loader]
                          [middleware/require-resource-org-membership :taxon/organization-id]
                          require-viewer-org]}
     ["/" {:name :taxon/detail
