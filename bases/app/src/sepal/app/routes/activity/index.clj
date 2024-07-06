@@ -157,7 +157,7 @@
       (mu/assoc :user [:maybe user.spec/User])
       (mu/assoc :organization [:maybe org.spec/Organization])))
 
-(defn get-activity [db page page-size]
+(defn get-activity [db org page page-size]
   (let [offset (* page-size (- page 1))]
     (->> (db.i/execute! db {:select [:a.*
                                      :tax.*
@@ -185,6 +185,7 @@
                                               [:->> :a.data "organization-id"]
                                               [[:cast :org.id :text]]]]]
                             :order-by [[:a.created_at :desc]]
+                            :where [:= :a.organization_id (:organization/id org)]
                             :offset offset
                             :limit page-size})
          (mapv #(reduce-kv (fn [acc k v]
@@ -213,9 +214,9 @@
    [:q :string]])
 
 (defn handler [& {:keys [context _headers query-params ::r/router]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db organization]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
-        activity (get-activity db page page-size)]
+        activity (get-activity db organization page page-size)]
     ;; TODO: Add an infinite scroll
     (render :activity activity
             :router router)))
