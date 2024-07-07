@@ -1,4 +1,4 @@
-(ns sepal.app.ui.sidebar
+(ns sepal.app.ui.sidebar.static
   (:require [clojure.string :as s]
             [sepal.app.globals :as g]
             [sepal.app.html :as html]
@@ -6,7 +6,7 @@
             [sepal.app.ui.icons.bootstrap :as bootstrap]
             [sepal.app.ui.icons.heroicons :as heroicons]))
 
-(defn static-sidebar-item [text & {:keys [href icon current]}]
+(defn sidebar-item [text & {:keys [href icon current]}]
   [:a {:href href
        :class  (cond->> ["hover:bg-gray-50" "hover:text-gray-900" "group" "flex" "items-center"
                          "px-2" "py-2" "text-sm" "font-medium" "rounded-md"]
@@ -26,7 +26,7 @@
       icon])
    text])
 
-(defn static [& {:keys []}]
+(defn sidebar [& {:keys []}]
   [:div
    [:div {:class (html/attr "hidden" "md:flex" "md:w-64" "md:flex-col" "md:fixed" "md:inset-y-0")}
     [:div {:class (html/attr "flex-1" "flex" "flex-col" "min-h-0" "border-r" "border-gray-200" "bg-white")}
@@ -41,30 +41,30 @@
          [:a {:href (url-for g/*router* :org/detail {:id (:id g/*organization*)})}
           (:organization/name g/*organization*)])]
       [:nav {:class "mt-5 flex-1 px-2 bg-white space-y-1"}
-       (static-sidebar-item "Activity"
-                            :href (url-for g/*router* :org/activity {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-clock)
-                            :current? false)
-       (static-sidebar-item "Accessions"
-                            :href (url-for g/*router* :org/accessions {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-rectangle-group)
-                            :current? false)
-       (static-sidebar-item "Material"
-                            :href (url-for g/*router* :org/materials {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-tag)
-                            :current? false)
-       (static-sidebar-item "Taxa"
-                            :href (url-for g/*router* :org/taxa {:org-id (:organization/id g/*organization*)})
-                            :icon (bootstrap/flower1)
-                            :current? false)
-       (static-sidebar-item "Locations"
-                            :href (url-for g/*router* :org/locations {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-map-pin)
-                            :current? false)
-       (static-sidebar-item "Media"
-                            :href (url-for g/*router* :org/media {:org-id (:organization/id g/*organization*)})
-                            :icon (heroicons/outline-photo)
-                            :current? false)]]
+       (sidebar-item "Activity"
+                     :href (url-for g/*router* :org/activity {:org-id (:organization/id g/*organization*)})
+                     :icon (heroicons/outline-clock)
+                     :current? false)
+       (sidebar-item "Accessions"
+                     :href (url-for g/*router* :org/accessions {:org-id (:organization/id g/*organization*)})
+                     :icon (heroicons/outline-rectangle-group)
+                     :current? false)
+       (sidebar-item "Material"
+                     :href (url-for g/*router* :org/materials {:org-id (:organization/id g/*organization*)})
+                     :icon (heroicons/outline-tag)
+                     :current? false)
+       (sidebar-item "Taxa"
+                     :href (url-for g/*router* :org/taxa {:org-id (:organization/id g/*organization*)})
+                     :icon (bootstrap/flower1)
+                     :current? false)
+       (sidebar-item "Locations"
+                     :href (url-for g/*router* :org/locations {:org-id (:organization/id g/*organization*)})
+                     :icon (heroicons/outline-map-pin)
+                     :current? false)
+       (sidebar-item "Media"
+                     :href (url-for g/*router* :org/media {:org-id (:organization/id g/*organization*)})
+                     :icon (heroicons/outline-photo)
+                     :current? false)]]
      [:div {:x-data "{expanded: false}"
             :role "region"
             :class "flex-shrink-0 flex border-t border-gray-200 bg-green-50/50"}
