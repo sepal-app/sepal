@@ -11,78 +11,80 @@
    [sepal.user.interface :as user.i]
    [sepal.validation.interface :as validation.i]))
 
-(defn render [& {:keys [_error invitation next request router]}]
-  (let [{:keys [params]} request]
+(defn form [& {:keys [request email invitation next router]}]
+  [:form {:method "post"
+          :action (url-for router :register/index)}
+   (form/anti-forgery-field)
+   (form/hidden-field :name "next" :value next)
+   (when invitation
+     (form/hidden-field :name "invitation" :value invitation))
 
-    ;; TODO: We need a way to keep the values in the form field after the
-    ;; submit. Maybe we could use htmx so that we intercept the redirect and
-    ;; inject the form into the page with the errors and values in tact
-    (-> [:div
-         [:div {:class "grid grid-cols-3 gap-12 pl-8"}
-          [:div {:class "col-start-1 flex flex-col justify-center"}
-           [:h1 {:class "mb-12 text-3xl"} "Welcome to Sepal"]
-           [:form {:method "post"
-                   :action (url-for router :register/index)}
-            (form/anti-forgery-field)
-            (form/hidden-field :name "next" :value next)
-            (when invitation
-              (form/hidden-field :name "invitation" :value invitation))
+   (form/input-field :label "Email"
+                     :name "email"
+                     :value email
+                     :required true
+                     :type "email"
+                     :errors (flash/field-error request :email))
+   (form/input-field :label "Password"
+                     :name "password"
+                     :type "password"
+                     :required true
+                     ;; :value (:password params)
+                     :errors (flash/field-error request :password))
+   ;; TODO: Validate that the password match client side
+   (form/input-field :label "Confirm password"
+                     :name "confirm-password"
+                     :type "password"
+                     :required true
+                     ;; :value (:confirm-password params)
+                     :errors (flash/field-error request :confirm-password))
 
-            (form/input-field :label "Email"
-                              :name "email"
-                              :value (:email params)
-                              :required true
-                              :type "email"
-                              :errors (flash/field-error request :email))
-            (form/input-field :label "Password"
-                              :name "password"
-                              :type "password"
-                              :required true
-                              :value (:password params)
-                              :errors (flash/field-error request :password))
-            ;; TODO: Validate that the password match client side
-            (form/input-field :label "Confirm password"
-                              :name "confirm-password"
-                              :type "password"
-                              :required true
-                              :value (:confirm-password params)
-                              :errors (flash/field-error request :confirm-password))
+   [:div {:class (html/attr "flex" "flex-row" "mt-4" "justify-between" "items-center")}
+    [:button {:type "submit"
+              ;; :x-bind:disabled "submitting"
+              :class (html/attr "inline-flex" "justify-center" "py-2" "px-4" "border"
+                                "border-transparent" "shadow-sm" "text-sm" "font-medium"
+                                "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
+                                "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
+                                "focus:ring-green-500")}
+     "Create account"]
+    ;; TODO:
+    ;; [:p
+    ;;  [:a {:href "/forgot_password"}
+    ;;   "Forgot password?"]]
+    ]
 
-            [:div {:class (html/attr "flex" "flex-row" "mt-4" "justify-between" "items-center")}
-             [:button {:type "submit"
-                       ;; :x-bind:disabled "submitting"
-                       :class (html/attr "inline-flex" "justify-center" "py-2" "px-4" "border"
-                                         "border-transparent" "shadow-sm" "text-sm" "font-medium"
-                                         "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
-                                         "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
-                                         "focus:ring-green-500")}
-              "Create account"]
-             ;; TODO:
-             ;; [:p
-             ;;  [:a {:href "/forgot_password"}
-             ;;   "Forgot password?"]]
-             ]
+   [:div {:class "mt-4"}
+    ;; TODO
+    [:a {:href "/login"} "Already have an account?"]]])
 
-            [:div {:class "mt-4"}
-             ;; TODO
-             [:a {:href "/login"} "Already have an account?"]]]
+(defn render [& {:keys [email #_field-errors invitation next request router flash]}]
+  (-> [:div
+       [:div {:class "absolute top-0 left-0 right-0 bottom-0"}
+        [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
+               :class "h-screen w-full object-cover object-center -z-10"
+               :alt "login banner"}]]
+       [:div {:class "grid grid-cols-3"}
+        [:div {:class "col-start-1 col-span-3 lg:col-start-2 lg:col-span-1 flex flex-col justify-center z-10 lg:bg-white/60 h-screen shadow"}
+         [:div {:class "bg-white/95 lg:bg-white/80 p-8 lg:block sm:max-lg:flex sm:max-lg:flex-col sm:max-lg:items-center"}
+          [:div
+           [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+           (form :email email
+                 :invitation invitation
+                 :next next
+                 :request request
+                 :router router)]]
 
-           ;; TODO: Non field errors
+         ;; TODO: Non field errors
 
-           ;; (when error
-           ;;   [:div {:class "rounded-md bg-red-50 p-4 text-red-800"
-           ;;          :x-show "!submitting"}
-           ;;    error])
-
-           (flash/banner (get-in request [:flash :messages]))]
-
-          [:div {:class "col-span-2"}
-           [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
-                  :class "h-screen w-full object-cover object-center"
-                  :alt "login banner"}]]]]
-
-        (base/html)
-        (html/render-html))))
+          ;; (when error
+          ;;   [:div {:class "rounded-md bg-red-50 p-4 text-red-800"
+          ;;          :x-show "!submitting"}
+          ;;    error])
+         ]]
+       (flash/banner (:messages flash))]
+      (base/html)
+      (html/render-html)))
 
 (def RegisterForm
   [:and
