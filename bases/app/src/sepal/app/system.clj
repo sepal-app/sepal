@@ -12,9 +12,9 @@
 ;; Make sure we have the malli.experimental.time schemes in the default
 ;; registry.
 (mr/set-default-registry!
- (mr/composite-registry
-  (m/default-schemas)
-  (met/schemas)))
+  (mr/composite-registry
+    (m/default-schemas)
+    (met/schemas)))
 
 (defn start! [profile]
   (let [system-config (config.i/read-config "app/system.edn"

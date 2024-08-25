@@ -61,12 +61,12 @@
 (defn table [& {:keys [rows page href page-size router total]}]
   [:div {:class "w-full"}
    (table/card-table
-    (table/table :columns (table-columns router)
-                 :rows rows)
-    (table/paginator :current-page page
-                     :href href
-                     :page-size page-size
-                     :total total))])
+     (table/table :columns (table-columns router)
+                  :rows rows)
+     (table/paginator :current-page page
+                      :href href
+                      :page-size page-size
+                      :total total))])
 
 (defn render [& {:keys [href org page page-size router rows total]}]
   (-> (pages.list/render :content (table :href href

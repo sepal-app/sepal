@@ -1,5 +1,6 @@
 (ns sepal.organization.core
-  (:require [integrant.core :as ig]
+  (:require [camel-snake-kebab.core :as csk]
+            [integrant.core :as ig]
             [malli.generator :as mg]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
@@ -26,14 +27,7 @@
            (store.i/coerce spec/Organization)))
 
 (defn assign-role! [db data]
-  ;; TODO: validate assign role
-  (try
-    (db.i/execute-one! db
-                       {:insert-into :organization-user
-                        :values [data]
-                        :returning :*})
-    (catch Exception e
-      {:error {:message (ex-message e)}})))
+  (store.i/create! db :organization-user data spec/CreateOrganizationUser))
 
 (create-ns 'sepal.organization.interface)
 (alias 'org.i 'sepal.organization.interface)
@@ -47,3 +41,16 @@
   (when data
     (let [{:keys [db]} (meta data)]
       (jdbc.sql/delete! db :organization {:id (:organization/id data)}))))
+
+(defn organization-user-factory [{:keys [db org user] :as args}]
+  (let [result (assign-role! db {:organization-id (:organization/id org)
+                                 :user-id (:user/id user)
+                                 :role (:role args)})]
+    (vary-meta result assoc :db db)))
+
+(defmethod ig/halt-key! ::org.i/organization-user-factory [_ data]
+  (when data
+    (let [{:keys [db]} (meta data)
+          data (update data :organization-user/role (comp db.i/->pg-enum
+                                                          csk/->kebab-case-string))]
+      (jdbc.sql/delete! db :organization-user data))))

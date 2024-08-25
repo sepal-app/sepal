@@ -25,27 +25,27 @@
 
 (defn build-create-activity-schema [data-schema registry]
   (mu/closed-schema
-   [:map
-    [:type {:decode/db keyword
-            :encode/db #(format "%s/%s" (namespace %) (name %))}
-     [:= type]]
-    [:data {;;:encode/json db.i/->jsonb
-            :encode/db db.i/->jsonb}
-     data-schema]
-    [:created-at :time/instant]
-    [:created-by :int]
-    [:organization-id :int]]
-   {:registry registry}))
+    [:map
+     [:type {:decode/db keyword
+             :encode/db #(format "%s/%s" (namespace %) (name %))}
+      [:= type]]
+     [:data {;;:encode/json db.i/->jsonb
+             :encode/db db.i/->jsonb}
+      data-schema]
+     [:created-at :time/instant]
+     [:created-by :int]
+     [:organization-id :int]]
+    {:registry registry}))
 
 (def registry
   (mr/lazy-registry
-   (mr/composite-registry
-    (m/default-schemas)
-    (met/schemas))
-   (fn [type registry]
+    (mr/composite-registry
+      (m/default-schemas)
+      (met/schemas))
+    (fn [type registry]
      ;; Create the schema lazily depending on the :type of the activity
-     (when-let [ds (data-schema type)]
-       (build-create-activity-schema ds registry)))))
+      (when-let [ds (data-schema type)]
+        (build-create-activity-schema ds registry)))))
 
 (defn create! [db activity]
   (let [Activity (m/schema (into [:multi {:dispatch :type :lazy-refs true}]

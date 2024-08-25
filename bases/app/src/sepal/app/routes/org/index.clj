@@ -1,8 +1,8 @@
 (ns sepal.app.routes.org.index
-  (:require [reitit.core :as r]
-            [sepal.app.http-response :as http]
-            [honey.sql :as sql]
-            [next.jdbc :as jdbc]))
+  (:require [honey.sql :as sql]
+            [next.jdbc :as jdbc]
+            [reitit.core :as r]
+            [sepal.app.http-response :as http]))
 
 (defn get-user-organizations [db user-id]
   (let [stmt

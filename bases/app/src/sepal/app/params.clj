@@ -3,10 +3,10 @@
             [malli.transform :as mt]))
 
 (def params-transformer (mt/transformer
-                         (mt/key-transformer {:decode keyword})
-                         mt/strip-extra-keys-transformer
-                         mt/default-value-transformer
-                         mt/string-transformer))
+                          (mt/key-transformer {:decode keyword})
+                          mt/strip-extra-keys-transformer
+                          mt/default-value-transformer
+                          mt/string-transformer))
 
 (defn decode [schema params]
   (m/decode schema params params-transformer))

@@ -1,10 +1,10 @@
 (ns sepal.app.ui.page
-  (:require [sepal.app.html :as html]
-            [sepal.app.globals :as g]
+  (:require [sepal.app.globals :as g]
+            [sepal.app.html :as html]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.sidebar.static :as sidebar.static]
-            [sepal.app.ui.sidebar.mobile :as sidebar.mobile]))
+            [sepal.app.ui.sidebar.mobile :as sidebar.mobile]
+            [sepal.app.ui.sidebar.static :as sidebar.static]))
 
 (defn mobile-top-bar [& {:keys [title]}]
   [:div {:class "sticky top-0 z-40 flex items-center gap-x-6 md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-white shadow-sm"}

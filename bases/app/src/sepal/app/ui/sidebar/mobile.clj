@@ -1,8 +1,8 @@
 (ns sepal.app.ui.sidebar.mobile
   (:require [sepal.app.globals :as g]
             [sepal.app.router :refer [url-for]]
-            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
+            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.sidebar.mobile :as sidebar.mobile]))
 
 (defn sidebar-button

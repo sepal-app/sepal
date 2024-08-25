@@ -1,6 +1,5 @@
 (ns sepal.app.main
-  (:require #_[clojure.tools.logging :as log]
-   [sepal.app.system :as system])
+  (:require [sepal.app.system :as system])
   (:gen-class))
 
 (def default-environment "local")

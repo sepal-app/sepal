@@ -22,5 +22,5 @@ fi
 SKIP_DEP_CHECKS=${SKIP_DEP_CHECKS:=false}
 
 $CLJ_KONDO --parallel --lint components --lint bases --lint projects &&
-    $CLJFMT check --parallel components bases projects &&
+    $CLJFMT check &&
     if [[ $SKIP_POLY != true ]]; then clojure -M:poly check; fi &&

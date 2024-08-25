@@ -6,8 +6,8 @@
 
 (def transformer
   (mt/transformer
-   mt/strip-extra-keys-transformer
-   {:name :store}))
+    mt/strip-extra-keys-transformer
+    {:name :store}))
 
 (defn coerce [spec data]
   (m/coerce spec data transformer))

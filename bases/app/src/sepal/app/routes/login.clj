@@ -1,13 +1,13 @@
 (ns sepal.app.routes.login
   (:require [reitit.core :as r]
-            [sepal.database.interface :as db.i]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
             [sepal.app.session :as session]
             [sepal.app.ui.base :as base]
-            [sepal.app.ui.form :as form]))
+            [sepal.app.ui.form :as form]
+            [sepal.database.interface :as db.i]))
 
 (defn verify-password [db email password]
   (->> {:select

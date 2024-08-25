@@ -1,15 +1,14 @@
 (ns sepal.app.routes.register.index
-  (:require
-   [reitit.core :as r]
-   [sepal.app.flash :as flash]
-   [sepal.app.html :as html]
-   [sepal.app.http-response :as http]
-   [sepal.app.router :refer [url-for]]
-   [sepal.app.session :as session]
-   [sepal.app.ui.base :as base]
-   [sepal.app.ui.form :as form]
-   [sepal.user.interface :as user.i]
-   [sepal.validation.interface :as validation.i]))
+  (:require [reitit.core :as r]
+            [sepal.app.flash :as flash]
+            [sepal.app.html :as html]
+            [sepal.app.http-response :as http]
+            [sepal.app.router :refer [url-for]]
+            [sepal.app.session :as session]
+            [sepal.app.ui.base :as base]
+            [sepal.app.ui.form :as form]
+            [sepal.user.interface :as user.i]
+            [sepal.validation.interface :as validation.i]))
 
 (defn form [& {:keys [request email invitation next router]}]
   [:form {:method "post"

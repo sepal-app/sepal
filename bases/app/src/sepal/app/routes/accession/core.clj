@@ -2,8 +2,8 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.detail :as detail]
-            [sepal.app.routes.accession.detail.media :as detail-media]
-            [sepal.app.routes.accession.detail.general :as detail-general]))
+            [sepal.app.routes.accession.detail.general :as detail-general]
+            [sepal.app.routes.accession.detail.media :as detail-media]))
 
 (def accession-loader
   (middleware/default-loader accession.i/get-by-id

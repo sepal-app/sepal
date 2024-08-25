@@ -2,9 +2,9 @@
   (:require [reitit.core :as r]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
+            [sepal.error.interface :as error.i]
             [sepal.organization.interface :as org.i]
             [sepal.user.interface :as user.i]
-            [sepal.error.interface :as error.i]
             ;; [reitit.ring.middleware.exception :as exception]
             [taoensso.timbre :as log]))
 
