@@ -8,6 +8,7 @@
             [sepal.app.ui.base :as base]
             [sepal.app.ui.form :as form]
             [sepal.user.interface :as user.i]
+            [sepal.user.interface.spec :as user.spec]
             [sepal.validation.interface :as validation.i]))
 
 (defn form [& {:keys [request email invitation next router]}]
@@ -89,8 +90,7 @@
   [:and
    [:map {:closed true}
     form/AntiForgeryField
-    ;; TODO: Use validate.i/email-re
-    [:email :string]
+    [:email user.spec/email]
     [:password {} :string]
     [:confirm-password :string]
     [:next {:optional true} [:maybe :string]]
@@ -104,7 +104,6 @@
 (defn handler [{:keys [context params request-method ::r/router] :as request}]
   (let [{:keys [db]} context
         {:keys [email password]} params]
-
     (case request-method
       :post
       (cond
@@ -119,7 +118,6 @@
         :else
         (let [user (user.i/create! db {:email email :password password})
               session (session/user->session user)]
-          (tap> (str "user: " user))
           (-> (http/see-other router :root)
               (assoc :session session))))
 

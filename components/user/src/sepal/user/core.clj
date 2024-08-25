@@ -7,8 +7,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]
-            [sepal.user.interface.spec :as spec]
-            [sepal.validation.interface :refer [invalid? validate]]))
+            [sepal.user.interface.spec :as spec]))
 
 (defn get-by-id
   [db id]
@@ -16,15 +15,7 @@
   (store.i/get-by-id db :public.user id spec/User))
 
 (defn create! [db data]
-  (cond
-    (invalid? spec/CreateUser data)
-    (validate spec/CreateUser data)
-
-    :else
-    (let [data (assoc data :password [:crypt (:password data) [:gen_salt "bf"]])]
-      (db.i/execute-one! db {:insert-into [:public.user]
-                             :values [data]
-                             :returning [:*]}))))
+  (store.i/create! db :public.user data spec/CreateUser))
 
 (defn exists? [db id-or-email]
   (let [where (if (int? id-or-email)
