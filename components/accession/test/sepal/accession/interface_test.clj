@@ -37,7 +37,7 @@
 
 (deftest test-update
   (let [db *db*]
-    (tf/testing "update! - org taxon"
+    (tf/testing "update!"
       {[::org.i/factory :key/org] {:db db}
        [::taxon.i/factory :key/taxon] {:db db
                                        :organization (ig/ref :key/org)}

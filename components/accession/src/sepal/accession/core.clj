@@ -20,7 +20,6 @@
 
 (defn factory [{:keys [db organization taxon] :as args}]
   (let [data (-> (mg/generate spec/CreateAccession)
-                 ;; (merge (m/decode spec/CreateTaxon args (mt/strip-extra-keys-transformer)))j
                  (assoc :organization-id (:organization/id organization))
                  (assoc :taxon-id (:taxon/id taxon)))
         result (create! db data)]
