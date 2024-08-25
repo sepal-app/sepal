@@ -1,9 +1,10 @@
 (ns sepal.accession.interface.spec
-  (:require [malli.util :as mu]))
+  (:require [malli.util :as mu]
+            [sepal.validation.interface :as validate.i]))
 
-(def id :int)
-(def taxon-id :int)
-(def organization-id :int)
+(def id pos-int?)
+(def taxon-id pos-int?)
+(def organization-id pos-int?)
 (def code [:string {:min 1}])
 
 (def Accession
@@ -13,21 +14,13 @@
    [:accession/taxon-id taxon-id]
    [:accession/organization-id organization-id]])
 
-(defn coerce-int [v]
-  (cond
-    (int? v) v
-    (string? v) (Integer/parseInt v)
-    (nil? v) v
-    :else (int v)))
-
 (def CreateAccession
   [:map {:closed true
          :store/result Accession}
    [:code code]
-   [:taxon-id {:optional true
-               :decode/store coerce-int}
-    [:maybe taxon-id]]
-   [:organization-id {:decode/store coerce-int}
+   [:taxon-id {:decode/store validate.i/coerce-int}
+    taxon-id]
+   [:organization-id {:decode/store validate.i/coerce-int}
     organization-id]])
 
 (def UpdateAccession
@@ -35,5 +28,5 @@
     [:map {:closed true
            :store/result Accession}
      [:code code]
-     [:taxon-id {:decode/store coerce-int}
+     [:taxon-id {:decode/store validate.i/coerce-int}
       [:maybe taxon-id]]]))
