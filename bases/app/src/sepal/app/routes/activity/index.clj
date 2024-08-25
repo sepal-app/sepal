@@ -11,6 +11,7 @@
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.organization.interface.spec :as org.spec]
+            [sepal.store.interface :as store.i]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]))
 
@@ -205,7 +206,7 @@
                            %))
          ;; We're using m/decode so that decoding doesn't throw an
          ;; error
-         (mapv #(m/decode Activity % db.i/transformer)))))
+         (mapv #(m/decode Activity % store.i/transformer)))))
 
 (def Params
   [:map

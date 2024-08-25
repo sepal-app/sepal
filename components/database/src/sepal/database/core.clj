@@ -4,18 +4,12 @@
             [clojure.string :as str]
             [honey.sql]
             [integrant.core :as ig]
-            [malli.transform :as mt]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as jdbc.connection]
             [next.jdbc.result-set :as jdbc.result-set]
             [sepal.database.honeysql :as honeysql]
             [sepal.database.postgresql :as postgresql])
   (:import [com.zaxxer.hikari HikariDataSource]))
-
-(def transformer
-  (mt/transformer
-   mt/strip-extra-keys-transformer
-   {:name :db}))
 
 (defn get-modified-column-names [^java.sql.ResultSetMetaData rsmeta opts]
   (let [lf (:label-fn opts)]

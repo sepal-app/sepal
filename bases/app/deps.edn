@@ -9,6 +9,7 @@
         poly/material {:local/root "../../components/material"}
         poly/media {:local/root "../../components/media"}
         poly/organization {:local/root "../../components/organization"}
+        poly/store {:local/root "../../components/store"}
         poly/taxon {:local/root "../../components/taxon"}
         poly/test {:local/root "../../components/test"}
         poly/user {:local/root "../../components/user"}
@@ -19,7 +20,7 @@
         com.taoensso/timbre {:mvn/version "6.5.0"}
         info.sunng/ring-jetty9-adapter {:mvn/version "0.33.3"}
         lambdaisland/uri {:mvn/version "1.16.134"}
-        metosin/malli {:mvn/version "0.16.2"}
+        metosin/malli {:mvn/version "0.16.3"}
         metosin/reitit {:mvn/version "0.7.1"}
         metosin/reitit-middleware {:mvn/version "0.7.1"}
         metosin/ring-http-response {:mvn/version "0.9.4"}

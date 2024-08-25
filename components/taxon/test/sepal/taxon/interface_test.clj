@@ -7,26 +7,26 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
                                            default-system-fixture]]
-            [sepal.database.interface :as db.i]
             [sepal.error.interface :as err.i]
             [sepal.organization.interface :as org.i]
+            [sepal.store.interface :as store.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.spec :as taxon.spec]))
 
 (use-fixtures :once default-system-fixture)
 
 (deftest test-specs
-  (testing "CreateTaxon - encode/db"
+  (testing "CreateTaxon - encode/store"
     (let [data {:taxon/id 123
                 :taxon/rank :genus}]
-      (is (match? (db.i/encode  taxon.spec/CreateTaxon data)
+      (is (match? (store.i/encode taxon.spec/CreateTaxon data)
                   {:id 1234
                    :rank "genus"}))))
 
   (testing "CreateTaxon - encode/db"
     (let [data {:taxon/id 123
                 :taxon/rank :genus}]
-      (is (match? (db.i/encode  taxon.spec/CreateTaxon data)
+      (is (match? (store.i/encode taxon.spec/CreateTaxon data)
                   {:id 1234
                    :rank "genus"})))))
 

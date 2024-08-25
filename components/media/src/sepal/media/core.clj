@@ -11,19 +11,18 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.media.interface.spec :as spec]
+            [sepal.store.interface :as store.i]
             [sepal.taxon.interface :as taxon.i]))
 
 (defn get-by-id [db id]
-  (let [result (jdbc.sql/get-by-id db :media id)]
-    (when (some? result)
-      (db.i/coerce spec/Media result))))
+  (store.i/get-by-id db :media id spec/Media))
 
 (defn get-link [db media-id]
   (some->> {:select :*
             :from :media_link
             :where [:= :media_id media-id]}
            (db.i/execute-one! db)
-           (db.i/coerce spec/MediaLink)))
+           (store.i/coerce spec/MediaLink)))
 
 (defn get-linked [db resource-type resource-id organization-id opts]
   (let [opts-map (apply hash-map opts)]
@@ -37,20 +36,10 @@
                       [:= :m.organization_id organization-id]]}
              (merge opts-map)
              (db.i/execute! db)
-             (mapv #(db.i/coerce spec/Media %)))))
+             (mapv #(store.i/coerce spec/Media %)))))
 
 (defn create! [db data]
-  (try
-    ;; First we db/coerce the data into a CreateMedia to make sure it
-    ;; validates and then we db/encode the data so its in the form expected by
-    ;; the database
-    (let [data (->> data
-                    (db.i/coerce spec/CreateMedia)
-                    (db.i/encode spec/CreateMedia))
-          result (jdbc.sql/insert! db :media data {:return-keys true})]
-      (db.i/coerce spec/Media result))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (store.i/create! db :media data spec/CreateMedia))
 
 (defn delete! [db id]
   (jdbc.sql/delete! db :public.media {:id id}))
@@ -63,8 +52,8 @@
     (let [data (->> {:media-id media-id
                      :resource-id resource-id
                      :resource-type resource-type}
-                    (db.i/coerce spec/CreateMediaLink)
-                    (db.i/encode spec/CreateMediaLink))
+                    (store.i/coerce spec/CreateMediaLink)
+                    (store.i/encode spec/CreateMediaLink))
           _ (db.i/execute-one! db
                                {:insert-into [:public.media_link :ml]
                                 :values [data]
@@ -84,7 +73,7 @@
 (alias 'media.i 'sepal.media.interface)
 
 (defn factory [{:keys [db created-by organization] :as args}]
-  ;; TODO: validate the args for required args like organization
+  ;; TODO: validate the e for required args like organization
   (let [data (-> (mg/generate spec/CreateMedia)
                  (merge (m/decode spec/CreateMedia args (mt/strip-extra-keys-transformer)))
                  (assoc :organization-id (:organization/id organization)

@@ -1,29 +1,19 @@
 (ns sepal.organization.core
-  (:require [honey.sql :as sql]
-            [integrant.core :as ig]
+  (:require [integrant.core :as ig]
             [malli.generator :as mg]
-            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.organization.interface.spec :as spec]
-            [sepal.validation.interface :refer [invalid? validate]]))
+            [sepal.store.interface :as store.i]))
+
+;; TODO: Add a unique_id / uuid column for the organization that we use for things like s3 buckets
 
 (defn get-by-id [db id]
   {:pre [(pos-int? id)]}
-  (jdbc.sql/get-by-id db :organization id))
+  (store.i/get-by-id db :organization id spec/Organization))
 
 (defn create! [db data]
-  ;; TODO: coerce then encode
-  (cond
-    (invalid? spec/CreateOrganization data)
-    (validate spec/CreateOrganization data)
-
-    :else
-    (let [stmt (-> {:insert-into :organization
-                    :values [data]
-                    :returning :*}
-                   (sql/format))]
-      (jdbc/execute-one! db stmt))))
+  (store.i/create! db :organization data spec/CreateOrganization))
 
 (defn get-user-org [db user-id]
   ;; TODO: This is assuming one organization per user
@@ -33,7 +23,7 @@
                                          [:= :ou.organization_id :o.id]]
                                   :where [:and
                                           [:= :ou.user_id user-id]]})
-           (db.i/coerce spec/Organization)))
+           (store.i/coerce spec/Organization)))
 
 (defn assign-role! [db data]
   ;; TODO: validate assign role

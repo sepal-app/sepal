@@ -6,13 +6,14 @@
             [malli.transform :as mt]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
+            [sepal.store.interface :as store.i]
             [sepal.user.interface.spec :as spec]
             [sepal.validation.interface :refer [invalid? validate]]))
 
 (defn get-by-id
   [db id]
   {:pre [(pos-int? id)]}
-  (jdbc.sql/get-by-id db :public.user id))
+  (store.i/get-by-id db :public.user id spec/User))
 
 (defn create! [db data]
   (cond

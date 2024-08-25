@@ -26,7 +26,8 @@
    [:media/created-by created-by]])
 
 (def CreateMedia
-  [:map {:closed true}
+  [:map {:closed true
+         :store/result Media}
    [:s3-bucket s3-bucket]
    [:s3-key s3-key]
    [:title {:optional true} [:maybe title]]
@@ -37,20 +38,21 @@
    [:created-at {:optional true} created-at]
    [:created-by created-by]])
 
-(def CreateMediaLink
-  [:map {:closed true}
-   [:media-id id]
-   [:resource-type {:decode/db csk/->kebab-case-keyword
-                    :encode/db csk/->kebab-case-string}
-    :keyword]
-   [:resource-id {:decode/db #(cond (string? %) (parse-long %)
-                                    :else %)}
-    pos-int?]])
-
 (def MediaLink
   [:map {:closed true}
    [:media-link/id id]
    [:media-link/media-id id]
-   [:media-link/resource-type {:encode/db csk/->kebab-case-string}
+   [:media-link/resource-type {:encode/store csk/->kebab-case-string}
     :string]
    [:media-link/resource-id pos-int?]])
+
+(def CreateMediaLink
+  [:map {:closed true
+         :store/result MediaLink}
+   [:media-id id]
+   [:resource-type {:decode/store csk/->kebab-case-keyword
+                    :encode/store csk/->kebab-case-string}
+    :keyword]
+   [:resource-id {:decode/store #(cond (string? %) (parse-long %)
+                                       :else %)}
+    pos-int?]])

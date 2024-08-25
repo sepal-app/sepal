@@ -3,7 +3,8 @@
             [clojure.data.json :as json]
             [clojure.datafy :as d]
             [next.jdbc.prepare :as prepare]
-            [next.jdbc.result-set :as rs])
+            [next.jdbc.result-set :as rs]
+            [next.jdbc.types :as jdbc.types])
   (:import [java.sql PreparedStatement]
            [org.postgresql.util PGobject]))
 
@@ -16,6 +17,11 @@
 
 (defn ->jsonb [value]
   (->pgobject :jsonb (json/write-str value)))
+
+(defn ->pg-enum [value]
+  (when (some? value)
+    #_{:clj-kondo/ignore [:unresolved-var]}
+    (jdbc.types/as-other value)))
 
 (extend-protocol p/Datafiable
   org.postgresql.util.PGobject

@@ -16,3 +16,6 @@
 
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))
+
+(defmethod ig/init-key ::organization-user-factory [_ args]
+  (core/organization-user-factory args))

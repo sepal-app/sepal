@@ -7,7 +7,7 @@
 (def code [:string {:min 1}])
 
 (def Accession
-  [:map {:closed true}
+  [:map #_{:closed true}
    [:accession/id id]
    [:accession/code code]
    [:accession/taxon-id taxon-id]
@@ -21,17 +21,19 @@
     :else (int v)))
 
 (def CreateAccession
-  [:map {:closed true}
+  [:map {:closed true
+         :store/result Accession}
    [:code code]
    [:taxon-id {:optional true
-               :decode/db coerce-int}
+               :decode/store coerce-int}
     [:maybe taxon-id]]
-   [:organization-id {:decode/db coerce-int}
+   [:organization-id {:decode/store coerce-int}
     organization-id]])
 
 (def UpdateAccession
   (mu/optional-keys
-   [:map {:closed true}
-    [:code code]
-    [:taxon-id {:decode/db coerce-int}
-     [:maybe taxon-id]]]))
+    [:map {:closed true
+           :store/result Accession}
+     [:code code]
+     [:taxon-id {:decode/store coerce-int}
+      [:maybe taxon-id]]]))

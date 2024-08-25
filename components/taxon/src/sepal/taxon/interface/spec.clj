@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [name])
   (:require [camel-snake-kebab.core :as csk]
             [malli.util :as mu]
-            [next.jdbc.types :as jdbc.types]))
+            [sepal.database.interface :as db.i]
+            [sepal.validation.interface :as validate.i]))
 
 ;; (def wfo-plantlist-name-id [:re #"^wfo-\d{10}"])
 (def wfo-plantlist-taxon-id [:re #"^wfo-\d{10}-\d{4}-\d{2}"])
@@ -36,15 +37,10 @@
            :tribe
            :variety])
 
-(defn rank->pg-enum [rank]
-  (when (some? rank)
-    #_{:clj-kondo/ignore [:unresolved-var]}
-    (jdbc.types/as-other rank)))
-
 (def Taxon
   [:map {:closed true}
    [:taxon/id id]
-   [:taxon/rank {:decode/db csk/->kebab-case-keyword}
+   [:taxon/rank {:decode/store csk/->kebab-case-keyword}
     rank]
    [:taxon/author [:maybe author]]
    [:taxon/name name]
@@ -56,46 +52,39 @@
    [:taxon/organization-id [:maybe organization-id]]
    [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]])
 
-(defn coerce-int [v]
-  (try
-    (cond
-      (int? v) v
-      (string? v) (Integer/parseInt v)
-      (nil? v) v
-      :else (int v))
-    (catch Exception _
-      nil)))
-
 (def CreateTaxon
-  [:map {:closed true}
+  [:map {:closed true
+         :store/result Taxon}
+   ;; TODO: allow specifying an id when creating a taxon
    [:name name]
    [:author {:optional :true}
     [:maybe author]]
-   [:rank {:decode/db csk/->kebab-case-keyword
-           :encode/db (comp rank->pg-enum
-                            csk/->kebab-case-string)}
+   [:rank {:decode/store csk/->kebab-case-keyword
+           :encode/store (comp db.i/->pg-enum
+                               csk/->kebab-case-string)}
     rank]
    [:taxon/wfo-taxon-id-2023-12 {:optional true}
     [:maybe wfo-plantlist-taxon-id]]
    [:parent-id {:optional true
-                :decode/db coerce-int}
+                :decode/store validate.i/coerce-int}
     [:maybe id]]
-   [:organization-id {:decode/db coerce-int}
+   [:organization-id {:decode/store validate.i/coerce-int}
     organization-id]])
 
 (def UpdateTaxon
   (mu/optional-keys
-   [:map {:closed true}
-    [:name {:optional true}
-     name]
-    [:author {:optional true}
-     author]
-    [:rank {:decode/db csk/->kebab-case-keyword
-            :encode/db (comp rank->pg-enum
-                             csk/->kebab-case-string)}
-     rank]
-    [:wfo-taxon-id-2023-12 {:optional true}
-     [:maybe wfo-plantlist-taxon-id]]
-    [:parent-id {:optional true
-                 :decode/db coerce-int}
-     [:maybe id]]]))
+    [:map {:closed true
+           :store/result Taxon}
+     [:name {:optional true}
+      name]
+     [:author {:optional true}
+      author]
+     [:rank {:decode/store csk/->kebab-case-keyword
+             :encode/store (comp db.i/->pg-enum
+                                 csk/->kebab-case-string)}
+      rank]
+     [:wfo-taxon-id-2023-12 {:optional true}
+      [:maybe wfo-plantlist-taxon-id]]
+     [:parent-id {:optional true
+                  :decode/store validate.i/coerce-int}
+      [:maybe id]]]))

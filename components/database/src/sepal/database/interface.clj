@@ -1,7 +1,6 @@
 (ns sepal.database.interface
   (:refer-clojure :exclude [count])
   (:require [integrant.core :as ig]
-            [malli.core :as m]
             [next.jdbc :as jdbc]
             [next.jdbc.date-time]
             [sepal.database.core :as core]
@@ -9,14 +8,6 @@
 
 ;; read all db date times as java.time.Instant
 (next.jdbc.date-time/read-as-instant)
-
-(def transformer core/transformer)
-
-(defn coerce [spec data]
-  (m/coerce spec data transformer))
-
-(defn encode [spec data]
-  (m/encode spec data transformer))
 
 (defn execute!
   ([db stmt]
@@ -45,6 +36,9 @@
 
 (defn ->jsonb [value]
   (pg/->jsonb value))
+
+(defn ->pg-enum [value]
+  (pg/->pg-enum value))
 
 (defmethod ig/init-key ::db [_ {:keys [connectable jdbc-options]}]
   (core/init-db :connectable connectable

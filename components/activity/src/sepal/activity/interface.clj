@@ -5,7 +5,8 @@
             [malli.experimental.time :as met]
             [malli.registry :as mr]
             [malli.util :as mu]
-            [sepal.database.interface :as db.i]))
+            [sepal.database.interface :as db.i]
+            [sepal.store.interface :as store.i]))
 
 (defmulti data-schema (fn [type] type))
 
@@ -50,11 +51,13 @@
   (let [Activity (m/schema (into [:multi {:dispatch :type :lazy-refs true}]
                                  (keys (methods data-schema)))
                            {:registry registry})
-        value (m/encode Activity activity db.i/transformer)]
+        ;; value (m/encode Activity activity db.i/transformer)
+        ]
+    (store.i/create! db :activity activity Activity)
     ;; TODO: seems like we should validate before we encode
-    (m/validate Activity activity)
-    (db.i/execute! db {:insert-into :activity
-                       :values [value]})))
+    #_(m/validate Activity activity)
+    #_(db.i/execute! db {:insert-into :activity
+                         :values [value]})))
 
 #_(defn find [db]
     (let [result (db.i/execute! db {:select :* :from :activity})]

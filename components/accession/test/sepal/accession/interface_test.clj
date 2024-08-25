@@ -1,6 +1,6 @@
 (ns sepal.accession.interface-test
-  (:require [clojure.test :as test :refer :all]
-            #_[sepal.accession.interface :as accession]))
+  (:require #_[sepal.accession.interface :as accession]
+    [clojure.test :as test :refer :all]))
 
 (deftest dummy-test
   (is (= 1 1)))

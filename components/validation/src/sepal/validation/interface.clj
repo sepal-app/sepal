@@ -30,3 +30,13 @@
   (-> err error.i/data :explain me/humanize))
 
 (def email-re #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$")
+
+(defn coerce-int [v]
+  (try
+    (cond
+      (int? v) v
+      (string? v) (Integer/parseInt v)
+      (nil? v) v
+      :else (int v))
+    (catch Exception _
+      nil)))
