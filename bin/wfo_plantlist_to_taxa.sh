@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
+#
+# This script will use the default psql environment variables for the database
+# connection, e.g. PGHOST, PGDATABASE, etc.
 
 set -Eeuxo pipefail
 
 WFO_SCHEMA=${WFO_SCHEMA:-wfo_plantlist_2023_12}
 TAXON_FIELD=${TAXON_FIELD:-wfo_taxon_id_2023_12}
-
-PGHOST=localhost
-PGDATABASE=sepal
 
 psql <<EOF
  insert into public.taxon ($TAXON_FIELD, name, author, rank)

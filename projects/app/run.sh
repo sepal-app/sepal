@@ -2,9 +2,11 @@
 
 set -Eeuo pipefail
 
-PGPORT=${PGPORT:-5432}
-DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@/${PGDATABASE}?socket=$(dirname ${DB_UNIX_SOCKET_PATH})"
+DB_PORT=${DB_PORT:-5432}
 
-bin/dbmate --url "${DATABASE_URL}" --no-dump-schema migrate && \
-cd projects/app && \
-clojure -M:main
+DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?socket=$(dirname ${DB_UNIX_SOCKET_PATH})"
+export DATABASE_URL
+
+bin/dbmate -e DATABASE_URL --no-dump-schema migrate &&
+    cd projects/app &&
+    clojure -M:main

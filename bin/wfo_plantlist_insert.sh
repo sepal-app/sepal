@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+# This script will use the default psql environment variables for the database
+# connection, e.g. PGHOST, PGDATABASE, etc.
 
 set -Eeuxo pipefail
 
