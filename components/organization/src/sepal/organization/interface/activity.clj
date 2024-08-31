@@ -15,12 +15,14 @@
                        :organization-id (:organization/id data)
                        :data {:organization-id (:organization/id data)
                               :organization-name (:organization/name data)
+                              :organization-short-name (:organization/short-name data)
                               :organization-abbreviation (:organization/abbreviation data)}}))
 
 (def OrganizationActivityData
   [:map
    [:organization-id spec/id]
    [:organization-name spec/name]
+   [:organization-short-name spec/short-name]
    [:organization-abbreviation spec/abbreviation]])
 
 (defmethod activity.i/data-schema created [_]

@@ -10,6 +10,8 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.location.interface.spec :as location.spec]
+            [sepal.material.interface.spec :as material.spec]
             [sepal.organization.interface.spec :as org.spec]
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.spec :as taxon.spec]
@@ -102,6 +104,19 @@
                                    (:taxon/name parent)]
                                   ")"])])))
 
+(defmethod activity-description :location/created
+  [& {:keys [router activity]}]
+  (let [{:keys [location user]} activity]
+    (tap> (str "location: " location))
+    (timeline-activity :title [:span (str (:user/email user) " created location ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :location/detail
+                                                   {:id (:location/id location)})}
+                                (cond-> (:location/name location)
+                                  (:location/code location)
+                                  (str (format " (%s)" (:location/code location))))]])))
+
 (defn timeline-section [date activity]
   [:div {:class (html/attr "p-5" "mb-4" "border" "border-gray-100" "rounded-lg" "bg-white")}
    [:time {:class "text-lg font-semibold text-gray-900 dark:text-white"}
@@ -155,6 +170,8 @@
                                                   :taxon/rank
                                                   :taxon/author])])
       (mu/assoc :accession [:maybe accession.spec/Accession])
+      (mu/assoc :location [:maybe location.spec/Location])
+      (mu/assoc :material [:maybe material.spec/Material])
       (mu/assoc :user [:maybe user.spec/User])
       (mu/assoc :organization [:maybe org.spec/Organization])))
 
@@ -163,6 +180,8 @@
     (->> (db.i/execute! db {:select [:a.*
                                      :tax.*
                                      :acc.*
+                                     :loc.*
+                                     :mat.*
                                      :u.id
                                      :u.email
                                      :org.*
@@ -175,6 +194,14 @@
                                              [:=
                                               [:->> :a.data "accession-id"]
                                               [[:cast :acc.id :text]]]]
+                                      :left [[:location :loc]
+                                             [:=
+                                              [:->> :a.data "location-id"]
+                                              [[:cast :loc.id :text]]]]
+                                      :left [[:material :mat]
+                                             [:=
+                                              [:->> :a.data "material-id"]
+                                              [[:cast :mat.id :text]]]]
                                       :left [[:taxon :tax]
                                              [:=
                                               [:->> :a.data "taxon-id"]

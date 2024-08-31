@@ -17,8 +17,12 @@
 
 (defn get-by-id
   [db table id spec]
-  (when-let [result (jdbc.sql/get-by-id db table id)]
-    (coerce spec result)))
+  (let [spec-props (m/properties spec)
+        opts (some-> {}
+                     (:store/columns spec-props)
+                     (assoc :columns (:store/columns spec-props)))]
+    (when-let [result (jdbc.sql/get-by-id db table id opts)]
+      (coerce spec result))))
 
 (defn update! [db table id data spec]
   (try

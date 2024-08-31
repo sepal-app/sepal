@@ -33,7 +33,8 @@
 (alias 'org.i 'sepal.organization.interface)
 
 (defn factory [{:keys [db] :as args}]
-  (let [data (mg/generate spec/CreateOrganization)
+  (let [data (merge (mg/generate spec/CreateOrganization)
+                    args)
         result (create! db data)]
     (vary-meta result assoc :db db)))
 
