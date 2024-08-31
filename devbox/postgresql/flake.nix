@@ -13,7 +13,7 @@
       in {
         packages = {
           # Return postgresql with the postgis extension include.
-          postgresql = pkgs.postgresql_15.withPackages (p: [ p.postgis ]);
+          postgresql = pkgs.postgresql_16.withPackages (p: [ p.postgis ]);
         };
 
         defaultPackage = self.packages.postgresql;
