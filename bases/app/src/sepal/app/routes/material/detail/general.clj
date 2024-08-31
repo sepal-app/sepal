@@ -68,7 +68,10 @@
                        :accession-code (:accession/code accession)
                        :location-id (:material/location-id resource)
                        :location-name (:location/name location)
-                       :location-code (:location/code location)}
+                       :location-code (:location/code location)
+                       :status (:material/status resource)
+                       :quantity (:material/quantity resource)
+                       :type (:material/type resource)}
                       params)]
 
     (case request-method
