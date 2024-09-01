@@ -27,7 +27,7 @@
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
               :items (tab-items :router router :material material))
-   (material.form/form :action (url-for router :material/detail {:id (:material/id material)})
+   (material.form/form :action (url-for router :material/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org
                        :router router
@@ -85,9 +85,11 @@
                        :type (:material/type resource)}
                       params)]
 
+    (tap> (str "params: " params))
+
     (case request-method
       :post
-      (let [result (save! db (:accession/id resource) (:user/id viewer) params)]
+      (let [result (save! db (:material/id resource) (:user/id viewer) params)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :material/detail {:org-id (-> organization :organization/id str)
