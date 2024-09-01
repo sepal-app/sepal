@@ -72,11 +72,13 @@
       (html/render-html)))
 
 (defn save! [db taxon-id updated-by data]
-  (db.i/with-transaction [tx db]
-    (let [result (taxon.i/update! tx taxon-id data)]
-      (when-not (error.i/error? result)
-        (taxon.activity/create! tx taxon.activity/updated updated-by result))
-      result)))
+  (try
+    (db.i/with-transaction [tx db]
+      (let [taxon (taxon.i/update! tx taxon-id data)]
+        (taxon.activity/create! tx taxon.activity/updated updated-by taxon)
+        taxon))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 ;; TODO: We can use reitit to handle this automatically
 (def FormValues

@@ -55,11 +55,13 @@
       (html/render-html)))
 
 (defn save! [db accession-id updated-by data]
-  (db.i/with-transaction [tx db]
-    (let [result (accession.i/update! tx accession-id data)]
-      (when-not (error.i/error? result)
-        (accession.activity/create! tx accession.activity/updated updated-by result))
-      result)))
+  (try
+    (db.i/with-transaction [tx db]
+      (let [accession (accession.i/update! tx accession-id data)]
+        (accession.activity/create! tx accession.activity/updated updated-by accession)
+        accession))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context

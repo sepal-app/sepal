@@ -41,11 +41,13 @@
       (html/render-html)))
 
 (defn update! [db location-id updated-by data]
-  (db.i/with-transaction [tx db]
-    (let [result (location.i/update! tx location-id data)]
-      (when-not (error.i/error? result)
-        (location.activity/create! tx location.activity/updated updated-by result))
-      result)))
+  (try
+    (db.i/with-transaction [tx db]
+      (let [location (location.i/update! tx location-id data)]
+        (location.activity/create! tx location.activity/updated updated-by location)
+        location))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context

@@ -8,9 +8,11 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
+            [sepal.material.interface.activity :as material.activity]
             [sepal.taxon.interface :as taxon.i]))
 
 (defn tab-items [& {:keys [router material]}]
@@ -57,7 +59,16 @@
                  :router router)
       (html/render-html)))
 
-(defn handler [{:keys [context params request-method ::r/router]}]
+(defn save! [db material-id updated-by data]
+  (try
+    (db.i/with-transaction [tx db]
+      (let [material (material.i/update! tx material-id data)]
+        (material.activity/create! tx material.activity/updated updated-by material)
+        material))
+    (catch Exception ex
+      (error.i/ex->error ex))))
+
+(defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -76,7 +87,7 @@
 
     (case request-method
       :post
-      (let [result (material.i/update! db (:accession/id resource) params)]
+      (let [result (save! db (:accession/id resource) (:user/id viewer) params)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :material/detail {:org-id (-> organization :organization/id str)
