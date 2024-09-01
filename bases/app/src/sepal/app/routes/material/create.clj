@@ -39,13 +39,13 @@
       (html/render-html)))
 
 (defn create! [db created-by data]
-  (db.i/with-transaction [tx db]
-    (try
+  (try
+    (db.i/with-transaction [tx db]
       (let [acc (material.i/create! tx data)]
         (material.activity/create! tx material.activity/created created-by acc)
-        acc)
-      (catch Exception ex
-        (error.i/ex->error ex)))))
+        acc))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db]} context

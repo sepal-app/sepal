@@ -42,13 +42,13 @@
       (html/render-html)))
 
 (defn create! [db created-by data]
-  (db.i/with-transaction [tx db]
-    (try
+  (try
+    (db.i/with-transaction [tx db]
       (let [taxon (taxon.i/create! tx data)]
         (taxon.activity/create! tx taxon.activity/created created-by taxon)
-        taxon)
-      (catch Exception ex
-        (error.i/ex->error ex)))))
+        taxon))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [context params request-method viewer ::r/router]}]
   (let [{:keys [db]} context

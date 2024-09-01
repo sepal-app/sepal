@@ -64,11 +64,13 @@
       (html/render-html)))
 
 (defn create! [db created-by data]
-  (db.i/with-transaction [tx db]
-    (let [result (org.i/create! tx data)]
-      (when-not (error.i/error? result)
-        (org.activity/create! tx org.activity/created created-by result))
-      result)))
+  (try
+    (db.i/with-transaction [tx db]
+      (let [org (org.i/create! tx data)]
+        (org.activity/create! tx org.activity/created created-by org)
+        org))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db]} context]
