@@ -95,7 +95,8 @@
 (def Params
   [:map
    [:accessions-only {:default false
-                      :decode #(= "1" %)} :boolean]
+                      :decode/string #(= "1" %)}
+    :boolean]
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]])
@@ -119,7 +120,11 @@
                           1.0)
                         :search-rank]]
               :from [[:public.taxon :t]]
-              :join-by [:left [[:public.taxon :p] [:= :p.id :t.parent_id]]]
+              :join-by (cond-> [:left [[:public.taxon :p]
+                                       [:= :p.id :t.parent_id]]]
+                         accessions-only
+                         (conj :inner [[:public.accession :a]
+                                       [:= :a.taxon_id :t.id]]))
               :where [:and
                       [:or
                        [:= :t.organization_id (:organization/id org)]
@@ -127,11 +132,6 @@
                       (if (seq q)
                         [:%> :t.name q]
                         :true)]}
-        stmt (if-not accessions-only
-               stmt
-               (update stmt :join-by #(conj % :inner [[:public.accession :a]
-                                                      [:= :a.taxon_id :t.id]])))
-        ;;
         ;; TODO: Do the queries in parallel for faster response
         total (db.i/count db (assoc stmt :select 1))
         ;; ;; TODO: Can we use jdbc datafy/nav to eager load the parent
