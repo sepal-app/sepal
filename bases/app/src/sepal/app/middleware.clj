@@ -60,8 +60,6 @@
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
-              ;; TODO: Remove current-organization
-              (assoc-in [:context :current-organization] org)
               (assoc-in [:context :organization] org)
               (handler)))
         (http/see-other router :root)))))
@@ -123,8 +121,6 @@
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
-              ;; TODO: Remove current-organization
-              (assoc-in [:context :current-organization] org)
               (assoc-in [:context :organization] org)
               (handler)))
 
