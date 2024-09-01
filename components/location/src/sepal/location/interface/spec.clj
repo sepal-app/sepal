@@ -7,7 +7,7 @@
 (def organization-id pos-int?)
 (def name [:string {:min 2}])
 (def code [:string {:min 2}])
-(def description [:string {:min 1}])
+(def description :string)
 
 (def Location
   [:map {:closed true}
