@@ -24,13 +24,14 @@
             [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
             [sepal.app.routes.org.core :as org]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.routes.register.core :as register]
             [sepal.app.routes.taxon.core :as taxon]))
 
 (defn routes []
   [""
    ["/" {:name :root
-         :handler #(http-response/found (::r/router %) :org/index)
+         :handler #(http-response/found (::r/router %) org.routes/index)
          :middleware [[middleware/require-viewer]]}]
 
    ["/ok" {:name :ok

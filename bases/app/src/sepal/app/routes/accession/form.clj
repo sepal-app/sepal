@@ -2,6 +2,7 @@
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]))
 
 (defn form [& {:keys [action errors org router values]}]
@@ -21,7 +22,7 @@
                         :value (:code values)
                         :errors (:code errors))
 
-      (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+      (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
         (form/field :label "Taxon"
                     :name "taxon-id"
                     :input [:select {:x-taxon-field (json/js {:url url})

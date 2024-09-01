@@ -5,6 +5,7 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.database.interface :as db.i]
@@ -22,7 +23,7 @@
     :value "location"}])
 
 (defn taxon-field [& {:keys [org taxon-name router name id taxon-id]}]
-  (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+  (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
     [:select {:x-taxon-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -34,7 +35,7 @@
         taxon-name])]))
 
 (defn accession-field [& {:keys [org accession-name router name id accession-id]}]
-  (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+  (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
     [:select {:x-accession-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -46,7 +47,8 @@
         accession-name])]))
 
 (defn location-field [& {:keys [org location-name router name id location-id]}]
-  (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+  ;; TODO: Are these routes correct?
+  (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
     [:select {:x-location-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -58,7 +60,7 @@
         location-name])]))
 
 (defn material-field [& {:keys [org material-name router name id material-id]}]
-  (let [url (url-for router :org/materials {:org-id (:organization/id org)})]
+  (let [url (url-for router org.routes/materials {:org-id (:organization/id org)})]
     [:select {:x-material-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)

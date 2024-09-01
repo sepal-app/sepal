@@ -5,6 +5,7 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -32,7 +33,7 @@
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
                          "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
-       :href (url-for router :org/accessions-new {:org-id (:organization/id org)})}
+       :href (url-for router org.routes/accessions-new {:org-id (:organization/id org)})}
    "Create"])
 
 (defn table-columns [router]

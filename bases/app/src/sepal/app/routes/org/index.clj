@@ -2,7 +2,8 @@
   (:require [honey.sql :as sql]
             [next.jdbc :as jdbc]
             [reitit.core :as r]
-            [sepal.app.http-response :as http]))
+            [sepal.app.http-response :as http]
+            [sepal.app.routes.org.routes :as org.routes]))
 
 (defn get-user-organizations [db user-id]
   (let [stmt
@@ -22,5 +23,5 @@
       (if org
         ;; TODO: create a view to allow the user to select an organization that
         ;; posts back here
-        (http/found router :org/activity {:org-id (:organization/id org)})
-        (http/found router :org/create)))))
+        (http/found router org.routes/activity {:org-id (:organization/id org)})
+        (http/found router org.routes/create)))))

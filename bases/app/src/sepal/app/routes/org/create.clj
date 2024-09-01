@@ -4,6 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -15,7 +16,7 @@
 (defn form [& {:keys [errors router values]}]
   (form/form
     {:method "post"
-     :action (url-for router :org/create)}
+     :action (url-for router org.routes/create)}
     [:<>
      (form/anti-forgery-field)
      (form/field :label "Name"
@@ -83,8 +84,8 @@
                                        :user-id (:user/id viewer)
                                        :role :owner}))]
         (if-not (error? result)
-          (http/found router :org/activity {:org-id (-> result :organization/id str)})
-          (-> (http/see-other router :org/create)
+          (http/found router org.routes/activity {:org-id (-> result :organization/id str)})
+          (-> (http/see-other router org.routes/create)
               (flash/set-field-errors result)
               (assoc-in [:flash :values] data))))
 

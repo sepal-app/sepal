@@ -6,13 +6,14 @@
             [sepal.app.http-response :refer [found see-other]]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]))
 
 (defn page-content [& {:keys [errors values router org]}]
-  (accession.form/form :action (url-for router :org/accession-new {:org-id (:organization/id org)})
+  (accession.form/form :action (url-for router org.routes/accessions-new {:org-id (:organization/id org)})
                        :errors errors
                        :org org
                        :router router
@@ -50,13 +51,12 @@
     (case request-method
       :post
       (let [data (-> params
-                     ;; (assoc :rank :genus)
                      (assoc :organization-id (:organization/id org)))
             result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
           (see-other router :accession/detail {:id (:accession/id result)})
-          (-> (found router :org/accession-new {:org-id (:organization/id org)})
+          (-> (found router org.routes/accessions-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 

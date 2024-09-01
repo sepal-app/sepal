@@ -11,50 +11,40 @@
             [sepal.app.routes.org.create :as create]
             [sepal.app.routes.org.detail :as detail]
             [sepal.app.routes.org.index :as index]
+            [sepal.app.routes.org.routes :as routes]
             [sepal.app.routes.taxon.create :as taxon.create]
             [sepal.app.routes.taxon.index :as taxon.index]))
 
-;; (def bind-organization [handler])
-
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   ["/" {:name :org/index
+   ["/" {:name routes/index
          :handler #'index/handler}]
-   ["/create" {:name :org/create
+   ["/create" {:name routes/create
                :handler #'create/handler}]
    ["/:org-id" {:middleware [[middleware/require-org-membership :org-id]]}
-    ["/" {:name :org/detail
+    ["/" {:name routes/detail
           :handler #'detail/handler}]
 
-    ["/activity" {:name :org/activity
+    ["/activity" {:name routes/activity
                   :handler #'activity.index/handler}]
 
-    ["/locations" {:name :org/locations
+    ["/locations" {:name routes/locations
                    :handler #'location.index/handler}]
-    ["/locations/new" {:name :org/locations-new
+    ["/locations/new" {:name routes/locations-new
                        :handler #'location.create/handler}]
 
-    ["/materials" {:name :org/materials
+    ["/materials" {:name routes/materials
                    :handler #'material.index/handler}]
-    ["/materials/new" {:name :org/materials-new
+    ["/materials/new" {:name routes/materials-new
                        :handler #'material.create/handler}]
-    ["/media" {:name :org/media
+    ["/media" {:name routes/media
                :handler #'media.index/handler}]
-    #_["/activity/" {:name :taxon/index
-                     :handler #'activity.index/handler}]
-    #_["/accession/" {:name :taxon/index
-                      :handler #'accession.index/handler}]
-    #_["/item/" {:name :taxon/index
-                 :handler #'item.index/handler}]
-    ["/taxa" {:name :org/taxa
+    ["/taxa" {:name routes/taxa
               :handler #'taxon.index/handler}]
-    ["/taxa/new" {:name :org/taxa-new
+    ["/taxa/new" {:name routes/taxa-new
                   :handler #'taxon.create/handler}]
 
-    ["/accessions" {:name :org/accessions
+    ["/accessions" {:name routes/accessions
                     :handler #'accession.index/handler}]
-    ["/accessions/new" {:name :org/accessions-new
-                        :handler #'accession.create/handler}]
-
-    #_["/location/" {:name :location/index
-                     :handler #'taxon.index/handler}]]])
+    ["/accessions/new" {:name routes/accessions-new
+                        :handler #'accession.create/handler}]]])

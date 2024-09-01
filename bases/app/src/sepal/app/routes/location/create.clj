@@ -4,6 +4,7 @@
             [sepal.app.http-response :refer [found see-other]]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.location.form :as location.form]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -12,7 +13,9 @@
             [sepal.location.interface.activity :as location.activity]))
 
 (defn page-content [& {:keys [errors values router org]}]
-  (location.form/form :action (url-for router :org/location-new {:org-id (:organization/id org)})
+  (location.form/form :action (url-for router
+                                       org.routes/locations-new
+                                       {:org-id (:organization/id org)})
                       :errors errors
                       :org org
                       :router router
@@ -55,7 +58,7 @@
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
           (see-other router :location/detail {:id (:location/id result)})
-          (-> (found router :org/location-new {:org-id (:organization/id org)})
+          (-> (found router org.routes/locations-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 

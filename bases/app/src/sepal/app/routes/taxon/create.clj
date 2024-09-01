@@ -3,6 +3,7 @@
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
@@ -13,7 +14,7 @@
 
 (defn page-content [& {:keys [errors values router org]}]
   [:div
-   (taxon.form/form :action (url-for router :org/taxa-new {:org-id (:organization/id org)})
+   (taxon.form/form :action (url-for router org.routes/taxa-new {:org-id (:organization/id org)})
                     :errors errors
                     :org org
                     :router router
@@ -57,7 +58,7 @@
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
           (see-other router :taxon/detail {:id (:taxon/id result)})
-          (-> (found router :org/taxa-new {:org-id (:organization/id org)})
+          (-> (found router org.routes/taxa-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 

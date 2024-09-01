@@ -2,6 +2,7 @@
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
             [sepal.taxon.interface.spec :as taxon.spec]))
 
@@ -38,7 +39,7 @@
                             :read-only read-only
                             :value (:parent-name values))
 
-          (let [url (url-for router :org/taxa {:org-id (:organization/id org)})]
+          (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
             (form/field :label "Parent"
                         :name "parent-id"
                         :input [:select {:x-taxon-field (json/js {:url url})

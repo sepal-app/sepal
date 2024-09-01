@@ -1,6 +1,7 @@
 (ns sepal.app.ui.sidebar.mobile
   (:require [sepal.app.globals :as g]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.sidebar.mobile :as sidebar.mobile]))
@@ -89,26 +90,26 @@
        [:ul {:role "list"
              :class "flex flex-1 flex-col gap-y-7"}
         (sidebar-item "Activity"
-                      :href (url-for g/*router* :org/activity {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/activity {:org-id (:organization/id g/*organization*)})
                       :icon (heroicons/outline-clock)
                       :current? false)
         (sidebar-item "Accessions"
-                      :href (url-for g/*router* :org/accessions {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/accessions {:org-id (:organization/id g/*organization*)})
                       :icon (heroicons/outline-rectangle-group)
                       :current? false)
         (sidebar-item "Material"
-                      :href (url-for g/*router* :org/materials {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/materials {:org-id (:organization/id g/*organization*)})
                       :icon (heroicons/outline-tag)
                       :current? false)
         (sidebar-item "Taxa"
-                      :href (url-for g/*router* :org/taxa {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/taxa {:org-id (:organization/id g/*organization*)})
                       :icon (bootstrap/flower1)
                       :current? false)
         (sidebar-item "Locations"
-                      :href (url-for g/*router* :org/locations {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/locations {:org-id (:organization/id g/*organization*)})
                       :icon (heroicons/outline-map-pin)
                       :current? false)
         (sidebar-item "Media"
-                      :href (url-for g/*router* :org/media {:org-id (:organization/id g/*organization*)})
+                      :href (url-for g/*router* org.routes/media {:org-id (:organization/id g/*organization*)})
                       :icon (heroicons/outline-photo)
                       :current? false)]]]]]])
