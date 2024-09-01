@@ -105,7 +105,7 @@
   [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
         org (:organization context)
-        {:keys [_accessions-only page page-size q]} (params/decode Params query-params)
+        {:keys [accessions-only page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [[:t.id :id]
                        [:t.name :name]
@@ -127,10 +127,10 @@
                       (if (seq q)
                         [:%> :t.name q]
                         :true)]}
-        ;; stmt (if-not accessions-only
-        ;;        stmt
-        ;;        (update stmt :join-by #(conj % :inner []))
-        ;;        )
+        stmt (if-not accessions-only
+               stmt
+               (update stmt :join-by #(conj % :inner [[:public.accession :a]
+                                                      [:= :a.taxon_id :t.id]])))
         ;;
         ;; TODO: Do the queries in parallel for faster response
         total (db.i/count db (assoc stmt :select 1))
