@@ -2,6 +2,7 @@
   (:require [malli.core :as m]
             [malli.util :as mu]
             [reitit.core :as r]
+            [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
@@ -10,10 +11,14 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.spec :as location.spec]
+            [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
+            [sepal.organization.interface.activity :as org.activity]
             [sepal.organization.interface.spec :as org.spec]
             [sepal.store.interface :as store.i]
+            [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]))
 
@@ -34,7 +39,7 @@
 (defmethod activity-description :default [& {:keys []}]
   nil)
 
-(defmethod activity-description :organization/created
+(defmethod activity-description org.activity/created
   [& {:keys [router activity]}]
   (let [{:keys [organization user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created organization ")
@@ -44,7 +49,7 @@
                                                    {:org-id (:organization/id organization)})}
                                 (:organization/name organization)]])))
 
-(defmethod activity-description :accession/created
+(defmethod activity-description accession.activity/created
   [& {:keys [router activity]}]
   (let [{:keys [accession taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created accession ")
@@ -64,27 +69,27 @@
                                    (:taxon/name taxon)]
                                   ")"])])))
 
-(defmethod activity-description :taxon/updated
+(defmethod activity-description accession.activity/updated
   [& {:keys [router activity]}]
-  (let [{:keys [parent taxon user]} activity]
-    (timeline-activity :title [:span (str (:user/email user) " updated taxon ")
+  (let [{:keys [accession taxon user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " updated accession ")
                                [:a {:class "spl-link"
                                     :href (url-for router
-                                                   :taxon/detail
-                                                   {:id (:taxon/id taxon)})}
-                                (:taxon/name taxon)]
-                               (when (some? parent)
+                                                   :accession/detail
+                                                   {:id (:accession/id accession)})}
+                                (:accession/code accession)]
+                               (when (some? taxon)
                                  [:<>
                                   " ("
                                   [:a {:class "spl-link"
                                        :href (url-for router
                                                       :taxon/detail
-                                                      {:id (:taxon/id parent)})}
+                                                      {:id (:taxon/id taxon)})}
 
-                                   (:taxon/name parent)]
+                                   (:taxon/name taxon)]
                                   ")"])])))
 
-(defmethod activity-description :taxon/created
+(defmethod activity-description taxon.activity/created
   [& {:keys [router activity]}]
   (let [{:keys [parent taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created taxon ")
@@ -104,10 +109,29 @@
                                    (:taxon/name parent)]
                                   ")"])])))
 
-(defmethod activity-description :location/created
+(defmethod activity-description taxon.activity/updated
+  [& {:keys [router activity]}]
+  (let [{:keys [parent taxon user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " updated taxon ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :taxon/detail
+                                                   {:id (:taxon/id taxon)})}
+                                (:taxon/name taxon)]
+                               (when (some? parent)
+                                 [:<>
+                                  " ("
+                                  [:a {:class "spl-link"
+                                       :href (url-for router
+                                                      :taxon/detail
+                                                      {:id (:taxon/id parent)})}
+
+                                   (:taxon/name parent)]
+                                  ")"])])))
+
+(defmethod activity-description location.activity/created
   [& {:keys [router activity]}]
   (let [{:keys [location user]} activity]
-    (tap> (str "location: " location))
     (timeline-activity :title [:span (str (:user/email user) " created location ")
                                [:a {:class "spl-link"
                                     :href (url-for router
@@ -117,8 +141,50 @@
                                   (:location/code location)
                                   (str (format " (%s)" (:location/code location))))]])))
 
+(defmethod activity-description location.activity/updated
+  [& {:keys [router activity]}]
+  (let [{:keys [location user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " updated location ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :location/detail
+                                                   {:id (:location/id location)})}
+                                (cond-> (:location/name location)
+                                  (:location/code location)
+                                  (str (format " (%s)" (:location/code location))))]])))
+
+(defmethod activity-description material.activity/created
+  [& {:keys [router activity]}]
+  (let [{:keys [accession material taxon user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " created material ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :material/detail
+                                                   {:id (:material/id material)})}
+
+                                (format "%s.%s (%s)"
+                                        (:accession/code accession)
+                                        (:material/code material)
+                                        (:taxon/name taxon))
+                                #_(cond-> (:material/name material)
+                                    (:material/code material)
+                                    (str (format " (%s)" (:material/code material))))]])))
+
+(defmethod activity-description material.activity/updated
+  [& {:keys [router activity]}]
+  (let [{:keys [accession material user]} activity]
+    (timeline-activity :title [:span (str (:user/email user) " updated material ")
+                               [:a {:class "spl-link"
+                                    :href (url-for router
+                                                   :material/detail
+                                                   {:id (:material/id material)})}
+                                (cond-> (:material/name material)
+                                  (:material/code material)
+                                  (str (format " (%s)" (:material/code material))))]])))
+
 (defn timeline-section [date activity]
-  [:div {:class (html/attr "p-5" "mb-4" "border" "border-gray-100" "rounded-lg" "bg-white")}
+  [:div {:class (html/attr "p-5" "mb-4" "rounded-lg" "bg-white" "shadow"
+                           "ring-1" "ring-black" "ring-opacity-5")}
    [:time {:class "text-lg font-semibold text-gray-900 dark:text-white"}
     date]
    [:ol {:class "mt-3 divide-y divider-gray-200 dark:divide-gray-700"}
@@ -203,9 +269,11 @@
                                               [:->> :a.data "material-id"]
                                               [[:cast :mat.id :text]]]]
                                       :left [[:taxon :tax]
-                                             [:=
-                                              [:->> :a.data "taxon-id"]
-                                              [[:cast :tax.id :text]]]]
+                                             [:or
+                                              [:=
+                                               [:->> :a.data "taxon-id"]
+                                               [[:cast :tax.id :text]]]
+                                              [:= :acc.taxon_id :tax.id]]]
                                       :left [[:taxon :parent]
                                              [:= :parent.id :tax.parent_id]]
                                       :left [[:organization :org]
