@@ -82,7 +82,7 @@
 
 (defn handler [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
-        org (:current-organization context)
+        org (:organization context)
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [:*]

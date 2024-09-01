@@ -51,7 +51,7 @@
 
 (defn handler [{:keys [context params request-method ::r/router viewer]}]
   (let [{:keys [db]} context
-        org (:current-organization context)]
+        org (:organization context)]
     (case request-method
       :post
       (let [data (-> params

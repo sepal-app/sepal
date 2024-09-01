@@ -75,7 +75,7 @@
 
 (defn handler [& {:keys [context headers query-params ::r/router uri]}]
   (let [{:keys [db]} context
-        org (:current-organization context)
+        org (:organization context)
         ;; TODO: validate page and page size
         {:strs [page page-size q]
          :or {page-size default-page-size}} query-params
