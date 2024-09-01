@@ -7,23 +7,21 @@
 (def deleted :accession/deleted)
 (def updated :accession/updated)
 
-(defn create! [db type created-by data]
+(defn create! [db type created-by accession]
   (activity.i/create! db
                       {:type type
                        :created-at (Instant/now)
                        :created-by created-by
-                       :organization-id (:accession/organization-id data)
-                       ;; TODO: The parent name would be helpful
-                       :data {:accession-id (:accession/id data)
-                              :accession-code (:accession/code data)
-                              :taxon-id (:accession/taxon-id data)}}))
+                       :organization-id (:accession/organization-id accession)
+                       :data {:accession-id (:accession/id accession)
+                              :accession-code (:accession/code accession)
+                              :taxon-id (:accession/taxon-id accession)}}))
 
 (def AccessionActivityData
   [:map
    [:accession-id spec/id]
    [:accession-code spec/code]
-   [:taxon-id spec/taxon-id]
-   [:taxon-name :string]])
+   [:taxon-id spec/taxon-id]])
 
 (defmethod activity.i/data-schema created [_]
   AccessionActivityData)
