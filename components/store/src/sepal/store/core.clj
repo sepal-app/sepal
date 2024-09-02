@@ -2,6 +2,7 @@
   (:require [malli.core :as m]
             [malli.transform :as mt]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]))
 
 (def transformer
@@ -47,11 +48,9 @@
                   (coerce spec)
                   (encode spec))
         result-spec (-> spec m/properties :store/result)]
-    (when-let [result (jdbc.sql/insert! db
-                                        table
-                                        data
-                                        ;; TODO: use the store/columns keys from the properties
-                                        {:return-keys true})]
+    (when-let [result (db.i/execute-one! db {:insert-into [table]
+                                             :values [data]
+                                             :returning [:*]})]
       (cond->> result
         (some? result-spec)
         (coerce result-spec)))))
