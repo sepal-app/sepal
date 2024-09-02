@@ -17,7 +17,7 @@
                        :data {:taxon-id (:taxon/id data)
                               :taxon-name (:taxon/name data)
                               :taxon-author (:taxon/author data)
-                              :taxon-rank (:taxon/tank data)}}))
+                              :taxon-rank (:taxon/rank data)}}))
 
 (def TaxonActivityData
   [:map
