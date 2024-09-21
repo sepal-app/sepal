@@ -58,28 +58,30 @@
         (jdbc.sql/delete! db :public.user {:id (:user/id user)})))
 
     (tf/testing "user.i/create! - with invalid email"
-      (let [data {:email (mg/generate [:string {:min 1}])
-                  :password  (mg/generate user.spec/password)}
-            result (user.i/create! db data)
-            errors (-> result error.i/data :explain me/humanize)]
-        (is (match? {:email ["invalid email"]}
-                    errors))))
+      (let [data {:email (mg/generate [:string {:min 10}])
+                  :password  (mg/generate user.spec/password)}]
+        (is (thrown-match? clojure.lang.ExceptionInfo
+                           (fn [exd]
+                             (is (match? {:email ["invalid email"]}
+                                         (-> exd :data :explain me/humanize))))
+                           (user.i/create! db data)))))
 
     (tf/testing "org.i/create! - error: invalid id"
       (let [id (mg/generate neg-int?)
             data (-> (mg/generate user.spec/CreateUser)
-                     (assoc :id id))
-            result (user.i/create! db  data)
-            errors (-> result error.i/data :explain me/humanize)]
-        (is (match? {:id ["should be a positive int"]}
-                    errors))))
+                     (assoc :id id))]
+        (is (thrown-match? clojure.lang.ExceptionInfo
+                           (fn [exd]
+                             (is (match? {:id ["should be a positive int"]}
+                                         (-> exd :data :explain me/humanize))))
+                           (user.i/create! db data)))))
 
     (tf/testing "org.i/create! - error: id=0"
       (let [id 0
             data (-> (mg/generate user.spec/CreateUser)
-                     (assoc :id id))
-            result (user.i/create! db  data)
-
-            errors (-> result error.i/data :explain me/humanize)]
-        (is (match? {:id ["should be a positive int"]}
-                    errors))))))
+                     (assoc :id id))]
+        (is (thrown-match? clojure.lang.ExceptionInfo
+                           (fn [exd]
+                             (is (match? {:id ["should be a positive int"]}
+                                         (-> exd :data :explain me/humanize))))
+                           (user.i/create! db data)))))))

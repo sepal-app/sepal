@@ -1,9 +1,11 @@
-(ns sepal.app.routes.register.index
+(ns sepal.app.routes.auth.register
   (:require [reitit.core :as r]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.form :as form]
@@ -13,7 +15,7 @@
 
 (defn form [& {:keys [request email invitation next router]}]
   [:form {:method "post"
-          :action (url-for router :register/index)}
+          :action (url-for router auth.routes/register)}
    (form/anti-forgery-field)
    (form/hidden-field :name "next" :value next)
    (when invitation
@@ -48,7 +50,7 @@
                                 "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
                                 "focus:ring-green-500")}
      "Create account"]
-    ;; TODO:
+    ;; TODO: bump
     ;; [:p
     ;;  [:a {:href "/forgot_password"}
     ;;   "Forgot password?"]]
@@ -91,7 +93,7 @@
    [:map {:closed true}
     form/AntiForgeryField
     [:email user.spec/email]
-    [:password {} :string]
+    [:password :string]
     [:confirm-password :string]
     [:next {:optional true} [:maybe :string]]
     [:invitation {:optional true} [:maybe :string]]]
@@ -101,18 +103,27 @@
     (fn [{:keys [password confirm-password]}]
       (= password confirm-password))]])
 
-(defn handler [{:keys [context params request-method ::r/router] :as request}]
+(defn handler [{:keys [context form-params request-method ::r/router] :as request}]
+  (tap> (str "form-params: " form-params))
+
   (let [{:keys [db]} context
-        {:keys [email password]} params]
+        {:keys [email password] :as p} (params/decode RegisterForm form-params)]
+
+    (tap> (str "email: " email))
+    (tap> (str "password: " password))
+
     (case request-method
       :post
       (cond
-        (validation.i/invalid? RegisterForm params)
-        (-> (http/see-other router :register/index)
-            (flash/set-field-errors (validation.i/validate RegisterForm params)))
+        ;; (validation.i/invalid? RegisterForm params)
+        ;; (do
+        ;;   ;; (tap> (validation.i/validate RegisterForm params))
+        ;;   (-> (http/see-other router auth.routes/register)
+        ;;       (flash/set-field-errors (validation.i/validate RegisterForm params))))
 
+        ;; TODO: This doesn't seem to be showing the error
         (user.i/exists? db email)
-        (-> (http/see-other router :register/index)
+        (-> (http/see-other router auth.routes/register)
             (flash/error "User already exists"))
 
         :else

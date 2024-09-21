@@ -1,60 +1,22 @@
-(ns sepal.app.routes.login
+(ns sepal.app.routes.auth.login
   (:require [reitit.core :as r]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.form :as form]
-            [sepal.database.interface :as db.i]))
+            [sepal.user.interface :as user.i]))
 
-(defn verify-password [db email password]
-  (->> {:select
-        :*
-        :from :public.user
-        :where [:and
-                [:= :email email]
-                [[:= :password
-                  [:'crypt password :password]]]]}
-       (db.i/execute-one! db)))
-
-#_(defn send-verification-email [email]
-  ;; See https://app.sendgrid.com/guide/integrate/langs/java
-
-;;   // using SendGrid's Java Library
-;; // https://github.com/sendgrid/sendgrid-java
-;; import com.sendgrid.*;
-;; import java.io.IOException;
-
-;; public class Example {
-;;   public static void main(String[] args) throws IOException {
-;;     Email from = new Email("test@example.com");
-;;     String subject = "Sending with SendGrid is Fun";
-;;     Email to = new Email("test@example.com");
-;;     Content content = new Content("text/plain", "and easy to do anywhere, even with Java");
-;;     Mail mail = new Mail(from, subject, to, content);
-
-;;     SendGrid sg = new SendGrid(System.getenv("SENDGRID_API_KEY"));
-;;     Request request = new Request();
-;;     try {
-;;       request.setMethod(Method.POST);
-;;       request.setEndpoint("mail/send");
-;;       request.setBody(mail.build());
-;;       Response response = sg.api(request);
-;;       System.out.println(response.getStatusCode());
-;;       System.out.println(response.getBody());
-;;       System.out.println(response.getHeaders());
-;;     } catch (IOException ex) {
-;;       throw ex;
-;;     }
-;;   }
-;; }
-    )
+(defn send-verification-email [email]
+  ;; TODO: bump
+  )
 
 (defn form [& {:keys [email invitation next router]}]
   [:form {:method "post"
-          :action (url-for router :auth/login)}
+          :action (url-for router auth.routes/login)}
    (form/anti-forgery-field)
    (when invitation
      (form/hidden-field :name "invitation" :value invitation))
@@ -71,11 +33,11 @@
                                 "focus:ring-green-500")}
      "Login"]
     [:p
-     [:a {:href "/forgot_password"}
+     [:a {:href (url-for router auth.routes/forgot-password)}
       "Forgot password?"]]]
 
    [:div {:class "mt-4"}
-    [:a {:href (url-for router :register/index)} "Don't have an account?"]]])
+    [:a {:href (url-for router auth.routes/register)} "Don't have an account?"]]])
 
 (defn render [& {:keys [email #_field-errors invitation next router flash]}]
   (-> [:div
@@ -91,32 +53,28 @@
            (form :email email
                  :invitation invitation
                  :next next
-                 :router router)]]
-
-         ;; TODO: Non field errors
-
-          ;; (when error
-          ;;   [:div {:class "rounded-md bg-red-50 p-4 text-red-800"
-          ;;          :x-show "!submitting"}
-          ;;    error])
-         ]]
+                 :router router)]]]]
        (flash/banner (:messages flash))]
       (base/html)
       (html/render-html)))
 
 (defn handler [{:keys [context flash params request-method ::r/router]}]
   (let [{:keys [db]} context
-        {:keys [email password invitation next]} params]
+        ;; TODO: we need to params encode this because we're getting the params
+        ;; with string keys
+        {:strs [email password invitation next]} params]
+    ;; TODO: Put the email in the session so we can put the value in the input
+    ;; after the redirect on error
     (case request-method
       :post
-      (let [user (verify-password db email password)
+      (let [user (user.i/verify-password db email password)
             error (when-not user "Invalid password")
             session (when-not error (session/user->session user))]
         (if-not error
           (-> (http/see-other router :root)
               (assoc :session session))
           ;; TODO: pass params on redirect
-          (-> (http/see-other router :auth/login)
+          (-> (http/see-other router auth.routes/login)
               (flash/error error))))
 
       ;; else

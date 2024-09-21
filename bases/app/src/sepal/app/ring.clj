@@ -18,44 +18,32 @@
             [sepal.app.http-response :as http-response]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
+            [sepal.app.routes.auth.core :as auth]
             [sepal.app.routes.location.core :as location]
-            [sepal.app.routes.login :as login]
-            [sepal.app.routes.logout :as logout]
             [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
             [sepal.app.routes.org.core :as org]
             [sepal.app.routes.org.routes :as org.routes]
-            [sepal.app.routes.register.core :as register]
             [sepal.app.routes.taxon.core :as taxon]))
 
 (defn routes []
-  [""
-   ["/" {:name :root
-         :handler #(http-response/found (::r/router %) org.routes/index)
-         :middleware [[middleware/require-viewer]]}]
-
-   ["/ok" {:name :ok
-           :handler (constantly {:status 204})}]
-
-   ;; See sepal.app.html/static-url for accessing static assets
-   ["/assets/*" {:name :static-files
-                 :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
-   ["/register" (register/routes)]
-   ["/login" {:name :auth/login
-              :handler #'login/handler}]
-   ["/logout" {:name :auth/logout
-               :handler #'logout/handler}]
-
-   ["/forgot_password" {:name :auth/forgot-pasword
-                        ;; :handler #(logout/handler %)
-                        }]
-
-   ["/accession" (accession/routes)]
-   ["/location" (location/routes)]
-   ["/material" (material/routes)]
-   ["/org" (org/routes)]
-   ["/taxon" (taxon/routes)]
-   ["/media" (media/routes)]])
+  (concat
+    (auth/routes)
+    [""
+     ["/" {:name :root
+           :handler #(http-response/found (::r/router %) org.routes/index)
+           :middleware [[middleware/require-viewer]]}]
+     ["/ok" {:name :ok
+             :handler (constantly {:status 204})}]
+     ;; See sepal.app.html/static-url for accessing static assets
+     ["/assets/*" {:name :static-files
+                   :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
+     ["/accession" (accession/routes)]
+     ["/location" (location/routes)]
+     ["/material" (material/routes)]
+     ["/org" (org/routes)]
+     ["/taxon" (taxon/routes)]
+     ["/media" (media/routes)]]))
 
 (def error-handlers
   {:not-found (constantly {:status 404

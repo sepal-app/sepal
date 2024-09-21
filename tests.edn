@@ -8,8 +8,10 @@
                         "components/database/test"
                         "components/location/test"
                         "components/material/test"
+                        "components/postmark/test"
                         "components/organization/test"
                         "components/taxon/test"
+                        "components/store/test"
                         "components/user/test"
                         "components/validation/test"]
            :ns-patterns [".*-test"]}]}

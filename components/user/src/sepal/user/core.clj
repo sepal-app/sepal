@@ -14,16 +14,39 @@
   {:pre [(pos-int? id)]}
   (store.i/get-by-id db :public.user id spec/User))
 
+(defn get-by-email
+  [db email]
+  (some->> {:select :*
+            :from :public.user
+            :where [:= :email email]}
+           (db.i/execute-one! db)
+           (store.i/coerce spec/User)))
+
 (defn create! [db data]
   (store.i/create! db :public.user data spec/CreateUser))
 
-(defn exists? [db id-or-email]
-  (let [where (if (int? id-or-email)
-                [:= :id id-or-email]
-                [:= :email id-or-email])]
-    (db.i/exists? db {:select 1
-                      :from :public.user
-                      :where where})))
+(defn exists? [db email]
+  (db.i/exists? db {:select 1
+                    :from :public.user
+                    :where [:= :email email]}))
+
+(defn set-password! [db id password]
+  (store.i/update! db
+                   :public.user
+                   id
+                   {:password password}
+                   spec/SetPassword
+                   spec/User))
+
+(defn verify-password [db email password]
+  (->> {:select
+        :*
+        :from :public.user
+        :where [:and
+                [:= :email email]
+                [[:= :password
+                  [:'crypt password :password]]]]}
+       (db.i/execute-one! db)))
 
 (create-ns 'sepal.user.interface)
 (alias 'user.i 'sepal.user.interface)

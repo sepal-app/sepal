@@ -29,6 +29,7 @@ export default defineConfig({
                 "resources/app/static/js/media_detail.ts",
                 "resources/app/static/js/page.ts",
                 "resources/app/static/js/taxon_form.ts",
+                "resources/app/static/js/auth/page.ts",
             ],
         },
     },

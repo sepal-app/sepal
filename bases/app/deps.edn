@@ -9,6 +9,7 @@
         poly/material {:local/root "../../components/material"}
         poly/media {:local/root "../../components/media"}
         poly/organization {:local/root "../../components/organization"}
+        poly/postmark {:local/root "../../components/postmark"}
         poly/store {:local/root "../../components/store"}
         poly/taxon {:local/root "../../components/taxon"}
         poly/test {:local/root "../../components/test"}

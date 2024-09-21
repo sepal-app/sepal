@@ -1,4 +1,4 @@
-(ns sepal.app.routes.logout
+(ns sepal.app.routes.auth.logout
   (:require [ring.util.http-response :refer [found]]))
 
 (defn handler [_]
