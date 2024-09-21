@@ -22,9 +22,9 @@
           :hx-target "#media-list"
           :hx-swap "afterbegin"}
    (form/anti-forgery-field)
-   (into [:<>] (for [[key value] fields]
-                 (form/hidden-field :name  (csk/->camelCaseString key)
-                                    :value value)))])
+   (for [[key value] fields]
+     (form/hidden-field :name  (csk/->camelCaseString key)
+                        :value value))])
 
 (defn handler [& {:keys [context params ::r/router] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context
@@ -59,5 +59,4 @@
                           :s3-method "PUT"}))
          (mapv #(assoc % :s3-url (presign-fn %)))
          (mapv #(success-form :router router :fields %))
-         (into [:<>])
          (html/render-partial))))

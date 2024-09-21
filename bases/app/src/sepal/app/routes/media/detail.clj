@@ -25,8 +25,7 @@
       [:img {:src zoom-url}]]]]])
 
 (defn page-title-buttons [& {:keys [delete-url dl-url]}]
-  [:<>
-   [:button {:class "btn"
+  [[:button {:class "btn"
              :aria-label "Zoom"
              :x-on:click "zoom=true;"}
     (heroicons/magnifying-glass)]
@@ -42,8 +41,7 @@
     (heroicons/outline-trash :class "text-error")]])
 
 (defn page-content [& {:keys [media router srcset-urls zoom-url]}]
-  [:<>
-   [:div
+  [[:div
     [:template {:x-if "zoom"}
      (zoom-view :zoom-url zoom-url)]
 

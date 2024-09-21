@@ -3,7 +3,7 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as s]
-            [huff2.core :as huff]))
+            [dev.onionpancakes.chassis.core :as chassis]))
 
 (defn attr [& classes]
   (->> classes
@@ -45,14 +45,14 @@
 (defn response [body]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (str "<!DOCTYPE html>\n" body)})
+   :body (str chassis/doctype-html5 body)})
 
 (defn render-html [html]
   (->> html
-       (huff/html)
+       (chassis/html)
        (response)))
 
 (defn render-partial [html]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (str (huff/html html))})
+   :body (str (chassis/html html))})

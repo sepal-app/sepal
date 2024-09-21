@@ -59,8 +59,7 @@
                                                    {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
-                                 [:<>
-                                  " ("
+                                 [" ("
                                   [:a {:class "spl-link"
                                        :href (url-for router
                                                       :taxon/detail
@@ -79,8 +78,7 @@
                                                    {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
-                                 [:<>
-                                  " ("
+                                 [" ("
                                   [:a {:class "spl-link"
                                        :href (url-for router
                                                       :taxon/detail
@@ -99,8 +97,7 @@
                                                    {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
-                                 [:<>
-                                  " ("
+                                 [" ("
                                   [:a {:class "spl-link"
                                        :href (url-for router
                                                       :taxon/detail
@@ -119,8 +116,7 @@
                                                    {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
-                                 [:<>
-                                  " ("
+                                 [" ("
                                   [:a {:class "spl-link"
                                        :href (url-for router
                                                       :taxon/detail
@@ -206,17 +202,17 @@
     (reduce (fn [acc date]
               (let [activity (get activity-by-date date)]
                 (conj acc
-                      [timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
-                       (reduce (fn [acc cur]
-                                 (if-let [desc (activity-description :router router
-                                                                     :activity cur)]
-                                   (conj acc desc)
-                                   acc)
-                                 ;; TODO: On hover show a tooltup with the exact time
-                                 ;; in the org's default timezone
-                                 )
-                               []
-                               activity)])))
+                      (timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
+                                        (reduce (fn [acc cur]
+                                                  (if-let [desc (activity-description :router router
+                                                                                      :activity cur)]
+                                                    (conj acc desc)
+                                                    acc)
+                                                  ;; TODO: On hover show a tooltup with the exact time
+                                                  ;; in the org's default timezone
+                                                  )
+                                                []
+                                                activity)))))
             []
             dates)))
 

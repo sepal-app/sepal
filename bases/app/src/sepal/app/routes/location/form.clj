@@ -9,8 +9,7 @@
       :method "POST"
       :id "location-form"
       :x-ref "locationForm"}
-     [:<>
-      (form/anti-forgery-field)
+     [(form/anti-forgery-field)
       (form/input-field :label "Name"
                         :name "name"
                         :required true

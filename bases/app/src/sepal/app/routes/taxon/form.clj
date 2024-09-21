@@ -14,8 +14,7 @@
         :method "POST"
         :id "taxon-form"
         :x-ref "taxonForm"}
-       [:<>
-        (form/anti-forgery-field)
+       [(form/anti-forgery-field)
         (form/hidden-field :name "organization-id"
                            :value (:organization-id values))
 
@@ -68,11 +67,10 @@
                                        :read-only read-only
                                        :x-validate.required true
                                        :value (:rank values)}
-                              [:<>
-                               (for [rank ranks]
-                                 [:option {:value rank
-                                           :selected (when (= rank (some-> values :rank name))
-                                                       "selected")}
-                                  rank])]]))])
+                              (for [rank ranks]
+                                [:option {:value rank
+                                          :selected (when (= rank (some-> values :rank name))
+                                                      "selected")}
+                                 rank])]))])
      [:script {:type "module"
                :src (html/static-url "js/taxon_form.ts")}]]))

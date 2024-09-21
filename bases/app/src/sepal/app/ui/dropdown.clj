@@ -53,4 +53,4 @@ close(focusAfter) {
            ::id "$id('dropdown-button')",
            :style "display: none;",
            :class "absolute left-0 mt-2 w-40 rounded-md bg-white shadow-md z-10"}
-     [:<> items]]]])
+     items]]])

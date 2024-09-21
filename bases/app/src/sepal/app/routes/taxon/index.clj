@@ -79,8 +79,7 @@
                          :page-title "Taxa"
                          :page-title-buttons (create-button :router router
                                                             :org org)
-                         :table-actions [:<>
-                                         (search-field (-> href uri/query-map :q))
+                         :table-actions [(search-field (-> href uri/query-map :q))
                                          [:label {:class "ml-8"}
                                           "Only taxa with accessions"
                                           ;; TODO: Pass this value in and set it here so

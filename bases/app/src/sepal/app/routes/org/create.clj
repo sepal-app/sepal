@@ -17,8 +17,7 @@
   (form/form
     {:method "post"
      :action (url-for router org.routes/create)}
-    [:<>
-     (form/anti-forgery-field)
+    [(form/anti-forgery-field)
      (form/field :label "Name"
                  :name "name"
                  :errors (:name errors)

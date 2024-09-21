@@ -14,8 +14,7 @@
       :method "POST"
       :id "accession-form"
       :x-ref "accessionForm"}
-     [:<>
-      (form/anti-forgery-field)
+     [(form/anti-forgery-field)
       (form/input-field :label "Code"
                         :name "code"
                         :require true

@@ -27,8 +27,7 @@
         :method "POST"
         :id "material-form"
         :x-ref "materialForm"}
-       [:<>
-        ;; TODO: Add an organization-id field so we don't have to nest the url under the id
+       [;; TODO: Add an organization-id field so we don't have to nest the url under the id
         ;;
         (form/anti-forgery-field)
 
@@ -90,8 +89,7 @@
                                      :id "status"
                                      :x-validate.required true
                                      :value (:status values)}
-                            [:<>
-                             (for [status statuses]
+                            [(for [status statuses]
                                [:option {:value status
                                          :selected (when (= status (some-> values :status name))
                                                      "selected")}
@@ -106,8 +104,7 @@
                                      :id "type"
                                      :x-validate.required true
                                      :value (:type values)}
-                            [:<>
-                             (for [type types]
+                            [(for [type types]
                                [:option {:value type
                                          :selected (when (= type (some-> values :type name))
                                                      "selected")}

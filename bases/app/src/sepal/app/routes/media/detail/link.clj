@@ -73,53 +73,51 @@
 
 (defn media-link-form [& {:keys [media org router]}]
   (form/form
-   {:class "flex flex-row gap-2 items-center"
-    :hx-post (url-for router :media/detail.link {:id (:media/id media)})
-    :hx-target "#media-link-root"}
-   [:<>
-    (form/anti-forgery-field)
-    (form/field :label "Resource type"
-                :name "resource-type"
-                :input [:select {:name "resource-type"
-                                 :class "select select-bordered select-sm w-full max-w-xs leading-4"
-                                 :autocomplete "off"
-                                 :id "resource-type"
-                                 :x-validate.required true
-                                 :x-model "resourceType"
+    {:class "flex flex-row gap-2 items-center"
+     :hx-post (url-for router :media/detail.link {:id (:media/id media)})
+     :hx-target "#media-link-root"}
+    [(form/anti-forgery-field)
+     (form/field :label "Resource type"
+                 :name "resource-type"
+                 :input [:select {:name "resource-type"
+                                  :class "select select-bordered select-sm w-full max-w-xs leading-4"
+                                  :autocomplete "off"
+                                  :id "resource-type"
+                                  :x-validate.required true
+                                  :x-model "resourceType"
                                  ;; :value (:rank values)
-                                 }
-                        [:<>
-                         [:option {:value ""} ""]
-                         (for [rt resource-types]
-                           [:option {:value  (:value rt)}
-                            (:label rt)])]])
-    [:div {:x-show "resourceType"
-           :class "flex flex-row gap-2 items-end flex-grow"}
-     (form/field :label "Resource"
-                 :name "resource-id"
-                 :input [:<>
-                         [:template {:x-if "resourceType === 'accession'"}
-                          (accession-field :org org
+                                  }
+                         [[:option {:value ""} ""]
+                          (for [rt resource-types]
+                            [:option {:value  (:value rt)}
+                             (:label rt)])]])
+     [:div {:x-show "resourceType"
+            :class "flex flex-row gap-2 items-end flex-grow"}
+      (form/field :label "Resource"
+                  :name "resource-id"
+                  :input [:<>
+                          [:template {:x-if "resourceType === 'accession'"}
+                           (accession-field :org org
+                                            :router router
+                                            :name "resource-id")]
+                          [:template {:x-if "resourceType === 'location'"}
+                           (location-field :org org
                                            :router router
                                            :name "resource-id")]
-                         [:template {:x-if "resourceType === 'location'"}
-                          (location-field :org org
-                                          :router router
-                                          :name "resource-id")]
-                         [:template {:x-if "resourceType === 'material'"}
-                          (material-field :org org
-                                          :router router
-                                          :name "resource-id")]
-                         [:template {:x-if "resourceType === 'taxon'"}
-                          (taxon-field :org org
-                                       :router router
-                                       :name "resource-id")]])
+                          [:template {:x-if "resourceType === 'material'"}
+                           (material-field :org org
+                                           :router router
+                                           :name "resource-id")]
+                          [:template {:x-if "resourceType === 'taxon'"}
+                           (taxon-field :org org
+                                        :router router
+                                        :name "resource-id")]])
 
-     [:button {:type "button"
-               :class "btn btn-sm btn-secondary mb-4"
-               :x-on:click "editLink=false"}
-      "Cancel"]
-     (form/button {:class "btn btn-sm btn-primary mb-4"}  "Save")]]))
+      [:button {:type "button"
+                :class "btn btn-sm btn-secondary mb-4"
+                :x-on:click "editLink=false"}
+       "Cancel"]
+      (form/submit-button {:class "btn btn-sm btn-primary mb-4"}  "Save")]]))
 
 ;; (ns-unmap *ns* 'link-text)
 
