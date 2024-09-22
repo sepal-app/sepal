@@ -17,12 +17,16 @@
 
 (defn update!
   ([db table id data]
-   (core/update! db table id data nil))
-  ([db table id data spec]
-   (core/update! db table id data spec)))
+   (update! db table id data nil nil))
+  ([db table id data input-spec]
+   (update! db table id data input-spec nil))
+  ([db table id data input-spec result-spec]
+   (core/update! db table id data input-spec result-spec)))
 
 (defn create!
   ([db table data]
-   (core/create! db table data nil))
-  ([db table data spec]
-   (core/create! db table data spec)))
+   (create! db table data nil nil))
+  ([db table data input-spec]
+   (create! db table data input-spec nil))
+  ([db table data input-spec result-spec]
+   (core/create! db table data input-spec result-spec)))
