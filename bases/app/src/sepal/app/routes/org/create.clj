@@ -3,6 +3,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
@@ -52,9 +53,9 @@
                                  :value (:abbreviation values)}])
 
      [:div {:class "spl-btn-grp mt-4"}
-     ;; TODO: After submitting rewrite the history to not allow the back button.
-     ;; Can probably use htmx for this.
-      (form/button "Create organization")]]))
+      ;; TODO: After submitting rewrite the history to not allow the back button.
+      ;; Can probably use htmx for this.
+      (form/submit-button "Create organization")]]))
 
 (defn render [& {:keys [router values]}]
   (-> (page/page :router router
@@ -66,24 +67,32 @@
   (try
     (db.i/with-transaction [tx db]
       (let [org (org.i/create! tx data)]
+        (org.i/assign-role! db
+                            {:organization-id (:organization/id org)
+                             :user-id created-by
+                             :role :owner})
         (org.activity/create! tx org.activity/created created-by org)
         org))
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
-  (let [{:keys [db]} context]
+(def FormParams
+  [:map {:closed true}
+   form/AntiForgeryField
+   [:name :string]
+   [:short-name :string]
+   [:abbreviation :string]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+  (let [{:keys [db]} context
+        {:keys [name short-name abbreviation] :as data}  (params/decode FormParams form-params)]
     (case request-method
       :post
-      (let [data (-> params
-                     (select-keys [:name :short-name :abbreviation]))
-            ;; TODO: create the user and assign the role in the same transaction
-            result (create! db (:user/id viewer) data)
-            _ou (when-not (error? result)
-                  (org.i/assign-role! db
-                                      {:organization-id (:organization/id result)
-                                       :user-id (:user/id viewer)
-                                       :role :owner}))]
+      (let [result (create! db
+                            (:user/id viewer)
+                            {:name name
+                             :short-name short-name
+                             :abbreviation abbreviation})]
         (if-not (error? result)
           (http/found router org.routes/activity {:org-id (-> result :organization/id str)})
           (-> (http/see-other router org.routes/create)
@@ -92,4 +101,4 @@
 
       ;; else
       (render :router router
-              :values params))))
+              :values data))))

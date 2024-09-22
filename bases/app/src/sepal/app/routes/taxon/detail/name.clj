@@ -3,10 +3,12 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.alert :as alert]
             [sepal.app.ui.dropdown :as dropdown]
+            [sepal.app.ui.form :as form]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
@@ -49,7 +51,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.taxonForm.submit()"}
+             :x-on:click "$dispatch('taxon-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
@@ -80,60 +82,24 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-;; TODO: We can use reitit to handle this automatically
-(def FormValues
-  [:map
+(def FormParams
+  [:map {:closed true}
    [:id :string]
    [:name :string]
+   [:author :string]
    [:rank :string]
    [:parent-id [:maybe :string]]])
 
-;; (defn validate-form-values [spec values]
-;;   (try
-;;     (m/coerce spec
-;;               values
-;;               (mt/transformer mt/strip-extra-keys-transformer {:name :form}))
-;;     (catch Exception e
-;;       (error.i/ex->error e))))
-
-;; (defn humanize-validation-error [spec err]
-;;   (->> err
-;;        error.i/data
-;;        (m/explain spec)
-;;        me/humanize.))
-
-#_(comment
-    (require '[malli.core :as m])
-    (require '[malli.transform :as mt])
-    (require '[malli.error :as me])
-
-    (require '[sepal.validation.interface])
-    (let [result (validation.i/validate-form-values FormValues {:id 123})
-          err-data (error.i/data result)
-          explanation (m/explain (:schema err-data) err-data)]
-      (validation.i/humanize result)
-    ;; (me/humanize (m/explain FormValues result))
-    ;; (validation.i/humanize FormValues result)
-      #_(->> err
-             error.i/data
-             (m/explain spec)
-             me/humanize)
-    ;; result
-    ;; (me/humanize explanation)
-      )
-
-    ())
-
-(defn handler [{:keys [context flash params request-method ::r/router viewer]}]
+(defn handler [{:keys [context _flash form-params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context]
     (case request-method
       :post
-      (let [result (save! db (:taxon/id resource) (:user/id viewer) params)]
-        (tap> (str "result: " result))
-        (tap> (str "params: " params))
+      (let [data (params/decode FormParams form-params)
+            result (save! db (:taxon/id resource) (:user/id viewer) data)]
         (if-not (error.i/error? result)
           (http/found router :taxon/detail {:id (:taxon/id result)})
           (do
+            ;; TODO: better error handling
             (tap> (str "ERROR: " (validation.i/humanize result)))
             (-> (http/found router :taxon/detail {:id (:taxon/id resource)})
                 (flash/set-field-errors (validation.i/humanize result))))))

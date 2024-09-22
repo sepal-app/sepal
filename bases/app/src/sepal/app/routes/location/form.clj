@@ -8,7 +8,8 @@
      {:action action
       :method "POST"
       :id "location-form"
-      :x-ref "locationForm"}
+      :x-on:location-form:submit.window "$el.submit()"
+      :x-on:location-form:reset.window "$el.reset()"}
      [(form/anti-forgery-field)
       (form/input-field :label "Name"
                         :name "name"

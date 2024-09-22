@@ -9,10 +9,10 @@
   (store.i/get-by-id db :material id spec/Material))
 
 (defn update! [db id data]
-  (store.i/update! db :material id data spec/UpdateMaterial))
+  (store.i/update! db :material id data spec/UpdateMaterial spec/Material))
 
 (defn create! [db data]
-  (store.i/create! db :material data spec/CreateMaterial))
+  (store.i/create! db :material data spec/CreateMaterial spec/Material))
 
 (create-ns 'sepal.material.interface)
 (alias 'mat.i 'sepal.material.interface)

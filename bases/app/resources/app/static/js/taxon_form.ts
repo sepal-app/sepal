@@ -23,7 +23,7 @@ document.addEventListener("alpine:init", () => {
         new TomSelect(el, {
             itemClass: "sm:text-sm bg-white",
             optionClass: "sm:text-sm bg-white py-2 px-2",
-            sortField: { field: "text" },
+            sortField: [{ field: "text" }],
             selectOnTab: true,
         })
     })

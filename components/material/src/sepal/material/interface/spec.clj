@@ -22,8 +22,14 @@
    [:material/accession-id accession-id]
    [:material/location-id location-id]
    [:material/organization-id organization-id]
-   [:material/type {:decode/store csk/->kebab-case-keyword} type]
-   [:material/status {:decode/store csk/->kebab-case-keyword} status]
+   [:material/type {:decode/store csk/->kebab-case-keyword
+                    :encode/store (comp db.i/->pg-enum
+                                        csk/->kebab-case-string)}
+    type]
+   [:material/status {:decode/store csk/->kebab-case-keyword
+                      :encode/store (comp db.i/->pg-enum
+                                          csk/->kebab-case-string)}
+    status]
    [:material/memorial memorial]
    [:material/quantity quantity]])
 
@@ -62,6 +68,10 @@
              :encode/store (comp db.i/->pg-enum
                                  csk/->kebab-case-string)}
       type]
+     [:status {:decode/store csk/->kebab-case-keyword
+               :encode/store (comp db.i/->pg-enum
+                                   csk/->kebab-case-string)}
+      status]
      [:memorial memorial]
      [:quantity {:decode/store validate.i/coerce-int}
       quantity]]))

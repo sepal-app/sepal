@@ -51,7 +51,7 @@
     (fn [type registry]
      ;; Create the schema lazily depending on the :type of the activity
       (when-let [ds (data-schema type)]
-        (tap> (str "ds: " ds))
+        ;; (tap> (str "ds: " ds))
         (build-create-activity-schema type ds registry)))))
 
 (defn create! [db activity]

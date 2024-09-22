@@ -34,7 +34,6 @@
         ;; TODO: deprecate the :store/result property
         result-spec (or result-spec
                         (-> spec m/properties :store/result))]
-    ;; TODO: Allow using HoneySQL
     (when-let [result (db.i/execute-one! db
                                          {:update table
                                           :set data

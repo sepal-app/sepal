@@ -6,14 +6,13 @@
             [sepal.app.ui.form :as form]))
 
 (defn form [& {:keys [action errors org router values]}]
-  (tap> (str "values: " values))
-
   [:div
    (form/form
      {:action action
       :method "POST"
       :id "accession-form"
-      :x-ref "accessionForm"}
+      :x-on:accession-form:submit.window "$el.submit()"
+      :x-on:accession-form:reset.window "$el.reset()"}
      [(form/anti-forgery-field)
       (form/input-field :label "Code"
                         :name "code"

@@ -4,6 +4,7 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.org.routes :as org.routes]
@@ -21,7 +22,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.accessionForm.submit()"}
+             :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
@@ -47,12 +48,17 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
+(def FormParams
+  [:map {:closed true}
+   [:code :string]
+   [:taxon-id :int]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
   (let [{:keys [db]} context
         org (:organization context)]
     (case request-method
       :post
-      (let [data (-> params
+      (let [data (-> (params/decode FormParams form-params)
                      (assoc :organization-id (:organization/id org)))
             result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
@@ -64,4 +70,4 @@
 
       (render :org org
               :router router
-              :values params))))
+              :values form-params))))

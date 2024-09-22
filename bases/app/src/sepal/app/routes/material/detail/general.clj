@@ -3,6 +3,7 @@
             [sepal.accession.interface :as accession.i]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.ui.form :as ui.form]
@@ -35,7 +36,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.materialForm.submit()"}
+             :x-on:click "$dispatch('material-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
@@ -68,7 +69,16 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
+(def FormParams
+  [:map {:closed true}
+   [:code :string]
+   [:accession-id :int]
+   [:location-id [:maybe :int]]
+   [:quantity :int]
+   [:status :string]
+   [:type :string]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -83,21 +93,18 @@
                        :status (:material/status resource)
                        :quantity (:material/quantity resource)
                        :type (:material/type resource)}
-                      params)]
-
-    (tap> (str "params: " params))
-
+                      (params/decode FormParams form-params))]
     (case request-method
       :post
-      (let [result (save! db (:material/id resource) (:user/id viewer) params)]
+      (let [result (save! db (:material/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :material/detail {:org-id (-> organization :organization/id str)
                                                :id (:material/id resource)})
           (-> (http/found router :accession/detail)
               ;; TODO: The errors needs to be parsed here and return a message
-              (assoc :flash {:error result
-                             :values params}))))
+              (assoc :flash {:error "Error saving material"  ;; TODO: result
+                             :values values}))))
 
       (render :org organization
               :router router

@@ -2,6 +2,7 @@
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.ui.form :as ui.form]
@@ -20,7 +21,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.locationForm.submit()"}
+             :x-on:click "$dispatch('location-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
@@ -49,25 +50,31 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
+(def FormParams
+  [:map {:closed true}
+   [:name :string]
+   [:code [:maybe :string]]
+   [:description [:maybe :string]]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         error nil
         values (merge {:id (:location/id resource)
                        :name (:location/name resource)
                        :code (:location/code resource)
                        :description (:location/description resource)}
-                      params)]
+                      (params/decode FormParams form-params))]
 
     (case request-method
       :post
-      (let [result (update! db (:location/id resource) (:user/id viewer) params)]
+      (let [result (update! db (:location/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :location/detail {:org-id (-> organization :organization/id str)
                                                :id (:location/id resource)})
           (-> (http/found router :location/detail)
               (assoc :flash {:error error
-                             :values params}))))
+                             :values values}))))
 
       (render :org organization
               :router router

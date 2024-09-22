@@ -13,7 +13,7 @@
   [:map {:closed true}
    [:location/id id]
    [:location/code code]
-   [:location/description description]
+   [:location/description [:maybe  description]]
    [:location/name name]
    [:location/organization-id organization-id]])
 

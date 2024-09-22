@@ -13,11 +13,9 @@
        {:action action
         :method "POST"
         :id "taxon-form"
-        :x-ref "taxonForm"}
+        :x-on:taxon-form:submit.window "$el.submit()"
+        :x-on:taxon-form:reset.window "$el.reset()"}
        [(form/anti-forgery-field)
-        (form/hidden-field :name "organization-id"
-                           :value (:organization-id values))
-
         (form/input-field :label "Name"
                           :name "name"
                           :required true

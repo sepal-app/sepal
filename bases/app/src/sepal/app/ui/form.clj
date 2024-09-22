@@ -76,7 +76,6 @@
                :id id
                :required (or required false)
                :x-validate true
-               :type (or type "text")
                :class "textarea textarea-bordered"}
     value]
 

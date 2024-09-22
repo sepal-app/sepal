@@ -9,6 +9,7 @@
     [:title (or title "Sepal")]
     [:meta {:name "description" :content ""}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+    [:style "[x-cloak] {display: none !important;}"]
     [:link {:rel "stylesheet"
             :href (html/static-url "css/main.css")}]]
    [:body {:hx-ext "alpine-morph"

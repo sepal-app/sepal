@@ -4,6 +4,7 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.ui.form :as ui.form]
@@ -33,7 +34,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.accessionForm.submit()"}
+             :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
@@ -63,18 +64,23 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
+(def FormParams
+  [:map {:closed true}
+   [:code :string]
+   [:taxon-id :int]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
   (let [{:keys [db organization resource]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         values (merge {:id (:accession/id resource)
                        :code (:accession/code resource)
                        :taxon-id (:accession/taxon-id resource)
                        :taxon-name (:taxon/name taxon)}
-                      params)]
+                      (params/decode FormParams form-params))]
 
     (case request-method
       :post
-      (let [result (save! db (:accession/id resource) (:user/id viewer) params)]
+      (let [result (save! db (:accession/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
           (http/found router :accession/detail {:org-id (-> organization :organization/id str)
@@ -82,7 +88,7 @@
           (-> (http/found router :accession/detail)
               ;; TODO: The errors needs to be parsed here and return a message
               (assoc :flash {:error result
-                             :values params}))))
+                             :values form-params}))))
 
       (render :org organization
               :router router

@@ -19,29 +19,25 @@
 (defn form [& {:keys [action errors org router values]}]
   (let [statuses (->> material.spec/status rest (mapv name))
         types (->> material.spec/type rest (mapv name))]
-    ;; TODO: spec to validate the values
-    (tap> (str "values: " values))
     [:div
      (form/form
        {:action action
         :method "POST"
         :id "material-form"
-        :x-ref "materialForm"}
-       [;; TODO: Add an organization-id field so we don't have to nest the url under the id
-        ;;
-        (form/anti-forgery-field)
-
+        :x-on:material-form:submit.window "$el.submit()"
+        :x-on:material-form:reset.window "$el.reset()"}
+       [(form/anti-forgery-field)
         (form/field :label "Code"
                     :name "code"
                     :errors (:code errors)
                     :input [:input {:autocomplete "off"
                                     :class "input input-bordered input-sm w-full max-w-xs bg-white"
                                     :x-validate.required true
+                                    :placeholder "Required"
                                     :id "code"
                                     :name "code"
                                     :type "text"
                                     :value (:code values)}])
-
         (let [url (url-for router org.routes/accessions {:org-id (:organization/id org)})]
           (form/field :label "Accession"
                       :name "accession-id"
@@ -54,12 +50,12 @@
                               (when (:accession-id values)
                                 [:option {:value (:accession-id values)}
                                  (:accession-code values)])]))
-
         (let [url (url-for router org.routes/locations {:org-id (:organization/id org)})]
           (form/field :label "Location"
                       :name "location-id"
                       :input [:select {:x-location-field (json/js {:url url})
                                        :x-validate.required true
+                                       :placeholder "Required"
                                        :name "location-id"
                                        :id "location-id"
                                        :class "input input-bordered input-sm"}
@@ -68,7 +64,6 @@
                                  (format "%s (%s)"
                                          (:location-code values)
                                          (:location-name values))])]))
-
         (form/field :label "Quantity"
                     :name "quantity"
                     :errors (:code errors)
@@ -78,8 +73,8 @@
                                     :id "code"
                                     :name "quantity"
                                     :type "number"
-                                    :value (:quantity values)}])
-
+                                    :min 1
+                                    :value (or (:quantity values) 1)}])
         (form/field :label "Status"
                     :name "status"
                     :input [:select {:name "status"
@@ -94,7 +89,6 @@
                                          :selected (when (= status (some-> values :status name))
                                                      "selected")}
                                 status])]])
-
         (form/field :label "Type"
                     :name "type"
                     :input [:select {:name "type"

@@ -5,6 +5,7 @@
             [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.ui.form :as form]
             [sepal.aws-s3.interface :as aws-s3.i])
@@ -26,14 +27,25 @@
      (form/hidden-field :name  (csk/->camelCaseString key)
                         :value value))])
 
-(defn handler [& {:keys [context params ::r/router] :as _request}]
+(def FormParams
+  [:map {:closed true}
+   [:files [:or
+            :string
+            [:vector :string]]]
+   ;; TODO: Validate that if we have one then we require both if
+   ;; linkResourceType/Id
+   [:linkResourceType [:maybe :string]]
+   [:linkResourceId [:maybe :string]]
+   [:organizationId :int]])
+
+(defn handler [& {:keys [context form-params ::r/router] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context
         {files :files
          link-resource-type :linkResourceType
          link-resource-id :linkResourceId
-         organization-id :organizationId} params
+         organization-id :organizationId
+         :as params} (params/decode FormParams form-params)
         files (if (sequential? files) files [files])
-        organization-id (parse-long organization-id)
         s3-key-fn (fn [filename]
                     (format "organization_id=%s/%s.%s"
                             organization-id

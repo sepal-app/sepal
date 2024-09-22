@@ -14,4 +14,4 @@ Alpine.plugin(morph)
 Alpine.plugin(ui)
 Alpine.plugin(validate)
 
-document.addEventListener("DOMContentLoaded", () => Alpine.start())
+Alpine.start()

@@ -2,6 +2,7 @@
   (:require [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.http-response :refer [found see-other]]
+            [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.org.routes :as org.routes]
@@ -21,7 +22,7 @@
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
-             :x-on:click "$refs.materialForm.submit()"}
+             :x-on:click "$dispatch('material-form:submit')"}
     "Save"]
    [:button {:class "btn btn-secondary"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
@@ -47,21 +48,28 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [context params request-method ::r/router viewer]}]
+(def FormParams
+  [:map {:closed true}
+   [:code :string]
+   [:accession-id :int]
+   [:location-id [:maybe :int]]
+   [:quantity :int]
+   [:status :string]
+   [:type :string]])
+
+(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
   (let [{:keys [db]} context
         org (:organization context)]
     (case request-method
       :post
-      (let [data (-> params
+      (let [data (-> (params/decode FormParams form-params)
                      (assoc :organization-id (:organization/id org)))
             result (create! db (:user/id viewer) data)]
+        ;; TODO: Better error handling
         (if-not (error.i/error? result)
-          ;; TODO: Add a success message
           (see-other router :material/detail {:id (:material/id result)})
           (-> (found router org.routes/materials-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
-
       (render :org org
-              :router router
-              :values params))))
+              :router router))))
