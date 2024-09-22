@@ -4,16 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
-[x-cloak] {
-    display: none !important;
-}
-
 .label-text {
     @apply font-medium;
-}
-
-.input {
-    @apply bg-white;
 }
 
 .input[aria-invalid="true"] {
@@ -21,7 +13,7 @@
 }
 
 body {
-    @apply bg-slate-50 min-h-dvh;
+    @apply min-h-dvh;
 }
 
 .ts-control {

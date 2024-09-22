@@ -27,6 +27,16 @@ module.exports = {
             {
                 light: {
                     ...require("daisyui/src/theming/themes")["emerald"],
+                    "base-100": "#f7f8fc",
+                    ".input": {
+                        "background-color": "white",
+                    },
+                    ".textarea": {
+                        "background-color": "white",
+                    },
+                    ".select": {
+                        "background-color": "white",
+                    },
                 },
             },
         ],

@@ -4,7 +4,8 @@
             [sepal.app.ui.base :as base]))
 
 (defn page [& {:keys [content flash]}]
-  (-> [:div {:x-cloak true}
+  (-> [:div {:x-data true
+             :x-cloak true}
        [:div
         [:div {:class "absolute top-0 left-0 right-0 bottom-0"}
          [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")

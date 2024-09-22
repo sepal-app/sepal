@@ -48,7 +48,7 @@
                                    :params params)
                      :response)
             ring-session (get-in sess [:cookie-jar "localhost" "ring-session" :value])
-            store (:sepal.app.ring/cookie-store *system*)
+            store (:sepal.app.middleware/cookie-store *system*)
             ;; store (:sepal.app.session-store)
             ]
 

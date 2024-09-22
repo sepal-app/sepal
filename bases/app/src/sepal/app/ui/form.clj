@@ -7,8 +7,8 @@
   [(keyword anti-forgery-field-name) :string])
 
 (defn form [attrs children]
-  [:form (merge {:x-data ""
-                 :x-validate ""
+  [:form (merge {:x-data true
+                 :x-validate.use-browser.input true
                  :x-ref "form"
                  :class "flex flex-col gap-2"}
                 attrs)
@@ -40,21 +40,25 @@
 
    (field-errors errors)])
 
-(defn input-field [& {:keys [id label name read-only required type value errors minlength maxlength]}]
+(defn input-field [& {:keys [id label name read-only required type value errors
+                             minlength maxlength data-error-msg input-attrs]}]
+  ;; TODO: Validate the errors format
   (field :errors errors
          :name name
          :label label
-         :input [:input {:autocomplete "off"
-                         :class "input input-bordered input-sm"
-                         :id (or id name)
-                         :maxlength maxlength
-                         :minlength minlength
-                         :name name
-                         :readonly (or read-only false)
-                         :x-validate.required (or required false)
-                         :required (or required false)
-                         :type (or type "text")
-                         :value value}]))
+         :input [:input (merge {:autocomplete "off"
+                                :class "input input-bordered input-sm"
+                                :id (or id name)
+                                :maxlength maxlength
+                                :minlength minlength
+                                :name name
+                                :readonly (or read-only false)
+                                :x-validate true
+                                :data-error-msg data-error-msg
+                                :required (or required false)
+                                :type (or type "text")
+                                :value value}
+                               input-attrs)]))
 
 (defn hidden-field [& {:keys [id name value]}]
   [:input {:name name
@@ -71,6 +75,7 @@
                :name name
                :id id
                :required (or required false)
+               :x-validate true
                :type (or type "text")
                :class "textarea textarea-bordered"}
     value]
@@ -80,9 +85,9 @@
       (for [error errors]
         [:li {:class "text-red-600"} error])])])
 
-(defn button
+(defn submit-button
   ([children]
-   (button {} children))
+   (submit-button {} children))
   ([attrs children]
    [:button (merge {:type "submit"
                     :class "btn btn-primary"
@@ -96,4 +101,4 @@
          :x-transition:enter-start "translate-y-20"
          :x-transition:enter-end "translate-y-0"
          :x-show "dirty"}
-   [:<> buttons]])
+   buttons])

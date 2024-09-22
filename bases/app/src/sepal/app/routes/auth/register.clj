@@ -5,13 +5,12 @@
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.router :refer [url-for]]
+            [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.session :as session]
-            [sepal.app.ui.base :as base]
             [sepal.app.ui.form :as form]
             [sepal.user.interface :as user.i]
-            [sepal.user.interface.spec :as user.spec]
-            [sepal.validation.interface :as validation.i]))
+            [sepal.user.interface.spec :as user.spec]))
 
 (defn form [& {:keys [request email invitation next router]}]
   [:form {:method "post"
@@ -61,31 +60,14 @@
     [:a {:href "/login"} "Already have an account?"]]])
 
 (defn render [& {:keys [email #_field-errors invitation next request router flash]}]
-  (-> [:div
-       [:div {:class "absolute top-0 left-0 right-0 bottom-0"}
-        [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
-               :class "h-screen w-full object-cover object-center -z-10"
-               :alt "login banner"}]]
-       [:div {:class "grid grid-cols-3"}
-        [:div {:class "col-start-1 col-span-3 lg:col-start-2 lg:col-span-1 flex flex-col justify-center z-10 lg:bg-white/60 h-screen shadow"}
-         [:div {:class "bg-white/95 lg:bg-white/80 p-8 lg:block sm:max-lg:flex sm:max-lg:flex-col sm:max-lg:items-center"}
-          [:div
-           [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
-           (form :email email
-                 :invitation invitation
-                 :next next
-                 :request request
-                 :router router)]]
-
-         ;; TODO: Non field errors
-
-          ;; (when error
-          ;;   [:div {:class "rounded-md bg-red-50 p-4 text-red-800"
-          ;;          :x-show "!submitting"}
-          ;;    error])
-         ]]
-       (flash/banner (:messages flash))]
-      (base/html)
+  (-> (page/page :content [:div
+                           [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+                           (form :email email
+                                 :invitation invitation
+                                 :next next
+                                 :request request
+                                 :router router)]
+                 :flash flash)
       (html/render-html)))
 
 (def RegisterForm
@@ -104,13 +86,8 @@
       (= password confirm-password))]])
 
 (defn handler [{:keys [context form-params request-method ::r/router] :as request}]
-  (tap> (str "form-params: " form-params))
-
   (let [{:keys [db]} context
-        {:keys [email password] :as p} (params/decode RegisterForm form-params)]
-
-    (tap> (str "email: " email))
-    (tap> (str "password: " password))
+        {:keys [email password]} (params/decode RegisterForm form-params)]
 
     (case request-method
       :post
