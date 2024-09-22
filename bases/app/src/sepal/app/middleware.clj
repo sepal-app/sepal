@@ -1,12 +1,27 @@
 (ns sepal.app.middleware
-  (:require [reitit.core :as r]
+  (:require [integrant.core :as ig]
+            [reitit.coercion.malli]
+            [reitit.core :as r]
+            [reitit.ring]
+            [reitit.ring.coercion :as coercion]
+            [reitit.ring.middleware.multipart :as multipart]
+            [reitit.ring.middleware.muuntaja :as muuntaja]
+            [reitit.ring.middleware.parameters :as parameters]
+            [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
+            [ring.middleware.cookies :refer [wrap-cookies]]
+            [ring.middleware.flash :refer [wrap-flash]]
+            [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.session.cookie :refer [cookie-store]]
+            [ring.middleware.stacktrace :as stacktrace]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.error.interface :as error.i]
             [sepal.organization.interface :as org.i]
             [sepal.user.interface :as user.i]
-            ;; [reitit.ring.middleware.exception :as exception]
             [taoensso.timbre :as log]))
+
+;; TODO: Add SameSite=lax to all cookies:
+;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
 
 (defn wrap-context [handler context]
   (fn [request]
@@ -22,18 +37,6 @@
         (assoc :htmx-boosted?
                (= (get headers "hx-boosted") "true"))
         (handler))))
-
-;; (defn coerce-response [handler]
-;;   (fn [request]
-;;     (let [response (handler request)]
-;;       (cond
-;;         (string? response)
-;;         {:status 200
-;;          :headers {"content-type" "text/html"}
-;;          :body (str response)}
-
-;;         :else
-;;         response))))
 
 (defn require-viewer
   "Redirects to /login if there are no valid claims in the request."
@@ -134,45 +137,36 @@
               g/*session* session]
       (handler request))))
 
-;; (defn exception-handler [message exception _request & rest]
-;;   (tap> (str "exception-handler rest: " rest))
-;;   (tap> (str "exception-handler message: " message))
-;;   ;; (tap> (str "exception-handler exception: " message))
-;;   ;; request
-;;   (as-> [:div
-;;          [:h1 {:class "text-xl"} message]
-;;          [:pre
-;;           (with-out-str
-;;             (pp/pprint exception))]] $
-;;     (html/root-template :content $)
-;;     (html/render-html $)
-;;     (assoc $ :status 500)))
+(defmethod ig/init-key ::cookie-store [_ {:keys [secret]}]
+  (cookie-store {:key (.getBytes secret)}))
 
-;; (def exception-middleware
-;;   (exception/create-exception-middleware
-;;    (merge
-;;     exception/default-handlers
-;;     {;; ex-data with :type ::error
-;;      ::error (partial exception-handler "error")
+(defmethod ig/init-key ::middleware [_ {:keys [context session-store]}]
+  [bind-globals
+   wrap-cookies
+   [wrap-session {:flash true
+                  :cookie-attrs {:http-only true}
+                  :store session-store}]
 
-;;        ;; ex-data with ::exception or ::failure
-;;      ::exception (partial exception-handler "exception")
+   ;; query-params & form-params
+   parameters/parameters-middleware
+   ;; multipart data
+   multipart/multipart-middleware
+   ;; content-negotiation
+   muuntaja/format-negotiate-middleware
+   ;; encoding response body
+   muuntaja/format-response-middleware
+   ;; Flash messages in the session
+   wrap-flash
+   ;; Check CSRF tokens
+   wrap-anti-forgery
+   ;; Print out stacktraces
+   stacktrace/wrap-stacktrace-web
+   ;; decoding request body
+   muuntaja/format-request-middleware
+   ;; coercing response bodys
+   coercion/coerce-response-middleware
+   ;; coercing request parameters
+   coercion/coerce-request-middleware
 
-;;        ;; SQLException and all it's child classes
-;;      java.sql.SQLException (partial exception-handler "sql-exception")
-
-;;        ;; override the default handler
-;;      ::exception/default (partial exception-handler "default")
-
-;;        ;; print stack-traces for all exceptions
-;;      ::exception/wrap (fn [_handler e request]
-;;                         (exception-handler "wrap" e request)
-;;                         ;; (println "ERROR" (pr-str (:uri request)))
-;;                         ;; (tap> e)
-;;                         ;; (tap> (ex-message e))
-;;                         ;; (tap> (ex-data e))
-;;                         ;; (tap> (ex-cause e))
-;;                         ;; (handler e request)
-;;                         )
-;;      ;; (partial exception-handler "wrap")
-;;      })))
+   [wrap-context context]
+   htmx-request])

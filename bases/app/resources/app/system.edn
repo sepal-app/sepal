@@ -11,9 +11,7 @@
  :sepal.app.server/jetty
  {:handler #ig/ref :sepal.app.ring/app
   :port #long #or [#env PORT 3000]
-  :join? false
-  ;; :routes {"/register" (ig/ref :sepal.app.routes.register.core/routes)}
-  }
+  :join? false}
 
  :sepal.aws-s3.interface/credentials-provider
  {:access-key-id #env AWS_ACCESS_KEY_ID
@@ -27,14 +25,29 @@
  {:endpoint-override #env AWS_S3_ENDPOINT
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
- :sepal.app.ring/app
- {:cookie-secret "1234567890123456"
-  :context {:db #ig/ref :sepal.database.interface/db
+ :sepal.app.middleware/cookie-store {:secret #env COOKIE_SECRET}
+
+ :sepal.app.middleware/middleware
+ {:context {:db #ig/ref :sepal.database.interface/db
+            :forgot-password-email-from #or [#env FORGOT_PASSWORD_EMAIL_FROM
+                                             "support@sepal.app"]
+            :forgot-password-email-subject #or [#env FORGOT_PASSWORD_EMAIL_SUBJECT
+                                                "Sepal - Reset Password"]
+            :reset-password-secret #env RESET_PASSWORD_SECRET
             :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
             :s3-client #ig/ref :sepal.aws-s3.interface/s3-client
+            :postmark #ig/ref :sepal.postmark.interface/service
+            :app-domain #env APP_DOMAIN
             :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
             :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
+
+  :session-store #ig/ref :sepal.app.middleware/cookie-store}
+
+ :sepal.app.ring/app
+ {:middleware #ig/ref :sepal.app.middleware/middleware
   :reload-per-request? #profile {:local true
                                  :default false}
-  :ring-defaults #profile {:local :site
-                           :default :secure-site}}}
+  :print-request-diffs? false}
+
+ :sepal.postmark.interface/service
+ {:api-key #env POSTMARK_API_KEY}}
