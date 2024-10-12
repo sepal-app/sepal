@@ -1,10 +1,8 @@
 (ns sepal.app.routes.org.create
-  (:require [reitit.core :as r]
-            [sepal.app.flash :as flash]
+  (:require [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.page :as page]
@@ -12,12 +10,13 @@
             [sepal.error.interface :as error.i]
             [sepal.organization.interface :as org.i]
             [sepal.organization.interface.activity :as org.activity]
-            [sepal.validation.interface :refer [error?]]))
+            [sepal.validation.interface :refer [error?]]
+            [zodiac.core :as z]))
 
-(defn form [& {:keys [errors router values]}]
+(defn form [& {:keys [errors values]}]
   (form/form
     {:method "post"
-     :action (url-for router org.routes/create)}
+     :action (z/url-for org.routes/create)}
     [(form/anti-forgery-field)
      (form/field :label "Name"
                  :name "name"
@@ -57,17 +56,14 @@
       ;; Can probably use htmx for this.
       (form/submit-button "Create organization")]]))
 
-(defn render [& {:keys [router values]}]
-  (-> (page/page :router router
-                 :content (form :router router
-                                :values values))
-      (html/render-html)))
+(defn render [& {:keys [values]}]
+  (page/page :content (form :values values)))
 
 (defn create! [db created-by data]
   (try
     (db.i/with-transaction [tx db]
       (let [org (org.i/create! tx data)]
-        (org.i/assign-role! db
+        (org.i/assign-role! tx
                             {:organization-id (:organization/id org)
                              :user-id created-by
                              :role :owner})
@@ -83,7 +79,7 @@
    [:short-name :string]
    [:abbreviation :string]])
 
-(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context
         {:keys [name short-name abbreviation] :as data}  (params/decode FormParams form-params)]
     (case request-method
@@ -94,11 +90,10 @@
                              :short-name short-name
                              :abbreviation abbreviation})]
         (if-not (error? result)
-          (http/found router org.routes/activity {:org-id (-> result :organization/id str)})
-          (-> (http/see-other router org.routes/create)
+          (http/found org.routes/activity {:org-id (-> result :organization/id str)})
+          (-> (http/see-other org.routes/create)
               (flash/set-field-errors result)
               (assoc-in [:flash :values] data))))
 
       ;; else
-      (render :router router
-              :values data))))
+      (render :values data))))

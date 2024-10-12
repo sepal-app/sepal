@@ -1,16 +1,15 @@
 (ns sepal.app.routes.media.detail
   (:require [lambdaisland.uri :as uri]
-            [reitit.core :as r]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.error.interface :as error.i]
-            [sepal.media.interface :as media.i]))
+            [sepal.media.interface :as media.i]
+            [zodiac.core :as z]))
 
 (defn zoom-view [& {:keys [zoom-url]}]
   [:div {:class "relative z-10"}
@@ -40,14 +39,14 @@
         :aria-label "Delete"}
     (heroicons/outline-trash :class "text-error")]])
 
-(defn page-content [& {:keys [media router srcset-urls zoom-url]}]
+(defn page-content [& {:keys [media srcset-urls zoom-url]}]
   [[:div
     [:template {:x-if "zoom"}
      (zoom-view :zoom-url zoom-url)]
 
     [:div#media-link-container
      {:hx-trigger "load"
-      :hx-get (url-for router :media/detail.link {:id (:media/id media)})}]
+      :hx-get (z/url-for :media/detail.link {:id (:media/id media)})}]
 
     [:img {:srcset (format "%s 1x, %s 2x, %s 3x"
                            (:1x srcset-urls)
@@ -57,24 +56,21 @@
    [:script {:type "module"
              :src (html/static-url "js/media_detail.ts")}]])
 
-(defn render [& {:keys [dl-url media preview-url router srcset-urls zoom-url]}]
+(defn render [& {:keys [dl-url media preview-url srcset-urls zoom-url]}]
   ;; We have to put the x-data in the page attrs b/c the zoom var is needed by
   ;; the zoom button in the page-title-buttons
-  (-> (page/page :attrs {:x-data (json/js {:zoom false})}
-                 :content (page-content :media media
-                                        :preview-url preview-url
-                                        :router router
-                                        :srcset-urls srcset-urls
-                                        :zoom-url zoom-url)
-                 :page-title (:media/title media)
-                 :page-title-buttons (page-title-buttons :delete-url (url-for router
-                                                                              :media/detail
-                                                                              {:id (:media/id media)})
-                                                         :dl-url dl-url)
-                 :router router)
-      (html/render-html)))
+  (page/page :attrs {:x-data (json/js {:zoom false})}
+             :content (page-content :media media
+                                    :preview-url preview-url
+                                    :srcset-urls srcset-urls
+                                    :zoom-url zoom-url)
+             :page-title (:media/title media)
+             :page-title-buttons (page-title-buttons :delete-url (z/url-for
+                                                                   :media/detail
+                                                                   {:id (:media/id media)})
+                                                     :dl-url dl-url)))
 
-(defn handler [& {:keys [context request-method ::r/router] :as _request}]
+(defn handler [& {:keys [::z/context request-method] :as _request}]
   (let [{:keys [db organization resource imgix-media-domain s3-client]} context
         srcset-opts {;;:h 2048
                      ;;:w 2048
@@ -113,13 +109,10 @@
                   (error.i/ex->error ex)))]
         ;; TODO: handle errors
         (-> {:status 204
-             :headers {"HX-Redirect" (url-for router
-                                              :org/media
-                                              {:org-id (:organization/id organization)})}}
+             :headers {"HX-Redirect" (z/url-for :org/media {:org-id (:organization/id organization)})}}
             (flash/add-message "Deleted media.")))
       (render :dl-url dl-url
               :media resource
               :preview-url preview-url
-              :router router
               :srcset-urls srcset-urls
               :zoom-url preview-url))))

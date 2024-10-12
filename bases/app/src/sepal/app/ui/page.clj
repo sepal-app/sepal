@@ -22,13 +22,13 @@
              :alt ""}]
       (heroicons/user-circle :size 38))]])
 
-(defn page-wrapper [& {:keys [content footer router]}]
+(defn page-wrapper [& {:keys [content footer]}]
   [:div
    [:div {:x-data "{showMobileSidebar: false}"
           :x-cloak true}
     [:div {:hx-boost "true"}
      (sidebar.mobile/sidebar)
-     (sidebar.static/sidebar :router router)]
+     (sidebar.static/sidebar)]
     [:div
      [:div {:class "md:pl-64 flex flex-col flex-1"}
       (mobile-top-bar)
@@ -46,7 +46,7 @@
    [:script {:type "module"
              :src (html/static-url "js/page.ts")}]])
 
-(defn page [& {:keys [content footer page-title page-title-buttons router attrs]}]
+(defn page [& {:keys [content footer page-title page-title-buttons attrs]}]
   (-> [:div (merge {} attrs)
        (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
                                [:div {:class "sm:flex sm:items-center h-10"}
@@ -58,6 +58,5 @@
                                  page-title-buttons]]
                                [:div {:class "mt-8"}
                                 content]]
-                     :footer footer
-                     :router router)]
+                     :footer footer)]
       (base/html)))

@@ -1,10 +1,10 @@
 (ns sepal.app.routes.material.form
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
-            [sepal.material.interface.spec :as material.spec]))
+            [sepal.material.interface.spec :as material.spec]
+            [zodiac.core :as z]))
 
 #_(def FormValues
     [:map
@@ -16,7 +16,7 @@
 
 ;; (def types ["Plant"])
 
-(defn form [& {:keys [action errors org router values]}]
+(defn form [& {:keys [action errors org values]}]
   (let [statuses (->> material.spec/status rest (mapv name))
         types (->> material.spec/type rest (mapv name))]
     [:div
@@ -38,7 +38,7 @@
                                     :name "code"
                                     :type "text"
                                     :value (:code values)}])
-        (let [url (url-for router org.routes/accessions {:org-id (:organization/id org)})]
+        (let [url (z/url-for org.routes/accessions {:org-id (:organization/id org)})]
           (form/field :label "Accession"
                       :name "accession-id"
                       :input [:select {:x-accession-field (json/js {:url url})
@@ -50,7 +50,7 @@
                               (when (:accession-id values)
                                 [:option {:value (:accession-id values)}
                                  (:accession-code values)])]))
-        (let [url (url-for router org.routes/locations {:org-id (:organization/id org)})]
+        (let [url (z/url-for org.routes/locations {:org-id (:organization/id org)})]
           (form/field :label "Location"
                       :name "location-id"
                       :input [:select {:x-location-field (json/js {:url url})

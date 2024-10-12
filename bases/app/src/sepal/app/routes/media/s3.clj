@@ -2,13 +2,12 @@
   (:require [babashka.fs :as fs]
             [camel-snake-kebab.core :as csk]
             [clojure.string :as s]
-            [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.form :as form]
-            [sepal.aws-s3.interface :as aws-s3.i])
+            [sepal.aws-s3.interface :as aws-s3.i]
+            [zodiac.core :as z])
   (:import [java.security SecureRandom]))
 
 (defn random-hex [length]
@@ -17,9 +16,9 @@
       (.nextBytes ba))
     (.toString (BigInteger. 1 ba) 16)))
 
-(defn success-form [& {:keys [fields router]}]
+(defn success-form [& {:keys [fields]}]
   [:form {:id (s/replace (:id fields) #"\/" "_")
-          :hx-post (url-for router :media/uploaded)
+          :hx-post (z/url-for :media/uploaded)
           :hx-target "#media-list"
           :hx-swap "afterbegin"}
    (form/anti-forgery-field)
@@ -38,7 +37,7 @@
    [:linkResourceId [:maybe :string]]
    [:organizationId :int]])
 
-(defn handler [& {:keys [context form-params ::r/router] :as _request}]
+(defn handler [& {:keys [::z/context form-params] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context
         {files :files
          link-resource-type :linkResourceType
@@ -70,5 +69,5 @@
                           :s3-key (s3-key-fn (:filename %))
                           :s3-method "PUT"}))
          (mapv #(assoc % :s3-url (presign-fn %)))
-         (mapv #(success-form :router router :fields %))
+         (mapv #(success-form :fields %))
          (html/render-partial))))

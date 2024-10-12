@@ -13,7 +13,7 @@
 (def organization-id pos-int?)
 (def quantity pos-int?)
 (def status [:enum :alive :dead])
-(def type [:enum :plant :seed :vegetative :tissue :other :none])
+(def type [:enum :plant :seed :vegetative :tissue :other])
 
 (def Material
   [:map {:closed true}

@@ -1,14 +1,13 @@
 (ns sepal.app.routes.accession.detail.media
-  (:require [reitit.core :as r]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
-            [sepal.media.interface :as media.i]))
+            [sepal.media.interface :as media.i]
+            [zodiac.core :as z]))
 
 (defn title-buttons []
   [:button {:id "upload-button"
@@ -19,26 +18,26 @@
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
 
-(defn next-page-url [& {:keys [router accession current-page]}]
-  (url-for router
-           :accession/detail-media
-           {:id (:accession/id accession)}
-           {:page (+ 1 current-page)}))
+(defn next-page-url [& {:keys [accession current-page]}]
+  (z/url-for
+    :accession/detail-media
+    {:id (:accession/id accession)}
+    {:page (+ 1 current-page)}))
 
-(defn tab-items [& {:keys [router accession]}]
+(defn tab-items [& {:keys [accession]}]
   [{:label "General"
     :key :name
-    :href (url-for router :accession/detail-general {:id (:accession/id accession)})}
+    :href (z/url-for :accession/detail-general {:id (:accession/id accession)})}
    {:label "Media"
     :key :media
-    :href (url-for router :accession/detail-media {:id (:accession/id accession)})}])
+    :href (z/url-for :accession/detail-media {:id (:accession/id accession)})}])
 
-(defn page-content [& {:keys [media org page page-size router accession]}]
+(defn page-content [& {:keys [media org page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
    (tabs/tabs :active :media
-              :items (tab-items :router router :accession accession))
+              :items (tab-items :accession accession))
 
    [:link {:rel "stylesheet"
            :href (html/static-url "css/media.css")}]
@@ -47,40 +46,35 @@
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
     [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (url-for router :media/s3)
+                                       :signingUrl (z/url-for :media/s3)
                                        :organizationId (:organization/id org)
                                        :linkResourceType "accession"
                                        :linkResourceId (:accession/id accession)
                                        :trigger "#upload-button"})}]
-    (media.ui/media-list :router router
-                         :media media
+    (media.ui/media-list :media media
                          :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :router router
-                                                         :accession accession
+                                          (next-page-url :accession accession
                                                          :current-page page)))
     [:div {:id "upload-success-forms"
            :class "hidden"}]]
    [:script {:type "module"
              :src (html/static-url "js/media.ts")}]])
 
-(defn render [& {:keys [org page page-size router media accession]}]
-  (-> (page/page :page-title "Media"
-                 :page-title-buttons (title-buttons)
-                 :content (page-content :org org
-                                        :page page
-                                        :page-size page-size
-                                        :media media
-                                        :router router
-                                        :accession accession)
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [org page page-size media accession]}]
+  (page/page :page-title "Media"
+             :page-title-buttons (title-buttons)
+             :content (page-content :org org
+                                    :page page
+                                    :page-size page-size
+                                    :media media
+                                    :accession accession)))
 
 (def Params
   [:map
    [:page {:default 1} :int]
    [:page-size {:default 10} :int]])
 
-(defn handler [{:keys [context htmx-boosted? htmx-request? query-params ::r/router]}]
+(defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
   (let [{:keys [db imgix-media-domain organization resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -99,11 +93,9 @@
 
     ;; TODO: Need to make sure the media are owned by the organization
     (if (and htmx-request? (not htmx-boosted?))
-      (-> (media.ui/media-list-items :router router
-                                     :media media
+      (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
-                                                      (next-page-url :router router
-                                                                     :accession resource
+                                                      (next-page-url :accession resource
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
@@ -111,5 +103,4 @@
               :media media
               :page 1
               :page-size page-size
-              :router router
               :accession resource))))

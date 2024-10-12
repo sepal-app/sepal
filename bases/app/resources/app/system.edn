@@ -1,17 +1,9 @@
-{;; :sepal.app.core/routes
- ;; {}
-
- :sepal.database.interface/pool
+{:sepal.database.interface/pool
  {:db-spec #include "database/config.edn"
   :max-pool-size #long #or [#env DB_MAX_POOL_SIZE 10]}
 
  :sepal.database.interface/db
  {:connectable #ig/ref :sepal.database.interface/pool}
-
- :sepal.app.server/jetty
- {:handler #ig/ref :sepal.app.ring/app
-  :port #long #or [#env PORT 3000]
-  :join? false}
 
  :sepal.aws-s3.interface/credentials-provider
  {:access-key-id #env AWS_ACCESS_KEY_ID
@@ -25,29 +17,24 @@
  {:endpoint-override #env AWS_S3_ENDPOINT
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
- :sepal.app.middleware/cookie-store {:secret #env COOKIE_SECRET}
-
- :sepal.app.middleware/middleware
- {:context {:db #ig/ref :sepal.database.interface/db
-            :forgot-password-email-from #or [#env FORGOT_PASSWORD_EMAIL_FROM
-                                             "support@sepal.app"]
-            :forgot-password-email-subject #or [#env FORGOT_PASSWORD_EMAIL_SUBJECT
-                                                "Sepal - Reset Password"]
-            :reset-password-secret #env RESET_PASSWORD_SECRET
-            :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
-            :s3-client #ig/ref :sepal.aws-s3.interface/s3-client
-            :postmark #ig/ref :sepal.postmark.interface/service
-            :app-domain #env APP_DOMAIN
-            :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
-            :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
-
-  :session-store #ig/ref :sepal.app.middleware/cookie-store}
-
- :sepal.app.ring/app
- {:middleware #ig/ref :sepal.app.middleware/middleware
+ :sepal.app.server/zodiac
+ {:request-context {:db #ig/ref :sepal.database.interface/db
+                    :forgot-password-email-from #or [#env FORGOT_PASSWORD_EMAIL_FROM
+                                                     "support@sepal.app"]
+                    :forgot-password-email-subject #or [#env FORGOT_PASSWORD_EMAIL_SUBJECT
+                                                        "Sepal - Reset Password"]
+                    :reset-password-secret #env RESET_PASSWORD_SECRET
+                    :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
+                    :s3-client #ig/ref :sepal.aws-s3.interface/s3-client
+                    :postmark #ig/ref :sepal.postmark.interface/service
+                    :app-domain #env APP_DOMAIN
+                    :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
+                    :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
   :reload-per-request? #profile {:local true
                                  :default false}
-  :print-request-diffs? false}
+  :cookie-secret #env COOKIE_SECRET
+  :print-request-diffs? false
+  :port #long #or [#env PORT 3000]}
 
  :sepal.postmark.interface/service
  {:api-key #env POSTMARK_API_KEY}}

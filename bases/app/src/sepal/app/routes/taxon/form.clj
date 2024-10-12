@@ -1,12 +1,12 @@
 (ns sepal.app.routes.taxon.form
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as form]
-            [sepal.taxon.interface.spec :as taxon.spec]))
+            [sepal.taxon.interface.spec :as taxon.spec]
+            [zodiac.core :as z]))
 
-(defn form [& {:keys [action errors org read-only router values]}]
+(defn form [& {:keys [action errors org read-only values]}]
   (let [ranks (->> taxon.spec/rank rest (mapv name))]
     [:div
      (form/form
@@ -36,7 +36,7 @@
                             :read-only read-only
                             :value (:parent-name values))
 
-          (let [url (url-for router org.routes/taxa {:org-id (:organization/id org)})]
+          (let [url (z/url-for org.routes/taxa {:org-id (:organization/id org)})]
             (form/field :label "Parent"
                         :name "parent-id"
                         :input [:select {:x-taxon-field (json/js {:url url})

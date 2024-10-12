@@ -1,14 +1,13 @@
 (ns sepal.app.routes.media.index
   (:require [lambdaisland.uri :as uri]
-            [reitit.core :as r]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
-            [sepal.database.interface :as db.i]))
+            [sepal.database.interface :as db.i]
+            [zodiac.core :as z]))
 
 (defn thumbnail-url [host key]
   (uri/uri-str {:scheme "https"
@@ -25,13 +24,13 @@
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
 
-(defn next-page-url [& {:keys [router org current-page]}]
-  (url-for router
-           :org/media
-           {:org-id (:organization/id org)}
-           {:page (+ 1 current-page)}))
+(defn next-page-url [& {:keys [org current-page]}]
+  (z/url-for
+    :org/media
+    {:org-id (:organization/id org)}
+    {:page (+ 1 current-page)}))
 
-(defn page-content [& {:keys [media org page page-size router]}]
+(defn page-content [& {:keys [media org page page-size]}]
   [:div {:x-data (json/js {:selected nil})}
    [:link {:rel "stylesheet"
            :href (html/static-url "css/media.css")}]
@@ -40,14 +39,12 @@
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
     [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (url-for router :media/s3)
+                                       :signingUrl (z/url-for :media/s3)
                                        :organizationId (:organization/id org)
                                        :trigger "#upload-button"})}]
-    (media.ui/media-list :router router
-                         :media media
+    (media.ui/media-list :media media
                          :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :router router
-                                                         :org org
+                                          (next-page-url :org org
                                                          :current-page page))
                          :page page)
     [:div {:id "upload-success-forms"
@@ -55,23 +52,20 @@
    [:script {:type "module"
              :src (html/static-url "js/media.ts")}]])
 
-(defn render [& {:keys [org page page-size router media]}]
-  (-> (page/page :page-title "Media"
-                 :page-title-buttons (title-buttons)
-                 :content (page-content :org org
-                                        :page page
-                                        :page-size page-size
-                                        :media media
-                                        :router router)
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [org page page-size media]}]
+  (page/page :page-title "Media"
+             :page-title-buttons (title-buttons)
+             :content (page-content :org org
+                                    :page page
+                                    :page-size page-size
+                                    :media media)))
 
 (def Params
   [:map
    [:page {:default 1} :int]
    [:page-size {:default 20} :int]])
 
-(defn handler [& {:keys [context htmx-boosted? htmx-request? query-params ::r/router] :as _request}]
+(defn handler [& {:keys [::z/context htmx-boosted? htmx-request? query-params] :as _request}]
   (let [{:keys [db organization imgix-media-domain]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -85,15 +79,12 @@
                                  :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
 
     (if (and htmx-request? (not htmx-boosted?))
-      (-> (media.ui/media-list-items :router router
-                                     :media media
+      (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
-                                                      (next-page-url :router router
-                                                                     :org organization
+                                                      (next-page-url :org organization
                                                                      :current-page page)))
           (html/render-partial))
       (render :media media
               :page page
               :page-size page-size
-              :org organization
-              :router router))))
+              :org organization))))

@@ -1,24 +1,22 @@
 (ns sepal.app.routes.auth.reset-password
-  (:require [reitit.core :as r]
-            [sepal.app.flash :as flash]
-            [sepal.app.html :as html]
+  (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
             [sepal.user.interface :as user.i]
-            [taoensso.nippy :as nippy])
+            [taoensso.nippy :as nippy]
+            [zodiac.core :as z])
   (:import [java.time Instant]
            [java.util Base64]))
 
-(defn page-content [& {:keys [email router token]}]
+(defn page-content [& {:keys [email token]}]
   [:div
    [:h1 {:class "text-2xl pb-2"} "Reset the password for "]
    [:p {:class "text-lg pb-6"} email]
    (form/form {:method "post"
                :x-validate.use-browser.input "true"
-               :action (url-for router auth.routes/reset-password)}
+               :action (z/url-for auth.routes/reset-password)}
               [(form/anti-forgery-field)
                (form/hidden-field :name "token" :value token)
                (form/input-field :label "Password"
@@ -35,14 +33,11 @@
                                  :input-attrs {:x-validate "$el.value === $formData.password.value"})
                (form/submit-button "Send")])])
 
-(defn render [& {:keys [email errors flash router token]}]
-  (-> (page/page :content (page-content :email email
-                                        :errors errors
-                                        :router router
-                                        :token token)
-                 :flash flash
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [email errors flash token]}]
+  (page/page :content (page-content :email email
+                                    :errors errors
+                                    :token token)
+             :flash flash))
 
 (defn token-valid? [created-at]
   (let [now (Instant/now)
@@ -63,7 +58,7 @@
       ;; TODO: Use proper logging
       (println (str "Warning: Could not decrypt reset password token: " token)))))
 
-(defn handler [{:keys [context flash params request-method ::r/router]}]
+(defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [db reset-password-secret]} context
         {:keys [token]} params
         {:keys [email created-at]} (decode-reset-password-token token
@@ -77,17 +72,16 @@
                  (token-valid? created-at))
           (do
             (user.i/set-password! db (:user/id user) password)
-            (-> (http/found router auth.routes/login)
+            (-> (http/found auth.routes/login)
                 (flash/add-message "Your password has been reset.")))
-          (-> (http/found router auth.routes/login {:token token})
+          (-> (http/found auth.routes/login {:token token})
               (flash/error "Invalid password reset token."))))
 
       ;; else
       (if (some? user)
         (render :email email
                 ;; :errors errors
-                :router router
                 :token token
                 :flash flash)
-        (-> (http/found router auth.routes/login {:token token})
+        (-> (http/found auth.routes/login {:token token})
             (flash/error "Invalid password reset token."))))))

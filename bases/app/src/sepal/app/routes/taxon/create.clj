@@ -1,9 +1,6 @@
 (ns sepal.app.routes.taxon.create
-  (:require [reitit.core :as r]
-            [sepal.app.html :as html]
-            [sepal.app.http-response :refer [found see-other]]
+  (:require [sepal.app.http-response :refer [found see-other]]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.ui.form :as form]
@@ -11,14 +8,14 @@
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
-            [sepal.taxon.interface.activity :as taxon.activity]))
+            [sepal.taxon.interface.activity :as taxon.activity]
+            [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors values router org]}]
+(defn page-content [& {:keys [errors values org]}]
   [:div
-   (taxon.form/form :action (url-for router org.routes/taxa-new {:org-id (:organization/id org)})
+   (taxon.form/form :action (z/url-for org.routes/taxa-new {:org-id (:organization/id org)})
                     :errors errors
                     :org org
-                    :router router
                     :values values)])
 
 (defn footer-buttons []
@@ -29,16 +26,13 @@
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org router values]}]
-  (-> (page/page :attrs {:x-data "taxonFormData"}
-                 :content (page-content :errors errors
-                                        :org org
-                                        :router router
-                                        :values values)
-                 :footer (form/footer :buttons (footer-buttons))
-                 :page-title "Create taxon"
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [errors org values]}]
+  (page/page :attrs {:x-data "taxonFormData"}
+             :content (page-content :errors errors
+                                    :org org
+                                    :values values)
+             :footer (form/footer :buttons (footer-buttons))
+             :page-title "Create taxon"))
 
 (defn create! [db created-by data]
   (try
@@ -56,7 +50,7 @@
    [:parent-id [:maybe :int]]
    [:rank :string]])
 
-(defn handler [{:keys [context params form-params request-method viewer ::r/router]}]
+(defn handler [{:keys [::z/context params form-params request-method viewer]}]
   (let [{:keys [db]} context
         org (:organization context)]
     (case request-method
@@ -66,11 +60,10 @@
             result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
-          (see-other router :taxon/detail {:id (:taxon/id result)})
-          (-> (found router org.routes/taxa-new {:org-id (:organization/id org)})
+          (see-other :taxon/detail {:id (:taxon/id result)})
+          (-> (found org.routes/taxa-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 
       (render :org org
-              :router router
               :values params))))

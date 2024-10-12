@@ -1,35 +1,32 @@
 (ns sepal.app.routes.accession.detail.general
-  (:require [reitit.core :as r]
-            [sepal.accession.interface :as accession.i]
+  (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.taxon.interface :as taxon.i]
+            [zodiac.core :as z]))
 
-(defn tab-items [& {:keys [router accession]}]
+(defn tab-items [& {:keys [accession]}]
   [{:label "General"
     :key :name
-    :href (url-for router :accession/detail-general {:id (:accession/id accession)})}
+    :href (z/url-for :accession/detail-general {:id (:accession/id accession)})}
    {:label "Media"
     :key :media
-    :href (url-for router :accession/detail-media {:id (:accession/id accession)})}])
+    :href (z/url-for :accession/detail-media {:id (:accession/id accession)})}])
 
-(defn page-content [& {:keys [errors org router accession values]}]
+(defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
-              :items (tab-items :router router :accession accession))
-   (accession.form/form :action (url-for router :accession/detail-general {:id (:accession/id accession)})
+              :items (tab-items :accession accession))
+   (accession.form/form :action (z/url-for :accession/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org
-                        :router router
                         :values values)])
 
 (defn footer-buttons []
@@ -42,18 +39,15 @@
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org router accession taxon values]}]
-  (-> (page/page :attrs {:x-data "accessionFormData"}
-                 :content (page-content :errors errors
-                                        :org org
-                                        :router router
-                                        :accession accession
-                                        :values values
-                                        :taxon taxon)
-                 :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title (str (:accession/code accession) " - " (:taxon/name taxon))
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [errors org accession taxon values]}]
+  (page/page :attrs {:x-data "accessionFormData"}
+             :content (page-content :errors errors
+                                    :org org
+                                    :accession accession
+                                    :values values
+                                    :taxon taxon)
+             :footer (ui.form/footer :buttons (footer-buttons))
+             :page-title (str (:accession/code accession) " - " (:taxon/name taxon))))
 
 (defn save! [db accession-id updated-by data]
   (try
@@ -69,7 +63,7 @@
    [:code :string]
    [:taxon-id :int]])
 
-(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         values (merge {:id (:accession/id resource)
@@ -83,15 +77,14 @@
       (let [result (save! db (:accession/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
-          (http/found router :accession/detail {:org-id (-> organization :organization/id str)
-                                                :id (:accession/id resource)})
-          (-> (http/found router :accession/detail)
+          (http/found :accession/detail {:org-id (-> organization :organization/id str)
+                                         :id (:accession/id resource)})
+          (-> (http/found :accession/detail)
               ;; TODO: The errors needs to be parsed here and return a message
               (assoc :flash {:error result
                              :values form-params}))))
 
       (render :org organization
-              :router router
               :accession resource
               :taxon taxon
               :values values))))

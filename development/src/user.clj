@@ -14,7 +14,8 @@
      (alter-var-root #'*system* (constantly sys))
      (alter-var-root #'*db* (constantly (:sepal.database.interface/db *system*))))))
 
-(defn halt []
-  (system/stop! *system*)
+(defn stop []
+  (when *system*
+    (system/stop! *system*))
   (alter-var-root #'*system* (constantly nil))
   (alter-var-root #'*db* (constantly nil)))

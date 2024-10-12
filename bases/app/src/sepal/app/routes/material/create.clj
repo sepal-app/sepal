@@ -1,9 +1,6 @@
 (ns sepal.app.routes.material.create
-  (:require [reitit.core :as r]
-            [sepal.app.html :as html]
-            [sepal.app.http-response :refer [found see-other]]
+  (:require [sepal.app.http-response :refer [found see-other]]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as ui.form]
@@ -11,13 +8,13 @@
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.material.interface :as material.i]
-            [sepal.material.interface.activity :as material.activity]))
+            [sepal.material.interface.activity :as material.activity]
+            [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors values router org]}]
-  (material.form/form :action (url-for router org.routes/materials-new {:org-id (:organization/id org)})
+(defn page-content [& {:keys [errors values org]}]
+  (material.form/form :action (z/url-for org.routes/materials-new {:org-id (:organization/id org)})
                       :errors errors
                       :org org
-                      :router router
                       :values values))
 
 (defn footer-buttons []
@@ -28,16 +25,13 @@
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org router values]}]
-  (-> (page/page :attrs {:x-data "materialFormData"}
-                 :content (page-content :errors errors
-                                        :org org
-                                        :router router
-                                        :values values)
-                 :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title "Create material"
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [errors org values]}]
+  (page/page :attrs {:x-data "materialFormData"}
+             :content (page-content :errors errors
+                                    :org org
+                                    :values values)
+             :footer (ui.form/footer :buttons (footer-buttons))
+             :page-title "Create material"))
 
 (defn create! [db created-by data]
   (try
@@ -57,7 +51,7 @@
    [:status :string]
    [:type :string]])
 
-(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context
         org (:organization context)]
     (case request-method
@@ -67,9 +61,8 @@
             result (create! db (:user/id viewer) data)]
         ;; TODO: Better error handling
         (if-not (error.i/error? result)
-          (see-other router :material/detail {:id (:material/id result)})
-          (-> (found router org.routes/materials-new {:org-id (:organization/id org)})
+          (see-other :material/detail {:id (:material/id result)})
+          (-> (found org.routes/materials-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
-      (render :org org
-              :router router))))
+      (render :org org))))

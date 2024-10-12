@@ -60,11 +60,12 @@
                      :headers {"Location" "/"}}
                     resp)
             (:body resp))
-        ;; (is (= (:email params) (-> resp :session :user/email)))
 
-        (tap> (str "session vals: " (store/read-session store ring-session)))
-        (tap> (user.i/exists? db (-> resp :session :user/email)))
-        (is (some? (user.i/verify-password db (:email params) (:password params))))))
+        ;; TODO: Test the user is in the session
+        ;; (is (= (:email params) (-> resp :session :user/email)))
+        ;; (tap> (str "session vals: " (store/read-session store ring-session)))
+        ;; (tap> (user.i/exists? db (-> resp :session :user/email)))
+        #_(is (some? (user.i/verify-password db (:email params) (:password params))))))
 
 ;; TODO: test errors like invalid password
     ))

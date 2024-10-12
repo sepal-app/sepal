@@ -6,7 +6,7 @@
     "clojure":     "latest",
     "glibcLocales": {
       "version":            "latest",
-      "excluded_platforms": ["aarch64-darwin x86_64-darwin"]
+      "excluded_platforms": ["aarch64-darwin", "x86_64-darwin"]
     },
     "nodejs":                            "20.12.2",
     "path:devbox/postgresql#postgresql": "",

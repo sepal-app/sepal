@@ -1,14 +1,13 @@
 (ns sepal.app.routes.auth.login
-  (:require [reitit.core :as r]
-            [sepal.app.flash :as flash]
+  (:require [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.form :as form]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i]
+            [zodiac.core :as z]))
 
 (defn send-verification-email [email]
   ;; TODO: bump
@@ -16,9 +15,9 @@
 
 ;; TODO: Use htmx to submit so we don't do a full page reload
 
-(defn form [& {:keys [email invitation next router]}]
+(defn form [& {:keys [email invitation next]}]
   (form/form {:method "post"
-              :action (url-for router auth.routes/login)}
+              :action (z/url-for auth.routes/login)}
              [(form/anti-forgery-field)
               (when invitation
                 (form/hidden-field :name "invitation" :value invitation))
@@ -35,23 +34,21 @@
                                            "focus:ring-green-500")}
                 "Login"]
                [:p
-                [:a {:href (url-for router auth.routes/forgot-password)}
+                [:a {:href (z/url-for auth.routes/forgot-password)}
                  "Forgot password?"]]]
 
               [:div {:class "mt-4"}
-               [:a {:href (url-for router auth.routes/register)} "Don't have an account?"]]]))
+               [:a {:href (z/url-for auth.routes/register)} "Don't have an account?"]]]))
 
-(defn render [& {:keys [email #_field-errors invitation next router flash]}]
-  (-> (page/page :content [:div
-                           [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
-                           (form :email email
-                                 :invitation invitation
-                                 :next next
-                                 :router router)]
-                 :flash flash)
-      (html/render-html)))
+(defn render [& {:keys [email #_field-errors invitation next flash]}]
+  (page/page :content [:div
+                       [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+                       (form :email email
+                             :invitation invitation
+                             :next next)]
+             :flash flash))
 
-(defn handler [{:keys [context flash params request-method ::r/router]}]
+(defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [db]} context
         ;; TODO: we need to params encode this because we're getting the params
         ;; with string keys
@@ -65,10 +62,10 @@
             error (when-not user "Invalid password")
             session (when-not error (session/user->session user))]
         (if-not error
-          (-> (http/see-other router :root)
+          (-> (http/see-other :root)
               (assoc :session session))
           ;; TODO: pass params on redirect
-          (-> (http/see-other router auth.routes/login)
+          (-> (http/see-other auth.routes/login)
               (flash/error error))))
 
       ;; else
@@ -76,6 +73,5 @@
               :email email
               :invitation invitation
               :next next
-              :router router
               :field-errors nil
               :flash flash))))

@@ -39,20 +39,9 @@
         path (get-in manifest [static-file-path "file"])]
     (str static-root path)))
 
-;; TODO: This should be cleaned up b/c we don't want always want the doctype.
-;; Also the "render" methods do more than render.
-
-(defn response [body]
-  {:status 200
-   :headers {"content-type" "text/html"}
-   :body (str chassis/doctype-html5 body)})
-
-(defn render-html [html]
-  (->> html
-       (chassis/html)
-       (response)))
-
-(defn render-partial [html]
+(defn render-partial
+  "Return an html responses without a doctype."
+  [html]
   {:status 200
    :headers {"content-type" "text/html"}
    :body (str (chassis/html html))})

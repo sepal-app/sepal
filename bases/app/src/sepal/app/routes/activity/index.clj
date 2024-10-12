@@ -1,13 +1,11 @@
 (ns sepal.app.routes.activity.index
   (:require [malli.core :as m]
             [malli.util :as mu]
-            [reitit.core :as r]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -20,7 +18,8 @@
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.user.interface.spec :as user.spec]
+            [zodiac.core :as z]))
 
 (defn timeline-activity [& {:keys [icon title description]
                             :or {icon (heroicons/user-circle :size 48)}}]
@@ -33,130 +32,130 @@
      description]]])
 
 (defmulti activity-description
-  (fn [& {:keys [_router activity]}]
+  (fn [& {:keys [activity]}]
     (:activity/type activity)))
 
 (defmethod activity-description :default [& {:keys []}]
   nil)
 
 (defmethod activity-description org.activity/created
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [organization user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created organization ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :org/detail
-                                                   {:org-id (:organization/id organization)})}
+                                    :href (z/url-for
+                                            :org/detail
+                                            {:org-id (:organization/id organization)})}
                                 (:organization/name organization)]])))
 
 (defmethod activity-description accession.activity/created
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [accession taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created accession ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :accession/detail
-                                                   {:id (:accession/id accession)})}
+                                    :href (z/url-for
+                                            :accession/detail
+                                            {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (url-for router
-                                                      :taxon/detail
-                                                      {:id (:taxon/id taxon)})}
+                                       :href (z/url-for
+                                               :taxon/detail
+                                               {:id (:taxon/id taxon)})}
 
                                    (:taxon/name taxon)]
                                   ")"])])))
 
 (defmethod activity-description accession.activity/updated
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [accession taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated accession ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :accession/detail
-                                                   {:id (:accession/id accession)})}
+                                    :href (z/url-for
+                                            :accession/detail
+                                            {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (url-for router
-                                                      :taxon/detail
-                                                      {:id (:taxon/id taxon)})}
+                                       :href (z/url-for
+                                               :taxon/detail
+                                               {:id (:taxon/id taxon)})}
 
                                    (:taxon/name taxon)]
                                   ")"])])))
 
 (defmethod activity-description taxon.activity/created
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [parent taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created taxon ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :taxon/detail
-                                                   {:id (:taxon/id taxon)})}
+                                    :href (z/url-for
+                                            :taxon/detail
+                                            {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (url-for router
-                                                      :taxon/detail
-                                                      {:id (:taxon/id parent)})}
+                                       :href (z/url-for
+                                               :taxon/detail
+                                               {:id (:taxon/id parent)})}
 
                                    (:taxon/name parent)]
                                   ")"])])))
 
 (defmethod activity-description taxon.activity/updated
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [parent taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated taxon ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :taxon/detail
-                                                   {:id (:taxon/id taxon)})}
+                                    :href (z/url-for
+                                            :taxon/detail
+                                            {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (url-for router
-                                                      :taxon/detail
-                                                      {:id (:taxon/id parent)})}
+                                       :href (z/url-for
+                                               :taxon/detail
+                                               {:id (:taxon/id parent)})}
 
                                    (:taxon/name parent)]
                                   ")"])])))
 
 (defmethod activity-description location.activity/created
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [location user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created location ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :location/detail
-                                                   {:id (:location/id location)})}
+                                    :href (z/url-for
+                                            :location/detail
+                                            {:id (:location/id location)})}
                                 (cond-> (:location/name location)
                                   (:location/code location)
                                   (str (format " (%s)" (:location/code location))))]])))
 
 (defmethod activity-description location.activity/updated
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [location user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated location ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :location/detail
-                                                   {:id (:location/id location)})}
+                                    :href (z/url-for
+                                            :location/detail
+                                            {:id (:location/id location)})}
                                 (cond-> (:location/name location)
                                   (:location/code location)
                                   (str (format " (%s)" (:location/code location))))]])))
 
 (defmethod activity-description material.activity/created
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [accession material taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created material ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :material/detail
-                                                   {:id (:material/id material)})}
+                                    :href (z/url-for
+                                            :material/detail
+                                            {:id (:material/id material)})}
 
                                 (format "%s.%s (%s)"
                                         (:accession/code accession)
@@ -167,13 +166,13 @@
                                     (str (format " (%s)" (:material/code material))))]])))
 
 (defmethod activity-description material.activity/updated
-  [& {:keys [router activity]}]
+  [& {:keys [activity]}]
   (let [{:keys [accession material user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated material ")
                                [:a {:class "spl-link"
-                                    :href (url-for router
-                                                   :material/detail
-                                                   {:id (:material/id material)})}
+                                    :href (z/url-for
+                                            :material/detail
+                                            {:id (:material/id material)})}
                                 (cond-> (:material/name material)
                                   (:material/code material)
                                   (str (format " (%s)" (:material/code material))))]])))
@@ -193,7 +192,7 @@
 
 (def date-time-formatter (java.time.format.DateTimeFormatter/ofPattern "E, MMM d YYYY"))
 
-(defn timeline [& {:keys [router activity]}]
+(defn timeline [& {:keys [activity]}]
   (let [activity-by-date (group-by #(.truncatedTo (:activity/created-at %)
                                                   java.time.temporal.ChronoUnit/DAYS)
                                    activity)
@@ -204,8 +203,7 @@
                 (conj acc
                       (timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
                                         (reduce (fn [acc cur]
-                                                  (if-let [desc (activity-description :router router
-                                                                                      :activity cur)]
+                                                  (if-let [desc (activity-description :activity cur)]
                                                     (conj acc desc)
                                                     acc)
                                                   ;; TODO: On hover show a tooltup with the exact time
@@ -216,12 +214,9 @@
             []
             dates)))
 
-(defn render [& {:keys [activity router]}]
-  (-> (page/page :content [(timeline :activity activity
-                                     :router router)]
-                 :page-title "Activity"
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [activity]}]
+  (page/page :content [(timeline :activity activity)]
+             :page-title "Activity"))
 
 (def Activity
   (-> activity.i/Activity
@@ -305,10 +300,9 @@
    [:page-size {:default 25} :int]
    [:q :string]])
 
-(defn handler [& {:keys [context _headers query-params ::r/router]}]
+(defn handler [& {:keys [::z/context _headers query-params]}]
   (let [{:keys [db organization]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
         activity (get-activity db organization page page-size)]
     ;; TODO: Add an infinite scroll
-    (render :activity activity
-            :router router)))
+    (render :activity activity)))

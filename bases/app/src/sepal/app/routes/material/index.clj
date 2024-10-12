@@ -1,14 +1,13 @@
 (ns sepal.app.routes.material.index
   (:require [lambdaisland.uri :as uri]
-            [reitit.core :as r]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
-            [sepal.database.interface :as db.i]))
+            [sepal.database.interface :as db.i]
+            [zodiac.core :as z]))
 
 (def default-page-size 25)
 
@@ -28,68 +27,64 @@
      :onclick "document.getElementById('q').value = null; this.form.submit()"}
     (heroicons/outline-x :size 20)]])
 
-(defn create-button [& {:keys [org router]}]
+(defn create-button [& {:keys [org]}]
   [:a {:class (html/attr "inline-flex" "items-center" "justify-center" "rounded-md"
                          "border" "border-transparent" "bg-green-700" "px-4" "py-2"
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
                          "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
-       :href (url-for router org.routes/materials-new {:org-id (:organization/id org)})}
+       :href (z/url-for org.routes/materials-new {:org-id (:organization/id org)})}
    "Create"])
 
-(defn table-columns [router]
+(defn table-columns []
   [{:name "Code"
-    :cell (fn [row] [:a {:href (url-for router
-                                        :material/detail
-                                        {:id (:material/id row)})
+    :cell (fn [row] [:a {:href (z/url-for
+                                 :material/detail
+                                 {:id (:material/id row)})
                          :class "spl-link"}
                      (:material/code row)])}
    {:name "Accession"
-    :cell (fn [row] [:a {:href (url-for router
-                                        :accession/detail
-                                        {:id (:accession/id row)})
+    :cell (fn [row] [:a {:href (z/url-for
+                                 :accession/detail
+                                 {:id (:accession/id row)})
                          :class "spl-link"}
                      (:accession/code row)])}
    {:name "Taxon"
     ;; TODO: Show the taxon parent on hover
-    :cell (fn [row] [:a {:href (url-for router
-                                        :taxon/detail
-                                        {:id (:taxon/id row)})
+    :cell (fn [row] [:a {:href (z/url-for
+                                 :taxon/detail
+                                 {:id (:taxon/id row)})
                          :class "spl-link"}
                      (:taxon/name row)])}
    {:name "Location"
     ;; TODO: Show the full location name on hover
-    :cell (fn [row] [:a {:href (url-for router
-                                        :location/detail
-                                        {:id (:location/id row)})
+    :cell (fn [row] [:a {:href (z/url-for
+                                 :location/detail
+                                 {:id (:location/id row)})
                          :class "spl-link"}
                      (:location/code row)])}])
 
-(defn table [& {:keys [rows page-num href page-size router total]}]
+(defn table [& {:keys [rows page-num href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
-     (table/table :columns (table-columns router)
+     (table/table :columns (table-columns)
                   :rows rows)
      (table/paginator :current-page page-num
                       :href href
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href org page-num page-size router rows total]}]
-  (-> (pages.list/render :content (table :href href
-                                         :page-num page-num
-                                         :page-size page-size
-                                         :router router
-                                         :rows rows
-                                         :total total)
-                         :page-title "Materials"
-                         :page-title-buttons (create-button :router router
-                                                            :org org)
-                         :table-actions (search-field (-> href uri/query-map :q))
-                         :router router)
-      (html/render-html)))
+(defn render [& {:keys [href org page-num page-size rows total]}]
+  (pages.list/render :content (table :href href
+                                     :page-num page-num
+                                     :page-size page-size
+                                     :rows rows
+                                     :total total)
+                     :page-title "Materials"
+                     :page-title-buttons (create-button :org org)
+                     :table-actions (search-field (-> href uri/query-map :q))))
 
-(defn handler [& {:keys [context headers query-params ::r/router uri]}]
+(defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context
         org (:organization context)
         ;; TODO: validate page and page size
@@ -134,7 +129,6 @@
       (render :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :org org
-              :router router
               :rows rows
               :page-num page-num
               :page-size page-size

@@ -1,33 +1,11 @@
 (ns sepal.app.middleware
-  (:require [integrant.core :as ig]
-            [reitit.coercion.malli]
-            [reitit.core :as r]
-            [reitit.ring]
-            [reitit.ring.coercion :as coercion]
-            [reitit.ring.middleware.multipart :as multipart]
-            [reitit.ring.middleware.muuntaja :as muuntaja]
-            [reitit.ring.middleware.parameters :as parameters]
-            [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
-            [ring.middleware.cookies :refer [wrap-cookies]]
-            [ring.middleware.flash :refer [wrap-flash]]
-            [ring.middleware.session :refer [wrap-session]]
-            [ring.middleware.session.cookie :refer [cookie-store]]
-            [ring.middleware.stacktrace :as stacktrace]
-            [sepal.app.globals :as g]
+  (:require [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.error.interface :as error.i]
             [sepal.organization.interface :as org.i]
             [sepal.user.interface :as user.i]
-            [taoensso.timbre :as log]))
-
-;; TODO: Add SameSite=lax to all cookies:
-;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
-
-(defn wrap-context [handler context]
-  (fn [request]
-    (-> request
-        (assoc :context context)
-        (handler))))
+            [taoensso.timbre :as log]
+            [zodiac.core :as z]))
 
 (defn htmx-request [handler]
   (fn [{:keys [headers] :as request}]
@@ -41,7 +19,7 @@
 (defn require-viewer
   "Redirects to /login if there are no valid claims in the request."
   [handler]
-  (fn [{:keys [context ::r/router session] :as request}]
+  (fn [{:keys [::z/context session] :as request}]
     (let [{:keys [db]} context
           user-id (:user/id session)
           viewer (when user-id (user.i/get-by-id db user-id))]
@@ -50,12 +28,12 @@
           (-> request
               (assoc :viewer viewer)
               (handler)))
-        (http/see-other router :auth/login)))))
+        (http/see-other :auth/login)))))
 
 (defn require-org-membership [handler path-param-key]
   ;; TODO: This redirects to root but maybe we should return a 404 or 403 or
   ;; something.
-  (fn [{:keys [context path-params ::r/router viewer] :as request}]
+  (fn [{:keys [::z/context path-params viewer] :as request}]
     (let [{:keys [db]} context
           org-id (Long/parseLong (get path-params path-param-key))
           org (org.i/get-user-org db (:user/id viewer))]
@@ -63,9 +41,9 @@
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
-              (assoc-in [:context :organization] org)
+              (assoc-in [::z/context :organization] org)
               (handler)))
-        (http/see-other router :root)))))
+        (http/see-other :root)))))
 
 (defn resource-loader
   "Accept a getter function that accepts the request and loads the resource and
@@ -88,7 +66,7 @@
 
         :else
         (-> request
-            (assoc-in [:context :resource] resource)
+            (assoc-in [::z/context :resource] resource)
             (handler))))))
 
 (defn default-loader
@@ -98,7 +76,7 @@
   ([getter path-param-key]
    (default-loader getter path-param-key identity))
   ([getter path-param-key coercer]
-   (fn [{:keys [context path-params] :as request}]
+   (fn [{:keys [::z/context path-params] :as request}]
      (let [{:keys [db]} context
            id (-> path-params path-param-key coercer)]
        (getter db id)))))
@@ -106,7 +84,7 @@
 (defn require-resource-org-membership
   "Require a user to be a member of the organization that owns the resource."
   [handler organization-id-key]
-  (fn [{:keys [context ::r/router viewer] :as request}]
+  (fn [{:keys [::z/context viewer] :as request}]
     (let [{:keys [db resource]} context
           org-id (get resource organization-id-key)
           org (org.i/get-user-org db (:user/id viewer))]
@@ -124,49 +102,8 @@
         (binding [g/*organization* org]
           (-> request
               (assoc-in [:session :organization] org)
-              (assoc-in [:context :organization] org)
+              (assoc-in [::z/context :organization] org)
               (handler)))
 
         :else
-        (http/see-other router :root)))))
-
-(defn bind-globals [handler]
-  (fn [{:keys [session ::r/router] :as request}]
-    (binding [g/*request* request
-              g/*router* router
-              g/*session* session]
-      (handler request))))
-
-(defmethod ig/init-key ::cookie-store [_ {:keys [secret]}]
-  (cookie-store {:key (.getBytes secret)}))
-
-(defmethod ig/init-key ::middleware [_ {:keys [context session-store]}]
-  [bind-globals
-   wrap-cookies
-   [wrap-session {:flash true
-                  :cookie-attrs {:http-only true}
-                  :store session-store}]
-
-   ;; query-params & form-params
-   parameters/parameters-middleware
-   ;; multipart data
-   multipart/multipart-middleware
-   ;; content-negotiation
-   muuntaja/format-negotiate-middleware
-   ;; encoding response body
-   muuntaja/format-response-middleware
-   ;; Flash messages in the session
-   wrap-flash
-   ;; Check CSRF tokens
-   wrap-anti-forgery
-   ;; Print out stacktraces
-   stacktrace/wrap-stacktrace-web
-   ;; decoding request body
-   muuntaja/format-request-middleware
-   ;; coercing response bodys
-   coercion/coerce-response-middleware
-   ;; coercing request parameters
-   coercion/coerce-request-middleware
-
-   [wrap-context context]
-   htmx-request])
+        (http/see-other :root)))))

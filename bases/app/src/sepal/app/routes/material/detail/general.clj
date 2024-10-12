@@ -1,10 +1,7 @@
 (ns sepal.app.routes.material.detail.general
-  (:require [reitit.core :as r]
-            [sepal.accession.interface :as accession.i]
-            [sepal.app.html :as html]
+  (:require [sepal.accession.interface :as accession.i]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
@@ -14,24 +11,24 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.taxon.interface :as taxon.i]
+            [zodiac.core :as z]))
 
-(defn tab-items [& {:keys [router material]}]
+(defn tab-items [& {:keys [material]}]
   [{:label "General"
     :key :name
-    :href (url-for router :material/detail-general {:id (:material/id material)})}
+    :href (z/url-for :material/detail-general {:id (:material/id material)})}
    {:label "Media"
     :key :media
-    :href (url-for router :material/detail-media {:id (:material/id material)})}])
+    :href (z/url-for :material/detail-media {:id (:material/id material)})}])
 
-(defn page-content [& {:keys [errors org router material values]}]
+(defn page-content [& {:keys [errors org material values]}]
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
-              :items (tab-items :router router :material material))
-   (material.form/form :action (url-for router :material/detail-general {:id (:material/id material)})
+              :items (tab-items :material material))
+   (material.form/form :action (z/url-for :material/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org
-                       :router router
                        :values values)])
 
 (defn footer-buttons []
@@ -44,21 +41,18 @@
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org router material accession taxon values]}]
-  (-> (page/page :attrs {:x-data "materialFormData"}
-                 :content (page-content :errors errors
-                                        :org org
-                                        :router router
-                                        :material material
-                                        :values values
-                                        :taxon taxon)
-                 :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title (format "%s.%s - %s"
-                                     (:accession/code accession)
-                                     (:material/code material)
-                                     (:taxon/name taxon))
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [errors org material accession taxon values]}]
+  (page/page :attrs {:x-data "materialFormData"}
+             :content (page-content :errors errors
+                                    :org org
+                                    :material material
+                                    :values values
+                                    :taxon taxon)
+             :footer (ui.form/footer :buttons (footer-buttons))
+             :page-title (format "%s.%s - %s"
+                                 (:accession/code accession)
+                                 (:material/code material)
+                                 (:taxon/name taxon))))
 
 (defn save! [db material-id updated-by data]
   (try
@@ -78,7 +72,7 @@
    [:status :string]
    [:type :string]])
 
-(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -99,15 +93,14 @@
       (let [result (save! db (:material/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
-          (http/found router :material/detail {:org-id (-> organization :organization/id str)
-                                               :id (:material/id resource)})
-          (-> (http/found router :accession/detail)
+          (http/found :material/detail {:org-id (-> organization :organization/id str)
+                                        :id (:material/id resource)})
+          (-> (http/found :accession/detail)
               ;; TODO: The errors needs to be parsed here and return a message
               (assoc :flash {:error "Error saving material"  ;; TODO: result
                              :values values}))))
 
       (render :org organization
-              :router router
               :material resource
               :accession accession
               :taxon taxon

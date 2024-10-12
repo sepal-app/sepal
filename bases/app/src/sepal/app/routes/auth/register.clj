@@ -1,20 +1,19 @@
 (ns sepal.app.routes.auth.register
-  (:require [reitit.core :as r]
-            [sepal.app.flash :as flash]
+  (:require [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.form :as form]
             [sepal.user.interface :as user.i]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.user.interface.spec :as user.spec]
+            [zodiac.core :as z]))
 
-(defn form [& {:keys [request email invitation next router]}]
+(defn form [& {:keys [request email invitation next]}]
   [:form {:method "post"
-          :action (url-for router auth.routes/register)}
+          :action (z/url-for auth.routes/register)}
    (form/anti-forgery-field)
    (form/hidden-field :name "next" :value next)
    (when invitation
@@ -59,16 +58,14 @@
     ;; TODO
     [:a {:href "/login"} "Already have an account?"]]])
 
-(defn render [& {:keys [email #_field-errors invitation next request router flash]}]
-  (-> (page/page :content [:div
-                           [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
-                           (form :email email
-                                 :invitation invitation
-                                 :next next
-                                 :request request
-                                 :router router)]
-                 :flash flash)
-      (html/render-html)))
+(defn render [& {:keys [email #_field-errors invitation next request flash]}]
+  (page/page :content [:div
+                       [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+                       (form :email email
+                             :invitation invitation
+                             :next next
+                             :request request)]
+             :flash flash))
 
 (def RegisterForm
   [:and
@@ -85,7 +82,7 @@
     (fn [{:keys [password confirm-password]}]
       (= password confirm-password))]])
 
-(defn handler [{:keys [context form-params request-method ::r/router] :as request}]
+(defn handler [{:keys [::z/context form-params request-method] :as request}]
   (let [{:keys [db]} context
         {:keys [email password]} (params/decode RegisterForm form-params)]
 
@@ -95,21 +92,20 @@
         ;; (validation.i/invalid? RegisterForm params)
         ;; (do
         ;;   ;; (tap> (validation.i/validate RegisterForm params))
-        ;;   (-> (http/see-other router auth.routes/register)
+        ;;   (-> (http/see-other auth.routes/register)
         ;;       (flash/set-field-errors (validation.i/validate RegisterForm params))))
 
         ;; TODO: This doesn't seem to be showing the error
         (user.i/exists? db email)
-        (-> (http/see-other router auth.routes/register)
+        (-> (http/see-other auth.routes/register)
             (flash/error "User already exists"))
 
         :else
         (let [user (user.i/create! db {:email email :password password})
               session (session/user->session user)]
-          (-> (http/see-other router :root)
+          (-> (http/see-other :root)
               (assoc :session session))))
 
       ;; else
       (render :next ""
-              :request request
-              :router router))))
+              :request request))))

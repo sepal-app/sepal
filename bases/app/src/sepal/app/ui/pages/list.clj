@@ -3,7 +3,7 @@
 
 (def list-container-id "list-container")
 
-(defn render [& {:keys [page-title-buttons content page-title table-actions router]}]
+(defn render [& {:keys [page-title-buttons content page-title table-actions]}]
   (page/page :content [:div
                        [:form {:method "get"
                                :hx-get " "
@@ -22,5 +22,4 @@
                            [:div {:class "overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg"}
                             content]]]]]]
              :page-title-buttons page-title-buttons
-             :page-title page-title
-             :router router))
+             :page-title page-title))

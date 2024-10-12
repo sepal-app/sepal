@@ -1,9 +1,6 @@
 (ns sepal.app.routes.location.create
-  (:require [reitit.core :as r]
-            [sepal.app.html :as html]
-            [sepal.app.http-response :refer [found see-other]]
+  (:require [sepal.app.http-response :refer [found see-other]]
             [sepal.app.params :as params]
-            [sepal.app.router :refer [url-for]]
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.ui.form :as ui.form]
@@ -11,15 +8,15 @@
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
-            [sepal.location.interface.activity :as location.activity]))
+            [sepal.location.interface.activity :as location.activity]
+            [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors values router org]}]
-  (location.form/form :action (url-for router
-                                       org.routes/locations-new
-                                       {:org-id (:organization/id org)})
+(defn page-content [& {:keys [errors values org]}]
+  (location.form/form :action (z/url-for
+                                org.routes/locations-new
+                                {:org-id (:organization/id org)})
                       :errors errors
                       :org org
-                      :router router
                       :values values))
 
 (defn footer-buttons []
@@ -30,16 +27,13 @@
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org router values]}]
-  (-> (page/page :attrs {:x-data "locationFormData"}
-                 :content (page-content :errors errors
-                                        :org org
-                                        :router router
-                                        :values values)
-                 :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title "Create location"
-                 :router router)
-      (html/render-html)))
+(defn render [& {:keys [errors org values]}]
+  (page/page :attrs {:x-data "locationFormData"}
+             :content (page-content :errors errors
+                                    :org org
+                                    :values values)
+             :footer (ui.form/footer :buttons (footer-buttons))
+             :page-title "Create location"))
 
 (defn create! [db created-by data]
   (try
@@ -56,7 +50,7 @@
    [:code [:maybe :string]]
    [:description [:maybe :string]]])
 
-(defn handler [{:keys [context form-params request-method ::r/router viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context
         org (:organization context)]
     (case request-method
@@ -66,11 +60,10 @@
             result (create! db (:user/id viewer) data)]
         (if-not (error.i/error? result)
           ;; TODO: Add a success message
-          (see-other router :location/detail {:id (:location/id result)})
-          (-> (found router org.routes/locations-new {:org-id (:organization/id org)})
+          (see-other :location/detail {:id (:location/id result)})
+          (-> (found org.routes/locations-new {:org-id (:organization/id org)})
               (assoc :flash {;;:error (error.i/explain result)
                              :values data}))))
 
       (render :org org
-              :router router
               :values form-params))))

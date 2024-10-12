@@ -1,10 +1,10 @@
 (ns sepal.app.routes.media.uploaded
-  (:require [reitit.core :as r]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.ui.media :as media.ui]
             [sepal.error.interface :as error.i]
-            [sepal.media.interface :as media.i]))
+            [sepal.media.interface :as media.i]
+            [zodiac.core :as z]))
 
 (def FormParams
   [:map {:closed true}
@@ -17,7 +17,7 @@
    [:s3Key :string]
    [:size :int]])
 
-(defn handler [& {:keys [context form-params ::r/router viewer] :as _request}]
+(defn handler [& {:keys [::z/context form-params viewer] :as _request}]
   (let [{:keys [db imgix-media-domain]} context
         {filename :filename
          content-type :contentType
@@ -48,8 +48,7 @@
                      link-resource-type))
 
     (if-not (error.i/error? result)
-      (->  (media.ui/media-item :item result
-                                :router router)
+      (->  (media.ui/media-item :item result)
            (html/render-partial))
       ;; TODO: handle error
       (throw result))))

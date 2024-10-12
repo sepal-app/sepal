@@ -70,18 +70,19 @@
         (jdbc.sql/delete! db :public.organization {:id (:organization/id org)})))
 
     (tf/testing "org.i/create! - error: invalid id"
-      (let [id (mg/generate neg-int?)
-            result (org.i/create! db {:name (mg/generate [:string {:min 1}])
-                                      :id id})
-            errors (-> result error.i/data :explain me/humanize)]
-
-        (is (match? {:id ["should be a positive int"]}
-                    errors))))
+      (let [data {:id (mg/generate neg-int?)
+                  :name (mg/generate [:string {:min 1}])}]
+        (is (thrown-match? clojure.lang.ExceptionInfo
+                           (fn [exd]
+                             (is (match? {:id ["should be a positive int"]}
+                                         (-> exd :data :explain me/humanize))))
+                           (org.i/create! db data)))))
 
     (tf/testing "org.i/create! - error: id=0"
-      (let [id 0
-            result (org.i/create! db {:name (mg/generate [:string {:min 1}])
-                                      :id id})
-            errors (-> result error.i/data :explain me/humanize)]
-        (is (match? {:id ["should be a positive int"]}
-                    errors))))))
+      (let [data {:id 0
+                  :name (mg/generate [:string {:min 1}])}]
+        (is (thrown-match? clojure.lang.ExceptionInfo
+                           (fn [exd]
+                             (is (match? {:id ["should be a positive int"]}
+                                         (-> exd :data :explain me/humanize))))
+                           (org.i/create! db data)))))))

@@ -1,7 +1,7 @@
 (ns sepal.app.routes.taxon.detail
-  (:require [reitit.core :as r]
-            [sepal.app.http-response :as http]))
+  (:require [sepal.app.http-response :as http]
+            [zodiac.core :as z]))
 
-(defn handler [{:keys [context ::r/router]}]
+(defn handler [{:keys [::z/context]}]
   (let [{:keys [resource]} context]
-    (http/found router :taxon/detail-name {:id (:taxon/id resource)})))
+    (http/found :taxon/detail-name {:id (:taxon/id resource)})))
