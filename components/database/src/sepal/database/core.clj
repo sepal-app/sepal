@@ -3,13 +3,8 @@
   (:require [camel-snake-kebab.core :as csk]
             [clojure.string :as str]
             [honey.sql]
-            [integrant.core :as ig]
             [next.jdbc :as jdbc]
-            [next.jdbc.connection :as jdbc.connection]
-            [next.jdbc.result-set :as jdbc.result-set]
-            [sepal.database.honeysql :as honeysql]
-            [sepal.database.postgresql :as postgresql])
-  (:import [com.zaxxer.hikari HikariDataSource]))
+            [next.jdbc.result-set :as jdbc.result-set]))
 
 (defn get-modified-column-names [^java.sql.ResultSetMetaData rsmeta opts]
   (let [lf (:label-fn opts)]
@@ -51,7 +46,7 @@
     (catch java.sql.SQLFeatureNotSupportedException _
       nil)))
 
-(def default-jdbc-options
+(def jdbc-options
   (merge jdbc/snake-kebab-opts
          {:column-fn ->snake-case
           :label-fn  (fn [rsmeta i]
@@ -65,59 +60,3 @@
            ;; override the builder-fn b/c the default behavior of ->kebab-case is to
            ;; turn :s3_bucket into s-3-bucket
           :builder-fn builder-fn}))
-
-(defn init-db  [& {:keys [connectable jdbc-options]}]
-  (postgresql/init)
-  (honeysql/init)
-  (jdbc/with-options connectable (or jdbc-options default-jdbc-options)))
-
-(defn init-pool [& {:keys [db-spec max-pool-size]}]
-  (when db-spec
-    (let [db-spec (cond-> db-spec
-                    (empty? (:host db-spec))
-                    (assoc :host nil)
-
-                    (= "" (:port db-spec))
-                    (assoc :port nil)
-
-                    (empty? (:socketFactory db-spec))
-                    (dissoc :socketFactory)
-
-                    ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required in case
-                    ;; a default :schema is provided, see https://github.com/brettwooldridge/HikariCP/issues/1369
-                    (= (:dbtype db-spec) "postgresql")
-                    (assoc :connectionInitSql "COMMIT;"))
-          url (jdbc.connection/jdbc-url db-spec)]
-      (jdbc.connection/->pool HikariDataSource {:jdbcUrl url
-                                                :maximumPoolSize max-pool-size}))))
-
-(create-ns 'sepal.database.interface)
-(alias 'db.i 'sepal.database.interface)
-
-(defmethod ig/halt-key! ::db.i/db [_ db]
-  (-> db jdbc/get-datasource .close))
-
-(defn execute! [db stmt opts]
-  (let [stmt (if (map? stmt)
-               (honey.sql/format stmt opts)
-               stmt)]
-    (jdbc/execute! db stmt opts)))
-
-(defn execute-one! [db stmt opts]
-  (let [stmt (if (map? stmt)
-               (honey.sql/format stmt opts)
-               stmt)]
-    (jdbc/execute-one! db stmt opts)))
-
-(defn exists?
-  [db stmt]
-  (-> (execute-one! db {:select [[[:exists stmt]]]} {})
-      :exists))
-
-(defn count
-  [db stmt opts]
-  (-> (execute-one! db
-                    {:select [[[:count :*]]]
-                     :from [[stmt :c]]}
-                    opts)
-      :count))

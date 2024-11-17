@@ -54,7 +54,7 @@
                            (:3x srcset-urls))
            :class "preview"}]]
    [:script {:type "module"
-             :src (html/static-url "js/media_detail.ts")}]])
+             :src (html/static-url "app/routes/media/detail.ts")}]])
 
 (defn render [& {:keys [dl-url media preview-url srcset-urls zoom-url]}]
   ;; We have to put the x-data in the page attrs b/c the zoom var is needed by

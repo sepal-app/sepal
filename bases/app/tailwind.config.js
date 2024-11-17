@@ -1,12 +1,12 @@
-/** @type {import('tailwindcss').Config} */
-const defaultTheme = require("tailwindcss/defaultTheme")
+import path from "path"
+import defaultTheme from "tailwindcss/defaultTheme"
+import forms from "@tailwindcss/forms"
+import daisyui from "daisyui"
+import themes from "daisyui/src/theming/themes"
 
 module.exports = {
     content: {
-        files: [
-            "./src/**/*.{html,js,ts,clj,css}",
-            "./resources/**/*.{html,js,ts,clj,css}",
-        ],
+        files: [path.resolve(__dirname, "src/**/*.{html,js,ts,clj,css}")],
     },
     theme: {
         extend: {
@@ -18,15 +18,15 @@ module.exports = {
     plugins: [
         // require("@tailwindcss/typography"),
         // Tailwind forms conflicts with daisy
-        require("@tailwindcss/forms"),
+        forms,
         // require("@tailwindcss/aspect-ratio"),
-        require("daisyui"),
+        daisyui,
     ],
     daisyui: {
         themes: [
             {
                 light: {
-                    ...require("daisyui/src/theming/themes")["emerald"],
+                    ...themes["emerald"],
                     "base-100": "#f7f8fc",
                     ".input": {
                         "background-color": "white",

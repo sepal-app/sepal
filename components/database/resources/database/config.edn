@@ -15,4 +15,9 @@
                      :test "password"}
  :unixSocketPath #env DB_UNIX_SOCKET_PATH
  :socketFactory #env DB_SOCKET_FACTORY
- :cloudSqlInstance #env CLOUD_SQL_INSTANCE}
+ :cloudSqlInstance #env CLOUD_SQL_INSTANCE
+ :maxPoolSize #long #or [#env DB_MAX_POOL_SIZE 10]
+ ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required
+ ;; in case a default :schema is provided, see
+ ;; https://github.com/brettwooldridge/HikariCP/issues/1369
+ :connectionInitSql "COMMIT;"}

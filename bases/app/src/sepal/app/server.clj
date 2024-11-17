@@ -12,7 +12,10 @@
             [sepal.app.routes.org.core :as org]
             [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.routes.taxon.core :as taxon]
-            [zodiac.core :as z]))
+            [sepal.database.interface :as db.i]
+            [zodiac.core :as z]
+            [zodiac.ext.assets :as z.assets]
+            [zodiac.ext.sql :as z.sql]))
 
 (defn routes []
   (concat
@@ -24,9 +27,6 @@
            :middleware [[middleware/require-viewer]]}]
      ["/ok" {:name :ok
              :handler (constantly {:status 204})}]
-     ;; See sepal.app.html/static-url for accessing static assets
-     ["/assets/*" {:name :static-files
-                   :handler (reitit.ring/create-resource-handler {:root "app/dist/assets"})}]
      ["/accession" (accession/routes)]
      ["/location" (location/routes)]
      ["/material" (material/routes)]
@@ -34,6 +34,13 @@
      ["/taxon" (taxon/routes)]
      ["/media" (media/routes)]]))
 
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [spec]}]
+  (db.i/init)
+  (z.sql/init {:jdbc-options db.i/jdbc-options
+               :spec spec}))
+
+(defmethod ig/init-key ::zodiac-assets [_ options]
+  (z.assets/init options))
 
 (defmethod ig/init-key ::zodiac [_ options]
   (z/start (merge options

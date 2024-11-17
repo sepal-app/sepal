@@ -8,7 +8,7 @@
              :x-cloak true}
        [:div
         [:div {:class "absolute top-0 left-0 right-0 bottom-0"}
-         [:img {:src (html/static-url "img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
+         [:img {:src (html/static-url "app/routes/auth/img/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
                 :class "h-screen w-full object-cover object-center -z-10"
                 :alt "login banner"}]]
         [:div {:class "grid grid-cols-3"}
@@ -19,5 +19,5 @@
         ;; TODO: Need to raise the z-index of the flash banner
         (flash/banner (:messages flash))]
        [:script {:type "module"
-                 :src (html/static-url "js/auth/page.ts")}]]
+                 :src (html/static-url "app/routes/auth/page.ts")}]]
       (base/html)))

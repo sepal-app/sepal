@@ -2,7 +2,8 @@
   (:require [integrant.core :as ig]
             [sepal.config.interface :as config.i]
             [sepal.test.interface :as test.i]
-            [zodiac.core :as z]))
+            [zodiac.core :as z]
+            [zodiac.ext.sql :as z.sql]))
 
 (def ^:dynamic *app* nil)
 (def ^:dynamic *db* nil)
@@ -12,10 +13,14 @@
   (config.i/read-config config {:profile :test}))
 
 (defn default-system-config []
-  {:sepal.database.interface/pool {:db-spec (load-config "database/config.edn")}
-   :sepal.database.interface/db {:connectable (ig/ref :sepal.database.interface/pool)}
-   :sepal.app.server/zodiac {:request-context {:db (ig/ref :sepal.database.interface/db)
-                                               :forgot-password-email-from "support@sepal.app"
+  {:sepal.app.server/zodiac-sql {:spec (load-config "database/config.edn")
+                                 :context-key :db}
+   :sepal.app.server/zodiac-assets {:build? false
+                                    :manifest-path  "app/build/.vite/manifest.json"
+                                    :asset-resource-path "app/build/assets"}
+   :sepal.app.server/zodiac {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
+                                          (ig/ref :sepal.app.server/zodiac-assets)]
+                             :request-context {:forgot-password-email-from "support@sepal.app"
                                                :forgot-password-email-subject "Sepal - Reset Password"
                                                :reset-password-secret "1234"
                                                :app-domain "test.sepal.app"}
@@ -27,7 +32,7 @@
     (test.i/create-system-fixture system-config
                                   (fn [system f]
                                     (binding [*system* system
-                                              *db* (:sepal.database.interface/db system)
+                                              *db* (-> system  :sepal.app.server/zodiac ::z.sql/db)
                                               *app* (-> system :sepal.app.server/zodiac ::z/app)]
                                       (f)))
                                   (keys system-config))))

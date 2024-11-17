@@ -28,4 +28,4 @@
                            :value (:description values)
                            :errors (:description errors))])
    [:script {:type "module"
-             :src (html/static-url "js/location_form.ts")}]])
+             :src (html/static-url "app/routes/location/form.ts")}]])

@@ -48,6 +48,7 @@ node_modules/
 
 
 bases/app/resources/app/dist/
+bases/app/resources/app/build/
 
 .env.*
 .rebl

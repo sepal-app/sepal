@@ -1,6 +1,6 @@
 import Alpine from "alpinejs"
 
-import TaxonField from "./TaxonField.ts"
+import TaxonField from "~/js/taxon_field"
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("accessionFormData", () => ({

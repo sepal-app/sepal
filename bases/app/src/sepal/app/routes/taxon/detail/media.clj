@@ -40,7 +40,7 @@
               :items (tab-items :taxon taxon))
 
    [:link {:rel "stylesheet"
-           :href (html/static-url "css/media.css")}]
+           :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
@@ -58,7 +58,7 @@
     [:div {:id "upload-success-forms"
            :class "hidden"}]]
    [:script {:type "module"
-             :src (html/static-url "js/media.ts")}]])
+             :src (html/static-url "app/routes/media/media.ts")}]])
 
 (defn render [& {:keys [org page page-size media taxon]}]
   (page/page :page-title "Media"

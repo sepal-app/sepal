@@ -1,35 +1,30 @@
-import { fileURLToPath, URL } from "node:url"
-
 import { defineConfig } from "vite"
 
 export default defineConfig({
-    plugins: [],
+    root: __dirname.concat("/src/sepal"),
+    mode: "production",
     resolve: {
         alias: {
-            "@": fileURLToPath(new URL("./src", import.meta.url)),
+            "~": __dirname.concat("/src/sepal/app"),
         },
-    },
-    optimizeDeps: {
-        include: ["linked-dep"],
     },
     build: {
         manifest: true,
+        outDir: __dirname.concat("/resources/app/build"),
+        emptyOutDir: true,
         rollupOptions: {
-            output: {
-                dir: "resources/app/dist",
-            },
             input: [
-                "resources/app/static/css/main.css",
-                "resources/app/static/css/media.css",
-                "resources/app/static/img/auth/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg",
-                "resources/app/static/js/accession_form.ts",
-                "resources/app/static/js/location_form.ts",
-                "resources/app/static/js/material_form.ts",
-                "resources/app/static/js/media.ts",
-                "resources/app/static/js/media_detail.ts",
-                "resources/app/static/js/page.ts",
-                "resources/app/static/js/taxon_form.ts",
-                "resources/app/static/js/auth/page.ts",
+                "~/css/main.css",
+                "~/routes/accession/form.ts",
+                "~/routes/auth/img/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg",
+                "~/routes/auth/page.ts",
+                "~/routes/location/form.ts",
+                "~/routes/material/form.ts",
+                "~/routes/media/css/media.css",
+                "~/routes/media/media.ts",
+                "~/routes/media/detail.ts",
+                "~/routes/taxon/form.ts",
+                "~/ui/page.ts",
             ],
         },
     },

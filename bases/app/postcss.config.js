@@ -1,12 +1,17 @@
-const path = require("path")
+import path from "path"
+import importPlugin from "postcss-import"
+import tailwindcss from "tailwindcss"
+import cssnano from "cssnano"
+import autoprefixer from "autoprefixer"
+import { fileURLToPath } from "url"
 
-module.exports = (ctx) => ({
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export default (_ctx) => ({
     plugins: [
-        require("postcss-import"),
-        require("tailwindcss")(path.resolve(__dirname, "tailwind.config.js")),
-        require("cssnano")({
-            preset: ["default", { discardComments: { removeAll: true } }],
-        }),
-        require("autoprefixer"),
+        importPlugin,
+        tailwindcss(path.resolve(__dirname, "tailwind.config.js")),
+        cssnano({ preset: ["default", { discardComments: { removeAll: true } }] }),
+        autoprefixer,
     ],
 })

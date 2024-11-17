@@ -1,8 +1,8 @@
 import Alpine from "alpinejs"
 import TomSelect from "tom-select"
 
-import AccessionField from "./AccessionField.ts"
-import LocationField from "./LocationField.ts"
+import AccessionField from "~/js/accession_field"
+import LocationField from "~/js/location_field"
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("materialFormData", () => ({

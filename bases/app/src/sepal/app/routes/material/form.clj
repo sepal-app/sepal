@@ -115,4 +115,4 @@
                                          :value (:memorial values)}])])
 
      [:script {:type "module"
-               :src (html/static-url "js/material_form.ts")}]]))
+               :src (html/static-url "app/routes/material/form.ts")}]]))

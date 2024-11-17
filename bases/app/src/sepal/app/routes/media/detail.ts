@@ -1,9 +1,9 @@
 import Alpine from "alpinejs"
 
-import AccessionField from "./AccessionField.ts"
-import LocationField from "./LocationField.ts"
-import TaxonField from "./TaxonField.ts"
-import MaterialField from "./MaterialField.ts"
+import AccessionField from "~/js/accession_field"
+import LocationField from "~/js/location_field"
+import TaxonField from "~/js/taxon_field"
+import MaterialField from "~/js/material_field"
 
 document.addEventListener("alpine:init", () => {
     Alpine.directive("accession-field", AccessionField)

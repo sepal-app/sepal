@@ -1,34 +1,22 @@
 (ns sepal.database.interface
   (:refer-clojure :exclude [count])
-  (:require [integrant.core :as ig]
-            [next.jdbc :as jdbc]
+  (:require [next.jdbc :as jdbc]
             [next.jdbc.date-time]
             [sepal.database.core :as core]
-            [sepal.database.postgresql :as pg]))
+            [sepal.database.honeysql :as honeysql]
+            [sepal.database.postgresql :as pg]
+            [zodiac.ext.sql :as z.sql]))
 
-;; read all db date times as java.time.Instant
-(next.jdbc.date-time/read-as-instant)
+(defn init []
+  (pg/init)
+  (honeysql/init))
 
-(defn execute!
-  ([db stmt]
-   (core/execute! db stmt {}))
-  ([db stmt opts]
-   (core/execute! db stmt opts)))
+(def jdbc-options core/jdbc-options)
 
-(defn execute-one!
-  ([db stmt]
-   (core/execute-one! db stmt {}))
-  ([db stmt opts]
-   (core/execute-one! db stmt opts)))
-
-(defn exists? [db stmt]
-  (core/exists? db stmt))
-
-(defn count
-  ([db stmt]
-   (count db stmt nil))
-  ([db stmt opts]
-   (core/count db stmt opts)))
+(def execute! #'z.sql/execute!)
+(def execute-one! #'z.sql/execute-one!)
+(def count #'z.sql/count)
+(def exists? #'z.sql/exists?)
 
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction+options [~sym ~transactable ~opts]
@@ -39,11 +27,3 @@
 
 (defn ->pg-enum [value]
   (pg/->pg-enum value))
-
-(defmethod ig/init-key ::db [_ {:keys [connectable jdbc-options]}]
-  (core/init-db :connectable connectable
-                :jdbc-options jdbc-options))
-
-(defmethod ig/init-key ::pool [_ {:keys [db-spec max-pool-size]}]
-  (core/init-pool :db-spec db-spec
-                  :max-pool-size (or max-pool-size 10)))

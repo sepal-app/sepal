@@ -1,5 +1,6 @@
 (ns user
-  (:require [sepal.app.system :as system]))
+  (:require [sepal.app.system :as system]
+            [zodiac.ext.sql :as z.sql]))
 
 (add-tap println)
 
@@ -12,7 +13,7 @@
   ([profile]
    (let [sys (system/start! profile)]
      (alter-var-root #'*system* (constantly sys))
-     (alter-var-root #'*db* (constantly (:sepal.database.interface/db *system*))))))
+     (alter-var-root #'*db* (constantly (get-in *system* [:sepal.app.server/zodiac ::z.sql/db]))))))
 
 (defn stop []
   (when *system*

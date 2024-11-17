@@ -44,7 +44,7 @@
          footer])]]]
 
    [:script {:type "module"
-             :src (html/static-url "js/page.ts")}]])
+             :src (html/static-url "app/ui/page.ts")}]])
 
 (defn page [& {:keys [content footer page-title page-title-buttons attrs]}]
   (-> [:div (merge {} attrs)

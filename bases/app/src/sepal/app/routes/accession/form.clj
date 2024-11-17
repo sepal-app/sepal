@@ -33,4 +33,4 @@
                               [:option {:value (:taxon-id values)}
                                (:taxon-name values)])]))])
    [:script {:type "module"
-             :src (html/static-url "js/accession_form.ts")}]])
+             :src (html/static-url "app/routes/accession/form.ts")}]])

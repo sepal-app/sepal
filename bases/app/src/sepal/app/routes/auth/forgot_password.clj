@@ -54,7 +54,7 @@
                                 "TextBody" content
                                 "MessageStream" "outbound"})))
 
-(defn handler [{:keys [context flash params request-method]}]
+(defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [app-domain db postmark reset-password-secret forgot-password-email-from
                 forgot-password-email-subject]} context
         {:keys [email]} params]

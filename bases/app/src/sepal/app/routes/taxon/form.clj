@@ -71,4 +71,4 @@
                                                       "selected")}
                                  rank])]))])
      [:script {:type "module"
-               :src (html/static-url "js/taxon_form.ts")}]]))
+               :src (html/static-url "app/routes/taxon/form.ts")}]]))
