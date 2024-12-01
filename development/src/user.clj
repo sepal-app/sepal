@@ -4,8 +4,8 @@
 
 (add-tap println)
 
-(def ^:dynamic *system* nil)
-(def ^:dynamic *db* nil)
+(defonce ^:dynamic *system* nil)
+(defonce ^:dynamic *db* nil)
 
 (defn go
   ([]
@@ -20,3 +20,8 @@
     (system/stop! *system*))
   (alter-var-root #'*system* (constantly nil))
   (alter-var-root #'*db* (constantly nil)))
+
+(defn restart []
+  (when *system*
+    (stop))
+  (go))

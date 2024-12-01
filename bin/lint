@@ -8,7 +8,6 @@ else
     CLJ_KONDO='clojure -M:clj-kondo'
 fi
 
-
 # Use the clj-kondo executable if it's available on the path
 if [[ $(which cljfmt) ]]; then
     CLJFMT=$(which cljfmt)
@@ -18,9 +17,8 @@ fi
 
 # Set SKIP_POLY to true to skip running the polylith info check
 
-
 SKIP_DEP_CHECKS=${SKIP_DEP_CHECKS:=false}
 
 $CLJ_KONDO --parallel --lint components --lint bases --lint projects &&
     $CLJFMT check &&
-    if [[ $SKIP_POLY != true ]]; then clojure -M:poly check; fi &&
+    if [[ $SKIP_POLY != true ]]; then clojure -M:poly check; fi
