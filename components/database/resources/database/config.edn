@@ -2,10 +2,10 @@
  :classname "org.postgresql.Driver"
  :subprotocol "postgresql"
  :host #profile {:default #or [#env DB_HOST "localhost"]
-                 :production #env DB_HOST
+                 :production nil
                  :test "localhost"}
  :port #profile {:default #or [#env DB_PORT 5432]
-                 :production #env DB_PORT}
+                 :production nil}
  :dbname #profile {:default #or [#env DB_NAME "sepal"]
                    :test "sepal_test"}
  :user #profile {:default #or [#env DB_USER "sepal"]
