@@ -34,9 +34,10 @@
      ["/taxon" (taxon/routes)]
      ["/media" (media/routes)]]))
 
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [spec]}]
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
   (db.i/init)
-  (z.sql/init {:jdbc-options db.i/jdbc-options
+  (z.sql/init {:context-key context-key
+               :jdbc-options db.i/jdbc-options
                :spec spec}))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]

@@ -17,6 +17,9 @@
         poly/validation {:local/root "../../components/validation"}
 
         babashka/fs {:mvn/version "0.4.19"}
+        com.github.brettatoms/zodiac {:mvn/version "0.4.45"}
+        com.github.brettatoms/zodiac-assets {:mvn/version "0.1.18"}
+        com.github.brettatoms/zodiac-sql {:mvn/version "0.1.7"}
         com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}
         com.taoensso/timbre {:mvn/version "6.5.0"}
         com.taoensso/nippy {:mvn/version "3.4.2"}
@@ -27,7 +30,6 @@
         pogonos/pogonos {:mvn/version "0.2.1"}
         ring/ring-anti-forgery {:mvn/version "1.3.1"}
         ring/ring-devel {:mvn/version "1.12.2"}
-        ring/ring-core {:mvn/version "1.12.2"}
-        com.github.brettatoms/zodiac {:mvn/version "0.0.4"}}
+        ring/ring-core {:mvn/version "1.12.2"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}
