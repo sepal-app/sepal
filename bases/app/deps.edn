@@ -1,21 +1,5 @@
 {:paths ["src" "resources"]
- :deps {poly/accession {:local/root "../../components/accession"}
-        poly/activity {:local/root "../../components/activity"}
-        poly/aws-s3 {:local/root "../../components/aws-s3"}
-        poly/config {:local/root "../../components/config"}
-        poly/database {:local/root "../../components/database"}
-        poly/error {:local/root "../../components/error"}
-        poly/location {:local/root "../../components/location"}
-        poly/material {:local/root "../../components/material"}
-        poly/media {:local/root "../../components/media"}
-        poly/postmark {:local/root "../../components/postmark"}
-        poly/store {:local/root "../../components/store"}
-        poly/taxon {:local/root "../../components/taxon"}
-        poly/test {:local/root "../../components/test"}
-        poly/user {:local/root "../../components/user"}
-        poly/validation {:local/root "../../components/validation"}
-
-        babashka/fs {:mvn/version "0.4.19"}
+ :deps {babashka/fs {:mvn/version "0.4.19"}
         com.github.brettatoms/zodiac {:mvn/version "0.4.48"}
         com.github.brettatoms/zodiac-assets {:mvn/version "0.1.18"}
         com.github.brettatoms/zodiac-sql {:mvn/version "0.1.7"}
