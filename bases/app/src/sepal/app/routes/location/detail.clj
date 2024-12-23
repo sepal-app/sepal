@@ -2,6 +2,7 @@
   (:require [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.location.form :as location.form]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -10,10 +11,9 @@
             [sepal.location.interface.activity :as location.activity]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org location values]}]
-  (location.form/form :action (z/url-for :location/detail {:id (:location/id location)})
+(defn page-content [& {:keys [errors location values]}]
+  (location.form/form :action (z/url-for location.routes/detail {:id (:location/id location)})
                       :errors errors
-                      :org org
                       :values values))
 
 (defn footer-buttons []
@@ -26,10 +26,9 @@
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org location values]}]
+(defn render [& {:keys [errors location values]}]
   (page/page :attrs {:x-data "locationFormData"}
              :content (page-content :errors errors
-                                    :org org
                                     :location location
                                     :values values)
              :footer (ui.form/footer :buttons (footer-buttons))
@@ -51,7 +50,7 @@
    [:description [:maybe :string]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db organization resource]} context
+  (let [{:keys [db resource]} context
         error nil
         values (merge {:id (:location/id resource)
                        :name (:location/name resource)
@@ -64,12 +63,10 @@
       (let [result (update! db (:location/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
-          (http/found :location/detail {:org-id (-> organization :organization/id str)
-                                        :id (:location/id resource)})
-          (-> (http/found :location/detail)
+          (http/found location.routes/detail {:id (:location/id resource)})
+          (-> (http/found location.routes/detail)
               (assoc :flash {:error error
                              :values values}))))
 
-      (render :org organization
-              :location resource
+      (render :location resource
               :values values))))

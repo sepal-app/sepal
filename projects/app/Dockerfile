@@ -23,6 +23,7 @@ COPY db /dist/db
 COPY components /dist/components
 COPY bases /dist/bases
 COPY projects /dist/projects
+COPY bases/vite.config.js /dist
 
 RUN chmod +x /dist/projects/app/run.sh
 

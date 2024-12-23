@@ -12,7 +12,6 @@
                       {:type type
                        :created-at (Instant/now)
                        :created-by created-by
-                       :organization-id (:taxon/organization-id data)
                        ;; TODO: The parent name would be helpful
                        :data {:taxon-id (:taxon/id data)
                               :taxon-name (:taxon/name data)

@@ -1,6 +1,9 @@
 (ns sepal.app.routes.location.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.location.create :as create]
             [sepal.app.routes.location.detail :as detail]
+            [sepal.app.routes.location.index :as index]
+            [sepal.app.routes.location.routes :as routes]
             [sepal.location.interface :as location.i]))
 
 (def location-loader
@@ -10,7 +13,14 @@
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   ["/:id/" {:name :location/detail
-             :handler #'detail/handler
-             :middleware [[middleware/resource-loader location-loader]
-                          [middleware/require-resource-org-membership :location/organization-id]]}]])
+   ["/"
+    {:name routes/index
+     :handler #'index/handler}]
+   ["/new/"
+    {:name routes/new
+     :handler #'create/handler
+     :conflicting true}]
+   ["/:id" {:middleware [[middleware/resource-loader location-loader]]
+            :conflicting true}
+    ["/" {:name routes/detail
+          :handler #'detail/handler}]]])

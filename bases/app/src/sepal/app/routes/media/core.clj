@@ -2,6 +2,7 @@
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.media.detail :as detail]
             [sepal.app.routes.media.detail.link :as link]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.media.s3 :as s3]
             [sepal.app.routes.media.uploaded :as uploaded]
             [sepal.media.interface :as media.i]))
@@ -10,16 +11,16 @@
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
-   ["/s3" {:name :media/s3
+   ["/s3" {:name media.routes/s3
            :handler #'s3/handler}]
-   ["/uploaded" {:name :media/uploaded
+   ["/uploaded" {:name media.routes/uploaded
                  :handler #'uploaded/handler}]
-   ["/:id/" {:name :media/detail
-             :get #'detail/handler
-             :delete #'detail/handler
-             :middleware [[middleware/resource-loader media-loader]
-                          [middleware/require-resource-org-membership :media/organization-id]]}]
-   ["/:id/link/" {:name :media/detail.link
-                  :handler #'link/handler
-                  :middleware [[middleware/resource-loader media-loader]
-                               [middleware/require-resource-org-membership :media/organization-id]]}]])
+   ["/:id" {:middleware [[middleware/resource-loader media-loader]]
+            :parameters {:path {:id nat-int?}}
+            :conflicting true}
+    ["/"
+     {:name media.routes/detail
+      :get #'detail/handler
+      :delete #'detail/handler}]
+    ["/link/" {:name media.routes/detail-link
+               :handler #'link/handler}]]])

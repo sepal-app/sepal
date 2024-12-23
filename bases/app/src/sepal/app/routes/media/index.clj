@@ -4,6 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -24,13 +25,10 @@
                               "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
    "Upload"])
 
-(defn next-page-url [& {:keys [org current-page]}]
-  (z/url-for
-    :org/media
-    {:org-id (:organization/id org)}
-    {:page (+ 1 current-page)}))
+(defn next-page-url [& {:keys [current-page]}]
+  (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
 
-(defn page-content [& {:keys [media org page page-size]}]
+(defn page-content [& {:keys [media page page-size]}]
   [:div {:x-data (json/js {:selected nil})}
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
@@ -39,24 +37,21 @@
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
     [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for :media/s3)
-                                       :organizationId (:organization/id org)
+                                       :signingUrl (z/url-for media.routes/s3)
                                        :trigger "#upload-button"})}]
     (media.ui/media-list :media media
                          :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :org org
-                                                         :current-page page))
+                                          (next-page-url :current-page page))
                          :page page)
     [:div {:id "upload-success-forms"
            :class "hidden"}]]
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [org page page-size media]}]
+(defn render [& {:keys [page page-size media]}]
   (page/page :page-title "Media"
              :page-title-buttons (title-buttons)
-             :content (page-content :org org
-                                    :page page
+             :content (page-content :page page
                                     :page-size page-size
                                     :media media)))
 
@@ -66,12 +61,11 @@
    [:page-size {:default 20} :int]])
 
 (defn handler [& {:keys [::z/context htmx-boosted? htmx-request? query-params] :as _request}]
-  (let [{:keys [db organization imgix-media-domain]} context
+  (let [{:keys [db imgix-media-domain]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         media (->> (db.i/execute! db {:select :*
                                       :from :media
-                                      :where [:= :organization_id (:organization/id organization)]
                                       :limit page-size
                                       :offset offset
                                       :order-by [[:created-at :desc]]})
@@ -81,10 +75,8 @@
     (if (and htmx-request? (not htmx-boosted?))
       (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
-                                                      (next-page-url :org organization
-                                                                     :current-page page)))
+                                                      (next-page-url :current-page page)))
           (html/render-partial))
       (render :media media
               :page page
-              :page-size page-size
-              :org organization))))
+              :page-size page-size))))

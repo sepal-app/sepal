@@ -8,7 +8,6 @@
         poly/location {:local/root "../../components/location"}
         poly/material {:local/root "../../components/material"}
         poly/media {:local/root "../../components/media"}
-        poly/organization {:local/root "../../components/organization"}
         poly/postmark {:local/root "../../components/postmark"}
         poly/store {:local/root "../../components/store"}
         poly/taxon {:local/root "../../components/taxon"}
@@ -17,7 +16,7 @@
         poly/validation {:local/root "../../components/validation"}
 
         babashka/fs {:mvn/version "0.4.19"}
-        com.github.brettatoms/zodiac {:mvn/version "0.4.45"}
+        com.github.brettatoms/zodiac {:mvn/version "0.4.48"}
         com.github.brettatoms/zodiac-assets {:mvn/version "0.1.18"}
         com.github.brettatoms/zodiac-sql {:mvn/version "0.1.7"}
         com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}

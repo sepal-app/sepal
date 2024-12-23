@@ -1,6 +1,7 @@
 (ns sepal.app.ui.media
   (:require [lambdaisland.uri :as uri]
             [sepal.app.html :as html]
+            [sepal.app.routes.media.routes :as media.routes]
             [zodiac.core :as z]))
 
 (defn media-item [& {:keys [item next-page-url]}]
@@ -15,7 +16,7 @@
                             "overflow-hidden" "rounded-lg" "bg-gray-100" "shadow-lg"
                             "focus-within:ring-2" "focus-within:ring-indigo-500"
                             "focus-within:ring-offset-2" "focus-within:ring-offset-gray-100")}
-    [:a {:href (z/url-for :media/detail {:id (:media/id item)})
+    [:a {:href (z/url-for media.routes/detail {:id (:media/id item)})
          :class "inset-0 focus:outline-none"}
      [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
             :src (:thumbnail-url item)}]]]])

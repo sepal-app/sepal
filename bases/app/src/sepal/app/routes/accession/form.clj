@@ -1,11 +1,11 @@
 (ns sepal.app.routes.accession.form
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.routes.org.routes :as org.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as form]
             [zodiac.core :as z]))
 
-(defn form [& {:keys [action errors org values]}]
+(defn form [& {:keys [action errors values]}]
   [:div
    (form/form
      {:action action
@@ -20,7 +20,7 @@
                         :value (:code values)
                         :errors (:code errors))
 
-      (let [url (z/url-for org.routes/taxa {:org-id (:organization/id org)})]
+      (let [url (z/url-for taxon.routes/index)]
         (form/field :label "Taxon"
                     :name "taxon-id"
                     :input [:select {:x-taxon-field (json/js {:url url})

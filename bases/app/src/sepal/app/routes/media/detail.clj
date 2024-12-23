@@ -4,6 +4,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.aws-s3.interface :as s3.i]
@@ -46,7 +47,7 @@
 
     [:div#media-link-container
      {:hx-trigger "load"
-      :hx-get (z/url-for :media/detail.link {:id (:media/id media)})}]
+      :hx-get (z/url-for media.routes/detail-link {:id (:media/id media)})}]
 
     [:img {:srcset (format "%s 1x, %s 2x, %s 3x"
                            (:1x srcset-urls)
@@ -65,9 +66,8 @@
                                     :srcset-urls srcset-urls
                                     :zoom-url zoom-url)
              :page-title (:media/title media)
-             :page-title-buttons (page-title-buttons :delete-url (z/url-for
-                                                                   :media/detail
-                                                                   {:id (:media/id media)})
+             :page-title-buttons (page-title-buttons :delete-url (z/url-for media.routes/detail
+                                                                            {:id (:media/id media)})
                                                      :dl-url dl-url)))
 
 (defn handler [& {:keys [::z/context request-method] :as _request}]
@@ -109,7 +109,7 @@
                   (error.i/ex->error ex)))]
         ;; TODO: handle errors
         (-> {:status 204
-             :headers {"HX-Redirect" (z/url-for :org/media {:org-id (:organization/id organization)})}}
+             :headers {"HX-Redirect" (z/url-for media.routes/index)}}
             (flash/add-message "Deleted media.")))
       (render :dl-url dl-url
               :media resource

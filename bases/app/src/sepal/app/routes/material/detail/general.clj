@@ -2,7 +2,9 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.form :as material.form]
+            [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
@@ -17,16 +19,16 @@
 (defn tab-items [& {:keys [material]}]
   [{:label "General"
     :key :name
-    :href (z/url-for :material/detail-general {:id (:material/id material)})}
+    :href (z/url-for material.routes/detail-general {:id (:material/id material)})}
    {:label "Media"
     :key :media
-    :href (z/url-for :material/detail-media {:id (:material/id material)})}])
+    :href (z/url-for material.routes/detail-media {:id (:material/id material)})}])
 
 (defn page-content [& {:keys [errors org material values]}]
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
               :items (tab-items :material material))
-   (material.form/form :action (z/url-for :material/detail-general {:id (:material/id material)})
+   (material.form/form :action (z/url-for material.routes/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org
                        :values values)])
@@ -93,9 +95,8 @@
       (let [result (save! db (:material/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
-          (http/found :material/detail {:org-id (-> organization :organization/id str)
-                                        :id (:material/id resource)})
-          (-> (http/found :accession/detail)
+          (http/found material.routes/detail {:id (:material/id resource)})
+          (-> (http/found accession.routes/detail)
               ;; TODO: The errors needs to be parsed here and return a message
               (assoc :flash {:error "Error saving material"  ;; TODO: result
                              :values values}))))

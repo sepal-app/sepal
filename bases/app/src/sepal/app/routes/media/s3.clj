@@ -5,6 +5,7 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.form :as form]
             [sepal.aws-s3.interface :as aws-s3.i]
             [zodiac.core :as z])
@@ -18,7 +19,7 @@
 
 (defn success-form [& {:keys [fields]}]
   [:form {:id (s/replace (:id fields) #"\/" "_")
-          :hx-post (z/url-for :media/uploaded)
+          :hx-post (z/url-for media.routes/uploaded)
           :hx-target "#media-list"
           :hx-swap "afterbegin"}
    (form/anti-forgery-field)
@@ -34,20 +35,17 @@
    ;; TODO: Validate that if we have one then we require both if
    ;; linkResourceType/Id
    [:linkResourceType [:maybe :string]]
-   [:linkResourceId [:maybe :string]]
-   [:organizationId :int]])
+   [:linkResourceId [:maybe :string]]])
 
 (defn handler [& {:keys [::z/context form-params] :as _request}]
   (let [{:keys [s3-presigner media-upload-bucket]} context
         {files :files
          link-resource-type :linkResourceType
          link-resource-id :linkResourceId
-         organization-id :organizationId
          :as params} (params/decode FormParams form-params)
         files (if (sequential? files) files [files])
         s3-key-fn (fn [filename]
-                    (format "organization_id=%s/%s.%s"
-                            organization-id
+                    (format "%s.%s"
                             (random-hex 20)
                             (fs/extension filename)))
         presign-fn (fn [file]
@@ -61,8 +59,7 @@
     ;; that form will be inserted into the media by htmx.
     (->> files
          (mapv #(json/parse-str % {:key-fn csk/->kebab-case-keyword}))
-         (mapv #(merge % {:organization-id organization-id
-                          :link-resource-type link-resource-type
+         (mapv #(merge % {:link-resource-type link-resource-type
                           :link-resource-id link-resource-id
                           :s3-bucket media-upload-bucket
                           ;; :s3-url (presign-fn %)

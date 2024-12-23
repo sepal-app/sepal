@@ -2,7 +2,7 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.routes.org.routes :as org.routes]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -33,14 +33,13 @@
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
                          "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
-       :href (z/url-for org.routes/locations-new {:org-id (:organization/id org)})}
+       :href (z/url-for location.routes/new)}
    "Create"])
 
 (defn table-columns []
   [{:name "Name"
-    :cell (fn [l] [:a {:href (z/url-for
-                               :location/detail
-                               {:id (:location/id l)})
+    :cell (fn [l] [:a {:href (z/url-for location.routes/detail
+                                        {:id (:location/id l)})
                        :class "spl-link"}
                    (:location/name l)])}
    {:name "Code"
@@ -78,13 +77,11 @@
         offset (* page-size (- page-num 1))
         stmt {:select [:l.*]
               :from [[:public.location :l]]
-              :where [:and
-                      [:= :organization_id (:organization/id org)]
-                      (if q
-                        [:or
-                         [:ilike :name (format "%%%s%%" q)]
-                         [:ilike :code (format "%%%s%%" q)]]
-                        :true)]}
+              :where (if q
+                       [:or
+                        [:ilike :name (format "%%%s%%" q)]
+                        [:ilike :code (format "%%%s%%" q)]]
+                       :true)}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size

@@ -10,7 +10,6 @@
 (def code [:string {:min 1}])
 (def location-id pos-int?)
 (def memorial :boolean)
-(def organization-id pos-int?)
 (def quantity pos-int?)
 (def status [:enum :alive :dead])
 (def type [:enum :plant :seed :vegetative :tissue :other])
@@ -21,7 +20,6 @@
    [:material/code code]
    [:material/accession-id accession-id]
    [:material/location-id location-id]
-   [:material/organization-id organization-id]
    [:material/type {:decode/store csk/->kebab-case-keyword
                     :encode/store (comp db.i/->pg-enum
                                         csk/->kebab-case-string)}
@@ -41,8 +39,7 @@
     accession-id]
    [:location-id {:decode/store validate.i/coerce-int}
     location-id]
-   [:organization-id {:decode/store validate.i/coerce-int}
-    organization-id]
+
    [:type {:decode/store csk/->kebab-case-keyword
            :encode/store (comp db.i/->pg-enum
                                csk/->kebab-case-string)}

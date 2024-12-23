@@ -3,6 +3,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.form :as taxon.form]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
             [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.ui.form :as ui.form]
@@ -15,33 +16,28 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-title-buttons [& {:keys [org]}]
+(defn page-title-buttons [& {:keys []}]
   (dropdown/dropdown "Actions"
-                     (dropdown/item (z/url-for
-                                      :org/taxa-new
-                                      {:org-id (:organization/id org)})
-                                    "Add a taxon")))
+                     (dropdown/item (z/url-for taxon.routes/new) "Add a taxon")))
 
 (defn tab-items [& {:keys [taxon]}]
   [{:label "Name"
     :key :name
-    :href (z/url-for :taxon/detail-name {:id (:taxon/id taxon)})}
+    :href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
    {:label "Media"
     :key :media
-    :href (z/url-for :taxon/detail-media {:id (:taxon/id taxon)})}])
+    :href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})}])
 
-(defn page-content [& {:keys [errors org taxon values]}]
+(defn page-content [& {:keys [errors taxon values]}]
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
               :items (tab-items :taxon taxon))
-
-   (let [read-only? (nil? (:taxon/organization-id taxon))]
+   (let [read-only? (:taxon/read-only taxon)]
      [:div
       (when read-only?
         (alert/info "Taxa from the WFO Plantlist are not editable."))
-      (taxon.form/form :action (z/url-for :taxon/detail-name {:id (:taxon/id taxon)})
+      (taxon.form/form :action (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
                        :errors errors
-                       :org org
                        :read-only read-only?
                        :values values)])])
 
@@ -55,15 +51,14 @@
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org taxon values]}]
+(defn render [& {:keys [errors taxon values]}]
   (page/page :attrs {:x-data "taxonFormData"}
              :content (page-content :errors errors
-                                    :org org
                                     :taxon taxon
                                     :values values)
              :footer (ui.form/footer :buttons (footer-buttons))
              :page-title (:taxon/name taxon)
-             :page-title-buttons (page-title-buttons :org org)))
+             :page-title-buttons (page-title-buttons)))
 
 (defn save! [db taxon-id updated-by data]
   (try
@@ -83,17 +78,17 @@
    [:parent-id [:maybe :string]]])
 
 (defn handler [{:keys [::z/context _flash form-params request-method viewer]}]
-  (let [{:keys [db organization resource]} context]
+  (let [{:keys [db resource]} context]
     (case request-method
       :post
       (let [data (params/decode FormParams form-params)
             result (save! db (:taxon/id resource) (:user/id viewer) data)]
         (if-not (error.i/error? result)
-          (http/found :taxon/detail {:id (:taxon/id result)})
+          (http/found taxon.routes/detail {:id (:taxon/id result)})
           (do
             ;; TODO: better error handling
             (tap> (str "ERROR: " (validation.i/humanize result)))
-            (-> (http/found :taxon/detail {:id (:taxon/id resource)})
+            (-> (http/found taxon.routes/detail {:id (:taxon/id resource)})
                 (flash/set-field-errors (validation.i/humanize result))))))
 
       :get
@@ -103,11 +98,8 @@
                     :name (:taxon/name resource)
                     :rank (:taxon/rank resource)
                     :author (:taxon/author resource)
-                    :organization-id (or (:taxon/organization-id resource)
-                                         (:organization/id organization))
                     :parent-id (:taxon/id parent)
                     :parent-name (:taxon/name parent)}]
         ;; (tap> (str "FLASH:" flash))
-        (render :org organization
-                :taxon resource
+        (render :taxon resource
                 :values values)))))

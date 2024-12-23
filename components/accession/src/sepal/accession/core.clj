@@ -18,9 +18,8 @@
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)
 
-(defn factory [{:keys [db organization taxon] :as args}]
+(defn factory [{:keys [db taxon] :as args}]
   (let [data (-> (mg/generate spec/CreateAccession)
-                 (assoc :organization-id (:organization/id organization))
                  (assoc :taxon-id (:taxon/id taxon)))
         result (create! db data)]
     (vary-meta result assoc :db db)))

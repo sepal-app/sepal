@@ -10,7 +10,6 @@
   [:map {:closed true}
    [:filename :string]
    [:contentType :string]
-   [:organizationId :int]
    [:linkResourceType [:maybe :string]]
    [:linkResourceId [:maybe :string]]
    [:s3Bucket :string]
@@ -21,7 +20,6 @@
   (let [{:keys [db imgix-media-domain]} context
         {filename :filename
          content-type :contentType
-         organization-id :organizationId
          link-resource-type :linkResourceType
          link-resource-id :linkResourceId
          s3-bucket :s3Bucket
@@ -30,7 +28,6 @@
         result  (-> (media.i/create! db
                                      {:created-by (:user/id viewer)
                                       :media-type content-type
-                                      :organization-id organization-id
                                       :s3-bucket s3-bucket
                                       :s3-key s3-key
                                       :size-in-bytes size

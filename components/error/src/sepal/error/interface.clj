@@ -1,5 +1,6 @@
 (ns sepal.error.interface
-  (:refer-clojure :exclude [type]))
+  (:refer-clojure :exclude [type])
+  (:require [malli.error :as me]))
 
 (defn error
   ([type msg]
@@ -25,7 +26,10 @@
   (::data err))
 
 (defn explain [err]
-  (-> err data :explain :errors))
+  (-> err data :explain))
+
+(defn humanize [err]
+  (-> err explain me/humanize))
 
 (defn error?
   ([err] (true? (-> err meta ::error)))

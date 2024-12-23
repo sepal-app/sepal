@@ -12,7 +12,6 @@
                                poly/location {:local/root "components/location"}
                                poly/material {:local/root "components/material"}
                                poly/media {:local/root "components/media"}
-                               poly/organization {:local/root "components/organization"}
                                poly/postmark {:local/root "components/postmark"}
                                poly/store {:local/root "components/store"}
                                poly/taxon {:local/root "components/taxon"}
@@ -44,7 +43,6 @@
                                  "components/location/test"
                                  "components/material/test"
                                  "components/postmark/test"
-                                 "components/organization/test"
                                  "components/store/test"
                                  "components/taxon/test"
                                  "components/test/test"

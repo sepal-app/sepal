@@ -12,7 +12,6 @@
                       {:type type
                        :created-at (Instant/now)
                        :created-by created-by
-                       :organization-id (:material/organization-id material)
                        :data {:material-id (:material/id material)
                               :material-code (:material/code material)
                               :accession-id (:material/accession-id material)

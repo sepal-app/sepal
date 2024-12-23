@@ -21,11 +21,14 @@
            :value (force *anti-forgery-token*)}])
 
 (defn field-errors [& {:keys [errors]}]
-  (when errors
-    [:ul {:class "errors"}
-     (for [error errors]
-       [:div {:class "label"}
-        [:span {:class "label-text-alt"} error]])]))
+  (let [errors (if (string? errors)
+                 [errors]
+                 errors)]
+    (when errors
+      [:ul {:class "errors"}
+       (for [error errors]
+         [:div {:class "label"}
+          [:span {:class "label-text-alt input-error text-red-500"} error]])])))
 
 (defn field [& {:keys [errors label input name]}]
   [:label {:for name
@@ -34,11 +37,7 @@
     [:span {:class "label-text"} label]]
    input
 
-   [:div {:class "label"}
-    [:span {:class "label-text-alt"
-            :id (str "error-msg-" name)}]]
-
-   (field-errors errors)])
+   (field-errors :errors errors)])
 
 (defn input-field [& {:keys [id label name read-only required type value errors
                              minlength maxlength data-error-msg input-attrs]}]
@@ -56,6 +55,7 @@
                                 :x-validate true
                                 :data-error-msg data-error-msg
                                 :required (or required false)
+                                :aria-invalid (str (boolean (not-empty errors)))
                                 :type (or type "text")
                                 :value value}
                                input-attrs)]))

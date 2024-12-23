@@ -3,7 +3,11 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.routes.org.routes :as org.routes]
+            [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.database.interface :as db.i]
@@ -21,8 +25,8 @@
    {:label "Location"
     :value "location"}])
 
-(defn taxon-field [& {:keys [org taxon-name name id taxon-id]}]
-  (let [url (z/url-for org.routes/taxa {:org-id (:organization/id org)})]
+(defn taxon-field [& {:keys [taxon-name name id taxon-id]}]
+  (let [url (z/url-for taxon.routes/index)]
     [:select {:x-taxon-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -33,8 +37,8 @@
        [:option {:value taxon-id}
         taxon-name])]))
 
-(defn accession-field [& {:keys [org accession-name name id accession-id]}]
-  (let [url (z/url-for org.routes/taxa {:org-id (:organization/id org)})]
+(defn accession-field [& {:keys [accession-name name id accession-id]}]
+  (let [url (z/url-for taxon.routes/index)]
     [:select {:x-accession-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -45,9 +49,9 @@
        [:option {:value accession-id}
         accession-name])]))
 
-(defn location-field [& {:keys [org location-name name id location-id]}]
+(defn location-field [& {:keys [location-name name id location-id]}]
   ;; TODO: Are these routes correct?
-  (let [url (z/url-for org.routes/taxa {:org-id (:organization/id org)})]
+  (let [url (z/url-for taxon.routes/index)]
     [:select {:x-location-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -58,8 +62,8 @@
        [:option {:value location-id}
         location-name])]))
 
-(defn material-field [& {:keys [org material-name name id material-id]}]
-  (let [url (z/url-for org.routes/materials {:org-id (:organization/id org)})]
+(defn material-field [& {:keys [material-name name id material-id]}]
+  (let [url (z/url-for material.routes/index)]
     [:select {:x-material-field (json/js {:url url})
               :x-validate.required true
               :id (or id name)
@@ -70,10 +74,10 @@
        [:option {:value material-id}
         material-name])]))
 
-(defn media-link-form [& {:keys [media org]}]
+(defn media-link-form [& {:keys [media]}]
   (form/form
     {:class "flex flex-row gap-2 items-center"
-     :hx-post (z/url-for :media/detail.link {:id (:media/id media)})
+     :hx-post (z/url-for media.routes/detail-link {:id (:media/id media)})
      :hx-target "#media-link-root"}
     [(form/anti-forgery-field)
      (form/field :label "Resource type"
@@ -96,17 +100,13 @@
                   :name "resource-id"
                   :input [:<>
                           [:template {:x-if "resourceType === 'accession'"}
-                           (accession-field :org org
-                                            :name "resource-id")]
+                           (accession-field :name "resource-id")]
                           [:template {:x-if "resourceType === 'location'"}
-                           (location-field :org org
-                                           :name "resource-id")]
+                           (location-field :name "resource-id")]
                           [:template {:x-if "resourceType === 'material'"}
-                           (material-field :org org
-                                           :name "resource-id")]
+                           (material-field :name "resource-id")]
                           [:template {:x-if "resourceType === 'taxon'"}
-                           (taxon-field :org org
-                                        :name "resource-id")]])
+                           (taxon-field :name "resource-id")]])
 
       [:button {:type "button"
                 :class "btn btn-sm btn-secondary mb-4"
@@ -169,10 +169,10 @@
 (defn link-anchor [& {:keys [db link]}]
   (let [text (link-text db link)
         url (case (:media-link/resource-type link)
-              "accession" (z/url-for :accession/detail {:id (:media-link/resource-id link)})
-              "location" (z/url-for :location/detail {:id (:media-link/resource-id link)})
-              "material" (z/url-for :material/detail {:id (:media-link/resource-id link)})
-              "taxon" (z/url-for :taxon/detail {:id (:media-link/resource-id link)}))]
+              "accession" (z/url-for accession.routes/detail {:id (:media-link/resource-id link)})
+              "location" (z/url-for location.routes/detail {:id (:media-link/resource-id link)})
+              "material" (z/url-for material.routes/detail {:id (:media-link/resource-id link)})
+              "taxon" (z/url-for taxon.routes/detail {:id (:media-link/resource-id link)}))]
     [:a {:href url} text]))
 
 (defn delete-button [& {:keys [media]}]
@@ -180,12 +180,12 @@
          :class "btn btn-sm btn-square btn-outline btn-error *:hover:text-white"
          :hx-confirm "Are you sure you want to remove this link?"
          :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-         :hx-delete (z/url-for :media/detail.link {:id (:media/id media)})
+         :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})
          :hx-target "#media-link-root"
          :alt "Delete"}
    (heroicons/outline-trash :class "size-4")])
 
-(defn render [& {:keys [anchor link media org]}]
+(defn render [& {:keys [anchor link media]}]
   (-> [:div#media-link-root {:x-data (json/js {:editLink false
                                                :resourceType (:media-link/resource-type link)})}
        [:template {:x-if "!editLink"}
@@ -200,29 +200,26 @@
            (heroicons/outline-link)])]
        [:div {:x-show "editLink"} ;;:template {:x-if "editLink"}
         (media-link-form :link link
-                         :media media
-                         :org org)]]
+                         :media media)]]
       (html/render-partial)))
 
 (defn handler [& {:keys [::z/context params request-method] :as _request}]
   ;; TODO: create an activity
-  (let [{:keys [organization db resource]} context]
+  (let [{:keys [db resource]} context]
     (case request-method
       :post
       (let [{:keys [resource-id resource-type]} params
             result (media.i/link! db (:media/id resource) resource-id resource-type)]
         (if-not (error.i/error? result)
           (render :link result
-                  :media resource
-                  :org organization)
+                  :media resource)
           ;; TODO: render an error
           (flash/error {} "Error: Could not link resource")))
       :delete
       (let [result (media.i/unlink! db (:media/id resource))]
         (tap> (str "result: " result))
         (if-not (error.i/error? result)
-          (render :media resource
-                  :org organization)
+          (render :media resource)
           ;; TODO: render an error
           (flash/error {} "Error: Could not unlink resource")))
 
@@ -231,5 +228,4 @@
             anchor (link-anchor :db db :link link)]
         (render :anchor anchor
                 :link link
-                :media resource
-                :org organization)))))
+                :media resource)))))

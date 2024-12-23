@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.form :as accession.form]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
@@ -15,16 +16,16 @@
 (defn tab-items [& {:keys [accession]}]
   [{:label "General"
     :key :name
-    :href (z/url-for :accession/detail-general {:id (:accession/id accession)})}
+    :href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})}
    {:label "Media"
     :key :media
-    :href (z/url-for :accession/detail-media {:id (:accession/id accession)})}])
+    :href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})}])
 
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
    (tabs/tabs :active :name
               :items (tab-items :accession accession))
-   (accession.form/form :action (z/url-for :accession/detail-general {:id (:accession/id accession)})
+   (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org
                         :values values)])
@@ -77,9 +78,8 @@
       (let [result (save! db (:accession/id resource) (:user/id viewer) values)]
         ;; TODO: handle errors
         (if-not (error.i/error? result)
-          (http/found :accession/detail {:org-id (-> organization :organization/id str)
-                                         :id (:accession/id resource)})
-          (-> (http/found :accession/detail)
+          (http/found accession.routes/detail {:id (:accession/id resource)})
+          (-> (http/found accession.routes/detail {:id (:accession/id resource)})
               ;; TODO: The errors needs to be parsed here and return a message
               (assoc :flash {:error result
                              :values form-params}))))

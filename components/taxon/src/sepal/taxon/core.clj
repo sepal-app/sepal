@@ -37,12 +37,10 @@
 (create-ns 'sepal.taxon.interface)
 (alias 'taxon.i 'sepal.taxon.interface)
 
-(defn factory [{:keys [db organization] :as args}]
-  ;; TODO: validate the args for required args like organization
+(defn factory [{:keys [db] :as args}]
   (let [data (-> (mg/generate spec/CreateTaxon)
                  (dissoc :parent-id)
-                 (merge (m/decode spec/CreateTaxon args (mt/strip-extra-keys-transformer)))
-                 (assoc :organization-id (:organization/id organization)))
+                 (merge (m/decode spec/CreateTaxon args (mt/strip-extra-keys-transformer))))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

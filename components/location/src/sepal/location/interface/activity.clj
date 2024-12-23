@@ -12,7 +12,6 @@
                       {:type type
                        :created-at (Instant/now)
                        :created-by created-by
-                       :organization-id (:location/organization-id data)
                        :data {:location-id (:location/id data)
                               :location-name (:location/name data)
                               :location-code (:location/code data)}}))

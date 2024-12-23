@@ -17,9 +17,8 @@
 (create-ns 'sepal.material.interface)
 (alias 'mat.i 'sepal.material.interface)
 
-(defn factory [{:keys [db organization accession location] :as args}]
+(defn factory [{:keys [db accession location] :as args}]
   (let [data (-> (mg/generate spec/CreateMaterial)
-                 (assoc :organization-id (:organization/id organization))
                  (assoc :accession-id (:accession/id accession))
                  (assoc :location-id (:location/id location)))
         result (create! db data)]

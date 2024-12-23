@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.dashboard.routes :as dashboard.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.form :as form]
             [sepal.user.interface :as user.i]
@@ -62,7 +63,7 @@
             error (when-not user "Invalid password")
             session (when-not error (session/user->session user))]
         (if-not error
-          (-> (http/see-other :root)
+          (-> (http/see-other dashboard.routes/index)
               (assoc :session session))
           ;; TODO: pass params on redirect
           (-> (http/see-other auth.routes/login)

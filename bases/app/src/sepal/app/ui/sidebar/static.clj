@@ -2,7 +2,13 @@
   (:require [clojure.string :as s]
             [sepal.app.globals :as g]
             [sepal.app.html :as html]
-            [sepal.app.routes.org.routes :as org.routes]
+            [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.activity.routes :as activity.routes]
+            [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [zodiac.core :as z]))
@@ -37,33 +43,33 @@
         "Sepal"]
        [:span {:class "ml-2"}
         "[beta]"]]
-      [:div {:class "px-4 pt-2"}
-       (when g/*organization*
-         [:a {:href (z/url-for org.routes/detail {:id (:id g/*organization*)})}
-          (:organization/name g/*organization*)])]
+      #_[:div {:class "px-4 pt-2"}
+         (when g/*organization*
+           [:a {:href (z/url-for org.routes/detail {:id (:id g/*organization*)})}
+            (:organization/name g/*organization*)])]
       [:nav {:class "mt-5 flex-1 px-2 bg-white space-y-1"}
        (sidebar-item "Activity"
-                     :href (z/url-for org.routes/activity {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for activity.routes/index)
                      :icon (heroicons/outline-clock)
                      :current? false)
        (sidebar-item "Accessions"
-                     :href (z/url-for org.routes/accessions {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for accession.routes/index)
                      :icon (heroicons/outline-rectangle-group)
                      :current? false)
        (sidebar-item "Material"
-                     :href (z/url-for org.routes/materials {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for material.routes/index)
                      :icon (heroicons/outline-tag)
                      :current? false)
        (sidebar-item "Taxa"
-                     :href (z/url-for org.routes/taxa {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for taxon.routes/index)
                      :icon (bootstrap/flower1)
                      :current? false)
        (sidebar-item "Locations"
-                     :href (z/url-for org.routes/locations {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for location.routes/index)
                      :icon (heroicons/outline-map-pin)
                      :current? false)
        (sidebar-item "Media"
-                     :href (z/url-for org.routes/media {:org-id (:organization/id g/*organization*)})
+                     :href (z/url-for media.routes/index)
                      :icon (heroicons/outline-photo)
                      :current? false)]]
      [:div {:x-data "{expanded: false}"
@@ -103,7 +109,7 @@
         ;;                          "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
         ;;                          "font-medium" "rounded-md")}
         ;;    "Switch organizations"])
-        [:a {:href (z/url-for :auth/logout)
+        [:a {:href (z/url-for auth.routes/logout)
              :class (html/attr "text-gray-600" "hover:bg-gray-50" "hover:text-gray-900" "hover:bg-gray-50"
                                "hover:text-gray-900" "group" "flex" "items-center" "px-2" "py-2" "text-sm"
                                "font-medium" "rounded-md")}

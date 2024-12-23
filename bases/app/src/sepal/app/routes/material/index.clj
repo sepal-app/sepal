@@ -2,7 +2,10 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.routes.org.routes :as org.routes]
+            [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -33,34 +36,30 @@
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
                          "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
                          "focus:ring-offset-2" "sm:w-auto")
-       :href (z/url-for org.routes/materials-new {:org-id (:organization/id org)})}
+       :href (z/url-for material.routes/new)}
    "Create"])
 
 (defn table-columns []
   [{:name "Code"
-    :cell (fn [row] [:a {:href (z/url-for
-                                 :material/detail
-                                 {:id (:material/id row)})
+    :cell (fn [row] [:a {:href (z/url-for material.routes/detail
+                                          {:id (:material/id row)})
                          :class "spl-link"}
                      (:material/code row)])}
    {:name "Accession"
-    :cell (fn [row] [:a {:href (z/url-for
-                                 :accession/detail
-                                 {:id (:accession/id row)})
+    :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
+                                          {:id (:accession/id row)})
                          :class "spl-link"}
                      (:accession/code row)])}
    {:name "Taxon"
     ;; TODO: Show the taxon parent on hover
-    :cell (fn [row] [:a {:href (z/url-for
-                                 :taxon/detail
-                                 {:id (:taxon/id row)})
+    :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
+                                          {:id (:taxon/id row)})
                          :class "spl-link"}
                      (:taxon/name row)])}
    {:name "Location"
     ;; TODO: Show the full location name on hover
-    :cell (fn [row] [:a {:href (z/url-for
-                                 :location/detail
-                                 {:id (:location/id row)})
+    :cell (fn [row] [:a {:href (z/url-for location.routes/detail
+                                          {:id (:location/id row)})
                          :class "spl-link"}
                      (:location/code row)])}])
 
@@ -100,13 +99,11 @@
                      [:= :t.id :a.taxon_id]
                      [:location :l]
                      [:= :l.id :m.location_id]]
-              :where [:and
-                      [:= :m.organization_id (:organization/id org)]
-                      (if q
-                        [:or
-                         [:ilike :m.code (format "%%%s%%" q)]
-                         [:ilike :a.code (format "%%%s%%" q)]]
-                        :true)]}
+              :where (if q
+                       [:or
+                        [:ilike :m.code (format "%%%s%%" q)]
+                        [:ilike :a.code (format "%%%s%%" q)]]
+                       :true)}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size

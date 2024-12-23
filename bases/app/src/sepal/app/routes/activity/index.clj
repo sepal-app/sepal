@@ -6,6 +6,11 @@
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
@@ -13,8 +18,6 @@
             [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
-            [sepal.organization.interface.activity :as org.activity]
-            [sepal.organization.interface.spec :as org.spec]
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
@@ -38,31 +41,19 @@
 (defmethod activity-description :default [& {:keys []}]
   nil)
 
-(defmethod activity-description org.activity/created
-  [& {:keys [activity]}]
-  (let [{:keys [organization user]} activity]
-    (timeline-activity :title [:span (str (:user/email user) " created organization ")
-                               [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :org/detail
-                                            {:org-id (:organization/id organization)})}
-                                (:organization/name organization)]])))
-
 (defmethod activity-description accession.activity/created
   [& {:keys [activity]}]
   (let [{:keys [accession taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created accession ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :accession/detail
-                                            {:id (:accession/id accession)})}
+                                    :href (z/url-for accession.routes/detail
+                                                     {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (z/url-for
-                                               :taxon/detail
-                                               {:id (:taxon/id taxon)})}
+                                       :href (z/url-for taxon.routes/detail
+                                                        {:id (:taxon/id taxon)})}
 
                                    (:taxon/name taxon)]
                                   ")"])])))
@@ -72,16 +63,14 @@
   (let [{:keys [accession taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated accession ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :accession/detail
-                                            {:id (:accession/id accession)})}
+                                    :href (z/url-for accession.routes/detail
+                                                     {:id (:accession/id accession)})}
                                 (:accession/code accession)]
                                (when (some? taxon)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (z/url-for
-                                               :taxon/detail
-                                               {:id (:taxon/id taxon)})}
+                                       :href (z/url-for taxon.routes/detail
+                                                        {:id (:taxon/id taxon)})}
 
                                    (:taxon/name taxon)]
                                   ")"])])))
@@ -91,16 +80,14 @@
   (let [{:keys [parent taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created taxon ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :taxon/detail
-                                            {:id (:taxon/id taxon)})}
+                                    :href (z/url-for taxon.routes/detail
+                                                     {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (z/url-for
-                                               :taxon/detail
-                                               {:id (:taxon/id parent)})}
+                                       :href (z/url-for taxon.routes/detail
+                                                        {:id (:taxon/id parent)})}
 
                                    (:taxon/name parent)]
                                   ")"])])))
@@ -110,16 +97,14 @@
   (let [{:keys [parent taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated taxon ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :taxon/detail
-                                            {:id (:taxon/id taxon)})}
+                                    :href (z/url-for taxon.routes/detail
+                                                     {:id (:taxon/id taxon)})}
                                 (:taxon/name taxon)]
                                (when (some? parent)
                                  [" ("
                                   [:a {:class "spl-link"
-                                       :href (z/url-for
-                                               :taxon/detail
-                                               {:id (:taxon/id parent)})}
+                                       :href (z/url-for taxon.routes/detail
+                                                        {:id (:taxon/id parent)})}
 
                                    (:taxon/name parent)]
                                   ")"])])))
@@ -129,9 +114,8 @@
   (let [{:keys [location user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created location ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :location/detail
-                                            {:id (:location/id location)})}
+                                    :href (z/url-for location.routes/detail
+                                                     {:id (:location/id location)})}
                                 (cond-> (:location/name location)
                                   (:location/code location)
                                   (str (format " (%s)" (:location/code location))))]])))
@@ -141,9 +125,8 @@
   (let [{:keys [location user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated location ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :location/detail
-                                            {:id (:location/id location)})}
+                                    :href (z/url-for location.routes/detail
+                                                     {:id (:location/id location)})}
                                 (cond-> (:location/name location)
                                   (:location/code location)
                                   (str (format " (%s)" (:location/code location))))]])))
@@ -153,9 +136,8 @@
   (let [{:keys [accession material taxon user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " created material ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :material/detail
-                                            {:id (:material/id material)})}
+                                    :href (z/url-for material.routes/detail
+                                                     {:id (:material/id material)})}
 
                                 (format "%s.%s (%s)"
                                         (:accession/code accession)
@@ -170,9 +152,8 @@
   (let [{:keys [accession material user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated material ")
                                [:a {:class "spl-link"
-                                    :href (z/url-for
-                                            :material/detail
-                                            {:id (:material/id material)})}
+                                    :href (z/url-for material.routes/detail
+                                                     {:id (:material/id material)})}
                                 (cond-> (:material/name material)
                                   (:material/code material)
                                   (str (format " (%s)" (:material/code material))))]])))
@@ -186,7 +167,6 @@
     (for [item activity]
       [:li item])]])
 
-;; TODO: We need to store the default timezone of the organization
 (def default-timezone
   (java.time.ZoneId/of "UTC"))
 
@@ -229,10 +209,9 @@
       (mu/assoc :accession [:maybe accession.spec/Accession])
       (mu/assoc :location [:maybe location.spec/Location])
       (mu/assoc :material [:maybe material.spec/Material])
-      (mu/assoc :user [:maybe user.spec/User])
-      (mu/assoc :organization [:maybe org.spec/Organization])))
+      (mu/assoc :user [:maybe user.spec/User])))
 
-(defn get-activity [db org page page-size]
+(defn get-activity [db page page-size]
   (let [offset (* page-size (- page 1))]
     (->> (db.i/execute! db {:select [:a.*
                                      :tax.*
@@ -241,7 +220,6 @@
                                      :mat.*
                                      :u.id
                                      :u.email
-                                     :org.*
                                      [:parent.id :parent__id]
                                      [:parent.name :parent__name]]
                             :from [[:activity :a]]
@@ -266,13 +244,8 @@
                                                [[:cast :tax.id :text]]]
                                               [:= :acc.taxon_id :tax.id]]]
                                       :left [[:taxon :parent]
-                                             [:= :parent.id :tax.parent_id]]
-                                      :left [[:organization :org]
-                                             [:=
-                                              [:->> :a.data "organization-id"]
-                                              [[:cast :org.id :text]]]]]
+                                             [:= :parent.id :tax.parent_id]]]
                             :order-by [[:a.created_at :desc]]
-                            :where [:= :a.organization_id (:organization/id org)]
                             :offset offset
                             :limit page-size})
          (mapv #(reduce-kv (fn [acc k v]
@@ -301,8 +274,8 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context _headers query-params]}]
-  (let [{:keys [db organization]} context
+  (let [{:keys [db]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
-        activity (get-activity db organization page page-size)]
+        activity (get-activity db page page-size)]
     ;; TODO: Add an infinite scroll
     (render :activity activity)))

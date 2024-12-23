@@ -3,15 +3,14 @@
             [next.jdbc.connection :as jdbc.connection]
             [reitit.ring]
             [ring.middleware.stacktrace :as stacktrace]
-            [sepal.app.http-response :as http-response]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
+            [sepal.app.routes.activity.core :as activity]
             [sepal.app.routes.auth.core :as auth]
+            [sepal.app.routes.dashboard.core :as dashboard]
             [sepal.app.routes.location.core :as location]
             [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
-            [sepal.app.routes.org.core :as org]
-            [sepal.app.routes.org.routes :as org.routes]
             [sepal.app.routes.taxon.core :as taxon]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]
@@ -23,15 +22,13 @@
     (auth/routes)
     ["" {:middleware [stacktrace/wrap-stacktrace-web
                       middleware/htmx-request]}
-     ["/" {:name :root
-           :handler (fn [_] (http-response/found org.routes/index))
-           :middleware [[middleware/require-viewer]]}]
+     ["/" (dashboard/routes)]
      ["/ok" {:name :ok
              :handler (constantly {:status 204})}]
      ["/accession" (accession/routes)]
+     ["/activity" (activity/routes)]
      ["/location" (location/routes)]
      ["/material" (material/routes)]
-     ["/org" (org/routes)]
      ["/taxon" (taxon/routes)]
      ["/media" (media/routes)]]))
 

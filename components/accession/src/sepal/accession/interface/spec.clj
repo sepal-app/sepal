@@ -4,24 +4,20 @@
 
 (def id pos-int?)
 (def taxon-id pos-int?)
-(def organization-id pos-int?)
 (def code [:string {:min 1}])
 
 (def Accession
   [:map #_{:closed true}
    [:accession/id id]
    [:accession/code code]
-   [:accession/taxon-id taxon-id]
-   [:accession/organization-id organization-id]])
+   [:accession/taxon-id taxon-id]])
 
 (def CreateAccession
   [:map {:closed true
          :store/result Accession}
    [:code code]
    [:taxon-id {:decode/store validate.i/coerce-int}
-    taxon-id]
-   [:organization-id {:decode/store validate.i/coerce-int}
-    organization-id]])
+    taxon-id]])
 
 (def UpdateAccession
   (mu/optional-keys

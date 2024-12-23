@@ -6,7 +6,6 @@
             [sepal.app.test.system :refer [*db*
                                            default-system-fixture]]
             [sepal.media.interface :as media.i]
-            [sepal.organization.interface :as org.i]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
@@ -14,15 +13,11 @@
 (deftest media-link
   (let [db *db*]
     (tf/testing "link!"
-      {[::org.i/factory :key/org]
-       {:db db}
-
-       [::user.i/factory :key/user]
+      {[::user.i/factory :key/user]
        {:db db}
 
        [::media.i/factory :key/media]
        {:db db
-        :organization (ig/ref :key/org)
         :created-by (ig/ref :key/user)}}
 
       (fn [{:keys [media]}]

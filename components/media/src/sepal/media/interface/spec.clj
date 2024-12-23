@@ -8,7 +8,6 @@
 (def description :string)
 (def size-in-bytes pos-int?)
 (def media-type :string)
-(def organization-id pos-int?)
 (def created-at :time/instant)
 (def created-by pos-int?)
 
@@ -21,7 +20,6 @@
    [:media/description [:maybe  description]]
    [:media/size-in-bytes size-in-bytes]
    [:media/media-type media-type]
-   [:media/organization-id organization-id]
    [:media/created-at created-at]
    [:media/created-by created-by]])
 
@@ -34,7 +32,6 @@
    [:description {:optional true} [:maybe description]]
    [:size-in-bytes size-in-bytes]
    [:media-type media-type]
-   [:organization-id organization-id]
    [:created-at {:optional true} created-at]
    [:created-by created-by]])
 

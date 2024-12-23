@@ -12,7 +12,6 @@
                       {:type type
                        :created-at (Instant/now)
                        :created-by created-by
-                       :organization-id (:accession/organization-id accession)
                        :data {:accession-id (:accession/id accession)
                               :accession-code (:accession/code accession)
                               :taxon-id (:accession/taxon-id accession)}}))

@@ -24,7 +24,7 @@
            (db.i/execute-one! db)
            (store.i/coerce spec/MediaLink)))
 
-(defn get-linked [db resource-type resource-id organization-id opts]
+(defn get-linked [db resource-type resource-id opts]
   (let [opts-map (apply hash-map opts)]
     (some->> {:select :m.*
               :from [[:public.media :m]]
@@ -32,8 +32,7 @@
                      [:= :ml.media_id :m.id]]
               :where [:and
                       [:= :ml.resource_type resource-type]
-                      [:= :ml.resource_id resource-id]
-                      [:= :m.organization_id organization-id]]}
+                      [:= :ml.resource_id resource-id]]}
              (merge opts-map)
              (db.i/execute! db)
              (mapv #(store.i/coerce spec/Media %)))))
@@ -72,12 +71,10 @@
 (create-ns 'sepal.media.interface)
 (alias 'media.i 'sepal.media.interface)
 
-(defn factory [{:keys [db created-by organization] :as args}]
-  ;; TODO: validate the e for required args like organization
+(defn factory [{:keys [db created-by] :as args}]
   (let [data (-> (mg/generate spec/CreateMedia)
                  (merge (m/decode spec/CreateMedia args (mt/strip-extra-keys-transformer)))
-                 (assoc :organization-id (:organization/id organization)
-                        :created-by (:user/id created-by)))
+                 (assoc :created-by (:user/id created-by)))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

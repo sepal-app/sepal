@@ -11,7 +11,6 @@
 (defmulti data-schema (fn [type] type))
 
 (def id pos-int?)
-(def organization-id pos-int?)
 (def created-at :time/instant)
 (def created-by pos-int?)
 (def type :keyword)
@@ -27,8 +26,7 @@
     ;; multimethod?
     [:map-of :keyword :any]]
    [:activity/created-at created-at]
-   [:activity/created-by created-by]
-   [:activity/organization-id organization-id]])
+   [:activity/created-by created-by]])
 
 (defn build-create-activity-schema [type data-schema registry]
   (mu/closed-schema
@@ -39,8 +37,7 @@
      [:data {:encode/store db.i/->jsonb}
       data-schema]
      [:created-at created-at]
-     [:created-by created-by]
-     [:organization-id organization-id]]
+     [:created-by created-by]]
     {:registry registry}))
 
 (def registry

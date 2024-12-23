@@ -21,8 +21,8 @@ psql -v ON_ERROR_STOP=1 -h localhost -U "$USER" postgres <<-EOSQL
 EOSQL
 
 dbmate -e DATABASE_URL load
-# dbmate -e DATABASE_URL migrate
+
 if [[ $SKIP_WFO_PLANTLIST != true ]]; then
-    PGDATABASE=$DB_NAME bin/wfo_plantlist_insert.sh
-    PGDATABASE=$DB_NAME bin/wfo_plantlist_to_taxa.sh
+    PGHOST=localhost PGDATABASE=$DB_NAME bin/wfo_plantlist_insert.sh
+    PGHOST=localhost PGDATABASE=$DB_NAME bin/wfo_plantlist_to_taxa.sh
 fi

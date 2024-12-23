@@ -3,6 +3,8 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
@@ -19,20 +21,19 @@
    "Upload"])
 
 (defn next-page-url [& {:keys [material current-page]}]
-  (z/url-for
-    :material/detail-media
-    {:id (:material/id material)}
-    {:page (+ 1 current-page)}))
+  (z/url-for material.routes/detail-media
+             {:id (:material/id material)}
+             {:page (+ 1 current-page)}))
 
 (defn tab-items [& {:keys [material]}]
   [{:label "General"
     :key :name
-    :href (z/url-for :material/detail-general {:id (:material/id material)})}
+    :href (z/url-for material.routes/detail-general {:id (:material/id material)})}
    {:label "Media"
     :key :media
-    :href (z/url-for :material/detail-media {:id (:material/id material)})}])
+    :href (z/url-for material.routes/detail-media {:id (:material/id material)})}])
 
-(defn page-content [& {:keys [media org page page-size material]}]
+(defn page-content [& {:keys [media page page-size material]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
@@ -46,8 +47,7 @@
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
     [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for :media/s3)
-                                       :organizationId (:organization/id org)
+                                       :signingUrl (z/url-for media.routes/s3)
                                        :linkResourceType "material"
                                        :linkResourceId (:material/id material)
                                        :trigger "#upload-button"})}]
@@ -60,11 +60,10 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [org page page-size media material]}]
+(defn render [& {:keys [page page-size media material]}]
   (page/page :page-title "Media"
              :page-title-buttons (title-buttons)
-             :content (page-content :org org
-                                    :page page
+             :content (page-content :page page
                                     :page-size page-size
                                     :media media
                                     :material material)))
@@ -75,14 +74,13 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db imgix-media-domain organization resource]} context
+  (let [{:keys [db imgix-media-domain resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
         media (->> (media.i/get-linked db
                                        "material"
                                        (:material/id resource)
-                                       (:organization/id organization)
                                        :offset offset
                                        :limit limit)
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url imgix-media-domain
@@ -91,7 +89,6 @@
     ;; TODO: if a media instance is unlinked then we need to remove it from the
     ;; resource media list page
 
-    ;; TODO: Need to make sure the media are owned by the organization
     (if (and htmx-request? (not htmx-boosted?))
       (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
@@ -99,8 +96,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :org organization
-              :media media
+      (render :media media
               :page 1
               :page-size page-size
               :material resource))))

@@ -5,8 +5,10 @@
             [sepal.app.params :as params]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.dashboard.routes :as dashboard.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.form :as form]
+            [sepal.error.interface :as error.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z]))
@@ -84,18 +86,15 @@
 
 (defn handler [{:keys [::z/context form-params request-method] :as request}]
   (let [{:keys [db]} context
-        {:keys [email password]} (params/decode RegisterForm form-params)]
-
+        {:keys [email password] :as data} (params/decode RegisterForm form-params)]
     (case request-method
       :post
       (cond
-        ;; (validation.i/invalid? RegisterForm params)
-        ;; (do
-        ;;   ;; (tap> (validation.i/validate RegisterForm params))
-        ;;   (-> (http/see-other auth.routes/register)
-        ;;       (flash/set-field-errors (validation.i/validate RegisterForm params))))
+        (error.i/error? data)
+        (-> (http/found auth.routes/register)
+            (flash/error "Could not register user")
+            (assoc-in [:flash :values] data))
 
-        ;; TODO: This doesn't seem to be showing the error
         (user.i/exists? db email)
         (-> (http/see-other auth.routes/register)
             (flash/error "User already exists"))
@@ -103,7 +102,7 @@
         :else
         (let [user (user.i/create! db {:email email :password password})
               session (session/user->session user)]
-          (-> (http/see-other :root)
+          (-> (http/see-other dashboard.routes/index)
               (assoc :session session))))
 
       ;; else

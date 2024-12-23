@@ -18,8 +18,7 @@
 (alias 'loc.i 'sepal.location.interface)
 
 (defn factory [{:keys [db organization] :as args}]
-  (let [data (-> (mg/generate spec/CreateLocation)
-                 (assoc :organization-id (:organization/id organization)))
+  (let [data (mg/generate spec/CreateLocation)
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

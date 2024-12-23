@@ -3,6 +3,8 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tabs :as tabs]
@@ -19,18 +21,17 @@
    "Upload"])
 
 (defn next-page-url [& {:keys [accession current-page]}]
-  (z/url-for
-    :accession/detail-media
-    {:id (:accession/id accession)}
-    {:page (+ 1 current-page)}))
+  (z/url-for accession.routes/detail-media
+             {:id (:accession/id accession)}
+             {:page (+ 1 current-page)}))
 
 (defn tab-items [& {:keys [accession]}]
   [{:label "General"
     :key :name
-    :href (z/url-for :accession/detail-general {:id (:accession/id accession)})}
+    :href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})}
    {:label "Media"
     :key :media
-    :href (z/url-for :accession/detail-media {:id (:accession/id accession)})}])
+    :href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})}])
 
 (defn page-content [& {:keys [media org page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
@@ -46,8 +47,7 @@
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
     [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for :media/s3)
-                                       :organizationId (:organization/id org)
+                                       :signingUrl (z/url-for media.routes/s3)
                                        :linkResourceType "accession"
                                        :linkResourceId (:accession/id accession)
                                        :trigger "#upload-button"})}]
@@ -82,7 +82,6 @@
         media (->> (media.i/get-linked db
                                        "accession"
                                        (:accession/id resource)
-                                       (:organization/id organization)
                                        :offset offset
                                        :limit limit)
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url imgix-media-domain

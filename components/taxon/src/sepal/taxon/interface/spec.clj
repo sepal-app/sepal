@@ -8,7 +8,6 @@
 ;; (def wfo-plantlist-name-id [:re #"^wfo-\d{10}"])
 (def wfo-plantlist-taxon-id [:re #"^wfo-\d{10}-\d{4}-\d{2}"])
 (def id pos-int?)
-(def organization-id pos-int?)
 (def name [:string {:min 1}])
 (def author :string)
 (def rank [:enum
@@ -36,6 +35,7 @@
            :superorder
            :tribe
            :variety])
+(def read-only [:boolean])
 
 (def Taxon
   [:map {:closed true}
@@ -44,12 +44,12 @@
     rank]
    [:taxon/author [:maybe author]]
    [:taxon/name name]
+   [:taxon/read-only read-only]
    ;; TODO: If the parent-id is none then use the parent of the taxon that
    ;; wfo-plantlist-name-id references. What about if we want to set the parent
    ;; id to something else? Maybe we just don't allow it as long as it
    ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
    [:taxon/parent-id [:maybe id]]
-   [:taxon/organization-id [:maybe organization-id]]
    [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]])
 
 (def CreateTaxon
@@ -67,9 +67,7 @@
     [:maybe wfo-plantlist-taxon-id]]
    [:parent-id {:optional true
                 :decode/store validate.i/coerce-int}
-    [:maybe id]]
-   [:organization-id {:decode/store validate.i/coerce-int}
-    organization-id]])
+    [:maybe id]]])
 
 (def UpdateTaxon
   (mu/optional-keys

@@ -65,10 +65,9 @@
               ;; TODO: This needs to be an absolute url
               reset-password-url (format "http://%s%s"
                                          app-domain
-                                         (z/url-for
-                                           auth.routes/reset-password
-                                           nil
-                                           {:token token}))
+                                         (z/url-for auth.routes/reset-password
+                                                    nil
+                                                    {:token token}))
               resp (send-reset-password-email postmark
                                               email
                                               forgot-password-email-subject

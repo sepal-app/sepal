@@ -14,6 +14,9 @@
 (defn error [response text]
   (add-message response text category/error))
 
+(defn success [response text]
+  (add-message response text category/success))
+
 #_(defn error-seq
     "Create a validation-seq from humanized malli validation error.
 
@@ -47,7 +50,8 @@
 
 (defn banner [messages]
   [:div {:class (html/attr "pointer-events-none" "fixed" "inset-x-0" "bottom-0" "sm:flex"
-                           "sm:justify-center" "sm:px-6" "sm:pb-5" "lg:px-8" "z-10")}
+                           "sm:justify-center" "sm:px-6" "sm:pb-5" "lg:px-8" "z-10"
+                           "flex" "flex-col" "gap-4")}
    (for [{:keys [text category]} messages]
      (let [color (condp = category
                    category/error "bg-red-600"

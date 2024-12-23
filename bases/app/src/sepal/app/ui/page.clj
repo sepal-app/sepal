@@ -1,5 +1,6 @@
 (ns sepal.app.ui.page
-  (:require [sepal.app.globals :as g]
+  (:require [sepal.app.flash :as flash]
+            [sepal.app.globals :as g]
             [sepal.app.html :as html]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.heroicons :as heroicons]
@@ -22,7 +23,7 @@
              :alt ""}]
       (heroicons/user-circle :size 38))]])
 
-(defn page-wrapper [& {:keys [content footer]}]
+(defn page-wrapper [& {:keys [content flash footer]}]
   [:div
    [:div {:x-data "{showMobileSidebar: false}"
           :x-cloak true}
@@ -39,6 +40,9 @@
         [:div {:id "page-wrapper-content"
                :class "max-w-7xl mx-auto px-4 sm:px-6 md:px-8"}
          content]]]
+
+      (flash/banner (:messages flash))
+
       (when footer
         [:div {:id "page-footer"}
          footer])]]]
@@ -46,7 +50,7 @@
    [:script {:type "module"
              :src (html/static-url "app/ui/page.ts")}]])
 
-(defn page [& {:keys [content footer page-title page-title-buttons attrs]}]
+(defn page [& {:keys [content flash footer page-title page-title-buttons attrs]}]
   (-> [:div (merge {} attrs)
        (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
                                [:div {:class "sm:flex sm:items-center h-10"}
@@ -58,5 +62,6 @@
                                  page-title-buttons]]
                                [:div {:class "mt-8"}
                                 content]]
+                     :flash flash
                      :footer footer)]
       (base/html)))
