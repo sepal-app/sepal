@@ -10,9 +10,9 @@
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
 
-(defn send-verification-email [email]
+#_(defn send-verification-email [email]
   ;; TODO: bump
-  )
+    )
 
 ;; TODO: Use htmx to submit so we don't do a full page reload
 

@@ -1,6 +1,21 @@
 {:deps {org.clojure/clojure {:mvn/version "1.12.0"}
-        poly/base-app {:local/root "../../bases/app"}}
+        poly/base-app {:local/root "../../bases/app"}
 
+        poly/accession {:local/root "../../components/accession"}
+        poly/activity {:local/root "../../components/activity"}
+        poly/aws-s3 {:local/root "../../components/aws-s3"}
+        poly/config {:local/root "../../components/config"}
+        poly/database {:local/root "../../components/database"}
+        poly/error {:local/root "../../components/error"}
+        poly/location {:local/root "../../components/location"}
+        poly/material {:local/root "../../components/material"}
+        poly/media {:local/root "../../components/media"}
+        poly/postmark {:local/root "../../components/postmark"}
+        poly/store {:local/root "../../components/store"}
+        poly/taxon {:local/root "../../components/taxon"}
+        poly/test {:local/root "../../components/test"}
+        poly/user {:local/root "../../components/user"}
+        poly/validation {:local/root "../../components/validation"}}
  :aliases {:test {:extra-paths []
                   :extra-deps  {}}
            :main {:jvm-opts ["-Duser.timezone=UTC"]

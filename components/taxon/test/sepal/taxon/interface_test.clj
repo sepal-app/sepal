@@ -1,6 +1,5 @@
 (ns sepal.taxon.interface-test
   (:require [clojure.test :as test :refer :all]
-            [integrant.core :as ig]
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
             [next.jdbc.sql :as jdbc.sql]

@@ -33,7 +33,7 @@
     :key :media
     :href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})}])
 
-(defn page-content [& {:keys [media org page page-size accession]}]
+(defn page-content [& {:keys [media page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
@@ -60,11 +60,10 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [org page page-size media accession]}]
+(defn render [& {:keys [page page-size media accession]}]
   (page/page :page-title "Media"
              :page-title-buttons (title-buttons)
-             :content (page-content :org org
-                                    :page page
+             :content (page-content :page page
                                     :page-size page-size
                                     :media media
                                     :accession accession)))
@@ -75,7 +74,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db imgix-media-domain organization resource]} context
+  (let [{:keys [db imgix-media-domain resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -90,7 +89,6 @@
     ;; TODO: if a media instance is unlinked then we need to remove it from the
     ;; resource media list page
 
-    ;; TODO: Need to make sure the media are owned by the organization
     (if (and htmx-request? (not htmx-boosted?))
       (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
@@ -98,8 +96,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :org organization
-              :media media
+      (render :media media
               :page 1
               :page-size page-size
               :accession resource))))

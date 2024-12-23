@@ -5,14 +5,10 @@
             [malli.generator :as mg]
             [malli.transform :as mt]
             [next.jdbc.sql :as jdbc.sql]
-            [sepal.accession.interface :as accession.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.location.interface :as location.i]
-            [sepal.material.interface :as material.i]
             [sepal.media.interface.spec :as spec]
-            [sepal.store.interface :as store.i]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.store.interface :as store.i]))
 
 (defn get-by-id [db id]
   (store.i/get-by-id db :media id spec/Media))

@@ -3,16 +3,14 @@
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
             [peridot.core :as peri]
-            [ring.middleware.session.store :as store]
             [sepal.app.test.system :refer [*app* *db* *system* default-system-fixture]]
-            [sepal.user.interface :as user.i]
             [sepal.user.interface.spec :as user.spec])
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
 (deftest register-test
-  (let [db *db*]
+  (let [_db *db*]
     (testing "get"
       (let [resp (*app* {:request-method :get
                          :uri "/register"})

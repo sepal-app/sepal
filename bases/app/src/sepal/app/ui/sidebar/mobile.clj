@@ -1,6 +1,5 @@
 (ns sepal.app.ui.sidebar.mobile
-  (:require [sepal.app.globals :as g]
-            [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.activity.routes :as activity.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]

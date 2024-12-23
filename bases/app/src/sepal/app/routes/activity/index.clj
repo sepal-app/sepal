@@ -9,7 +9,6 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
-            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
@@ -149,7 +148,7 @@
 
 (defmethod activity-description material.activity/updated
   [& {:keys [activity]}]
-  (let [{:keys [accession material user]} activity]
+  (let [{:keys [material user]} activity]
     (timeline-activity :title [:span (str (:user/email user) " updated material ")
                                [:a {:class "spl-link"
                                     :href (z/url-for material.routes/detail

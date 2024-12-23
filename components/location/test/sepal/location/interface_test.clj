@@ -1,6 +1,5 @@
 (ns sepal.location.interface-test
   (:require [clojure.test :as test :refer :all]
-            [integrant.core :as ig]
             [malli.core :as m]
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]

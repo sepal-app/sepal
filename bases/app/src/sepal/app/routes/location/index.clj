@@ -27,7 +27,7 @@
      :onclick "document.getElementById('q').value = null; this.form.submit()"}
     (heroicons/outline-x :size 20)]])
 
-(defn create-button [& {:keys [org]}]
+(defn create-button [& {:keys []}]
   [:a {:class (html/attr "inline-flex" "items-center" "justify-center" "rounded-md"
                          "border" "border-transparent" "bg-green-700" "px-4" "py-2"
                          "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
@@ -57,19 +57,18 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href org page-num page-size rows total]}]
+(defn render [& {:keys [href page-num page-size rows total]}]
   (pages.list/render :content (table :href href
                                      :page-num page-num
                                      :page-size page-size
                                      :rows rows
                                      :total total)
                      :page-title "Locations"
-                     :page-title-buttons (create-button :org org)
+                     :page-title-buttons (create-button)
                      :table-actions (search-field (-> href uri/query-map :q))))
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context
-        org (:organization context)
         ;; TODO: validate page and page size
         {:strs [page page-size q]
          :or {page-size default-page-size}} query-params
@@ -99,7 +98,6 @@
                              :description (:location/description location)}))
       (render :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
-              :org org
               :rows rows
               :page-num page-num
               :page-size page-size

@@ -1,6 +1,7 @@
 (ns sepal.test.interface-test
-  (:require [clojure.test :as test :refer :all]
-            #_[sepal.test.interface :as test]))
+  (:require
+    #_[sepal.test.interface :as test]
+    [clojure.test :as test :refer :all]))
 
 (deftest dummy-test
   (is (= 1 1)))

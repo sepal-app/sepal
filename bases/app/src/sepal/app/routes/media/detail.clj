@@ -71,7 +71,7 @@
                                                      :dl-url dl-url)))
 
 (defn handler [& {:keys [::z/context request-method] :as _request}]
-  (let [{:keys [db organization resource imgix-media-domain s3-client]} context
+  (let [{:keys [db resource imgix-media-domain s3-client]} context
         srcset-opts {;;:h 2048
                      ;;:w 2048
                      ;; :fit "clip"

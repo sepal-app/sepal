@@ -33,7 +33,7 @@
     :key :media
     :href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})}])
 
-(defn page-content [& {:keys [media org page page-size taxon]}]
+(defn page-content [& {:keys [media page page-size taxon]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
@@ -60,11 +60,10 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [org page page-size media taxon]}]
+(defn render [& {:keys [page page-size media taxon]}]
   (page/page :page-title "Media"
              :page-title-buttons (title-buttons)
-             :content (page-content :org org
-                                    :page page
+             :content (page-content :page page
                                     :page-size page-size
                                     :media media
                                     :taxon taxon)))
@@ -75,7 +74,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db imgix-media-domain organization resource]} context
+  (let [{:keys [db imgix-media-domain resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -99,8 +98,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :org organization
-              :media media
+      (render :media media
               :page 1
               :page-size page-size
               :taxon resource))))

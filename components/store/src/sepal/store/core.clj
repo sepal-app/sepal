@@ -2,8 +2,7 @@
   (:require [malli.core :as m]
             [malli.transform :as mt]
             [next.jdbc.sql :as jdbc.sql]
-            [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]))
+            [sepal.database.interface :as db.i]))
 
 (def transformer
   (mt/transformer

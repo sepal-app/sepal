@@ -1,6 +1,6 @@
 (ns sepal.store.interface-test
-  (:require [clojure.test :as test :refer :all]
-            [sepal.store.interface :as store]))
+  (:require #_[sepal.store.interface :as store]
+    [clojure.test :as test :refer :all]))
 
 (deftest dummy-test
   (is (= 1 1)))

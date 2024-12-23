@@ -24,7 +24,7 @@
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org values]}]
+(defn render [& {:keys [errors values]}]
   (-> (page/page :attrs {:x-data "accessionFormData"}
                  :content (page-content :errors errors
                                         :values values)

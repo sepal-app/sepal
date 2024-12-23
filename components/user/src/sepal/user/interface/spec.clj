@@ -1,6 +1,5 @@
 (ns sepal.user.interface.spec
-  (:require [sepal.store.interface :as store.i]
-            [sepal.validation.interface :refer [email-re]]))
+  (:require [sepal.validation.interface :refer [email-re]]))
 
 (def id pos-int?)
 (def email [:re {:error/message "invalid email"} email-re])
