@@ -3,7 +3,7 @@
             [malli.core :as m]
             [malli.error :as me]
             [malli.generator :as mg]
-            [matcher-combinators.test :refer [match?]]
+            [matcher-combinators.test :refer [match? thrown-match?]]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
