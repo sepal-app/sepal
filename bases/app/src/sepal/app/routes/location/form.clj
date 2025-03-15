@@ -1,6 +1,5 @@
 (ns sepal.app.routes.location.form
-  (:require [sepal.app.html :as html]
-            [sepal.app.ui.form :as form]))
+  (:require [sepal.app.ui.form :as form]))
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
