@@ -123,7 +123,8 @@ CREATE TYPE public.taxon_rank_enum AS ENUM (
     'subvariety',
     'superorder',
     'tribe',
-    'variety'
+    'variety',
+    'suborder'
 );
 
 
@@ -743,4 +744,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240618125844'),
     ('20240618180333'),
     ('20240723120705'),
-    ('20241215172420');
+    ('20241215172420'),
+    ('20250207201652');
