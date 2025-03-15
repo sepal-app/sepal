@@ -27,12 +27,15 @@
    input
    [:ul {:class "validator-hint"}
     (for [error errors]
-      [:li error])]
-
+      [:li error])]])
 
 (defn input-field [& {:keys [id label name read-only required type value errors
                              minlength maxlength input-attrs]}]
   ;; TODO: Validate the errors format
+  ;; (tap> (str "input-field/errors: " errors))
+
+;; TODO: The main thing we need to figure out with the form is how to set client
+  ;; set both server side and client side validation errors in the field error
   (field :errors errors
          :name name
          :label label

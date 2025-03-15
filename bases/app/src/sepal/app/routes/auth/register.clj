@@ -33,7 +33,6 @@
     ;; [:p
     ;;  [:a {:href "/forgot_password"}
     ;;   "Forgot password?"]]
-    ]
     (form/input-field :label "Password"
                       :name "password"
                       :type "password"
