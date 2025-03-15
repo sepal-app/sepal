@@ -41,22 +41,12 @@
                        :read-only read-only?
                        :values values)])])
 
-(defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('taxon-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
-             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
-             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
-             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]])
-
 (defn render [& {:keys [errors taxon values]}]
   (page/page :attrs {:x-data "taxonFormData"}
              :content (page-content :errors errors
                                     :taxon taxon
                                     :values values)
-             :footer (ui.form/footer :buttons (footer-buttons))
+             :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
              :page-title (:taxon/name taxon)
              :page-title-buttons (page-title-buttons)))
 

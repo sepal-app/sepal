@@ -28,11 +28,11 @@
 (defn taxon-field [& {:keys [taxon-name name id taxon-id]}]
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-taxon-field (json/js {:url url})
-              :x-validate.required true
               :id (or id name)
               :class "input input-bordered input-sm"
               :name name
-              :autocomplete "off"}
+              :autocomplete "off"
+              :required true}
      (when taxon-id
        [:option {:value taxon-id}
         taxon-name])]))
@@ -40,11 +40,11 @@
 (defn accession-field [& {:keys [accession-name name id accession-id]}]
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-accession-field (json/js {:url url})
-              :x-validate.required true
               :id (or id name)
               :class "input input-bordered input-sm"
               :name name
-              :autocomplete "off"}
+              :autocomplete "off"
+              :required true}
      (when accession-id
        [:option {:value accession-id}
         accession-name])]))
@@ -53,11 +53,11 @@
   ;; TODO: Are these routes correct?
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-location-field (json/js {:url url})
-              :x-validate.required true
               :id (or id name)
               :class "input input-bordered input-sm"
               :name name
-              :autocomplete "off"}
+              :autocomplete "off"
+              :required true}
      (when location-id
        [:option {:value location-id}
         location-name])]))
@@ -65,11 +65,11 @@
 (defn material-field [& {:keys [material-name name id material-id]}]
   (let [url (z/url-for material.routes/index)]
     [:select {:x-material-field (json/js {:url url})
-              :x-validate.required true
               :id (or id name)
-              :class "input input-bordered input-sm"
+              :class "select select-bordered select-md w-full max-w-xs px-2"
               :name name
-              :autocomplete "off"}
+              :autocomplete "off"
+              :required true}
      (when material-id
        [:option {:value material-id}
         material-name])]))
@@ -86,8 +86,8 @@
                                   :class "select select-bordered select-sm w-full max-w-xs leading-4"
                                   :autocomplete "off"
                                   :id "resource-type"
-                                  :x-validate.required true
                                   :x-model "resourceType"
+                                  :required true
                                  ;; :value (:rank values)
                                   }
                          [[:option {:value ""} ""]

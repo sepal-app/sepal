@@ -18,20 +18,12 @@
                     :errors errors
                     :values values)])
 
-(defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('taxon-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]])
-
 (defn render [& {:keys [errors flash values]}]
   (page/page :attrs {:x-data "taxonFormData"}
              :content (page-content :errors errors
                                     :values values)
              :flash flash
-             :footer (form/footer :buttons (footer-buttons))
+             :footer (form/footer :buttons (taxon.form/footer-buttons))
              :page-title "Create taxon"))
 
 (defn create! [db created-by data]

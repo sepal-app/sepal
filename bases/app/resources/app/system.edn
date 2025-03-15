@@ -10,11 +10,16 @@
  {:endpoint-override #env AWS_S3_ENDPOINT
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
- :sepal.app.server/zodiac-sql {:spec #include "database/config.edn"
-                               :context-key :db}
- :sepal.app.server/zodiac-assets {:config-file #env VITE_CONFIG_FILE
-                                  :manifest-path  "app/build/.vite/manifest.json"
-                                  :asset-resource-path "app/build/assets"}
+ :sepal.app.server/zodiac-sql
+ {:spec #include "database/config.edn"
+  :context-key :db}
+
+ :sepal.app.server/zodiac-assets
+ {:config-file #profile {:local "bases/app/vite.config.dev.js"
+                         :default "bases/app/vite.config.js"}
+  :manifest-path  "app/build/.vite/manifest.json"
+  :asset-resource-path "app/build/assets"
+  :package-json-dir "bases/app"}
 
  :sepal.app.server/zodiac
  {:extensions [#ig/ref :sepal.app.server/zodiac-sql

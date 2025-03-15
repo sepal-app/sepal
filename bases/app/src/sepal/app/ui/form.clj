@@ -6,11 +6,11 @@
 (def AntiForgeryField
   [(keyword anti-forgery-field-name) :string])
 
-(defn form [attrs children]
+(defn form [attrs & children]
   [:form (merge {:x-data true
-                 :x-validate.use-browser.input true
                  :x-ref "form"
-                 :class "flex flex-col gap-2"}
+                 :class "flex flex-col"
+                 :x-form-state {}}
                 attrs)
    children])
 
@@ -20,42 +20,30 @@
            :id "__anti-forgery-token"
            :value (force *anti-forgery-token*)}])
 
-(defn field-errors [& {:keys [errors]}]
-  (let [errors (if (string? errors)
-                 [errors]
-                 errors)]
-    (when errors
-      [:ul {:class "errors"}
-       (for [error errors]
-         [:div {:class "label"}
-          [:span {:class "label-text-alt input-error text-red-500"} error]])])))
-
-(defn field [& {:keys [errors label input name]}]
-  [:label {:for name
-           :class "form-control w-full max-w-xs"}
-   [:div {:class "label"}
-    [:span {:class "label-text"} label]]
+(defn field [& {:keys [errors label input]}]
+  [:fieldset {:class "fieldset"}
+   [:legend {:class "fieldset-legend text-md"}
+    label]
    input
+   [:ul {:class "validator-hint"}
+    (for [error errors]
+      [:li error])]
 
-   (field-errors :errors errors)])
 
 (defn input-field [& {:keys [id label name read-only required type value errors
-                             minlength maxlength data-error-msg input-attrs]}]
+                             minlength maxlength input-attrs]}]
   ;; TODO: Validate the errors format
   (field :errors errors
          :name name
          :label label
          :input [:input (merge {:autocomplete "off"
-                                :class "input input-bordered input-sm"
+                                :class "input validator"
                                 :id (or id name)
                                 :maxlength maxlength
                                 :minlength minlength
                                 :name name
                                 :readonly (or read-only false)
-                                :x-validate true
-                                :data-error-msg data-error-msg
                                 :required (or required false)
-                                :aria-invalid (str (boolean (not-empty errors)))
                                 :type (or type "text")
                                 :value value}
                                input-attrs)]))
@@ -75,7 +63,6 @@
                :name name
                :id id
                :required (or required false)
-               :x-validate true
                :class "textarea textarea-bordered"}
     value]
 

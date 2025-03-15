@@ -24,9 +24,9 @@
         (form/field :label "Taxon"
                     :name "taxon-id"
                     :input [:select {:x-taxon-field (json/js {:url url})
-                                     :x-validate.required true
                                      :id "taxon-id"
-                                     :class "input input-bordered input-sm"
+                                     :class "select select-bordered select-md w-full max-w-xs px-2"
+                                     :required true
                                      :name "taxon-id"
                                      :autocomplete "off"}
                             (when (:taxon-id values)

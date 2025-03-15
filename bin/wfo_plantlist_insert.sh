@@ -6,7 +6,7 @@
 set -Eeuxo pipefail
 
 SCHEMA=${SCHEMA:-wfo_plantlist_2023_12}
-WFO_PATH=${WFO_PATH:-/home/brett/devel/wfo_plantlist}
+WFO_PATH=${WFO_PATH:-$HOME/devel/wfo_plantlist}
 
 # TODO: Warn if a WFO_PATH isn't set
 

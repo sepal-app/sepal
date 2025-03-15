@@ -6,6 +6,17 @@
             [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$dispatch('taxon-form:submit')"
+             :x-bind:disabled "!valid"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
+             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
+             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
+    "Cancel"]])
+
 (defn form [& {:keys [action errors read-only values]}]
   (let [ranks (->> taxon.spec/rank rest (mapv name))]
     [:div
@@ -40,10 +51,10 @@
             (form/field :label "Parent"
                         :name "parent-id"
                         :input [:select {:x-taxon-field (json/js {:url url})
-                                         :class "select select-bordered select-sm w-full max-w-xs px-2"
+                                         :class "select select-bordered select-md w-full max-w-xs px-2"
                                          :name "parent-id"
                                          :id "parent-id"
-                                         :x-validate.required true
+                                         :required true
                                          :read-only read-only
                                          :autocomplete "off"}
                                 (when (:parent-id values)
@@ -58,12 +69,12 @@
           (form/field :label "Rank"
                       :name "rank"
                       :input [:select {:name "rank"
-                                       :x-rank-field true
-                                       :class "select select-bordered select-sm w-full max-w-xs px-2"
+                                       :x-rank-field (json/js {:test "test"})
+                                       :class "select select-bordered select-md w-full max-w-xs px-2"
                                        :autocomplete "off"
                                        :id "rank"
                                        :read-only read-only
-                                       :x-validate.required true
+                                       :required true
                                        :value (:rank values)}
                               (for [rank ranks]
                                 [:option {:value rank

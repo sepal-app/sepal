@@ -1,13 +1,19 @@
+import { type DirectiveCallback } from "alpinejs"
 import TomSelect from "tom-select"
 
-export default (el, directive, { cleanup, evaluate }) => {
-    const { url, exclude } = evaluate(directive.expression)
+interface DirectiveExpression {
+    url: string
+}
 
-    function load(query, callback) {
+const MaterialField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => {
+    const { url }: DirectiveExpression = evaluate(directive.expression)
+
+    function load(query: string, callback: () => void) {
         // We need to clear the options so that previous options don't get
         // merged with the new ones
+        // @ts-ignore
         this.clearOptions()
-        const params = new URLSearchParams({ q: query, page_size: 6 })
+        const params = new URLSearchParams({ q: query, page_size: "6" })
         fetch(url + "?" + params.toString(), {
             headers: { Accept: "application/json" },
         })
@@ -19,7 +25,7 @@ export default (el, directive, { cleanup, evaluate }) => {
             })
     }
 
-    const tomselect = new TomSelect(el, {
+    const tomselect = new TomSelect(el as HTMLInputElement, {
         itemClass: "sm:text-sm bg-white",
         loadingClass: "",
         maxItems: 1,
@@ -36,3 +42,5 @@ export default (el, directive, { cleanup, evaluate }) => {
         tomselect.destroy()
     })
 }
+
+export default MaterialField

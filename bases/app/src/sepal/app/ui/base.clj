@@ -2,7 +2,7 @@
   (:require [sepal.app.html :as html]))
 
 (defn html [content & {:keys [title]}]
-  [:html
+  [:html {:data-theme "emerald"}
    [:head
     [:meta {:charset "utf-8"}]
     [:meta {:http-equiv "x-ua-compatible" :content "ie=edge"}]

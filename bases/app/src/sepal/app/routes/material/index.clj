@@ -17,7 +17,7 @@
 (defn search-field [q]
   [:div {:class "flex flex-row"}
    [:input {:name "q"
-            :class "spl-input w-96"
+            :class "input input-md w-fill max-w-xs bg-white w-96"
             :type "search"
             :value q
             :placeholder "Search..."}]

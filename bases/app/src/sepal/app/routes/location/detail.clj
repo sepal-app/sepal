@@ -16,22 +16,11 @@
                       :errors errors
                       :values values))
 
-(defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('location-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
-             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
-             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
-             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]])
-
 (defn render [& {:keys [errors location values]}]
-  (page/page :attrs {:x-data "locationFormData"}
-             :content (page-content :errors errors
+  (page/page :content (page-content :errors errors
                                     :location location
                                     :values values)
-             :footer (ui.form/footer :buttons (footer-buttons))
+             :footer (ui.form/footer :buttons (location.form/footer-buttons))
              :page-title (:location/name location)))
 
 (defn update! [db location-id updated-by data]

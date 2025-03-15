@@ -2,6 +2,15 @@
   (:require [sepal.app.html :as html]
             [sepal.app.ui.form :as form]))
 
+(defn footer-buttons []
+  [[:button {:class "btn btn-primary"
+             :x-on:click "$dispatch('location-form:submit')"
+             :x-bind:disabled "!valid"}
+    "Save"]
+   [:button {:class "btn btn-secondary"
+             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
+    "Cancel"]])
+
 (defn form [& {:keys [action errors values]}]
   [:div
    (form/form
@@ -26,6 +35,4 @@
       (form/textarea-field :label "Description"
                            :name "description"
                            :value (:description values)
-                           :errors (:description errors))])
-   [:script {:type "module"
-             :src (html/static-url "app/routes/location/form.ts")}]])
+                           :errors (:description errors))])])

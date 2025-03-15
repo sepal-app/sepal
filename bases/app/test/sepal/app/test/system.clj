@@ -8,6 +8,7 @@
 (def ^:dynamic *app* nil)
 (def ^:dynamic *db* nil)
 (def ^:dynamic *system* nil)
+(def ^:dynamic *cookie-store* nil)
 
 (defn load-config [config]
   (config.i/read-config config {:profile :test}))
@@ -17,7 +18,8 @@
                                  :context-key :db}
    :sepal.app.server/zodiac-assets {:build? false
                                     :manifest-path  "app/build/.vite/manifest.json"
-                                    :asset-resource-path "app/build/assets"}
+                                    :asset-resource-path "app/build/assets"
+                                    :package-json-dir "bases/app"}
    :sepal.app.server/zodiac {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
                                           (ig/ref :sepal.app.server/zodiac-assets)]
                              :request-context {:forgot-password-email-from "support@sepal.app"
@@ -33,6 +35,7 @@
                                   (fn [system f]
                                     (binding [*system* system
                                               *db* (-> system  :sepal.app.server/zodiac ::z.sql/db)
-                                              *app* (-> system :sepal.app.server/zodiac ::z/app)]
+                                              *app* (-> system :sepal.app.server/zodiac ::z/app)
+                                              *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)]
                                       (f)))
                                   (keys system-config))))

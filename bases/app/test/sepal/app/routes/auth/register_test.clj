@@ -3,8 +3,11 @@
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
             [peridot.core :as peri]
-            [sepal.app.test.system :refer [*app* *db* *system* default-system-fixture]]
-            [sepal.user.interface.spec :as user.spec])
+            [ring.middleware.session.store :as store]
+            [sepal.app.test.system :refer [*app* *db* default-system-fixture *cookie-store*]]
+            [sepal.test.interface :as test.i]
+            [sepal.user.interface.spec :as user.spec]
+            [sepal.validation.interface :as validation.i])
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
@@ -28,42 +31,36 @@
         (is (some? (-> body
                        (.selectFirst "input[name=__anti-forgery-token]")
                        (.selectFirst "input[type=hidden]"))))))
+
     (testing "post"
-      (let [sess (-> (peri/session *app*)
-                     (peri/request "/register"))
-            token (-> sess
-                      :response
-                      :body
-                      Jsoup/parse
-                      (.selectFirst "input[name=__anti-forgery-token]")
-                      (.attr "value"))
+      (let [{:keys [response] :as sess} (-> (peri/session *app*)
+                                            (peri/request "/register"))
+            token (test.i/response-anti-forgery-token response)
             params {:__anti-forgery-token token
                     :email (mg/generate user.spec/email)
                     :password (mg/generate user.spec/password)}
-            resp (-> sess
-                     (peri/request "/register"
-                                   :request-method :post
-                                   :params params)
-                     :response)
-            ring-session (get-in sess [:cookie-jar "localhost" "ring-session" :value])
-            store (:sepal.app.middleware/cookie-store *system*)
-            ;; store (:sepal.app.session-store)
-            ]
-
-        (tap> (str "s: " (-> sess :cookie-jar)))
-        (tap> (str "ring-session: " ring-session))
-        (tap> (str "store: " store))
-
-        (is (match? {:status 303
-                     :headers {"Location" "/"}}
-                    resp)
-            (:body resp))
-
-        ;; TODO: Test the user is in the session
-        ;; (is (= (:email params) (-> resp :session :user/email)))
-        ;; (tap> (str "session vals: " (store/read-session store ring-session)))
-        ;; (tap> (user.i/exists? db (-> resp :session :user/email)))
-        #_(is (some? (user.i/verify-password db (:email params) (:password params))))))
-
-;; TODO: test errors like invalid password
-    ))
+            {:keys [response]
+             :as sess} (-> sess
+                           (peri/request "/register"
+                                         :request-method :post
+                                         :params params)
+                           ;; (peri/follow-redirect)
+                           (peri/follow-redirect)
+                           (peri/follow-redirect))
+            ring-session (->> (test.i/ring-session-cookie sess)
+                              (store/read-session *cookie-store*))]
+        (is (match? {:status 200
+                     :headers {"content-type" "text/html"}}
+                    response)
+            (:body response))
+        ;; Test that the user is in the session
+        (is (match? {:user/id int?
+                     :user/email validation.i/email-re}
+                    ring-session))
+        ;; Eventually redirects to the activity page
+        (is (= "Activity"
+               (-> response
+                   :body
+                   (Jsoup/parse)
+                   (.selectFirst "main h1")
+                   (.text))))))))

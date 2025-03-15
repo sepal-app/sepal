@@ -33,8 +33,8 @@
                     :errors (:code errors)
                     :input [:input {:autocomplete "off"
                                     :class "input input-bordered input-sm w-full max-w-xs bg-white"
-                                    :x-validate.required true
                                     :placeholder "Required"
+                                    :required true
                                     :id "code"
                                     :name "code"
                                     :type "text"
@@ -43,11 +43,11 @@
           (form/field :label "Accession"
                       :name "accession-id"
                       :input [:select {:x-accession-field (json/js {:url url})
-                                       :x-validate.required true
                                        :placeholder "Required"
                                        :name "accession-id"
                                        :id "accession-id"
-                                       :class "input input-bordered input-sm"}
+                                       :required true
+                                       :class "select select-bordered select-md w-full max-w-xs px-2"}
                               (when (:accession-id values)
                                 [:option {:value (:accession-id values)}
                                  (:accession-code values)])]))
@@ -55,11 +55,11 @@
           (form/field :label "Location"
                       :name "location-id"
                       :input [:select {:x-location-field (json/js {:url url})
-                                       :x-validate.required true
                                        :placeholder "Required"
+                                       :required true
                                        :name "location-id"
                                        :id "location-id"
-                                       :class "input input-bordered input-sm"}
+                                       :class "select select-bordered select-md w-full max-w-xs px-2"}
                               (when (:location-id values)
                                 [:option {:value (:location-id values)}
                                  (format "%s (%s)"
@@ -70,11 +70,11 @@
                     :errors (:code errors)
                     :input [:input {:autocomplete "off"
                                     :class "input input-bordered input-sm w-full max-w-xs bg-white"
-                                    :x-validate.required true
                                     :id "code"
                                     :name "quantity"
                                     :type "number"
                                     :min 1
+                                    :required true
                                     :value (or (:quantity values) 1)}])
         (form/field :label "Status"
                     :name "status"
@@ -83,7 +83,7 @@
                                      :class "select select-bordered select-sm w-full max-w-xs px-2"
                                      :autocomplete "off"
                                      :id "status"
-                                     :x-validate.required true
+                                     :required true
                                      :value (:status values)}
                             [(for [status statuses]
                                [:option {:value status
@@ -97,7 +97,7 @@
                                      :class "select select-bordered select-sm w-full max-w-xs px-2"
                                      :autocomplete "off"
                                      :id "type"
-                                     :x-validate.required true
+                                     :required true
                                      :value (:type values)}
                             [(for [type types]
                                [:option {:value type

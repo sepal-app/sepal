@@ -15,22 +15,19 @@
    [:h1 {:class "text-2xl pb-2"} "Reset the password for "]
    [:p {:class "text-lg pb-6"} email]
    (form/form {:method "post"
-               :x-validate.use-browser.input "true"
                :action (z/url-for auth.routes/reset-password)}
               [(form/anti-forgery-field)
                (form/hidden-field :name "token" :value token)
                (form/input-field :label "Password"
                                  :name "password"
                                  :minlength 8
-                                 :x-validate true
                                  :required true
                                  :data-error-msg "The password must be a minimum of 8 characters long.")
                (form/input-field :label "Confirm password"
                                  :name "confirm_password"
                                  :minlength 8
                                  :required true
-                                 :data-error-msg "The passwords do not match"
-                                 :input-attrs {:x-validate "$el.value === $formData.password.value"})
+                                 :data-error-msg "The passwords do not match")
                (form/submit-button "Send")])])
 
 (defn render [& {:keys [email errors flash token]}]

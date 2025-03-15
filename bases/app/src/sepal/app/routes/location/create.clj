@@ -16,19 +16,10 @@
                       :errors errors
                       :values values))
 
-(defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('location-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]])
-
 (defn render [& {:keys [errors values]}]
-  (page/page :attrs {:x-data "locationFormData"}
-             :content (page-content :errors errors
+  (page/page :content (page-content :errors errors
                                     :values values)
-             :footer (ui.form/footer :buttons (footer-buttons))
+             :footer (ui.form/footer :buttons (location.form/footer-buttons))
              :page-title "Create location"))
 
 (defn create! [db created-by data]

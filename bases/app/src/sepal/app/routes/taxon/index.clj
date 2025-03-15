@@ -14,7 +14,7 @@
   [:div {:class "flex flex-row"}
    [:input {:name "q"
             :id "q"
-            :class "spl-input w-96"
+            :class "input input-md w-fill max-w-xs bg-white w-96"
             :type "search"
             :value q
             :placeholder "Search..."}]
@@ -43,7 +43,6 @@
 (defn table-columns []
   [{:name "Name"
     :cell (fn [t]
-            (tap> (str "t: " t))
             [:a {:href (z/url-for taxon.routes/detail
                                   {:id (:taxon/id t)})
                  :class "spl-link"}

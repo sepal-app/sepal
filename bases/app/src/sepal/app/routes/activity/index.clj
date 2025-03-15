@@ -158,8 +158,8 @@
                                   (str (format " (%s)" (:material/code material))))]])))
 
 (defn timeline-section [date activity]
-  [:div {:class (html/attr "p-5" "mb-4" "rounded-lg" "bg-white" "shadow"
-                           "ring-1" "ring-black" "ring-opacity-5")}
+  [:div {:class (html/attr "p-5" "mb-4" "rounded-lg" "bg-white" "shadow-sm"
+                           "ring-1" "ring-black/5")}
    [:time {:class "text-lg font-semibold text-gray-900 dark:text-white"}
     date]
    [:ol {:class "mt-3 divide-y divider-gray-200 dark:divide-gray-700"}

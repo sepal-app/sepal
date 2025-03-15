@@ -1,4 +1,5 @@
 import { defineConfig } from "vite"
+import tailwindcss from "@tailwindcss/vite"
 
 export default defineConfig({
     root: __dirname.concat("/src/sepal"),
@@ -8,6 +9,7 @@ export default defineConfig({
             "~": __dirname.concat("/src/sepal/app"),
         },
     },
+    plugins: [tailwindcss()],
     build: {
         manifest: true,
         outDir: __dirname.concat("/resources/app/build"),
@@ -18,7 +20,6 @@ export default defineConfig({
                 "~/routes/accession/form.ts",
                 "~/routes/auth/img/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg",
                 "~/routes/auth/page.ts",
-                "~/routes/location/form.ts",
                 "~/routes/material/form.ts",
                 "~/routes/media/css/media.css",
                 "~/routes/media/media.ts",
