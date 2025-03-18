@@ -25,8 +25,7 @@
     "Cancel"]])
 
 (defn render [& {:keys [errors values]}]
-  (-> (page/page :attrs {:x-data "accessionFormData"}
-                 :content (page-content :errors errors
+  (-> (page/page :content (page-content :errors errors
                                         :values values)
                  :footer (ui.form/footer :buttons (footer-buttons))
                  :page-title "Create accession")))

@@ -19,8 +19,7 @@
                     :values values)])
 
 (defn render [& {:keys [errors flash values]}]
-  (page/page :attrs {:x-data "taxonFormData"}
-             :content (page-content :errors errors
+  (page/page :content (page-content :errors errors
                                     :values values)
              :flash flash
              :footer (form/footer :buttons (taxon.form/footer-buttons))

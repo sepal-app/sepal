@@ -42,8 +42,7 @@
                        :values values)])])
 
 (defn render [& {:keys [errors taxon values]}]
-  (page/page :attrs {:x-data "taxonFormData"}
-             :content (page-content :errors errors
+  (page/page :content (page-content :errors errors
                                     :taxon taxon
                                     :values values)
              :footer (ui.form/footer :buttons (taxon.form/footer-buttons))

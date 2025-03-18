@@ -41,8 +41,7 @@
     "Cancel"]])
 
 (defn render [& {:keys [errors org accession taxon values]}]
-  (page/page :attrs {:x-data "accessionFormData"}
-             :content (page-content :errors errors
+  (page/page :content (page-content :errors errors
                                     :org org
                                     :accession accession
                                     :values values
