@@ -58,19 +58,11 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(def FormParams
-  [:map {:closed true}
-   [:id :string]
-   [:name :string]
-   [:author :string]
-   [:rank :string]
-   [:parent-id [:maybe :string]]])
-
 (defn handler [{:keys [::z/context _flash form-params request-method viewer]}]
   (let [{:keys [db resource]} context]
     (case request-method
       :post
-      (let [data (params/decode FormParams form-params)
+      (let [data (params/decode taxon.form/FormParams form-params)
             result (save! db (:taxon/id resource) (:user/id viewer) data)]
         (if-not (error.i/error? result)
           (http/found taxon.routes/detail {:id (:taxon/id result)})
@@ -88,7 +80,7 @@
                     :rank (:taxon/rank resource)
                     :author (:taxon/author resource)
                     :parent-id (:taxon/id parent)
-                    :parent-name (:taxon/name parent)}]
-        ;; (tap> (str "FLASH:" flash))
+                    :parent-name (:taxon/name parent)
+                    :vernacular-names (:taxon/vernacular-names resource)}]
         (render :taxon resource
                 :values values)))))

@@ -21,7 +21,7 @@
            :value (force *anti-forgery-token*)}])
 
 (defn field [& {:keys [errors label input]}]
-  [:fieldset {:class "fieldset"}
+  [:fieldset {:class "fieldset w-full"}
    [:legend {:class "fieldset-legend text-md"}
     label]
    input
@@ -40,7 +40,7 @@
          :name name
          :label label
          :input [:input (merge {:autocomplete "off"
-                                :class "input validator"
+                                :class "input validator w-full"
                                 :id (or id name)
                                 :maxlength maxlength
                                 :minlength minlength
@@ -51,11 +51,12 @@
                                 :value value}
                                input-attrs)]))
 
-(defn hidden-field [& {:keys [id name value]}]
-  [:input {:name name
-           :id id
-           :value value
-           :type "hidden"}])
+(defn hidden-field [& {:keys [id name value input-attrs]}]
+  [:input (merge {:name name
+                  :id id
+                  :value value
+                  :type "hidden"}
+                 input-attrs)])
 
 (defn textarea-field [& {:keys [errors id label name required value]}]
   [:label {:for name

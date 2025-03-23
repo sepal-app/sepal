@@ -34,13 +34,6 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(def FormParams
-  [:map {:closed true}
-   [:name :string]
-   [:author [:maybe :string]]
-   [:parent-id [:maybe :int]]
-   [:rank :string]])
-
 (defn get-handler [{:keys [params flash]}]
   (let [{:keys [field-errors]} flash
         values (merge params (-> flash :values))]
@@ -50,7 +43,7 @@
 
 (defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db]} context
-        data (params/decode FormParams form-params)
+        data (params/decode taxon.form/FormParams form-params)
         result (create! db (:user/id viewer) data)]
     (if-not (error.i/error? result)
       (-> (see-other taxon.routes/detail {:id (:taxon/id result)})

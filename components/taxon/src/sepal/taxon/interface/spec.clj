@@ -1,6 +1,7 @@
 (ns sepal.taxon.interface.spec
   (:refer-clojure :exclude [name])
   (:require [camel-snake-kebab.core :as csk]
+            [camel-snake-kebab.extras :as cske]
             [malli.util :as mu]
             [sepal.database.interface :as db.i]
             [sepal.validation.interface :as validate.i]))
@@ -37,6 +38,13 @@
            :variety])
 (def read-only [:boolean])
 
+(def VernacularName
+  [:map {:closed true
+         :encode/store #(cske/transform-keys csk/->kebab-case-string %)}
+   [:name :string]
+   [:language :string]
+   [:default {:optional true} :boolean]])
+
 (def Taxon
   [:map {:closed true}
    [:taxon/id id]
@@ -50,7 +58,9 @@
    ;; id to something else? Maybe we just don't allow it as long as it
    ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
    [:taxon/parent-id [:maybe id]]
-   [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]])
+   [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]
+   [:taxon/vernacular-names {:decode/store #(mapv (partial cske/transform-keys csk/->kebab-case-keyword) %)}
+    [:* VernacularName]]])
 
 (def CreateTaxon
   [:map {:closed true
@@ -67,7 +77,9 @@
     [:maybe wfo-plantlist-taxon-id]]
    [:parent-id {:optional true
                 :decode/store validate.i/coerce-int}
-    [:maybe id]]])
+    [:maybe id]]
+   [:vernacular-names {:encode/store db.i/->jsonb}
+    [:* VernacularName]]])
 
 (def UpdateTaxon
   (mu/optional-keys
@@ -85,4 +97,6 @@
       [:maybe wfo-plantlist-taxon-id]]
      [:parent-id {:optional true
                   :decode/store validate.i/coerce-int}
-      [:maybe id]]]))
+      [:maybe id]]
+     [:vernacular-names {:encode/store db.i/->jsonb}
+      [:* VernacularName]]]))

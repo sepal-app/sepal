@@ -20,20 +20,43 @@ export default (
     data.dirty = false
     data.valid = true
 
-    const inputs = el.querySelectorAll("input, select, textarea")
+    function addListeners() {
+        const inputs = findInputs()
+        for (const input of inputs) {
+            input.addEventListener("input", handler)
+        }
+    }
+
+    function removeListeners() {
+        const inputs = findInputs()
+        for (const input of inputs) {
+            input.removeEventListener("input", handler)
+        }
+    }
+
+    const observer = new MutationObserver((_mutationList, _) => {
+        removeListeners()
+        addListeners()
+    })
+
+    observer.observe(el, {
+        childList: true,
+        subtree: true,
+    })
 
     const handler = () => {
         data.dirty = true
         data.valid = el.checkValidity()
     }
 
-    for (const input of inputs) {
-        input.addEventListener("input", handler)
+    function findInputs() {
+        return el.querySelectorAll("input, select, textarea")
     }
 
+    addListeners()
+
     cleanup(() => {
-        for (const input of inputs) {
-            input.removeEventListener("input", handler)
-        }
+        observer.disconnect()
+        removeListeners()
     })
 }

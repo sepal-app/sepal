@@ -4,6 +4,7 @@
 
 (def params-transformer (mt/transformer
                           (mt/key-transformer {:decode keyword})
+                          {:name :form}
                           mt/strip-extra-keys-transformer
                           mt/default-value-transformer
                           mt/string-transformer))

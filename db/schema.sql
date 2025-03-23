@@ -328,7 +328,8 @@ CREATE TABLE public.taxon (
     parent_id integer,
     rank public.taxon_rank_enum NOT NULL,
     wfo_taxon_id_2023_12 text,
-    read_only boolean DEFAULT false NOT NULL
+    read_only boolean DEFAULT false NOT NULL,
+    vernacular_names jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
@@ -745,4 +746,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240618180333'),
     ('20240723120705'),
     ('20241215172420'),
-    ('20250207201652');
+    ('20250207201652'),
+    ('20250207203948');

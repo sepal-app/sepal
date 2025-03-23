@@ -53,3 +53,4 @@ bases/app/resources/app/build/
 .env.*
 .rebl
 .dir-locals.el
+.projectile-cache.eld
