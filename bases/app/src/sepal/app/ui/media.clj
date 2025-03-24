@@ -33,7 +33,10 @@
         :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
                           "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
    (media-list-items :media media
-                     :next-page-url next-page-url)])
+                     :next-page-url next-page-url)
+   (when (zero? (count media))
+     [:div {:class "flex items-center justify-center bg-blue-50 p-6 rounded-xl"}
+      [:span "No media"]])])
 
 #_(defn upload-button []
     [:button {:id "upload-button"

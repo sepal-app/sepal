@@ -27,7 +27,7 @@ export default (el, directive, { cleanup, evaluate }) => {
         })
         .use(AwsS3, {
             async getUploadParameters(file) {
-                const formId = file.id.replace(/\//g, "_")
+                const formId = CSS.escape(file.id.replace(/\//g, "_"))
                 const form = document.querySelector(
                     `#upload-success-forms form#${formId}`,
                 )
