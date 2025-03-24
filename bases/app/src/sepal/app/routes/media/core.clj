@@ -2,6 +2,7 @@
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.media.detail :as detail]
             [sepal.app.routes.media.detail.link :as link]
+            [sepal.app.routes.media.index :as index]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.media.s3 :as s3]
             [sepal.app.routes.media.uploaded :as uploaded]
@@ -11,6 +12,8 @@
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
+   ["/" {:name media.routes/index
+         :handler #'index/handler}]
    ["/s3" {:name media.routes/s3
            :handler #'s3/handler}]
    ["/uploaded" {:name media.routes/uploaded
