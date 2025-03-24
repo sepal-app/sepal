@@ -2,6 +2,7 @@
   (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
+            [sepal.app.routes.taxon.detail.tabs :as taxon.tabs]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
@@ -20,18 +21,10 @@
   (dropdown/dropdown "Actions"
                      (dropdown/item (z/url-for taxon.routes/new) "Add a taxon")))
 
-(defn tab-items [& {:keys [taxon]}]
-  [{:label "Name"
-    :key :name
-    :href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
-   {:label "Media"
-    :key :media
-    :href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})}])
-
 (defn page-content [& {:keys [errors taxon values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs :active :name
-              :items (tab-items :taxon taxon))
+   (tabs/tabs (taxon.tabs/items :taxon taxon
+                                :active :name))
    (let [read-only? (:taxon/read-only taxon)]
      [:div
       (when read-only?

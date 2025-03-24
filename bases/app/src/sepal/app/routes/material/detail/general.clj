@@ -3,6 +3,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.material.detail.tabs :as material.tabs]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
@@ -16,18 +17,10 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn tab-items [& {:keys [material]}]
-  [{:label "General"
-    :key :name
-    :href (z/url-for material.routes/detail-general {:id (:material/id material)})}
-   {:label "Media"
-    :key :media
-    :href (z/url-for material.routes/detail-media {:id (:material/id material)})}])
-
 (defn page-content [& {:keys [errors org material values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs :active :name
-              :items (tab-items :material material))
+   (tabs/tabs (material.tabs/items :material material
+                                   :active :general))
    (material.form/form :action (z/url-for material.routes/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org

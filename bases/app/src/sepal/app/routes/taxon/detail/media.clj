@@ -4,6 +4,7 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.taxon.detail.tabs :as taxon.tabs]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
@@ -25,23 +26,14 @@
              {:id (:taxon/id taxon)}
              {:page (+ 1 current-page)}))
 
-(defn tab-items [& {:keys [taxon]}]
-  [{:label "Name"
-    :key :name
-    :href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
-   {:label "Media"
-    :key :media
-    :href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})}])
-
 (defn page-content [& {:keys [media page page-size taxon]}]
+
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
-
-   (tabs/tabs :active :media
-              :items (tab-items :taxon taxon))
-
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
+   (tabs/tabs (taxon.tabs/items :taxon taxon
+                                :active :media))
    [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that

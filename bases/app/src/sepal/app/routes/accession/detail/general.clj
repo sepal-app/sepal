@@ -3,6 +3,7 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.detail.tabs :as accession.tabs]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
@@ -13,18 +14,10 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn tab-items [& {:keys [accession]}]
-  [{:label "General"
-    :key :name
-    :href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})}
-   {:label "Media"
-    :key :media
-    :href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})}])
-
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs :active :name
-              :items (tab-items :accession accession))
+   (tabs/tabs (accession.tabs/items :accession accession
+                                    :active :general))
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org

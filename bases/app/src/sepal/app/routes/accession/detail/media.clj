@@ -3,6 +3,7 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.detail.tabs :as accession.tabs]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
@@ -25,20 +26,12 @@
              {:id (:accession/id accession)}
              {:page (+ 1 current-page)}))
 
-(defn tab-items [& {:keys [accession]}]
-  [{:label "General"
-    :key :name
-    :href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})}
-   {:label "Media"
-    :key :media
-    :href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})}])
-
 (defn page-content [& {:keys [media page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
-   (tabs/tabs :active :media
-              :items (tab-items :accession accession))
+   (tabs/tabs (accession.tabs/items :accession accession
+                                    :active :media))
 
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
