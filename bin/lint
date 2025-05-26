@@ -19,6 +19,6 @@ fi
 
 SKIP_DEP_CHECKS=${SKIP_DEP_CHECKS:=false}
 
-$CLJ_KONDO --parallel --lint components --lint bases --lint projects &&
+$CLJ_KONDO --parallel --lint components --lint bases --lint projects --fail-level error &&
     $CLJFMT check &&
     if [[ $SKIP_POLY != true ]]; then clojure -M:poly check; fi
