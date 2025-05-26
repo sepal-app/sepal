@@ -30,8 +30,8 @@
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
 
-   (tabs/tabs (accession.tabs/items :accession accession
-                                    :active :media))
+   (tabs/tabs2 (accession.tabs/items :accession accession
+                                     :active :media))
 
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]

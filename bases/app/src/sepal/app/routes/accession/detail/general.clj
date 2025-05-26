@@ -16,8 +16,9 @@
 
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs (accession.tabs/items :accession accession
-                                    :active :general))
+   [:div {:x-data "accessionTabs"}
+    (tabs/tabs2 (accession.tabs/items :accession accession
+                                      :active :general))]
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org
