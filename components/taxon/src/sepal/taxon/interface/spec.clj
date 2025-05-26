@@ -63,8 +63,7 @@
     [:* VernacularName]]])
 
 (def CreateTaxon
-  [:map {:closed true
-         :store/result Taxon}
+  [:map {:closed true}
    ;; TODO: allow specifying an id when creating a taxon
    [:name name]
    [:author {:optional :true}
@@ -83,8 +82,7 @@
 
 (def UpdateTaxon
   (mu/optional-keys
-    [:map {:closed true
-           :store/result Taxon}
+    [:map {:closed true}
      [:name {:optional true}
       name]
      [:author {:optional true}

@@ -11,7 +11,7 @@
    [:user/email email]])
 
 (def CreateUser
-  [:map {:store/result User}
+  [:map
    [:id {:optional true} id]
    [:email email]
    [:password {:encode/store (fn [p]

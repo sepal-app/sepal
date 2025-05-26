@@ -11,7 +11,7 @@
   (store.i/get-by-id db :taxon id spec/Taxon))
 
 (defn create! [db data]
-  (store.i/create! db :taxon data spec/CreateTaxon))
+  (store.i/create! db :taxon data spec/CreateTaxon spec/Taxon))
 
 (comment
   ;; id
@@ -32,7 +32,7 @@
   ())
 
 (defn update! [db id data]
-  (store.i/update! db :taxon id data spec/UpdateTaxon))
+  (store.i/update! db :taxon id data spec/UpdateTaxon spec/Taxon))
 
 (create-ns 'sepal.taxon.interface)
 (alias 'taxon.i 'sepal.taxon.interface)

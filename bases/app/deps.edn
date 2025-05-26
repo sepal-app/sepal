@@ -7,7 +7,7 @@
         com.taoensso/timbre {:mvn/version "6.5.0"}
         com.taoensso/nippy {:mvn/version "3.4.2"}
         lambdaisland/uri {:mvn/version "1.16.134"}
-        metosin/malli {:mvn/version "0.17.0"}
+        metosin/malli {:mvn/version "0.18.0"}
         metosin/reitit {:mvn/version "0.7.2"}
         metosin/ring-http-response {:mvn/version "0.9.4"}
         pogonos/pogonos {:mvn/version "0.2.1"}

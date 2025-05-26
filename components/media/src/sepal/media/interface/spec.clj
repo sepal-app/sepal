@@ -24,8 +24,7 @@
    [:media/created-by created-by]])
 
 (def CreateMedia
-  [:map {:closed true
-         :store/result Media}
+  [:map {:closed true}
    [:s3-bucket s3-bucket]
    [:s3-key s3-key]
    [:title {:optional true} [:maybe title]]
@@ -44,8 +43,7 @@
    [:media-link/resource-id pos-int?]])
 
 (def CreateMediaLink
-  [:map {:closed true
-         :store/result MediaLink}
+  [:map {:closed true}
    [:media-id id]
    [:resource-type {:decode/store csk/->kebab-case-keyword
                     :encode/store csk/->kebab-case-string}

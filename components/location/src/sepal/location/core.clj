@@ -9,10 +9,10 @@
   (store.i/get-by-id db :location id spec/Location))
 
 (defn create! [db data]
-  (store.i/create! db :location data spec/CreateLocation))
+  (store.i/create! db :location data spec/CreateLocation spec/Location))
 
 (defn update! [db id data]
-  (store.i/update! db :location id data spec/UpdateLocation))
+  (store.i/update! db :location id data spec/UpdateLocation spec/Location))
 
 (create-ns 'sepal.location.interface)
 (alias 'loc.i 'sepal.location.interface)

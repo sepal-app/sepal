@@ -15,16 +15,14 @@
    [:location/name name]])
 
 (def CreateLocation
-  [:map {:closed true
-         :store/result Location}
+  [:map {:closed true}
    [:code code]
    [:name name]
    [:description description]])
 
 (def UpdateLocation
   (mu/optional-keys
-    [:map {:closed true
-           :store/result Location}
+    [:map {:closed true}
      [:code code]
      [:name name]
      [:description description]]))

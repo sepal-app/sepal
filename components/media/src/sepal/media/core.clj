@@ -34,7 +34,7 @@
              (mapv #(store.i/coerce spec/Media %)))))
 
 (defn create! [db data]
-  (store.i/create! db :media data spec/CreateMedia))
+  (store.i/create! db :media data spec/CreateMedia spec/Media))
 
 (defn delete! [db id]
   (jdbc.sql/delete! db :public.media {:id id}))

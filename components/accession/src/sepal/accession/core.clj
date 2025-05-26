@@ -10,10 +10,10 @@
   (store.i/get-by-id db :accession id spec/Accession))
 
 (defn create! [db data]
-  (store.i/create! db :accession data spec/CreateAccession))
+  (store.i/create! db :accession data spec/CreateAccession spec/Accession))
 
 (defn update! [db id data]
-  (store.i/update! db :accession id data spec/UpdateAccession))
+  (store.i/update! db :accession id data spec/UpdateAccession spec/Accession))
 
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)

@@ -30,7 +30,7 @@
 
 (defn build-create-activity-schema [type data-schema registry]
   (mu/closed-schema
-    [:map {:store/result Activity}
+    [:map
      [:type {:decode/store keyword
              :encode/store #(format "%s/%s" (namespace %) (name %))}
       [:= type]]
@@ -53,8 +53,7 @@
 
 (defn create! [db activity]
   (let [CreateActivity (m/schema (into [:multi {:dispatch :type
-                                                :lazy-refs true
-                                                :store/result Activity}]
+                                                :lazy-refs true}]
                                        (keys (methods data-schema)))
                                  {:registry registry})]
-    (store.i/create! db :activity activity CreateActivity)))
+    (store.i/create! db :activity activity CreateActivity Activity)))

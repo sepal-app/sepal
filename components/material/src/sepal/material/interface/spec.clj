@@ -32,8 +32,7 @@
    [:material/quantity quantity]])
 
 (def CreateMaterial
-  [:map {:closed true
-         :store/result Material}
+  [:map {:closed true}
    [:code code]
    [:accession-id {:decode/store validate.i/coerce-int}
     accession-id]
@@ -54,8 +53,7 @@
 
 (def UpdateMaterial
   (mu/optional-keys
-    [:map {:closed true
-           :store/result Material}
+    [:map {:closed true}
      [:code code]
      [:accession-id {:decode/store validate.i/coerce-int}
       accession-id]

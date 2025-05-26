@@ -23,7 +23,7 @@
            (store.i/coerce spec/User)))
 
 (defn create! [db data]
-  (store.i/create! db :public.user data spec/CreateUser))
+  (store.i/create! db :public.user data spec/CreateUser spec/User))
 
 (defn exists? [db email]
   (db.i/exists? db {:select 1

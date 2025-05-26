@@ -29,17 +29,14 @@
   ;; then we encode the data so its in the form expected by the database
   (let [data (->> data
                   (coerce spec)
-                  (encode spec))
-        ;; TODO: deprecate the :store/result property
-        result-spec (or result-spec
-                        (-> spec m/properties :store/result))]
+                  (encode spec))]
     (when-let [result (db.i/execute-one! db
                                          {:update table
                                           :set data
                                           :where [:= :id id]}
                                          ;; TODO: use the store/columns keys from the properties
                                          {:return-keys 1})]
-      ;; If the spec has a :store/result property then coerce the result
+      ;; If we have a result-spec then coerce the result
       (cond->> result
         (some? result-spec)
         (coerce result-spec)))))
@@ -47,14 +44,12 @@
 (defn create! [db table data spec result-spec]
   (let [data (->> data
                   (coerce spec)
-                  (encode spec))
-        ;; TODO: deprecate the :store/result property
-        result-spec (or result-spec
-                        (-> spec m/properties :store/result))]
+                  (encode spec))]
     (when-let [result (db.i/execute-one! db {:insert-into [table]
                                              :values [data]
                                              ;; TODO: use the store/columns keys from the properties
                                              :returning [:*]})]
+      ;; If we have a result-spec then coerce the result
       (cond->> result
         (some? result-spec)
         (coerce result-spec)))))

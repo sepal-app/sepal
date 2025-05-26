@@ -13,16 +13,14 @@
    [:accession/taxon-id taxon-id]])
 
 (def CreateAccession
-  [:map {:closed true
-         :store/result Accession}
+  [:map {:closed true}
    [:code code]
    [:taxon-id {:decode/store validate.i/coerce-int}
     taxon-id]])
 
 (def UpdateAccession
   (mu/optional-keys
-    [:map {:closed true
-           :store/result Accession}
+    [:map {:closed true}
      [:code code]
      [:taxon-id {:decode/store validate.i/coerce-int}
       [:maybe taxon-id]]]))
