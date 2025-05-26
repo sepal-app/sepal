@@ -1,8 +1,8 @@
 {:paths ["src" "resources"]
  :deps {babashka/fs {:mvn/version "0.4.19"}
-        com.github.brettatoms/zodiac {:mvn/version "0.4.61"}
-        com.github.brettatoms/zodiac-assets {:mvn/version "0.2.22"}
-        com.github.brettatoms/zodiac-sql {:mvn/version "0.1.9"}
+        com.github.brettatoms/zodiac {:mvn/version "0.4.62"}
+        com.github.brettatoms/zodiac-assets {:mvn/version "0.3.23"}
+        com.github.brettatoms/zodiac-sql {:mvn/version "0.1.10"}
         com.fzakaria/slf4j-timbre {:mvn/version "0.4.1"}
         com.taoensso/timbre {:mvn/version "6.5.0"}
         com.taoensso/nippy {:mvn/version "3.4.2"}
