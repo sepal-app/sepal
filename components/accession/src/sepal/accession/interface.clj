@@ -11,5 +11,11 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(def !updated
+  #'core/!updated)
+
+(def !created
+  #'core/!created)
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))
