@@ -13,34 +13,34 @@ CREATE TABLE taxon (
   author text,
   parent_id integer references taxon(id),
   rank text not null check(rank in (
-  'class',
-  'family',
-  'form',
-  'genus',
-  'kingdom',
-  'lusus',
-  'order',
-  'phylum',
-  'prole',
-  'section',
-  'series',
-  'species',
-  'subclass',
-  'subfamily',
-  'subform',
-  'subgenus',
-  'subkingdom',
-  'suborder',
-  'subsection',
-  'subseries',
-  'subspecies',
-  'subtribe',
-  'subvariety',
-  'superorder',
-  'supertribe',
-  'tribe',
-  'unranked',
-  'variety'
+    'class',
+    'family',
+    'form',
+    'genus',
+    'kingdom',
+    'lusus',
+    'order',
+    'phylum',
+    'prole',
+    'section',
+    'series',
+    'species',
+    'subclass',
+    'subfamily',
+    'subform',
+    'subgenus',
+    'subkingdom',
+    'suborder',
+    'subsection',
+    'subseries',
+    'subspecies',
+    'subtribe',
+    'subvariety',
+    'superorder',
+    'supertribe',
+    'tribe',
+    'unranked',
+    'variety'
   )),
   wfo_taxon_id text,
   read_only integer not null default 0,
@@ -61,7 +61,36 @@ CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
   taxon_id integer not null references taxon(id)
-);
+, private boolean not null default false, id_qualifier text check(id_qualifier in (
+  'aff',
+  'cf',
+  'forsan',
+  'incorrect',
+  'near',
+  'questionable'
+)), id_qualifier_rank text check(id_qualifier_rank in (
+  'below_family',
+  'family',
+  'genus',
+  'species',
+  'first_infraspecific_epithet',
+  'second_infraspecific_epithet',
+  'cultivar'
+)), provenance_type text check(provenance_type in (
+  'wild',
+  'cultivated',
+  'not_wild',
+  'purchase',
+  'insufficient_data'
+)), wild_provenance_status text check(wild_provenance_status in (
+  'wild_native',
+  'wild_non_native',
+  'cultivated_native',
+  'cultivated',
+  'not_wild',
+  'purchase',
+  'insufficient_data'
+)));
 CREATE INDEX accession_id_idx on accession (id);
 CREATE TABLE material (
   id integer primary key autoincrement,
@@ -107,6 +136,51 @@ CREATE TABLE settings (
   value text,
   user_id integer references "user"(id)
 );
+CREATE TABLE source_detail (
+  id integer primary key autoincrement,
+  name text,
+  description text,
+  phone text,
+  email text,
+  address text,
+  source_type text check(source_type in (
+    'expedition',
+    'gene_bank',
+    'field_station',
+    'staff',
+    'university_department',
+    'club',
+    'municipal_department',
+    'commerical',
+    'individual',
+    'other'
+)));
+CREATE TABLE source (
+  id integer primary key autoincrement,
+  sources_code text,
+  -- accession_id int constraint source_accession_id_fkey unique references accession (id) not null,
+  -- source_detail_id int constraint source_detail_id_fkey references source_detail (id) not null
+  accession_id int not null unique references accession (id),
+  source_detail_id int not null references source_detail (id)
+);
+CREATE TABLE collection (
+  id integer primary key autoincrement,
+  collector text,
+  collectors_code text,
+  date date,
+  locale text,
+  -- Always store points as WGS84 but allow setting a coordinate system for conversion
+  -- coordinates geography (point, 4326),
+  coordinates_accuracy smallint,
+  -- Use postgis_srs_all to get all of the coordinate systems
+  coordinate_system_srid text,
+  altitude smallint,
+  altitude_accuracy smallint,
+  notes text,
+  source_id int not null unique references source (id)
+  -- source_id int constraint collection_source_id_fkey unique references source (id) not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
-  ('20251021111547');
+  ('20251021111547'),
+  ('20251101133108');

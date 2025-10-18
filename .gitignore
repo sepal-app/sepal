@@ -43,7 +43,7 @@ manifest.edn
 *-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].*
 
 node_modules/
-# bases/app/node_modules
+# ./bases/app/node_modules/**
 .clj-kondo/
 
 
@@ -57,3 +57,6 @@ bases/app/resources/app/build/
 
 # AI/LLM
 .serena
+
+sepal.db
+wfo_plantlist*.db

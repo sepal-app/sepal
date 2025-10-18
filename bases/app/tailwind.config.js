@@ -4,6 +4,8 @@ import forms from "@tailwindcss/forms"
 import daisyui from "daisyui"
 import themes from "daisyui/src/theming/themes"
 
+// TODO: Move this config to CSS
+
 module.exports = {
     content: {
         files: [path.resolve(__dirname, "src/**/*.{html,js,ts,clj,css}")],

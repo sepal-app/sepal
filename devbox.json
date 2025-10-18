@@ -8,10 +8,10 @@
       "version":            "latest",
       "excluded_platforms": ["aarch64-darwin", "x86_64-darwin"]
     },
-    "nodejs":                            "20.12.2",
-    "sqlfluff":                          "3.1.0",
-    "dbmate":                            "2.19.0",
-    "python":                            "3.14.0",
-    "uv":                                "0.8.19"
+    "nodejs":           "22.14.0",
+    "google-cloud-sdk": "latest",
+    "sqlfluff":         "3.4.2",
+    "dbmate":           "2.28.0",
+    "sqlite":           "latest"
   }
 }
