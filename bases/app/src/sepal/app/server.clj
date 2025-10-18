@@ -32,6 +32,12 @@
      ["/taxon" (taxon/routes)]
      ["/media" (media/routes)]]))
 
+(defn routes []
+  ["" {:middleware [stacktrace/wrap-stacktrace-web
+                    middleware/htmx-request]}
+   ;; other routes
+   ])
+
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
   (db.i/init)
   ;; Building the url instead of passing the spec as-is makes it work on google

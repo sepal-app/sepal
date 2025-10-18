@@ -6,6 +6,7 @@
                                poly/accession {:local/root "components/accession"}
                                poly/activity {:local/root "components/activity"}
                                poly/aws-s3 {:local/root "components/aws-s3"}
+                               poly/collection {:local/root "components/collection"}
                                poly/config {:local/root "components/config"}
                                poly/database {:local/root "components/database"}
                                poly/error {:local/root "components/error"}
@@ -14,6 +15,7 @@
                                poly/media {:local/root "components/media"}
                                poly/postmark {:local/root "components/postmark"}
                                poly/store {:local/root "components/store"}
+                               poly/supplier {:local/root "components/supplier"}
                                poly/taxon {:local/root "components/taxon"}
                                poly/test {:local/root "components/test"}
                                poly/user {:local/root "components/user"}

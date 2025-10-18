@@ -1,1 +1,1 @@
-{:source-paths #{"components" "bases" "projects"}}
+{:source-paths #{"components" "bases" "projects" "development"}}

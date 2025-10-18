@@ -43,6 +43,8 @@
         (.withoutPadding)
         (.encodeToString data))))
 
+;; TODO: We should probably switch to providing and smtp server since we're doing SaaS
+
 (defn send-reset-password-email [postmark to subject from reset-password-url]
   (let [content (mustache/render-resource "app/email/reset_password.mustache"
                                           {:email to

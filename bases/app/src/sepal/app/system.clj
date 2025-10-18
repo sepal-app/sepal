@@ -9,6 +9,8 @@
 
 (def ^:dynamic *system* nil)
 
+;; TODO: add registery for :pos-int or :unsigned-int
+
 ;; Make sure we have the malli.experimental.time schemes in the default
 ;; registry.
 (mr/set-default-registry!

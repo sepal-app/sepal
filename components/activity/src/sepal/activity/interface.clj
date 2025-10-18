@@ -8,6 +8,8 @@
             [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]))
 
+;; TODO: Should this be moved to its relative namespaces...if not then leave a comment why?
+
 (defmulti data-schema (fn [type] type))
 
 (def id pos-int?)

@@ -14,6 +14,17 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
+;; bauble accession columns: code, prov_type, wild_prov_status, date_accd,
+;; date_recvd, quantity_recvd, recvd_type, id_qual, id_qual_rank, private,
+;; species_id, intended_location_id, intended2_location_id, id, _created,
+;; _last_updated
+;;
+;; TODO:
+;; accession.source_id
+;; source_detail
+;;
+;; Sources: Staff, Individual, Expedition, Commercial, Propagation (internal)
+
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
    [:div {:x-data "accessionTabs"}
