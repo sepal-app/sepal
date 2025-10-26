@@ -26,8 +26,10 @@
    [:activity/data {:decode/store #(cond-> %
                                      (string? %) (json/read-str)
                                      :always (walk/keywordize-keys))}
-    ;; TODO: Can we validate this against the data-schema
-    ;; multimethod?
+    ;; TODO: I couldn't figure out how to use the data schema multimethod to automatically
+    ;; validate the activity data and to make it use to store decoders so for now we'll
+    ;; just do that as an extra step in each of the resource activity create! functions,
+    ;; e.g. see sepal.taxon.interface.activity/create!
     [:map-of :keyword :any]]
    [:activity/created-at {:decode/store
                           #(cond-> %

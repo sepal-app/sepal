@@ -1,5 +1,6 @@
 (ns sepal.taxon.interface.activity
   (:require [sepal.activity.interface :as activity.i]
+            [sepal.store.interface :as store.i]
             [sepal.taxon.interface.spec :as spec])
   (:import [java.time Instant]))
 
@@ -7,23 +8,25 @@
 (def deleted :taxon/deleted)
 (def updated :taxon/updated)
 
-(defn create! [db type created-by data]
-  (activity.i/create! db
-                      {:type type
-                       :created-at (Instant/now)
-                       :created-by created-by
-                       ;; TODO: The parent name would be helpful
-                       :data {:taxon-id (:taxon/id data)
-                              :taxon-name (:taxon/name data)
-                              :taxon-author (:taxon/author data)
-                              :taxon-rank (:taxon/rank data)}}))
-
 (def TaxonActivityData
   [:map
    [:taxon-id spec/id]
    [:taxon-name spec/name]
-   [:taxon-author spec/author]
-   [:taxon-rank spec/rank]])
+   [:taxon-author [:maybe spec/author]]
+   [:taxon-rank {:decode/store keyword}
+    spec/rank]])
+
+(defn create! [db type created-by data]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                         ;; TODO: The parent name would be helpful
+                           :data {:taxon-id (:taxon/id data)
+                                  :taxon-name (:taxon/name data)
+                                  :taxon-author (:taxon/author data)
+                                  :taxon-rank (:taxon/rank data)}})
+      (update :activity/data #(store.i/coerce TaxonActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   TaxonActivityData)

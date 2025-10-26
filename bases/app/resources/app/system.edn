@@ -15,7 +15,8 @@
   :context-key :db}
 
  :sepal.app.server/zodiac-assets
- {:config-file #profile {:local "bases/app/vite.config.dev.js"
+ {:build? false
+  :config-file #profile {:local "bases/app/vite.config.dev.js"
                          :default "bases/app/vite.config.js"}
   :manifest-path  "app/build/.vite/manifest.json"
   :asset-resource-path "app/build/assets"
