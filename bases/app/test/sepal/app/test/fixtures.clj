@@ -1,6 +1,5 @@
 (ns sepal.app.test.fixtures
   (:require [clojure.test :as t]
-            [clojure.tools.logging :as log]
             [integrant.core :as ig])
   (:import [clojure.lang ExceptionInfo]))
 

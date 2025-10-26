@@ -5,8 +5,7 @@
             [clojure.string :as str]
             [honey.sql]
             [next.jdbc :as jdbc]
-            [next.jdbc.result-set :as jdbc.result-set]
-            [zodiac.ext.sql :as z.sql])
+            [next.jdbc.result-set :as jdbc.result-set])
   (:import [java.sql ResultSet ResultSetMetaData]))
 
 (def builder-fn (jdbc.result-set/builder-adapter

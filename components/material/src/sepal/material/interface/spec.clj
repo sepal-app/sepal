@@ -2,7 +2,6 @@
   (:refer-clojure :exclude [name type])
   (:require [camel-snake-kebab.core :as csk]
             [malli.util :as mu]
-            [sepal.database.interface :as db.i]
             [sepal.validation.interface :as validate.i]))
 
 (def id pos-int?)

@@ -1,7 +1,5 @@
 (ns sepal.app.test.system
-  (:require [clojure.java.io :as io]
-            [integrant.core :as ig]
-            [next.jdbc :as jdbc]
+  (:require [integrant.core :as ig]
             [sepal.config.interface :as config.i]
             [sepal.test.interface :as test.i]
             [zodiac.core :as z]

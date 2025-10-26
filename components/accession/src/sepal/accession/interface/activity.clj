@@ -1,6 +1,6 @@
 (ns sepal.accession.interface.activity
-  (:require [sepal.accession.interface.spec :as spec] [sepal.activity.interface :as activity.i]
-            [sepal.store.interface :as store.i]
+  (:require [sepal.accession.interface.spec :as spec]
+            [sepal.activity.interface :as activity.i]
             [sepal.store.interface :as store.i])
   (:import [java.time Instant]))
 
