@@ -1,23 +1,12 @@
-{:dbtype "postgresql"
- :classname "org.postgresql.Driver"
- :subprotocol "postgresql"
- :host #profile {:default #or [#env DB_HOST "localhost"]
-                 :production nil
-                 :test "localhost"}
- :port #profile {:default #or [#env DB_PORT 5432]
-                 :production nil}
- :dbname #profile {:default #or [#env DB_NAME "sepal"]
-                   :test "sepal_test"}
- :user #profile {:default #or [#env DB_USER "sepal"]
-                 ;; :test #or [#env DB_USER "sepal_test"]
-                 :test "sepal_test"}
- :password #profile {:default #env DB_PASSWORD
-                     :test "password"}
- :unixSocketPath #env DB_UNIX_SOCKET_PATH
- :socketFactory #env DB_SOCKET_FACTORY
- :cloudSqlInstance #env CLOUD_SQL_INSTANCE
- :maxPoolSize #long #or [#env DB_MAX_POOL_SIZE 10]
- ;; When using postgresql use :connectionInitSql "COMMIT;" setting is required
- ;; in case a default :schema is provided, see
- ;; https://github.com/brettwooldridge/HikariCP/issues/1369
- :connectionInitSql "COMMIT;"}
+{:jdbcUrl #profile {:default #or [#env DATABASE_JDBC_URL "jdbc:sqlite:/tmp/sepal.db"]
+                    :test "jdbc:sqlite::memory:"}
+
+ ;; SQLite-specific pragmas
+ ;; CRITICAL: Enable foreign key constraints (off by default in SQLite)
+ :foreign_keys true
+
+ ;; Additional SQLite connection parameters (optional)
+ :journal_mode "WAL"  ;; Write-Ahead Logging for better concurrency
+ ;; :synchronous "NORMAL"  ;; Balance between safety and speed
+ ;; :cache_size -64000  ;; Cache size in KiB (negative value = KiB, positive = pages)
+ }

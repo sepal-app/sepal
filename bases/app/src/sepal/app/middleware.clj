@@ -1,10 +1,10 @@
 (ns sepal.app.middleware
-  (:require [sepal.app.globals :as g]
+  (:require [clojure.tools.logging :as log]
+            [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.error.interface :as error.i]
             [sepal.user.interface :as user.i]
-            [taoensso.timbre :as log]
             [zodiac.core :as z]))
 
 (defn htmx-request [handler]

@@ -1,6 +1,5 @@
 (ns sepal.app.server
   (:require [integrant.core :as ig]
-            [next.jdbc.connection :as jdbc.connection]
             [reitit.ring]
             [ring.middleware.stacktrace :as stacktrace]
             [sepal.app.middleware :as middleware]
@@ -34,15 +33,9 @@
 
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
   (db.i/init)
-  ;; Building the url instead of passing the spec as-is makes it work on google
-  ;; cloud in production where host and port are nil
-  (let [url (cond-> spec
-              (empty? (:socketFactory spec)) (dissoc :socketFactory)
-              :always (jdbc.connection/jdbc-url))]
-    (z.sql/init {:context-key context-key
-                 :jdbc-options db.i/jdbc-options
-                 :spec (merge (select-keys spec [:maxPoolSize])
-                              {:jdbcUrl url})})))
+  (z.sql/init {:context-key context-key
+               :jdbc-options db.i/jdbc-options
+               :spec spec}))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))

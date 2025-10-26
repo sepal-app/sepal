@@ -33,5 +33,5 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/deps.edn') }}
       - name: Lint
         run: bin/lint
-      # - name: Run All Tests
-      #   run: clojure -M:dev:test:test-runner
+      - name: Run All Tests
+        run: clojure -M:dev:test:test-runner

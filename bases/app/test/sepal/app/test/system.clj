@@ -1,5 +1,7 @@
 (ns sepal.app.test.system
-  (:require [integrant.core :as ig]
+  (:require [clojure.java.io :as io]
+            [integrant.core :as ig]
+            [next.jdbc :as jdbc]
             [sepal.config.interface :as config.i]
             [sepal.test.interface :as test.i]
             [zodiac.core :as z]
@@ -17,7 +19,7 @@
   {:sepal.app.server/zodiac-sql {:spec (load-config "database/config.edn")
                                  :context-key :db}
    :sepal.app.server/zodiac-assets {:build? false
-                                    :manifest-path  "app/build/.vite/manifest.json"
+                                    :manifest-path "app/build/.vite/manifest.json"
                                     :asset-resource-path "app/build/assets"
                                     :package-json-dir "bases/app"}
    :sepal.app.server/zodiac {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
@@ -27,15 +29,19 @@
                                                :reset-password-secret "1234"
                                                :app-domain "test.sepal.app"}
                              :cookie-secret "1234567890123456"
-                             :start-server? false}})
+                             :start-server? false}
+   :sepal.database.interface/schema {:zodiac (ig/ref :sepal.app.server/zodiac)}
+   :sepal.malli.interface/init {}})
 
 (def default-system-fixture
   (let [system-config (default-system-config)]
     (test.i/create-system-fixture system-config
                                   (fn [system f]
-                                    (binding [*system* system
-                                              *db* (-> system  :sepal.app.server/zodiac ::z.sql/db)
-                                              *app* (-> system :sepal.app.server/zodiac ::z/app)
-                                              *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)]
-                                      (f)))
+                                    (let [db (-> system :sepal.app.server/zodiac ::z.sql/db)]
+                                      ;; Load schema for in-memory test database
+                                      (binding [*system* system
+                                                *db* db
+                                                *app* (-> system :sepal.app.server/zodiac ::z/app)
+                                                *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)]
+                                        (f))))
                                   (keys system-config))))

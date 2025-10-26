@@ -100,8 +100,8 @@
                      [:= :l.id :m.location_id]]
               :where (if q
                        [:or
-                        [:ilike :m.code (format "%%%s%%" q)]
-                        [:ilike :a.code (format "%%%s%%" q)]]
+                        [:like :m.code (format "%%%s%%" q)]
+                        [:like :a.code (format "%%%s%%" q)]]
                        :true)}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt

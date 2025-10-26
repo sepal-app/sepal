@@ -1,4 +1,4 @@
 {:paths ["src" "resources"]
- :deps {}
+ :deps {com.password4j/password4j {:mvn/version "1.8.4"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}

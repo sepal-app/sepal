@@ -9,7 +9,9 @@
 (def accession-id pos-int?)
 (def code [:string {:min 1}])
 (def location-id pos-int?)
-(def memorial :boolean)
+(def memorial [:boolean
+               {:decode/store #(and (int? %) (= % 1))
+                :encode/store #(if (true? %) 1 0)}])
 (def quantity pos-int?)
 (def status [:enum :alive :dead])
 (def type [:enum :plant :seed :vegetative :tissue :other])
@@ -21,12 +23,10 @@
    [:material/accession-id accession-id]
    [:material/location-id location-id]
    [:material/type {:decode/store csk/->kebab-case-keyword
-                    :encode/store (comp db.i/->pg-enum
-                                        csk/->kebab-case-string)}
+                    :encode/store csk/->kebab-case-string}
     type]
    [:material/status {:decode/store csk/->kebab-case-keyword
-                      :encode/store (comp db.i/->pg-enum
-                                          csk/->kebab-case-string)}
+                      :encode/store csk/->kebab-case-string}
     status]
    [:material/memorial memorial]
    [:material/quantity quantity]])
@@ -40,12 +40,10 @@
     location-id]
 
    [:type {:decode/store csk/->kebab-case-keyword
-           :encode/store (comp db.i/->pg-enum
-                               csk/->kebab-case-string)}
+           :encode/store csk/->kebab-case-string}
     type]
    [:status {:decode/store csk/->kebab-case-keyword
-             :encode/store (comp db.i/->pg-enum
-                                 csk/->kebab-case-string)}
+             :encode/store csk/->kebab-case-string}
     status]
    [:memorial {:optional true} memorial]
    [:quantity {:decode/store validate.i/coerce-int}
@@ -60,12 +58,10 @@
      [:location-id {:decode/store validate.i/coerce-int}
       location-id]
      [:type {:decode/store csk/->kebab-case-keyword
-             :encode/store (comp db.i/->pg-enum
-                                 csk/->kebab-case-string)}
+             :encode/store csk/->kebab-case-string}
       type]
      [:status {:decode/store csk/->kebab-case-keyword
-               :encode/store (comp db.i/->pg-enum
-                                   csk/->kebab-case-string)}
+               :encode/store csk/->kebab-case-string}
       status]
      [:memorial memorial]
      [:quantity {:decode/store validate.i/coerce-int}

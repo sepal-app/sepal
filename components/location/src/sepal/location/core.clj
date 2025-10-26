@@ -22,7 +22,7 @@
         result (create! db data)]
     (vary-meta result assoc :db db)))
 
-(defmethod ig/halt-key! ::loc.i/factory [_ data]
-  (when data
+(defmethod ig/halt-key! ::loc.i/factory [_ {:location/keys [id] :as data}]
+  (when id
     (let [{:keys [db]} (meta data)]
-      (jdbc.sql/delete! db :location {:id (:location/id data)}))))
+      (jdbc.sql/delete! db :location {:id id}))))

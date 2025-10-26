@@ -113,9 +113,9 @@
                                            :selected (when (= rank (some-> values :rank name))
                                                        "selected")}
                                   rank])])])]
-
        [:fieldset {:class "fieldset mt-6"
-                   :x-data (json/js {:vernacularNames (:vernacular-names values)})}
+                   :x-data (json/js {:vernacularNames (or (:vernacular-names values)
+                                                          [])})}
         [:legend {:class "fieldset-legend text-md"}
          "Vernacular names"
          [:button {:type "button"
@@ -139,7 +139,7 @@
                      :aria-label "Delete"}
             [:span {:aria-hidden true}
              (heroicons/outline-trash)]]]]]
-        [:div {:x-show "!vernacularNames.length"
+        [:div {:x-show "!vernacularNames?.length"
                :class "bg-blue-50 p-6 rounded-xl"}
          "This taxon doesn't have any vernacular names"]])
 

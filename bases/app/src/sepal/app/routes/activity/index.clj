@@ -200,11 +200,11 @@
 (def Activity
   (-> activity.i/Activity
       (mu/assoc :taxon [:maybe taxon.spec/Taxon])
-      (mu/assoc :parent [:maybe (mu/select-keys  taxon.spec/Taxon
-                                                 [:taxon/id
-                                                  :taxon/name
-                                                  :taxon/rank
-                                                  :taxon/author])])
+      (mu/assoc :parent [:maybe (mu/select-keys taxon.spec/Taxon
+                                                [:taxon/id
+                                                 :taxon/name
+                                                 :taxon/rank
+                                                 :taxon/author])])
       (mu/assoc :accession [:maybe accession.spec/Accession])
       (mu/assoc :location [:maybe location.spec/Location])
       (mu/assoc :material [:maybe material.spec/Material])
@@ -222,7 +222,7 @@
                                      [:parent.id :parent__id]
                                      [:parent.name :parent__name]]
                             :from [[:activity :a]]
-                            :join-by [:inner [[:public.user :u]
+                            :join-by [:inner [[:user :u]
                                               [:= :u.id :a.created_by]]
                                       :left [[:accession :acc]
                                              [:=

@@ -54,3 +54,6 @@ bases/app/resources/app/build/
 .rebl
 .dir-locals.el
 .projectile-cache.eld
+
+# AI/LLM
+.serena

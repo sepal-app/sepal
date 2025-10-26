@@ -1,24 +1,25 @@
 (ns sepal.database.core
   (:refer-clojure :exclude [count])
   (:require [camel-snake-kebab.core :as csk]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [honey.sql]
             [next.jdbc :as jdbc]
-            [next.jdbc.result-set :as jdbc.result-set]))
+            [next.jdbc.result-set :as jdbc.result-set]
+            [zodiac.ext.sql :as z.sql])
+  (:import [java.sql ResultSet ResultSetMetaData]))
 
-(defn get-modified-column-names [^java.sql.ResultSetMetaData rsmeta opts]
-  (let [lf (:label-fn opts)]
-    (assert lf ":label-fn is required")
-    (mapv (fn [^Integer i]
-            (lf rsmeta i))
-          (range 1 (inc (if rsmeta (.getColumnCount rsmeta) 0))))))
-
-(defn builder-fn [^java.sql.ResultSet rs opts]
-  (let [rsmeta (.getMetaData rs)
-        cols   (get-modified-column-names rsmeta opts)]
-    ;; TODO: What about supporting something like parent__taxon__name to get an map back like
-    ;; {:parent {:taxon/name "xxx"}}
-    (next.jdbc.result-set/->MapResultSetBuilder rs rsmeta cols)))
+(def builder-fn (jdbc.result-set/builder-adapter
+                  ;; (next.jdbc.result-set/->MapResultSetBuilder rs rsmeta cols)
+                  jdbc.result-set/as-kebab-maps
+                  (fn [builder ^ResultSet rs ^Integer i]
+                    (let [rsm ^ResultSetMetaData (:rsmeta builder)]
+                      (jdbc.result-set/read-column-by-index
+                        (if (#{"BIT" "BOOL" "BOOLEAN"} (.getColumnTypeName rsm i))
+                          (.getBoolean rs i)
+                          (.getObject rs i))
+                        rsm
+                        i)))))
 
 (defn ->kebab-case
   "Same as csk/->kebab-case but only use '_' as the separator.
@@ -60,3 +61,28 @@
            ;; override the builder-fn b/c the default behavior of ->kebab-case is to
            ;; turn :s3_bucket into s-3-bucket
           :builder-fn builder-fn}))
+
+(defn load-schema!
+  "Load the SQLite schema into the in-memory test database.
+   Uses db/schema.sql which is maintained by dbmate dump."
+  [datasource]
+  (let [schema-file (io/file "db/schema.sql")]
+    (if (.exists schema-file)
+      (let [sql (slurp schema-file)
+            ;; Split SQL into individual statements
+            statements (->> (clojure.string/split sql #";")
+                            (map clojure.string/trim)
+                            (remove clojure.string/blank?))]
+        (doseq [statement statements]
+          (try
+            (jdbc/execute! datasource [statement])
+            (catch Exception e
+              ;; Ignore errors for duplicate objects and constraint violations
+              ;; These can happen when the schema is loaded multiple times
+              (when-not (or (re-find #"already exists" (.getMessage e))
+                            (re-find #"duplicate column name" (.getMessage e))
+                            (re-find #"UNIQUE constraint failed" (.getMessage e))
+                            (re-find #"PRIMARY KEY constraint failed" (.getMessage e)))
+                (throw e))))))
+      (throw (ex-info "Schema file not found. Run 'dbmate dump' to generate it."
+                      {:file "db/schema.sql"})))))

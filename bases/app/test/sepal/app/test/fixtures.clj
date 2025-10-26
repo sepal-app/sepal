@@ -1,5 +1,6 @@
 (ns sepal.app.test.fixtures
   (:require [clojure.test :as t]
+            [clojure.tools.logging :as log]
             [integrant.core :as ig])
   (:import [clojure.lang ExceptionInfo]))
 
@@ -14,18 +15,16 @@
                              %1)
                           {}
                           sys)]
-      (try
-        (test-fn args)
-        (finally
-          (ig/halt! sys))))
-    (catch ExceptionInfo t
-      (tap> t)
+      (test-fn args)
+      (ig/halt! sys))
+    (catch ExceptionInfo e
+      ;; (log/error e)
       ;; Integrant doesn't halt the system when an exception occurs in one of
       ;; the init-key fns, so we have to halt the system here to give the
       ;; halt-key fns a chance to clean up.
-      (when-let [s (:system (ex-data t))]
+      (when-let [s (:system (ex-data e))]
         (ig/halt! s))
-      (throw t))))
+      (throw e))))
 
 (defmacro testing
   "If it looks like a test with fixtures and a fixture function then apply the

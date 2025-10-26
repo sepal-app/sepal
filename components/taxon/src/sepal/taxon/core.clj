@@ -11,7 +11,10 @@
   (store.i/get-by-id db :taxon id spec/Taxon))
 
 (defn create! [db data]
-  (store.i/create! db :taxon data spec/CreateTaxon spec/Taxon))
+  (let [data (cond-> data
+               (not (contains? data :vernacular-names))
+               (assoc :vernacular-names []))]
+    (store.i/create! db :taxon data spec/CreateTaxon spec/Taxon)))
 
 (comment
   ;; id

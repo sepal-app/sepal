@@ -2,8 +2,8 @@
   (:refer-clojure :exclude [name])
   (:require [camel-snake-kebab.core :as csk]
             [camel-snake-kebab.extras :as cske]
+            [clojure.data.json :as json]
             [malli.util :as mu]
-            [sepal.database.interface :as db.i]
             [sepal.validation.interface :as validate.i]))
 
 ;; (def wfo-plantlist-name-id [:re #"^wfo-\d{10}"])
@@ -17,6 +17,7 @@
            :form
            :genus
            :kingdom
+           :lusus
            :order
            :phylum
            :prole
@@ -28,19 +29,24 @@
            :subform
            :subgenus
            :subkingdom
+           :suborder
            :subsection
            :subseries
            :subspecies
            :subtribe
            :subvariety
            :superorder
+           :supertribe
            :tribe
+           :unranked
            :variety])
-(def read-only [:boolean])
+
+(def read-only [:boolean {:decode/store #(and (int? %) (= % 1))
+                          :encode/store #(if (true? %) 1 0)}])
 
 (def VernacularName
   [:map {:closed true
-         :encode/store #(cske/transform-keys csk/->kebab-case-string %)}
+         :encode/store #(when % (cske/transform-keys csk/->kebab-case-string %))}
    [:name :string]
    [:language :string]
    [:default {:optional true} :boolean]])
@@ -58,8 +64,10 @@
    ;; id to something else? Maybe we just don't allow it as long as it
    ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
    [:taxon/parent-id [:maybe id]]
-   [:taxon/wfo-taxon-id-2023-12 [:maybe wfo-plantlist-taxon-id]]
-   [:taxon/vernacular-names {:decode/store #(mapv (partial cske/transform-keys csk/->kebab-case-keyword) %)}
+   [:taxon/wfo-taxon-id [:maybe wfo-plantlist-taxon-id]]
+   [:taxon/vernacular-names {:decode/store #(let [vn (when % (json/read-str %))]
+                                              (mapv (partial cske/transform-keys csk/->kebab-case-keyword) vn))}
+
     [:* VernacularName]]])
 
 (def CreateTaxon
@@ -69,15 +77,16 @@
    [:author {:optional :true}
     [:maybe author]]
    [:rank {:decode/store csk/->kebab-case-keyword
-           :encode/store (comp db.i/->pg-enum
-                               csk/->kebab-case-string)}
+           :encode/store csk/->kebab-case-string}
     rank]
-   [:taxon/wfo-taxon-id-2023-12 {:optional true}
+   [:taxon/wfo-taxon-id {:optional true}
     [:maybe wfo-plantlist-taxon-id]]
    [:parent-id {:optional true
                 :decode/store validate.i/coerce-int}
     [:maybe id]]
-   [:vernacular-names {:encode/store db.i/->jsonb}
+   [:vernacular-names {:optional true
+                       :default []
+                       :encode/store json/write-str}
     [:* VernacularName]]])
 
 (def UpdateTaxon
@@ -88,13 +97,16 @@
      [:author {:optional true}
       author]
      [:rank {:decode/store csk/->kebab-case-keyword
-             :encode/store (comp db.i/->pg-enum
-                                 csk/->kebab-case-string)}
+             :encode/store csk/->kebab-case-string}
       rank]
-     [:wfo-taxon-id-2023-12 {:optional true}
+     [:wfo-taxon-id {:optional true}
       [:maybe wfo-plantlist-taxon-id]]
      [:parent-id {:optional true
                   :decode/store validate.i/coerce-int}
       [:maybe id]]
-     [:vernacular-names {:encode/store db.i/->jsonb}
+     ;; TODO: I think writing already saves maps and vectors as json
+     [:vernacular-names {:encode/store
+                         (fn [v]
+                           (tap> (str "v: " v))
+                           (json/write-str v))}
       [:* VernacularName]]]))

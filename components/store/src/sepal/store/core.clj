@@ -6,6 +6,7 @@
 
 (def transformer
   (mt/transformer
+    mt/default-value-transformer
     mt/strip-extra-keys-transformer
     {:name :store}))
 
@@ -30,16 +31,15 @@
   (let [data (->> data
                   (coerce spec)
                   (encode spec))]
-    (when-let [result (db.i/execute-one! db
-                                         {:update table
-                                          :set data
-                                          :where [:= :id id]}
+    (when-let [_result (db.i/execute-one! db
+                                          {:update table
+                                           :set data
+                                           :where [:= :id id]}
+
                                          ;; TODO: use the store/columns keys from the properties
-                                         {:return-keys 1})]
+                                          {:returning-keys 1})]
       ;; If we have a result-spec then coerce the result
-      (cond->> result
-        (some? result-spec)
-        (coerce result-spec)))))
+      (get-by-id db table id result-spec))))
 
 (defn create! [db table data spec result-spec]
   (let [data (->> data

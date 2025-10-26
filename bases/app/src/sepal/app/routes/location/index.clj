@@ -75,11 +75,11 @@
         page-num (or (when page (Integer/parseInt page)) 1)
         offset (* page-size (- page-num 1))
         stmt {:select [:l.*]
-              :from [[:public.location :l]]
+              :from [[:location :l]]
               :where (if q
                        [:or
-                        [:ilike :name (format "%%%s%%" q)]
-                        [:ilike :code (format "%%%s%%" q)]]
+                        [:like :name (format "%%%s%%" q)]
+                        [:like :code (format "%%%s%%" q)]]
                        :true)}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt

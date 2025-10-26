@@ -99,39 +99,36 @@
   (let [{:keys [db]} context
         {:keys [accessions-only page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
-        stmt {:select [[:t.id :id]
-                       [:t.name :name]
-                       [:t.rank :rank]
-                       [:t.author :author]
-                       [:t.parent_id :parent-id]
-                       [:p.name :parent_name]
-                       [:t.wfo_taxon_id_2023_12 :wfo_taxon_id_2023_12]
-                       [(if (seq q)
-                          [:similarity :t.name q]
-                          1.0)
-                        :search-rank]]
-              :from [[:public.taxon :t]]
-              :join-by (cond-> [:left [[:public.taxon :p]
+        columns (cond->  [[:t.id :id]
+                          [:t.name :name]
+                          [:t.rank :rank]
+                          [:t.author :author]
+                          [:t.parent_id :parent-id]
+                          [:p.name :parent_name]
+                          [:t.wfo_taxon_id :wfo_taxon_id]]
+                  (seq q) (conj [:fts.rank :search-rank]))
+        stmt {:select columns
+              :from [[:taxon :t]]
+              :join-by (cond-> [:left [[:taxon :p]
                                        [:= :p.id :t.parent_id]]]
+                         (seq q)
+                         (conj :inner [[:taxon_fts :fts]
+                                       [:= :fts.rowid :t.id]])
                          accessions-only
-                         (conj :inner [[:public.accession :a]
+                         (conj :inner [[:accession :a]
                                        [:= :a.taxon_id :t.id]]))
               :where (if (seq q)
-                       [:%> :t.name q]
+                       [:match :taxon_fts (str q "*")]
                        :true)}
-        ;; TODO: Do the queries in parallel for faster response
-        total (db.i/count db (assoc stmt :select 1))
-        ;; ;; TODO: Can we use jdbc datafy/nav to eager load the parent
-        rows (->> (db.i/execute! db (assoc stmt
-                                           :limit page-size
-                                           :offset offset
-                                           :order-by [[:search-rank :desc] [:t.name :asc]])))]
-
-    #_(tap> (str "rows: " rows))
-
+        [rows total] (pcalls
+                       #(->> (db.i/execute! db (assoc stmt
+                                                      :limit page-size
+                                                      :offset offset
+                                                      :order-by [[:t.name :asc]])))
+                       #(db.i/count db (assoc stmt :select 1)))]
     (cond
+      ;; We return JSON for autocomplete fields
       (= (get headers "accept") "application/json")
-      ;; TODO: Use Taxon json transformer
       (json/json-response (for [taxon rows]
                             {:text (:taxon/name taxon)
                              :name (:taxon/name taxon)

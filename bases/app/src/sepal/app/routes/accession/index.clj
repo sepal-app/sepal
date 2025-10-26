@@ -84,7 +84,7 @@
                      [:= :t.id :a.taxon_id]]
               :where [:and
                       (if q
-                        [:ilike :a.code (format "%%%s%%" q)]
+                        [:like :a.code (format "%%%s%%" q)]
                         :true)]}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt

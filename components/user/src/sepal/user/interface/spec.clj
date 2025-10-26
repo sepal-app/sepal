@@ -14,12 +14,8 @@
   [:map
    [:id {:optional true} id]
    [:email email]
-   [:password {:encode/store (fn [p]
-                               [:crypt p [:gen_salt "bf"]])}
-    password]])
+   [:password password]])
 
 (def SetPassword
   [:map
-   [:password {:encode/store (fn [p]
-                               [:crypt p [:gen_salt "bf"]])}
-    password]])
+   [:password password]])

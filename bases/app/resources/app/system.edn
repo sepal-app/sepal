@@ -41,5 +41,9 @@
   :print-request-diffs? false
   :port #long #or [#env PORT 3000]}
 
+ :sepal.logging.interface/logging {:level #or [#env LOG_LEVEL "DEBUG"]}
+
+ :sepal.malli.interface/init {}
+
  :sepal.postmark.interface/service
  {:api-key #env POSTMARK_API_KEY}}

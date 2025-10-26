@@ -25,10 +25,10 @@
         ;; test password not stored in the database as plain text
         (is (not= (:password data)
                   (-> (db.i/execute-one! db {:select :password
-                                             :from :public.user
+                                             :from :user
                                              :where [:= :id (:id data)]})
                       :password)))
-        (jdbc.sql/delete! db :public.user {:id (:user/id user)})))
+        (jdbc.sql/delete! db :user {:id (:user/id user)})))
 
     (tf/testing "user.i/create! - with id"
       (let [id (mg/generate pos-int?)
@@ -39,11 +39,11 @@
         (is (m/validate user.spec/User user))
         (is (= id (:user/id user)))
 
-        (jdbc.sql/delete! db :public.user {:id (:user/id user)})))
+        (jdbc.sql/delete! db :user {:id (:user/id user)})))
 
     (tf/testing "user.i/create! - with invalid email"
       (let [data {:email (mg/generate [:string {:min 10}])
-                  :password  (mg/generate user.spec/password)}]
+                  :password (mg/generate user.spec/password)}]
         (is (thrown-match? clojure.lang.ExceptionInfo
                            (fn [exd]
                              (is (match? {:email ["invalid email"]}

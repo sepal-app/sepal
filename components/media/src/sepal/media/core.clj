@@ -23,7 +23,7 @@
 (defn get-linked [db resource-type resource-id opts]
   (let [opts-map (apply hash-map opts)]
     (some->> {:select :m.*
-              :from [[:public.media :m]]
+              :from [[:media :m]]
               :join [[:media_link :ml]
                      [:= :ml.media_id :m.id]]
               :where [:and
@@ -37,7 +37,7 @@
   (store.i/create! db :media data spec/CreateMedia spec/Media))
 
 (defn delete! [db id]
-  (jdbc.sql/delete! db :public.media {:id id}))
+  (jdbc.sql/delete! db :media {:id id}))
 
 (defn link! [db media-id resource-id resource-type]
   (try
@@ -50,7 +50,7 @@
                     (store.i/coerce spec/CreateMediaLink)
                     (store.i/encode spec/CreateMediaLink))
           _ (db.i/execute-one! db
-                               {:insert-into [:public.media_link :ml]
+                               {:insert-into [:media_link :ml]
                                 :values [data]
                                 :on-conflict [:media_id]
                                 :do-update-set {:fields [:resource_type :resource_id]
@@ -61,7 +61,7 @@
       (error.i/ex->error ex))))
 
 (defn unlink! [db media-id]
-  (db.i/execute-one! db {:delete-from :public.media_link
+  (db.i/execute-one! db {:delete-from :media_link
                          :where [:= :media-id media-id]}))
 
 (create-ns 'sepal.media.interface)

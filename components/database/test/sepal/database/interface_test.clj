@@ -1,7 +1,12 @@
 (ns sepal.database.interface-test
   (:require
-    #_[sepal.database.interface :as database]
-    [clojure.test :as test :refer :all]))
+    [clojure.test :as test :refer :all]
+    [sepal.app.test.system :refer [*db*
+                                   default-system-fixture]]
+    [sepal.database.interface :as db.i]))
 
-(deftest dummy-test
-  (is (= 1 1)))
+(use-fixtures :once default-system-fixture)
+
+(deftest test
+  (is (= [{:x 1}] (db.i/execute! *db* ["select 1 as x"])))
+  (is (= [{:x "{}"}] (db.i/execute! *db* ["select json('{}')  as x"]))))

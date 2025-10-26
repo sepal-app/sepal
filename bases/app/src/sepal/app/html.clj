@@ -1,7 +1,7 @@
 (ns sepal.app.html
   (:require [clojure.string :as s]
+            [clojure.tools.logging :as log]
             [dev.onionpancakes.chassis.core :as chassis]
-            [taoensso.timbre :as log]
             [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]))
 

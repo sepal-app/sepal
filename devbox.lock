@@ -146,50 +146,50 @@
       }
     },
     "clojure@latest": {
-      "last_modified": "2024-08-14T11:41:26Z",
-      "resolved": "github:NixOS/nixpkgs/0cb2fd7c59fed0cd82ef858cbcbdb552b9a33465#clojure",
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#clojure",
       "source": "devbox-search",
-      "version": "1.11.4.1474",
+      "version": "1.12.2.1565",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/2jdf5b95yrryy1vi75kwmhmgq4yg1fyn-clojure-1.11.4.1474",
+              "path": "/nix/store/d3m4cbi8g960hn2dxx8ybqdhzgn6rw19-clojure-1.12.2.1565",
               "default": true
             }
           ],
-          "store_path": "/nix/store/2jdf5b95yrryy1vi75kwmhmgq4yg1fyn-clojure-1.11.4.1474"
+          "store_path": "/nix/store/d3m4cbi8g960hn2dxx8ybqdhzgn6rw19-clojure-1.12.2.1565"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/mjqrfxpy06n0mipvjbibiqab4z572aa1-clojure-1.11.4.1474",
+              "path": "/nix/store/z9zldc5kkfc14kil70glwhngn063mlqy-clojure-1.12.2.1565",
               "default": true
             }
           ],
-          "store_path": "/nix/store/mjqrfxpy06n0mipvjbibiqab4z572aa1-clojure-1.11.4.1474"
+          "store_path": "/nix/store/z9zldc5kkfc14kil70glwhngn063mlqy-clojure-1.12.2.1565"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/2ki3vknrm27mwqm7csh131gx4gbh8yf8-clojure-1.11.4.1474",
+              "path": "/nix/store/8jx8xj32r5vgrvixzrbjknsyadqk4d0n-clojure-1.12.2.1565",
               "default": true
             }
           ],
-          "store_path": "/nix/store/2ki3vknrm27mwqm7csh131gx4gbh8yf8-clojure-1.11.4.1474"
+          "store_path": "/nix/store/8jx8xj32r5vgrvixzrbjknsyadqk4d0n-clojure-1.12.2.1565"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/wbp703nscxhlwrmysybnnj4fzqjxk8wc-clojure-1.11.4.1474",
+              "path": "/nix/store/5jz0c2n3j5vk8qnmrq43qb3zrsd1wvy6-clojure-1.12.2.1565",
               "default": true
             }
           ],
-          "store_path": "/nix/store/wbp703nscxhlwrmysybnnj4fzqjxk8wc-clojure-1.11.4.1474"
+          "store_path": "/nix/store/5jz0c2n3j5vk8qnmrq43qb3zrsd1wvy6-clojure-1.12.2.1565"
         }
       }
     },
@@ -272,54 +272,6 @@
         }
       }
     },
-    "google-cloud-sdk@latest": {
-      "last_modified": "2024-08-14T11:41:26Z",
-      "resolved": "github:NixOS/nixpkgs/0cb2fd7c59fed0cd82ef858cbcbdb552b9a33465#google-cloud-sdk",
-      "source": "devbox-search",
-      "version": "485.0.0",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/gi2icsxy8mdwrc1lqfgfvwzz1k9wamdg-google-cloud-sdk-485.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/gi2icsxy8mdwrc1lqfgfvwzz1k9wamdg-google-cloud-sdk-485.0.0"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/pdwridvvxk84rlgr8pfk07rxgbhji836-google-cloud-sdk-485.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/pdwridvvxk84rlgr8pfk07rxgbhji836-google-cloud-sdk-485.0.0"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/3lc1yqjbl60fi0zykj91byr5xlg155fc-google-cloud-sdk-485.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/3lc1yqjbl60fi0zykj91byr5xlg155fc-google-cloud-sdk-485.0.0"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/7s4q044dma8lvlwlj7v8vmf5s8wi949n-google-cloud-sdk-485.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/7s4q044dma8lvlwlj7v8vmf5s8wi949n-google-cloud-sdk-485.0.0"
-        }
-      }
-    },
     "nodejs@20.12.2": {
       "last_modified": "2024-06-12T20:55:33Z",
       "plugin_version": "0.0.2",
@@ -385,6 +337,63 @@
         }
       }
     },
+    "python@3.14.0": {
+      "last_modified": "2025-10-08T01:30:28Z",
+      "plugin_version": "0.0.4",
+      "resolved": "github:NixOS/nixpkgs/8b5c9dd8856f0c0cf46cc91f2c21c106a9d42e25#python314",
+      "source": "devbox-search",
+      "version": "3.14.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/2sqv05h8017f38w5rvppb2f5wbbisnwp-python3-3.14.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/2sqv05h8017f38w5rvppb2f5wbbisnwp-python3-3.14.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zlph3shgrkfmrhkxbgmi6qa26gfzl58q-python3-3.14.0",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/3zmfrpjfpqaxcl68hlg5nfzvx49awjks-python3-3.14.0-debug"
+            }
+          ],
+          "store_path": "/nix/store/zlph3shgrkfmrhkxbgmi6qa26gfzl58q-python3-3.14.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bq9ss2vlr05zdrhcfmvclm0gsrc7i6xb-python3-3.14.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bq9ss2vlr05zdrhcfmvclm0gsrc7i6xb-python3-3.14.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/76lchhz5hhik0j5hjy6lwwn3ik0x54aa-python3-3.14.0",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/rjm597f2d9bjllyjnv3y20261bwxd108-python3-3.14.0-debug"
+            }
+          ],
+          "store_path": "/nix/store/76lchhz5hhik0j5hjy6lwwn3ik0x54aa-python3-3.14.0"
+        }
+      }
+    },
     "sqlfluff@3.1.0": {
       "last_modified": "2024-08-14T11:41:26Z",
       "resolved": "github:NixOS/nixpkgs/0cb2fd7c59fed0cd82ef858cbcbdb552b9a33465#sqlfluff",
@@ -446,6 +455,54 @@
             }
           ],
           "store_path": "/nix/store/62kq788m2kk9r354jan958z9kgf0zgq5-sqlfluff-3.1.0"
+        }
+      }
+    },
+    "uv@0.8.19": {
+      "last_modified": "2025-10-07T08:41:47Z",
+      "resolved": "github:NixOS/nixpkgs/bce5fe2bb998488d8e7e7856315f90496723793c#uv",
+      "source": "devbox-search",
+      "version": "0.8.19",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lv129j2nzhmqidpp52kf359adwdxxv24-uv-0.8.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lv129j2nzhmqidpp52kf359adwdxxv24-uv-0.8.19"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rmv0i8zwjsyxkiim6bspy9fx9sqdxi37-uv-0.8.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/rmv0i8zwjsyxkiim6bspy9fx9sqdxi37-uv-0.8.19"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/z2xcpx4vnbkn9v8iqss4d71fgz13n8m1-uv-0.8.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/z2xcpx4vnbkn9v8iqss4d71fgz13n8m1-uv-0.8.19"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/jiwzxayklgiacpgj0fivzk7abp7gm6bm-uv-0.8.19",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/jiwzxayklgiacpgj0fivzk7abp7gm6bm-uv-0.8.19"
         }
       }
     }
