@@ -1,4 +1,4 @@
-FROM clojure:temurin-22-bookworm-slim
+FROM clojure:temurin-25-trixie-slim
 
 WORKDIR /dist
 
@@ -27,6 +27,7 @@ COPY bases/vite.config.js /dist
 
 RUN chmod +x /dist/projects/app/run.sh
 
+# Don't build the assets when starting the system since we're building them in advance
 ENV BUILD_ASSETS=false
 
 RUN cd /dist/bases/app && \
@@ -36,5 +37,7 @@ RUN cd /dist/bases/app && \
     clojure -P -M:main
 
 EXPOSE 3000
+
+# TODO: WE should turn this into a multistage build
 
 CMD /dist/projects/app/run.sh
