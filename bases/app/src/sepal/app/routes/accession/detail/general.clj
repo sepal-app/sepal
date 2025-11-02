@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.detail.general
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.detail.tabs :as accession.tabs]
@@ -55,7 +56,12 @@
 (def FormParams
   [:map {:closed true}
    [:code :string]
-   [:taxon-id :int]])
+   [:taxon-id :int]
+   [:private accession.spec/private]
+   [:id-qualifier accession.spec/id-qualifier]
+   [:id-qualifier-rank accession.spec/id-qualifier-rank]
+   [:provenance-type accession.spec/provenance-type]
+   [:wild-provenance-status accession.spec/wild-provenance-status]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
@@ -63,7 +69,11 @@
         values (merge {:id (:accession/id resource)
                        :code (:accession/code resource)
                        :taxon-id (:accession/taxon-id resource)
-                       :taxon-name (:taxon/name taxon)}
+                       :taxon-name (:taxon/name taxon)
+                       :id-qualifier (:accession/id-qualifier resource)
+                       :id-qualifier-rank (:accession/id-qualifier-rank resource)
+                       :provenance-type (:accession/provenance-type resource)
+                       :wild-provenance-status (:accession/wild-provenance-status resource)}
                       (params/decode FormParams form-params))]
 
     (case request-method

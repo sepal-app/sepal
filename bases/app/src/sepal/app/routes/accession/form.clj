@@ -1,36 +1,63 @@
 (ns sepal.app.routes.accession.form
-  (:require [sepal.app.html :as html]
+  (:require [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.taxon.routes :as taxon.routes]
-            [sepal.app.ui.form :as form]
+            [sepal.app.ui.form :as ui.form]
             [zodiac.core :as z]))
 
 (defn form [& {:keys [action errors values]}]
+  (tap> (str "accession.form/values: " values))
+
   [:div
-   (form/form
+   (ui.form/form
      {:action action
       :method "POST"
       :id "accession-form"
       :x-on:accession-form:submit.window "$el.submit()"
       :x-on:accession-form:reset.window "$el.reset()"}
-     [(form/anti-forgery-field)
-      (form/input-field :label "Code"
-                        :name "code"
-                        :require true
-                        :value (:code values)
-                        :errors (:code errors))
+     [(ui.form/anti-forgery-field)
+      (ui.form/input-field :label "Code"
+                           :name "code"
+                           :require true
+                           :value (:code values)
+                           :errors (:code errors))
 
       (let [url (z/url-for taxon.routes/index)]
-        (form/field :label "Taxon"
-                    :name "taxon-id"
-                    :input [:select {:x-taxon-field (json/js {:url url})
-                                     :id "taxon-id"
-                                     :class "select select-bordered select-md w-full max-w-xs px-2"
-                                     :required true
-                                     :name "taxon-id"
-                                     :autocomplete "off"}
-                            (when (:taxon-id values)
-                              [:option {:value (:taxon-id values)}
-                               (:taxon-name values)])]))])
+        (ui.form/field :label "Taxon"
+                       :name "taxon-id"
+                       :input [:select {:x-taxon-field (json/js {:url url})
+                                        :id "taxon-id"
+                                        :class "select select-bordered select-md w-full max-w-xs px-2"
+                                        :required true
+                                        :name "taxon-id"
+                                        :autocomplete "off"}
+                               (when (:taxon-id values)
+                                 [:option {:value (:taxon-id values)}
+                                  (:taxon-name values)])]))
+      (ui.form/field :label "ID Qualifier"
+                     :name "id-qualifier"
+                     :input (ui.form/enum-select "id-qualifier"
+                                                 accession.spec/id-qualifier
+                                                 (:id-qualifier values)))
+      ;; TODO: This should only be set when the id-qualifier is set
+      (ui.form/field :label "ID Qualifier Rank"
+                     :name "id-qualifier-rank"
+                     :input (ui.form/enum-select "id-qualifier-rank"
+                                                 accession.spec/id-qualifier-rank
+                                                 (:id-qualifier-rank values)))
+      (ui.form/field :label "Provenance Type"
+                     :name "provenance-type"
+                     :input (ui.form/enum-select "provenance-type"
+                                                 accession.spec/provenance-type
+                                                 (:provenance-type values)))
+
+      ;; TODO: This should only be set when the provenance type is "wild"
+      (ui.form/field :label "Wile Provenance Status"
+                     :name "wild-provenance-status"
+                     :input (ui.form/enum-select "wild-provenance-status"
+                                                 accession.spec/wild-provenance-status
+                                                 (:wild-provenance-status values)))])
+
    [:script {:type "module"
              :src (html/static-url "app/routes/accession/form.ts")}]])

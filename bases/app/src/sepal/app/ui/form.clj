@@ -1,5 +1,6 @@
 (ns sepal.app.ui.form
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
+  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.malli.interface :as malli.i]))
 
 (def anti-forgery-field-name "__anti-forgery-token")
 
@@ -84,6 +85,21 @@
                     :x-bind:disabled "$refs?.form && !$validate.isComplete($refs.form)"}
                    attrs)
     children]))
+
+(defn enum-select
+  "Helper for the common case of building a <select/> from a malli :enum spec."
+  [name enum value]
+  [:select {:name name
+            :class "select select-bordered select-md w-full max-w-xs px-2"
+            :autocomplete "off"
+            :id name
+            :value value}
+   [:option ""]
+   (for [label (malli.i/enum-labels enum)]
+     [:option {:value label
+               :selected (when (= (keyword label) value)
+                           "selected")}
+      label])])
 
 (defn footer [& {:keys [buttons]}]
   [:div {:class "fixed bottom-0 flex flex-row gap-4 p-4 bg-white shadow w-full"

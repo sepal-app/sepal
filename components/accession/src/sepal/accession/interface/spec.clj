@@ -5,22 +5,82 @@
 (def id pos-int?)
 (def taxon-id pos-int?)
 (def code [:string {:min 1}])
+(def private :boolean)
+
+(def id-qualifier [:enum {:decode/store keyword
+                          :encode/store name
+                          :decode/params #(when (seq %) keyword)}
+                   :aff
+                   :cf
+                   :forsan
+                   :incorrect
+                   :near
+                   :questionable])
+
+(def id-qualifier-rank [:enum {:decode/store keyword
+                               :encode/store name
+                               :decode/params #(when (seq %) keyword)}
+                        :below_family
+                        :family
+                        :genus
+                        :species
+                        :first_infraspecific_epithet
+                        :second_infraspecific_epithet
+                        :cultivar])
+
+(def provenance-type [:enum {:decode/store keyword
+                             :encode/store name
+                             :decode/params #(when (seq %) keyword)}
+                      :wild
+                      :cultivated
+                      :not_wild
+                      :purchase
+                      :insufficient_data])
+
+(def wild-provenance-status [:enum {:decode/store keyword
+                                    :encode/store name
+                                    :decode/params #(when (seq %) keyword)}
+                             :wild_native
+                             :wild_non_native
+                             :cultivated_native
+                             :cultivated
+                             :not_wild
+                             :purchase
+                             :insufficient_data])
 
 (def Accession
   [:map #_{:closed true}
    [:accession/id id]
    [:accession/code code]
-   [:accession/taxon-id taxon-id]])
+   [:accession/taxon-id taxon-id]
+   [:accession/private private]
+   [:accession/id-qualifier [:maybe id-qualifier]]
+   [:accession/id-qualifier-rank [:maybe id-qualifier-rank]]
+   [:accession/provenance-type [:maybe provenance-type]]
+   [:accession/wild-provenance-status [:maybe wild-provenance-status]]])
+
+(def Source)
+(def SourceDetail)
+(def Collection)
 
 (def CreateAccession
   [:map {:closed true}
    [:code code]
    [:taxon-id {:decode/store validate.i/coerce-int}
-    taxon-id]])
+    taxon-id]
+   [:private {:optional true} private]
+   [:id-qualifier {:optional true} [:maybe id-qualifier]]
+   [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
+   [:provenance-type {:optional true} [:maybe provenance-type]]
+   [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]])
 
 (def UpdateAccession
   (mu/optional-keys
     [:map {:closed true}
      [:code code]
-     [:taxon-id {:decode/store validate.i/coerce-int}
-      [:maybe taxon-id]]]))
+     [:taxon-id {:optional true :decode/store validate.i/coerce-int} taxon-id]
+     [:private {:optional true} private]
+     [:id-qualifier {:optional true} [:maybe id-qualifier]]
+     [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
+     [:provenance-type {:optional true} [:maybe provenance-type]]
+     [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]]))

@@ -8,6 +8,11 @@
 (defn init []
   (core/init))
 
+(defn enum-labels
+  "Accept and [:enum ...] spec and return a list of string labels."
+  [spec]
+  (->> spec rest (filterv keyword?) (mapv name)))
+
 (defn humanize-coercion-ex
   "Return the humanized error of a malli.core/coercion exception."
   [ex]

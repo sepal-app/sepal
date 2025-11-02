@@ -1,19 +1,4 @@
-
 -- migrate:up
-
--- TODO:
--- accession.id_qualifier
--- accession.id_qualifier_rank
--- accession.private
--- accession.provenance
--- accession.wild_provenance_status
-
--- accession.propagation_id
--- accession.plant_propagation_id
--- accession.collection_id
--- accession.donor_id
---
-
 alter table accession
 add column private boolean not null default false;
 
@@ -81,12 +66,9 @@ create table source_detail (
 create table source (
   id integer primary key autoincrement,
   sources_code text,
-  -- accession_id int constraint source_accession_id_fkey unique references accession (id) not null,
-  -- source_detail_id int constraint source_detail_id_fkey references source_detail (id) not null
   accession_id int not null unique references accession (id),
   source_detail_id int not null references source_detail (id)
 );
-
 
 create table collection (
   id integer primary key autoincrement,
@@ -103,7 +85,6 @@ create table collection (
   altitude_accuracy smallint,
   notes text,
   source_id int not null unique references source (id)
-  -- source_id int constraint collection_source_id_fkey unique references source (id) not null
 );
 
 

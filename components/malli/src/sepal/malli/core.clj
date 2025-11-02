@@ -18,7 +18,9 @@
        [:or {:decode/store json/read-str
              :encode/store json/write-str}
         [:map-of :string :any]
-        [:sequential [:map-of :string :any]]]})))
+        [:sequential [:map-of :string :any]]]
+       ;; sqlite rowid
+       :rowid [:int {:max 9,223,372,036,854,775,807  :min 0}]})))
 
 (defn humanize-coercion-ex
   "Return the humanized error of a malli.core/coercion exception."
