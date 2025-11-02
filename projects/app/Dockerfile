@@ -8,12 +8,12 @@ RUN apt-get update && \
     apt-get clean
 
 # Install nodejs
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean
 
 RUN mkdir bin && \
-    curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.17.0/dbmate-linux-amd64 && \
+    curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64 && \
     chmod +x bin/dbmate
 
 # Copy specific files and directories to avoid any working files we might have
@@ -26,6 +26,8 @@ COPY projects /dist/projects
 COPY bases/vite.config.js /dist
 
 RUN chmod +x /dist/projects/app/run.sh
+
+ENV BUILD_ASSETS=false
 
 RUN cd /dist/bases/app && \
     npm install && \

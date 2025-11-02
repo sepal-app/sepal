@@ -5,9 +5,10 @@ set -Eeuxo pipefail
 DATABASE_URL=${DATABASE_JDBC_URL//jdbc:/}
 DATABASE_PATH=${DATABASE_JDBC_URL//jdbc:sqlite:/}
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
+DBMATE=${DBMATE:-dbmate}
 
-dbmate -u "$DATABASE_URL" drop
-dbmate -u "$DATABASE_URL" load
+${DBMATE} -u "$DATABASE_URL" drop
+${DBMATE} -u "$DATABASE_URL" load
 
 #
 # Populate the database from the WFO database
