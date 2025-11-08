@@ -59,10 +59,6 @@
    [:accession/provenance-type [:maybe provenance-type]]
    [:accession/wild-provenance-status [:maybe wild-provenance-status]]])
 
-(def Source)
-(def SourceDetail)
-(def Collection)
-
 (def CreateAccession
   [:map {:closed true}
    [:code code]
