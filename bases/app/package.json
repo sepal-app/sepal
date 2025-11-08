@@ -25,7 +25,7 @@
         "@uppy/dashboard": "3.8.3",
         "alpinejs": "3.15.0",
         "cssnano": "7.0.6",
-        "daisyui": "5.2.3",
+        "daisyui": "5.4.2",
         "htmx.org": "1.9.12",
         "prettier": "2.8.7",
         "tailwindcss": "4.1.14",
