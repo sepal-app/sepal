@@ -1,7 +1,6 @@
-export DB_NAME=
-export DB_HOST=
-export DB_PASSWORD=
-export DB_PORT=
-export DB_USER=
+WFO_DATABASE_PATH="wfo_plantlist_2025-06_1.db"
+DATABASE_PATH="sepal.db"
+DATABASE_URL="sqlite:sepal.db"
+DATABASE_JDBC_URL="jdbc:$DATABASE_URL"
 
 export COOKIE_SECRET=
