@@ -152,50 +152,6 @@ CREATE TABLE settings (
   value text,
   user_id integer references "user"(id)
 );
-CREATE TABLE source_detail (
-  id integer primary key autoincrement,
-  name text,
-  description text,
-  phone text,
-  email text,
-  address text,
-  source_type text check(source_type in (
-    'expedition',
-    'gene_bank',
-    'field_station',
-    'staff',
-    'university_department',
-    'club',
-    'municipal_department',
-    'commerical',
-    'individual',
-    'other'
-)));
-CREATE TABLE source (
-  id integer primary key autoincrement,
-  sources_code text,
-  -- accession_id int constraint source_accession_id_fkey unique references accession (id) not null,
-  -- source_detail_id int constraint source_detail_id_fkey references source_detail (id) not null
-  accession_id int not null unique references accession (id),
-  source_detail_id int not null references source_detail (id)
-);
-CREATE TABLE collection (
-  id integer primary key autoincrement,
-  collector text,
-  collectors_code text,
-  date date,
-  locale text,
-  -- Always store points as WGS84 but allow setting a coordinate system for conversion
-  -- coordinates geography (point, 4326),
-  coordinates_accuracy smallint,
-  -- Use postgis_srs_all to get all of the coordinate systems
-  coordinate_system_srid text,
-  altitude smallint,
-  altitude_accuracy smallint,
-  notes text,
-  source_id int not null unique references source (id)
-  -- source_id int constraint collection_source_id_fkey unique references source (id) not null
-);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20251021111547'),
