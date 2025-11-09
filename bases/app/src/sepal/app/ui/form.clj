@@ -88,16 +88,20 @@
 
 (defn enum-select
   "Helper for the common case of building a <select/> from a malli :enum spec."
-  [name enum value]
+  [name enum value & {:keys [label-fn value-fn filter-fn]
+                      :or {value-fn clojure.core/name
+                           label-fn clojure.core/name
+                           filter-fn keyword?}}]
   [:select {:name name
             :class "select select-bordered select-md w-full max-w-xs px-2"
             :autocomplete "off"
             :id name
             :value value}
    [:option ""]
-   (for [label (malli.i/enum-labels enum)]
-     [:option {:value label
-               :selected (when (= (keyword label) value)
+   (for [[val label] (map #(vector (value-fn %) (label-fn %))
+                          (->> enum rest (filter filter-fn)))]
+     [:option {:value val
+               :selected (when (= val value)
                            "selected")}
       label])])
 
