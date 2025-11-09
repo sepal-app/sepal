@@ -36,7 +36,6 @@
                        :name "taxon-id"
                        :input [:select {:x-taxon-field (json/js {:url url})
                                         :id "taxon-id"
-                                        :class "select"
                                         :required true
                                         :name "taxon-id"
                                         :autocomplete "off"}

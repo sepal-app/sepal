@@ -10,7 +10,7 @@
 (defn form [attrs & children]
   [:form (merge {:x-data true
                  :x-ref "form"
-                 :class "flex flex-col"
+                 :class "grid gap-1"
                  :x-form-state {}}
                 attrs)
    children])
