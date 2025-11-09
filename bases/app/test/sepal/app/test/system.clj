@@ -1,4 +1,4 @@
-(ns sepal.app.system-test
+(ns sepal.app.test.system
   (:require [integrant.core :as ig]
             [sepal.config.interface :as config.i]
             [sepal.test.interface :as test.i]
