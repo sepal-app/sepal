@@ -7,9 +7,15 @@
 (def code [:string {:min 1}])
 (def private :boolean)
 
+(defn- name-encoder [v]
+  (when v (name v)))
+
+(defn- keyword-encoder [v]
+  (when v (keyword v)))
+
 (def id-qualifier [:enum {:decode/store keyword
-                          :encode/store name
-                          :decode/params #(when (seq %) keyword)}
+                          :encode/store name-encoder
+                          :decode/params keyword-encoder}
                    :aff
                    :cf
                    :forsan
@@ -18,8 +24,8 @@
                    :questionable])
 
 (def id-qualifier-rank [:enum {:decode/store keyword
-                               :encode/store name
-                               :decode/params #(when (seq %) keyword)}
+                               :encode/store name-encoder
+                               :decode/params keyword-encoder}
                         :below_family
                         :family
                         :genus
@@ -29,8 +35,8 @@
                         :cultivar])
 
 (def provenance-type [:enum {:decode/store keyword
-                             :encode/store name
-                             :decode/params #(when (seq %) keyword)}
+                             :encode/store name-encoder
+                             :decode/params keyword-encoder}
                       :wild
                       :cultivated
                       :not_wild
@@ -38,8 +44,8 @@
                       :insufficient_data])
 
 (def wild-provenance-status [:enum {:decode/store keyword
-                                    :encode/store name
-                                    :decode/params #(when (seq %) keyword)}
+                                    :encode/store name-encoder
+                                    :decode/params keyword-encoder}
                              :wild_native
                              :wild_non_native
                              :cultivated_native
