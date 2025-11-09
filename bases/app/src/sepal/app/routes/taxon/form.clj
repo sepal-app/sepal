@@ -81,7 +81,6 @@
              (form/field :label "Parent"
                          :name "parent-id"
                          :input [:select {:x-taxon-field (json/js {:url url})
-                                          :class "select select-bordered select-md w-full max-w-xs px-2"
                                           :name "parent-id"
                                           :id "parent-id"
                                           :required true
@@ -102,7 +101,6 @@
                        :name "rank"
                        :input [:select {:name "rank"
                                         :x-rank-field {}
-                                        :class "select select-bordered select-md w-full max-w-xs px-2"
                                         :autocomplete "off"
                                         :id "rank"
                                         :read-only read-only

@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tom-select/dist/css/tom-select.css";
+@import "slim-select/styles";
 
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
@@ -22,6 +22,22 @@
     font-size: 0.9rem;
 }
 
+/* Make the SlimSelect match DaisyUI */
+.ss-main {
+    @apply shadow-primary;
+    border-radius: var(--radius-field);
+}
+
+.ss-main:focus {
+    --input-color: var(--color-base-content);
+    box-shadow: none;
+    outline: 2px solid var(--input-color);
+    outline-offset: 2px;
+    box-shadow: 0 1px
+        color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
+    border-color: var(--input-color);
+}
+
 /* .field-label-text { */
 /*     @apply font-medium; */
 /* } */
@@ -32,23 +48,4 @@
 
 /* body { */
 /*     @apply min-h-dvh; */
-/* } */
-
-.ts-control {
-    border: none;
-    padding: 5px 4px 5px 4px;
-}
-
-/* @layer components { */
-/*     .spl-input { */
-/*         /\* @apply block px-2 w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6; *\/ */
-/*         /\* @apply input input-bordered input-sm w-full max-w-xs bg-white; *\/ */
-/*         @apply input input-sm w-full max-w-xs bg-white; */
-/*     } */
-/*     .spl-link { */
-/*         @apply underline-offset-4 text-blue-600 hover:underline decoration-solid; */
-/*     } */
-/*     .spl-btn-grp { */
-/*         @apply flex flex-row mt-4 justify-between items-center; */
-/*     } */
 /* } */

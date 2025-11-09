@@ -46,8 +46,7 @@
                                        :placeholder "Required"
                                        :name "accession-id"
                                        :id "accession-id"
-                                       :required true
-                                       :class "select select-bordered select-md w-full max-w-xs px-2"}
+                                       :required true}
                               (when (:accession-id values)
                                 [:option {:value (:accession-id values)}
                                  (:accession-code values)])]))
@@ -58,8 +57,7 @@
                                        :placeholder "Required"
                                        :required true
                                        :name "location-id"
-                                       :id "location-id"
-                                       :class "select select-bordered select-md w-full max-w-xs px-2"}
+                                       :id "location-id"}
                               (when (:location-id values)
                                 [:option {:value (:location-id values)}
                                  (format "%s (%s)"
@@ -80,7 +78,6 @@
                     :name "status"
                     :input [:select {:name "status"
                                      :x-material-status-field true
-                                     :class "select select-bordered select-sm w-full max-w-xs px-2"
                                      :autocomplete "off"
                                      :id "status"
                                      :required true
@@ -94,7 +91,6 @@
                     :name "type"
                     :input [:select {:name "type"
                                      :x-material-type-field true
-                                     :class "select select-bordered select-sm w-full max-w-xs px-2"
                                      :autocomplete "off"
                                      :id "type"
                                      :required true
