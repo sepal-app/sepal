@@ -22,9 +22,9 @@
 (def count #'z.sql/count)
 (def exists? #'z.sql/exists?)
 
-(defmethod ig/init-key ::schema [_ {:keys [zodiac]}]
+(defmethod ig/init-key ::schema [_ {:keys [zodiac database-url] :as config}]
   ;; THIS IS ONLY FOR LOADING THE DB SCHEMA INTO A TEST DATABASE
-  (core/load-schema! (::z.sql/db zodiac)))
+  (core/load-schema! config))
 
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction+options [~sym ~transactable ~opts]

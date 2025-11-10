@@ -67,7 +67,7 @@ create index taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
 
 -- Taxon full text search
 
-create virtual table taxon_fts using fts5(name, content=taxon, content_rowid=id); --, tokenize="porter");
+create virtual table taxon_fts using fts5(name, content='taxon', content_rowid='id'); --, tokenize="porter");
 
 insert into taxon_fts(rowid, name) select id, name from taxon;
 
@@ -81,8 +81,8 @@ create trigger trigger_taxon_after_delete after delete on taxon begin
 end;
 
 create trigger trigger_taxon_after_update after update on taxon begin
-  insert into taxon_fts(fts_idx, rowid, b, c) values('delete', old.id, old.name);
-  insert into taxon_fts(id, name) values (new.d, new.name);
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
 
 -- ============================================================================

@@ -50,7 +50,7 @@ CREATE INDEX taxon_id_idx on taxon (id);
 CREATE INDEX taxon_name_idx on taxon (name);
 CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
 CREATE INDEX taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
-CREATE VIRTUAL TABLE taxon_fts using fts5(name, content=taxon, content_rowid=id)
+CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id')
 /* taxon_fts(name) */;
 CREATE TABLE IF NOT EXISTS 'taxon_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
 CREATE TABLE IF NOT EXISTS 'taxon_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
@@ -63,8 +63,8 @@ CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
   insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
 end;
 CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
-  insert into taxon_fts(fts_idx, rowid, b, c) values('delete', old.id, old.name);
-  insert into taxon_fts(id, name) values (new.d, new.name);
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
 CREATE TABLE location (
   id integer primary key autoincrement,

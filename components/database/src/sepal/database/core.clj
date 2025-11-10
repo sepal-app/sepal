@@ -1,7 +1,7 @@
 (ns sepal.database.core
-  (:refer-clojure :exclude [count])
+  ;; (:refer-clojure :exclude [count])
   (:require [camel-snake-kebab.core :as csk]
-            [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [clojure.string :as str]
             [honey.sql]
             [next.jdbc :as jdbc]
@@ -64,24 +64,6 @@
 (defn load-schema!
   "Load the SQLite schema into the in-memory test database.
    Uses db/schema.sql which is maintained by dbmate dump."
-  [datasource]
-  (let [schema-file (io/file "db/schema.sql")]
-    (if (.exists schema-file)
-      (let [sql (slurp schema-file)
-            ;; Split SQL into individual statements
-            statements (->> (clojure.string/split sql #";")
-                            (map clojure.string/trim)
-                            (remove clojure.string/blank?))]
-        (doseq [statement statements]
-          (try
-            (jdbc/execute! datasource [statement])
-            (catch Exception e
-              ;; Ignore errors for duplicate objects and constraint violations
-              ;; These can happen when the schema is loaded multiple times
-              (when-not (or (re-find #"already exists" (.getMessage e))
-                            (re-find #"duplicate column name" (.getMessage e))
-                            (re-find #"UNIQUE constraint failed" (.getMessage e))
-                            (re-find #"PRIMARY KEY constraint failed" (.getMessage e)))
-                (throw e))))))
-      (throw (ex-info "Schema file not found. Run 'dbmate dump' to generate it."
-                      {:file "db/schema.sql"})))))
+  [{:keys [dbmate database-url]
+    :or {dbmate "dbmate"}}]
+  (shell/sh dbmate "-u" database-url "load"))
