@@ -33,5 +33,9 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/deps.edn') }}
       - name: Lint
         run: bin/lint
+      - name: Install dbmate
+        run: |
+          apt-get update
+          apt-get install dbmate
       - name: Run All Tests
         run: clojure -M:dev:test:test-runner
