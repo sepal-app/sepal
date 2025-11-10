@@ -35,7 +35,7 @@ jobs:
         run: bin/lint
       - name: Install dbmate
         run: |
-          wget -O dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64
-          chmod u+x dbmate
+          wget -O /tmp/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64
+          chmod u+x /tmp/dbmate
       - name: Run All Tests
-        run: clojure -M:dev:test:test-runner
+        run: DBMATE=/tmp/dbmate clojure -M:dev:test:test-runner
