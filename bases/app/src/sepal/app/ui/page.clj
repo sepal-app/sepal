@@ -52,20 +52,9 @@
                :aria-label "open sidebar",
                :class "btn btn-square btn-ghost"}
        ;; (comment "Sidebar toggle icon")
-       (sidebar-toggle-icon)]
-
-      #_[:a {:href "#"}
-         [:span {:class "sr-only"} "Your profile"]
-         (if (:avatar-s3-key g/*viewer*)
-           [:img {:class "h-8 w-8 rounded-full"
-                  :src "{{ current_user.avatar_url(50)|default('', true)}}"
-                  :alt ""}]
-           (heroicons/user-circle :size 38))]
-      ;; [:div "hi"]
-      ]
+       (sidebar-toggle-icon)]]
      #_[:div {:class "px-4"} "Navbar Title"]]
-    ;; (comment "Page content here")
-    [:div ;; {:class "p-4"}
+    [:main
      content
      (flash/banner (:messages flash))
 
