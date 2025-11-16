@@ -28,7 +28,7 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (footer-buttons))
-             :page-title "Create material"))
+             :page-title "Create Material"))
 
 (defn create! [db created-by data]
   (try

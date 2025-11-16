@@ -8,7 +8,6 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
@@ -32,8 +31,7 @@
          :class "flex flex-col gap-8"}
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
-   (tabs/tabs (taxon.tabs/items :taxon taxon
-                                :active :media))
+   (taxon.tabs/tabs taxon taxon.tabs/media-tab)
    [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that

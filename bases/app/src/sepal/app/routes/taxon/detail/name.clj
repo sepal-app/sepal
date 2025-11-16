@@ -9,7 +9,6 @@
             [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
@@ -23,8 +22,7 @@
 
 (defn page-content [& {:keys [errors taxon values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs (taxon.tabs/items :taxon taxon
-                                :active :name))
+   (taxon.tabs/tabs taxon taxon.tabs/name-tab)
    (let [read-only? (:taxon/read-only taxon)]
      [:div
       (when read-only?

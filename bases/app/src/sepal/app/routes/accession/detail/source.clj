@@ -8,7 +8,6 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
@@ -16,9 +15,7 @@
 
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   [:div {:x-data "accessionTabs"}
-    (tabs/tabs2 (accession.tabs/items :accession accession
-                                      :active :general))]
+   (accession.tabs/tabs accession accession.tabs/general-tab)
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org

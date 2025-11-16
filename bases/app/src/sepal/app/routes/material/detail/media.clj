@@ -8,7 +8,6 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
@@ -29,10 +28,7 @@
 (defn page-content [& {:keys [media page page-size material]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
-
-   (tabs/tabs (material.tabs/items :material material
-                                   :active :media))
-
+   (material.tabs/tabs material material.tabs/media-tab)
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}

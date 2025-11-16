@@ -28,7 +28,7 @@
   (-> (page/page :content (page-content :errors errors
                                         :values values)
                  :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title "Create accession")))
+                 :page-title "Create Accession")))
 
 (defn create! [db created-by data]
   (try

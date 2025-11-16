@@ -23,7 +23,7 @@
                                     :values values)
              :flash flash
              :footer (form/footer :buttons (taxon.form/footer-buttons))
-             :page-title "Create taxon"))
+             :page-title "Create Taxon"))
 
 (defn create! [db created-by data]
   (try

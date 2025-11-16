@@ -20,7 +20,7 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (location.form/footer-buttons))
-             :page-title "Create location"))
+             :page-title "Create Location"))
 
 (defn create! [db created-by data]
   (try

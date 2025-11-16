@@ -8,7 +8,6 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
@@ -19,8 +18,7 @@
 
 (defn page-content [& {:keys [errors org material values]}]
   [:div {:class "flex flex-col gap-2"}
-   (tabs/tabs (material.tabs/items :material material
-                                   :active :general))
+   (material.tabs/tabs material material.tabs/general-tab)
    (material.form/form :action (z/url-for material.routes/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org

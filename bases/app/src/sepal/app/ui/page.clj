@@ -36,93 +36,103 @@
    [:path {:d "M9 4v16"}]
    [:path {:d "M14 10l2 2l-2 2"}]])
 
-(defn page-wrapper [& {:keys [content flash footer] :as props}]
-  [:div {:class "drawer lg:drawer-open"}
-   [:input {:id "sidebar-drawer-toggle"
-            :type "checkbox"
-            :class "drawer-toggle"
-            ;; Setting checked makes the sidebar open by default. To have this follow page
-            ;; navigation we would probably need to store it in locale storage.
-            :checked "checked"}]
-   [:div {:class "drawer-content"}
-    ;; (comment "Navbar")
-    [:nav {:class "navbar w-full bg-base-100"}
-     [:div {:class "w-full flex flex-row justify-between items-center"}
-      [:label {:for "sidebar-drawer-toggle",
-               :aria-label "open sidebar",
-               :class "btn btn-square btn-ghost"}
-       ;; (comment "Sidebar toggle icon")
-       (sidebar-toggle-icon)]]
-     #_[:div {:class "px-4"} "Navbar Title"]]
-    [:main
-     content
-     (flash/banner (:messages flash))
+;; TODO: We need a page-inner component so that we have consistent margins on
+;; horizontal pages edges, e.g. the form footer lines up with the form fields
 
-     (when footer
-       [:div {:id "page-footer"}
-        footer])
+(defn page [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
+  (base/html
+    [:div (merge {:x-data true} attrs)
+     [:div {:class "drawer lg:drawer-open"}
+      [:input {:id "sidebar-drawer-toggle"
+               :type "checkbox"
+               :class "drawer-toggle"
+               ;; Setting checked makes the sidebar open by default. To have this follow page
+               ;; navigation we would probably need to store it in locale storage.
+               ;; :checked "checked"
+               }]
+      [:div {:class "drawer-content"}
+       ;; (comment "Navbar")
+       [:nav {:class "navbar w-full bg-base-100"}
+        [:div {:class "w-full flex flex-row justify-between items-center"}
+         [:div {:class "flex flex-row"}
+          [:label {:for "sidebar-drawer-toggle",
+                   :aria-label "open sidebar",
+                   :class "btn btn-square btn-ghost"}
+           ;; (comment "Sidebar toggle icon")
+           (sidebar-toggle-icon)]
+          #_[:div {:class "px-4"} "Navbar Title"]
+          (when breadcrumbs
+            [:div {:class "breadcrumbs text-lg mt-[-3px] ml-4"}
+             [:ul
+              (for [item breadcrumbs]
+                [:li item])]])]
 
-     [:script {:type "module"
-               :src (html/static-url "app/ui/page.ts")}]]]
+         [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
+          page-title-buttons]]]
 
-   [:div {:class "drawer-side is-drawer-close:overflow-visible"}
-    [:label {:for "sidebar-drawer-toggle",
-             :aria-label "close sidebar",
-             :class "drawer-overlay"}]
-    [:div {:class
-           "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64"}
-     ;; (comment "Sidebar content here")
-     [:ul {:class "menu w-full grow flex flex-col justify-between"}
-      ;; (comment "List item")
-      [:div
-       (sidebar-item ;;"Activity"
-         :label "Activity"
-         :href (z/url-for activity.routes/index)
-         :icon (heroicons/outline-clock)
-         :current? false)
-       (sidebar-item :label "Accessions"
-                     :href (z/url-for accession.routes/index)
-                     :icon (heroicons/outline-rectangle-group)
-                     :current? false)
-       (sidebar-item :label "Material"
-                     :href (z/url-for material.routes/index)
-                     :icon (heroicons/outline-tag)
-                     :current? false)
-       (sidebar-item :label "Taxa"
-                     :href (z/url-for taxon.routes/index)
-                     :icon (bootstrap/flower1)
-                     :current? false)
-       (sidebar-item :label "Locations"
-                     :href (z/url-for location.routes/index)
-                     :icon (heroicons/outline-map-pin)
-                     :current? false)
-       (sidebar-item :label "Media"
-                     :href (z/url-for media.routes/index)
-                     :icon (heroicons/outline-photo)
-                     :current? false)]
+       [:main
+        [:div {:class "px-4 sm:px-6 lg:px-8"}
+         [:div {:class "mt-8"}
+          (when page-title
+            [:h1 {:class "text-3xl font-semibold text-gray-900 mb-8"}
+             page-title]
+            #_[:div {:class "sm:flex sm:items-center h-10"}
+               [:div {:class "sm:flex-auto"}
+                [:h1 {:class "text-xl font-semibold text-gray-900"}
+                 page-title]]])
+          content]]
+        (flash/banner (:messages flash))
 
-      [:div {:class ""}
-       (sidebar-item :label "Profile"
-                     :href  "#"
-                     :icon (if (:avatar-s3-key g/*viewer*)
-                             [:img {:class "h-8 w-8 rounded-full"
-                                    :src "{{ current_user.avatar_url(50)|default('', true)}}"
-                                    :alt ""}]
-                             (heroicons/user-circle :size 38))
-                     :current? false)]]]]])
+        (when footer
+          [:div {:id "page-footer"}
+           footer])
 
-(defn page [& {:keys [content flash footer page-title page-title-buttons attrs]}]
-  (-> [:div (merge {} attrs)
-       (page-wrapper :content [:div {:class "px-4 sm:px-6 lg:px-8 md:py-8"}
-                               [:div {:class "sm:flex sm:items-center h-10"}
-                                [:div {:class "sm:flex-auto"}
-                                 [:h1 {:class "text-xl font-semibold text-gray-900"}
-                                  page-title]]
+        [:script {:type "module"
+                  :src (html/static-url "app/ui/page.ts")}]]]
 
-                                [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
-                                 page-title-buttons]]
-                               [:div {:class "mt-8"}
-                                content]]
-                     :flash flash
-                     :footer footer)]
-      (base/html)))
+      [:div {:class "drawer-side is-drawer-close:overflow-visible"}
+       [:label {:for "sidebar-drawer-toggle",
+                :aria-label "close sidebar",
+                :class "drawer-overlay"}]
+       [:div {:class
+              "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64"}
+        ;; (comment "Sidebar content here")
+        [:ul {:class "menu w-full grow flex flex-col justify-between"}
+         ;; (comment "List item")
+         [:div
+          (sidebar-item ;;"Activity"
+            :label "Activity"
+            :href (z/url-for activity.routes/index)
+            :icon (heroicons/outline-clock)
+            :current? false)
+          (sidebar-item :label "Accessions"
+                        :href (z/url-for accession.routes/index)
+                        :icon (heroicons/outline-rectangle-group)
+                        :current? false)
+          (sidebar-item :label "Material"
+                        :href (z/url-for material.routes/index)
+                        :icon (heroicons/outline-tag)
+                        :current? false)
+          (sidebar-item :label "Taxa"
+                        :href (z/url-for taxon.routes/index)
+                        :icon (bootstrap/flower1)
+                        :current? false)
+          (sidebar-item :label "Locations"
+                        :href (z/url-for location.routes/index)
+                        :icon (heroicons/outline-map-pin)
+                        :current? false)
+          (sidebar-item :label "Media"
+                        :href (z/url-for media.routes/index)
+                        :icon (heroicons/outline-photo)
+                        :current? false)]
+
+         [:div {:class ""}
+          (sidebar-item :label "Profile"
+                        :href  "#"
+                        :icon (if (:avatar-s3-key g/*viewer*)
+                                [:img {:class "h-8 w-8 rounded-full"
+                                       :src "{{ current_user.avatar_url(50)|default('', true)}}"
+                                       :alt ""}]
+                                (heroicons/user-circle ;;:size 32
+                                  ))
+                        :current? false)]]]]]]))

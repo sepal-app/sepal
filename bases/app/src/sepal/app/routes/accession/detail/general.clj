@@ -7,9 +7,9 @@
             [sepal.app.routes.accession.detail.tabs :as accession.tabs]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
@@ -17,9 +17,7 @@
 
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   [:div {:x-data "accessionTabs"}
-    (tabs/tabs2 (accession.tabs/items :accession accession
-                                      :active :general))]
+   (accession.tabs/tabs accession accession.tabs/general-tab)
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org
@@ -41,8 +39,10 @@
                                     :accession accession
                                     :values values
                                     :taxon taxon)
-             :footer (ui.form/footer :buttons (footer-buttons))
-             :page-title (str (:accession/code accession) " - " (:taxon/name taxon))))
+             :breadcrumbs [[:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
+                            (:taxon/name taxon)]
+                           (:accession/code accession)]
+             :footer (ui.form/footer :buttons (footer-buttons))))
 
 (defn save! [db accession-id updated-by data]
   (try

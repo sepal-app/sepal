@@ -6,10 +6,11 @@
             [sepal.app.routes.accession.detail.tabs :as accession.tabs]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tabs :as tabs]
             [sepal.media.interface :as media.i]
+            [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (defn title-buttons []
@@ -29,10 +30,7 @@
 (defn page-content [& {:keys [media page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
-
-   (tabs/tabs2 (accession.tabs/items :accession accession
-                                     :active :media))
-
+   (accession.tabs/tabs accession accession.tabs/media-tab)
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}
@@ -53,13 +51,17 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [page page-size media accession]}]
-  (page/page :page-title "Media"
-             :page-title-buttons (title-buttons)
-             :content (page-content :page page
-                                    :page-size page-size
-                                    :media media
-                                    :accession accession)))
+(defn render [& {:keys [page page-size media accession taxon]}]
+  (page/page ;;:page-title "Media"
+    :page-title-buttons (title-buttons)
+    :content (page-content :page page
+                           :page-size page-size
+                           :media media
+                           :accession accession)
+
+    :breadcrumbs [[:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
+                   (:taxon/name taxon)]
+                  (:accession/code accession)]))
 
 (def Params
   [:map
@@ -71,6 +73,7 @@
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
+        taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         media (->> (media.i/get-linked db
                                        "accession"
                                        (:accession/id resource)
@@ -92,4 +95,5 @@
       (render :media media
               :page 1
               :page-size page-size
-              :accession resource))))
+              :accession resource
+              :taxon taxon))))
