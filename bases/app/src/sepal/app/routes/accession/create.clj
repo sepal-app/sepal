@@ -6,7 +6,7 @@
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [zodiac.core :as z]))
@@ -25,10 +25,10 @@
     "Cancel"]])
 
 (defn render [& {:keys [errors values]}]
-  (-> (page/page :content (page-content :errors errors
-                                        :values values)
-                 :footer (ui.form/footer :buttons (footer-buttons))
-                 :page-title "Create Accession")))
+  (ui.page/page :content (page-content :errors errors
+                                       :values values)
+                :footer (ui.form/footer :buttons (footer-buttons))
+                :page-title "Create Accession"))
 
 (defn create! [db created-by data]
   (try

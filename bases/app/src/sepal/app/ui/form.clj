@@ -1,5 +1,6 @@
 (ns sepal.app.ui.form
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.app.ui.page :as ui.page]
             [sepal.malli.interface :as malli.i]))
 
 (def anti-forgery-field-name "__anti-forgery-token")
@@ -106,9 +107,11 @@
       label])])
 
 (defn footer [& {:keys [buttons]}]
-  [:div {:class "fixed bottom-0 flex flex-row gap-4 p-4 bg-white shadow w-full"
+  [:div {:class "fixed bottom-0 py-4 bg-white shadow w-full"
          :x-transition:enter "transition-transform ease-out duration-300"
          :x-transition:enter-start "translate-y-20"
          :x-transition:enter-end "translate-y-0"
          :x-show "dirty"}
-   buttons])
+   (ui.page/page-inner
+     [:div {:class "flex flex-row gap-4 "}
+      buttons])])

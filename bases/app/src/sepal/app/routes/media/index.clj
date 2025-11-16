@@ -6,7 +6,7 @@
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]))
 
@@ -29,31 +29,32 @@
   (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
 
 (defn page-content [& {:keys [media page page-size]}]
-  [:div {:x-data (json/js {:selected nil})}
-   [:link {:rel "stylesheet"
-           :href (html/static-url "app/routes/media/css/media.css")}]
-   [:div {:id "media-page"}
-    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-    ;; probably store the antiForgeryToken in a separate element and then that
-    ;; element can be updated with the when we get the signing urls
-    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for media.routes/s3)
-                                       :trigger "#upload-button"})}]
-    (media.ui/media-list :media media
-                         :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :current-page page))
-                         :page page)
-    [:div {:id "upload-success-forms"
-           :class "hidden"}]]
-   [:script {:type "module"
-             :src (html/static-url "app/routes/media/media.ts")}]])
+  (ui.page/page-inner
+    [:div {:x-data (json/js {:selected nil})}
+     [:link {:rel "stylesheet"
+             :href (html/static-url "app/routes/media/css/media.css")}]
+     [:div {:id "media-page"}
+      ;; TODO: This won't work b/c its reusing the anti forgery token. We should
+      ;; probably store the antiForgeryToken in a separate element and then that
+      ;; element can be updated with the when we get the signing urls
+      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                         :signingUrl (z/url-for media.routes/s3)
+                                         :trigger "#upload-button"})}]
+      (media.ui/media-list :media media
+                           :next-page-url (when (>= (count media) page-size)
+                                            (next-page-url :current-page page))
+                           :page page)
+      [:div {:id "upload-success-forms"
+             :class "hidden"}]]
+     [:script {:type "module"
+               :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media]}]
-  (page/page :page-title "Media"
-             :page-title-buttons (title-buttons)
-             :content (page-content :page page
-                                    :page-size page-size
-                                    :media media)))
+  (ui.page/page :page-title "Media"
+                :page-title-buttons (title-buttons)
+                :content (page-content :page page
+                                       :page-size page-size
+                                       :media media)))
 
 (def Params
   [:map

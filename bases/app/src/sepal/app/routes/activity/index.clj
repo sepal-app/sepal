@@ -11,7 +11,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.spec :as location.spec]
@@ -177,25 +177,26 @@
                                    activity)
         ;; dates in descending order (most recent first)
         dates (sort #(.isAfter %1 %2) (keys activity-by-date))]
-    (reduce (fn [acc date]
-              (let [activity (get activity-by-date date)]
-                (conj acc
-                      (timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
-                                        (reduce (fn [acc cur]
-                                                  (if-let [desc (activity-description :activity cur)]
-                                                    (conj acc desc)
-                                                    acc)
-                                                  ;; TODO: On hover show a tooltup with the exact time
-                                                  ;; in the org's default timezone
-                                                  )
-                                                []
-                                                activity)))))
-            []
-            dates)))
+    (ui.page/page-inner
+      (reduce (fn [acc date]
+                (let [activity (get activity-by-date date)]
+                  (conj acc
+                        (timeline-section (.format date-time-formatter (.atZone date default-timezone)) ;; "January 13th, 2022"
+                                          (reduce (fn [acc cur]
+                                                    (if-let [desc (activity-description :activity cur)]
+                                                      (conj acc desc)
+                                                      acc)
+                                                    ;; TODO: On hover show a tooltup with the exact time
+                                                    ;; in the org's default timezone
+                                                    )
+                                                  []
+                                                  activity)))))
+              []
+              dates))))
 
 (defn render [& {:keys [activity]}]
-  (page/page :content [(timeline :activity activity)]
-             :page-title "Activity"))
+  (ui.page/page :content (timeline :activity activity)
+                :page-title "Activity"))
 
 (def Activity
   (-> activity.i/Activity

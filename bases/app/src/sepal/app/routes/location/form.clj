@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.form
-  (:require [sepal.app.ui.form :as form]))
+  (:require [sepal.app.ui.form :as form]
+            [sepal.app.ui.page :as ui.page]))
 
 (defn footer-buttons []
   [[:button {:class "btn btn-primary"
@@ -11,27 +12,27 @@
     "Cancel"]])
 
 (defn form [& {:keys [action errors values]}]
-  [:div
-   (form/form
-     {:action action
-      :method "POST"
-      :id "location-form"
-      :x-on:location-form:submit.window "$el.submit()"
-      :x-on:location-form:reset.window "$el.reset()"}
-     [(form/anti-forgery-field)
-      (form/input-field :label "Name"
-                        :name "name"
-                        :required true
-                        :value (:name values)
-                        :errors (:name errors))
+  (ui.page/page-inner
+    (form/form
+      {:action action
+       :method "POST"
+       :id "location-form"
+       :x-on:location-form:submit.window "$el.submit()"
+       :x-on:location-form:reset.window "$el.reset()"}
+      [(form/anti-forgery-field)
+       (form/input-field :label "Name"
+                         :name "name"
+                         :required true
+                         :value (:name values)
+                         :errors (:name errors))
 
-      (form/input-field :label "Code"
-                        :name "code"
-                        :required true
-                        :value (:code values)
-                        :errors (:code errors))
+       (form/input-field :label "Code"
+                         :name "code"
+                         :required true
+                         :value (:code values)
+                         :errors (:code errors))
 
-      (form/textarea-field :label "Description"
-                           :name "description"
-                           :value (:description values)
-                           :errors (:description errors))])])
+       (form/textarea-field :label "Description"
+                            :name "description"
+                            :value (:description values)
+                            :errors (:description errors))])))

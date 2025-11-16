@@ -1,9 +1,7 @@
 (ns sepal.app.routes.location.index
   (:require [lambdaisland.uri :as uri]
-            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.location.routes :as location.routes]
-            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
@@ -11,28 +9,12 @@
 
 (def default-page-size 25)
 
-(defn search-field [q]
-  [:div {:class "flex flex-row"}
-   [:input {:name "q"
-            :class "input input-md w-fill max-w-xs bg-white w-96"
-            :type "search"
-            :value q
-            :placeholder "Search..."}]
-   [:button
-    {:type "button",
-     :class (html/attr "inline-flex" "items-center" "mx-2" "px-2.5" "py-1.5" "border"
-                       "border-gray-300" "shadow-sm" "text-xs" "font-medium" "rounded"
-                       "text-gray-700" "bg-white" "hover:bg-gray-50" "focus:outline-none"
-                       "focus:ring-2" "focus:ring-offset-2" "focus:ring-indigo-500")
-     :onclick "document.getElementById('q').value = null; this.form.submit()"}
-    (heroicons/outline-x :size 20)]])
-
 (defn create-button [& {:keys []}]
-  [:a {:class (html/attr "inline-flex" "items-center" "justify-center" "rounded-md"
-                         "border" "border-transparent" "bg-green-700" "px-4" "py-2"
-                         "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
-                         "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
-                         "focus:ring-offset-2" "sm:w-auto")
+  [:a {:class ["inline-flex" "items-center" "justify-center" "rounded-md"
+               "border" "border-transparent" "bg-green-700" "px-4" "py-2"
+               "text-sm" "font-medium" "text-white" "shadow-sm" "hover:bg-green-700"
+               "focus:outline-none" "focus:ring-2" "focus:ring-grenn-500"
+               "focus:ring-offset-2" "sm:w-auto"]
        :href (z/url-for location.routes/new)}
    "Create"])
 
@@ -65,7 +47,7 @@
                                      :total total)
                      :page-title "Locations"
                      :page-title-buttons (create-button)
-                     :table-actions (search-field (-> href uri/query-map :q))))
+                     :table-actions (pages.list/search-field (-> href uri/query-map :q))))
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context

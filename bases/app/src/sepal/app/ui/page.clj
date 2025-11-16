@@ -40,6 +40,10 @@
 ;; TODO: We need a page-inner component so that we have consistent margins on
 ;; horizontal pages edges, e.g. the form footer lines up with the form fields
 
+(defn page-inner [& children]
+  [:div {:class "px-4 sm:px-6 lg:px-8 w-full"}
+   children])
+
 (defn page [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
   (base/html
     [:div (merge {:x-data true} attrs)
@@ -72,16 +76,18 @@
           page-title-buttons]]]
 
        [:main
-        [:div {:class "px-4 sm:px-6 lg:px-8"}
-         [:div {:class "mt-8"}
-          (when page-title
-            [:h1 {:class "text-3xl font-semibold text-gray-900 mb-8"}
-             page-title]
-            #_[:div {:class "sm:flex sm:items-center h-10"}
-               [:div {:class "sm:flex-auto"}
-                [:h1 {:class "text-xl font-semibold text-gray-900"}
-                 page-title]]])
-          content]]
+        (page-inner
+          [:div {:class "mt-8"}
+           (when page-title
+             [:h1 {:class "text-3xl font-semibold text-gray-900 mb-8"}
+              page-title]
+             #_[:div {:class "sm:flex sm:items-center h-10"}
+                [:div {:class "sm:flex-auto"}
+                 [:h1 {:class "text-xl font-semibold text-gray-900"}
+                  page-title]]])])
+
+        [:div {:class "mb-32"} ;; mb to leave room for the footer
+         content]
         (flash/banner (:messages flash))
 
         (when footer
