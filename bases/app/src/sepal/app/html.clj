@@ -8,6 +8,7 @@
 (defn attr [& classes]
   (->> classes
        flatten
+       (remove nil?)
        (mapv name)
        (s/join " ")))
 

@@ -19,7 +19,8 @@
     {:class "is-drawer-close:tooltip is-drawer-close:tooltip-right",
      :href href
      :data-tip label}
-    icon
+    [:div {:class "w-6 h-6"}
+     icon]
     [:span {:class "is-drawer-close:hidden"}
      label]]])
 
@@ -95,7 +96,7 @@
                 :aria-label "close sidebar",
                 :class "drawer-overlay"}]
        [:div {:class
-              "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64"}
+              "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-16 is-drawer-open:w-64"}
         ;; (comment "Sidebar content here")
         [:ul {:class "menu w-full grow flex flex-col justify-between"}
          ;; (comment "List item")

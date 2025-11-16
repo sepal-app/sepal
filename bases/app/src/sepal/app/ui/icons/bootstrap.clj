@@ -1,11 +1,9 @@
 (ns sepal.app.ui.icons.bootstrap)
 
-(defn flower1 [& {:keys [color size]
-                  :or {color "text-gray-400"
-                       size 24}}]
+(defn flower1 [& {:keys [color size]}]
   [:svg {:xmlns "http://www.w3.org/2000/svg"
          :fill "currentColor"
-         :class (str color " group-hover:text-gray-500 flex-shrink-0")
+         :class [color "flex-shrink-0"]
          :viewBox "0 0 16 16"
          :width size
          :height size}
