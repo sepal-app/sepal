@@ -5,6 +5,7 @@
         poly/activity {:local/root "../../components/activity"}
         poly/aws-s3 {:local/root "../../components/aws-s3"}
         poly/config {:local/root "../../components/config"}
+        poly/contact {:local/root "../../components/contact"}
         poly/database {:local/root "../../components/database"}
         poly/error {:local/root "../../components/error"}
         poly/location {:local/root "../../components/location"}
