@@ -25,6 +25,7 @@ export default (
         for (const input of inputs) {
             input.addEventListener("input", handler)
         }
+        el.addEventListener("form-state.dirty", handler)
     }
 
     function removeListeners() {
@@ -32,6 +33,7 @@ export default (
         for (const input of inputs) {
             input.removeEventListener("input", handler)
         }
+        el.removeEventListener("form-state.dirty", handler)
     }
 
     const observer = new MutationObserver((_mutationList, _) => {

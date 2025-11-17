@@ -5,6 +5,7 @@
                         "components/activity/test"
                         "components/aws-s3/test"
                         "components/config/test"
+                        "components/contact/test"
                         "components/database/test"
                         "components/location/test"
                         "components/logging/test"

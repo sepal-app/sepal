@@ -6,6 +6,7 @@
 (def taxon-id pos-int?)
 (def code [:string {:min 1}])
 (def private :boolean)
+(def supplier-contact-id pos-int?)
 
 (defn- name-encoder [v]
   (when v (name v)))
@@ -63,7 +64,8 @@
    [:accession/id-qualifier [:maybe id-qualifier]]
    [:accession/id-qualifier-rank [:maybe id-qualifier-rank]]
    [:accession/provenance-type [:maybe provenance-type]]
-   [:accession/wild-provenance-status [:maybe wild-provenance-status]]])
+   [:accession/wild-provenance-status [:maybe wild-provenance-status]]
+   [:accession/supplier-contact-id [:maybe supplier-contact-id]]])
 
 (def CreateAccession
   [:map {:closed true}
@@ -74,7 +76,8 @@
    [:id-qualifier {:optional true} [:maybe id-qualifier]]
    [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
    [:provenance-type {:optional true} [:maybe provenance-type]]
-   [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]])
+   [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
+   [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]])
 
 (def UpdateAccession
   (mu/optional-keys
@@ -85,4 +88,5 @@
      [:id-qualifier {:optional true} [:maybe id-qualifier]]
      [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
      [:provenance-type {:optional true} [:maybe provenance-type]]
-     [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]]))
+     [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
+     [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]]))

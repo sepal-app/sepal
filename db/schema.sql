@@ -106,7 +106,7 @@ CREATE TABLE accession (
   'not_wild',
   'purchase',
   'insufficient_data'
-)));
+)), supplier_contact_id integer references contact(id), date_received integer text, date_accessioned integer text);
 CREATE INDEX accession_id_idx on accession (id);
 CREATE TABLE material (
   id integer primary key autoincrement,
@@ -152,7 +152,20 @@ CREATE TABLE settings (
   value text,
   user_id integer references "user"(id)
 );
+CREATE TABLE contact (
+  id integer primary key autoincrement,
+  name text not null,
+  email text,
+  address text,
+  province text,
+  postal_code text,
+  country text,
+  phone text,
+  business text not null,
+  notes text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20251021111547'),
-  ('20251101133108');
+  ('20251101133108'),
+  ('20251116002821');

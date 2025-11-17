@@ -4,6 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.activity.routes :as activity.routes]
+            [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
@@ -11,6 +12,7 @@
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.icons.lucide :as lucide]
             [zodiac.core :as z]))
 
 (defn sidebar-item [& {:keys [href icon label] :as props}]
@@ -131,6 +133,10 @@
           (sidebar-item :label "Media"
                         :href (z/url-for media.routes/index)
                         :icon (heroicons/outline-photo)
+                        :current? false)
+          (sidebar-item :label "Contacts"
+                        :href (z/url-for contact.routes/index)
+                        :icon (lucide/contact-round)
                         :current? false)]
 
          [:div {:class ""}

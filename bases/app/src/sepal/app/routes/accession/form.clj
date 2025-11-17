@@ -3,6 +3,7 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as ui.page]
@@ -14,7 +15,7 @@
       (str/replace "_" " ")
       (str/capitalize)))
 
-(defn form [& {:keys [action errors values]}]
+(defn form [& {:keys [action errors supplier taxon values]}]
   (ui.page/page-inner
     (ui.form/form
       {:action action
@@ -31,17 +32,17 @@
                              :value (:code values)
                              :errors (:code errors))]
 
-       (let [url (z/url-for taxon.routes/index)]
+       (let [taxa-url (z/url-for taxon.routes/index)]
          (ui.form/field :label "Taxon"
                         :name "taxon-id"
-                        :input [:select {:x-taxon-field (json/js {:url url})
+                        :input [:select {:x-taxon-field (json/js {:url taxa-url})
                                          :id "taxon-id"
                                          :required true
                                          :name "taxon-id"
                                          :autocomplete "off"}
-                                (when (:taxon-id values)
-                                  [:option {:value (:taxon-id values)}
-                                   (:taxon-name values)])]))
+                                (when (:taxon/id taxon) #_(:taxon-id values)
+                                      [:option {:value (:taxon/id taxon) #_(:taxon-id values)}
+                                       (:taxon/name values)])]))
        [:div {:class "grid grid-cols-2"}
         [:div
          (ui.form/field :label "ID Qualifier"
@@ -70,7 +71,17 @@
                         :input (ui.form/enum-select "wild-provenance-status"
                                                     accession.spec/wild-provenance-status
                                                     (:wild-provenance-status values)
-                                                    :label-fn enum-label-fn))]]])
+                                                    :label-fn enum-label-fn))]
+
+        (ui.form/field :label "Supplier"
+                       :name "supplier-contact-id"
+                       :input [:select {:x-contact-field (json/js {:url (z/url-for contact.routes/index)})
+                                        :id "supplier-contact-id"
+                                        :name "supplier-contact-id"
+                                        :autocomplete "off"}
+                               (when (:contact/id supplier) #_(:supplier-contact-id values)
+                                     [:option {:value  (:contact/id supplier) #_(:supplier-contact-id values)}
+                                      (:contact/name supplier)])])]])
 
     [:script {:type "module"
               :src (html/static-url "app/routes/accession/form.ts")}]))

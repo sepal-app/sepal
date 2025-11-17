@@ -5,7 +5,7 @@ interface DirectiveExpression {
     url: string
 }
 
-const AccessionField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => {
+const ContactField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => {
     const { url }: DirectiveExpression = evaluate(directive.expression)
 
     function onSearch(
@@ -37,6 +37,10 @@ const AccessionField: DirectiveCallback = (el, directive, { cleanup, evaluate })
 
     const select = new SlimSelect({
         select: el,
+        settings: {
+            // TODO: How can we make this configurable and pass this in
+            allowDeselect: true,
+        },
         events: {
             search: onSearch,
             afterChange: (newVal) => {
@@ -49,4 +53,4 @@ const AccessionField: DirectiveCallback = (el, directive, { cleanup, evaluate })
     cleanup(() => select.destroy())
 }
 
-export default AccessionField
+export default ContactField

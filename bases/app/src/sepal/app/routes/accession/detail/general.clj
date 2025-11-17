@@ -10,16 +10,19 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org accession values]}]
+(defn page-content [& {:keys [errors org accession supplier taxon values]}]
   [:div {:class "flex flex-col gap-2"}
    (accession.tabs/tabs accession accession.tabs/general-tab)
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
+                        :supplier supplier
+                        :taxon taxon
                         :org org
                         :values values)])
 
@@ -33,12 +36,13 @@
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]])
 
-(defn render [& {:keys [errors org accession taxon values]}]
+(defn render [& {:keys [errors org accession supplier taxon values]}]
   (page/page :content (page-content :errors errors
                                     :org org
                                     :accession accession
-                                    :values values
-                                    :taxon taxon)
+                                    :supplier supplier
+                                    :taxon taxon
+                                    :values values)
              :breadcrumbs [[:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
                             (:taxon/name taxon)]
                            (:accession/code accession)]
@@ -57,19 +61,22 @@
   [:map {:closed true}
    [:code :string]
    [:taxon-id :int]
-   [:private accession.spec/private]
-   [:id-qualifier accession.spec/id-qualifier]
-   [:id-qualifier-rank accession.spec/id-qualifier-rank]
-   [:provenance-type accession.spec/provenance-type]
-   [:wild-provenance-status accession.spec/wild-provenance-status]])
+   [:private {:decode/form seq} accession.spec/private]
+   [:id-qualifier {:decode/form seq} accession.spec/id-qualifier]
+   [:id-qualifier-rank {:decode/form seq} accession.spec/id-qualifier-rank]
+   [:provenance-type {:decode/form seq} accession.spec/provenance-type]
+   [:wild-provenance-status {:decode/form seq} accession.spec/wild-provenance-status]
+   [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
+        supplier (contact.i/get-by-id db (:accession/supplier-contact-id resource))
         values (merge {:id (:accession/id resource)
                        :code (:accession/code resource)
                        :taxon-id (:accession/taxon-id resource)
                        :taxon-name (:taxon/name taxon)
+                       :supplier-contact-id (:accession/supplier-contact-id resource)
                        :id-qualifier (:accession/id-qualifier resource)
                        :id-qualifier-rank (:accession/id-qualifier-rank resource)
                        :provenance-type (:accession/provenance-type resource)
@@ -89,5 +96,6 @@
 
       (render :org organization
               :accession resource
+              :supplier supplier
               :taxon taxon
               :values values))))

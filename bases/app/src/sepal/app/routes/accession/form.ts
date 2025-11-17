@@ -1,9 +1,11 @@
 import Alpine from "alpinejs"
 
 import TaxonField from "~/js/taxon-field"
+import ContactField from "~/js/contact-field"
 
 document.addEventListener("alpine:init", () => {
     Alpine.directive("taxon-field", TaxonField)
+    Alpine.directive("contact-field", ContactField)
 
     // TODO: Create a generic directive like prevent-unsaved
     Alpine.data("accessionTabs", () => ({

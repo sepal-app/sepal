@@ -50,7 +50,14 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
     const select = new SlimSelect({
         select: el,
         // settings: { focusSearch: true },
-        events: { search: onSearch },
+        events: {
+            search: onSearch,
+            afterChange: (newVal) => {
+                // This is kind of a hack to get x-form-state for the form to set the
+                // dirty state when the value changes
+                el.form?.dispatchEvent(new CustomEvent("form-state.dirty"))
+            },
+        },
     })
 
     cleanup(() => {
