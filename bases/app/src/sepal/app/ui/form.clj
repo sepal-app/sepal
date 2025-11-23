@@ -61,21 +61,15 @@
                  input-attrs)])
 
 (defn textarea-field [& {:keys [errors id label name required value]}]
-  [:label {:for name
-           :class "form-control w-full max-w-xs"}
-   [:div {:class "label"}
-    [:span {:class "label-text"} label]]
-   [:textarea {:autocomplete "off"
-               :name name
-               :id id
-               :required (or required false)
-               :class "textarea textarea-bordered"}
-    value]
-
-   (when errors
-     [:ul {:class "errors"}
-      (for [error errors]
-        [:li {:class "text-red-600"} error])])])
+  (field :errors errors
+         :name name
+         :label label
+         :input  [:textarea {:autocomplete "off"
+                             :name name
+                             :id id
+                             :required (or required false)
+                             :class "textarea textarea-bordered"}
+                  value]))
 
 (defn submit-button
   ([children]

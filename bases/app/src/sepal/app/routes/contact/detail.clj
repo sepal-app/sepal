@@ -21,7 +21,8 @@
                                     :contact contact
                                     :values values)
              :footer (ui.form/footer :buttons (contact.form/footer-buttons))
-             :page-title (:contact/name contact)))
+             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
+                           (:contact/name contact)]))
 
 (defn update! [db contact-id updated-by data]
   (try

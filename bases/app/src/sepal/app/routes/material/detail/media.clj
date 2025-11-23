@@ -1,14 +1,16 @@
 (ns sepal.app.routes.material.detail.media
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
-            [sepal.app.routes.material.detail.tabs :as material.tabs]
+            [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.media.interface :as media.i]
+            [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (defn title-buttons []
@@ -28,7 +30,7 @@
 (defn page-content [& {:keys [media page page-size material]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
-   (material.tabs/tabs material material.tabs/media-tab)
+   (material.shared/tabs material material.shared/media-tab)
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}
@@ -49,13 +51,16 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [page page-size media material]}]
-  (page/page :page-title "Media"
-             :page-title-buttons (title-buttons)
-             :content (page-content :page page
-                                    :page-size page-size
-                                    :media media
-                                    :material material)))
+(defn render [& {:keys [accession page page-size media material taxon]}]
+  (ui.page/page
+    :content (ui.page/page-inner (page-content :page page
+                                               :page-size page-size
+                                               :media media
+                                               :material material))
+    :breadcrumbs (material.shared/breadcrumbs :accession accession
+                                              :material material
+                                              :taxon taxon)
+    :page-title-buttons (title-buttons)))
 
 (def Params
   [:map
@@ -67,6 +72,8 @@
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
+        accession (accession.i/get-by-id db (:material/accession-id resource))
+        taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
         media (->> (media.i/get-linked db
                                        "material"
                                        (:material/id resource)
@@ -85,7 +92,9 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :media media
+      (render :accession accession
+              :media media
               :page 1
               :page-size page-size
-              :material resource))))
+              :material resource
+              :taxon taxon))))

@@ -1,5 +1,6 @@
-(ns sepal.app.routes.accession.detail.tabs
+(ns sepal.app.routes.accession.detail.shared
   (:require [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.tabs :as ui.tabs]
             [zodiac.core :as z]))
 
@@ -25,3 +26,13 @@
          :x-data "accessionTabs"}
    (ui.tabs/tabs (items :accession accession
                         :active active))])
+
+(defn breadcrumbs [taxon accession]
+  [[:a {:href (z/url-for taxon.routes/index)}
+    "Taxa"]
+   [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+        :class "italic"}
+    (:taxon/name taxon)]
+   [:a {:href (z/url-for accession.routes/index {} {:taxon-id (:taxon/id taxon)})}
+    "Accessions"]
+   (:accession/code accession)])

@@ -3,12 +3,12 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
-            [sepal.app.routes.accession.detail.tabs :as accession.tabs]
+            [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.media.interface :as media.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -30,7 +30,7 @@
 (defn page-content [& {:keys [media page page-size accession]}]
   [:div {:x-data (json/js {:selected nil})
          :class "flex flex-col gap-8"}
-   (accession.tabs/tabs accession accession.tabs/media-tab)
+   (accession.shared/tabs accession accession.shared/media-tab)
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}
@@ -52,16 +52,12 @@
              :src (html/static-url "app/routes/media/media.ts")}]])
 
 (defn render [& {:keys [page page-size media accession taxon]}]
-  (page/page ;;:page-title "Media"
-    :page-title-buttons (title-buttons)
-    :content (page-content :page page
-                           :page-size page-size
-                           :media media
-                           :accession accession)
-
-    :breadcrumbs [[:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
-                   (:taxon/name taxon)]
-                  (:accession/code accession)]))
+  (ui.page/page :page-title-buttons (title-buttons)
+                :content (ui.page/page-inner (page-content :page page
+                                                           :page-size page-size
+                                                           :media media
+                                                           :accession accession))
+                :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (def Params
   [:map

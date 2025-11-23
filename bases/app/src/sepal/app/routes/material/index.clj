@@ -1,13 +1,17 @@
 (ns sepal.app.routes.material.index
   (:require [lambdaisland.uri :as uri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.json :as json]
+            [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (def default-page-size 25)
@@ -45,33 +49,53 @@
                          :class "spl-link"}
                      (:location/code row)])}])
 
-(defn table [& {:keys [rows page-num href page-size total]}]
+(defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
                   :rows rows)
-     (table/paginator :current-page page-num
+     (table/paginator :current-page page
                       :href href
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href page-num page-size rows total]}]
-  (pages.list/render :content (table :href href
-                                     :page-num page-num
-                                     :page-size page-size
-                                     :rows rows
-                                     :total total)
-                     :page-title "Materials"
-                     :page-title-buttons (create-button)
-                     :table-actions (pages.list/search-field (-> href uri/query-map :q))))
+(defn render [& {:keys [accession href page page-size rows taxon total]}]
+  (ui.page/page
+    :content (pages.list/page-content
+               :content (table :href href
+                               :page page
+                               :page-size page-size
+                               :rows rows
+                               :total total)
+
+               :table-actions (pages.list/search-field (-> href uri/query-map :q)))
+    :breadcrumbs (cond-> []
+                   taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+                               [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+                                    :class "italic"}
+                                (:taxon/name taxon)])
+                   accession (conj [:a {:href (z/url-for accession.routes/index)} "Accessions"]
+                                   [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})
+                                        :class "italic"}
+                                    (:accession/code accession)])
+                   :always (conj "Materials"))
+    :page-title-buttons (create-button)))
+
+(def Params
+  [:map
+   [:page {:default 1} :int]
+   [:page-size {:default 25} :int]
+   [:q :string]
+   [:accession-id  {:min 0} :int]
+   [:taxon-id  {:min 0} :int]])
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context
         ;; TODO: validate page and page size
-        {:strs [page page-size q]
-         :or {page-size default-page-size}} query-params
-        page-num (or (when page (Integer/parseInt page)) 1)
-        offset (* page-size (- page-num 1))
+        ;; {:strs [page page-size q]
+        ;;  :or {page-size default-page-size}} query-params
+        {:keys [accession-id page page-size q taxon-id]} (params/decode Params query-params)
+        offset (* page-size (- page 1))
         stmt {:select [:*]
               :from [[:material :m]]
               :join [[:accession :a]
@@ -80,12 +104,21 @@
                      [:= :t.id :a.taxon_id]
                      [:location :l]
                      [:= :l.id :m.location_id]]
-              :where (if q
-                       [:or
-                        [:like :m.code (format "%%%s%%" q)]
-                        [:like :a.code (format "%%%s%%" q)]]
-                       :true)}
+              :where [:and
+                      (if q
+                        [:or
+                         [:like :m.code (format "%%%s%%" q)]
+                         [:like :a.code (format "%%%s%%" q)]]
+                        :true)
+                      (when taxon-id
+                        [:= :t.id taxon-id])
+                      (when (and accession-id (not taxon-id))
+                        [:= :a.id accession-id])]}
         total (db.i/count db stmt)
+        taxon (when taxon-id
+                (taxon.i/get-by-id db taxon-id))
+        accession (when (and accession-id (not taxon-id))
+                    (accession.i/get-by-id db accession-id))
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
@@ -104,9 +137,11 @@
                                            (:material/code material)
                                            (:taxon/name material))
                              :accession-id (:material/accession-id material)}))
-      (render :href (uri/uri-str {:path uri
+      (render :accession accession
+              :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows
-              :page-num page-num
+              :page page
               :page-size page-size
+              :taxon taxon
               :total total))))

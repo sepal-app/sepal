@@ -2,7 +2,7 @@
   (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.routes.taxon.detail.tabs :as taxon.tabs]
+            [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
@@ -22,7 +22,7 @@
 
 (defn page-content [& {:keys [errors taxon values]}]
   [:div {:class "flex flex-col gap-2"}
-   (taxon.tabs/tabs taxon taxon.tabs/name-tab)
+   (taxon.shared/tabs taxon taxon.shared/name-tab)
    (let [read-only? (:taxon/read-only taxon)]
      [:div
       (when read-only?
@@ -36,8 +36,8 @@
   (page/page :content (page-content :errors errors
                                     :taxon taxon
                                     :values values)
+             :breadcrumbs (taxon.shared/breadcrumbs taxon)
              :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
-             :page-title (:taxon/name taxon)
              :page-title-buttons (page-title-buttons)))
 
 (defn save! [db taxon-id updated-by data]

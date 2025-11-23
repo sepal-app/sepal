@@ -4,10 +4,10 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
-            [sepal.app.routes.taxon.detail.tabs :as taxon.tabs]
+            [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
-            [sepal.app.ui.page :as page]
+            [sepal.app.ui.page :as ui.page]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
@@ -31,7 +31,7 @@
          :class "flex flex-col gap-8"}
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
-   (taxon.tabs/tabs taxon taxon.tabs/media-tab)
+   (taxon.shared/tabs taxon taxon.shared/media-tab)
    [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
@@ -51,12 +51,12 @@
              :src (html/static-url "app/routes/media/media.ts")}]])
 
 (defn render [& {:keys [page page-size media taxon]}]
-  (page/page :page-title "Media"
-             :page-title-buttons (title-buttons)
-             :content (page-content :page page
-                                    :page-size page-size
-                                    :media media
-                                    :taxon taxon)))
+  (ui.page/page :content (ui.page/page-inner (page-content :page page
+                                                           :page-size page-size
+                                                           :media media
+                                                           :taxon taxon))
+                :breadcrumbs (taxon.shared/breadcrumbs taxon)
+                :page-title-buttons (title-buttons)))
 
 (def Params
   [:map

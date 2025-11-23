@@ -1,4 +1,4 @@
-(ns sepal.app.routes.taxon.detail.tabs
+(ns sepal.app.routes.taxon.detail.shared
   (:require [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.tabs :as ui.tabs]
             [zodiac.core :as z]))
@@ -19,3 +19,7 @@
          :x-data "taxonTabs"}
    (ui.tabs/tabs (items :taxon taxon
                         :active active))])
+
+(defn breadcrumbs [taxon]
+  [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+   [:span {:class "item"} (:taxon/name taxon)]])

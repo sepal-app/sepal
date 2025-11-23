@@ -3,6 +3,7 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
@@ -45,22 +46,25 @@
                       :total total))])
 
 (defn render [& {:keys [href page page-size rows total]}]
-  (pages.list/render :content (table :href href
-                                     :page page
-                                     :page-size page-size
-                                     :rows rows
-                                     :total total)
-                     :page-title "Taxa"
-                     :page-title-buttons (create-button)
-                     :table-actions [(pages.list/search-field (-> href uri/query-map :q))
-                                     [:label {:class "ml-8"}
-                                      "Only taxa with accessions"
-                                      ;; TODO: Pass this value in and set it here so
-                                      ;; that it matches the url for form submissions
-                                      [:input {:type "checkbox"
-                                               :name "accessions-only"
-                                               :value "1"
-                                               :class "ml-4"}]]]))
+  (ui.page/page
+    :content (pages.list/page-content
+               :content (table :href href
+                               :page page
+                               :page-size page-size
+                               :rows rows
+                               :total total)
+               :table-actions [(pages.list/search-field (-> href uri/query-map :q))
+                               [:label {:class "ml-8"}
+                                "Only taxa with accessions"
+                                ;; TODO: Pass this value in and set it here so
+                                ;; that it matches the url for form submissions
+                                [:input {:type "checkbox"
+                                         :name "accessions-only"
+                                         :value "1"
+                                         :class "ml-4"}]]])
+
+    :breadcrumbs ["Taxa"]
+    :page-title-buttons (create-button)))
 
 (def Params
   [:map

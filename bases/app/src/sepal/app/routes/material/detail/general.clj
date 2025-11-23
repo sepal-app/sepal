@@ -3,7 +3,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
-            [sepal.app.routes.material.detail.tabs :as material.tabs]
+            [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
@@ -18,7 +18,7 @@
 
 (defn page-content [& {:keys [errors org material values]}]
   [:div {:class "flex flex-col gap-2"}
-   (material.tabs/tabs material material.tabs/general-tab)
+   (material.shared/tabs material material.shared/general-tab)
    (material.form/form :action (z/url-for material.routes/detail-general {:id (:material/id material)})
                        :errors errors
                        :org org
@@ -40,11 +40,10 @@
                                     :material material
                                     :values values
                                     :taxon taxon)
-             :footer (ui.form/footer :buttons (footer-buttons))
-             :page-title (format "%s.%s - %s"
-                                 (:accession/code accession)
-                                 (:material/code material)
-                                 (:taxon/name taxon))))
+             :breadcrumbs (material.shared/breadcrumbs :accession accession
+                                                       :material material
+                                                       :taxon taxon)
+             :footer (ui.form/footer :buttons (footer-buttons))))
 
 (defn save! [db material-id updated-by data]
   (try

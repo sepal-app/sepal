@@ -20,8 +20,10 @@
   (page/page :content (page-content :errors errors
                                     :location location
                                     :values values)
-             :footer (ui.form/footer :buttons (location.form/footer-buttons))
-             :page-title (:location/name location)))
+             :breadcrumbs [[:a {:href (z/url-for location.routes/index)}
+                            "Locations"]
+                           (:location/name location)]
+             :footer (ui.form/footer :buttons (location.form/footer-buttons))))
 
 (defn update! [db location-id updated-by data]
   (try

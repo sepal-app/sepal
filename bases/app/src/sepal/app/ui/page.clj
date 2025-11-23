@@ -67,12 +67,13 @@
                    :class "btn btn-square btn-ghost"}
            ;; (comment "Sidebar toggle icon")
            (sidebar-toggle-icon)]
-          #_[:div {:class "px-4"} "Navbar Title"]
           (when breadcrumbs
-            [:div {:class "breadcrumbs text-lg mt-[-3px] ml-4"}
+            [:div {:class "breadcrumbs t-[-3px] ml-4"}
              [:ul
-              (for [item breadcrumbs]
-                [:li item])]])]
+              (for [item (butlast breadcrumbs)]
+                [:li item])
+              [:li [:span {:class "font-semibold text-xl"}
+                    (last breadcrumbs)]]]])]
 
          [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
           page-title-buttons]]]

@@ -50,11 +50,11 @@
                :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media]}]
-  (ui.page/page :page-title "Media"
-                :page-title-buttons (title-buttons)
-                :content (page-content :page page
+  (ui.page/page :content (page-content :page page
                                        :page-size page-size
-                                       :media media)))
+                                       :media media)
+                :breadcrumbs ["Media"]
+                :page-title-buttons (title-buttons)))
 
 (def Params
   [:map

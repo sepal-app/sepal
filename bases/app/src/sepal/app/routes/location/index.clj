@@ -2,6 +2,7 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.json :as json]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
@@ -40,14 +41,15 @@
                       :total total))])
 
 (defn render [& {:keys [href page-num page-size rows total]}]
-  (pages.list/render :content (table :href href
-                                     :page-num page-num
-                                     :page-size page-size
-                                     :rows rows
-                                     :total total)
-                     :page-title "Locations"
-                     :page-title-buttons (create-button)
-                     :table-actions (pages.list/search-field (-> href uri/query-map :q))))
+  (ui.page/page
+    :content (pages.list/page-content :content (table :href href
+                                                      :page-num page-num
+                                                      :page-size page-size
+                                                      :rows rows
+                                                      :total total)
+                                      :table-actions (pages.list/search-field (-> href uri/query-map :q)))
+    :breadcrumbs ["Locations"]
+    :page-title-buttons (create-button)))
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context

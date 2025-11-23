@@ -3,7 +3,7 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
-            [sepal.app.routes.accession.detail.tabs :as accession.tabs]
+            [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
@@ -15,7 +15,7 @@
 
 (defn page-content [& {:keys [errors org accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   (accession.tabs/tabs accession accession.tabs/general-tab)
+   (accession.shared/tabs accession accession.shared/general-tab)
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :org org
@@ -37,8 +37,8 @@
                                     :accession accession
                                     :values values
                                     :taxon taxon)
-             :footer (ui.form/footer :buttons (footer-buttons))
-             :page-title (str (:accession/code accession) " - " (:taxon/name taxon))))
+             :breadcrumbs (accession.shared/breadcrumbs taxon accession)
+             :footer (ui.form/footer :buttons (footer-buttons))))
 
 (defn save! [db accession-id updated-by data]
   (try

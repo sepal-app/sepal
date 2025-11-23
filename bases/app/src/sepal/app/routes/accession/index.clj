@@ -4,9 +4,11 @@
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (defn create-button [& {:keys []}]
@@ -40,25 +42,35 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href page page-size rows total]}]
-  (pages.list/render :content (table :href href
-                                     :page page
-                                     :page-size page-size
-                                     :rows rows
-                                     :total total)
-                     :page-title "Accessions"
-                     :page-title-buttons (create-button)
-                     :table-actions (pages.list/search-field (-> href uri/query-map :q))))
+(defn render [& {:keys [href page page-size rows taxon total]}]
+  (ui.page/page
+    :content (pages.list/page-content
+               :content (table :href href
+                               :page page
+                               :page-size page-size
+                               :rows rows
+                               :total total)
+               :table-actions (pages.list/search-field (-> href uri/query-map :q)))
+    :breadcrumbs (cond-> []
+                   taxon (conj [:a {:href (z/url-for taxon.routes/index)}
+                                "Taxa"]
+                               [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+                                    :class "italic"}
+                                (:taxon/name taxon)])
+                   :always
+                   (conj "Accessions"))
+    :page-title-buttons (create-button)))
 
 (def Params
   [:map
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
-   [:q :string]])
+   [:q :string]
+   [:taxon-id  {:min 0} :int]])
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context
-        {:keys [page page-size q]} (params/decode Params query-params)
+        {:keys [page page-size q taxon-id]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [:*]
               :from [[:accession :a]]
@@ -67,12 +79,16 @@
               :where [:and
                       (if q
                         [:like :a.code (format "%%%s%%" q)]
-                        :true)]}
+                        :true)
+                      (when taxon-id
+                        [:= :t.id taxon-id])]}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:code]))]
+                                      :order-by [:code]))
+        taxon (when taxon-id
+                (taxon.i/get-by-id db taxon-id))]
 
     (if (= (get headers "accept") "application/json")
       ;; TODO: json response
@@ -87,4 +103,5 @@
               :rows rows
               :page page
               :page-size page-size
+              :taxon taxon
               :total total))))
