@@ -1,4 +1,5 @@
 import Alpine from "alpinejs"
+import "htmx.org"
 
 import TaxonField from "~/js/taxon-field"
 import ContactField from "~/js/contact-field"

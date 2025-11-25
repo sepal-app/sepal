@@ -22,14 +22,40 @@
            :id "__anti-forgery-token"
            :value (force *anti-forgery-token*)}])
 
-(defn field [& {:keys [errors label input]}]
+(defn label-id [field-name]
+  (str field-name "-label"))
+
+(defn description-id [field-name]
+  (str field-name "-description"))
+
+(defn errors-id
+  "ID for the error container element for a field."
+  [field-name]
+  (str field-name "-errors"))
+
+(defn error-id
+  ([field-name]
+   (str field-name "-error"))
+  ([field-name index]
+   (str field-name "-error-" index)))
+
+(defn error-list
+  "Render just the error list for a field. Can be used for OOB swaps."
+  [field-name errors & {:keys [hx-swap-oob?]}]
+  [:ul (cond-> {:id (errors-id field-name)
+                :class ["validator-hint text-error"
+                        (when (seq errors) "visible")]}
+         hx-swap-oob? (assoc :hx-swap-oob "true"))
+   (for [[i error] (map-indexed vector errors)]
+     [:li {:id (error-id field-name i)} error])])
+
+(defn field [& {:keys [name errors label input]}]
   [:fieldset {:class "fieldset w-full"}
-   [:legend {:class "fieldset-legend text-md"}
+   [:legend {:class "fieldset-legend text-md"
+             :id (label-id name)}
     label]
    input
-   [:ul {:class "validator-hint"}
-    (for [error errors]
-      [:li error])]])
+   (error-list name errors :hx-swap-oob? true)])
 
 (defn input-field [& {:keys [id label name read-only required type value errors
                              minlength maxlength input-attrs]}]

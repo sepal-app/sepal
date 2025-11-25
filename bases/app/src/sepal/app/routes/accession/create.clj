@@ -1,14 +1,15 @@
 (ns sepal.app.routes.accession.create
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
-            [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.params :as params]
+            [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors values]}]
@@ -41,20 +42,20 @@
 
 (def FormParams
   [:map {:closed true}
-   [:code :string]
-   [:taxon-id :int]])
+   [:code [:string {:min 1}]]
+   [:taxon-id [:int {:min 0}]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [data (params/decode FormParams form-params)
-            result (create! db (:user/id viewer) data)]
-        (if-not (error.i/error? result)
-          ;; TODO: Add a success message
-          (see-other accession.routes/detail {:id (:accession/id result)})
-          (-> (found accession.routes/new)
-              (assoc :flash {;;:error (error.i/explain result)
-                             :values data}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          ;; Validation error - return 422 with OOB error elements
+          (http/validation-errors (validation.i/humanize result))
+          ;; Valid - save and redirect
+          (let [saved (create! db (:user/id viewer) result)]
+            (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
+                (flash/success "Accession created successfully")))))
 
       (render :values form-params))))

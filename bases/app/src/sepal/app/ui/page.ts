@@ -19,4 +19,13 @@ document.addEventListener("alpine:init", () => {
     Alpine.directive("form-state", FormState)
 })
 
+// Allow 422 responses to be processed by HTMX for OOB error swaps
+document.addEventListener("htmx:beforeSwap", (evt: Event) => {
+    const event = evt as CustomEvent
+    if (event.detail.xhr.status === 422) {
+        event.detail.shouldSwap = true
+        event.detail.isError = false
+    }
+})
+
 Alpine.start()

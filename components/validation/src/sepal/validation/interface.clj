@@ -17,11 +17,20 @@
 (defn error? [data]
   (-> data (meta) :error some?))
 
+(def form-transformer
+  "Transformer for decoding and validating form params.
+   Converts string keys to keywords, coerces string values to proper types,
+   applies default values, and strips extra keys."
+  (mt/transformer
+    (mt/key-transformer {:decode keyword})
+    {:name :form}
+    mt/strip-extra-keys-transformer
+    mt/default-value-transformer
+    mt/string-transformer))
+
 (defn validate-form-values [spec values]
   (try
-    (m/coerce spec
-              values
-              (mt/transformer mt/strip-extra-keys-transformer {:name :form}))
+    (m/coerce spec values form-transformer)
     (catch Exception e
       (error.i/ex->error e))))
 

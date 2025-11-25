@@ -18,31 +18,33 @@
 (defn form [& {:keys [action errors supplier taxon values]}]
   (ui.page/page-inner
     (ui.form/form
-      {:action action
-       :method "POST"
-       :id "accession-form"
-       :x-on:accession-form:submit.window "$el.submit()"
+      {:id "accession-form"
+       :hx-post action
+       :hx-swap "none"
+       :x-on:accession-form:submit.window "$el.requestSubmit()"
        :x-on:accession-form:reset.window "$el.reset()"}
       [:div {:class "max-w-3xl"}
        (ui.form/anti-forgery-field)
        [:div {:class "max-w-xs"}
         (ui.form/input-field :label "Code"
                              :name "code"
-                             :require true
+                             :required true
+                             :minlength 1
                              :value (:code values)
                              :errors (:code errors))]
 
        (let [taxa-url (z/url-for taxon.routes/index)]
          (ui.form/field :label "Taxon"
                         :name "taxon-id"
+                        :errors (:taxon-id errors)
                         :input [:select {:x-taxon-field (json/js {:url taxa-url})
                                          :id "taxon-id"
                                          :required true
                                          :name "taxon-id"
                                          :autocomplete "off"}
-                                (when (:taxon/id taxon) #_(:taxon-id values)
-                                      [:option {:value (:taxon/id taxon) #_(:taxon-id values)}
-                                       (:taxon/name values)])]))
+                                (when (:taxon/id taxon)
+                                  [:option {:value (:taxon/id taxon)}
+                                   (:taxon/name taxon)])]))
        [:div {:class "grid grid-cols-2"}
         [:div
          (ui.form/field :label "ID Qualifier"
