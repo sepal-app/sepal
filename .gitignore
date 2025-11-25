@@ -59,4 +59,5 @@ bases/app/resources/app/build/
 .serena
 
 sepal.db
+sepal.db*
 wfo_plantlist*.db
