@@ -55,6 +55,11 @@
   [selector]
   (.click *page* selector))
 
+(defn press
+  "Press a key"
+  [key]
+  (.press *page* "body" key))
+
 (defn fill
   "Fill input field with value"
   [selector value]
