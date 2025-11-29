@@ -16,7 +16,8 @@
             (let [email (mg/generate user.spec/email)
                   password "TestPassword123!"]
               (pw/navigate "http://localhost:3000/register")
-              (pw/wait-for-selector "input[name=\"email\"]")
+              ;; Give extra time for first page load after server start
+              (pw/wait-for-selector "input[name=\"email\"]" 10000)
 
               ;; Fill registration form
               (pw/fill "input[name=\"email\"]" email)

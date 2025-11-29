@@ -37,11 +37,26 @@
 
      :sepal.malli.interface/init {}}))
 
+(defn- wait-for-server-ready
+  "Wait for server to be ready by polling the health endpoint"
+  [max-attempts]
+  (loop [attempts 0]
+    (if (>= attempts max-attempts)
+      (throw (Exception. "Server failed to start within timeout"))
+      (try
+        (slurp "http://localhost:3000/ok")
+        (println "Server is ready after" attempts "attempts")
+        (catch Exception _e
+          (Thread/sleep 100)
+          (recur (inc attempts)))))))
+
 (defn start-server!
   "Start web server and return system map"
   []
   (let [config (create-test-config)
         system (ig/init config)]
+    ;; Wait for server to be ready before returning
+    (wait-for-server-ready 50)  ;; 50 attempts * 100ms = 5 seconds max
     system))
 
 (defn stop-server!
