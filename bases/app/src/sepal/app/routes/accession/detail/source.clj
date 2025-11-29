@@ -22,14 +22,14 @@
                         :values values)])
 
 (defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('accession-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
+  [[:button {:class "btn"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
              ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]])
+    "Cancel"]
+   [:button {:class "btn btn-primary"
+             :x-on:click "$dispatch('accession-form:submit')"}
+    "Save"]])
 
 (defn render [& {:keys [errors org accession taxon values]}]
   (page/page :content (page-content :errors errors

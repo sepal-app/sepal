@@ -19,7 +19,6 @@ const MaterialField: DirectiveCallback = (el, directive, { cleanup, evaluate }) 
             })
                 .then((response) => response.json())
                 .then((data) => {
-                    console.log("data: ", data)
                     if (!data || data.length === 0) {
                         return reject("No results found")
                     }

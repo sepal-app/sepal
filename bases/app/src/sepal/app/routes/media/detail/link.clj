@@ -108,11 +108,11 @@
                           [:template {:x-if "resourceType === 'taxon'"}
                            (taxon-field :name "resource-id")]])
 
+      (form/submit-button {:class "btn btn-sm btn-primary mb-4"}  "Save")
       [:button {:type "button"
-                :class "btn btn-sm btn-secondary mb-4"
+                :class "btn btn-sm mb-4"
                 :x-on:click "editLink=false"}
-       "Cancel"]
-      (form/submit-button {:class "btn btn-sm btn-primary mb-4"}  "Save")]]))
+       "Cancel"]]]))
 
 ;; (ns-unmap *ns* 'link-text)
 

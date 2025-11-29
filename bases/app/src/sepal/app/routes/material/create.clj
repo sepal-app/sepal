@@ -21,7 +21,7 @@
   [[:button {:class "btn btn-primary"
              :x-on:click "$dispatch('material-form:submit')"}
     "Save"]
-   [:button {:class "btn btn-secondary"
+   [:button {:class "btn"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]])
 

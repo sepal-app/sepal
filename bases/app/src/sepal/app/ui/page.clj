@@ -59,7 +59,7 @@
                }]
       [:div {:class "drawer-content"}
        ;; (comment "Navbar")
-       [:nav {:class "navbar w-full bg-base-100"}
+       [:nav {:class "navbar w-full bg-base-200"}
         [:div {:class "w-full flex flex-row justify-between items-center"}
          [:div {:class "flex flex-row"}
           [:label {:for "sidebar-drawer-toggle",
@@ -105,7 +105,7 @@
                 :aria-label "close sidebar",
                 :class "drawer-overlay"}]
        [:div {:class
-              "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-16 is-drawer-open:w-64"}
+              "flex min-h-full flex-col items-start bg-base-300 is-drawer-close:w-16 is-drawer-open:w-64"}
         ;; (comment "Sidebar content here")
         [:ul {:class "menu w-full grow flex flex-col justify-between"}
          ;; (comment "List item")

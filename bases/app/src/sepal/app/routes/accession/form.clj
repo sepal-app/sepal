@@ -45,7 +45,7 @@
                                 (when (:taxon/id taxon)
                                   [:option {:value (:taxon/id taxon)}
                                    (:taxon/name taxon)])]))
-       [:div {:class "grid grid-cols-2"}
+       [:div {:class "grid grid-cols-2 gap-8"}
         [:div
          (ui.form/field :label "ID Qualifier"
                         :name "id-qualifier"

@@ -18,12 +18,12 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('accession-form:submit')"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
+  [[:button {:class "btn"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]])
+    "Cancel"]
+   [:button {:class "btn btn-primary"
+             :x-on:click "$dispatch('accession-form:submit')"}
+    "Save"]])
 
 (defn render [& {:keys [errors values]}]
   (ui.page/page :content (page-content :errors errors

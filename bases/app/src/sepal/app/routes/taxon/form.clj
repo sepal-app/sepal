@@ -9,15 +9,15 @@
             [zodiac.core :as z]))
 
 (defn footer-buttons []
-  [[:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('taxon-form:submit')"
-             :x-bind:disabled "!valid"}
-    "Save"]
-   [:button {:class "btn btn-secondary"
+  [[:button {:class "btn"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
              ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]])
+    "Cancel"]
+   [:button {:class "btn btn-primary"
+             :x-on:click "$dispatch('taxon-form:submit')"
+             :x-bind:disabled "!valid"}
+    "Save"]])
 
 (defn- vernacular-name-decoder [form-data]
   (let [names (cond-> (:vernacular-name-name form-data)
@@ -119,7 +119,7 @@
          [:legend {:class "fieldset-legend text-md"}
           "Vernacular names"
           [:button {:type "button"
-                    :class "btn btn-xs btn-secondary btn-circle"
+                    :class "btn btn-xs btn-circle"
                     :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
                     :aria-label "Add vernacular name"}
            [:span {:aria-hidden true}

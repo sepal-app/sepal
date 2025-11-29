@@ -114,7 +114,7 @@
                            label-fn clojure.core/name
                            filter-fn keyword?}}]
   [:select {:name name
-            :class "select select-bordered select-md w-full max-w-xs px-2"
+            :class "select select-bordered select-md w-full max-w-sm px-2"
             :autocomplete "off"
             :id name
             :value value}
