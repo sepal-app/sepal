@@ -64,6 +64,10 @@
                                 org.jsoup/jsoup {:mvn/version "1.18.1"}
                                 peridot/peridot {:mvn/version "0.5.4"}}}
 
+            ;; Integration test dependencies (Playwright)
+            ;; clojure -M:dev:test:test-integration:test-runner --focus :integration
+            :test-integration {:extra-deps {com.microsoft.playwright/playwright {:mvn/version "1.50.0"}}}
+
             ;; clojure -M:dev:test:test-runner
             :test-runner {:main-opts ["-m" "kaocha.runner"]}
 

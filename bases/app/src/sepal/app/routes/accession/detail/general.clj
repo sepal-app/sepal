@@ -58,7 +58,7 @@
   [:map {:closed true}
    [:code [:string {:min 1}]]
    [:taxon-id [:int {:min 0}]]
-   [:private {:decode/form validation.i/empty->nil} [:maybe accession.spec/private]]
+   ;; [:private {:decode/form validation.i/empty->nil} [:maybe accession.spec/private]]
    [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]
    [:id-qualifier-rank {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier-rank]]
    [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]

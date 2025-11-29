@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  integration-chromium:
+    build:
+      context: .
+      dockerfile: Dockerfile.integration
+      args:
+        BROWSER: chromium
+    environment:
+      - PLAYWRIGHT_BROWSER=chromium
+    volumes:
+      # Mount source for live editing
+      - ./bases/app/test:/app/bases/app/test:ro
+      - ./components:/app/components:ro
+
+  integration-firefox:
+    build:
+      context: .
+      dockerfile: Dockerfile.integration
+      args:
+        BROWSER: firefox
+    environment:
+      - PLAYWRIGHT_BROWSER=firefox
+    volumes:
+      # Mount source for live editing
+      - ./bases/app/test:/app/bases/app/test:ro
+      - ./components:/app/components:ro

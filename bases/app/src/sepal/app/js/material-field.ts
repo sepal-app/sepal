@@ -19,6 +19,7 @@ const MaterialField: DirectiveCallback = (el, directive, { cleanup, evaluate }) 
             })
                 .then((response) => response.json())
                 .then((data) => {
+                    console.log("data: ", data)
                     if (!data || data.length === 0) {
                         return reject("No results found")
                     }
@@ -37,6 +38,9 @@ const MaterialField: DirectiveCallback = (el, directive, { cleanup, evaluate }) 
 
     const select = new SlimSelect({
         select: el,
+        settings: {
+            hideSelected: true,
+        },
         events: {
             search: onSearch,
 

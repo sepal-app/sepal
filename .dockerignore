@@ -1,8 +1,17 @@
+# Don't copy these into Docker image
 .git
-**/.cpcache
-.devbox
-.env*
+.github
+node_modules
+*.db
+*.db-shm
+*.db-wal
+.cpcache
 .clj-kondo
-.dir-locals.el
 .lsp
-**/node_modules
+target
+.nrepl-port
+.calva
+.vscode
+*.log
+.env
+.envrc

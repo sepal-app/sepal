@@ -37,6 +37,9 @@ const AccessionField: DirectiveCallback = (el, directive, { cleanup, evaluate })
 
     const select = new SlimSelect({
         select: el,
+        settings: {
+            hideSelected: true,
+        },
         events: {
             search: onSearch,
             afterChange: (newVal) => {

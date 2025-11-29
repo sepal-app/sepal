@@ -38,8 +38,10 @@ const ContactField: DirectiveCallback = (el, directive, { cleanup, evaluate }) =
     const select = new SlimSelect({
         select: el,
         settings: {
-            // TODO: How can we make this configurable and pass this in
+            // TODO: we need to be able to set the allowDeselect fields since its mores
+            // specific to the accession form
             allowDeselect: true,
+            hideSelected: true,
         },
         events: {
             search: onSearch,
