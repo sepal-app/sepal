@@ -56,6 +56,17 @@ jobs:
         uses: DeLaGuardo/setup-clojure@master
         with:
           cli: '1.12.0.1479'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'bases/app/package-lock.json'
+      - name: Build Frontend Assets
+        run: |
+          cd bases/app
+          npm ci
+          npm run build
       - name: Cache Clojure Dependencies
         uses: actions/cache@v4
         with:
