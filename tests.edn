@@ -16,7 +16,8 @@
                         "components/store/test"
                         "components/user/test"
                         "components/validation/test"]
-           :ns-patterns [".*-test"]
+           ;; Exclude integration test namespaces (prevents loading Playwright classes)
+           :ns-patterns ["^(?!.*\\.integration\\.).*-test$"]
            :kaocha.filter/skip-meta [:integration]}
 
           {:id :integration
