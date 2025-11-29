@@ -56,7 +56,7 @@ jobs:
         uses: DeLaGuardo/setup-clojure@master
         with:
           cli: '1.12.0.1479'
-      - name: Cache All The Things
+      - name: Cache Clojure Dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -64,13 +64,23 @@ jobs:
             ~/.gitlibs
             ~/.clojure
             ~/.cpcache
-          key: ${{ runner.os }}-${{ hashFiles('**/deps.edn') }}
+          key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
+      - name: Cache Playwright Browser (${{ matrix.browser }})
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('deps.edn') }}
       - name: Install dbmate
         run: |
           wget -O /tmp/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64
           chmod u+x /tmp/dbmate
-      - name: Install Playwright Browsers
-        run: |
-          java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright Browser (${{ matrix.browser }})
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install --with-deps ${{ matrix.browser }}
       - name: Run Integration Tests (${{ matrix.browser }})
         run: PLAYWRIGHT_BROWSER=${{ matrix.browser }} DBMATE=/tmp/dbmate clojure -M:dev:test:test-integration:test-runner --focus :integration
