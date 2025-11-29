@@ -71,6 +71,6 @@ jobs:
           chmod u+x /tmp/dbmate
       - name: Install Playwright Browsers
         run: |
-          mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps ${{ matrix.browser }}"
+          clojure -M:test-integration -m com.microsoft.playwright.CLI install --with-deps ${{ matrix.browser }}
       - name: Run Integration Tests (${{ matrix.browser }})
         run: PLAYWRIGHT_BROWSER=${{ matrix.browser }} DBMATE=/tmp/dbmate clojure -M:dev:test:test-integration:test-runner --focus :integration
