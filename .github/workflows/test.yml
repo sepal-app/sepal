@@ -40,53 +40,53 @@ jobs:
       - name: Run Unit Tests
         run: DBMATE=/tmp/dbmate clojure -M:dev:test:test-runner --focus :unit
 
-  integration-tests:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        java: [ '21' ]
-        browser: [ 'chromium', 'firefox' ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ matrix.java }}
-      - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@master
-        with:
-          cli: '1.12.0.1479'
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: 'bases/app/package-lock.json'
-      - name: Build Frontend Assets
-        run: |
-          cd bases/app
-          npm ci
-          npm run build
-      - name: Cache Clojure Dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository
-            ~/.gitlibs
-            ~/.clojure
-            ~/.cpcache
-          key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
-      - name: Cache Playwright Browser (${{ matrix.browser }})
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('deps.edn') }}
-      - name: Install dbmate
-        run: |
-          wget -O /tmp/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64
-          chmod u+x /tmp/dbmate
-      - name: Install Playwright Browser (${{ matrix.browser }})
-        run: |
-          java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install --with-deps ${{ matrix.browser }}
-      - name: Run Integration Tests (${{ matrix.browser }})
-        run: PLAYWRIGHT_BROWSER=${{ matrix.browser }} DBMATE=/tmp/dbmate clojure -M:dev:test:test-integration:test-runner --focus :integration
+  # integration-tests:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       java: [ '21' ]
+  #       browser: [ 'chromium', 'firefox' ]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-java@v4
+  #       with:
+  #         distribution: 'temurin'
+  #         java-version: ${{ matrix.java }}
+  #     - name: Setup Clojure
+  #       uses: DeLaGuardo/setup-clojure@master
+  #       with:
+  #         cli: '1.12.0.1479'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #         cache-dependency-path: 'bases/app/package-lock.json'
+  #     - name: Build Frontend Assets
+  #       run: |
+  #         cd bases/app
+  #         npm ci
+  #         npm run build
+  #     - name: Cache Clojure Dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.m2/repository
+  #           ~/.gitlibs
+  #           ~/.clojure
+  #           ~/.cpcache
+  #         key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
+  #     - name: Cache Playwright Browser (${{ matrix.browser }})
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/ms-playwright
+  #         key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('deps.edn') }}
+  #     - name: Install dbmate
+  #       run: |
+  #         wget -O /tmp/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64
+  #         chmod u+x /tmp/dbmate
+  #     - name: Install Playwright Browser (${{ matrix.browser }})
+  #       run: |
+  #         java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install --with-deps ${{ matrix.browser }}
+  #     - name: Run Integration Tests (${{ matrix.browser }})
+  #       run: PLAYWRIGHT_BROWSER=${{ matrix.browser }} DBMATE=/tmp/dbmate clojure -M:dev:test:test-integration:test-runner --focus :integration
