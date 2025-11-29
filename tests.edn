@@ -16,4 +16,10 @@
                         "components/store/test"
                         "components/user/test"
                         "components/validation/test"]
-           :ns-patterns [".*-test"]}]}
+           :ns-patterns [".*-test"]
+           :kaocha.filter/skip-meta [:integration]}
+
+          {:id :integration
+           :test-paths ["bases/app"]
+           :ns-patterns [".*integration.*-test"]
+           :kaocha.filter/focus-meta [:integration]}]}

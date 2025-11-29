@@ -1,0 +1,59 @@
+(ns sepal.app.integration.server
+  "Server lifecycle management for integration tests"
+  (:require [integrant.core :as ig]
+            [sepal.app.server]  ;; Load Integrant methods
+            [sepal.config.interface :as config.i])
+  (:import [java.io File]))
+
+(defn- create-test-config []
+  (let [db-path (.getAbsolutePath (File/createTempFile "sepal-integration-test" ".db"))
+        database-url (str "sqlite:/" db-path)
+        dbmate (or (System/getenv "DBMATE") "dbmate")]
+    {:sepal.app.server/zodiac-sql
+     {:spec (assoc (config.i/read-config "database/config.edn" {:profile :test})
+                   :jdbcUrl (str "jdbc:sqlite:" db-path))
+      :context-key :db}
+
+     :sepal.app.server/zodiac-assets
+     {:build? false
+      :manifest-path "app/build/.vite/manifest.json"
+      :asset-resource-path "app/build/assets"
+      :package-json-dir "bases/app"}
+
+     :sepal.app.server/zodiac
+     {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
+                   (ig/ref :sepal.app.server/zodiac-assets)]
+      :request-context {:forgot-password-email-from "support@sepal.app"
+                        :forgot-password-email-subject "Sepal - Reset Password"
+                        :reset-password-secret "1234"
+                        :app-domain "localhost:3000"}
+      :cookie-secret "1234567890123456"
+      :port 3000
+      :start-server? true}  ;; START THE SERVER for integration tests
+
+     :sepal.database.interface/schema
+     {:dbmate dbmate
+      :database-url database-url}
+
+     :sepal.malli.interface/init {}}))
+
+(defn start-server!
+  "Start web server and return system map"
+  []
+  (let [config (create-test-config)
+        system (ig/init config)]
+    system))
+
+(defn stop-server!
+  "Stop web server"
+  [system]
+  (ig/halt! system))
+
+(defn with-server
+  "Fixture to start/stop server around tests"
+  [test-fn]
+  (let [system (start-server!)]
+    (try
+      (test-fn system)
+      (finally
+        (stop-server! system)))))
