@@ -43,12 +43,16 @@
   (loop [attempts 0]
     (if (>= attempts max-attempts)
       (throw (Exception. "Server failed to start within timeout"))
-      (try
-        (slurp "http://localhost:3000/ok")
-        (println "Server is ready after" attempts "attempts")
-        (catch Exception _e
-          (Thread/sleep 100)
-          (recur (inc attempts)))))))
+      (let [ready? (try
+                     (slurp "http://localhost:3000/ok")
+                     true
+                     (catch Exception _e
+                       false))]
+        (if ready?
+          (println "Server is ready after" attempts "attempts")
+          (do
+            (Thread/sleep 100)
+            (recur (inc attempts))))))))
 
 (defn start-server!
   "Start web server and return system map"
