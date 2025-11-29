@@ -66,13 +66,6 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
   insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
   insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
-CREATE TABLE location (
-  id integer primary key autoincrement,
-  code text not null,
-  name text not null default '',
-  description text not null default ''
-);
-CREATE INDEX location_id_idx on location (id);
 CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
@@ -164,8 +157,16 @@ CREATE TABLE contact (
   business text not null,
   notes text not null
 );
+CREATE TABLE IF NOT EXISTS "location" (
+  id integer primary key autoincrement,
+  code text not null,
+  name text not null,
+  description text  -- nullable, no default
+);
+CREATE INDEX location_id_idx ON location (id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20251021111547'),
   ('20251101133108'),
-  ('20251116002821');
+  ('20251116002821'),
+  ('20251128154132');

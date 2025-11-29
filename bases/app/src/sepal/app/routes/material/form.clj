@@ -23,10 +23,10 @@
         types (->> material.spec/type rest (mapv name))]
     (ui.page/page-inner
       (form/form
-        {:action action
-         :method "POST"
-         :id "material-form"
-         :x-on:material-form:submit.window "$el.submit()"
+        {:id "material-form"
+         :hx-post action
+         :hx-swap "none"
+         :x-on:material-form:submit.window "$el.requestSubmit()"
          :x-on:material-form:reset.window "$el.reset()"}
         [(form/anti-forgery-field)
          (form/field :label "Code"
@@ -43,6 +43,7 @@
          (let [url (z/url-for accession.routes/index)]
            (form/field :label "Accession"
                        :name "accession-id"
+                       :errors (:accession-id errors)
                        :input [:select {:x-accession-field (json/js {:url url})
                                         :placeholder "Required"
                                         :name "accession-id"
@@ -54,6 +55,7 @@
          (let [url (z/url-for location.routes/index)]
            (form/field :label "Location"
                        :name "location-id"
+                       :errors (:location-id errors)
                        :input [:select {:x-location-field (json/js {:url url})
                                         :placeholder "Required"
                                         :required true
@@ -66,7 +68,7 @@
                                           (:location-name values))])]))
          (form/field :label "Quantity"
                      :name "quantity"
-                     :errors (:code errors)
+                     :errors (:quantity errors)
                      :input [:input {:autocomplete "off"
                                      :class "input input-bordered input-sm w-full max-w-xs bg-white"
                                      :id "code"
@@ -77,6 +79,7 @@
                                      :value (or (:quantity values) 1)}])
          (form/field :label "Status"
                      :name "status"
+                     :errors (:status errors)
                      :input [:select {:name "status"
                                       :x-material-status-field true
                                       :autocomplete "off"
@@ -90,6 +93,7 @@
                                  status])]])
          (form/field :label "Type"
                      :name "type"
+                     :errors (:type errors)
                      :input [:select {:name "type"
                                       :x-material-type-field true
                                       :autocomplete "off"

@@ -1,7 +1,5 @@
 (ns sepal.app.routes.taxon.create
-  (:require [sepal.app.flash :as flash]
-            [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.params :as params]
+  (:require [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as form]
@@ -10,6 +8,7 @@
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.activity :as taxon.activity]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors values]}]
@@ -43,11 +42,10 @@
 
 (defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db]} context
-        data (params/decode taxon.form/FormParams form-params)
-        result (create! db (:user/id viewer) data)]
-    (if-not (error.i/error? result)
-      (-> (see-other taxon.routes/detail {:id (:taxon/id result)})
-          (flash/success (str (:taxon/name result) "created.")))
-      (-> (found taxon.routes/new)
-          (flash/error "Could not save form")
-          (assoc-in [:flash :values] data)))))
+        result (validation.i/validate-form-values taxon.form/FormParams form-params)]
+    (if (error.i/error? result)
+      (http/validation-errors (validation.i/humanize result))
+      (let [saved (create! db (:user/id viewer) result)]
+        (if-not (error.i/error? saved)
+          (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+          (http/validation-errors (validation.i/humanize saved)))))))

@@ -1,8 +1,7 @@
 (ns sepal.app.routes.material.detail.general
   (:require [sepal.accession.interface :as accession.i]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
-            [sepal.app.params :as params]
-            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.routes :as material.routes]
@@ -14,6 +13,7 @@
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors org material values]}]
@@ -56,39 +56,36 @@
 
 (def FormParams
   [:map {:closed true}
-   [:code :string]
-   [:accession-id :int]
+   [:code [:string {:min 1}]]
+   [:accession-id [:int {:min 1}]]
    [:location-id [:maybe :int]]
-   [:quantity :int]
-   [:status :string]
-   [:type :string]])
+   [:quantity [:int {:min 1}]]
+   [:status [:string {:min 1}]]
+   [:type [:string {:min 1}]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
         location (location.i/get-by-id db (:material/location-id resource))
-        values (merge {:id (:material/id resource)
-                       :code (:material/code resource)
-                       :accession-id (:accession/id accession)
-                       :accession-code (:accession/code accession)
-                       :location-id (:material/location-id resource)
-                       :location-name (:location/name location)
-                       :location-code (:location/code location)
-                       :status (:material/status resource)
-                       :quantity (:material/quantity resource)
-                       :type (:material/type resource)}
-                      (params/decode FormParams form-params))]
+        values {:id (:material/id resource)
+                :code (:material/code resource)
+                :accession-id (:accession/id accession)
+                :accession-code (:accession/code accession)
+                :location-id (:material/location-id resource)
+                :location-name (:location/name location)
+                :location-code (:location/code location)
+                :status (:material/status resource)
+                :quantity (:material/quantity resource)
+                :type (:material/type resource)}]
     (case request-method
       :post
-      (let [result (save! db (:material/id resource) (:user/id viewer) values)]
-        ;; TODO: handle errors
-        (if-not (error.i/error? result)
-          (http/found material.routes/detail {:id (:material/id resource)})
-          (-> (http/found accession.routes/detail)
-              ;; TODO: The errors needs to be parsed here and return a message
-              (assoc :flash {:error "Error saving material"  ;; TODO: result
-                             :values values}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (save! db (:material/id resource) (:user/id viewer) result)]
+            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+                (flash/success "Material updated successfully")))))
 
       (render :org organization
               :material resource

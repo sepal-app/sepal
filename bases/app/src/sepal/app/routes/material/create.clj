@@ -1,6 +1,6 @@
 (ns sepal.app.routes.material.create
-  (:require [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.params :as params]
+  (:require [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
@@ -9,6 +9,7 @@
             [sepal.error.interface :as error.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors values]}]
@@ -41,23 +42,21 @@
 
 (def FormParams
   [:map {:closed true}
-   [:code :string]
-   [:accession-id :int]
+   [:code [:string {:min 1}]]
+   [:accession-id [:int {:min 1}]]
    [:location-id [:maybe :int]]
-   [:quantity :int]
-   [:status :string]
-   [:type :string]])
+   [:quantity [:int {:min 1}]]
+   [:status [:string {:min 1}]]
+   [:type [:string {:min 1}]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [data (params/decode FormParams form-params)
-            result (create! db (:user/id viewer) data)]
-        ;; TODO: Better error handling
-        (if-not (error.i/error? result)
-          (see-other material.routes/detail {:id (:material/id result)})
-          (-> (found material.routes/new)
-              (assoc :flash {;;:error (error.i/explain result)
-                             :values data}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (create! db (:user/id viewer) result)]
+            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+                (flash/success "Material created successfully")))))
       (render))))

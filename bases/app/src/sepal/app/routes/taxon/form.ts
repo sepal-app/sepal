@@ -1,4 +1,5 @@
 import Alpine from "alpinejs"
+import "htmx.org"
 import SlimSelect from "slim-select"
 
 import TaxonField from "~/js/taxon-field"

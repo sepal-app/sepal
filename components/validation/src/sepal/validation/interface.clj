@@ -49,3 +49,8 @@
       :else (int v))
     (catch Exception _
       nil)))
+
+(defn empty->nil
+  "Converts empty strings to nil. Useful as a form decoder for optional fields."
+  [s]
+  (when (seq s) s))

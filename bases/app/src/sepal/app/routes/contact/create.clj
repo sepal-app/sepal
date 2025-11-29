@@ -1,6 +1,6 @@
 (ns sepal.app.routes.contact.create
-  (:require [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.params :as params]
+  (:require [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.ui.form :as ui.form]
@@ -9,6 +9,7 @@
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors values]}]
@@ -32,18 +33,15 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn empty-to-nil [v]
-  (when (seq v) v))
-
 (def FormParams
   [:map {:closed true}
-   [:name :string]
-   [:email {:decode/form empty-to-nil} [:maybe :string]]
-   [:address [:maybe :string]]
-   [:province [:maybe :string]]
-   [:postal-code [:maybe :string]]
-   [:country [:maybe :string]]
-   [:phone [:maybe :string]]
+   [:name [:string {:min 1}]]
+   [:email {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:address {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:province {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:postal-code {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:country {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:phone {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:business [:maybe :string]]
    [:notes [:maybe :string]]])
 
@@ -67,15 +65,13 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [data (params/decode FormParams form-params)
-            result (create! db (:user/id viewer) data)]
-        (tap> (str "data: " data))
-        (tap> (str "result: " result))
-        (if-not (error.i/error? result)
-          ;; TODO: Add a success message
-          (see-other contact.routes/detail {:id (:contact/id result)})
-          (-> (found contact.routes/new)
-              (assoc :flash {;;:error (error.i/explain result)
-                             :values data}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (create! db (:user/id viewer) result)]
+            (if (error.i/error? saved)
+              (http/validation-errors (validation.i/humanize saved))
+              (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+                  (flash/success "Contact created successfully"))))))
 
       (render :values form-params))))

@@ -2,7 +2,6 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.app.http-response :as http]
-            [sepal.app.params :as params]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -11,6 +10,7 @@
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors org accession values]}]
@@ -51,31 +51,28 @@
 
 (def FormParams
   [:map {:closed true}
-   [:code :string]
-   [:taxon-id :int]])
+   [:code [:string {:min 1}]]
+   [:taxon-id [:int {:min 0}]]])
 
 ;; (defn data-loader [{:keys [] :as request}])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
-        ;; collection (collec)
-        values (merge {:id (:accession/id resource)
-                       :code (:accession/code resource)
-                       :taxon-id (:accession/taxon-id resource)
-                       :taxon-name (:taxon/name taxon)}
-                      (params/decode FormParams form-params))]
+        values {:id (:accession/id resource)
+                :code (:accession/code resource)
+                :taxon-id (:accession/taxon-id resource)
+                :taxon-name (:taxon/name taxon)}]
 
     (case request-method
       :post
-      (let [result (save! db (:accession/id resource) (:user/id viewer) values)]
-        ;; TODO: handle errors
-        (if-not (error.i/error? result)
-          (http/found accession.routes/detail {:id (:accession/id resource)})
-          (-> (http/found accession.routes/detail {:id (:accession/id resource)})
-              ;; TODO: The errors needs to be parsed here and return a message
-              (assoc :flash {:error result
-                             :values form-params}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (save! db (:accession/id resource) (:user/id viewer) result)]
+            (if-not (error.i/error? saved)
+              (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+              (http/validation-errors (validation.i/humanize saved))))))
 
       (render :org organization
               :accession resource

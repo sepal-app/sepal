@@ -1,6 +1,6 @@
 (ns sepal.app.routes.location.create
-  (:require [sepal.app.http-response :refer [found see-other]]
-            [sepal.app.params :as params]
+  (:require [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.form :as ui.form]
@@ -9,6 +9,7 @@
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors values]}]
@@ -33,21 +34,19 @@
 
 (def FormParams
   [:map {:closed true}
-   [:name :string]
-   [:code [:maybe :string]]
-   [:description [:maybe :string]]])
+   [:name [:string {:min 1}]]
+   [:code {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [data (params/decode FormParams form-params)
-            result (create! db (:user/id viewer) data)]
-        (if-not (error.i/error? result)
-          ;; TODO: Add a success message
-          (see-other location.routes/detail {:id (:location/id result)})
-          (-> (found location.routes/new)
-              (assoc :flash {;;:error (error.i/explain result)
-                             :values data}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (create! db (:user/id viewer) result)]
+            (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
+                (flash/success "Location created successfully")))))
 
       (render :values form-params))))

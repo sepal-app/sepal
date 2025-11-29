@@ -11,18 +11,18 @@
   [:map {:closed true}
    [:location/id id]
    [:location/code code]
-   [:location/description [:maybe  description]]
+   [:location/description [:maybe description]]
    [:location/name name]])
 
 (def CreateLocation
   [:map {:closed true}
    [:code code]
    [:name name]
-   [:description description]])
+   [:description {:optional true} [:maybe description]]])
 
 (def UpdateLocation
   (mu/optional-keys
     [:map {:closed true}
      [:code code]
      [:name name]
-     [:description description]]))
+     [:description [:maybe description]]]))

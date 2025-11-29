@@ -1,7 +1,5 @@
 (ns sepal.app.routes.taxon.detail.name
-  (:require [sepal.app.flash :as flash]
-            [sepal.app.http-response :as http]
-            [sepal.app.params :as params]
+  (:require [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -49,19 +47,17 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [::z/context _flash form-params request-method viewer]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context]
     (case request-method
       :post
-      (let [data (params/decode taxon.form/FormParams form-params)
-            result (save! db (:taxon/id resource) (:user/id viewer) data)]
-        (if-not (error.i/error? result)
-          (http/found taxon.routes/detail {:id (:taxon/id result)})
-          (do
-            ;; TODO: better error handling
-            (tap> (str "ERROR: " (validation.i/humanize result)))
-            (-> (http/found taxon.routes/detail {:id (:taxon/id resource)})
-                (flash/set-field-errors (validation.i/humanize result))))))
+      (let [result (validation.i/validate-form-values taxon.form/FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (save! db (:taxon/id resource) (:user/id viewer) result)]
+            (if-not (error.i/error? saved)
+              (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+              (http/validation-errors (validation.i/humanize saved))))))
 
       :get
       (let [parent (when (:taxon/parent-id resource)

@@ -38,9 +38,9 @@
 (def FormParams
   [:and
    [:map {:decode/form {:enter vernacular-name-decoder}}
-    [:name :string]
+    [:name [:string {:min 1}]]
     [:author :string]
-    [:rank :string]
+    [:rank [:string {:min 1}]]
     [:parent-id [:maybe :string]]
     [:vernacular-names [:* [:map
                             [:name [:string {:min 1}]]
@@ -51,9 +51,10 @@
     (ui.page/page-inner
       (form/form
         {:action action
-         :method "POST"
+         :hx-post action
+         :hx-swap "none"
          :id "taxon-form"
-         :x-on:taxon-form:submit.window "$el.submit()"
+         :x-on:taxon-form:submit.window "$el.requestSubmit()"
          :x-on:taxon-form:reset.window "$el.reset()"}
         [(form/anti-forgery-field)
          [:div {:class "flex flex-row md:flex-nowrap sm:flex-wrap gap-2"}
@@ -73,7 +74,7 @@
            [:div {:class "w-1/2"}
             (form/input-field :label "Parent"
                               :name "parent-id"
-                              :required true
+                              ;; :required true
                               :read-only read-only
                               :value (:parent-name values))]
 
@@ -84,7 +85,7 @@
                           :input [:select {:x-taxon-field (json/js {:url url})
                                            :name "parent-id"
                                            :id "parent-id"
-                                           :required true
+                                           ;; :required true
                                            :read-only read-only
                                            :autocomplete "off"}
                                   (when (:parent-id values)

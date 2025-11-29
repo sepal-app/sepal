@@ -14,10 +14,10 @@
 (defn form [& {:keys [action errors values]}]
   (ui.page/page-inner
     (ui.form/form
-      {:action action
-       :method "POST"
-       :id "contact-form"
-       :x-on:contact-form:submit.window "$el.submit()"
+      {:id "contact-form"
+       :hx-post action
+       :hx-swap "none"
+       :x-on:contact-form:submit.window "$el.requestSubmit()"
        :x-on:contact-form:reset.window "$el.reset()"}
       [(ui.form/anti-forgery-field)
        (ui.form/input-field :label "Name"

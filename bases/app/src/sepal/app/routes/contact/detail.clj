@@ -1,6 +1,6 @@
 (ns sepal.app.routes.contact.detail
-  (:require [sepal.app.http-response :as http]
-            [sepal.app.params :as params]
+  (:require [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.ui.form :as ui.form]
@@ -9,6 +9,7 @@
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors contact values]}]
@@ -35,40 +36,36 @@
 
 (def FormParams
   [:map {:closed true}
-   [:name :string]
-   [:email [:maybe :string]]
-   [:address [:maybe :string]]
-   [:province [:maybe :string]]
-   [:postal-code [:maybe :string]]
-   [:country [:maybe :string]]
-   [:phone [:maybe :string]]
+   [:name [:string {:min 1}]]
+   [:email {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:address {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:province {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:postal-code {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:country {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:phone {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:business [:maybe :string]]
    [:notes [:maybe :string]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context
-        error nil
-        values (merge {:id (:contact/id resource)
-                       :name (:contact/name resource)
-                       :email (:contact/email resource)
-                       :address (:contact/address resource)
-                       :province (:contact/province resource)
-                       :postal-code (:contact/postal-code resource)
-                       :country (:contact/country resource)
-                       :phone (:contact/phone resource)
-                       :business (:contact/business resource)
-                       :notes (:contact/notes resource)}
-                      (params/decode FormParams form-params))]
-
+        values {:id (:contact/id resource)
+                :name (:contact/name resource)
+                :email (:contact/email resource)
+                :address (:contact/address resource)
+                :province (:contact/province resource)
+                :postal-code (:contact/postal-code resource)
+                :country (:contact/country resource)
+                :phone (:contact/phone resource)
+                :business (:contact/business resource)
+                :notes (:contact/notes resource)}]
     (case request-method
       :post
-      (let [result (update! db (:contact/id resource) (:user/id viewer) values)]
-        ;; TODO: handle errors
-        (if-not (error.i/error? result)
-          (http/found contact.routes/detail {:id (:contact/id resource)})
-          (-> (http/found contact.routes/detail)
-              (assoc :flash {:error error
-                             :values values}))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (update! db (:contact/id resource) (:user/id viewer) result)]
+            (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+                (flash/success "Contact updated successfully")))))
 
       (render :contact resource
               :values values))))
