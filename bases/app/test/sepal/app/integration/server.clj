@@ -16,8 +16,10 @@
 
      :sepal.app.server/zodiac-assets
      {:build? false
-      :manifest-path "app/build/.vite/manifest.json"
-      :asset-resource-path "app/build/assets"
+      :manifest-path (or (System/getenv "ASSET_MANIFEST_PATH")
+                         "app/build/.vite/manifest.json")
+      :asset-resource-path (or (System/getenv "ASSET_RESOURCE_PATH")
+                               "app/build/assets")
       :package-json-dir "bases/app"}
 
      :sepal.app.server/zodiac

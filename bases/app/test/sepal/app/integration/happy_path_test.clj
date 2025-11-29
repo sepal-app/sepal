@@ -25,7 +25,7 @@
               (pw/fill "input[name=\"confirm-password\"]" password)
 
               ;; Submit form
-              (pw/click "button:has-text(\"Register\")")
+              (pw/click "button:has-text(\"Create account\")")
 
               ;; Wait for redirect to activity page
               (pw/wait-for-url #"/activity")

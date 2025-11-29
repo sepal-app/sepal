@@ -1,0 +1,56 @@
+# Dockerfile for running integration tests locally
+FROM eclipse-temurin:21-jdk
+
+# Install system dependencies including Node.js and Playwright browser dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    rlwrap \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22.x (required by package.json engines)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# Install Clojure
+RUN curl -L -O https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh \
+    && chmod +x linux-install.sh \
+    && ./linux-install.sh \
+    && rm linux-install.sh
+
+# Install dbmate
+RUN wget -O /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64 \
+    && chmod +x /usr/local/bin/dbmate
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY deps.edn .
+COPY tests.edn .
+COPY db ./db
+COPY bases ./bases
+COPY components ./components
+COPY development ./development
+COPY projects ./projects
+
+# Download Clojure dependencies (cache layer)
+RUN clojure -P -M:dev:test:test-integration
+
+# Install frontend dependencies and build assets
+WORKDIR /app/bases/app
+RUN npm install && npm run build
+WORKDIR /app
+
+# Install Playwright browsers with system dependencies
+# Install both chromium and firefox (we'll select at runtime via PLAYWRIGHT_BROWSER env var)
+RUN java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install chromium firefox && \
+    java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install-deps chromium firefox
+
+# Set environment variables
+ENV DBMATE=/usr/local/bin/dbmate
+
+# Default command runs integration tests
+CMD ["clojure", "-M:dev:test:test-integration:test-runner", "--focus", ":integration"]

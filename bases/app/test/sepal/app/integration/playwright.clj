@@ -1,7 +1,7 @@
 (ns sepal.app.integration.playwright
   "Thin Clojure wrapper around Playwright Java API for browser automation"
   (:import [com.microsoft.playwright Playwright Browser Page
-            BrowserType$LaunchOptions Page$WaitForSelectorOptions]))
+            BrowserType$LaunchOptions Page$WaitForSelectorOptions Page$WaitForLoadStateOptions]))
 
 (defonce ^:dynamic *page* nil)
 
@@ -44,9 +44,11 @@
            (stop-browser! browser-ctx#))))))
 
 (defn navigate
-  "Navigate to URL"
+  "Navigate to URL and wait for load event"
   [url]
-  (.navigate *page* url))
+  (.navigate *page* url)
+  ;; Wait for load event (all resources loaded including stylesheets and images)
+  (.waitForLoadState *page*))
 
 (defn click
   "Click element by selector"
