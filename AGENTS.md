@@ -74,7 +74,7 @@ Each component follows Polylith conventions:
 - **Peridot/Kerodon** - HTTP testing
 
 ### Tools
-- **dbmate** - Database migrations
+- **dbmate** - Database migrations (use `$DBMATE` env var for custom build with fts5 support)
 - **clj-kondo** - Linter
 - **cljfmt** - Formatter
 
@@ -240,6 +240,23 @@ Use `sepal.validation.interface` for form validation:
 - Form fields have error containers with IDs like `#code-errors`, `#taxon-id-errors`
 - On validation failure, return 422 with `hx-swap-oob` error elements
 - Form uses `hx-swap="none"` so only error containers are updated
+
+**Empty String Handling:**
+HTML forms submit empty strings `""` for unfilled fields. For optional/nullable database columns, use `validation.i/empty->nil` as a form decoder to convert empty strings to `nil`:
+
+```clojure
+(def FormParams
+  [:map {:closed true}
+   [:name [:string {:min 1}]]  ; required - no decoder needed
+   [:email {:decode/form validation.i/empty->nil} [:maybe :string]]  ; optional string
+   [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]])  ; optional enum
+```
+
+Key points:
+- Required fields with `:min` constraints don't need special handling (empty string fails validation)
+- Optional string fields (`[:maybe :string]`) need `empty->nil` to avoid storing empty strings
+- Optional enum fields need both `empty->nil` AND wrapping in `[:maybe ...]` since enums don't accept `nil` by default
+- Fields with regex validation (like email) also need `empty->nil` since empty strings fail regex matching
 
 ### HTML Rendering
 
