@@ -66,6 +66,7 @@ Each component follows Polylith conventions:
 - **Aero** - Configuration with profiles
 - **Chassis** - HTML generation (Hiccup-like)
 - **HTMX** - Frontend interactivity
+- **DaisyUI** - UI component library (TailwindCSS-based)
 
 ### Testing
 - **Kaocha** - Test runner
@@ -281,3 +282,8 @@ Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_li
 - Format: Cursive-style function argument indentation
 - Sorted ns requires (`cljfmt :sort-ns-references? true`)
 - Test namespaces end in `-test`
+
+## External Documentation
+
+For AI assistants working with this codebase:
+- **DaisyUI**: https://daisyui.com/llms.txt
