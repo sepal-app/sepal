@@ -1,6 +1,37 @@
-WFO_DATABASE_PATH="wfo_plantlist_2025-06_1.db"
-DATABASE_PATH="sepal.db"
-DATABASE_URL="sqlite:sepal.db"
-DATABASE_JDBC_URL="jdbc:$DATABASE_URL"
+# -*- mode: conf -*-
 
-export COOKIE_SECRET=
+# The path do a World Flora Online Sqlite database. This variable is only necessary when
+# initializing a new database. For more information see:
+# https://github.com/brettatoms/wfo-plantlist-sqlite
+WFO_DATABASE_PATH="wfo_plantlist_2025-06_1.db"
+
+# The JDBC url for the database. This variable is optional and will default to the user's
+# data dir.
+DATABASE_JDBC_URL=
+
+# The secret used to encrypt cookies.  [REQUIRED]
+COOKIE_SECRET=
+
+# The secret use to encrypt the reset password token. [REQUIRED]
+RESET_PASSWORD_SECRET=
+
+# The reply to email address for password reset emails
+FORGOT_PASSWORD_EMAIL_FROM=
+
+# The subject to use for the password reset emails
+FORGOT_PASSWORD_EMAIL_SUBJECT=
+
+# The domain used to link back to the deployed app. For example the domain to use for the
+# reset password links. [REQUIRED]
+APP_DOMAIN=
+
+# Sepal uses POSTMARK for sending emails. [REQUIRED]
+POSTMARK_API_KEY=
+
+# Environment variables for uploading media.  These can be from an AWS compatible S3 API.  Required if you want to upload media.
+MEDIA_UPLOAD_BUCKET=
+IMGIX_MEDIA_DOMAIN=
+AWS_S3_ENDPOINT=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=

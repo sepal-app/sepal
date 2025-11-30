@@ -1,5 +1,6 @@
 (ns sepal.app.server
-  (:require [integrant.core :as ig]
+  (:require [babashka.fs :as fs]
+            [integrant.core :as ig]
             [reitit.ring]
             [ring.middleware.stacktrace :as stacktrace]
             [sepal.app.middleware :as middleware]
@@ -34,10 +35,17 @@
      ["/media" (media/routes)]]))
 
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
-  (db.i/init)
-  (z.sql/init {:context-key context-key
-               :jdbc-options db.i/jdbc-options
-               :spec spec}))
+  (let [spec (if (seq (:jdbcUrl spec))
+               spec
+               (let [data-dir (fs/path (fs/xdg-data-home) "sepal")
+                     _ (when-not (fs/exists? data-dir)
+                         (fs/create-dir data-dir))]
+                 (assoc spec :jdbcUrl (format "jdbc:sqlite:%s"
+                                              (fs/path (fs/xdg-data-home) "sepal" "sepal.db")))))]
+    (db.i/init)
+    (z.sql/init {:context-key context-key
+                 :jdbc-options db.i/jdbc-options
+                 :spec spec})))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))

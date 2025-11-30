@@ -1,4 +1,4 @@
-{:jdbcUrl #profile {:default #or [#env DATABASE_JDBC_URL "jdbc:sqlite:sepal.db"]
+{:jdbcUrl #profile {:default #env DATABASE_JDBC_URL
                     :test "jdbc:sqlite::memory:"}
 
  ;; SQLite-specific pragmas
