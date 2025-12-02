@@ -1,7 +1,8 @@
 (ns sepal.app.integration.playwright
   "Thin Clojure wrapper around Playwright Java API for browser automation"
   (:import [com.microsoft.playwright Playwright Browser Page
-            BrowserType$LaunchOptions Page$WaitForSelectorOptions Page$WaitForLoadStateOptions]))
+            BrowserType$LaunchOptions Page$WaitForSelectorOptions Page$WaitForLoadStateOptions]
+           [com.microsoft.playwright.options WaitForSelectorState]))
 
 (defonce ^:dynamic *page* nil)
 
@@ -56,14 +57,21 @@
   (.click *page* selector))
 
 (defn press
-  "Press a key"
-  [key]
-  (.press *page* "body" key))
+  "Press a key. If one arg, presses on 'body'. If two, presses on selector."
+  ([key]
+   (.press *page* "body" key))
+  ([selector key]
+   (.press *page* selector key)))
 
 (defn fill
   "Fill input field with value"
   [selector value]
   (.fill *page* selector value))
+
+(defn select-option
+  "Select option(s) in a dropdown by value"
+  [selector value]
+  (.selectOption *page* selector value))
 
 (defn text-content
   "Get text content of element"
@@ -90,6 +98,30 @@
   (if (string? pattern)
     (.waitForURL *page* pattern)
     (.waitForURL *page* (re-pattern pattern))))
+
+(defn wait-for-hidden
+  "Wait for element to be hidden/detached (with optional timeout in ms)"
+  ([selector]
+   (.waitForSelector *page* selector
+                     (doto (Page$WaitForSelectorOptions.)
+                       (.setState WaitForSelectorState/HIDDEN))))
+  ([selector timeout-ms]
+   (.waitForSelector *page* selector
+                     (doto (Page$WaitForSelectorOptions.)
+                       (.setState WaitForSelectorState/HIDDEN)
+                       (.setTimeout (double timeout-ms))))))
+
+(defn wait-for-attached
+  "Wait for element to be attached to the DOM (even if hidden)"
+  ([selector]
+   (.waitForSelector *page* selector
+                     (doto (Page$WaitForSelectorOptions.)
+                       (.setState WaitForSelectorState/ATTACHED))))
+  ([selector timeout-ms]
+   (.waitForSelector *page* selector
+                     (doto (Page$WaitForSelectorOptions.)
+                       (.setState WaitForSelectorState/ATTACHED)
+                       (.setTimeout (double timeout-ms))))))
 
 (defn get-url
   "Get current page URL"

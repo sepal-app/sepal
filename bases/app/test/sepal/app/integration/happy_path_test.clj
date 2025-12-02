@@ -59,8 +59,8 @@
             (pw/fill "input[name=\"name\"]" "Rosa")
             ;; Select rank from SlimSelect dropdown
             (pw/click "select[name=\"rank\"] + .ss-main")  ;; Open SlimSelect
-            (Thread/sleep 300)  ;; Wait for dropdown to open
-            (pw/click ".ss-option:has-text(\"genus\")")  ;; Select genus option
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/click ".ss-content.ss-open .ss-option:has-text(\"genus\")")  ;; Select genus option
 
             ;; Submit
             (pw/click "button:has-text(\"Save\")")
@@ -79,16 +79,18 @@
             (pw/fill "input[name=\"name\"]" "Rosa canina")
             ;; Select rank from SlimSelect dropdown
             (pw/click "select[name=\"rank\"] + .ss-main")
-            (Thread/sleep 300)
-            (pw/click ".ss-option:has-text(\"species\")")
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/click ".ss-content.ss-open .ss-option:has-text(\"species\")")
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Select parent taxon via SlimSelect (uses async search, min 2 chars)
             (pw/click "select#parent-id + .ss-main")  ;; Open SlimSelect dropdown
-            (Thread/sleep 500)  ;; Wait for dropdown
-            (pw/fill ".ss-search input" "Ros")  ;; Type partial search (3 chars triggers search)
-            (Thread/sleep 2000)  ;; Wait for AJAX search results
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "Ros")  ;; Type partial search (3 chars triggers search)
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa\")")  ;; Wait for AJAX search results
             (pw/press "ArrowDown")  ;; Navigate to first result
-            (pw/press "Enter")  ;; Select it
+            (pw/press "Tab")  ;; Select it and move to next field
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Submit
             (pw/click "button:has-text(\"Save\")")
@@ -107,11 +109,12 @@
 
             ;; Select taxon via SlimSelect (async search)
             (pw/click "select#taxon-id + .ss-main")
-            (Thread/sleep 500)
-            (pw/fill ".ss-search input" "Rosa")
-            (Thread/sleep 2000)  ;; Wait for AJAX
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "Rosa")
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa canina\")")  ;; Wait for AJAX
             (pw/press "ArrowDown")
-            (pw/press "Enter")
+            (pw/press "Tab")
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Submit
             (pw/click "button:has-text(\"Save\")")
@@ -147,30 +150,38 @@
 
             ;; Select accession via SlimSelect (async search)
             (pw/click "select#accession-id + .ss-main")
-            (Thread/sleep 500)
-            (pw/fill ".ss-search input" "ACC")
-            (Thread/sleep 2000)  ;; Wait for AJAX
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "ACC")
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"ACC-001\")")  ;; Wait for AJAX
             (pw/press "ArrowDown")
-            (pw/press "Enter")
+            (pw/press "Tab")
 
             ;; Wait for accession dropdown to fully close
-            (Thread/sleep 1500)
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Select location via SlimSelect (async search)
             (pw/click "select#location-id + .ss-main")
-            (Thread/sleep 500)
-            (pw/fill ".ss-search input" "Gre")
-            (Thread/sleep 2500)  ;; Extra time for AJAX
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "Gre")
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Greenhouse A\")")  ;; Extra time for AJAX
             (pw/press "ArrowDown")
-            (pw/press "Enter")
+            (pw/press "Tab")
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Fill other fields
             (pw/fill "input[name=\"quantity\"]" "5")
-            ;; Select status and type from regular dropdowns
-            (pw/click "select[name=\"status\"]")
-            (pw/click "option[value=\"active\"]")
-            (pw/click "select[name=\"type\"]")
-            (pw/click "option[value=\"seed\"]")
+            ;; Select status and type from SlimSelect dropdowns
+            (pw/click "select[name=\"status\"] + .ss-main")
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "active")
+            (pw/press ".ss-content.ss-open .ss-search input" "Tab")
+            (pw/wait-for-hidden ".ss-content.ss-open")
+
+            (pw/click "select[name=\"type\"] + .ss-main")
+            (pw/wait-for-selector ".ss-content.ss-open")
+            (pw/fill ".ss-content.ss-open .ss-search input" "seed")
+            (pw/press ".ss-content.ss-open .ss-search input" "Tab")
+            (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Submit
             (pw/click "button:has-text(\"Save\")")
