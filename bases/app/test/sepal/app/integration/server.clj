@@ -7,8 +7,7 @@
 
 (defn- create-test-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-integration-test" ".db"))
-        database-url (str "sqlite:/" db-path)
-        dbmate (or (System/getenv "DBMATE") "dbmate")]
+        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")]
     {:sepal.app.server/zodiac-sql
      {:spec (assoc (config.i/read-config "database/config.edn" {:profile :test})
                    :jdbcUrl (str "jdbc:sqlite:" db-path))
@@ -34,8 +33,8 @@
       :start-server? true}  ;; START THE SERVER for integration tests
 
      :sepal.database.interface/schema
-     {:dbmate dbmate
-      :database-url database-url}
+     {:database-path db-path
+      :schema-dump-file schema-dump-file}
 
      :sepal.malli.interface/init {}}))
 

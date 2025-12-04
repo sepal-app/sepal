@@ -1,12 +1,11 @@
-CREATE TABLE IF NOT EXISTS "schema_migrations" (version varchar(128) primary key);
-CREATE TABLE IF NOT EXISTS "user" (
+CREATE TABLE "schema_version" (version TEXT NOT NULL);
+CREATE TABLE "user" (
   id integer primary key autoincrement,
   avatar_public_id text,
   email text not null unique,
   password text not null unique,
   email_verified_at text default null
 );
-CREATE INDEX user_id_idx on "user" (id);
 CREATE TABLE taxon (
   id integer primary key autoincrement,
   name text not null,
@@ -46,26 +45,7 @@ CREATE TABLE taxon (
   read_only integer not null default 0,
   vernacular_names text not null default '[]' check(json_valid(vernacular_names))
 );
-CREATE INDEX taxon_id_idx on taxon (id);
-CREATE INDEX taxon_name_idx on taxon (name);
-CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
-CREATE INDEX taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
-CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id')
-/* taxon_fts(name) */;
-CREATE TABLE IF NOT EXISTS 'taxon_fts_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'taxon_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'taxon_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'taxon_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
-CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-end;
-CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
+CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id');
 CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
@@ -100,7 +80,6 @@ CREATE TABLE accession (
   'purchase',
   'insufficient_data'
 )), supplier_contact_id integer references contact(id), date_received integer text, date_accessioned integer text);
-CREATE INDEX accession_id_idx on accession (id);
 CREATE TABLE material (
   id integer primary key autoincrement,
   code text not null,
@@ -111,7 +90,6 @@ CREATE TABLE material (
   memorial integer not null default 0,
   quantity integer not null default 1
 );
-CREATE INDEX material_id_idx on material (id);
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -123,15 +101,12 @@ CREATE TABLE media (
   created_at text not null default (datetime('now')),
   created_by integer not null references "user"(id)
 );
-CREATE INDEX media_id_idx on media (id);
 CREATE TABLE media_link (
   id integer primary key autoincrement,
   media_id integer not null unique,
   resource_id integer not null,
   resource_type text not null
 );
-CREATE INDEX media_link_media_id_idx on media_link (media_id);
-CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
 CREATE TABLE activity (
   id integer primary key autoincrement,
   data text not null check(json_valid(data)),
@@ -139,7 +114,6 @@ CREATE TABLE activity (
   created_by integer not null references "user"(id),
   created_at text not null default (datetime('now'))
 );
-CREATE INDEX activity_id_idx on activity (id);
 CREATE TABLE settings (
   key text not null,
   value text,
@@ -157,16 +131,35 @@ CREATE TABLE contact (
   business text not null,
   notes text not null
 );
-CREATE TABLE IF NOT EXISTS "location" (
+CREATE TABLE "location" (
   id integer primary key autoincrement,
   code text not null,
   name text not null,
   description text  -- nullable, no default
 );
+CREATE INDEX user_id_idx on "user" (id);
+CREATE INDEX taxon_id_idx on taxon (id);
+CREATE INDEX taxon_name_idx on taxon (name);
+CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
+CREATE INDEX taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
+CREATE INDEX accession_id_idx on accession (id);
+CREATE INDEX material_id_idx on material (id);
+CREATE INDEX media_id_idx on media (id);
+CREATE INDEX media_link_media_id_idx on media_link (media_id);
+CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
+CREATE INDEX activity_id_idx on activity (id);
 CREATE INDEX location_id_idx ON location (id);
--- Dbmate schema migrations
-INSERT INTO "schema_migrations" (version) VALUES
-  ('20251021111547'),
-  ('20251101133108'),
-  ('20251116002821'),
-  ('20251128154132');
+CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
+end;
+CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+end;
+CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
+end;
+INSERT INTO "schema_version" (version) VALUES ('20251021111547');
+INSERT INTO "schema_version" (version) VALUES ('20251101133108');
+INSERT INTO "schema_version" (version) VALUES ('20251116002821');
+INSERT INTO "schema_version" (version) VALUES ('20251128154132');

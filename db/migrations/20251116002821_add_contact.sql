@@ -1,4 +1,3 @@
--- migrate:up
 create table contact (
   id integer primary key autoincrement,
   name text not null,
@@ -21,9 +20,3 @@ add column date_received integer text;
 alter table accession
 add column date_accessioned integer text;
 
--- migrate:down
-drop table contact;
-
-alter table accession drop column supplier_contact_id;
-alter table accession drop column date_received;
-alter table accession drop column date_accessioned;

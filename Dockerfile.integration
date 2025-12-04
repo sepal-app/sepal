@@ -20,9 +20,9 @@ RUN curl -L -O https://github.com/clojure/brew-install/releases/latest/download/
     && ./linux-install.sh \
     && rm linux-install.sh
 
-# Install dbmate
-RUN wget -O /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64 \
-    && chmod +x /usr/local/bin/dbmate
+# Install migrate.sh (tests load schema directly via sqlite3, but this is available if needed)
+RUN wget -O /usr/local/bin/migrate.sh https://raw.githubusercontent.com/brettatoms/sqlite-migrate/main/migrate.sh \
+    && chmod +x /usr/local/bin/migrate.sh
 
 # Set working directory
 WORKDIR /app
@@ -50,7 +50,7 @@ RUN java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CL
     java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install-deps chromium firefox
 
 # Set environment variables
-ENV DBMATE=/usr/local/bin/dbmate
+ENV SCHEMA_DUMP_FILE=db/schema.sql
 
 # Default command runs integration tests
 CMD ["clojure", "-M:dev:test:test-integration:test-runner", "--focus", ":integration"]

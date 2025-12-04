@@ -16,8 +16,7 @@
 
 (defn default-system-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-test" ".db"))
-        database-url (str "sqlite:/" db-path)
-        dbmate (or (System/getenv "DBMATE") "dbmate")]
+        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")]
     {:sepal.app.server/zodiac-sql {:spec (assoc (load-config "database/config.edn")
                                                 :jdbcUrl (str "jdbc:sqlite:" db-path))
                                    :context-key :db}
@@ -33,8 +32,8 @@
                                                  :app-domain "test.sepal.app"}
                                :cookie-secret "1234567890123456"
                                :start-server? false}
-     :sepal.database.interface/schema {:dbmate dbmate
-                                       :database-url  database-url}
+     :sepal.database.interface/schema {:database-path db-path
+                                       :schema-dump-file schema-dump-file}
      :sepal.malli.interface/init {}}))
 
 (def default-system-fixture

@@ -1,4 +1,3 @@
--- migrate:up
 alter table accession
 add column private boolean not null default false;
 
@@ -43,9 +42,3 @@ add column wild_provenance_status text check(wild_provenance_status in (
   'insufficient_data'
 ));
 
--- migrate:down
-alter table accession drop column private;
-alter table accession drop column id_qualifier;
-alter table accession drop column id_qualifier_rank;
-alter table accession drop column provenance_type;
-alter table accession drop column wild_provenance_status;

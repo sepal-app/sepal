@@ -62,8 +62,8 @@
           :builder-fn builder-fn}))
 
 (defn load-schema!
-  "Load the SQLite schema into the in-memory test database.
-   Uses db/schema.sql which is maintained by dbmate dump."
-  [{:keys [dbmate database-url]
-    :or {dbmate "dbmate"}}]
-  (shell/sh dbmate "-u" database-url "load"))
+  "Load the SQLite schema into the test database.
+   Uses db/schema.sql which is maintained by migrate.sh."
+  [{:keys [database-path schema-dump-file]
+    :or {schema-dump-file "db/schema.sql"}}]
+  (shell/sh "sqlite3" "-init" schema-dump-file database-path ""))

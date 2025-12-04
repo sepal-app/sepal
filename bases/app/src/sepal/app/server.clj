@@ -37,11 +37,11 @@
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
   (let [spec (if (seq (:jdbcUrl spec))
                spec
-               (let [data-dir (fs/path (fs/xdg-data-home) "sepal")
+               (let [data-dir (fs/path (fs/xdg-data-home) "Sepal")
                      _ (when-not (fs/exists? data-dir)
                          (fs/create-dir data-dir))]
                  (assoc spec :jdbcUrl (format "jdbc:sqlite:%s"
-                                              (fs/path (fs/xdg-data-home) "sepal" "sepal.db")))))]
+                                              (fs/path data-dir "sepal.db")))))]
     (db.i/init)
     (z.sql/init {:context-key context-key
                  :jdbc-options db.i/jdbc-options

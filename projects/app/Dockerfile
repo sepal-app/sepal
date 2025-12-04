@@ -13,8 +13,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get clean
 
 RUN mkdir bin && \
-    curl -fsSL -o bin/dbmate https://github.com/amacneil/dbmate/releases/download/v2.28.0/dbmate-linux-amd64 && \
-    chmod +x bin/dbmate
+    curl -fsSL -o bin/migrate.sh https://raw.githubusercontent.com/brettatoms/sqlite-migrate/main/migrate.sh && \
+    chmod +x bin/migrate.sh
 
 # Copy specific files and directories to avoid any working files we might have
 # in the root directory that we missed in the .dockerignore

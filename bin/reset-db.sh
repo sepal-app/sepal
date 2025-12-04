@@ -2,11 +2,10 @@
 
 set -Eeuxo pipefail
 
-# Determine DATABASE_PATH and DATABASE_URL
+# Determine DATABASE_PATH
 if [[ -n "${DATABASE_JDBC_URL:-}" ]]; then
     # Extract from JDBC URL
     DATABASE_PATH=${DATABASE_JDBC_URL//jdbc:sqlite:/}
-    DATABASE_URL=${DATABASE_JDBC_URL//jdbc:/}
 else
     # Use XDG_DATA_HOME or platform-specific default
     if [[ -n "${XDG_DATA_HOME:-}" ]]; then
@@ -17,18 +16,22 @@ else
         DATA_DIR="$HOME/.local/share"
     fi
 
-    DATABASE_PATH="$DATA_DIR/sepal/sepal.db"
-    DATABASE_URL="sqlite:$DATABASE_PATH"
+    DATABASE_PATH="$DATA_DIR/Sepal/sepal.db"
 
     # Ensure directory exists
     mkdir -p "$(dirname "$DATABASE_PATH")"
 fi
 
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
-DBMATE=${DBMATE:-dbmate}
+MIGRATE_SH=${MIGRATE_SH:-migrate.sh}
+SCHEMA_DUMP_FILE=${SCHEMA_DUMP_FILE:-db/schema.sql}
 
-${DBMATE} -u "$DATABASE_URL" drop
-${DBMATE} -u "$DATABASE_URL" load
+# Remove existing database and load schema
+rm -f "$DATABASE_PATH"
+sqlite3 "$DATABASE_PATH" < "$SCHEMA_DUMP_FILE"
+
+# Apply any pending migrations
+${MIGRATE_SH} apply "$DATABASE_PATH"
 
 #
 # Populate the database from the WFO database

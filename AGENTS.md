@@ -12,7 +12,7 @@ This is a **Polylith** monorepo with the following structure:
 - `components/` - Domain components with public interfaces
 - `development/` - REPL development entry point
 - `projects/` - Deployable artifacts
-- `db/migrations/` - SQL migrations managed by dbmate
+- `db/migrations/` - SQL migrations managed by migrate.sh
 
 ### Bases vs Components
 
@@ -75,7 +75,7 @@ Each component follows Polylith conventions:
 - **Peridot/Kerodon** - HTTP testing
 
 ### Tools
-- **dbmate** - Database migrations (use `$DBMATE` env var for custom build with fts5 support)
+- **[sqlite-migrate](https://github.com/brettatoms/sqlite-migrate)** - Database migrations
 - **clj-kondo** - Linter
 - **cljfmt** - Formatter
 
@@ -126,8 +126,8 @@ clojure -M:poly check
 
 ### Environment Setup
 
-Copy `.envrc.example` to `.envrc` and set:
-- `DATABASE_JDBC_URL` - SQLite database path
+Copy `.env.local.example` to `.env.local` and set:
+- `DATABASE_JDBC_URL` - SQLite database path (Defaults to $XDG_DATA_DIR/Sepal/sepal.db)
 - `WFO_DATABASE_PATH` - World Flora Online database
 - `COOKIE_SECRET` - Session encryption (16+ chars)
 
@@ -271,7 +271,7 @@ Use Chassis for HTML generation:
 ## Database
 
 - **SQLite** with JSON columns and FTS5 for full-text search
-- Migrations in `db/migrations/` (dbmate format)
+- Migrations in `db/migrations/` (plain SQL files)
 - Schema dumped to `db/schema.sql`
 
 Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `settings`

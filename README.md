@@ -17,7 +17,8 @@ A botanical collection management system for managing plant accessions, material
 
 - Clojure 1.12+
 - Node.js 22.x (for frontend build)
-- dbmate (with FTS5 support)
+- sqlite3 (for database operations)
+- [sqlite-migrate](https://github.com/brettatoms/sqlite-migrate)  (optional, for applying new migrations)
 
 ### WFO Plantlist Database
 
@@ -28,7 +29,7 @@ Sepal uses a SQLite version of the World Flora Online Plantlist for taxonomy dat
 
 ### Environment Variables
 
-Copy `.envrc.example` to `.envrc` and configure the following:
+Copy `.env.local.example` to `.env.local` and configure the following:
 
 **Required:**
 

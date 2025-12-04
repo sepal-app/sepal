@@ -1,5 +1,3 @@
--- migrate:up
-
 pragma foreign_keys = on;
 
 -- ============================================================================
@@ -183,14 +181,3 @@ create table settings (
 -- Note: All WFO (World Flora Online) tables have been removed.
 -- If WFO integration is needed in the future, it can be added separately.
 
--- migrate:down
-drop table if exists settings;
-drop table if exists activity;
-drop table if exists media_link;
-drop table if exists media;
-drop table if exists material;
-drop table if exists accession;
-drop table if exists location;
-drop table if exists taxon_fts;
-drop table if exists taxon;
-drop table if exists "user";
