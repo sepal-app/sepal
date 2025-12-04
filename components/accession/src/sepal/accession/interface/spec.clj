@@ -5,7 +5,9 @@
 (def id pos-int?)
 (def taxon-id pos-int?)
 (def code [:string {:min 1}])
-(def private :boolean)
+(def private [:boolean
+              {:decode/store #(and (int? %) (= % 1))
+               :encode/store #(if (true? %) 1 0)}])
 (def supplier-contact-id pos-int?)
 
 (defn- name-encoder [v]

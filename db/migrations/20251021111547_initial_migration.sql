@@ -9,7 +9,7 @@ create table "user" (
   email text not null unique,
   password text not null unique,
   email_verified_at text default null
-);
+) strict;
 
 create index user_id_idx on "user" (id);
 
@@ -53,9 +53,9 @@ create table taxon (
     'variety'
   )),
   wfo_taxon_id text,
-  read_only integer not null default 0,
+  read_only integer not null default 0 check(read_only in (0, 1)),
   vernacular_names text not null default '[]' check(json_valid(vernacular_names))
-);
+) strict;
 
 create index taxon_id_idx on taxon (id);
 create index taxon_name_idx on taxon (name);
@@ -91,7 +91,7 @@ create table location (
   code text not null,
   name text not null default '',
   description text not null default ''
-);
+) strict;
 
 create index location_id_idx on location (id);
 
@@ -102,7 +102,7 @@ create table accession (
   id integer primary key autoincrement,
   code text not null,
   taxon_id integer not null references taxon(id)
-);
+) strict;
 
 create index accession_id_idx on accession (id);
 
@@ -117,9 +117,9 @@ create table material (
   location_id integer not null references location(id),
   type text not null default 'plant' check(type in ('plant', 'seed', 'vegetative', 'tissue', 'other')),
   status text not null default 'alive' check(status in ('dead', 'alive')),
-  memorial integer not null default 0,
+  memorial integer not null default 0 check(memorial in (0, 1)),
   quantity integer not null default 1
-);
+) strict;
 
 create index material_id_idx on material (id);
 
@@ -136,7 +136,7 @@ create table media (
   media_type text not null,
   created_at text not null default (datetime('now')),
   created_by integer not null references "user"(id)
-);
+) strict;
 
 create index media_id_idx on media (id);
 
@@ -148,7 +148,7 @@ create table media_link (
   media_id integer not null unique,
   resource_id integer not null,
   resource_type text not null
-);
+) strict;
 
 create index media_link_media_id_idx on media_link (media_id);
 create index media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
@@ -162,7 +162,7 @@ create table activity (
   type text not null,
   created_by integer not null references "user"(id),
   created_at text not null default (datetime('now'))
-);
+) strict;
 
 create index activity_id_idx on activity (id);
 
@@ -173,7 +173,7 @@ create table settings (
   key text not null,
   value text,
   user_id integer references "user"(id)
-);
+) strict;
 
 -- ============================================================================
 -- WFO PLANTLIST TABLES - REMOVED

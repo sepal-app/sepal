@@ -1,11 +1,11 @@
-CREATE TABLE "schema_version" (version TEXT NOT NULL);
+CREATE TABLE "schema_version" (version TEXT NOT NULL, applied_at TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE "user" (
   id integer primary key autoincrement,
   avatar_public_id text,
   email text not null unique,
   password text not null unique,
   email_verified_at text default null
-);
+) strict;
 CREATE TABLE taxon (
   id integer primary key autoincrement,
   name text not null,
@@ -42,15 +42,15 @@ CREATE TABLE taxon (
     'variety'
   )),
   wfo_taxon_id text,
-  read_only integer not null default 0,
+  read_only integer not null default 0 check(read_only in (0, 1)),
   vernacular_names text not null default '[]' check(json_valid(vernacular_names))
-);
+) strict;
 CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id');
 CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
   taxon_id integer not null references taxon(id)
-, private boolean not null default false, id_qualifier text check(id_qualifier in (
+, private integer not null default 0 check(private in (0, 1)), id_qualifier text check(id_qualifier in (
   'aff',
   'cf',
   'forsan',
@@ -79,7 +79,7 @@ CREATE TABLE accession (
   'not_wild',
   'purchase',
   'insufficient_data'
-)), supplier_contact_id integer references contact(id), date_received integer text, date_accessioned integer text);
+)), supplier_contact_id integer references contact(id), date_received text, date_accessioned text) strict;
 CREATE TABLE material (
   id integer primary key autoincrement,
   code text not null,
@@ -87,9 +87,9 @@ CREATE TABLE material (
   location_id integer not null references location(id),
   type text not null default 'plant' check(type in ('plant', 'seed', 'vegetative', 'tissue', 'other')),
   status text not null default 'alive' check(status in ('dead', 'alive')),
-  memorial integer not null default 0,
+  memorial integer not null default 0 check(memorial in (0, 1)),
   quantity integer not null default 1
-);
+) strict;
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -100,25 +100,25 @@ CREATE TABLE media (
   media_type text not null,
   created_at text not null default (datetime('now')),
   created_by integer not null references "user"(id)
-);
+) strict;
 CREATE TABLE media_link (
   id integer primary key autoincrement,
   media_id integer not null unique,
   resource_id integer not null,
   resource_type text not null
-);
+) strict;
 CREATE TABLE activity (
   id integer primary key autoincrement,
   data text not null check(json_valid(data)),
   type text not null,
   created_by integer not null references "user"(id),
   created_at text not null default (datetime('now'))
-);
+) strict;
 CREATE TABLE settings (
   key text not null,
   value text,
   user_id integer references "user"(id)
-);
+) strict;
 CREATE TABLE contact (
   id integer primary key autoincrement,
   name text not null,
@@ -130,13 +130,13 @@ CREATE TABLE contact (
   phone text,
   business text not null,
   notes text not null
-);
+) strict;
 CREATE TABLE "location" (
   id integer primary key autoincrement,
   code text not null,
   name text not null,
   description text  -- nullable, no default
-);
+) strict;
 CREATE INDEX user_id_idx on "user" (id);
 CREATE INDEX taxon_id_idx on taxon (id);
 CREATE INDEX taxon_name_idx on taxon (name);
@@ -159,7 +159,7 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
   insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
   insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
-INSERT INTO "schema_version" (version) VALUES ('20251021111547');
-INSERT INTO "schema_version" (version) VALUES ('20251101133108');
-INSERT INTO "schema_version" (version) VALUES ('20251116002821');
-INSERT INTO "schema_version" (version) VALUES ('20251128154132');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20251021111547', '2025-12-04 13:28:58');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20251101133108', '2025-12-04 13:28:58');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20251116002821', '2025-12-04 13:28:58');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20251128154132', '2025-12-04 13:28:58');

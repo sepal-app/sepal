@@ -5,7 +5,7 @@ CREATE TABLE location_new (
   code text not null,
   name text not null,
   description text  -- nullable, no default
-);
+) strict;
 
 -- Copy data, converting empty strings to null
 INSERT INTO location_new (id, code, name, description)

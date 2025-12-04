@@ -9,14 +9,14 @@ create table contact (
   phone text,
   business text not null,
   notes text not null
-);
+) strict;
 
 alter table accession
 add column supplier_contact_id integer references contact(id);
 
 alter table accession
-add column date_received integer text;
+add column date_received text;
 
 alter table accession
-add column date_accessioned integer text;
+add column date_accessioned text;
 

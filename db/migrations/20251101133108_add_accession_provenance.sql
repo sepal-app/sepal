@@ -1,5 +1,5 @@
 alter table accession
-add column private boolean not null default false;
+add column private integer not null default 0 check(private in (0, 1));
 
 alter table accession
 add column id_qualifier text check(id_qualifier in (
