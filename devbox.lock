@@ -273,6 +273,70 @@
         }
       }
     },
+    "libspatialite@5.1.0": {
+      "last_modified": "2025-11-23T21:50:36Z",
+      "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#libspatialite",
+      "source": "devbox-search",
+      "version": "5.1.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/s75qpp20j0alknnhk15c21y6n6npw3xd-libspatialite-5.1.0",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/swpdbdz7wi423dz0b261qwslh7mms37a-libspatialite-5.1.0-dev"
+            }
+          ],
+          "store_path": "/nix/store/s75qpp20j0alknnhk15c21y6n6npw3xd-libspatialite-5.1.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1b57bpmby0k80bvvlzg139gv3m71g18v-libspatialite-5.1.0",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/42b65inf8y4d2x567w9jp1i73r1qscfn-libspatialite-5.1.0-dev"
+            }
+          ],
+          "store_path": "/nix/store/1b57bpmby0k80bvvlzg139gv3m71g18v-libspatialite-5.1.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/wz5192zqkhf7zr4059683an7nc48yfdh-libspatialite-5.1.0",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/xhjksx8lvgggrxv36jkjbic0k5fgaxz0-libspatialite-5.1.0-dev"
+            }
+          ],
+          "store_path": "/nix/store/wz5192zqkhf7zr4059683an7nc48yfdh-libspatialite-5.1.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/y6k4izbxppjynr2f97ddji8x1f10bw9v-libspatialite-5.1.0",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/947ddd19b7s5n2i10d0kv6vkqhrimxrb-libspatialite-5.1.0-dev"
+            }
+          ],
+          "store_path": "/nix/store/y6k4izbxppjynr2f97ddji8x1f10bw9v-libspatialite-5.1.0"
+        }
+      }
+    },
     "nodejs@22.14.0": {
       "last_modified": "2025-05-31T03:30:20Z",
       "plugin_version": "0.0.2",

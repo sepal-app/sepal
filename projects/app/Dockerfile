@@ -9,7 +9,7 @@ RUN apt-get update && \
 
 # Install nodejs
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
+    apt-get install -y nodejs libspatialite8t64 && \
     apt-get clean
 
 RUN mkdir bin && \

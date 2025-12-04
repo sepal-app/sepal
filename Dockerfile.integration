@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     rlwrap \
+    libspatialite8t64 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22.x (required by package.json engines)
