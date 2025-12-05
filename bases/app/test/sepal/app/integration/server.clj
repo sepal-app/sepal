@@ -9,8 +9,9 @@
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-integration-test" ".db"))
         schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")]
     {:sepal.app.server/zodiac-sql
-     {:spec (assoc (config.i/read-config "database/config.edn" {:profile :test})
-                   :jdbcUrl (str "jdbc:sqlite:" db-path))
+     {:database-path db-path
+      :pragmas {:journal_mode "WAL"
+                :foreign_keys "ON"}
       :context-key :db}
 
      :sepal.app.server/zodiac-assets

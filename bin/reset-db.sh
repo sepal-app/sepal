@@ -2,12 +2,8 @@
 
 set -Eeuxo pipefail
 
-# Determine DATABASE_PATH
-if [[ -n "${DATABASE_JDBC_URL:-}" ]]; then
-    # Extract from JDBC URL
-    DATABASE_PATH=${DATABASE_JDBC_URL//jdbc:sqlite:/}
-else
-    # Use XDG_DATA_HOME or platform-specific default
+# Determine DATABASE_PATH (use env var or default to XDG data dir)
+if [[ -z "${DATABASE_PATH:-}" ]]; then
     if [[ -n "${XDG_DATA_HOME:-}" ]]; then
         DATA_DIR="$XDG_DATA_HOME"
     elif [[ "$(uname)" == "Darwin" ]]; then
@@ -15,12 +11,11 @@ else
     else
         DATA_DIR="$HOME/.local/share"
     fi
-
     DATABASE_PATH="$DATA_DIR/Sepal/sepal.db"
-
-    # Ensure directory exists
-    mkdir -p "$(dirname "$DATABASE_PATH")"
 fi
+
+# Ensure directory exists
+mkdir -p "$(dirname "$DATABASE_PATH")"
 
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
 MIGRATE_SH=${MIGRATE_SH:-migrate.sh}

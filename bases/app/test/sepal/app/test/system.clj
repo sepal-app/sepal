@@ -17,8 +17,9 @@
 (defn default-system-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-test" ".db"))
         schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")]
-    {:sepal.app.server/zodiac-sql {:spec (assoc (load-config "database/config.edn")
-                                                :jdbcUrl (str "jdbc:sqlite:" db-path))
+    {:sepal.app.server/zodiac-sql {:database-path db-path
+                                   :pragmas {:journal_mode "WAL"
+                                             :foreign_keys "ON"}
                                    :context-key :db}
      :sepal.app.server/zodiac-assets {:build? false
                                       :manifest-path "app/build/.vite/manifest.json"

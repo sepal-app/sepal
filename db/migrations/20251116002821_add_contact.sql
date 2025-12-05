@@ -7,8 +7,8 @@ create table contact (
   postal_code text,
   country text,
   phone text,
-  business text not null,
-  notes text not null
+  business text,
+  notes text
 ) strict;
 
 alter table accession
@@ -19,4 +19,3 @@ add column date_received text;
 
 alter table accession
 add column date_accessioned text;
-

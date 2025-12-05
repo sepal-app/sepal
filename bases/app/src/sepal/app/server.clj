@@ -34,14 +34,24 @@
      ["/taxon" (taxon/routes)]
      ["/media" (media/routes)]]))
 
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [spec context-key]}]
-  (let [spec (if (seq (:jdbcUrl spec))
-               spec
-               (let [data-dir (fs/path (fs/xdg-data-home) "Sepal")
-                     _ (when-not (fs/exists? data-dir)
-                         (fs/create-dir data-dir))]
-                 (assoc spec :jdbcUrl (format "jdbc:sqlite:%s"
-                                              (fs/path data-dir "sepal.db")))))]
+(defn- build-jdbc-url
+  "Build a SQLite JDBC URL with optional pragma query parameters."
+  [db-path pragmas]
+  (if (seq pragmas)
+    (let [query-params (->> pragmas
+                            (map (fn [[k v]] (str (name k) "=" v)))
+                            (clojure.string/join "&"))]
+      (format "jdbc:sqlite:%s?%s" db-path query-params))
+    (format "jdbc:sqlite:%s" db-path)))
+
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec context-key]}]
+  (let [db-path (or database-path
+                    (str (fs/path (fs/xdg-data-home) "Sepal" "sepal.db")))
+        parent-dir (fs/parent db-path)
+        jdbc-url (build-jdbc-url db-path pragmas)
+        spec (assoc spec :jdbcUrl jdbc-url)]
+    (when (and parent-dir (not (fs/exists? parent-dir)))
+      (fs/create-dirs parent-dir))
     (db.i/init)
     (z.sql/init {:context-key context-key
                  :jdbc-options db.i/jdbc-options

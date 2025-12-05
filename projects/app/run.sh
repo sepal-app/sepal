@@ -2,10 +2,8 @@
 
 set -Eeuo pipefail
 
-# Determine DATABASE_PATH for migrate.sh
-if [[ -n "${DATABASE_JDBC_URL:-}" ]]; then
-    DATABASE_PATH=${DATABASE_JDBC_URL//jdbc:sqlite:/}
-else
+# Determine DATABASE_PATH (use env var or default to XDG data dir)
+if [[ -z "${DATABASE_PATH:-}" ]]; then
     if [[ -n "${XDG_DATA_HOME:-}" ]]; then
         DATA_DIR="$XDG_DATA_HOME"
     elif [[ "$(uname)" == "Darwin" ]]; then
@@ -13,7 +11,6 @@ else
     else
         DATA_DIR="$HOME/.local/share"
     fi
-
     DATABASE_PATH="$DATA_DIR/Sepal/sepal.db"
 fi
 

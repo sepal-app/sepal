@@ -18,9 +18,10 @@
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)
 
-(defn factory [{:keys [db taxon] :as args}]
+(defn factory [{:keys [db taxon contact] :as args}]
   (let [data (-> (mg/generate spec/CreateAccession)
-                 (assoc :taxon-id (:taxon/id taxon)))
+                 (assoc :taxon-id (:taxon/id taxon))
+                 (assoc :supplier-contact-id (when contact (:contact/id contact))))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

@@ -15,14 +15,14 @@
   (store.i/update! db :contact id data spec/UpdateContact spec/Contact))
 
 (create-ns 'sepal.contact.interface)
-(alias 'loc.i 'sepal.contact.interface)
+(alias 'contact.i 'sepal.contact.interface)
 
 (defn factory [{:keys [db] :as args}]
   (let [data (mg/generate spec/CreateContact)
         result (create! db data)]
     (vary-meta result assoc :db db)))
 
-(defmethod ig/halt-key! ::loc.i/factory [_ {:contact/keys [id] :as data}]
+(defmethod ig/halt-key! ::contact.i/factory [_ {:contact/keys [id] :as data}]
   (when id
     (let [{:keys [db]} (meta data)]
       (jdbc.sql/delete! db :contact {:id id}))))

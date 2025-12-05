@@ -99,14 +99,17 @@ After starting the system with `(go)`, two dynamic vars become available in the 
 ### Common Commands
 
 ```bash
-# Run all tests
+# Run unit tests (default - excludes integration tests)
 clojure -M:dev:test:test-runner
 
-# Run specific test namespace
+# Run unit tests with focus on specific namespace
 clojure -M:dev:test:test-runner --focus sepal.accession.interface-test
 
-# Run specific test
+# Run unit tests with focus on specific test
 clojure -M:dev:test:test-runner --focus sepal.accession.interface-test/test-create
+
+# Run integration tests (requires Playwright - see tests.edn for config)
+clojure -M:dev:test:test-integration:test-runner :integration
 
 # Lint
 bin/lint
@@ -127,7 +130,7 @@ clojure -M:poly check
 ### Environment Setup
 
 Copy `.env.local.example` to `.env.local` and set:
-- `DATABASE_JDBC_URL` - SQLite database path (Defaults to $XDG_DATA_DIR/Sepal/sepal.db)
+- `DATABASE_PATH` - Path to SQLite database file (defaults to $XDG_DATA_HOME/Sepal/sepal.db)
 - `WFO_DATABASE_PATH` - World Flora Online database
 - `COOKIE_SECRET` - Session encryption (16+ chars)
 
@@ -140,7 +143,7 @@ Additional env vars for production (see `bases/app/resources/app/system.edn`):
 
 - **Main Configuration**: The primary system configuration is defined as an [Integrant](https://github.com/weavejester/integrant) file at `bases/app/resources/app/system.edn`.
 - **Dynamic Setup with Aero**: The configuration is processed by [Aero](https://github.com/juxt/aero), which enables environment-specific setups using profiles (e.g., `:local`, `:default`, `:test`) and environment variable injection (e.g., `#env COOKIE_SECRET`).
-- **Database Configuration**: Database connection details are specified in `components/database/resources/database/config.edn`. This file uses Aero profiles to switch the `jdbcUrl` between a file-based SQLite database for development (`jdbc:sqlite:sepal.db`) and an in-memory database for testing.
+- **Database Configuration**: Database connection is configured via `DATABASE_PATH` environment variable in `system.edn`. The JDBC URL is generated from this path at startup. Tests use temporary files or in-memory databases.
 
 ## Code Patterns
 

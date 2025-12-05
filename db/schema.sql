@@ -128,8 +128,8 @@ CREATE TABLE contact (
   postal_code text,
   country text,
   phone text,
-  business text not null,
-  notes text not null
+  business text,
+  notes text
 ) strict;
 CREATE TABLE "location" (
   id integer primary key autoincrement,

@@ -45,7 +45,7 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 | Variable | Description |
 |----------|-------------|
 | `WFO_DATABASE_PATH` | Path to WFO Plantlist SQLite database (only needed for DB initialization) |
-| `DATABASE_JDBC_URL` | JDBC connection string (optional, defaults to user's data dir) |
+| `DATABASE_PATH` | Path to SQLite database file (optional, defaults to user's data dir) |
 
 **Optional - Media Uploads:**
 

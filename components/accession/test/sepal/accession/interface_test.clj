@@ -1,15 +1,15 @@
 (ns sepal.accession.interface-test
-  (:require [clojure.test :as test :refer :all]
+  (:require [clojure.test :refer :all]
             [integrant.core :as ig]
             [malli.core :as m]
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
-            [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.interface :as acc.i]
             [sepal.accession.interface.spec :as acc.spec]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
                                            default-system-fixture]]
+            [sepal.contact.interface :as contact.i]
             [sepal.error.interface :as err.i]
             [sepal.taxon.interface :as taxon.i]))
 
@@ -18,24 +18,26 @@
 (deftest test-create
   (let [db *db*]
     (tf/testing "accession.i/create!"
-      {[::taxon.i/factory :key/taxon] {:db db}}
-      (fn [{:keys [taxon]}]
-        (let [db *db*
-              data (-> (mg/generate acc.spec/CreateAccession)
-                       (assoc :taxon-id (:taxon/id taxon)))
-              result (acc.i/create! db data)]
-          (is (not (err.i/error? result)) (err.i/data result))
-          (is (m/validate acc.spec/Accession result))
-          (is (match? {:accession/taxon-id (:taxon/id taxon)}
-                      result))
-          (jdbc.sql/delete! db :accession {:id (:accession/id result)}))))))
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::contact.i/factory :key/contact] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :contact (ig/ref :key/contact)}}
+      (fn [{:keys [acc taxon contact]}]
+        (is (not (err.i/error? acc)) (err.i/data acc))
+        (is (m/validate acc.spec/Accession acc))
+        (is (match? {:accession/taxon-id (:taxon/id taxon)
+                     :accession/supplier-contact-id (:contact/id contact)}
+                    acc))))))
 
 (deftest test-update
   (let [db *db*]
     (tf/testing "update!"
       {[::taxon.i/factory :key/taxon] {:db db}
+       [::contact.i/factory :key/contact] {:db db}
        [::acc.i/factory :key/acc] {:db db
-                                   :taxon (ig/ref :key/taxon)}}
+                                   :taxon (ig/ref :key/taxon)
+                                   :contact (ig/ref :key/contact)}}
       (fn [{:keys [acc taxon]}]
         (let [acc-code (mg/generate acc.spec/code)
               result (acc.i/update! db
