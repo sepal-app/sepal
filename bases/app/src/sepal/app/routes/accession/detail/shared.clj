@@ -5,6 +5,7 @@
             [zodiac.core :as z]))
 
 (def general-tab ::general)
+(def collection-tab ::collection)
 (def media-tab ::media)
 
 (defn items [& {:keys [accession active]}]
@@ -12,10 +13,10 @@
                  {:href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                   :active (= active general-tab)
                   :x-on:click "tabClicked"})
-   #_(ui.tabs/item "Source"
-                   {:href (z/url-for accession.routes/detail-source {:id (:accession/id accession)})
-                    :active (= active source)
-                    :x-on:click "tabClicked"})
+   (ui.tabs/item "Collection"
+                 {:href (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
+                  :active (= active collection-tab)
+                  :x-on:click "tabClicked"})
    (ui.tabs/item "Media"
                  {:href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
                   :active (= active media-tab)

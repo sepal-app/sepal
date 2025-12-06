@@ -58,9 +58,9 @@
             ;; Fill taxon form
             (pw/fill "input[name=\"name\"]" "Rosa")
             ;; Select rank from SlimSelect dropdown
-            (pw/click "select[name=\"rank\"] + .ss-main")  ;; Open SlimSelect
+            (pw/click "select[name=\"rank\"] + .ss-main") ;; Open SlimSelect
             (pw/wait-for-selector ".ss-content.ss-open")
-            (pw/click ".ss-content.ss-open .ss-option:has-text(\"genus\")")  ;; Select genus option
+            (pw/click ".ss-content.ss-open .ss-option:has-text(\"genus\")") ;; Select genus option
 
             ;; Submit
             (pw/click "button:has-text(\"Save\")")
@@ -84,12 +84,12 @@
             (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Select parent taxon via SlimSelect (uses async search, min 2 chars)
-            (pw/click "select#parent-id + .ss-main")  ;; Open SlimSelect dropdown
+            (pw/click "select#parent-id + .ss-main") ;; Open SlimSelect dropdown
             (pw/wait-for-selector ".ss-content.ss-open")
-            (pw/fill ".ss-content.ss-open .ss-search input" "Ros")  ;; Type partial search (3 chars triggers search)
-            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa\")")  ;; Wait for AJAX search results
-            (pw/press "ArrowDown")  ;; Navigate to first result
-            (pw/press "Tab")  ;; Select it and move to next field
+            (pw/fill ".ss-content.ss-open .ss-search input" "Ros") ;; Type partial search (3 chars triggers search)
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa\")") ;; Wait for AJAX search results
+            (pw/press "ArrowDown") ;; Navigate to first result
+            (pw/press "Tab") ;; Select it and move to next field
             (pw/wait-for-hidden ".ss-content.ss-open")
 
             ;; Submit
@@ -111,7 +111,7 @@
             (pw/click "select#taxon-id + .ss-main")
             (pw/wait-for-selector ".ss-content.ss-open")
             (pw/fill ".ss-content.ss-open .ss-search input" "Rosa")
-            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa canina\")")  ;; Wait for AJAX
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa canina\")") ;; Wait for AJAX
             (pw/press "ArrowDown")
             (pw/press "Tab")
             (pw/wait-for-hidden ".ss-content.ss-open")
@@ -123,6 +123,32 @@
 
             (is (pw/visible? "text=ACC-001")
                 "Should show accession code"))
+
+          (testing "5.5 Add collection data to accession"
+            ;; Click on Collection tab
+            (pw/click "text=Collection")
+            (pw/wait-for-url #"/accession/\d+/collection/")
+            (pw/wait-for-selector "input[name=\"collector\"]")
+
+            ;; Fill collection form
+            (pw/fill "input[name=\"collector\"]" "Dr. Jane Botanist")
+            (pw/fill "input[name=\"collected-date\"]" "2024-06-15")
+            (pw/fill "input[name=\"country\"]" "Canada")
+            (pw/fill "input[name=\"province\"]" "British Columbia")
+            (pw/fill "input[name=\"locality\"]" "Stanley Park")
+            (pw/fill "textarea[name=\"habitat\"]" "Temperate rainforest understory")
+            (pw/fill "input[name=\"lat\"]" "49.3017")
+            (pw/fill "input[name=\"lng\"]" "-123.1417")
+            (pw/fill "input[name=\"elevation\"]" "25")
+
+            ;; Submit
+            (pw/click "button:has-text(\"Save\")")
+
+            ;; Wait for page to reload after save
+            (pw/wait-for-selector "input[name=\"collector\"][value=\"Dr. Jane Botanist\"]")
+
+            (is (pw/visible? "input[name=\"collector\"][value=\"Dr. Jane Botanist\"]")
+                "Should show saved collector name"))
 
           (testing "6. Create location"
             (pw/navigate "http://localhost:3000/location/new/")
@@ -152,7 +178,7 @@
             (pw/click "select#accession-id + .ss-main")
             (pw/wait-for-selector ".ss-content.ss-open")
             (pw/fill ".ss-content.ss-open .ss-search input" "ACC")
-            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"ACC-001\")")  ;; Wait for AJAX
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"ACC-001\")") ;; Wait for AJAX
             (pw/press "ArrowDown")
             (pw/press "Tab")
 
@@ -163,7 +189,7 @@
             (pw/click "select#location-id + .ss-main")
             (pw/wait-for-selector ".ss-content.ss-open")
             (pw/fill ".ss-content.ss-open .ss-search input" "Gre")
-            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Greenhouse A\")")  ;; Extra time for AJAX
+            (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Greenhouse A\")") ;; Extra time for AJAX
             (pw/press "ArrowDown")
             (pw/press "Tab")
             (pw/wait-for-hidden ".ss-content.ss-open")

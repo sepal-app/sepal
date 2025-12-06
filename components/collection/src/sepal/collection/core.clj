@@ -86,9 +86,11 @@
 (alias 'coll.i 'sepal.collection.interface)
 
 (defn factory [{:keys [db accession] :as args}]
-  (let [data (-> (mg/generate spec/CreateCollection)
+  (let [custom-fields (dissoc args :db :accession)
+        data (-> (mg/generate spec/CreateCollection)
                  (assoc :accession-id (:accession/id accession))
-                 (dissoc :geo-coordinates))
+                 (dissoc :geo-coordinates)
+                 (merge custom-fields))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

@@ -3,6 +3,7 @@
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.create :as create]
             [sepal.app.routes.accession.detail :as detail]
+            [sepal.app.routes.accession.detail.collection :as detail-collection]
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
             [sepal.app.routes.accession.detail.source :as detail-source]
@@ -30,6 +31,8 @@
           :handler #'detail/handler}]
     ["/general/" {:name routes/detail-general
                   :handler #'detail-general/handler}]
+    ["/collection/" {:name routes/detail-collection
+                     :handler #'detail-collection/handler}]
     ["/source/" {:name routes/detail-source
                  :handler #'detail-source/handler}]
     ["/media/" {:name routes/detail-media

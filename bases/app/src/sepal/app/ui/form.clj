@@ -94,7 +94,7 @@
                              :name name
                              :id id
                              :required (or required false)
-                             :class "textarea textarea-bordered"}
+                             :class "textarea textarea-bordered w-full"}
                   value]))
 
 (defn submit-button
