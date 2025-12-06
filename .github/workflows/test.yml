@@ -14,6 +14,8 @@ jobs:
         java: [ '17', '21' ]
     steps:
       - uses: actions/checkout@v4
+      - name: Install SpatiaLite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-mod-spatialite
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -44,6 +46,8 @@ jobs:
         browser: [ 'chromium', 'firefox' ]
     steps:
       - uses: actions/checkout@v4
+      - name: Install SpatiaLite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-mod-spatialite
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
