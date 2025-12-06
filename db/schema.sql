@@ -137,6 +137,21 @@ CREATE TABLE "location" (
   name text not null,
   description text  -- nullable, no default
 ) strict;
+CREATE TABLE collection (
+  id integer primary key autoincrement,
+  collected_date text,
+  collector text,
+  habitat text,
+  taxa text,
+  remarks text,
+  country text,
+  province text,
+  locality text,
+  geo_coordinates blob,  -- SpatiaLite POINT geometry
+  geo_uncertainty smallint check(geo_uncertainty > 0),
+  elevation smallint,
+  accession_id integer unique constraint collection_accession_id_fkey references accession (id) on delete cascade
+);
 CREATE INDEX user_id_idx on "user" (id);
 CREATE INDEX taxon_id_idx on taxon (id);
 CREATE INDEX taxon_name_idx on taxon (name);
@@ -159,7 +174,8 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
   insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
   insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
-INSERT INTO "schema_version" (version, applied_at) VALUES ('20251021111547', '2025-12-04 13:28:58');
-INSERT INTO "schema_version" (version, applied_at) VALUES ('20251101133108', '2025-12-04 13:28:58');
-INSERT INTO "schema_version" (version, applied_at) VALUES ('20251116002821', '2025-12-04 13:28:58');
-INSERT INTO "schema_version" (version, applied_at) VALUES ('20251128154132', '2025-12-04 13:28:58');
+INSERT INTO "schema_version" (version) VALUES ('20251021111547');
+INSERT INTO "schema_version" (version) VALUES ('20251101133108');
+INSERT INTO "schema_version" (version) VALUES ('20251116002821');
+INSERT INTO "schema_version" (version) VALUES ('20251128154132');
+INSERT INTO "schema_version" (version) VALUES ('20251202211419');

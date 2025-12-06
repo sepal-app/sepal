@@ -1,6 +1,7 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
             [integrant.core :as ig]
+            [lambdaisland.uri :as uri]
             [reitit.ring]
             [ring.middleware.stacktrace :as stacktrace]
             [sepal.app.middleware :as middleware]
@@ -38,18 +39,30 @@
   "Build a SQLite JDBC URL with optional pragma query parameters."
   [db-path pragmas]
   (if (seq pragmas)
-    (let [query-params (->> pragmas
-                            (map (fn [[k v]] (str (name k) "=" v)))
-                            (clojure.string/join "&"))]
-      (format "jdbc:sqlite:%s?%s" db-path query-params))
+    (format "jdbc:sqlite:%s?%s" db-path (uri/map->query-string pragmas))
     (format "jdbc:sqlite:%s" db-path)))
 
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec context-key]}]
+(defn- build-connection-init-sql
+  "Build connectionInitSql string to load SQLite extensions.
+   Takes a list of extension names and an optional library path."
+  [extensions extension-library-path]
+  (when (seq extensions)
+    (->> extensions
+         (map (fn [ext]
+                (let [ext-path (if extension-library-path
+                                 (str (fs/path extension-library-path ext))
+                                 ext)]
+                  (format "SELECT load_extension('%s')" ext-path))))
+         (clojure.string/join "; "))))
+
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key]}]
   (let [db-path (or database-path
                     (str (fs/path (fs/xdg-data-home) "Sepal" "sepal.db")))
         parent-dir (fs/parent db-path)
         jdbc-url (build-jdbc-url db-path pragmas)
-        spec (assoc spec :jdbcUrl jdbc-url)]
+        connection-init-sql (build-connection-init-sql extensions extension-library-path)
+        spec (cond-> (assoc spec :jdbcUrl jdbc-url)
+               connection-init-sql (assoc :connectionInitSql connection-init-sql))]
     (when (and parent-dir (not (fs/exists? parent-dir)))
       (fs/create-dirs parent-dir))
     (db.i/init)

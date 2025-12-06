@@ -7,11 +7,15 @@
 
 (defn- create-test-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-integration-test" ".db"))
-        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")]
+        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")
+        extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
     {:sepal.app.server/zodiac-sql
      {:database-path db-path
       :pragmas {:journal_mode "WAL"
-                :foreign_keys "ON"}
+                :foreign_keys "ON"
+                :enable_load_extension "true"}
+      :extensions ["mod_spatialite"]
+      :extension-library-path extension-library-path
       :context-key :db}
 
      :sepal.app.server/zodiac-assets

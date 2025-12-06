@@ -22,6 +22,13 @@
 (def count #'z.sql/count)
 (def exists? #'z.sql/exists?)
 
+(defmethod ig/init-key ::extensions [_ {:keys [zodiac extensions] :as config}]
+  (let [db (::z.sql/db zodiac)
+        extensions (if (string? extensions) [extensions] extensions)]
+    (doseq [extension extensions]
+      (execute! db [(format "select load_extension('%s');" extension)])))
+  (core/load-schema! config))
+
 (defmethod ig/init-key ::schema [_ {:keys [zodiac database-url] :as config}]
   ;; THIS IS ONLY FOR LOADING THE DB SCHEMA INTO A TEST DATABASE
   (core/load-schema! config))

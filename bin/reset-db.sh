@@ -23,7 +23,7 @@ SCHEMA_DUMP_FILE=${SCHEMA_DUMP_FILE:-db/schema.sql}
 
 # Remove existing database and load schema
 rm -f "$DATABASE_PATH"
-sqlite3 "$DATABASE_PATH" < "$SCHEMA_DUMP_FILE"
+sqlite3 "$DATABASE_PATH" <"$SCHEMA_DUMP_FILE"
 
 # Apply any pending migrations
 ${MIGRATE_SH} apply "$DATABASE_PATH"

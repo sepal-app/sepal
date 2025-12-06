@@ -14,7 +14,11 @@
  {:database-path #env DATABASE_PATH
   ;; SQLite pragmas are set via JDBC URL query parameters
   :pragmas {:journal_mode "WAL"
-            :foreign_keys "ON"}
+            :foreign_keys "ON"
+            :enable_load_extension "true"}
+  ;; SQLite extensions to load on each connection
+  :extensions ["mod_spatialite"]
+  :extension-library-path #env EXTENSIONS_LIBRARY_PATH
   :context-key :db}
 
  :sepal.app.server/zodiac-assets
