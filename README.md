@@ -18,7 +18,10 @@ A botanical collection management system for managing plant accessions, material
 - Clojure 1.12+
 - Node.js 22.x (for frontend build)
 - sqlite3 (for database operations)
+- SpatiaLite extension (for geo-coordinate support)
 - [sqlite-migrate](https://github.com/brettatoms/sqlite-migrate)  (optional, for applying new migrations)
+
+**Using devbox (recommended):** All prerequisites including SpatiaLite are installed automatically via `devbox shell`.
 
 ### WFO Plantlist Database
 
@@ -46,6 +49,7 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 |----------|-------------|
 | `WFO_DATABASE_PATH` | Path to WFO Plantlist SQLite database (only needed for DB initialization) |
 | `DATABASE_PATH` | Path to SQLite database file (optional, defaults to user's data dir) |
+| `EXTENSIONS_LIBRARY_PATH` | Path to directory containing SQLite extensions like `mod_spatialite` (see troubleshooting below) |
 
 **Optional - Media Uploads:**
 
@@ -67,10 +71,13 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 
 ### Development Setup
 
-1. Download the WFO Plantlist database (see above)
-2. Copy `.envrc.example` to `.envrc` and configure variables
-3. Run `bin/reset-db.sh` to initialize database with WFO data
-4. Start REPL and run `(go)` - zodiac-asset handles npm install and Vite automatically
+1. Enter devbox shell: `devbox shell` (installs all dependencies including SpatiaLite)
+2. Download the WFO Plantlist database (see above)
+3. Copy `.env.local.example` to `.env.local` and configure variables
+4. Run `bin/reset-db.sh` to initialize database with WFO data
+5. Start REPL and run `(go)` - zodiac-asset handles npm install and Vite automatically
+
+**Troubleshooting SQLite extensions:** If you encounter errors loading SQLite extensions (like SpatiaLite), set `EXTENSIONS_LIBRARY_PATH` to the directory containing the extension libraries. With devbox, this is typically `${PWD}/.devbox/nix/profile/default/lib`. See `.env.local.example` for an example.
 
 ### Production Build
 

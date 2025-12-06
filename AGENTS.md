@@ -51,6 +51,35 @@ Each component follows Polylith conventions:
 (:require [sepal.accession.core :as acc.core])
 ```
 
+### Interface Return Conventions
+
+Interface functions that retrieve data typically return:
+- The entity map when found
+- `nil` when not found (NOT an error)
+- An error map (checked with `error.i/error?`) only for actual failures (e.g., database errors, validation failures)
+
+Check for `nil` for "not found" cases, not `error.i/error?`:
+```clojure
+;; Good - check for nil
+(if-let [entity (some.i/get-by-id db id)]
+  (do-something entity)
+  (handle-not-found))
+
+;; Bad - get-by-id returns nil when not found, not an error
+(let [entity (some.i/get-by-id db id)]
+  (if (error.i/error? entity)  ; This will never be true for "not found"
+    (handle-not-found)
+    (do-something entity)))
+```
+
+Use `error.i/error?` for operations that can fail (create, update, validation):
+```clojure
+(let [result (some.i/create! db data)]
+  (if (error.i/error? result)
+    (handle-error result)
+    (handle-success result)))
+```
+
 ## Tech Stack
 
 ### Core Libraries
@@ -102,11 +131,14 @@ After starting the system with `(go)`, two dynamic vars become available in the 
 # Run unit tests (default - excludes integration tests)
 clojure -M:dev:test:test-runner
 
+# Run unit tests explicitly (useful if integration test loading fails)
+clojure -M:dev:test:test-runner :unit
+
 # Run unit tests with focus on specific namespace
-clojure -M:dev:test:test-runner --focus sepal.accession.interface-test
+clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test
 
 # Run unit tests with focus on specific test
-clojure -M:dev:test:test-runner --focus sepal.accession.interface-test/test-create
+clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test/test-create
 
 # Run integration tests (requires Playwright - see tests.edn for config)
 clojure -M:dev:test:test-integration:test-runner :integration
@@ -274,10 +306,23 @@ Use Chassis for HTML generation:
 ## Database
 
 - **SQLite** with JSON columns and FTS5 for full-text search
+- **SpatiaLite** extension for geo-coordinates
 - Migrations in `db/migrations/` (plain SQL files)
 - Schema dumped to `db/schema.sql`
 
-Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `settings`
+Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `collection`, `settings`
+
+### Geo-coordinates (SpatiaLite)
+
+The project uses SQLite with the SpatiaLite extension for spatial data. Geo-coordinates are stored as GeoJSON with SRID (spatial reference ID).
+
+**Environment setup:**
+- `EXTENSIONS_LIBRARY_PATH` may need to be set to the directory containing `mod_spatialite` if SQLite has trouble loading extensions
+- With devbox, this is typically `${PWD}/.devbox/nix/profile/default/lib` (see `.env.local.example`)
+
+**Coordinate reference systems:**
+- Defined in `sepal.collection.interface.datum` with EPSG SRID codes
+- Default is WGS-84 (SRID 4326)
 
 ## Style Guide
 
