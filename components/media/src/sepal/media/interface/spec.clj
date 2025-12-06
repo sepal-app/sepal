@@ -8,8 +8,6 @@
 (def description :string)
 (def size-in-bytes pos-int?)
 (def media-type :string)
-(def created-at :time/instant)
-(def created-by pos-int?)
 
 (def Media
   [:map {:closed true}
@@ -19,9 +17,7 @@
    [:media/title [:maybe title]]
    [:media/description [:maybe  description]]
    [:media/size-in-bytes size-in-bytes]
-   [:media/media-type media-type]
-   [:media/created-at created-at]
-   [:media/created-by created-by]])
+   [:media/media-type media-type]])
 
 (def CreateMedia
   [:map {:closed true}
@@ -30,9 +26,7 @@
    [:title {:optional true} [:maybe title]]
    [:description {:optional true} [:maybe description]]
    [:size-in-bytes size-in-bytes]
-   [:media-type media-type]
-   [:created-at {:optional true} created-at]
-   [:created-by created-by]])
+   [:media-type media-type]])
 
 (def MediaLink
   [:map {:closed true}

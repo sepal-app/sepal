@@ -4,6 +4,7 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
+            [sepal.media.interface.activity :as media.activity]
             [zodiac.core :as z]))
 
 (def FormParams
@@ -26,23 +27,28 @@
          s3-key :s3Key
          size :size} (params/decode FormParams form-params)
         result  (-> (media.i/create! db
-                                     {:created-by (:user/id viewer)
-                                      :media-type content-type
+                                     {:media-type content-type
                                       :s3-bucket s3-bucket
                                       :s3-key s3-key
                                       :size-in-bytes size
                                       :title filename})
                     (assoc :thumbnail-url (media.ui/thumbnail-url imgix-media-domain s3-key)))]
 
-    ;; If the media was successfully added and we were sent an resource type and
-    ;; resource id to link then link the media and the resource
-    (when (and (some? link-resource-type)
-               (some? link-resource-id)
-               (not (error.i/error? result)))
-      (media.i/link! db
-                     (:media/id result)
-                     link-resource-id
-                     link-resource-type))
+    (when-not (error.i/error? result)
+      ;; Create activity record for the media creation
+      (media.activity/create! db
+                              media.activity/created
+                              (:user/id viewer)
+                              result)
+
+      ;; If we were sent a resource type and resource id to link then link
+      ;; the media and the resource
+      (when (and (some? link-resource-type)
+                 (some? link-resource-id))
+        (media.i/link! db
+                       (:media/id result)
+                       link-resource-id
+                       link-resource-type)))
 
     (if-not (error.i/error? result)
       (->  (media.ui/media-item :item result)

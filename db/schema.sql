@@ -97,9 +97,7 @@ CREATE TABLE media (
   title text null,
   description text null,
   size_in_bytes integer not null,
-  media_type text not null,
-  created_at text not null default (datetime('now')),
-  created_by integer not null references "user"(id)
+  media_type text not null
 ) strict;
 CREATE TABLE media_link (
   id integer primary key autoincrement,

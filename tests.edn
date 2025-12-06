@@ -8,13 +8,16 @@
                         "components/config/test"
                         "components/contact/test"
                         "components/database/test"
+                        "components/error/test"
                         "components/location/test"
                         "components/logging/test"
                         "components/malli/test"
                         "components/material/test"
+                        "components/media/test"
                         "components/postmark/test"
-                        "components/taxon/test"
                         "components/store/test"
+                        "components/taxon/test"
+                        "components/test/test"
                         "components/user/test"
                         "components/validation/test"]
            ;; Exclude integration test namespaces (prevents loading Playwright classes)
