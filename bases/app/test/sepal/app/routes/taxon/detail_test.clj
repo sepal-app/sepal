@@ -1,6 +1,5 @@
 (ns sepal.app.routes.taxon.detail-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
-            [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]

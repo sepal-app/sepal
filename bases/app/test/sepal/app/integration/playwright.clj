@@ -1,7 +1,6 @@
 (ns sepal.app.integration.playwright
   "Thin Clojure wrapper around Playwright Java API for browser automation"
-  (:import [com.microsoft.playwright Playwright Browser Page
-            BrowserType$LaunchOptions Page$WaitForSelectorOptions Page$WaitForLoadStateOptions]
+  (:import [com.microsoft.playwright Playwright BrowserType$LaunchOptions Page$WaitForSelectorOptions]
            [com.microsoft.playwright.options WaitForSelectorState]))
 
 (defonce ^:dynamic *page* nil)

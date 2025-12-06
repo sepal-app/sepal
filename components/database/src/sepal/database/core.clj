@@ -3,7 +3,6 @@
             [clojure.java.shell :as shell]
             [clojure.string :as str]
             [honey.sql]
-            [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc.result-set])
   (:import [java.sql ResultSet ResultSetMetaData]))
 
@@ -69,7 +68,7 @@
   ;; 2. Uses our custom column reader for SQLite booleans
   (jdbc.result-set/builder-adapter
     ;; Base builder - we'll override its column naming via the adapter
-    (fn [rs opts]
+    (fn [rs _opts]
       ;; Create column names using our label-fn
       (let [rsmeta (.getMetaData rs)
             col-count (.getColumnCount rsmeta)

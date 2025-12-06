@@ -49,7 +49,7 @@
    [:collection/province province]
    [:collection/locality locality]
    [:collection/geo-coordinates {:optional true
-                                  :decode/store parse-geo-json}
+                                 :decode/store parse-geo-json}
     [:maybe GeoPoint]]
    [:collection/geo-uncertainty geo-uncertainty]
    [:collection/elevation elevation]

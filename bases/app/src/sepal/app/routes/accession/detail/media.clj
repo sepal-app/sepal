@@ -6,7 +6,6 @@
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
-            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.media.interface :as media.i]

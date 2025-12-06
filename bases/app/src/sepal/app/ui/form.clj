@@ -1,7 +1,6 @@
 (ns sepal.app.ui.form
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.ui.page :as ui.page]
-            [sepal.malli.interface :as malli.i]))
+            [sepal.app.ui.page :as ui.page]))
 
 (def anti-forgery-field-name "__anti-forgery-token")
 

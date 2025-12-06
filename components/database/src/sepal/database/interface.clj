@@ -29,7 +29,7 @@
       (execute! db [(format "select load_extension('%s');" extension)])))
   (core/load-schema! config))
 
-(defmethod ig/init-key ::schema [_ {:keys [zodiac database-url] :as config}]
+(defmethod ig/init-key ::schema [_ config]
   ;; THIS IS ONLY FOR LOADING THE DB SCHEMA INTO A TEST DATABASE
   (core/load-schema! config))
 

@@ -1,8 +1,7 @@
 (ns sepal.app.integration.server
   "Server lifecycle management for integration tests"
   (:require [integrant.core :as ig]
-            [sepal.app.server]  ;; Load Integrant methods
-            [sepal.config.interface :as config.i])
+            [sepal.app.server])  ;; Load Integrant methods
   (:import [java.io File]))
 
 (defn- create-test-config []

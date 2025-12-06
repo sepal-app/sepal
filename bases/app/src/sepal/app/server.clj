@@ -1,5 +1,6 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
+            [clojure.string :as str]
             [integrant.core :as ig]
             [lambdaisland.uri :as uri]
             [reitit.ring]
@@ -53,7 +54,7 @@
                                  (str (fs/path extension-library-path ext))
                                  ext)]
                   (format "SELECT load_extension('%s')" ext-path))))
-         (clojure.string/join "; "))))
+         (str/join "; "))))
 
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key]}]
   (let [db-path (or database-path

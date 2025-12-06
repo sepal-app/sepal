@@ -7,7 +7,7 @@
             [sepal.user.interface.spec :as user.spec]))
 
 (deftest ^:integration happy-path-flow
-  "Complete user flow: register -> create contact -> create taxa -> create accession -> create location -> create material"
+  ;; "Complete user flow: register -> create contact -> create taxa -> create accession -> create location -> create material"
   (testing "Server and browser setup"
     (server/with-server
       (fn [_system]
