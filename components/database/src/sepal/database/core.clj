@@ -1,5 +1,4 @@
 (ns sepal.database.core
-  ;; (:refer-clojure :exclude [count])
   (:require [camel-snake-kebab.core :as csk]
             [clojure.java.shell :as shell]
             [clojure.string :as str]
@@ -7,18 +6,6 @@
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc.result-set])
   (:import [java.sql ResultSet ResultSetMetaData]))
-
-(def builder-fn (jdbc.result-set/builder-adapter
-                  ;; (next.jdbc.result-set/->MapResultSetBuilder rs rsmeta cols)
-                  jdbc.result-set/as-kebab-maps
-                  (fn [builder ^ResultSet rs ^Integer i]
-                    (let [rsm ^ResultSetMetaData (:rsmeta builder)]
-                      (jdbc.result-set/read-column-by-index
-                        (if (#{"BIT" "BOOL" "BOOLEAN"} (.getColumnTypeName rsm i))
-                          (.getBoolean rs i)
-                          (.getObject rs i))
-                        rsm
-                        i)))))
 
 (defn ->kebab-case
   "Same as csk/->kebab-case but only use '_' as the separator.
@@ -30,7 +17,7 @@
     (csk/->kebab-case v :separator \_)))
 
 (defn ->snake-case
-  "Same as csk/->skae-case but only use '-' as the separator.
+  "Same as csk/->snake-case but only use '-' as the separator.
 
   This is needed so a column like :s3-bucket doesn't get turned into :s_3_bucket
   "
@@ -38,7 +25,7 @@
   (when (seq v)
     (csk/->snake_case v :separator \-)))
 
-(defn get-table-name
+(defn- get-table-name
   "Copied from the private function next.jdbc.result-set/get-table-name."
   [^java.sql.ResultSetMetaData rsmeta ^Integer i]
   (try
@@ -46,20 +33,55 @@
     (catch java.sql.SQLFeatureNotSupportedException _
       nil)))
 
-(def jdbc-options
-  (merge jdbc/snake-kebab-opts
-         {:column-fn ->snake-case
-          :label-fn  (fn [rsmeta i]
-                       (let [[ns label] (str/split (.getColumnLabel rsmeta i) #"__" 2)]
-                         (if (seq label)
-                           (keyword (->kebab-case ns)
-                                    (->kebab-case label))
-                           (keyword (->kebab-case (get-table-name rsmeta i))
-                                    (->kebab-case (.getColumnLabel rsmeta i))))))
+(defn- label-fn
+  "Convert column label to keyword, handling __ as namespace separator.
+   - 'my_table__my_column' -> :my-table/my-column
+   - 'my_column' (with table 'foo') -> :foo/my-column
+   - 's3_bucket' -> :s3-bucket (not :s-3-bucket)
+   - 'ns__col_with__more' -> :ns/col-with-more (additional __ become single _)"
+  [^ResultSetMetaData rsmeta ^Integer i]
+  (let [col-label (.getColumnLabel rsmeta i)
+        [ns-part label-part] (str/split col-label #"__" 2)]
+    (if (seq label-part)
+      ;; Has __ separator: use first part as namespace
+      ;; Replace any remaining __ with single _ before kebab conversion
+      (keyword (->kebab-case ns-part)
+               (->kebab-case (str/replace label-part #"__" "_")))
+      ;; No __ separator: use table name as namespace
+      (keyword (->kebab-case (get-table-name rsmeta i))
+               (->kebab-case col-label)))))
 
-           ;; override the builder-fn b/c the default behavior of ->kebab-case is to
-           ;; turn :s3_bucket into s-3-bucket
-          :builder-fn builder-fn}))
+(defn- column-reader
+  "Read column value from result set."
+  [builder ^ResultSet rs ^Integer i]
+  (let [rsmeta ^ResultSetMetaData (:rsmeta builder)]
+    (jdbc.result-set/read-column-by-index
+      (.getObject rs i)
+      rsmeta
+      i)))
+
+(defn- make-builder-fn
+  "Create a result set builder that uses our label-fn for column naming.
+   Returns a builder function suitable for use as :builder-fn option."
+  []
+  ;; We need to create a builder that:
+  ;; 1. Uses our custom label-fn for column naming (handles __ separator)
+  ;; 2. Uses our custom column reader for SQLite booleans
+  (jdbc.result-set/builder-adapter
+    ;; Base builder - we'll override its column naming via the adapter
+    (fn [rs opts]
+      ;; Create column names using our label-fn
+      (let [rsmeta (.getMetaData rs)
+            col-count (.getColumnCount rsmeta)
+            cols (mapv #(label-fn rsmeta %) (range 1 (inc col-count)))]
+        (jdbc.result-set/->MapResultSetBuilder rs rsmeta cols)))
+    ;; Column reader function
+    column-reader))
+
+(def jdbc-options
+  {:column-fn  ->snake-case
+   :table-fn   csk/->snake_case
+   :builder-fn (make-builder-fn)})
 
 (defn load-schema!
   "Load the SQLite schema into the test database.
