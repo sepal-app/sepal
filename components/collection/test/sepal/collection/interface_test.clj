@@ -66,8 +66,6 @@
           (is (match? {:collection/collector new-collector}
                       result)))))))
 
-;; NOTE: This test requires SpatiaLite extension to be loaded.
-;; Run with: EXTENSIONS_LIBRARY_PATH=/path/to/lib
 (deftest test-geo-point-roundtrip
   (let [db *db*]
     (tf/testing "geo-coordinates roundtrip"

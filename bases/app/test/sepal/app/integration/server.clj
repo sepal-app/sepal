@@ -1,7 +1,8 @@
 (ns sepal.app.integration.server
   "Server lifecycle management for integration tests"
   (:require [integrant.core :as ig]
-            [sepal.app.server])  ;; Load Integrant methods
+            [sepal.app.server] ;; Load Integrant methods
+            [sepal.malli.interface]) ;; Load Malli Integrant methods
   (:import [java.io File]))
 
 (defn- create-test-config []
@@ -34,7 +35,7 @@
                         :app-domain "localhost:3000"}
       :cookie-secret "1234567890123456"
       :port 3000
-      :start-server? true}  ;; START THE SERVER for integration tests
+      :start-server? true} ;; START THE SERVER for integration tests
 
      :sepal.database.interface/schema
      {:database-path db-path
@@ -65,7 +66,7 @@
   (let [config (create-test-config)
         system (ig/init config)]
     ;; Wait for server to be ready before returning
-    (wait-for-server-ready 50)  ;; 50 attempts * 100ms = 5 seconds max
+    (wait-for-server-ready 50) ;; 50 attempts * 100ms = 5 seconds max
     system))
 
 (defn stop-server!
