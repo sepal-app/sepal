@@ -61,7 +61,7 @@
                  (-> response
                      :body
                      (Jsoup/parse)
-                     (.selectFirst "main h1")
+                     (.selectFirst ".breadcrumbs span")
                      (.text)))))))
 
     (tf/testing "post - invalid password"
