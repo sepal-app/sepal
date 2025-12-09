@@ -1,12 +1,12 @@
-(ns sepal.app.integration.happy-path-test
-  "End-to-end integration test for happy path user flow"
+(ns sepal.app.e2e.happy-path-test
+  "End-to-end e2e test for happy path user flow"
   (:require [clojure.test :refer [deftest is testing]]
             [malli.generator :as mg]
-            [sepal.app.integration.playwright :as pw]
-            [sepal.app.integration.server :as server]
+            [sepal.app.e2e.playwright :as pw]
+            [sepal.app.e2e.server :as server]
             [sepal.user.interface.spec :as user.spec]))
 
-(deftest ^:integration happy-path-flow
+(deftest ^:e2e happy-path-flow
   ;; "Complete user flow: register -> create contact -> create taxa -> create accession -> create location -> create material"
   (testing "Server and browser setup"
     (server/with-server

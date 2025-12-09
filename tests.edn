@@ -20,11 +20,11 @@
                         "components/test/test"
                         "components/user/test"
                         "components/validation/test"]
-           ;; Exclude integration test namespaces (prevents loading Playwright classes)
-           :ns-patterns ["^(?!.*\\.integration\\.).*-test$"]
-           :kaocha.filter/skip-meta [:integration]}
+           ;; Exclude e2e test namespaces (prevents loading Playwright classes)
+           :ns-patterns ["^(?!.*\\.e2e\\.).*-test$"]
+           :kaocha.filter/skip-meta [:e2e]}
 
-          {:id :integration
+          {:id :e2e
            :test-paths ["bases/app"]
-           :ns-patterns [".*integration.*-test"]
-           :kaocha.filter/focus-meta [:integration]}]}
+           :ns-patterns [".*e2e.*-test"]
+           :kaocha.filter/focus-meta [:e2e]}]}

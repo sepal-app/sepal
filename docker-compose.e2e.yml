@@ -1,10 +1,10 @@
 version: '3.8'
 
 services:
-  integration-chromium:
+  e2e-chromium:
     build:
       context: .
-      dockerfile: Dockerfile.integration
+      dockerfile: Dockerfile.e2e
       args:
         BROWSER: chromium
     environment:
@@ -14,10 +14,10 @@ services:
       - ./bases/app/test:/app/bases/app/test:ro
       - ./components:/app/components:ro
 
-  integration-firefox:
+  e2e-firefox:
     build:
       context: .
-      dockerfile: Dockerfile.integration
+      dockerfile: Dockerfile.e2e
       args:
         BROWSER: firefox
     environment:

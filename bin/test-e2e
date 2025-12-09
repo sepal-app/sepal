@@ -1,0 +1,30 @@
+#!/bin/bash
+# Script to run e2e tests locally in Docker
+
+set -e
+
+BROWSER=${1:-chromium}
+
+echo "🧪 Running e2e tests with $BROWSER..."
+echo ""
+
+if [ "$BROWSER" = "both" ]; then
+    echo "Running tests in both Chromium and Firefox..."
+    docker-compose -f docker-compose.e2e.yml up --build --abort-on-container-exit
+else
+    echo "Building Docker image for $BROWSER..."
+    docker build \
+        -f Dockerfile.e2e \
+        --build-arg BROWSER=$BROWSER \
+        -t sepal-e2e:$BROWSER \
+        .
+
+    echo ""
+    echo "Running e2e tests..."
+    docker run --rm \
+        -e PLAYWRIGHT_BROWSER=$BROWSER \
+        sepal-e2e:$BROWSER
+fi
+
+echo ""
+echo "✅ E2E tests complete!"

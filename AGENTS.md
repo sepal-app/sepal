@@ -128,10 +128,10 @@ After starting the system with `(go)`, two dynamic vars become available in the 
 ### Common Commands
 
 ```bash
-# Run unit tests (default - excludes integration tests)
+# Run unit tests (default - excludes e2e tests)
 clojure -M:dev:test:test-runner
 
-# Run unit tests explicitly (useful if integration test loading fails)
+# Run unit tests explicitly (useful if e2e test loading fails)
 clojure -M:dev:test:test-runner :unit
 
 # Run unit tests with focus on specific namespace
@@ -140,8 +140,8 @@ clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test
 # Run unit tests with focus on specific test
 clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test/test-create
 
-# Run integration tests (requires Playwright - see tests.edn for config)
-clojure -M:dev:test:test-integration:test-runner :integration
+# Run e2e tests (requires Playwright - see tests.edn for config)
+clojure -M:dev:test:test-e2e:test-runner :e2e
 
 # Lint
 bin/lint
@@ -257,42 +257,24 @@ The frontend uses HTMX for server-driven interactivity and Alpine.js for client-
 - Use `$el.requestSubmit()` for form submission (not `$el.submit()`) so HTMX can intercept
 - Handle non-2xx responses with `htmx:beforeSwap` event (configured in `ui/page.ts`)
 
-**SlimSelect autocomplete fields:**
-- Alpine directives (`x-taxon-field`, `x-contact-field`) wrap SlimSelect
-- SlimSelect hides the original `<select>` and creates visible `.ss-main` wrapper
-- Directives include cleanup callbacks to destroy SlimSelect instances
-
 ### Form Validation
 
-Use `sepal.validation.interface` for form validation:
+Use `sepal.validation.interface` for form validation. Forms use `hx-swap="none"` with out-of-band error swaps:
 ```clojure
 (let [result (validation.i/validate-form-values FormSchema form-params)]
   (if (error.i/error? result)
-    (http/validation-errors (validation.i/humanize result))  ; 422 with OOB errors
+    (http/validation-errors (validation.i/humanize result))  ; 422 with OOB errors to #field-errors
     (do-something-with result)))
 ```
 
-**OOB Error Swaps:**
-- Form fields have error containers with IDs like `#code-errors`, `#taxon-id-errors`
-- On validation failure, return 422 with `hx-swap-oob` error elements
-- Form uses `hx-swap="none"` so only error containers are updated
-
-**Empty String Handling:**
-HTML forms submit empty strings `""` for unfilled fields. For optional/nullable database columns, use `validation.i/empty->nil` as a form decoder to convert empty strings to `nil`:
-
+**Empty String Handling:** Use `validation.i/empty->nil` decoder for optional fields:
 ```clojure
 (def FormParams
   [:map {:closed true}
-   [:name [:string {:min 1}]]  ; required - no decoder needed
-   [:email {:decode/form validation.i/empty->nil} [:maybe :string]]  ; optional string
-   [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]])  ; optional enum
+   [:name [:string {:min 1}]]                                         ; required
+   [:email {:decode/form validation.i/empty->nil} [:maybe :string]]   ; optional
+   [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]])
 ```
-
-Key points:
-- Required fields with `:min` constraints don't need special handling (empty string fails validation)
-- Optional string fields (`[:maybe :string]`) need `empty->nil` to avoid storing empty strings
-- Optional enum fields need both `empty->nil` AND wrapping in `[:maybe ...]` since enums don't accept `nil` by default
-- Fields with regex validation (like email) also need `empty->nil` since empty strings fail regex matching
 
 ### HTML Rendering
 

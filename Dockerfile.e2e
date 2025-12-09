@@ -1,4 +1,4 @@
-# Dockerfile for running integration tests locally
+# Dockerfile for running e2e tests locally
 FROM eclipse-temurin:21-jdk
 
 # Install system dependencies including Node.js and Playwright browser dependencies
@@ -37,7 +37,7 @@ COPY development ./development
 COPY projects ./projects
 
 # Download Clojure dependencies (cache layer)
-RUN clojure -P -M:dev:test:test-integration
+RUN clojure -P -M:dev:test:test-e2e
 
 # Install frontend dependencies and build assets
 WORKDIR /app/bases/app
@@ -46,11 +46,11 @@ WORKDIR /app
 
 # Install Playwright browsers with system dependencies
 # Install both chromium and firefox (we'll select at runtime via PLAYWRIGHT_BROWSER env var)
-RUN java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install chromium firefox && \
-    java -cp "$(clojure -Spath -M:test-integration)" com.microsoft.playwright.CLI install-deps chromium firefox
+RUN java -cp "$(clojure -Spath -M:test-e2e)" com.microsoft.playwright.CLI install chromium firefox && \
+    java -cp "$(clojure -Spath -M:test-e2e)" com.microsoft.playwright.CLI install-deps chromium firefox
 
 # Set environment variables
 ENV SCHEMA_DUMP_FILE=db/schema.sql
 
-# Default command runs integration tests
-CMD ["clojure", "-M:dev:test:test-integration:test-runner", "--focus", ":integration"]
+# Default command runs e2e tests
+CMD ["clojure", "-M:dev:test:test-e2e:test-runner", "--focus", ":e2e"]

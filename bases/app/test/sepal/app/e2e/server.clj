@@ -1,12 +1,12 @@
-(ns sepal.app.integration.server
-  "Server lifecycle management for integration tests"
+(ns sepal.app.e2e.server
+  "Server lifecycle management for e2e tests"
   (:require [integrant.core :as ig]
             [sepal.app.server] ;; Load Integrant methods
             [sepal.malli.interface]) ;; Load Malli Integrant methods
   (:import [java.io File]))
 
 (defn- create-test-config []
-  (let [db-path (.getAbsolutePath (File/createTempFile "sepal-integration-test" ".db"))
+  (let [db-path (.getAbsolutePath (File/createTempFile "sepal-e2e-test" ".db"))
         schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")
         extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
     {:sepal.app.server/zodiac-sql

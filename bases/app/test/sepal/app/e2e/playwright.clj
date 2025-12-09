@@ -1,4 +1,4 @@
-(ns sepal.app.integration.playwright
+(ns sepal.app.e2e.playwright
   "Thin Clojure wrapper around Playwright Java API for browser automation"
   (:import [com.microsoft.playwright Playwright BrowserType$LaunchOptions Page$WaitForSelectorOptions]
            [com.microsoft.playwright.options WaitForSelectorState]))
