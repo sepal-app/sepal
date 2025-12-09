@@ -70,7 +70,12 @@
 
             ;; E2E test dependencies (Playwright)
             ;; clojure -M:dev:test:test-e2e:test-runner --focus :e2e
-            :test-e2e {:extra-deps {com.microsoft.playwright/playwright {:mvn/version "1.50.0"}}}
+            :test-e2e {:extra-deps {com.microsoft.playwright/playwright {:mvn/version "1.50.0"}
+                                integrant/integrant {:mvn/version "0.10.0"}
+                                poly/app-base {:local/root "bases/app"}
+                                poly/malli {:local/root "components/malli"}
+                                poly/user {:local/root "components/user"}
+                                org.clojure/test.check {:mvn/version "1.1.1"}}}
 
             ;; clojure -M:dev:test:test-runner
             :test-runner {:main-opts ["-m" "kaocha.runner"]}
