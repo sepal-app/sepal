@@ -5,7 +5,7 @@
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
-            [sepal.postmark.interface :as postmark.i]
+            [sepal.mail.interface :as mail.i]
             [sepal.user.interface :as user.i]
             [taoensso.nippy :as nippy]
             [zodiac.core :as z])
@@ -43,19 +43,18 @@
         (.withoutPadding)
         (.encodeToString data))))
 
-(defn send-reset-password-email [postmark to subject from reset-password-url]
+(defn send-reset-password-email [mail to subject from reset-password-url]
   (let [content (mustache/render-resource "app/email/reset_password.mustache"
                                           {:email to
                                            :reset-password-url reset-password-url
                                            :support-email from})]
-    (postmark.i/email postmark {"From" from
-                                "To" to
-                                "Subject" subject
-                                "TextBody" content
-                                "MessageStream" "outbound"})))
+    (mail.i/send-message mail {:from from
+                               :to to
+                               :subject subject
+                               :body content})))
 
 (defn handler [{:keys [::z/context flash params request-method]}]
-  (let [{:keys [app-domain db postmark reset-password-secret forgot-password-email-from
+  (let [{:keys [app-domain db mail reset-password-secret forgot-password-email-from
                 forgot-password-email-subject]} context
         {:keys [email]} params]
     (case request-method
@@ -67,18 +66,18 @@
                                          app-domain
                                          (z/url-for auth.routes/reset-password
                                                     nil
-                                                    {:token token}))
-              resp (send-reset-password-email postmark
-                                              email
-                                              forgot-password-email-subject
-                                              forgot-password-email-from
-                                              reset-password-url)]
-          (if (= (:status resp) 200)
+                                                    {:token token}))]
+          (try
+            (send-reset-password-email mail
+                                        email
+                                        forgot-password-email-subject
+                                        forgot-password-email-from
+                                        reset-password-url)
             (-> (http/found auth.routes/forgot-password)
                 (flash/add-message "Check your email."))
-            (do
-              ;; TODO: PRoper logging
-              (println (str "Error: Could not send forgot password email: " resp))
+            (catch Exception e
+              ;; TODO: Proper logging
+              (println (str "Error: Could not send forgot password email: " (ex-message e)))
               (-> (http/found auth.routes/forgot-password)
                   (flash/error "Error: Could not send email.")))))
         (-> (http/found auth.routes/forgot-password)

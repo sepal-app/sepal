@@ -39,7 +39,7 @@
                     :reset-password-secret #env RESET_PASSWORD_SECRET
                     :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
                     :s3-client #ig/ref :sepal.aws-s3.interface/s3-client
-                    :postmark #ig/ref :sepal.postmark.interface/service
+                    :mail #ig/ref :sepal.mail.interface/client
                     :app-domain #env APP_DOMAIN
                     :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
                     :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
@@ -53,5 +53,10 @@
 
  :sepal.malli.interface/init {}
 
- :sepal.postmark.interface/service
- {:api-key #env POSTMARK_API_KEY}}
+ :sepal.mail.interface/client
+ {:host #env SMTP_HOST
+  :port #or [#env SMTP_PORT "587"]
+  :username #env SMTP_USERNAME
+  :password #env SMTP_PASSWORD
+  :auth #or [#env SMTP_AUTH "true"]
+  :tls #or [#env SMTP_TLS "starttls"]}}

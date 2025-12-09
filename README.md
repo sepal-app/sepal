@@ -41,7 +41,12 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 | `COOKIE_SECRET` | Secret for encrypting cookies |
 | `RESET_PASSWORD_SECRET` | Secret for encrypting password reset tokens |
 | `APP_DOMAIN` | Domain for email links (e.g., reset password) |
-| `POSTMARK_API_KEY` | Postmark API key for sending emails |
+| `SMTP_HOST` | SMTP server hostname |
+| `SMTP_PORT` | SMTP server port (e.g., 587 for STARTTLS, 465 for SSL) |
+| `SMTP_USERNAME` | SMTP authentication username |
+| `SMTP_PASSWORD` | SMTP authentication password |
+| `SMTP_AUTH` | Enable SMTP authentication (true/false) |
+| `SMTP_TLS` | TLS mode: `starttls`, `ssl`, or `none` |
 
 **Database:**
 
