@@ -165,6 +165,7 @@ create table activity (
 ) strict;
 
 create index activity_id_idx on activity (id);
+create index activity_created_at_idx on activity (created_at desc);
 
 -- ============================================================================
 -- SETTINGS TABLE
