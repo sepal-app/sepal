@@ -69,10 +69,10 @@
                                                     {:token token}))]
           (try
             (send-reset-password-email mail
-                                        email
-                                        forgot-password-email-subject
-                                        forgot-password-email-from
-                                        reset-password-url)
+                                       email
+                                       forgot-password-email-subject
+                                       forgot-password-email-from
+                                       reset-password-url)
             (-> (http/found auth.routes/forgot-password)
                 (flash/add-message "Check your email."))
             (catch Exception e

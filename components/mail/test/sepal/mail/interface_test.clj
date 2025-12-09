@@ -2,7 +2,8 @@
   (:require [clojure.test :refer [deftest is testing]]
             [integrant.core :as ig]
             [sepal.mail.core :as core]
-            [sepal.mail.interface :as mail.i]))
+            [sepal.mail.interface :as mail.i]
+            [sepal.mail.interface.protocols :as mail.p]))
 
 (deftest test-create-session
   (testing "creates session with starttls"
@@ -46,4 +47,4 @@
                                                :auth true
                                                :tls "starttls"})]
       (is (some? client))
-      (is (satisfies? sepal.mail.interface.protocols/MailClient client)))))
+      (is (satisfies? mail.p/MailClient client)))))
