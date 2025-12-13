@@ -67,8 +67,9 @@
 (create-ns 'sepal.media.interface)
 (alias 'media.i 'sepal.media.interface)
 
-(defn factory [{:keys [db] :as args}]
+(defn factory [{:keys [db user] :as args}]
   (let [data (-> (mg/generate spec/CreateMedia)
+                 (assoc :created-by (:user/id user))
                  (merge (m/decode spec/CreateMedia args (mt/strip-extra-keys-transformer))))
         result (create! db data)]
     (vary-meta result assoc :db db)))

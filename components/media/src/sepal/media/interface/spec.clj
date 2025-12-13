@@ -15,9 +15,10 @@
    [:media/s3-bucket s3-bucket]
    [:media/s3-key s3-key]
    [:media/title [:maybe title]]
-   [:media/description [:maybe  description]]
+   [:media/description [:maybe description]]
    [:media/size-in-bytes size-in-bytes]
-   [:media/media-type media-type]])
+   [:media/media-type media-type]
+   [:media/created-by pos-int?]])
 
 (def CreateMedia
   [:map {:closed true}
@@ -26,7 +27,8 @@
    [:title {:optional true} [:maybe title]]
    [:description {:optional true} [:maybe description]]
    [:size-in-bytes size-in-bytes]
-   [:media-type media-type]])
+   [:media-type media-type]
+   [:created-by pos-int?]])
 
 (def MediaLink
   [:map {:closed true}

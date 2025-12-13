@@ -6,6 +6,7 @@
 (def password [:string {:min 8}])
 
 (def User
+  ;; Be explicit about which columns to select to avoid selecting the password by default
   [:map {:store/columns [:id :email :full_name]}
    [:user/id id]
    [:user/email email]

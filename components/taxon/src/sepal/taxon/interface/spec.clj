@@ -67,7 +67,6 @@
    [:taxon/wfo-taxon-id [:maybe wfo-plantlist-taxon-id]]
    [:taxon/vernacular-names {:decode/store #(let [vn (when % (json/read-str %))]
                                               (mapv (partial cske/transform-keys csk/->kebab-case-keyword) vn))}
-
     [:* VernacularName]]])
 
 (def CreateTaxon

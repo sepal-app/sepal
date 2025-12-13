@@ -1,25 +1,28 @@
 (ns sepal.media.interface-test
   (:require [clojure.test :as test :refer :all]
+            [integrant.core :as ig]
             [matcher-combinators.test :refer [match?]]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
                                            default-system-fixture]]
             [sepal.media.interface :as media.i]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
 
 (deftest test-create
   (let [db *db*]
     (tf/testing "create!"
-      {}
-      (fn [_]
+      {[::user.i/factory :key/user] {:db db}}
+      (fn [{:keys [user]}]
         (let [data {:s3-bucket "test-bucket"
                     :s3-key "test-key.jpg"
                     :title "Test Image"
                     :description "A test image"
                     :size-in-bytes 1024
-                    :media-type "image/jpeg"}
+                    :media-type "image/jpeg"
+                    :created-by (:user/id user)}
               result (media.i/create! db data)]
           (is (match? {:media/id pos-int?
                        :media/s3-bucket "test-bucket"
@@ -27,7 +30,8 @@
                        :media/title "Test Image"
                        :media/description "A test image"
                        :media/size-in-bytes 1024
-                       :media/media-type "image/jpeg"}
+                       :media/media-type "image/jpeg"
+                       :media/created-by (:user/id user)}
                       result))
           ;; Clean up
           (media.i/delete! db (:media/id result)))))))
@@ -35,8 +39,8 @@
 (deftest test-get-by-id
   (let [db *db*]
     (tf/testing "get-by-id"
-      {[::media.i/factory :key/media]
-       {:db db}}
+      {[::user.i/factory :key/user] {:db db}
+       [::media.i/factory :key/media] {:db db :user (ig/ref :key/user)}}
 
       (fn [{:keys [media]}]
         (testing "returns media when found"
@@ -55,12 +59,13 @@
 (deftest test-delete
   (let [db *db*]
     (tf/testing "delete!"
-      {}
-      (fn [_]
+      {[::user.i/factory :key/user] {:db db}}
+      (fn [{:keys [user]}]
         (let [data {:s3-bucket "test-bucket"
                     :s3-key "delete-test.jpg"
                     :size-in-bytes 512
-                    :media-type "image/jpeg"}
+                    :media-type "image/jpeg"
+                    :created-by (:user/id user)}
               media (media.i/create! db data)
               media-id (:media/id media)]
           ;; Verify it exists
@@ -73,8 +78,8 @@
 (deftest test-link-and-unlink
   (let [db *db*]
     (tf/testing "link! and unlink!"
-      {[::media.i/factory :key/media]
-       {:db db}}
+      {[::user.i/factory :key/user] {:db db}
+       [::media.i/factory :key/media] {:db db :user (ig/ref :key/user)}}
 
       (fn [{:keys [media]}]
         (testing "link! creates a media link"
@@ -91,8 +96,8 @@
 (deftest test-get-link
   (let [db *db*]
     (tf/testing "get-link"
-      {[::media.i/factory :key/media]
-       {:db db}}
+      {[::user.i/factory :key/user] {:db db}
+       [::media.i/factory :key/media] {:db db :user (ig/ref :key/user)}}
 
       (fn [{:keys [media]}]
         (testing "returns nil when no link exists"
@@ -111,14 +116,10 @@
 (deftest test-get-linked
   (let [db *db*]
     (tf/testing "get-linked"
-      {[::taxon.i/factory :key/taxon]
-       {:db db}
-
-       [::media.i/factory :key/media1]
-       {:db db}
-
-       [::media.i/factory :key/media2]
-       {:db db}}
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/taxon] {:db db}
+       [::media.i/factory :key/media1] {:db db :user (ig/ref :key/user)}
+       [::media.i/factory :key/media2] {:db db :user (ig/ref :key/user)}}
 
       (fn [{:keys [taxon media1 media2]}]
         (let [taxon-id (:taxon/id taxon)]

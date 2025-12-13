@@ -55,7 +55,9 @@
                       response)
               (:body response))
           ;; Test that the user is in the session
-          (is (match? user ring-session))
+          (is (match? {:user/id (:user/id user)
+                       :user/email (:user/email user)}
+                      ring-session))
           ;; Eventually redirects to the activity page
           (is (= "Activity"
                  (-> response
