@@ -14,6 +14,7 @@
             [sepal.app.routes.location.core :as location]
             [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
+            [sepal.app.routes.settings.core :as settings]
             [sepal.app.routes.taxon.core :as taxon]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]
@@ -34,7 +35,8 @@
      ["/location" (location/routes)]
      ["/material" (material/routes)]
      ["/taxon" (taxon/routes)]
-     ["/media" (media/routes)]]))
+     ["/media" (media/routes)]
+     ["/settings" (settings/routes)]]))
 
 (defn- build-jdbc-url
   "Build a SQLite JDBC URL with optional pragma query parameters."

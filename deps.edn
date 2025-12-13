@@ -1,94 +1,92 @@
 {:paths []
  :deps {org.clojure/clojure {:mvn/version "1.12.0"}}
- :aliases  {:dev {:extra-paths ["development/src"]
-                  :extra-deps {poly/app-base {:local/root "bases/app"}
+ :aliases {:dev {:extra-paths ["development/src"]
+                 :extra-deps {poly/app-base {:local/root "bases/app"}
 
-                               poly/accession {:local/root "components/accession"}
-                               poly/activity {:local/root "components/activity"}
-                               poly/aws-s3 {:local/root "components/aws-s3"}
-                               poly/collection {:local/root "components/collection"}
-                               poly/config {:local/root "components/config"}
-                               poly/contact {:local/root "components/contact"}
-                               poly/database {:local/root "components/database"}
-                               poly/error {:local/root "components/error"}
-                               poly/location {:local/root "components/location"}
-                               poly/logging {:local/root "components/logging"}
-                               poly/mail {:local/root "components/mail"}
-                               poly/malli {:local/root "components/malli"}
-                               poly/material {:local/root "components/material"}
-                               poly/media {:local/root "components/media"}
-                               poly/store {:local/root "components/store"}
-                               poly/taxon {:local/root "components/taxon"}
-                               poly/test {:local/root "components/test"}
-                               poly/user {:local/root "components/user"}
-                               poly/validation {:local/root "components/validation"}
+                              poly/accession {:local/root "components/accession"}
+                              poly/activity {:local/root "components/activity"}
+                              poly/aws-s3 {:local/root "components/aws-s3"}
+                              poly/collection {:local/root "components/collection"}
+                              poly/config {:local/root "components/config"}
+                              poly/contact {:local/root "components/contact"}
+                              poly/database {:local/root "components/database"}
+                              poly/error {:local/root "components/error"}
+                              poly/location {:local/root "components/location"}
+                              poly/logging {:local/root "components/logging"}
+                              poly/mail {:local/root "components/mail"}
+                              poly/malli {:local/root "components/malli"}
+                              poly/material {:local/root "components/material"}
+                              poly/media {:local/root "components/media"}
+                              poly/settings {:local/root "components/settings"}
+                              poly/store {:local/root "components/store"}
+                              poly/taxon {:local/root "components/taxon"}
+                              poly/test {:local/root "components/test"}
+                              poly/user {:local/root "components/user"}
+                              poly/validation {:local/root "components/validation"}
 
-                               camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
-                               cljfmt/cljfmt {:mvn/version "0.9.2"}
-                               integrant/integrant {:mvn/version "0.10.0"}
-                               metosin/reitit-dev {:mvn/version "0.7.2"}
-                               org.clojure/data.json {:mvn/version "2.4.0"}
-                               org.clojure/tools.cli {:mvn/version "1.0.219"}
-                               org.clojure/tools.deps {:mvn/version "0.20.1440"}
-                               org.clojure/tools.namespace {:mvn/version "1.5.0"}
-                               ring-refresh/ring-refresh {:mvn/version "0.2.0"}}
+                              camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
+                              cljfmt/cljfmt {:mvn/version "0.9.2"}
+                              integrant/integrant {:mvn/version "0.10.0"}
+                              metosin/reitit-dev {:mvn/version "0.7.2"}
+                              org.clojure/data.json {:mvn/version "2.4.0"}
+                              org.clojure/tools.cli {:mvn/version "1.0.219"}
+                              org.clojure/tools.deps {:mvn/version "0.20.1440"}
+                              org.clojure/tools.namespace {:mvn/version "1.5.0"}
+                              ring-refresh/ring-refresh {:mvn/version "0.2.0"}}
 
-                  ;; OmitStackTraceInFastThrow add stacktraces when running in a
-                  ;; repl that might otherwise have been optimized out, see
-                  ;; https://docs.cider.mx/cider/troubleshooting.html#empty-java-stacktraces
-                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
+                 ;; OmitStackTraceInFastThrow add stacktraces when running in a
+                 ;; repl that might otherwise have been optimized out, see
+                 ;; https://docs.cider.mx/cider/troubleshooting.html#empty-java-stacktraces
+                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
 
-            :test {:extra-paths ["bases/app/test"
-                                 "components/accession/test"
-                                 "components/activity/test"
-                                 "components/aws-s3/test"
-                                 "components/collection/test"
-                                 "components/config/test"
-                                 "components/contact/test"
-                                 "components/database/test"
-                                 "components/error/test"
-                                 "components/location/test"
-                                 "components/logging/test"
-                                 "components/mail/test"
-                                 "components/malli/test"
-                                 "components/material/test"
-                                 "components/media/test"
-                                 "components/store/test"
-                                 "components/taxon/test"
-                                 "components/test/test"
-                                 "components/user/test"
-                                 "components/validation/test"]
-                   :extra-deps {poly/test {:local/root "components/test"}
-                                com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
-                                com.gfredericks/test.chuck {:mvn/version "0.2.14"}
-                                lambdaisland/kaocha {:mvn/version "1.89.1380"}
-                                kerodon/kerodon {:mvn/version "0.9.1"}
-                                nubank/matcher-combinators {:mvn/version "3.9.1"}
-                                org.clojure/test.check {:mvn/version "1.1.1"}
-                                org.jsoup/jsoup {:mvn/version "1.18.1"}
-                                peridot/peridot {:mvn/version "0.5.4"}}}
+           :test {:extra-paths ["bases/app/test"
+                                "components/accession/test"
+                                "components/activity/test"
+                                "components/aws-s3/test"
+                                "components/collection/test"
+                                "components/config/test"
+                                "components/contact/test"
+                                "components/database/test"
+                                "components/error/test"
+                                "components/location/test"
+                                "components/logging/test"
+                                "components/mail/test"
+                                "components/malli/test"
+                                "components/material/test"
+                                "components/media/test"
+                                "components/settings/test"
+                                "components/store/test"
+                                "components/taxon/test"
+                                "components/test/test"
+                                "components/user/test"
+                                "components/validation/test"]
+                  :extra-deps {poly/test {:local/root "components/test"}
+                               com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
+                               com.gfredericks/test.chuck {:mvn/version "0.2.14"}
+                               lambdaisland/kaocha {:mvn/version "1.89.1380"}
+                               kerodon/kerodon {:mvn/version "0.9.1"}
+                               nubank/matcher-combinators {:mvn/version "3.9.1"}
+                               org.clojure/test.check {:mvn/version "1.1.1"}
+                               org.jsoup/jsoup {:mvn/version "1.18.1"}
+                               peridot/peridot {:mvn/version "0.5.4"}}}
 
-            ;; E2E test dependencies (Playwright)
-            ;; clojure -M:dev:test:test-e2e:test-runner --focus :e2e
-            :test-e2e {:extra-deps {com.microsoft.playwright/playwright {:mvn/version "1.50.0"}}}
+           ;; E2E test dependencies (Playwright)
+           ;; clojure -M:dev:test:test-e2e:test-runner --focus :e2e
+           :test-e2e {:extra-deps {com.microsoft.playwright/playwright {:mvn/version "1.50.0"}}}
 
-            ;; clojure -M:dev:test:test-runner
-            :test-runner {:main-opts ["-m" "kaocha.runner"]}
+           ;; clojure -M:dev:test:test-runner
+           :test-runner {:main-opts ["-m" "kaocha.runner"]}
 
-            :carve {:extra-deps {io.github.borkdude/carve {:git/url "https://github.com/borkdude/carve"
-                                                           :git/sha "6f0f3bfed7f9615b06e1f285d03def6db9d74e61"}}
-                    :main-opts  ["-m" "carve.main"]}
+           ;; Run clj-kondo.  Also see ./clj-kondo/config.edn for other configuration settings.
+           ;; clojure -M:clj-kondo
+           :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2024.05.24"}}
+                       :main-opts ["-m" "clj-kondo.main"]}
 
-            ;; Run clj-kondo.  Also see ./clj-kondo/config.edn for other configuration settings.
-            ;; clojure -M:clj-kondo
-            :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2024.05.24"}}
-                        :main-opts ["-m" "clj-kondo.main"]}
+           ;; clojure -M:cljfmt check|fix components bases projects
+           :cljfmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
+                    :main-opts ["-m" "cljfmt.main"
+                                "--parallel"
+                                "--no-remove-consecutive-blank-lines"]}
 
-            ;; clojure -M:cljfmt check|fix components bases projects
-            :cljfmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.12.0"}}
-                     :main-opts ["-m" "cljfmt.main"
-                                 "--parallel"
-                                 "--no-remove-consecutive-blank-lines"]}
-
-            :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
-                   :extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}}}}
+           :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
+                  :extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}}}}

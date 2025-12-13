@@ -3,9 +3,18 @@
   (:require [integrant.core :as ig]
             [sepal.app.server] ;; Load Integrant methods
             [sepal.malli.interface]) ;; Load Malli Integrant methods
-  (:import [java.io File]))
+  (:import [java.io File]
+           [java.net ServerSocket]))
 
-(defn- create-test-config []
+(defn- find-available-port
+  "Find an available port by letting the OS assign one"
+  []
+  (with-open [socket (ServerSocket. 0)]
+    (.getLocalPort socket)))
+
+(defonce ^:dynamic *server-port* nil)
+
+(defn- create-test-config [port]
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-e2e-test" ".db"))
         schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")
         extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
@@ -32,10 +41,10 @@
       :request-context {:forgot-password-email-from "support@sepal.app"
                         :forgot-password-email-subject "Sepal - Reset Password"
                         :reset-password-secret "1234"
-                        :app-domain "localhost:3000"}
+                        :app-domain (str "localhost:" port)}
       :cookie-secret "1234567890123456"
-      :port 3000
-      :start-server? true} ;; START THE SERVER for integration tests
+      :port port
+      :start-server? true}
 
      :sepal.database.interface/schema
      {:database-path db-path
@@ -45,34 +54,40 @@
 
 (defn- wait-for-server-ready
   "Wait for server to be ready by polling the health endpoint"
-  [max-attempts]
+  [port max-attempts]
   (loop [attempts 0]
     (if (>= attempts max-attempts)
-      (throw (Exception. "Server failed to start within timeout"))
+      (throw (Exception. (str "Server failed to start on port " port " within timeout")))
       (let [ready? (try
-                     (slurp "http://localhost:3000/ok")
+                     (slurp (str "http://localhost:" port "/ok"))
                      true
                      (catch Exception _e
                        false))]
         (if ready?
-          (println "Server is ready after" attempts "attempts")
+          (println "Server is ready on port" port "after" attempts "attempts")
           (do
             (Thread/sleep 100)
             (recur (inc attempts))))))))
 
 (defn start-server!
-  "Start web server and return system map"
+  "Start web server on a random available port and return system map"
   []
-  (let [config (create-test-config)
+  (let [port (find-available-port)
+        config (create-test-config port)
         system (ig/init config)]
     ;; Wait for server to be ready before returning
-    (wait-for-server-ready 50) ;; 50 attempts * 100ms = 5 seconds max
-    system))
+    (wait-for-server-ready port 50) ;; 50 attempts * 100ms = 5 seconds max
+    (assoc system ::port port)))
 
 (defn stop-server!
   "Stop web server"
   [system]
   (ig/halt! system))
+
+(defn server-url
+  "Get the base URL for the running server"
+  [system]
+  (str "http://localhost:" (::port system)))
 
 (defn with-server
   "Fixture to start/stop server around tests"

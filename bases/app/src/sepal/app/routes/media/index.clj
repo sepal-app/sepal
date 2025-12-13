@@ -64,8 +64,13 @@
         media (->> (db.i/execute! db {:select :*
                                       :from :media
                                       :limit page-size
+                                      ;; TODO: join by activity to get the timestamp for ordering...or just add the timestamp back
+                                      ;; :join [[:activity :a]
+                                      ;;        [:and ]
+                                      ;;        [:= :type "media"]]
                                       :offset offset
-                                      :order-by [[:created-at :desc]]})
+                                      ;; :order-by [[:created-at :desc]]
+                                      })
                    (mapv #(assoc %
                                  :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
 

@@ -89,20 +89,19 @@
   (field :errors errors
          :name name
          :label label
-         :input  [:textarea {:autocomplete "off"
-                             :name name
-                             :id id
-                             :required (or required false)
-                             :class "textarea textarea-bordered w-full"}
-                  value]))
+         :input [:textarea {:autocomplete "off"
+                            :name name
+                            :id id
+                            :required (or required false)
+                            :class "textarea textarea-bordered w-full"}
+                 value]))
 
 (defn submit-button
   ([children]
    (submit-button {} children))
   ([attrs children]
    [:button (merge {:type "submit"
-                    :class "btn btn-primary"
-                    :x-bind:disabled "$refs?.form && !$validate.isComplete($refs.form)"}
+                    :x-bind:disabled "!dirty || !valid"}
                    attrs)
     children]))
 

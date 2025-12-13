@@ -20,5 +20,8 @@
 (defn verify-password [db email password]
   (core/verify-password db email password))
 
+(defn update! [db id data]
+  (core/update! db id data))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

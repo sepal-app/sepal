@@ -4,7 +4,8 @@ CREATE TABLE "user" (
   avatar_public_id text,
   email text not null unique,
   password text not null unique,
-  email_verified_at text default null
+  email_verified_at text default null,
+  full_name text
 ) strict;
 CREATE TABLE taxon (
   id integer primary key autoincrement,
@@ -113,9 +114,8 @@ CREATE TABLE activity (
   created_at text not null default (datetime('now'))
 ) strict;
 CREATE TABLE settings (
-  key text not null,
-  value text,
-  user_id integer references "user"(id)
+  key text not null unique,
+  value text
 ) strict;
 CREATE TABLE contact (
   id integer primary key autoincrement,

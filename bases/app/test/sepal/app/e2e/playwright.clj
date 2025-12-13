@@ -11,7 +11,7 @@
   (case (System/getenv "PLAYWRIGHT_BROWSER")
     "firefox" (.firefox playwright)
     "webkit" (.webkit playwright)
-    (.chromium playwright)))  ;; default to chromium
+    (.chromium playwright))) ;; default to chromium
 
 (defn start-browser!
   "Create Playwright instance, launch browser in headless mode, and return browser context.
@@ -63,9 +63,13 @@
    (.press *page* selector key)))
 
 (defn fill
-  "Fill input field with value"
+  "Fill input field with value and dispatch input event for Alpine.js"
   [selector value]
-  (.fill *page* selector value))
+  (.fill *page* selector value)
+  ;; Dispatch input event to ensure Alpine.js form-state picks up the change
+  (.dispatchEvent (.locator *page* selector)
+                  "input"
+                  (java.util.HashMap.)))
 
 (defn select-option
   "Select option(s) in a dropdown by value"
@@ -126,3 +130,15 @@
   "Get current page URL"
   []
   (.url *page*))
+
+(defn wait-for-enabled
+  "Wait for element to be enabled (not disabled)"
+  ([selector]
+   (wait-for-enabled selector 5000))
+  ([selector timeout-ms]
+   ;; Use waitForFunction to wait until the element is not disabled
+   (.waitForFunction *page*
+                     (str "() => { const el = document.querySelector('" selector "'); return el && !el.disabled; }")
+                     nil
+                     (doto (com.microsoft.playwright.Page$WaitForFunctionOptions.)
+                       (.setTimeout (double timeout-ms))))))

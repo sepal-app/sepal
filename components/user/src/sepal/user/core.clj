@@ -52,13 +52,18 @@
                    spec/User))
 
 (defn verify-password [db email password]
-  (when-let [user (->> {:select [:id :email :password]
+  (when-let [user (->> {:select [:id :email :password :full_name]
                         :from :user
                         :where [:= :email email]}
                        (db.i/execute-one! db))]
     (when (-> (Password/check password (:user/password user))
               (.withScrypt))
-      (store.i/coerce spec/User (dissoc user :password)))))
+      (store.i/coerce spec/User (dissoc user :user/password)))))
+
+(defn update!
+  "Update user (full_name, email)."
+  [db id data]
+  (store.i/update! db :user id data spec/UpdateUser spec/User))
 
 (create-ns 'sepal.user.interface)
 (alias 'user.i 'sepal.user.interface)

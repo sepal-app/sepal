@@ -8,6 +8,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
@@ -46,6 +47,73 @@
   [:div {:class "px-4 sm:px-6 lg:px-8 w-full"}
    children])
 
+(defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
+  [:nav {:class "navbar w-full bg-base-200"}
+   [:div {:class "w-full flex flex-row justify-between items-center"}
+    [:div {:class "flex flex-row"}
+     [:label {:for "sidebar-drawer-toggle",
+              :aria-label "open sidebar",
+              :class "btn btn-square btn-ghost"}
+      ;; (comment "Sidebar toggle icon")
+      (sidebar-toggle-icon)]
+     (when breadcrumbs
+       [:div {:class "breadcrumbs t-[-3px] ml-4"}
+        [:ul
+         (for [item (butlast breadcrumbs)]
+           [:li item])
+         [:li [:span {:class "font-semibold text-xl"}
+               (last breadcrumbs)]]]])]
+
+    [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
+     page-title-buttons]]])
+
+(defn sidebar []
+  [:div {:class "drawer-side is-drawer-close:overflow-visible"}
+   [:label {:for "sidebar-drawer-toggle",
+            :aria-label "close sidebar",
+            :class "drawer-overlay"}]
+   [:div {:class
+          "flex min-h-full flex-col items-start bg-base-300 is-drawer-close:w-16 is-drawer-open:w-64"}
+    ;; (comment "Sidebar content here")
+    [:ul {:class "menu w-full grow flex flex-col justify-between"}
+     ;; (comment "List item")
+     [:div
+      (sidebar-item ;;"Activity"
+        :label "Activity"
+        :href (z/url-for activity.routes/index)
+        :icon (heroicons/outline-clock)
+        :current? false)
+      (sidebar-item :label "Accessions"
+                    :href (z/url-for accession.routes/index)
+                    :icon (heroicons/outline-rectangle-group)
+                    :current? false)
+      (sidebar-item :label "Material"
+                    :href (z/url-for material.routes/index)
+                    :icon (heroicons/outline-tag)
+                    :current? false)
+      (sidebar-item :label "Taxa"
+                    :href (z/url-for taxon.routes/index)
+                    :icon (bootstrap/flower1)
+                    :current? false)
+      (sidebar-item :label "Locations"
+                    :href (z/url-for location.routes/index)
+                    :icon (heroicons/outline-map-pin)
+                    :current? false)
+      (sidebar-item :label "Media"
+                    :href (z/url-for media.routes/index)
+                    :icon (heroicons/outline-photo)
+                    :current? false)
+      (sidebar-item :label "Contacts"
+                    :href (z/url-for contact.routes/index)
+                    :icon (lucide/contact-round)
+                    :current? false)]
+
+     [:div {:class ""}
+      (sidebar-item :label "Settings"
+                    :href (z/url-for settings.routes/profile)
+                    :icon (lucide/settings)
+                    :current? false)]]]])
+
 (defn page [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
   (base/html
     [:div (merge {:x-data true} attrs)
@@ -58,26 +126,8 @@
                ;; :checked "checked"
                }]
       [:div {:class "drawer-content"}
-       ;; (comment "Navbar")
-       [:nav {:class "navbar w-full bg-base-200"}
-        [:div {:class "w-full flex flex-row justify-between items-center"}
-         [:div {:class "flex flex-row"}
-          [:label {:for "sidebar-drawer-toggle",
-                   :aria-label "open sidebar",
-                   :class "btn btn-square btn-ghost"}
-           ;; (comment "Sidebar toggle icon")
-           (sidebar-toggle-icon)]
-          (when breadcrumbs
-            [:div {:class "breadcrumbs t-[-3px] ml-4"}
-             [:ul
-              (for [item (butlast breadcrumbs)]
-                [:li item])
-              [:li [:span {:class "font-semibold text-xl"}
-                    (last breadcrumbs)]]]])]
-
-         [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
-          page-title-buttons]]]
-
+       (navbar :breadcrumbs breadcrumbs
+               :page-title-buttons page-title-buttons)
        [:main
         (page-inner
           [:div {:class "mt-8"}
@@ -100,53 +150,4 @@
         [:script {:type "module"
                   :src (html/static-url "app/ui/page.ts")}]]]
 
-      [:div {:class "drawer-side is-drawer-close:overflow-visible"}
-       [:label {:for "sidebar-drawer-toggle",
-                :aria-label "close sidebar",
-                :class "drawer-overlay"}]
-       [:div {:class
-              "flex min-h-full flex-col items-start bg-base-300 is-drawer-close:w-16 is-drawer-open:w-64"}
-        ;; (comment "Sidebar content here")
-        [:ul {:class "menu w-full grow flex flex-col justify-between"}
-         ;; (comment "List item")
-         [:div
-          (sidebar-item ;;"Activity"
-            :label "Activity"
-            :href (z/url-for activity.routes/index)
-            :icon (heroicons/outline-clock)
-            :current? false)
-          (sidebar-item :label "Accessions"
-                        :href (z/url-for accession.routes/index)
-                        :icon (heroicons/outline-rectangle-group)
-                        :current? false)
-          (sidebar-item :label "Material"
-                        :href (z/url-for material.routes/index)
-                        :icon (heroicons/outline-tag)
-                        :current? false)
-          (sidebar-item :label "Taxa"
-                        :href (z/url-for taxon.routes/index)
-                        :icon (bootstrap/flower1)
-                        :current? false)
-          (sidebar-item :label "Locations"
-                        :href (z/url-for location.routes/index)
-                        :icon (heroicons/outline-map-pin)
-                        :current? false)
-          (sidebar-item :label "Media"
-                        :href (z/url-for media.routes/index)
-                        :icon (heroicons/outline-photo)
-                        :current? false)
-          (sidebar-item :label "Contacts"
-                        :href (z/url-for contact.routes/index)
-                        :icon (lucide/contact-round)
-                        :current? false)]
-
-         [:div {:class ""}
-          (sidebar-item :label "Profile"
-                        :href  "#"
-                        :icon (if (:avatar-s3-key g/*viewer*)
-                                [:img {:class "h-8 w-8 rounded-full"
-                                       :src "{{ current_user.avatar_url(50)|default('', true)}}"
-                                       :alt ""}]
-                                (heroicons/user-circle ;;:size 32
-                                  ))
-                        :current? false)]]]]]]))
+      (sidebar)]]))

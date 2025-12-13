@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     rlwrap \
+    sqlite3 \
+    libsqlite3-mod-spatialite \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22.x (required by package.json engines)

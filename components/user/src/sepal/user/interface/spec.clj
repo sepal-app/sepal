@@ -6,9 +6,10 @@
 (def password [:string {:min 8}])
 
 (def User
-  [:map {:store/columns [:id :email]}
+  [:map {:store/columns [:id :email :full_name]}
    [:user/id id]
-   [:user/email email]])
+   [:user/email email]
+   [:user/full-name [:maybe :string]]])
 
 (def CreateUser
   [:map
@@ -19,3 +20,8 @@
 (def SetPassword
   [:map
    [:password password]])
+
+(def UpdateUser
+  [:map
+   [:full_name [:maybe :string]]
+   [:email email]])

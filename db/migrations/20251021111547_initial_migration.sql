@@ -8,7 +8,8 @@ create table "user" (
   avatar_public_id text,
   email text not null unique,
   password text not null unique,
-  email_verified_at text default null
+  email_verified_at text default null,
+  full_name text
 ) strict;
 
 create index user_id_idx on "user" (id);
@@ -171,9 +172,8 @@ create index activity_created_at_idx on activity (created_at desc);
 -- SETTINGS TABLE
 -- ============================================================================
 create table settings (
-  key text not null,
-  value text,
-  user_id integer references "user"(id)
+  key text not null unique,
+  value text
 ) strict;
 
 -- ============================================================================
