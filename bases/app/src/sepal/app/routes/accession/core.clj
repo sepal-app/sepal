@@ -6,7 +6,6 @@
             [sepal.app.routes.accession.detail.collection :as detail-collection]
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
-            [sepal.app.routes.accession.detail.source :as detail-source]
             [sepal.app.routes.accession.index :as index]
             [sepal.app.routes.accession.routes :as routes]))
 
@@ -33,7 +32,5 @@
                   :handler #'detail-general/handler}]
     ["/collection/" {:name routes/detail-collection
                      :handler #'detail-collection/handler}]
-    ["/source/" {:name routes/detail-source
-                 :handler #'detail-source/handler}]
     ["/media/" {:name routes/detail-media
                 :handler #'detail-media/handler}]]])
