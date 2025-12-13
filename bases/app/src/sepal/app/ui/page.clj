@@ -1,6 +1,5 @@
 (ns sepal.app.ui.page
   (:require [sepal.app.flash :as flash]
-            [sepal.app.globals :as g]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.activity.routes :as activity.routes]
