@@ -2,11 +2,13 @@
   (:require [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
+            [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
             [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
@@ -30,10 +32,17 @@
                        :read-only read-only?
                        :values values)])])
 
-(defn render [& {:keys [errors taxon values]}]
-  (page/page :content (page-content :errors errors
-                                    :taxon taxon
-                                    :values values)
+(defn render [& {:keys [errors taxon values panel-data]}]
+  (page/page :content (pages.detail/page-content-with-panel
+                        :content (page-content :errors errors
+                                               :taxon taxon
+                                               :values values)
+                        :panel-content (taxon.panel/panel-content
+                                         :taxon (:taxon panel-data)
+                                         :parent (:parent panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs (taxon.shared/breadcrumbs taxon)
              :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
              :page-title-buttons (page-title-buttons)))
@@ -68,6 +77,8 @@
                     :author (:taxon/author resource)
                     :parent-id (:taxon/id parent)
                     :parent-name (:taxon/name parent)
-                    :vernacular-names (:taxon/vernacular-names resource)}]
+                    :vernacular-names (:taxon/vernacular-names resource)}
+            panel-data (taxon.panel/fetch-panel-data db resource)]
         (render :taxon resource
-                :values values)))))
+                :values values
+                :panel-data panel-data)))))

@@ -12,27 +12,27 @@
     "Save"]])
 
 (defn form [& {:keys [action errors values]}]
-  (ui.page/page-inner
-    (form/form
-      {:id "location-form"
-       :hx-post action
-       :hx-swap "none"
-       :x-on:location-form:submit.window "$el.requestSubmit()"
-       :x-on:location-form:reset.window "$el.reset()"}
-      [(form/anti-forgery-field)
-       (form/input-field :label "Name"
-                         :name "name"
-                         :required true
-                         :value (:name values)
-                         :errors (:name errors))
+  [:div
+   (form/form
+     {:id "location-form"
+      :hx-post action
+      :hx-swap "none"
+      :x-on:location-form:submit.window "$el.requestSubmit()"
+      :x-on:location-form:reset.window "$el.reset()"}
+     [(form/anti-forgery-field)
+      (form/input-field :label "Name"
+                        :name "name"
+                        :required true
+                        :value (:name values)
+                        :errors (:name errors))
 
-       (form/input-field :label "Code"
-                         :name "code"
-                         :required true
-                         :value (:code values)
-                         :errors (:code errors))
+      (form/input-field :label "Code"
+                        :name "code"
+                        :required true
+                        :value (:code values)
+                        :errors (:code errors))
 
-       (form/textarea-field :label "Description"
-                            :name "description"
-                            :value (:description values)
-                            :errors (:description errors))])))
+      (form/textarea-field :label "Description"
+                           :name "description"
+                           :value (:description values)
+                           :errors (:description errors))])])

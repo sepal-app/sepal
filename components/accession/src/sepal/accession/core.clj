@@ -4,6 +4,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.core :as core]
             [sepal.accession.interface.spec :as spec]
+            [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]))
 
 (defn get-by-id [db id]
@@ -14,6 +15,20 @@
 
 (defn update! [db id data]
   (store.i/update! db :accession id data spec/UpdateAccession spec/Accession))
+
+(defn count-by-taxon-id
+  "Count accessions for a given taxon."
+  [db taxon-id]
+  (db.i/count db {:select [:id]
+                  :from [:accession]
+                  :where [:= :taxon_id taxon-id]}))
+
+(defn count-by-supplier-contact-id
+  "Count accessions for a given supplier contact."
+  [db contact-id]
+  (db.i/count db {:select [:id]
+                  :from [:accession]
+                  :where [:= :supplier_contact_id contact-id]}))
 
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)

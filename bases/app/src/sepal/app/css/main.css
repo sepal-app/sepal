@@ -43,3 +43,8 @@ td {
         text-decoration: underline;
     }
 }
+
+/* Hide elements with x-cloak until Alpine.js initializes */
+[x-cloak] {
+    display: none !important;
+}

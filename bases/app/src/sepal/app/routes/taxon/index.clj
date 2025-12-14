@@ -19,23 +19,41 @@
     :cell (fn [t]
             [:a {:href (z/url-for taxon.routes/detail
                                   {:id (:taxon/id t)})
-                 :class "spl-link"}
+                 :class "spl-link"
+                 :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
              (:taxon/name t)])}
    {:name "Author"
     :cell :taxon/author}
    {:name "Rank"
     :cell :taxon/rank}
    {:name "Parent"
-    :cell (fn [t] [:a {:href (z/url-for taxon.routes/detail
-                                        {:id (:taxon/parent-id t)})
-                       :class "spl-link"}
-                   (:taxon/parent-name t)])}])
+    :cell (fn [t]
+            (when (:taxon/parent-id t)
+              [:a {:href (z/url-for taxon.routes/detail
+                                    {:id (:taxon/parent-id t)})
+                   :class "spl-link"
+                   :x-on:click.stop ""} ; Stop propagation
+               (:taxon/parent-name t)]))}])
+
+(defn- row-attrs
+  "Generate attributes for a table row to enable panel preview."
+  [row]
+  (let [id (:taxon/id row)
+        panel-url (z/url-for taxon.routes/panel {:id id})]
+    {:class "hover:bg-base-200 cursor-pointer"
+     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
+     :x-on:click (str "selectedId = " id "; panelOpen = true")
+     :hx-get panel-url
+     :hx-target (str "#" pages.list/panel-container-id)
+     :hx-swap "innerHTML"
+     :hx-push-url "false"}))
 
 (defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
-                  :rows rows)
+                  :rows rows
+                  :row-attrs row-attrs)
      (table/paginator :current-page page
                       :href href
                       :page-size page-size
@@ -43,7 +61,7 @@
 
 (defn render [& {:keys [href page page-size rows total]}]
   (ui.page/page
-    :content (pages.list/page-content
+    :content (pages.list/page-content-with-panel
                :content (table :href href
                                :page page
                                :page-size page-size
@@ -76,13 +94,13 @@
   (let [{:keys [db]} context
         {:keys [accessions-only page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
-        columns (cond->  [[:t.id :id]
-                          [:t.name :name]
-                          [:t.rank :rank]
-                          [:t.author :author]
-                          [:t.parent_id :parent-id]
-                          [:p.name :parent_name]
-                          [:t.wfo_taxon_id :wfo_taxon_id]]
+        columns (cond-> [[:t.id :id]
+                         [:t.name :name]
+                         [:t.rank :rank]
+                         [:t.author :author]
+                         [:t.parent_id :parent-id]
+                         [:p.name :parent_name]
+                         [:t.wfo_taxon_id :wfo_taxon_id]]
                   (seq q) (conj [:fts.rank :search-rank]))
         stmt {:select columns
               :from [[:taxon :t]]

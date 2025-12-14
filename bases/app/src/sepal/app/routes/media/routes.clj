@@ -5,3 +5,5 @@
 (def index ::index)
 (def s3 ::s3)
 (def uploaded ::uploaded)
+
+(def panel ::panel)

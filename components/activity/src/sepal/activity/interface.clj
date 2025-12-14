@@ -8,6 +8,7 @@
             [malli.experimental.time :as met]
             [malli.registry :as mr]
             [malli.util :as mu]
+            [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]))
 
 (defmulti data-schema (fn [type] type))
@@ -72,3 +73,53 @@
                                        (keys (methods data-schema)))
                                  {:registry registry})]
     (store.i/create! db :activity activity CreateActivity Activity)))
+
+(defn- resource-id-json-path
+  "Returns the JSON path for extracting a resource ID from activity data.
+   E.g., :taxon -> '$.taxon-id'"
+  [resource-type]
+  (str "$." (name resource-type) "-id"))
+
+(defn get-by-resource
+  "Get activities for a specific resource.
+   Returns activities with user info, ordered by created_at desc.
+
+   Options:
+   - :resource-type - Keyword like :taxon, :accession, :material, :location
+   - :resource-id   - The resource's ID
+   - :limit         - Max activities to return (default 10)
+   - :offset        - Offset for pagination (default 0)"
+  [db & {:keys [resource-type resource-id limit offset]
+         :or {limit 10 offset 0}}]
+  (let [json-path (resource-id-json-path resource-type)]
+    (->> (db.i/execute! db {:select [:a.* :u.id :u.email]
+                            :from [[:activity :a]]
+                            :join [[:user :u] [:= :u.id :a.created_by]]
+                            :where [:= [[:cast [:->> :a.data json-path] :integer]]
+                                    resource-id]
+                            :order-by [[:a.created_at :desc]]
+                            :limit limit
+                            :offset offset})
+         (mapv (fn [row]
+                 (let [;; Extract user fields before decoding activity
+                       user {:user/id (:user/id row)
+                             :user/email (:user/email row)}
+                       ;; Keep only activity fields for decoding
+                       activity-row (select-keys row [:activity/id :activity/type
+                                                      :activity/data :activity/created-at
+                                                      :activity/created-by])]
+                   (-> (m/decode Activity activity-row store.i/transformer)
+                       (assoc :activity/user user))))))))
+
+(defn count-by-resource
+  "Count activities for a specific resource.
+
+   Options:
+   - :resource-type - Keyword like :taxon, :accession, :material, :location
+   - :resource-id   - The resource's ID"
+  [db & {:keys [resource-type resource-id]}]
+  (let [json-path (resource-id-json-path resource-type)]
+    (db.i/count db {:select [:id]
+                    :from [:activity]
+                    :where [:= [[:cast [:->> :data json-path] :integer]]
+                            resource-id]})))

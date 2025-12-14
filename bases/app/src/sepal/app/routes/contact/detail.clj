@@ -2,9 +2,11 @@
   (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
+            [sepal.app.routes.contact.panel :as contact.panel]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.database.interface :as db.i]
@@ -17,10 +19,16 @@
                      :errors errors
                      :values values))
 
-(defn render [& {:keys [errors contact values]}]
-  (page/page :content (page-content :errors errors
-                                    :contact contact
-                                    :values values)
+(defn render [& {:keys [errors contact values panel-data]}]
+  (page/page :content (pages.detail/page-content-with-panel
+                        :content (page-content :errors errors
+                                               :contact contact
+                                               :values values)
+                        :panel (contact.panel/panel-content
+                                 :contact (:contact panel-data)
+                                 :stats (:stats panel-data)
+                                 :activities (:activities panel-data)
+                                 :activity-count (:activity-count panel-data)))
              :footer (ui.form/footer :buttons (contact.form/footer-buttons))
              :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
                            (:contact/name contact)]))
@@ -67,5 +75,7 @@
             (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
                 (flash/success "Contact updated successfully")))))
 
-      (render :contact resource
-              :values values))))
+      (let [panel-data (contact.panel/fetch-panel-data db resource)]
+        (render :contact resource
+                :values values
+                :panel-data panel-data)))))

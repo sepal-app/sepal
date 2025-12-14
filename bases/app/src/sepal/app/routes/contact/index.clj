@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.index
   (:require [lambdaisland.uri :as uri]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.ui.page :as ui.page]
@@ -15,11 +16,24 @@
        :href (z/url-for contact.routes/new)}
    "Create"])
 
+(defn row-attrs
+  "Generate HTMX attributes for clickable table rows that open the preview panel."
+  [contact]
+  (let [id (:contact/id contact)]
+    {:class (html/attr "cursor-pointer" "hover:bg-base-200")
+     :hx-get (z/url-for contact.routes/panel {:id id})
+     :hx-target "#preview-panel-content"
+     :hx-swap "innerHTML"
+     :hx-push-url "false"
+     :x-on:click "panelOpen = true"
+     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")}))
+
 (defn table-columns []
   [{:name "Name"
     :cell (fn [l] [:a {:href (z/url-for contact.routes/detail
                                         {:id (:contact/id l)})
-                       :class "spl-link"}
+                       :class "spl-link"
+                       :x-on:click.stop ""}
                    (:contact/name l)])}
    {:name "Business"
     :cell :contact/business}
@@ -32,7 +46,8 @@
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
-                  :rows rows)
+                  :rows rows
+                  :row-attrs row-attrs)
      (table/paginator :current-page page-num
                       :href href
                       :page-size page-size
@@ -40,13 +55,12 @@
 
 (defn render [& {:keys [href page-num page-size rows total]}]
   (ui.page/page
-    :content (pages.list/page-content
+    :content (pages.list/page-content-with-panel
                :content (table :href href
                                :page-num page-num
                                :page-size page-size
                                :rows rows
                                :total total)
-
                :table-actions (pages.list/search-field (-> href uri/query-map :q)))
     :breadcrumbs ["Contacts"]
     :page-title-buttons (create-button)))

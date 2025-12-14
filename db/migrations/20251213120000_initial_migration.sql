@@ -272,6 +272,28 @@ create table activity (
 create index activity_id_idx on activity (id);
 create index activity_created_at_idx on activity (created_at desc);
 
+-- Functional indexes for querying activity by resource ID in JSON data
+-- These enable efficient lookups for resource panel activity feeds
+create index activity_taxon_id_idx
+  on activity (cast(json_extract(data, '$.taxon-id') as integer))
+  where json_extract(data, '$.taxon-id') is not null;
+
+create index activity_accession_id_idx
+  on activity (cast(json_extract(data, '$.accession-id') as integer))
+  where json_extract(data, '$.accession-id') is not null;
+
+create index activity_material_id_idx
+  on activity (cast(json_extract(data, '$.material-id') as integer))
+  where json_extract(data, '$.material-id') is not null;
+
+create index activity_location_id_idx
+  on activity (cast(json_extract(data, '$.location-id') as integer))
+  where json_extract(data, '$.location-id') is not null;
+
+create index activity_contact_id_idx
+  on activity (cast(json_extract(data, '$.contact-id') as integer))
+  where json_extract(data, '$.contact-id') is not null;
+
 -- ============================================================================
 -- SETTINGS TABLE (key-value store - no timestamps)
 -- ============================================================================

@@ -5,9 +5,11 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
+            [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -35,13 +37,21 @@
              :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]])
 
-(defn render [& {:keys [errors org accession supplier taxon values]}]
-  (page/page :content (page-content :errors errors
-                                    :org org
-                                    :accession accession
-                                    :supplier supplier
-                                    :taxon taxon
-                                    :values values)
+(defn render [& {:keys [errors org accession supplier taxon values panel-data]}]
+  (page/page :content (pages.detail/page-content-with-panel
+                        :content (page-content :errors errors
+                                               :org org
+                                               :accession accession
+                                               :supplier supplier
+                                               :taxon taxon
+                                               :values values)
+                        :panel-content (accession.panel/panel-content
+                                         :accession (:accession panel-data)
+                                         :taxon (:taxon panel-data)
+                                         :supplier (:supplier panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs (accession.shared/breadcrumbs taxon accession)
              :footer (ui.form/footer :buttons (footer-buttons))))
 
@@ -89,8 +99,10 @@
               (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
               (http/validation-errors (validation.i/humanize saved))))))
 
-      (render :org organization
-              :accession resource
-              :supplier supplier
-              :taxon taxon
-              :values values))))
+      (let [panel-data (accession.panel/fetch-panel-data db resource)]
+        (render :org organization
+                :accession resource
+                :supplier supplier
+                :taxon taxon
+                :values values
+                :panel-data panel-data)))))

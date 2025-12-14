@@ -4,10 +4,12 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
+            [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.media.interface :as media.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -50,12 +52,20 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [page page-size media accession taxon]}]
+(defn render [& {:keys [page page-size media accession taxon panel-data]}]
   (ui.page/page :page-title-buttons (title-buttons)
-                :content (ui.page/page-inner (page-content :page page
-                                                           :page-size page-size
-                                                           :media media
-                                                           :accession accession))
+                :content (pages.detail/page-content-with-panel
+                           :content (page-content :page page
+                                                  :page-size page-size
+                                                  :media media
+                                                  :accession accession)
+                           :panel-content (accession.panel/panel-content
+                                            :accession (:accession panel-data)
+                                            :taxon (:taxon panel-data)
+                                            :supplier (:supplier panel-data)
+                                            :stats (:stats panel-data)
+                                            :activities (:activities panel-data)
+                                            :activity-count (:activity-count panel-data)))
                 :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (def Params
@@ -87,8 +97,10 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :media media
-              :page 1
-              :page-size page-size
-              :accession resource
-              :taxon taxon))))
+      (let [panel-data (accession.panel/fetch-panel-data db resource)]
+        (render :media media
+                :page 1
+                :page-size page-size
+                :accession resource
+                :taxon taxon
+                :panel-data panel-data)))))

@@ -47,3 +47,17 @@
           (is (m/validate acc.spec/Accession result))
           (is (match? {:accession/taxon-id (:taxon/id taxon)}
                       result)))))))
+
+(deftest test-count-by-taxon-id
+  (let [db *db*]
+    (tf/testing "count-by-taxon-id returns 0 for taxon with no accessions"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (is (= 0 (acc.i/count-by-taxon-id db (:taxon/id taxon))))))
+
+    (tf/testing "count-by-taxon-id returns correct count"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc1] {:db db :taxon (ig/ref :key/taxon)}
+       [::acc.i/factory :key/acc2] {:db db :taxon (ig/ref :key/taxon)}}
+      (fn [{:keys [taxon]}]
+        (is (= 2 (acc.i/count-by-taxon-id db (:taxon/id taxon))))))))

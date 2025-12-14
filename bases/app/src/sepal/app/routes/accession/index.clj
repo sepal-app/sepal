@@ -16,23 +16,39 @@
        :href (z/url-for accession.routes/new)}
    "Create"])
 
+(defn- row-attrs
+  "Generate attributes for a table row to enable panel preview."
+  [row]
+  (let [id (:accession/id row)
+        panel-url (z/url-for accession.routes/panel {:id id})]
+    {:class "hover:bg-base-200 cursor-pointer"
+     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
+     :x-on:click (str "selectedId = " id "; panelOpen = true")
+     :hx-get panel-url
+     :hx-target (str "#" pages.list/panel-container-id)
+     :hx-swap "innerHTML"
+     :hx-push-url "false"}))
+
 (defn table-columns []
   [{:name "Code"
     :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
                                           {:id (:accession/id row)})
-                         :class "spl-link"}
+                         :class "spl-link"
+                         :x-on:click.stop ""}
                      (:accession/code row)])}
    {:name "Taxon"
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
                                           {:id (:taxon/id row)})
-                         :class "spl-link"}
+                         :class "spl-link"
+                         :x-on:click.stop ""}
                      (:taxon/name row)])}])
 
 (defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
-                  :rows rows)
+                  :rows rows
+                  :row-attrs row-attrs)
      (table/paginator :current-page page
                       :href href
                       :page-size page-size
@@ -40,7 +56,7 @@
 
 (defn render [& {:keys [href page page-size rows taxon total]}]
   (ui.page/page
-    :content (pages.list/page-content
+    :content (pages.list/page-content-with-panel
                :content (table :href href
                                :page page
                                :page-size page-size
@@ -62,7 +78,7 @@
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]
-   [:taxon-id  {:min 0} :int]])
+   [:taxon-id {:min 0} :int]])
 
 (defn handler [& {:keys [::z/context headers query-params uri]}]
   (let [{:keys [db]} context

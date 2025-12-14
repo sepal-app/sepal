@@ -7,8 +7,9 @@
 
   columns: A list of map with keys :name and :cell
   rows: A list of data. Each row is passed to (:cell column)
-  "
-  [& {:keys [columns rows]}]
+  row-attrs: Optional function (row) -> attrs map for each <tr> element.
+             Use this to add click handlers, HTMX attributes, etc."
+  [& {:keys [columns rows row-attrs]}]
   [:table {:class "min-w-full border-separate"
            :style {:border-spacing 0}}
    [:thead {:class "bg-base-200"}
@@ -19,7 +20,7 @@
         (:name col)])]]
    [:tbody {:class "bg-base-100"}
     (for [row rows]
-      [:tr
+      [:tr (when row-attrs (row-attrs row))
        (for [col columns]
          [:td {:class "whitespace-nowrap border-b border-base-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8"}
           ((:cell col) row)])])]])

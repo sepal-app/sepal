@@ -7,6 +7,7 @@
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
             [sepal.app.routes.accession.index :as index]
+            [sepal.app.routes.accession.panel :as panel]
             [sepal.app.routes.accession.routes :as routes]))
 
 (def accession-loader
@@ -33,4 +34,6 @@
     ["/collection/" {:name routes/detail-collection
                      :handler #'detail-collection/handler}]
     ["/media/" {:name routes/detail-media
-                :handler #'detail-media/handler}]]])
+                :handler #'detail-media/handler}]
+    ["/panel/" {:name routes/panel
+                :handler #'panel/handler}]]])

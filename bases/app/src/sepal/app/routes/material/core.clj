@@ -5,6 +5,7 @@
             [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.routes.material.detail.media :as detail-media]
             [sepal.app.routes.material.index :as index]
+            [sepal.app.routes.material.panel :as panel]
             [sepal.app.routes.material.routes :as routes]
             [sepal.material.interface :as material.i]))
 
@@ -29,4 +30,6 @@
     ["/general/" {:name routes/detail-general
                   :handler #'detail-general/handler}]
     ["/media/" {:name routes/detail-media
-                :handler #'detail-media/handler}]]])
+                :handler #'detail-media/handler}]
+    ["/panel/" {:name routes/panel
+                :handler #'panel/handler}]]])

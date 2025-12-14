@@ -5,10 +5,12 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.material.detail.shared :as material.shared]
+            [sepal.app.routes.material.panel :as material.panel]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.media.interface :as media.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -51,12 +53,20 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [accession page page-size media material taxon]}]
+(defn render [& {:keys [accession page page-size media material taxon panel-data]}]
   (ui.page/page
-    :content (ui.page/page-inner (page-content :page page
-                                               :page-size page-size
-                                               :media media
-                                               :material material))
+    :content (pages.detail/page-content-with-panel
+               :content (page-content :page page
+                                      :page-size page-size
+                                      :media media
+                                      :material material)
+               :panel-content (material.panel/panel-content
+                                :material (:material panel-data)
+                                :accession (:accession panel-data)
+                                :taxon (:taxon panel-data)
+                                :location (:location panel-data)
+                                :activities (:activities panel-data)
+                                :activity-count (:activity-count panel-data)))
     :breadcrumbs (material.shared/breadcrumbs :accession accession
                                               :material material
                                               :taxon taxon)
@@ -92,9 +102,11 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :accession accession
-              :media media
-              :page 1
-              :page-size page-size
-              :material resource
-              :taxon taxon))))
+      (let [panel-data (material.panel/fetch-panel-data db resource)]
+        (render :accession accession
+                :media media
+                :page 1
+                :page-size page-size
+                :material resource
+                :taxon taxon
+                :panel-data panel-data)))))

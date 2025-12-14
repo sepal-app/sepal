@@ -136,3 +136,92 @@
               (is (every? #(= test-activity-type (:activity/type %)) activities))))
           (finally
             (jdbc.sql/delete! db :activity {:created_by user-id})))))))
+
+;; Define a taxon activity type for testing resource queries
+(def test-taxon-activity-type :test-taxon/activity)
+
+(def TestTaxonActivityData
+  [:map
+   [:taxon-id pos-int?]])
+
+(defmethod activity.i/data-schema test-taxon-activity-type [_]
+  TestTaxonActivityData)
+
+(deftest test-get-by-resource
+  (tf/testing "get-by-resource returns activities for a specific resource"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            user-id (:user/id user)
+            taxon-id 12345]
+        (try
+          ;; Create activities for the test taxon
+          (dotimes [_ 3]
+            (activity.i/create! db
+                                {:type test-taxon-activity-type
+                                 :created-at (Instant/now)
+                                 :created-by user-id
+                                 :data {:taxon-id taxon-id}}))
+          ;; Create activity for a different taxon
+          (activity.i/create! db
+                              {:type test-taxon-activity-type
+                               :created-at (Instant/now)
+                               :created-by user-id
+                               :data {:taxon-id 99999}})
+
+          (testing "returns only activities for the specified resource"
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id taxon-id)]
+              (is (= 3 (count activities)))
+              (is (every? #(= taxon-id (get-in % [:activity/data :taxon-id])) activities))))
+
+          (testing "includes user info in results"
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id taxon-id)]
+              (is (every? #(contains? % :activity/user) activities))
+              (is (every? #(= user-id (get-in % [:activity/user :user/id])) activities))))
+
+          (testing "respects limit parameter"
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id taxon-id
+                                                         :limit 2)]
+              (is (= 2 (count activities)))))
+
+          (testing "returns empty for non-existent resource"
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id 0)]
+              (is (empty? activities))))
+          (finally
+            (jdbc.sql/delete! db :activity {:created_by user-id})))))))
+
+(deftest test-count-by-resource
+  (tf/testing "count-by-resource returns correct count for a resource"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            user-id (:user/id user)
+            taxon-id 54321]
+        (try
+          ;; Create activities for the test taxon
+          (dotimes [_ 5]
+            (activity.i/create! db
+                                {:type test-taxon-activity-type
+                                 :created-at (Instant/now)
+                                 :created-by user-id
+                                 :data {:taxon-id taxon-id}}))
+
+          (testing "returns correct count"
+            (is (= 5 (activity.i/count-by-resource db
+                                                   :resource-type :taxon
+                                                   :resource-id taxon-id))))
+
+          (testing "returns 0 for non-existent resource"
+            (is (= 0 (activity.i/count-by-resource db
+                                                   :resource-type :taxon
+                                                   :resource-id 0))))
+          (finally
+            (jdbc.sql/delete! db :activity {:created_by user-id})))))))

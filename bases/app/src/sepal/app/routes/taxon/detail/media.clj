@@ -5,9 +5,11 @@
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
+            [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
@@ -50,11 +52,18 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [page page-size media taxon]}]
-  (ui.page/page :content (ui.page/page-inner (page-content :page page
-                                                           :page-size page-size
-                                                           :media media
-                                                           :taxon taxon))
+(defn render [& {:keys [page page-size media taxon panel-data]}]
+  (ui.page/page :content (pages.detail/page-content-with-panel
+                           :content (page-content :page page
+                                                  :page-size page-size
+                                                  :media media
+                                                  :taxon taxon)
+                           :panel-content (taxon.panel/panel-content
+                                            :taxon (:taxon panel-data)
+                                            :parent (:parent panel-data)
+                                            :stats (:stats panel-data)
+                                            :activities (:activities panel-data)
+                                            :activity-count (:activity-count panel-data)))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)
                 :page-title-buttons (title-buttons)))
 
@@ -88,7 +97,9 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (render :media media
-              :page 1
-              :page-size page-size
-              :taxon resource))))
+      (let [panel-data (taxon.panel/fetch-panel-data db resource)]
+        (render :media media
+                :page 1
+                :page-size page-size
+                :taxon resource
+                :panel-data panel-data)))))

@@ -2,6 +2,7 @@
   (:require [integrant.core :as ig]
             [malli.generator :as mg]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.database.interface :as db.i]
             [sepal.material.interface.spec :as spec]
             [sepal.store.interface :as store.i]))
 
@@ -13,6 +14,28 @@
 
 (defn create! [db data]
   (store.i/create! db :material data spec/CreateMaterial spec/Material))
+
+(defn count-by-accession-id
+  "Count materials for a given accession."
+  [db accession-id]
+  (db.i/count db {:select [:id]
+                  :from [:material]
+                  :where [:= :accession_id accession-id]}))
+
+(defn count-by-location-id
+  "Count materials at a given location."
+  [db location-id]
+  (db.i/count db {:select [:id]
+                  :from [:material]
+                  :where [:= :location_id location-id]}))
+
+(defn count-by-taxon-id
+  "Count materials for a given taxon (via accession)."
+  [db taxon-id]
+  (db.i/count db {:select [:m.id]
+                  :from [[:material :m]]
+                  :join [[:accession :a] [:= :m.accession_id :a.id]]
+                  :where [:= :a.taxon_id taxon-id]}))
 
 (create-ns 'sepal.material.interface)
 (alias 'mat.i 'sepal.material.interface)

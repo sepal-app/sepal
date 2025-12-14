@@ -1,5 +1,6 @@
 (ns sepal.app.ui.pages.list
   (:require [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.page :as ui.page]))
 
 (def list-container-id "list-container")
@@ -35,3 +36,43 @@
      [:div {:id list-container-id
             :class "mt-4 flex flex-col"}
       content]]))
+
+(def panel-container-id "preview-panel-content")
+
+(defn page-content-with-panel
+  "List page content with optional preview panel.
+
+   Options:
+   - :table-actions - Action buttons/forms above table
+   - :content       - Main table content"
+  [& {:keys [table-actions content]}]
+  [:div {:x-data "{ panelOpen: false, selectedId: null }"}
+   (ui.page/page-inner
+     [:div {:class "mt-8"}
+      [:form {:method "get"
+              :hx-get " "
+              :hx-trigger "keyup delay:200ms,change"
+              :hx-select (str "#" list-container-id)
+              :hx-target (str "#" list-container-id)
+              :hx-push-url "true"
+              :hx-swap "outerHTML"}
+       [:div {:class "flex justify-between"}
+        [:div {:class "flex flex-row items-center"}
+         table-actions]]]
+      ;; Table and panel in same row, outside the form
+      [:div {:class "mt-4 flex flex-row gap-8"}
+       ;; Table content
+       [:div {:id list-container-id
+              :class "flex-1 min-w-0"}
+        content]
+       ;; Preview panel
+       [:div {:class "w-80 shrink-0 bg-base-100 border-1 rounded-(--radius-box) border-base-300 overflow-y-auto"
+              :x-show "panelOpen"}
+        ;; Panel header with close button
+        [:div {:class "sticky top-0 bg-base-100 border-b border-base-300 p-2 flex justify-end"}
+         [:button {:class "btn btn-ghost btn-sm btn-square"
+                   :x-on:click "panelOpen = false; selectedId = null"
+                   :aria-label "Close panel"}
+          (lucide/x :class "w-5 h-5")]]
+        ;; Panel content - loaded via HTMX
+        [:div {:id panel-container-id}]]]])])

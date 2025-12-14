@@ -4,9 +4,11 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.form :as material.form]
+            [sepal.app.routes.material.panel :as material.panel]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
@@ -34,12 +36,20 @@
              :x-on:click "$dispatch('material-form:submit')"}
     "Save"]])
 
-(defn render [& {:keys [errors org material accession taxon values]}]
-  (page/page :content (page-content :errors errors
-                                    :org org
-                                    :material material
-                                    :values values
-                                    :taxon taxon)
+(defn render [& {:keys [errors org material accession taxon values panel-data]}]
+  (page/page :content (pages.detail/page-content-with-panel
+                        :content (page-content :errors errors
+                                               :org org
+                                               :material material
+                                               :values values
+                                               :taxon taxon)
+                        :panel-content (material.panel/panel-content
+                                         :material (:material panel-data)
+                                         :accession (:accession panel-data)
+                                         :taxon (:taxon panel-data)
+                                         :location (:location panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs (material.shared/breadcrumbs :accession accession
                                                        :material material
                                                        :taxon taxon)
@@ -87,8 +97,10 @@
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
                 (flash/success "Material updated successfully")))))
 
-      (render :org organization
-              :material resource
-              :accession accession
-              :taxon taxon
-              :values values))))
+      (let [panel-data (material.panel/fetch-panel-data db resource)]
+        (render :org organization
+                :material resource
+                :accession accession
+                :taxon taxon
+                :values values
+                :panel-data panel-data)))))

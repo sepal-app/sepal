@@ -3,6 +3,7 @@
             [sepal.app.routes.media.detail :as detail]
             [sepal.app.routes.media.detail.link :as link]
             [sepal.app.routes.media.index :as index]
+            [sepal.app.routes.media.panel :as panel]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.media.s3 :as s3]
             [sepal.app.routes.media.uploaded :as uploaded]
@@ -26,4 +27,6 @@
       :get #'detail/handler
       :delete #'detail/handler}]
     ["/link/" {:name media.routes/detail-link
-               :handler #'link/handler}]]])
+               :handler #'link/handler}]
+    ["/panel/" {:name media.routes/panel
+                :handler #'panel/handler}]]])

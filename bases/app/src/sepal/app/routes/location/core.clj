@@ -3,6 +3,7 @@
             [sepal.app.routes.location.create :as create]
             [sepal.app.routes.location.detail :as detail]
             [sepal.app.routes.location.index :as index]
+            [sepal.app.routes.location.panel :as panel]
             [sepal.app.routes.location.routes :as routes]
             [sepal.location.interface :as location.i]))
 
@@ -23,4 +24,6 @@
    ["/:id" {:middleware [[middleware/resource-loader location-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]]])
+          :handler #'detail/handler}]
+    ["/panel/" {:name routes/panel
+                :handler #'panel/handler}]]])

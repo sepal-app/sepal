@@ -3,7 +3,9 @@ import collapse from "@alpinejs/collapse"
 import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
-import "htmx.org"
+import htmx from "htmx.org"
+
+window.htmx = htmx
 
 import FormState from "~/js/form-state"
 

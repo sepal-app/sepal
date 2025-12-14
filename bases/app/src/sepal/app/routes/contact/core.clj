@@ -3,6 +3,7 @@
             [sepal.app.routes.contact.create :as create]
             [sepal.app.routes.contact.detail :as detail]
             [sepal.app.routes.contact.index :as index]
+            [sepal.app.routes.contact.panel :as panel]
             [sepal.app.routes.contact.routes :as routes]
             [sepal.contact.interface :as contact.i]))
 
@@ -23,4 +24,6 @@
    ["/:id" {:middleware [[middleware/resource-loader contact-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]]])
+          :handler #'detail/handler}]
+    ["/panel/" {:name routes/panel
+                :handler #'panel/handler}]]])
