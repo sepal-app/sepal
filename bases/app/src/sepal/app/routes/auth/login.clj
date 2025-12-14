@@ -38,10 +38,7 @@
                "Login"]
               [:p
                [:a {:href (z/url-for auth.routes/forgot-password)}
-                "Forgot password?"]]]
-
-             [:div {:class "mt-4"}
-              [:a {:href (z/url-for auth.routes/register)} "Don't have an account?"]]))
+                "Forgot password?"]]]))
 
 (defn render [& {:keys [email #_field-errors invitation next flash]}]
   (page/page :content [:div
