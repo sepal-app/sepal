@@ -8,6 +8,9 @@
 (defn get-by-email [db email]
   (core/get-by-email db email))
 
+(defn get-all [db]
+  (core/get-all db))
+
 (defn exists? [db email]
   (core/exists? db email))
 

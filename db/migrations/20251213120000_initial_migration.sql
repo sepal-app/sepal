@@ -10,6 +10,7 @@ create table "user" (
   password text not null unique,
   email_verified_at text default null,
   full_name text,
+  role text not null check(role in ('admin', 'editor', 'reader')),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;

@@ -4,19 +4,22 @@
 (def id pos-int?)
 (def email [:re {:error/message "invalid email"} email-re])
 (def password [:string {:min 8}])
+(def role [:enum :admin :editor :reader])
 
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default
-  [:map {:store/columns [:id :email :full_name]}
+  [:map {:store/columns [:id :email :full_name :role]}
    [:user/id id]
    [:user/email email]
-   [:user/full-name [:maybe :string]]])
+   [:user/full-name [:maybe :string]]
+   [:user/role role]])
 
 (def CreateUser
   [:map
    [:id {:optional true} id]
    [:email email]
-   [:password password]])
+   [:password password]
+   [:role role]])
 
 (def SetPassword
   [:map

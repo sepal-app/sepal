@@ -1,5 +1,6 @@
 (ns sepal.app.middleware
   (:require [clojure.tools.logging :as log]
+            [sepal.app.authorization :as authz]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -65,3 +66,47 @@
      (let [{:keys [db]} context
            id (-> path-params path-param-key coercer)]
        (getter db id)))))
+
+(defn- forbidden-response
+  "Return 403 response. For HTMX requests, return HTML fragment.
+   For regular requests, show 403 page."
+  [{:keys [htmx-request?]}]
+  (if htmx-request?
+    {:status 403
+     :headers {"Content-Type" "text/html"}
+     :body "<div class=\"alert alert-error\">You don't have permission to perform this action.</div>"}
+    {:status 403
+     :headers {"Content-Type" "text/html"}
+     :body "Forbidden - You don't have permission to access this resource."}))
+
+(defn require-role
+  "Middleware that checks if viewer has one of the specified roles.
+   Returns 403 if role check fails.
+   Must be used after require-viewer middleware."
+  [& roles]
+  (let [allowed-roles (set roles)]
+    (fn [handler]
+      (fn [{:keys [viewer] :as request}]
+        (if (contains? allowed-roles (:user/role viewer))
+          (handler request)
+          (forbidden-response request))))))
+
+(defn require-admin
+  "Middleware that requires viewer to be an admin."
+  [handler]
+  ((require-role :admin) handler))
+
+(defn require-editor-or-admin
+  "Middleware that requires viewer to be an editor or admin."
+  [handler]
+  ((require-role :admin :editor) handler))
+
+(defn require-permission
+  "Middleware that checks if viewer has a specific permission.
+   More granular than role-based checks."
+  [permission]
+  (fn [handler]
+    (fn [{:keys [viewer] :as request}]
+      (if (authz/user-has-permission? viewer permission)
+        (handler request)
+        (forbidden-response request)))))

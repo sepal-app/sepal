@@ -23,6 +23,15 @@
            (db.i/execute-one! db)
            (store.i/coerce spec/User)))
 
+(defn get-all
+  "Returns all users."
+  [db]
+  (let [columns (:store/columns (m/properties spec/User))]
+    (->> {:select columns
+          :from :user}
+         (db.i/execute! db)
+         (map #(store.i/coerce spec/User %)))))
+
 (defn- encrypt-password [password]
   (-> (Password/hash password)
       (.addRandomSalt)
