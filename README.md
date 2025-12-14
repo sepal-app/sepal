@@ -80,7 +80,32 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 2. Download the WFO Plantlist database (see above)
 3. Copy `.env.local.example` to `.env.local` and configure variables
 4. Run `bin/reset-db.sh` to initialize database with WFO data
-5. Start REPL and run `(go)` - zodiac-asset handles npm install and Vite automatically
+5. Create an admin user (see User Management below)
+6. Start REPL and run `(go)` - zodiac-asset handles npm install and Vite automatically
+
+### User Management
+
+User registration is disabled. Users must be created via the CLI.
+
+**Roles:**
+- `admin` - Full access: organization settings, user management, all CRUD operations
+- `editor` - Can create/edit/delete plant records, edit own profile
+- `reader` - View-only access to plant records, edit own profile
+
+**Create a user:**
+```bash
+clojure -M:dev:cli create-user --email admin@example.com --password secret --role admin
+```
+
+**List all users:**
+```bash
+clojure -M:dev:cli list-users
+```
+
+**Create admin user during database reset:**
+```bash
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret bin/reset-db.sh
+```
 
 **Troubleshooting SQLite extensions:** If you encounter errors loading SQLite extensions (like SpatiaLite), set `EXTENSIONS_LIBRARY_PATH` to the directory containing the extension libraries. With devbox, this is typically `${PWD}/.devbox/nix/profile/default/lib`. See `.env.local.example` for an example.
 

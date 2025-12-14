@@ -4,7 +4,13 @@
 (def id pos-int?)
 (def email [:re {:error/message "invalid email"} email-re])
 (def password [:string {:min 8}])
-(def role [:enum :admin :editor :reader])
+
+(defn- name-encoder [v]
+  (when v (name v)))
+
+(def role [:enum {:decode/store keyword
+                  :encode/store name-encoder}
+           :admin :editor :reader])
 
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default

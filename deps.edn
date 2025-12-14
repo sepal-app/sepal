@@ -89,4 +89,9 @@
                                 "--no-remove-consecutive-blank-lines"]}
 
            :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
-                  :extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}}}}
+                  :extra-deps {polylith/clj-poly {:mvn/version "0.2.22"}}}
+
+           ;; CLI for administrative tasks (user management)
+           ;; clojure -M:dev:cli create-user --email admin@example.com --password secret --role admin
+           ;; clojure -M:dev:cli list-users
+           :cli {:main-opts ["-m" "sepal.app.cli"]}}}

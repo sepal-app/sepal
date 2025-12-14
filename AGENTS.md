@@ -155,6 +155,15 @@ clojure -M:cljfmt fix
 # Reset database (loads WFO taxon data)
 bin/reset-db.sh
 
+# Reset database and create admin user
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret bin/reset-db.sh
+
+# User management CLI
+clojure -M:dev:cli create-user --email user@example.com --password secret --role admin
+clojure -M:dev:cli create-user --email editor@example.com --password secret --role editor
+clojure -M:dev:cli create-user --email reader@example.com --password secret --role reader
+clojure -M:dev:cli list-users
+
 # Run Polylith checks
 clojure -M:poly check
 ```

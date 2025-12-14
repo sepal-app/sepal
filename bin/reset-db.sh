@@ -42,3 +42,14 @@ sqlite3 -cmd "attach database \"${WFO_DATABASE_PATH}\" as wfo;" "$DATABASE_PATH"
  from wfo.taxon wfo_t
  join wfo.name wfo_n on wfo_n.ID = wfo_t.nameID
 EOSQL
+
+#
+# Create initial admin user if env vars are set
+#
+if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+    echo "Creating admin user..."
+    DATABASE_PATH="$DATABASE_PATH" clojure -M:dev:cli create-user \
+        --email "${ADMIN_EMAIL}" \
+        --password "${ADMIN_PASSWORD}" \
+        --role admin
+fi
