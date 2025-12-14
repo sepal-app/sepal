@@ -1,37 +1,10 @@
 (ns sepal.app.cli
   "CLI for administrative tasks like creating users."
-  (:require [babashka.fs :as fs]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
-            [next.jdbc :as jdbc]
-            [next.jdbc.connection :as connection]
-            [sepal.database.interface :as db.i]
+            [sepal.app.cli.system :as cli.sys]
             [sepal.user.interface :as user.i])
-  (:import [com.zaxxer.hikari HikariDataSource])
   (:gen-class))
-
-(defn- get-database-path
-  "Get database path from env var or default XDG location."
-  []
-  (or (System/getenv "DATABASE_PATH")
-      (str (fs/path (fs/xdg-data-home) "Sepal" "sepal.db"))))
-
-(defn- create-datasource
-  "Create a HikariCP datasource for SQLite."
-  [database-path]
-  (let [jdbc-url (format "jdbc:sqlite:%s?journal_mode=WAL&foreign_keys=ON" database-path)]
-    (connection/->pool HikariDataSource {:jdbcUrl jdbc-url})))
-
-(defn- with-db
-  "Execute f with a database connection."
-  [f]
-  (let [db-path (get-database-path)]
-    (when-not (fs/exists? db-path)
-      (println (format "Error: Database not found at %s" db-path))
-      (System/exit 1))
-    (db.i/init)
-    (with-open [ds (create-datasource db-path)]
-      (f ds))))
 
 ;; =============================================================================
 ;; create-user command
@@ -68,8 +41,8 @@
       (do (println "Error: --role is required") 1)
 
       :else
-      (with-db
-        (fn [db]
+      (cli.sys/with-system [sys]
+        (let [db (cli.sys/get-db sys)]
           (if (user.i/exists? db (:email options))
             (do (println (format "Error: User with email '%s' already exists" (:email options)))
                 1)
@@ -101,17 +74,17 @@
           1)
 
       :else
-      (with-db
-        (fn [db]
-          (let [users (user.i/get-all db)]
-            (if (empty? users)
-              (println "No users found.")
-              (doseq [user users]
-                (println (format "  %d: %s (%s)"
-                                 (:user/id user)
-                                 (:user/email user)
-                                 (name (:user/role user))))))
-            0))))))
+      (cli.sys/with-system [sys]
+        (let [db (cli.sys/get-db sys)
+              users (user.i/get-all db)]
+          (if (empty? users)
+            (println "No users found.")
+            (doseq [user users]
+              (println (format "  %d: %s (%s)"
+                               (:user/id user)
+                               (:user/email user)
+                               (name (:user/role user))))))
+          0)))))
 
 ;; =============================================================================
 ;; Main entry point

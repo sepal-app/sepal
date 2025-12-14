@@ -13,7 +13,8 @@
 (deftest test-create-accession-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             ;; Get the create accession page to get a fresh CSRF token
@@ -57,7 +58,8 @@
 (deftest test-create-accession-form-has-htmx-attributes
   (tf/testing "Form has HTMX attributes for OOB error swapping"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
 
@@ -78,7 +80,8 @@
 (deftest test-create-accession-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess

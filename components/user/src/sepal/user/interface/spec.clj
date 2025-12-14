@@ -17,7 +17,7 @@
   [:map {:store/columns [:id :email :full_name :role]}
    [:user/id id]
    [:user/email email]
-   [:user/full-name [:maybe :string]]
+   [:user/full-name {:optional true} [:maybe :string]]
    [:user/role role]])
 
 (def CreateUser

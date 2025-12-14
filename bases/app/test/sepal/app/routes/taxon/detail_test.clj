@@ -14,7 +14,8 @@
 (deftest test-update-taxon-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [user taxon]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
@@ -46,7 +47,8 @@
 (deftest test-update-taxon-form-has-htmx-attributes
   (tf/testing "Form has HTMX attributes for OOB error swapping"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [user taxon]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
@@ -63,7 +65,8 @@
 (deftest test-update-taxon-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [user taxon]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")

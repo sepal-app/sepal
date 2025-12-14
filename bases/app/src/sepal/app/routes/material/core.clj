@@ -21,6 +21,7 @@
      :handler #'index/handler}]
    ["/new/"
     {:name routes/new
+     :middleware [[middleware/require-editor-or-admin]]
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
@@ -28,8 +29,10 @@
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/general/" {:name routes/detail-general
+                  :middleware [[middleware/require-editor-or-admin]]
                   :handler #'detail-general/handler}]
     ["/media/" {:name routes/detail-media
+                :middleware [[middleware/require-editor-or-admin]]
                 :handler #'detail-media/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

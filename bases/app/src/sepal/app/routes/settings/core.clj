@@ -14,5 +14,7 @@
                 :handler #'profile/handler}]
    ["/security" {:name settings.routes/security
                  :handler #'security/handler}]
+   ;; Admin only
    ["/organization" {:name settings.routes/organization
+                     :middleware [[middleware/require-admin]]
                      :handler #'organization/handler}]])

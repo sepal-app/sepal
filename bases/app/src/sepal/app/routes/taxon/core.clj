@@ -16,6 +16,7 @@
    ["/" {:name routes/index
          :handler #'index/handler}]
    ["/new/" {:name routes/new
+             :middleware [[middleware/require-editor-or-admin]]
              :get #'create/get-handler
              :post #'create/post-handler
              :conflicting true}]
@@ -25,8 +26,10 @@
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/name/" {:name routes/detail-name
+               :middleware [[middleware/require-editor-or-admin]]
                :handler #'detail-name/handler}]
     ["/media/" {:name routes/detail-media
+                :middleware [[middleware/require-editor-or-admin]]
                 :handler #'detail-media/handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])

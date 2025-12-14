@@ -34,7 +34,8 @@
 (deftest test-collection-page-renders
   (tf/testing "GET collection page renders form"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
@@ -70,7 +71,8 @@
 (deftest test-collection-page-shows-existing-data
   (tf/testing "GET collection page shows existing collection data"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
      [::coll.i/factory :key/coll] {:db *db*
@@ -95,7 +97,8 @@
 (deftest test-create-collection
   (tf/testing "POST creates new collection"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
@@ -132,7 +135,8 @@
 (deftest test-update-collection
   (tf/testing "POST updates existing collection"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
      [::coll.i/factory :key/coll] {:db *db*
@@ -165,7 +169,8 @@
 (deftest test-create-collection-with-geo-coordinates
   (tf/testing "POST creates collection with geo coordinates"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
@@ -198,7 +203,8 @@
 (deftest test-collection-tabs-active
   (tf/testing "Collection tab is active on collection page"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]

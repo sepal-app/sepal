@@ -16,17 +16,21 @@
    ["/" {:name media.routes/index
          :handler #'index/handler}]
    ["/s3" {:name media.routes/s3
+           :middleware [[middleware/require-editor-or-admin]]
            :handler #'s3/handler}]
    ["/uploaded" {:name media.routes/uploaded
+                 :middleware [[middleware/require-editor-or-admin]]
                  :handler #'uploaded/handler}]
    ["/:id" {:middleware [[middleware/resource-loader media-loader]]
             :parameters {:path {:id nat-int?}}
             :conflicting true}
     ["/"
      {:name media.routes/detail
+      :middleware [[middleware/require-editor-or-admin]]
       :get #'detail/handler
       :delete #'detail/handler}]
     ["/link/" {:name media.routes/detail-link
+               :middleware [[middleware/require-editor-or-admin]]
                :handler #'link/handler}]
     ["/panel/" {:name media.routes/panel
                 :handler #'panel/handler}]]])

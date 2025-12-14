@@ -61,7 +61,7 @@
                    spec/User))
 
 (defn verify-password [db email password]
-  (when-let [user (->> {:select [:id :email :password :full_name]
+  (when-let [user (->> {:select [:id :email :password :full_name :role]
                         :from :user
                         :where [:= :email email]}
                        (db.i/execute-one! db))]

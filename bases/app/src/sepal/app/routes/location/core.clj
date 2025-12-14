@@ -19,11 +19,13 @@
      :handler #'index/handler}]
    ["/new/"
     {:name routes/new
+     :middleware [[middleware/require-editor-or-admin]]
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader location-loader]]
             :conflicting true}
     ["/" {:name routes/detail
+          :middleware [[middleware/require-editor-or-admin]]
           :handler #'detail/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

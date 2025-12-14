@@ -19,7 +19,8 @@
 (deftest test-update-contact-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [contact (contact.i/create! *db* test-contact-data)
             sess (app.test/login (:user/email user) "testpassword123")
@@ -53,7 +54,8 @@
 (deftest test-update-contact-form-has-htmx-attributes
   (tf/testing "Form has HTMX attributes for OOB error swapping"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [contact (contact.i/create! *db* test-contact-data)
             sess (app.test/login (:user/email user) "testpassword123")
@@ -70,7 +72,8 @@
 (deftest test-update-contact-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}}
+                                   :password "testpassword123"
+                                   :role :editor}}
     (fn [{:keys [user]}]
       (let [contact (contact.i/create! *db* test-contact-data)
             sess (app.test/login (:user/email user) "testpassword123")

@@ -16,7 +16,8 @@
 (deftest test-update-accession-general-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
@@ -48,7 +49,8 @@
 (deftest test-update-accession-general-form-has-htmx-attributes
   (tf/testing "Form has HTMX attributes for OOB error swapping"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
@@ -66,7 +68,8 @@
 (deftest test-update-accession-general-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
     {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"}
+                                   :password "testpassword123"
+                                   :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
