@@ -110,3 +110,14 @@
       (if (authz/user-has-permission? viewer permission)
         (handler request)
         (forbidden-response request)))))
+
+(defn require-permission-or-redirect
+  "Middleware that checks if viewer has a specific permission.
+   If not, redirects to a fallback route instead of returning 403.
+   redirect-route-fn should be a function that returns the route name."
+  [permission redirect-route-fn]
+  (fn [handler]
+    (fn [{:keys [viewer path-params] :as request}]
+      (if (authz/user-has-permission? viewer permission)
+        (handler request)
+        (http/found (redirect-route-fn) {:id (:id path-params)})))))

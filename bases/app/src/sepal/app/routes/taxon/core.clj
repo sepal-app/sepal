@@ -7,7 +7,8 @@
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
             [sepal.app.routes.taxon.routes :as routes]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.permission :as taxon.perm]))
 
 (def taxon-loader (middleware/default-loader taxon.i/get-by-id :id parse-long))
 
@@ -26,10 +27,12 @@
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/name/" {:name routes/detail-name
-               :middleware [[middleware/require-editor-or-admin]]
+               :middleware [[(middleware/require-permission-or-redirect
+                               taxon.perm/edit (constantly routes/detail))]]
                :handler #'detail-name/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[middleware/require-editor-or-admin]]
+                :middleware [[(middleware/require-permission-or-redirect
+                                taxon.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])

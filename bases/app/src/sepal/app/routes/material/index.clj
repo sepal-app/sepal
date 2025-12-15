@@ -1,6 +1,7 @@
 (ns sepal.app.routes.material.index
   (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -11,12 +12,13 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.material.interface.permission :as material.perm]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (def default-page-size 25)
 
-(defn create-button [& {:keys []}]
+(defn create-button []
   [:a {:class "btn btn-primary"
        :href (z/url-for material.routes/new)}
    "Create"])
@@ -71,7 +73,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [accession href page page-size rows taxon total]}]
+(defn render [& {:keys [viewer accession href page page-size rows taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -90,7 +92,8 @@
                                         :class "italic"}
                                     (:accession/code accession)])
                    :always (conj "Materials"))
-    :page-title-buttons (create-button)))
+    :page-title-buttons (when (authz/user-has-permission? viewer material.perm/create)
+                          (create-button))))
 
 (def Params
   [:map
@@ -100,7 +103,7 @@
    [:accession-id {:min 0} :int]
    [:taxon-id {:min 0} :int]])
 
-(defn handler [& {:keys [::z/context headers query-params uri]}]
+(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
         ;; TODO: validate page and page size
         ;; {:strs [page page-size q]
@@ -148,7 +151,8 @@
                                            (:material/code material)
                                            (:taxon/name material))
                              :accession-id (:material/accession-id material)}))
-      (render :accession accession
+      (render :viewer viewer
+              :accession accession
               :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows

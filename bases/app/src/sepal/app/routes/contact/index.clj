@@ -1,17 +1,19 @@
 (ns sepal.app.routes.contact.index
   (:require [lambdaisland.uri :as uri]
+            [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
+            [sepal.contact.interface.permission :as contact.perm]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]))
 
 (def default-page-size 25)
 
-(defn create-button [& {:keys []}]
+(defn create-button []
   [:a {:class "btn btn-primary"
        :href (z/url-for contact.routes/new)}
    "Create"])
@@ -53,7 +55,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href page-num page-size rows total]}]
+(defn render [& {:keys [viewer href page-num page-size rows total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -63,9 +65,10 @@
                                :total total)
                :table-actions (pages.list/search-field (-> href uri/query-map :q)))
     :breadcrumbs ["Contacts"]
-    :page-title-buttons (create-button)))
+    :page-title-buttons (when (authz/user-has-permission? viewer contact.perm/create)
+                          (create-button))))
 
-(defn handler [& {:keys [::z/context headers query-params uri]}]
+(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
         ;; TODO: validate page and page size
         {:strs [page page-size q]
@@ -94,7 +97,8 @@
                              :id (:contact/id contact)
                              :business (:contact/business contact)
                              :description (:contact/description contact)}))
-      (render :href (uri/uri-str {:path uri
+      (render :viewer viewer
+              :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows
               :page-num page-num

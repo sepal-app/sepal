@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.layout
-  (:require [sepal.app.html :as html]
+  (:require [sepal.app.authorization :as authz]
+            [sepal.app.html :as html]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
@@ -20,7 +21,7 @@
    [:nav {:class "space-y-1"}
     children]])
 
-(defn settings-sidebar [current-route]
+(defn settings-sidebar [& {:keys [current-route viewer]}]
   [:aside {:class "w-64 shrink-0"}
    (sidebar-section
      :title "Account"
@@ -32,22 +33,23 @@
        (sidebar-item :href (z/url-for settings.routes/security)
                      :label "Security"
                      :current? (= current-route settings.routes/security))))
-   (sidebar-section
-     :title "Organization"
-     :children
-     (list
-       (sidebar-item :href (z/url-for settings.routes/organization)
-                     :label "General"
-                     :current? (= current-route settings.routes/organization))))])
+   (when (authz/user-has-permission? viewer authz/organization-view)
+     (sidebar-section
+       :title "Organization"
+       :children
+       (list
+         (sidebar-item :href (z/url-for settings.routes/organization)
+                       :label "General"
+                       :current? (= current-route settings.routes/organization)))))])
 
-(defn layout [& {:keys [current-route category title content]}]
+(defn layout [& {:keys [viewer current-route category title content]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for settings.routes/profile)} "Settings"]
                   category
                   title]
     :content
     [:div {:class "flex gap-8 ml-4"}
-     (settings-sidebar current-route)
+     (settings-sidebar :current-route current-route :viewer viewer)
      [:div {:class "flex-1 max-w-2xl"}
       content]]))
 

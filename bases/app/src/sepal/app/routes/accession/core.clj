@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.core
   (:require [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.permission :as accession.perm]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.create :as create]
             [sepal.app.routes.accession.detail :as detail]
@@ -31,13 +32,16 @@
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/general/" {:name routes/detail-general
-                  :middleware [[middleware/require-editor-or-admin]]
+                  :middleware [[(middleware/require-permission-or-redirect
+                                  accession.perm/edit (constantly routes/detail))]]
                   :handler #'detail-general/handler}]
     ["/collection/" {:name routes/detail-collection
-                     :middleware [[middleware/require-editor-or-admin]]
+                     :middleware [[(middleware/require-permission-or-redirect
+                                     accession.perm/edit (constantly routes/detail))]]
                      :handler #'detail-collection/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[middleware/require-editor-or-admin]]
+                :middleware [[(middleware/require-permission-or-redirect
+                                accession.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

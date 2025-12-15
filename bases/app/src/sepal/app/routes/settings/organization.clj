@@ -72,8 +72,9 @@
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
 
-(defn render [& {:keys [values errors]}]
+(defn render [& {:keys [viewer values errors]}]
   (layout/layout
+    :viewer viewer
     :current-route settings.routes/organization
     :category "Organization"
     :title "General"
@@ -133,4 +134,4 @@
             (-> (http/see-other settings.routes/organization)
                 (flash/success "Organization settings updated successfully")))))
 
-      (render :values values))))
+      (render :viewer viewer :values values))))

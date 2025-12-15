@@ -25,7 +25,6 @@
    ["/:id" {:middleware [[middleware/resource-loader contact-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :middleware [[middleware/require-editor-or-admin]]
           :handler #'detail/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

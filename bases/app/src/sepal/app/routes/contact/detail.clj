@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.detail
-  (:require [sepal.app.flash :as flash]
+  (:require [sepal.app.authorization :as authz]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.panel :as contact.panel]
@@ -9,6 +10,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
+            [sepal.contact.interface.permission :as contact.perm]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
@@ -54,28 +56,47 @@
    [:business [:maybe :string]]
    [:notes [:maybe :string]]])
 
+(defn render-panel-page
+  "Render the panel view as a full page for read-only users."
+  [& {:keys [contact panel-data]}]
+  (page/page
+    :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
+                  (:contact/name contact)]
+    :content [:div {:class "max-w-2xl mx-auto"}
+              (contact.panel/panel-content
+                :contact (:contact panel-data)
+                :stats (:stats panel-data)
+                :activities (:activities panel-data)
+                :activity-count (:activity-count panel-data))]))
+
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context
-        values {:id (:contact/id resource)
-                :name (:contact/name resource)
-                :email (:contact/email resource)
-                :address (:contact/address resource)
-                :province (:contact/province resource)
-                :postal-code (:contact/postal-code resource)
-                :country (:contact/country resource)
-                :phone (:contact/phone resource)
-                :business (:contact/business resource)
-                :notes (:contact/notes resource)}]
-    (case request-method
-      :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (update! db (:contact/id resource) (:user/id viewer) result)]
-            (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-                (flash/success "Contact updated successfully")))))
-
+        id (:contact/id resource)]
+    ;; Readers see panel view as full page
+    (if (not (authz/user-has-permission? viewer contact.perm/edit))
       (let [panel-data (contact.panel/fetch-panel-data db resource)]
-        (render :contact resource
-                :values values
-                :panel-data panel-data)))))
+        (render-panel-page :contact resource :panel-data panel-data))
+      ;; Editors/Admins see the form
+      (let [values {:id id
+                    :name (:contact/name resource)
+                    :email (:contact/email resource)
+                    :address (:contact/address resource)
+                    :province (:contact/province resource)
+                    :postal-code (:contact/postal-code resource)
+                    :country (:contact/country resource)
+                    :phone (:contact/phone resource)
+                    :business (:contact/business resource)
+                    :notes (:contact/notes resource)}]
+        (case request-method
+          :post
+          (let [result (validation.i/validate-form-values FormParams form-params)]
+            (if (error.i/error? result)
+              (http/validation-errors (validation.i/humanize result))
+              (let [saved (update! db id (:user/id viewer) result)]
+                (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+                    (flash/success "Contact updated successfully")))))
+
+          (let [panel-data (contact.panel/fetch-panel-data db resource)]
+            (render :contact resource
+                    :values values
+                    :panel-data panel-data)))))))

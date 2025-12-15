@@ -33,8 +33,9 @@
     [:div {:class "mt-4"}
      (layout/save-button "Change password")]))
 
-(defn render [& {:keys [errors]}]
+(defn render [& {:keys [viewer errors]}]
   (layout/layout
+    :viewer viewer
     :current-route settings.routes/security
     :category "Account"
     :title "Security"
@@ -72,4 +73,4 @@
               (-> (http/see-other settings.routes/security)
                   (flash/error "Current password is incorrect"))))))
 
-      (render))))
+      (render :viewer viewer))))

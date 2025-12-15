@@ -28,8 +28,9 @@
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
 
-(defn render [& {:keys [values errors]}]
+(defn render [& {:keys [viewer values errors]}]
   (layout/layout
+    :viewer viewer
     :current-route settings.routes/profile
     :category "Account"
     :title "Profile"
@@ -63,4 +64,4 @@
                 (-> (http/see-other settings.routes/profile)
                     (flash/success "Profile updated successfully")))))))
 
-      (render :values values))))
+      (render :viewer viewer :values values))))

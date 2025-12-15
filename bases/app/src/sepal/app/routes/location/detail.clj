@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.detail
-  (:require [sepal.app.flash :as flash]
+  (:require [sepal.app.authorization :as authz]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.routes.location.panel :as location.panel]
@@ -11,6 +12,7 @@
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
+            [sepal.location.interface.permission :as location.perm]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -49,22 +51,41 @@
    [:code {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
+(defn render-panel-page
+  "Render the panel view as a full page for read-only users."
+  [& {:keys [location panel-data]}]
+  (page/page
+    :breadcrumbs [[:a {:href (z/url-for location.routes/index)} "Locations"]
+                  (:location/name location)]
+    :content [:div {:class "max-w-2xl mx-auto"}
+              (location.panel/panel-content
+                :location (:location panel-data)
+                :stats (:stats panel-data)
+                :activities (:activities panel-data)
+                :activity-count (:activity-count panel-data))]))
+
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context
-        values {:id (:location/id resource)
-                :name (:location/name resource)
-                :code (:location/code resource)
-                :description (:location/description resource)}]
-    (case request-method
-      :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (update! db (:location/id resource) (:user/id viewer) result)]
-            (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
-                (flash/success "Location updated successfully")))))
-
+        id (:location/id resource)]
+    ;; Readers see panel view as full page
+    (if (not (authz/user-has-permission? viewer location.perm/edit))
       (let [panel-data (location.panel/fetch-panel-data db resource)]
-        (render :location resource
-                :values values
-                :panel-data panel-data)))))
+        (render-panel-page :location resource :panel-data panel-data))
+      ;; Editors/Admins see the form
+      (let [values {:id id
+                    :name (:location/name resource)
+                    :code (:location/code resource)
+                    :description (:location/description resource)}]
+        (case request-method
+          :post
+          (let [result (validation.i/validate-form-values FormParams form-params)]
+            (if (error.i/error? result)
+              (http/validation-errors (validation.i/humanize result))
+              (let [saved (update! db id (:user/id viewer) result)]
+                (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
+                    (flash/success "Location updated successfully")))))
+
+          (let [panel-data (location.panel/fetch-panel-data db resource)]
+            (render :location resource
+                    :values values
+                    :panel-data panel-data)))))))

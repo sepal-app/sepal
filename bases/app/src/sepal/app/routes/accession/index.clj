@@ -1,5 +1,7 @@
 (ns sepal.app.routes.accession.index
   (:require [lambdaisland.uri :as uri]
+            [sepal.accession.interface.permission :as accession.perm]
+            [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -11,7 +13,7 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn create-button [& {:keys []}]
+(defn create-button []
   [:a {:class "btn btn-primary"
        :href (z/url-for accession.routes/new)}
    "Create"])
@@ -54,7 +56,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href page page-size rows taxon total]}]
+(defn render [& {:keys [viewer href page page-size rows taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -71,7 +73,8 @@
                                 (:taxon/name taxon)])
                    :always
                    (conj "Accessions"))
-    :page-title-buttons (create-button)))
+    :page-title-buttons (when (authz/user-has-permission? viewer accession.perm/create)
+                          (create-button))))
 
 (def Params
   [:map
@@ -80,7 +83,7 @@
    [:q :string]
    [:taxon-id {:min 0} :int]])
 
-(defn handler [& {:keys [::z/context headers query-params uri]}]
+(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size q taxon-id]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -110,7 +113,8 @@
                                            (:taxon/name row))
                              :code (:accession/code row)
                              :id (:accession/id row)}))
-      (render :href (uri/uri-str {:path uri
+      (render :viewer viewer
+              :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows
               :page page

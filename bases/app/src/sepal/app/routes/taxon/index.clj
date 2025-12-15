@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.index
   (:require [lambdaisland.uri :as uri]
+            [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -7,9 +8,10 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.taxon.interface.permission :as taxon.perm]
             [zodiac.core :as z]))
 
-(defn create-button [& {:keys []}]
+(defn create-button []
   [:a {:class "btn btn-primary"
        :href (z/url-for taxon.routes/new)}
    "Create"])
@@ -59,7 +61,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [href page page-size rows total]}]
+(defn render [& {:keys [viewer href page page-size rows total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -78,7 +80,8 @@
                                          :class "ml-4"}]]])
 
     :breadcrumbs ["Taxa"]
-    :page-title-buttons (create-button)))
+    :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
+                          (create-button))))
 
 (def Params
   [:map
@@ -90,7 +93,7 @@
    [:q :string]])
 
 (defn handler
-  [& {:keys [::z/context headers query-params uri]}]
+  [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [accessions-only page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -134,7 +137,8 @@
                              :parentName (:taxon/parent-name taxon)}))
 
       :else
-      (render :href (uri/uri-str {:path uri
+      (render :viewer viewer
+              :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows
               :page page
