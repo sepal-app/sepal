@@ -35,8 +35,9 @@
               ;; Submit form
               (pw/click "button:has-text(\"Login\")")
 
-              ;; Wait for redirect to activity page
-              (pw/wait-for-url #"/activity")
+              ;; Wait for network to settle, then for redirect to activity page
+              (pw/wait-for-load-state :networkidle)
+              (pw/wait-for-url #"/activity" 60000)
 
               (is (re-find #"/activity" (pw/get-url))
                   "Should redirect to Activity page after login"))
