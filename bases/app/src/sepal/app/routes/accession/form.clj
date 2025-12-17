@@ -6,7 +6,6 @@
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.page :as ui.page]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]

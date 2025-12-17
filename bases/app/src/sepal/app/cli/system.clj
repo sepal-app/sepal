@@ -6,8 +6,7 @@
             [integrant.core :as ig]
             [lambdaisland.uri :as uri]
             [next.jdbc.connection :as connection]
-            [sepal.database.interface :as db.i]
-            [sepal.malli.interface :as malli.i])
+            [sepal.database.interface :as db.i])
   (:import [com.zaxxer.hikari HikariDataSource]))
 
 ;; =============================================================================

@@ -4,7 +4,6 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.page :as ui.page]
             [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 

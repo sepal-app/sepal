@@ -2,7 +2,6 @@
   (:require [sepal.app.routes.auth.forgot-password :as forgot-password]
             [sepal.app.routes.auth.login :as login]
             [sepal.app.routes.auth.logout :as logout]
-            #_[sepal.app.routes.auth.register :as register]
             [sepal.app.routes.auth.reset-password :as reset-password]
             [sepal.app.routes.auth.routes :as auth.routes]))
 

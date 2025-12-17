@@ -1,11 +1,11 @@
 (ns sepal.app.authorization
   "Role-based authorization. Permissions defined as data for easy checking."
   (:require [sepal.accession.interface.permission :as accession.perm]
-            [sepal.taxon.interface.permission :as taxon.perm]
-            [sepal.location.interface.permission :as location.perm]
             [sepal.contact.interface.permission :as contact.perm]
+            [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
-            [sepal.media.interface.permission :as media.perm]))
+            [sepal.media.interface.permission :as media.perm]
+            [sepal.taxon.interface.permission :as taxon.perm]))
 
 ;; App-level permissions (non-resource)
 (def organization-view ::organization-view)

@@ -33,7 +33,7 @@
    - :activity-count - Total activity count
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [material accession taxon location activities activity-count on-close]}]
-  (let [{:material/keys [id code material-type quantity status]} material]
+  (let [{:material/keys [code material-type quantity status]} material]
     (panel/panel-container
       :children
       (list

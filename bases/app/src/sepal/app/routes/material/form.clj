@@ -4,7 +4,6 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.form :as form]
-            [sepal.app.ui.page :as ui.page]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
 

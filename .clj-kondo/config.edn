@@ -1,3 +1,4 @@
 {:linters {:refer-all {:exclude [clojure.test]}
            :unused-binding {:exclude-destructured-as true}}
- :lint-as {sepal.database.interface/with-transaction clojure.core/let}}
+ :lint-as {sepal.database.interface/with-transaction clojure.core/let}
+ :hooks {:analyze-call {sepal.app.cli.system/with-system hooks.with-system/with-system}}}
