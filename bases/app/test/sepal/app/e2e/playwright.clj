@@ -50,6 +50,17 @@
   ;; Wait for load event (all resources loaded including stylesheets and images)
   (.waitForLoadState *page*))
 
+(defn wait-for-load-state
+  "Wait for page to reach specified load state.
+   States: 'load' (default), 'domcontentloaded', 'networkidle'"
+  ([]
+   (.waitForLoadState *page*))
+  ([state]
+   (.waitForLoadState *page* (case state
+                               :load (com.microsoft.playwright.options.LoadState/LOAD)
+                               :domcontentloaded (com.microsoft.playwright.options.LoadState/DOMCONTENTLOADED)
+                               :networkidle (com.microsoft.playwright.options.LoadState/NETWORKIDLE)))))
+
 (defn click
   "Click element by selector"
   [selector]
@@ -96,11 +107,15 @@
                        (.setTimeout (double timeout-ms))))))
 
 (defn wait-for-url
-  "Wait for URL to match pattern (regex or string)"
-  [pattern]
-  (if (string? pattern)
-    (.waitForURL *page* pattern)
-    (.waitForURL *page* (re-pattern pattern))))
+  "Wait for URL to match pattern (regex or string), with optional timeout in ms"
+  ([pattern]
+   (wait-for-url pattern 30000))
+  ([pattern timeout-ms]
+   (let [options (doto (com.microsoft.playwright.Page$WaitForURLOptions.)
+                   (.setTimeout (double timeout-ms)))]
+     (if (string? pattern)
+       (.waitForURL *page* pattern options)
+       (.waitForURL *page* (re-pattern pattern) options)))))
 
 (defn wait-for-hidden
   "Wait for element to be hidden/detached (with optional timeout in ms)"
