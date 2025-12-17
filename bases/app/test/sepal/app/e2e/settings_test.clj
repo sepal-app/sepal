@@ -4,29 +4,36 @@
             [malli.generator :as mg]
             [sepal.app.e2e.playwright :as pw]
             [sepal.app.e2e.server :as server]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.user.interface :as user.i]
+            [sepal.user.interface.spec :as user.spec]
+            [zodiac.ext.sql :as z.sql]))
 
 (deftest ^:e2e settings-flow
-  (testing "Settings pages: register -> profile -> security -> organization"
+  (testing "Settings pages: login -> profile -> security -> organization"
     (server/with-server
       (fn [system]
-        (let [base-url (server/server-url system)]
+        (let [base-url (server/server-url system)
+              db (-> system :sepal.app.server/zodiac ::z.sql/db)
+              ;; Create test user programmatically (registration is disabled)
+              email (mg/generate user.spec/email)
+              password "TestPassword123!"]
+          ;; Create user in database
+          (user.i/create! db {:email email
+                              :password password
+                              :role :admin})
           (pw/with-browser
-            (testing "1. Register new user"
-              (let [email (mg/generate user.spec/email)
-                    password "TestPassword123!"]
-                (pw/navigate (str base-url "/register"))
-                (pw/wait-for-selector "input[name=\"email\"]" 10000)
+            (testing "1. Login with test user"
+              (pw/navigate (str base-url "/login"))
+              (pw/wait-for-selector "input[name=\"email\"]" 10000)
 
-                (pw/fill "input[name=\"email\"]" email)
-                (pw/fill "input[name=\"password\"]" password)
-                (pw/fill "input[name=\"confirm-password\"]" password)
+              (pw/fill "input[name=\"email\"]" email)
+              (pw/fill "input[name=\"password\"]" password)
 
-                (pw/click "button:has-text(\"Create account\")")
-                (pw/wait-for-url #"/activity")
+              (pw/click "button:has-text(\"Login\")")
+              (pw/wait-for-url #"/activity")
 
-                (is (re-find #"/activity" (pw/get-url))
-                    "Should redirect to Activity page after registration")))
+              (is (re-find #"/activity" (pw/get-url))
+                  "Should redirect to Activity page after login"))
 
             (testing "2. Navigate to settings"
               (pw/click "a:has-text(\"Settings\")")
