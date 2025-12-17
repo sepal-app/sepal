@@ -4,35 +4,42 @@
             [malli.generator :as mg]
             [sepal.app.e2e.playwright :as pw]
             [sepal.app.e2e.server :as server]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.user.interface :as user.i]
+            [sepal.user.interface.spec :as user.spec]
+            [zodiac.ext.sql :as z.sql]))
 
 (deftest ^:e2e happy-path-flow
-  ;; "Complete user flow: register -> create contact -> create taxa -> create accession -> create location -> create material"
+  ;; "Complete user flow: login -> create contact -> create taxa -> create accession -> create location -> create material"
   (testing "Server and browser setup"
     (server/with-server
       (fn [system]
-        (let [base-url (server/server-url system)]
+        (let [base-url (server/server-url system)
+              db (-> system :sepal.app.server/zodiac ::z.sql/db)
+              ;; Create test user programmatically (registration is disabled)
+              email (mg/generate user.spec/email)
+              password "TestPassword123!"]
+          ;; Create user in database
+          (user.i/create! db {:email email
+                              :password password
+                              :role :admin})
           (pw/with-browser
-            (testing "1. Register new user"
-              (let [email (mg/generate user.spec/email)
-                    password "TestPassword123!"]
-                (pw/navigate (str base-url "/register"))
-                ;; Give extra time for first page load after server start
-                (pw/wait-for-selector "input[name=\"email\"]" 10000)
+            (testing "1. Login with test user"
+              (pw/navigate (str base-url "/login"))
+              ;; Give extra time for first page load after server start
+              (pw/wait-for-selector "input[name=\"email\"]" 10000)
 
-                ;; Fill registration form
-                (pw/fill "input[name=\"email\"]" email)
-                (pw/fill "input[name=\"password\"]" password)
-                (pw/fill "input[name=\"confirm-password\"]" password)
+              ;; Fill login form
+              (pw/fill "input[name=\"email\"]" email)
+              (pw/fill "input[name=\"password\"]" password)
 
-                ;; Submit form
-                (pw/click "button:has-text(\"Create account\")")
+              ;; Submit form
+              (pw/click "button:has-text(\"Login\")")
 
-                ;; Wait for redirect to activity page
-                (pw/wait-for-url #"/activity")
+              ;; Wait for redirect to activity page
+              (pw/wait-for-url #"/activity")
 
-                (is (re-find #"/activity" (pw/get-url))
-                    "Should redirect to Activity page after registration")))
+              (is (re-find #"/activity" (pw/get-url))
+                  "Should redirect to Activity page after login"))
 
             (testing "2. Create new contact"
               (pw/navigate (str base-url "/contact/new/"))
