@@ -2,7 +2,6 @@
   (:require [integrant.core :as ig]
             [malli.generator :as mg]
             [next.jdbc.sql :as jdbc.sql]
-            [sepal.accession.core :as core]
             [sepal.accession.interface.spec :as spec]
             [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]))
