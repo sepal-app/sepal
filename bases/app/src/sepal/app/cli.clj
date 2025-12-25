@@ -2,6 +2,7 @@
   "CLI for administrative tasks like creating users."
   (:require [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
+            [sepal.app.cli.routes :as cli.routes]
             [sepal.app.cli.system :as cli.sys]
             [sepal.user.interface :as user.i])
   (:gen-class))
@@ -87,6 +88,34 @@
           0)))))
 
 ;; =============================================================================
+;; routes command
+;; =============================================================================
+
+(def routes-options
+  [["-t" "--tree" "Print as hierarchical tree"]
+   ["-h" "--help" "Show help for this command"]])
+
+(defn- routes-cmd [args]
+  (let [{:keys [options errors summary]} (parse-opts args routes-options)]
+    (cond
+      (:help options)
+      (do (println "Usage: clojure -M:dev:cli routes [options]")
+          (println)
+          (println "Print the application route tree.")
+          (println)
+          (println "Options:")
+          (println summary)
+          0)
+
+      errors
+      (do (println (str "Errors:\n" (str/join "\n" errors)))
+          1)
+
+      :else
+      (do (cli.routes/print-route-tree {:format (if (:tree options) :tree :table)})
+          0))))
+
+;; =============================================================================
 ;; Main entry point
 ;; =============================================================================
 
@@ -94,7 +123,9 @@
   {"create-user" {:description "Create a new user"
                   :fn create-user-cmd}
    "list-users"  {:description "List all users"
-                  :fn list-users-cmd}})
+                  :fn list-users-cmd}
+   "routes"      {:description "Print the route tree"
+                  :fn routes-cmd}})
 
 (defn- print-usage []
   (println "Usage: clojure -M:dev:cli <command> [options]")
