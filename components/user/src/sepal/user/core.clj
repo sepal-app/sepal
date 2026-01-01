@@ -23,14 +23,35 @@
            (db.i/execute-one! db)
            (store.i/coerce spec/User)))
 
+(defn- build-where-clause [{:keys [q status]}]
+  (let [conditions (cond-> [:and]
+                     q (conj [:or
+                              [:like :email (str "%" q "%")]
+                              [:like :full_name (str "%" q "%")]])
+                     status (conj [:= :status (name status)]))]
+    (when (not= conditions [:and])
+      conditions)))
+
 (defn get-all
-  "Returns all users."
-  [db]
+  "Returns all users, optionally filtered.
+   Options:
+   - :q      - Search by name or email
+   - :status - Filter by status (:active, :archived, :invited)"
+  [db & {:keys [q status]}]
   (let [columns (:store/columns (m/properties spec/User))]
-    (->> {:select columns
-          :from :user}
+    (->> (cond-> {:select columns
+                  :from :user
+                  :order-by [:full_name :email]}
+           (or q status) (assoc :where (build-where-clause {:q q :status status})))
          (db.i/execute! db)
          (map #(store.i/coerce spec/User %)))))
+
+(defn count-by-role
+  "Returns the count of users with the given role."
+  [db role]
+  (db.i/count db {:select [1]
+                  :from :user
+                  :where [:= :role (name role)]}))
 
 (defn- encrypt-password [password]
   (-> (Password/hash password)
@@ -61,9 +82,11 @@
                    spec/User))
 
 (defn verify-password [db email password]
-  (when-let [user (->> {:select [:id :email :password :full_name :role]
+  (when-let [user (->> {:select [:id :email :password :full_name :role :status]
                         :from :user
-                        :where [:= :email email]}
+                        :where [:and
+                                [:= :email email]
+                                [:= :status "active"]]}
                        (db.i/execute-one! db))]
     (when (-> (Password/check password (:user/password user))
               (.withScrypt))
@@ -77,12 +100,14 @@
 (create-ns 'sepal.user.interface)
 (alias 'user.i 'sepal.user.interface)
 
-(defn factory [{:keys [db] :as args}]
+(defn factory [{:keys [db status] :as args}]
   (let [data (-> (mg/generate spec/CreateUser)
                  (merge (m/decode spec/CreateUser args (mt/strip-extra-keys-transformer)))
                  ;; Remove :id so SQLite auto-generates it, avoiding conflicts
                  ;; with IDs from tests that use create! directly
-                 (dissoc :id))
+                 (dissoc :id)
+                 ;; Ensure status is explicitly set for tests (default to :active)
+                 (cond-> (not status) (assoc :status :active)))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

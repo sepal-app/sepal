@@ -1,10 +1,10 @@
 (ns sepal.app.middleware
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
+            [dev.onionpancakes.chassis.core :as chassis]
             [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.globals :as g]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.error.interface :as error.i]
@@ -21,18 +21,21 @@
         (handler))))
 
 (defn require-viewer
-  "Redirects to /login if there are no valid claims in the request."
+  "Redirects to /login if there are no valid claims in the request.
+   Also rejects non-active users (forces logout for archived, invited, or any future status)."
   [handler]
   (fn [{:keys [::z/context session] :as request}]
     (let [{:keys [db]} context
           user-id (:user/id session)
           viewer (when user-id (user.i/get-by-id db user-id))]
-      (if viewer
+      (if (and viewer (= :active (:user/status viewer)))
         (binding [g/*viewer* viewer]
           (-> request
               (assoc :viewer viewer)
               (handler)))
-        (http/see-other auth.routes/login)))))
+        ;; Clear session and redirect to login for non-active/missing users
+        (-> (http/see-other auth.routes/login)
+            (assoc :session nil))))))
 
 (defn resource-loader
   "Accept a getter function that accepts the request and loads the resource and
@@ -128,8 +131,9 @@
 (defn- html-response?
   "Returns true if response has text/html content type."
   [response]
-  (some-> (get-in response [:headers "Content-Type"])
-          (str/starts-with? "text/html")))
+  (let [content-type (or (get-in response [:headers "Content-Type"])
+                         (get-in response [:headers "content-type"]))]
+    (some-> content-type (str/starts-with? "text/html"))))
 
 (defn- redirect-response?
   "Returns true if response is a redirect (3xx or HX-Redirect/HX-Location)."
@@ -159,7 +163,7 @@
                (string? (:body response)))
         ;; HTMX partial response: inject OOB flash into body
         (-> response
-            (update :body str (html/render-partial (flash/banner-oob flash-messages)))
+            (update :body str (chassis/html (flash/banner-oob flash-messages)))
             (update :flash dissoc :messages))  ;; Clear from session since we rendered it
         ;; Regular response or redirect: leave flash in session
         response))))

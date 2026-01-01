@@ -7,6 +7,7 @@ CREATE TABLE "user" (
   email_verified_at text default null,
   full_name text,
   role text not null check(role in ('admin', 'editor', 'reader')),
+  status text not null default 'active' check(status in ('invited', 'active', 'archived')),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
@@ -179,6 +180,8 @@ CREATE TABLE collection (
   updated_at text not null default (datetime('now'))
 ) strict;
 CREATE INDEX user_id_idx on "user" (id);
+CREATE INDEX user_status_idx on "user" (status);
+CREATE INDEX user_role_idx on "user" (role);
 CREATE INDEX taxon_id_idx on taxon (id);
 CREATE INDEX taxon_name_idx on taxon (name);
 CREATE INDEX taxon_parent_id_idx on taxon (parent_id);

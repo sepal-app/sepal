@@ -66,9 +66,9 @@
               (do
                 (user.i/set-password! db (:user/id viewer) new_password)
                 (user.activity/create! db
-                                       user.activity/updated
-                                       (:user/id viewer)
-                                       {:user-id (:user/id viewer)})
+                                       (:user/id viewer)  ;; created-by
+                                       viewer             ;; user entity
+                                       {})                ;; additional data
                 (-> (http/see-other settings.routes/security)
                     (flash/success "Password changed successfully")))
               (-> (http/see-other settings.routes/security)

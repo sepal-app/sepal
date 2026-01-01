@@ -18,8 +18,8 @@
     (log/warn "Could not find the assets in the request context.")))
 
 (defn render-partial
-  "Return an html responses without a doctype."
-  [html]
+  "Return an html response without a doctype."
+  [content]
   {:status 200
    :headers {"content-type" "text/html"}
-   :body (str (chassis/html html))})
+   :body (chassis/html content)})

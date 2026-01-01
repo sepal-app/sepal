@@ -11,11 +11,14 @@ create table "user" (
   email_verified_at text default null,
   full_name text,
   role text not null check(role in ('admin', 'editor', 'reader')),
+  status text not null default 'active' check(status in ('invited', 'active', 'archived')),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
 
 create index user_id_idx on "user" (id);
+create index user_status_idx on "user" (status);
+create index user_role_idx on "user" (role);
 
 create trigger trigger_user_updated_at after update on "user"
 begin

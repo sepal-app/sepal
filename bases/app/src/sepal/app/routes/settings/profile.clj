@@ -58,10 +58,9 @@
                   (flash/error "Failed to update profile"))
               (do
                 (user.activity/create! db
-                                       user.activity/updated
-                                       (:user/id viewer)
-                                       {:user-id (:user/id viewer)
-                                        :changes result})
+                                       (:user/id viewer)  ;; created-by
+                                       viewer             ;; user entity
+                                       {})                ;; additional data (schema doesn't support full_name)
                 (-> (http/see-other settings.routes/profile)
                     (flash/success "Profile updated successfully")))))))
 

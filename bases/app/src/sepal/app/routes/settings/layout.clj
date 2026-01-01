@@ -2,6 +2,7 @@
   (:require [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.routes.settings.routes :as settings.routes]
+            [sepal.app.routes.settings.users.routes :as users.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [zodiac.core :as z]))
@@ -40,9 +41,12 @@
        (list
          (sidebar-item :href (z/url-for settings.routes/organization)
                        :label "General"
-                       :current? (= current-route settings.routes/organization)))))])
+                       :current? (= current-route settings.routes/organization))
+         (sidebar-item :href (z/url-for users.routes/index)
+                       :label "Users"
+                       :current? (= current-route users.routes/index)))))])
 
-(defn layout [& {:keys [viewer current-route category title content flash]}]
+(defn layout [& {:keys [viewer current-route category title content flash content-class]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for settings.routes/profile)} "Settings"]
                   category
@@ -51,7 +55,7 @@
     :content
     [:div {:class "flex gap-8 ml-4"}
      (settings-sidebar :current-route current-route :viewer viewer)
-     [:div {:class "flex-1 max-w-2xl"}
+     [:div {:class (or content-class "flex-1 max-w-2xl")}
       content]]))
 
 (defn save-button [label]
