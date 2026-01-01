@@ -34,6 +34,8 @@
                      :endpoint-override endpoint-override
                      :credentials-provider credentials-provider))
 
+;; TODO: Don't initi s3 client if s3 keys not set
+
 (defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override]}]
   (core/s3-client :credentials-provider credentials-provider
                   :endpoint-override endpoint-override))

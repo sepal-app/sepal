@@ -19,7 +19,7 @@
           email (create-user! *db* :admin password)
           sess (app.test/login email password)
           {:keys [response]} (peri/request sess "/settings/users")]
-      (is (= 200 (:status response)) 
+      (is (= 200 (:status response))
           (str "Expected 200, got " (:status response)))
       (when (= 200 (:status response))
         (let [body (Jsoup/parse ^String (:body response))]

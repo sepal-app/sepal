@@ -4,13 +4,9 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.test.interface :as test.i]
-            [sepal.user.interface :as user.i])
-  (:import [org.jsoup Jsoup]))
+            [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
-
-(defn- flash-banner-text [body]
-  (some-> (.selectFirst body ".banner-text") (.text)))
 
 (defn- create-user! [db role password]
   (let [email (str (name role) "-" (random-uuid) "@test.com")]
@@ -46,7 +42,6 @@
           ;; Create two admins
           admin1-email (create-user! *db* :admin password)
           admin2-email (create-user! *db* :admin password)
-          admin1 (user.i/get-by-email *db* admin1-email)
           admin2 (user.i/get-by-email *db* admin2-email)
           sess (app.test/login admin1-email password)
           {:keys [response] :as sess} (peri/request sess "/settings/profile")

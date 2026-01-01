@@ -1,6 +1,5 @@
 (ns sepal.app.ui.pages.detail
-  "Detail page layout with optional resource panel."
-  (:require [sepal.app.ui.page :as ui.page]))
+  "Detail page layout with optional resource panel.")
 
 (def panel-container-id "detail-panel-content")
 
