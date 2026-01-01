@@ -1,15 +1,32 @@
 (ns sepal.app.test.system
   (:require [integrant.core :as ig]
             [sepal.config.interface :as config.i]
+            [sepal.mail.interface.protocols :as mail.p]
             [sepal.test.interface :as test.i]
+            [sepal.token.interface :as token.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
   (:import [java.io File]))
+
+;; Mock mail client that records sent messages for testing
+(defrecord MockMailClient [sent-messages]
+  mail.p/MailClient
+  (send-message [_ message]
+    (swap! sent-messages conj message)
+    {:status :sent}))
+
+(defn create-mock-mail-client []
+  (->MockMailClient (atom [])))
+
+(defmethod ig/init-key ::mock-mail-client [_ _]
+  (create-mock-mail-client))
 
 (def ^:dynamic *app* nil)
 (def ^:dynamic *db* nil)
 (def ^:dynamic *system* nil)
 (def ^:dynamic *cookie-store* nil)
+(def ^:dynamic *mail-client* nil)
+(def ^:dynamic *token-service* nil)
 
 (defn load-config [config]
   (config.i/read-config config {:profile :test}))
@@ -29,12 +46,16 @@
                                       :manifest-path "app/build/.vite/manifest.json"
                                       :asset-resource-path "app/build/assets"
                                       :package-json-dir "bases/app"}
+     ::mock-mail-client {}
+     ::token.i/service {:secret "test-secret-1234"}
+
      :sepal.app.server/zodiac {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
                                             (ig/ref :sepal.app.server/zodiac-assets)]
                                :request-context {:forgot-password-email-from "support@sepal.app"
                                                  :forgot-password-email-subject "Sepal - Reset Password"
-                                                 :reset-password-secret "1234"
-                                                 :app-domain "test.sepal.app"}
+                                                 :token-service (ig/ref ::token.i/service)
+                                                 :app-domain "test.sepal.app"
+                                                 :mail (ig/ref ::mock-mail-client)}
                                :cookie-secret "1234567890123456"
                                :start-server? false}
      :sepal.database.interface/schema {:database-path db-path
@@ -50,6 +71,8 @@
                                       (binding [*system* system
                                                 *db* db
                                                 *app* (-> system :sepal.app.server/zodiac ::z/app)
-                                                *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)]
+                                                *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)
+                                                *mail-client* (-> system ::mock-mail-client)
+                                                *token-service* (-> system ::token.i/service)]
                                         (f))))
                                   (keys system-config))))

@@ -19,6 +19,7 @@
                         "components/store/test"
                         "components/taxon/test"
                         "components/test/test"
+                        "components/token/test"
                         "components/user/test"
                         "components/validation/test"]
            ;; Exclude e2e test namespaces (prevents loading Playwright classes)

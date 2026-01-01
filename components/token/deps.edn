@@ -1,0 +1,6 @@
+{:paths ["src" "resources"]
+ :deps {com.taoensso/nippy {:mvn/version "3.4.2"}
+        integrant/integrant {:mvn/version "0.8.1"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {}}}}

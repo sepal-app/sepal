@@ -19,6 +19,7 @@
         poly/store {:local/root "../../components/store"}
         poly/taxon {:local/root "../../components/taxon"}
         poly/test {:local/root "../../components/test"}
+        poly/token {:local/root "../../components/token"}
         poly/user {:local/root "../../components/user"}
         poly/validation {:local/root "../../components/validation"}}
  :aliases {:test {:extra-paths []

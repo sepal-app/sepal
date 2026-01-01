@@ -39,7 +39,7 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 | Variable | Description |
 |----------|-------------|
 | `COOKIE_SECRET` | Secret for encrypting cookies |
-| `RESET_PASSWORD_SECRET` | Secret for encrypting password reset tokens |
+| `TOKEN_SECRET` | Secret for encrypting tokens (password reset, invitations) - min 16 chars |
 | `APP_DOMAIN` | Domain for email links (e.g., reset password) |
 | `SMTP_HOST` | SMTP server hostname |
 | `SMTP_PORT` | SMTP server port (e.g., 587 for STARTTLS, 465 for SSL) |

@@ -6,10 +6,9 @@
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
             [sepal.mail.interface :as mail.i]
+            [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
-            [taoensso.nippy :as nippy]
-            [zodiac.core :as z])
-  (:import [java.util Base64]))
+            [zodiac.core :as z]))
 
 (defn page-content [& {:keys []}]
   [:div
@@ -30,18 +29,12 @@
              :flash flash))
 
 (defn reset-password-token
-  "Create a password reset token for an email that's encrypted with secret.
-
-  This token needs to be compatibile
-  sepal.app.routes.auth.reset-password#decrypt-reset-password-token
-  "
-  [email secret]
-  (let [timestamp (.getEpochSecond (java.time.Instant/now))
-        data (nippy/freeze [email timestamp]
-                           {:password [:cached secret]})]
-    (-> (Base64/getEncoder)
-        (.withoutPadding)
-        (.encodeToString data))))
+  "Create a password reset token for an email using the token service.
+   Token expires in 30 minutes."
+  [token-service email]
+  (token.i/encode token-service
+                  {:email email
+                   :expires-at (token.i/expires-in-minutes 30)}))
 
 (defn send-reset-password-email [mail to subject from reset-password-url]
   (let [content (mustache/render-resource "app/email/reset_password.mustache"
@@ -53,35 +46,42 @@
                                :subject subject
                                :body content})))
 
+(defn- active-user? [user]
+  (and (some? user)
+       (= :active (:user/status user))))
+
 (defn handler [{:keys [::z/context flash params request-method]}]
-  (let [{:keys [app-domain db mail reset-password-secret forgot-password-email-from
+  (let [{:keys [app-domain db mail token-service forgot-password-email-from
                 forgot-password-email-subject]} context
         {:keys [email]} params]
     (case request-method
       :post
-      (if (user.i/exists? db email)
-        (let [token (reset-password-token email reset-password-secret)
-              ;; TODO: This needs to be an absolute url
-              reset-password-url (format "http://%s%s"
-                                         app-domain
-                                         (z/url-for auth.routes/reset-password
-                                                    nil
-                                                    {:token token}))]
-          (try
-            (send-reset-password-email mail
-                                       email
-                                       forgot-password-email-subject
-                                       forgot-password-email-from
-                                       reset-password-url)
-            (-> (http/found auth.routes/forgot-password)
-                (flash/add-message "Check your email."))
-            (catch Exception e
-              ;; TODO: Proper logging
-              (println (str "Error: Could not send forgot password email: " (ex-message e)))
+      ;; Only send reset email for active users (prevents enumeration)
+      (let [user (user.i/get-by-email db email)]
+        (if (active-user? user)
+          (let [token (reset-password-token token-service email)
+                ;; TODO: This needs to be an absolute url
+                reset-password-url (format "http://%s%s"
+                                           app-domain
+                                           (z/url-for auth.routes/reset-password
+                                                      nil
+                                                      {:token token}))]
+            (try
+              (send-reset-password-email mail
+                                         email
+                                         forgot-password-email-subject
+                                         forgot-password-email-from
+                                         reset-password-url)
               (-> (http/found auth.routes/forgot-password)
-                  (flash/error "Error: Could not send email.")))))
-        (-> (http/found auth.routes/forgot-password)
-            (flash/add-message "Check your email.")))
+                  (flash/add-message "Check your email."))
+              (catch Exception e
+                ;; TODO: Proper logging
+                (println (str "Error: Could not send forgot password email: " (ex-message e)))
+                (-> (http/found auth.routes/forgot-password)
+                    (flash/error "Error: Could not send email.")))))
+          ;; Show same message for non-existent/inactive users (no enumeration)
+          (-> (http/found auth.routes/forgot-password)
+              (flash/add-message "Check your email."))))
 
       ;; else
       (render :flash flash))))

@@ -21,6 +21,7 @@
                               poly/store {:local/root "components/store"}
                               poly/taxon {:local/root "components/taxon"}
                               poly/test {:local/root "components/test"}
+                              poly/token {:local/root "components/token"}
                               poly/user {:local/root "components/user"}
                               poly/validation {:local/root "components/validation"}
 
@@ -56,6 +57,7 @@
                                 "components/store/test"
                                 "components/taxon/test"
                                 "components/test/test"
+                                "components/token/test"
                                 "components/user/test"
                                 "components/validation/test"]
                   :extra-deps {poly/test {:local/root "components/test"}
