@@ -399,12 +399,11 @@
       :or {timezone default-timezone
            page 1
            page-size 25}}]
-  (ui.page/page-inner
-    [:div {:id "activity-feed"}
-     (timeline-content :activity activity
-                       :timezone timezone
-                       :page page
-                       :page-size page-size)]))
+  [:div {:id "activity-feed"}
+   (timeline-content :activity activity
+                     :timezone timezone
+                     :page page
+                     :page-size page-size)])
 
 (defn render [& {:keys [activity page page-size]}]
   (ui.page/page :content (timeline :activity activity

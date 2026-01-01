@@ -25,25 +25,24 @@
   (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
 
 (defn page-content [& {:keys [media page page-size]}]
-  (ui.page/page-inner
-    [:div {:x-data (json/js {:selected nil})}
-     [:link {:rel "stylesheet"
-             :href (html/static-url "app/routes/media/css/media.css")}]
-     [:div {:id "media-page"}
-      ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-      ;; probably store the antiForgeryToken in a separate element and then that
-      ;; element can be updated with the when we get the signing urls
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :trigger "#upload-button"})}]
-      (media.ui/media-list :media media
-                           :next-page-url (when (>= (count media) page-size)
-                                            (next-page-url :current-page page))
-                           :page page)
-      [:div {:id "upload-success-forms"
-             :class "hidden"}]]
-     [:script {:type "module"
-               :src (html/static-url "app/routes/media/media.ts")}]]))
+  [:div {:x-data (json/js {:selected nil})}
+   [:link {:rel "stylesheet"
+           :href (html/static-url "app/routes/media/css/media.css")}]
+   [:div {:id "media-page"}
+    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
+    ;; probably store the antiForgeryToken in a separate element and then that
+    ;; element can be updated with the when we get the signing urls
+    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                       :signingUrl (z/url-for media.routes/s3)
+                                       :trigger "#upload-button"})}]
+    (media.ui/media-list :media media
+                         :next-page-url (when (>= (count media) page-size)
+                                          (next-page-url :current-page page))
+                         :page page)
+    [:div {:id "upload-success-forms"
+           :class "hidden"}]]
+   [:script {:type "module"
+             :src (html/static-url "app/routes/media/media.ts")}]])
 
 (defn render [& {:keys [page page-size media]}]
   (ui.page/page :content (page-content :page page
