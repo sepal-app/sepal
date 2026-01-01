@@ -28,12 +28,13 @@
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
 
-(defn render [& {:keys [viewer values errors]}]
+(defn render [& {:keys [viewer values errors flash]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/profile
     :category "Account"
     :title "Profile"
+    :flash flash
     :content (profile-form :values values :errors errors)))
 
 (def FormParams
@@ -42,7 +43,7 @@
    [:full_name {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:email [:string {:min 1}]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn handler [{:keys [::z/context flash form-params request-method viewer]}]
   (let [{:keys [db]} context
         values {:full_name (:user/full-name viewer)
                 :email (:user/email viewer)}]
@@ -64,4 +65,4 @@
                 (-> (http/see-other settings.routes/profile)
                     (flash/success "Profile updated successfully")))))))
 
-      (render :viewer viewer :values values))))
+      (render :viewer viewer :values values :flash flash))))

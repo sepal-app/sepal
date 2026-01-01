@@ -80,8 +80,9 @@
 (defn factory [{:keys [db] :as args}]
   (let [data (-> (mg/generate spec/CreateUser)
                  (merge (m/decode spec/CreateUser args (mt/strip-extra-keys-transformer)))
-                 #_(assoc :organization-id (:organization/id organization)
-                          :id (:user/id created-by)))
+                 ;; Remove :id so SQLite auto-generates it, avoiding conflicts
+                 ;; with IDs from tests that use create! directly
+                 (dissoc :id))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

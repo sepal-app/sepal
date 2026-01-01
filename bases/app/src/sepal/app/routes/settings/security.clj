@@ -33,12 +33,13 @@
     [:div {:class "mt-4"}
      (layout/save-button "Change password")]))
 
-(defn render [& {:keys [viewer errors]}]
+(defn render [& {:keys [viewer errors flash]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/security
     :category "Account"
     :title "Security"
+    :flash flash
     :content (password-form :errors errors)))
 
 (def FormParams
@@ -53,7 +54,7 @@
     (fn [{:keys [new_password confirm_password]}]
       (= new_password confirm_password))]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn handler [{:keys [::z/context flash form-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
@@ -73,4 +74,4 @@
               (-> (http/see-other settings.routes/security)
                   (flash/error "Current password is incorrect"))))))
 
-      (render :viewer viewer))))
+      (render :viewer viewer :flash flash))))

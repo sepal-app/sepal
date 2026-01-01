@@ -8,7 +8,11 @@
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
             [sepal.app.routes.activity.core :as activity]
-            [sepal.app.routes.auth.core :as auth]
+            [sepal.app.routes.auth.forgot-password :as forgot-password]
+            [sepal.app.routes.auth.login :as login]
+            [sepal.app.routes.auth.logout :as logout]
+            [sepal.app.routes.auth.reset-password :as reset-password]
+            [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.contact.core :as contact]
             [sepal.app.routes.dashboard.core :as dashboard]
             [sepal.app.routes.location.core :as location]
@@ -22,21 +26,30 @@
             [zodiac.ext.sql :as z.sql]))
 
 (defn routes []
-  (concat
-    (auth/routes)
-    ["" {:middleware [stacktrace/wrap-stacktrace-web
-                      middleware/htmx-request]}
-     ["/" (dashboard/routes)]
-     ["/ok" {:name :ok
-             :handler (constantly {:status 204})}]
-     ["/accession" (accession/routes)]
-     ["/activity" (activity/routes)]
-     ["/contact" (contact/routes)]
-     ["/location" (location/routes)]
-     ["/material" (material/routes)]
-     ["/taxon" (taxon/routes)]
-     ["/media" (media/routes)]
-     ["/settings" (settings/routes)]]))
+  ["" {:middleware [middleware/htmx-request
+                    middleware/wrap-flash-messages
+                    stacktrace/wrap-stacktrace-web]}
+   ;; Auth routes (inlined so they're under the root middleware)
+   ["/login" {:name auth.routes/login
+              :handler #'login/handler}]
+   ["/logout" {:name auth.routes/logout
+               :handler #'logout/handler}]
+   ["/forgot-password" {:name auth.routes/forgot-password
+                        :handler #'forgot-password/handler}]
+   ["/reset-password" {:name auth.routes/reset-password
+                       :handler #'reset-password/handler}]
+   ;; App routes
+   ["/" (dashboard/routes)]
+   ["/ok" {:name :ok
+           :handler (constantly {:status 204})}]
+   ["/accession" (accession/routes)]
+   ["/activity" (activity/routes)]
+   ["/contact" (contact/routes)]
+   ["/location" (location/routes)]
+   ["/material" (material/routes)]
+   ["/taxon" (taxon/routes)]
+   ["/media" (media/routes)]
+   ["/settings" (settings/routes)]])
 
 (defn- build-jdbc-url
   "Build a SQLite JDBC URL with optional pragma query parameters."

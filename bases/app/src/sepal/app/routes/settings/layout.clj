@@ -42,11 +42,12 @@
                        :label "General"
                        :current? (= current-route settings.routes/organization)))))])
 
-(defn layout [& {:keys [viewer current-route category title content]}]
+(defn layout [& {:keys [viewer current-route category title content flash]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for settings.routes/profile)} "Settings"]
                   category
                   title]
+    :flash flash
     :content
     [:div {:class "flex gap-8 ml-4"}
      (settings-sidebar :current-route current-route :viewer viewer)

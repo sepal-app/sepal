@@ -72,12 +72,13 @@
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
 
-(defn render [& {:keys [viewer values errors]}]
+(defn render [& {:keys [viewer values errors flash]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/organization
     :category "Organization"
     :title "General"
+    :flash flash
     :content (org-form :values values :errors errors)))
 
 (def FormParams
@@ -116,7 +117,7 @@
                   [setting-key (get form-values form-key)])
                 form-key->setting-key)))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn handler [{:keys [::z/context flash form-params request-method viewer]}]
   (let [{:keys [db]} context
         current-settings (settings.i/get-values db "organization")
         values (settings->form-values current-settings)]
@@ -134,4 +135,4 @@
             (-> (http/see-other settings.routes/organization)
                 (flash/success "Organization settings updated successfully")))))
 
-      (render :viewer viewer :values values))))
+      (render :viewer viewer :values values :flash flash))))

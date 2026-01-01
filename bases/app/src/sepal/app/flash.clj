@@ -9,7 +9,8 @@
   ([response text category]
    (update-in response
               [:flash :messages]
-              #(conj % {:text text :category category}))))
+              (fnil conj [])
+              {:text text :category category})))
 
 (defn error [response text]
   (add-message response text category/error))
@@ -54,20 +55,27 @@
                 category/error "bg-red-600"
                 category/success "bg-green-600"
                 category/warning "bg-yellow-600"
-                "bg-info")]
+                "bg-info")
+        ;; Errors don't auto-dismiss; success/info dismiss after 5s
+        auto-dismiss? (not= category category/error)
+        timeout-ms 5000]
     [:div {:class (html/attr color "w-full" "pointer-events-auto" "flex" "items-center"
-                             "justify-between" "gap-x-6" "" "px-6" "py-2.5" "sm:rounded-xl"
+                             "justify-between" "gap-x-6" "px-6" "py-2.5" "sm:rounded-xl"
                              "sm:py-3" "sm:pl-4" "sm:pr-3.5" "min-w-[33%]" "text-center"
                              "banner")
            :x-data "{show: true}"
-           :x-show "show"}
+           :x-show "show"
+           :x-init (when auto-dismiss?
+                     (format "setTimeout(() => show = false, %d)" timeout-ms))
+           :x-transition:leave "transition ease-in duration-300"
+           :x-transition:leave-start "opacity-100"
+           :x-transition:leave-end "opacity-0"}
      [:p {:class (html/attr "text-sm" "leading-6" "text-white")}
-      [:a {:href "#"}
-       [:strong {:class "font-semibold banner-text"}
-        text]]]
+      [:strong {:class "font-semibold banner-text"}
+       text]]
      [:button {:type "button"
-               :class "-m-1.5 flex-none p-1.5
-"                  :x-on:click "show=false"}
+               :class "-m-1.5 flex-none p-1.5"
+               :x-on:click "show = false"}
       [:span {:class "sr-only"} "Dismiss"]
       (icon/outline-x :color "text-white")]]))
 
@@ -77,3 +85,13 @@
                            "flex" "flex-col" "gap-4")}
    (for [message messages]
      (banner-message message))])
+
+(defn banner-oob
+  "Renders flash messages as OOB swap element for #flash-container.
+   Uses beforeend to append new messages rather than replacing existing ones.
+   Used by middleware for HTMX responses."
+  [messages]
+  [:div {:id "flash-container"
+         :hx-swap-oob "beforeend"}
+   (when (seq messages)
+     (banner messages))])

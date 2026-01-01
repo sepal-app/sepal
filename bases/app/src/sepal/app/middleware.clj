@@ -1,7 +1,10 @@
 (ns sepal.app.middleware
-  (:require [clojure.tools.logging :as log]
+  (:require [clojure.string :as str]
+            [clojure.tools.logging :as log]
             [sepal.app.authorization :as authz]
+            [sepal.app.flash :as flash]
             [sepal.app.globals :as g]
+            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.error.interface :as error.i]
@@ -121,3 +124,42 @@
       (if (authz/user-has-permission? viewer permission)
         (handler request)
         (http/found (redirect-route-fn) {:id (:id path-params)})))))
+
+(defn- html-response?
+  "Returns true if response has text/html content type."
+  [response]
+  (some-> (get-in response [:headers "Content-Type"])
+          (str/starts-with? "text/html")))
+
+(defn- redirect-response?
+  "Returns true if response is a redirect (3xx or HX-Redirect/HX-Location)."
+  [response]
+  (let [status (:status response)
+        headers (:headers response)]
+    (or (and status (<= 300 status 399))
+        (contains? headers "HX-Redirect")
+        (contains? headers "HX-Location"))))
+
+(defn wrap-flash-messages
+  "Middleware that handles flash messages for both regular and HTMX requests.
+
+   For HTMX partial responses (non-redirect), injects flash messages as OOB
+   elements into the response body. For redirects and HX-Location/HX-Redirect,
+   leaves flash in session for next page load.
+
+   Only injects into HTML responses with string bodies."
+  [handler]
+  (fn [{:keys [htmx-request?] :as request}]
+    (let [response (handler request)
+          flash-messages (get-in response [:flash :messages])]
+      (if (and htmx-request?
+               (seq flash-messages)
+               (not (redirect-response? response))
+               (html-response? response)
+               (string? (:body response)))
+        ;; HTMX partial response: inject OOB flash into body
+        (-> response
+            (update :body str (html/render-partial (flash/banner-oob flash-messages)))
+            (update :flash dissoc :messages))  ;; Clear from session since we rendered it
+        ;; Regular response or redirect: leave flash in session
+        response))))

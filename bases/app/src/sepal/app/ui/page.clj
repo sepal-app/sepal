@@ -140,7 +140,8 @@
 
         [:div {:class "mb-32"} ;; mb to leave room for the footer
          (page-inner content)]
-        (flash/banner (:messages flash))
+        [:div {:id "flash-container"}
+         (flash/banner (:messages flash))]
 
         (when footer
           [:div {:id "page-footer"}
