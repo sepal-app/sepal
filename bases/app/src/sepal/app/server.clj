@@ -58,9 +58,20 @@
                   (format "SELECT load_extension('%s')" ext-path))))
          (str/join "; "))))
 
+(defn- get-data-home
+  "Get Sepal data home directory.
+   Priority: SEPAL_DATA_HOME > XDG_DATA_HOME/Sepal > platform default"
+  []
+  (or (System/getenv "SEPAL_DATA_HOME")
+      (when-let [xdg (System/getenv "XDG_DATA_HOME")]
+        (str (fs/path xdg "Sepal")))
+      (if (= "Mac OS X" (System/getProperty "os.name"))
+        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
+        (str (fs/path (fs/xdg-data-home) "Sepal")))))
+
 (defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key]}]
   (let [db-path (or database-path
-                    (str (fs/path (fs/xdg-data-home) "Sepal" "sepal.db")))
+                    (str (fs/path (get-data-home) "sepal.db")))
         parent-dir (fs/parent db-path)
         jdbc-url (build-jdbc-url db-path pragmas)
         connection-init-sql (build-connection-init-sql extensions extension-library-path)

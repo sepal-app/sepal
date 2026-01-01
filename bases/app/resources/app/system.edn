@@ -11,7 +11,7 @@
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
  :sepal.app.server/zodiac-sql
- {:database-path #env DATABASE_PATH
+ {;; database-path is optional - defaults to $SEPAL_DATA_HOME/sepal.db
   ;; SQLite pragmas are set via JDBC URL query parameters
   :pragmas {:journal_mode "WAL"
             :foreign_keys "ON"

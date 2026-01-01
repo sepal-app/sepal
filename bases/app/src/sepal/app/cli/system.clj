@@ -6,7 +6,8 @@
             [integrant.core :as ig]
             [lambdaisland.uri :as uri]
             [next.jdbc.connection :as connection]
-            [sepal.database.interface :as db.i])
+            [sepal.database.interface :as db.i]
+            [sepal.malli.interface :as malli.i])
   (:import [com.zaxxer.hikari HikariDataSource]))
 
 ;; =============================================================================
@@ -37,11 +38,21 @@
 ;; System configuration
 ;; =============================================================================
 
-(defn- get-database-path
-  "Get database path from env var or default XDG location."
+(defn- get-data-home
+  "Get Sepal data home directory.
+   Priority: SEPAL_DATA_HOME > XDG_DATA_HOME/Sepal > platform default"
   []
-  (or (System/getenv "DATABASE_PATH")
-      (str (fs/path (fs/xdg-data-home) "Sepal" "sepal.db"))))
+  (or (System/getenv "SEPAL_DATA_HOME")
+      (when-let [xdg (System/getenv "XDG_DATA_HOME")]
+        (str (fs/path xdg "Sepal")))
+      (if (= "Mac OS X" (System/getProperty "os.name"))
+        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
+        (str (fs/path (fs/xdg-data-home) "Sepal")))))
+
+(defn- get-database-path
+  "Get database path from SEPAL_DATA_HOME."
+  []
+  (str (fs/path (get-data-home) "sepal.db")))
 
 (defn system-config
   "Create CLI system configuration.
@@ -51,7 +62,7 @@
    - Database connection pool"
   []
   (let [db-path (get-database-path)]
-    {:sepal.malli.interface/init {}
+    {::malli.i/init {}
      ::datasource {:database-path db-path
                    :pragmas {:journal_mode "WAL"
                              :foreign_keys "ON"
@@ -92,7 +103,7 @@
       (let [{:keys [database-path]} (ex-data e)]
         (if database-path
           (do (println (format "Error: %s" (ex-message e)))
-              (println "Set DATABASE_PATH environment variable to specify the database location.")
+              (println "Set SEPAL_DATA_HOME environment variable to specify the data directory.")
               1)
           (throw e))))
     (catch Exception e

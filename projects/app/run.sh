@@ -2,24 +2,18 @@
 
 set -Eeuo pipefail
 
-# Determine DATABASE_PATH (use env var or default to XDG data dir)
-if [[ -z "${DATABASE_PATH:-}" ]]; then
-    if [[ -n "${XDG_DATA_HOME:-}" ]]; then
-        DATA_DIR="$XDG_DATA_HOME"
-    elif [[ "$(uname)" == "Darwin" ]]; then
-        DATA_DIR="$HOME/Library/Application Support"
-    else
-        DATA_DIR="$HOME/.local/share"
-    fi
-    DATABASE_PATH="$DATA_DIR/Sepal/sepal.db"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../bin/lib/env.sh"
 
-export DATABASE_PATH
+SEPAL_DATA_HOME=$(get_sepal_data_home)
+DB_PATH="$SEPAL_DATA_HOME/sepal.db"
+
+export SEPAL_DATA_HOME
 export MIGRATIONS_DIR=db/migrations
 
-# Ensure database directory and file exist, then apply migrations
-mkdir -p "$(dirname "$DATABASE_PATH")"
-touch "$DATABASE_PATH"
-bin/migrate.sh apply "$DATABASE_PATH" &&
+# Ensure directory and database file exist, then apply migrations
+mkdir -p "$SEPAL_DATA_HOME"
+touch "$DB_PATH"
+bin/migrate.sh apply "$DB_PATH" &&
     cd projects/app &&
     clojure -M:main

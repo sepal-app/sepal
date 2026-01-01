@@ -171,7 +171,7 @@ clojure -M:poly check
 ### Environment Setup
 
 Copy `.env.local.example` to `.env.local` and set:
-- `DATABASE_PATH` - Path to SQLite database file (defaults to $XDG_DATA_HOME/Sepal/sepal.db)
+- `SEPAL_DATA_HOME` - Data directory (defaults to $XDG_DATA_HOME/Sepal)
 - `WFO_DATABASE_PATH` - World Flora Online database
 - `COOKIE_SECRET` - Session encryption (16+ chars)
 
@@ -184,7 +184,7 @@ Additional env vars for production (see `bases/app/resources/app/system.edn`):
 
 - **Main Configuration**: The primary system configuration is defined as an [Integrant](https://github.com/weavejester/integrant) file at `bases/app/resources/app/system.edn`.
 - **Dynamic Setup with Aero**: The configuration is processed by [Aero](https://github.com/juxt/aero), which enables environment-specific setups using profiles (e.g., `:local`, `:default`, `:test`) and environment variable injection (e.g., `#env COOKIE_SECRET`).
-- **Database Configuration**: Database connection is configured via `DATABASE_PATH` environment variable in `system.edn`. The JDBC URL is generated from this path at startup. Tests use temporary files or in-memory databases.
+- **Database Configuration**: Database path defaults to `$SEPAL_DATA_HOME/sepal.db`. The JDBC URL is generated from this path at startup. Tests use temporary files or in-memory databases.
 
 ## Code Patterns
 
