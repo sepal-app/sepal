@@ -53,7 +53,7 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 | Variable | Description |
 |----------|-------------|
 | `WFO_DATABASE_PATH` | Path to WFO Plantlist SQLite database (only needed for DB initialization) |
-| `DATABASE_PATH` | Path to SQLite database file (optional, defaults to user's data dir) |
+| `SEPAL_DATA_HOME` | Data directory for database and config files (defaults to `$XDG_DATA_HOME/Sepal` or platform equivalent) |
 | `EXTENSIONS_LIBRARY_PATH` | Path to directory containing SQLite extensions like `mod_spatialite` (see troubleshooting below) |
 
 **Optional - Media Uploads:**
