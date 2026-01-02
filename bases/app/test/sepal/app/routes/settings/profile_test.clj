@@ -27,7 +27,7 @@
           {:keys [response] :as sess} (peri/request sess "/settings/profile"
                                                     :request-method :post
                                                     :params {:__anti-forgery-token token
-                                                             :full_name "Updated Name"
+                                                             :full-name "Updated Name"
                                                              :email email})
           _ (is (= 303 (:status response)) "Should redirect after successful update")
           {:keys [response]} (peri/follow-redirect sess)]

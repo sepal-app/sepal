@@ -55,6 +55,16 @@
   (when (and (authz/user-has-permission? viewer authz/users-edit)
              (not= (:user/id user) (:user/id viewer)))
     [:div {:class "flex gap-1"}
+     ;; Resend invitation button for invited users
+     (when (= :invited (:user/status user))
+       [:button {:class "btn btn-ghost btn-xs"
+                 :title "Resend invitation"
+                 :hx-post (z/url-for users.routes/resend-invitation {:id (:user/id user)})
+                 :hx-swap "none"
+                 :hx-vals (csrf-hx-vals)
+                 :hx-confirm "Resend invitation to this user?"}
+        (lucide/mail :class "w-4 h-4")])
+     ;; Archive/Activate buttons
      (if (= :archived (:user/status user))
        [:button {:class "btn btn-ghost btn-xs"
                  :title "Activate user"
@@ -102,36 +112,41 @@
   [db viewer & {:keys [show-archived q]}]
   (let [users (user.i/get-all db
                               :q q
-                              :status (when-not show-archived :active))]
+                              :exclude-status (when-not show-archived :archived))]
     [:div {:id "users-table"}
      (users-table users viewer)]))
 
 (defn- filter-controls [params]
-  [:div {:class "flex items-center mb-4"}
-   [:input {:name "q"
-            :type "search"
-            :value (:q params)
-            :placeholder "Search..."
-            :class "input input-md bg-white w-96"
-            :hx-get (z/url-for users.routes/index)
-            :hx-trigger "keyup changed delay:300ms"
-            :hx-select "#users-table"
-            :hx-target "#users-table"
-            :hx-swap "outerHTML"
-            :hx-include "[name='show-archived']"}]
-   [:label {:class "ml-8"}
-    "Show archived"
-    [:input {:type "checkbox"
-             :name "show-archived"
-             :value "true"
-             :checked (:show-archived params)
-             :class "ml-4"
+  [:div {:class "flex items-center justify-between mb-4"}
+   [:div {:class "flex items-center"}
+    [:input {:name "q"
+             :type "search"
+             :value (:q params)
+             :placeholder "Search..."
+             :class "input input-md bg-white w-96"
              :hx-get (z/url-for users.routes/index)
-             :hx-trigger "change"
+             :hx-trigger "keyup changed delay:300ms"
              :hx-select "#users-table"
              :hx-target "#users-table"
              :hx-swap "outerHTML"
-             :hx-include "[name='q']"}]]])
+             :hx-include "[name='show-archived']"}]
+    [:label {:class "ml-8"}
+     "Show archived"
+     [:input {:type "checkbox"
+              :name "show-archived"
+              :value "true"
+              :checked (:show-archived params)
+              :class "ml-4"
+              :hx-get (z/url-for users.routes/index)
+              :hx-trigger "change"
+              :hx-select "#users-table"
+              :hx-target "#users-table"
+              :hx-swap "outerHTML"
+              :hx-include "[name='q']"}]]]
+   [:a {:href (z/url-for users.routes/invite)
+        :class "btn btn-primary"}
+    (lucide/user-plus :class "w-4 h-4 mr-2")
+    "Invite User"]])
 
 (defn render [& {:keys [db viewer params]}]
   (settings.layout/layout

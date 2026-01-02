@@ -8,6 +8,8 @@
             [sepal.app.routes.settings.users.activate :as users.activate]
             [sepal.app.routes.settings.users.archive :as users.archive]
             [sepal.app.routes.settings.users.index :as users.index]
+            [sepal.app.routes.settings.users.invite :as users.invite]
+            [sepal.app.routes.settings.users.resend-invitation :as users.resend-invitation]
             [sepal.app.routes.settings.users.routes :as users.routes]
             [sepal.app.routes.settings.users.update-role :as users.update-role]))
 
@@ -27,9 +29,14 @@
    ["/users" {:middleware [[middleware/require-admin]]}
     ["" {:name users.routes/index
          :get #'users.index/handler}]
+    ["/invite" {:name users.routes/invite
+                :get #'users.invite/handler
+                :post #'users.invite/handler}]
     ["/:id/role" {:name users.routes/update-role
                   :post #'users.update-role/handler}]
     ["/:id/archive" {:name users.routes/archive
                      :post #'users.archive/handler}]
     ["/:id/activate" {:name users.routes/activate
-                      :post #'users.activate/handler}]]])
+                      :post #'users.activate/handler}]
+    ["/:id/resend-invitation" {:name users.routes/resend-invitation
+                               :post #'users.resend-invitation/handler}]]])

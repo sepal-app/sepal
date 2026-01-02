@@ -61,7 +61,7 @@
         (if (active-user? user)
           (let [token (reset-password-token token-service email)
                 ;; TODO: This needs to be an absolute url
-                reset-password-url (format "http://%s%s"
+                reset-password-url (format "https://%s%s"
                                            app-domain
                                            (z/url-for auth.routes/reset-password
                                                       nil

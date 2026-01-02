@@ -89,3 +89,33 @@
    [:path {:d "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"}]
    [:circle {:cx "9" :cy "7" :r "4"}]
    [:polyline {:points "16 11 18 13 22 9"}]])
+
+(defn user-plus
+  "User plus icon from Lucide (for invite user)."
+  [& {:keys [class] :or {class "w-4 h-4"}}]
+  [:svg {:xmlns "http://www.w3.org/2000/svg"
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width "2"
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :class class}
+   [:path {:d "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"}]
+   [:circle {:cx "9" :cy "7" :r "4"}]
+   [:line {:x1 "19" :x2 "19" :y1 "8" :y2 "14"}]
+   [:line {:x1 "22" :x2 "16" :y1 "11" :y2 "11"}]])
+
+(defn mail
+  "Mail icon from Lucide (for resend invitation)."
+  [& {:keys [class] :or {class "w-4 h-4"}}]
+  [:svg {:xmlns "http://www.w3.org/2000/svg"
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width "2"
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :class class}
+   [:path {:d "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"}]
+   [:rect {:x "2" :y "4" :width "20" :height "16" :rx "2"}]])

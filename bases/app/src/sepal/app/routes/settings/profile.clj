@@ -16,9 +16,9 @@
      :action (z/url-for settings.routes/profile)}
     (ui.form/anti-forgery-field)
     (ui.form/input-field :label "Full name"
-                         :name "full_name"
-                         :value (:full_name values)
-                         :errors (:full_name errors))
+                         :name "full-name"
+                         :value (:full-name values)
+                         :errors (:full-name errors))
     (ui.form/input-field :label "Email"
                          :name "email"
                          :type "email"
@@ -40,12 +40,12 @@
 (def FormParams
   [:map {:closed true}
    ui.form/AntiForgeryField
-   [:full_name {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:full-name {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:email [:string {:min 1}]]])
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
   (let [{:keys [db]} context
-        values {:full_name (:user/full-name viewer)
+        values {:full-name (:user/full-name viewer)
                 :email (:user/email viewer)}]
     (case request-method
       :post

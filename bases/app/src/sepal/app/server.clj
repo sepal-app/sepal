@@ -8,6 +8,7 @@
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
             [sepal.app.routes.activity.core :as activity]
+            [sepal.app.routes.auth.accept-invitation :as accept-invitation]
             [sepal.app.routes.auth.forgot-password :as forgot-password]
             [sepal.app.routes.auth.login :as login]
             [sepal.app.routes.auth.logout :as logout]
@@ -38,6 +39,8 @@
                         :handler #'forgot-password/handler}]
    ["/reset-password" {:name auth.routes/reset-password
                        :handler #'reset-password/handler}]
+   ["/accept-invitation" {:name auth.routes/accept-invitation
+                          :handler #'accept-invitation/handler}]
    ;; App routes
    ["/" (dashboard/routes)]
    ["/ok" {:name :ok

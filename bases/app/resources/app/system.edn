@@ -39,6 +39,10 @@
                                                      "support@sepal.app"]
                     :forgot-password-email-subject #or [#env FORGOT_PASSWORD_EMAIL_SUBJECT
                                                         "Sepal - Reset Password"]
+                    :invitation-email-from #or [#env INVITATION_EMAIL_FROM
+                                                "noreply@sepal.app"]
+                    :invitation-email-subject #or [#env INVITATION_EMAIL_SUBJECT
+                                                   "You've been invited to Sepal"]
                     :token-service #ig/ref :sepal.token.interface/service
                     :s3-presigner #ig/ref :sepal.aws-s3.interface/s3-presigner
                     :s3-client #ig/ref :sepal.aws-s3.interface/s3-client

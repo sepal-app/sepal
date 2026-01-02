@@ -11,10 +11,11 @@
 (defn get-all
   "Returns all users, optionally filtered.
    Options:
-   - :q      - Search by name or email
-   - :status - Filter by status (:active, :archived, :invited)"
-  [db & {:keys [q status]}]
-  (core/get-all db :q q :status status))
+   - :q              - Search by name or email
+   - :status         - Filter by status (:active, :archived, :invited)
+   - :exclude-status - Exclude users with this status"
+  [db & {:keys [q status exclude-status]}]
+  (core/get-all db :q q :status status :exclude-status exclude-status))
 
 (defn count-by-role [db role]
   (core/count-by-role db role))

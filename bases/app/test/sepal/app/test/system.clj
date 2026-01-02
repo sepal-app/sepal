@@ -53,6 +53,8 @@
                                             (ig/ref :sepal.app.server/zodiac-assets)]
                                :request-context {:forgot-password-email-from "support@sepal.app"
                                                  :forgot-password-email-subject "Sepal - Reset Password"
+                                                 :invitation-email-from "noreply@sepal.app"
+                                                 :invitation-email-subject "You've been invited to Sepal"
                                                  :token-service (ig/ref ::token.i/service)
                                                  :app-domain "test.sepal.app"
                                                  :mail (ig/ref ::mock-mail-client)}

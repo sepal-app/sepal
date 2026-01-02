@@ -18,7 +18,7 @@
 
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default
-  [:map {:store/columns [:id :email :full_name :role :status]}
+  [:map {:store/columns [:id :email :full-name :role :status]}
    [:user/id id]
    [:user/email email]
    [:user/full-name {:optional true} [:maybe :string]]
@@ -31,6 +31,7 @@
    [:email email]
    [:password password]
    [:role role]
+   [:full-name {:optional true} [:maybe :string]]
    [:status {:optional true} status]])
 
 (def SetPassword
@@ -39,7 +40,7 @@
 
 (def UpdateUser
   [:map
-   [:full_name {:optional true} [:maybe :string]]
+   [:full-name {:optional true} [:maybe :string]]
    [:email {:optional true} email]
    [:role {:optional true} role]
    [:status {:optional true} status]])

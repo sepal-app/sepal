@@ -23,26 +23,29 @@
            (db.i/execute-one! db)
            (store.i/coerce spec/User)))
 
-(defn- build-where-clause [{:keys [q status]}]
+(defn- build-where-clause [{:keys [q status exclude-status]}]
   (let [conditions (cond-> [:and]
                      q (conj [:or
                               [:like :email (str "%" q "%")]
                               [:like :full_name (str "%" q "%")]])
-                     status (conj [:= :status (name status)]))]
+                     status (conj [:= :status (name status)])
+                     exclude-status (conj [:!= :status (name exclude-status)]))]
     (when (not= conditions [:and])
       conditions)))
 
 (defn get-all
   "Returns all users, optionally filtered.
    Options:
-   - :q      - Search by name or email
-   - :status - Filter by status (:active, :archived, :invited)"
-  [db & {:keys [q status]}]
+   - :q              - Search by name or email
+   - :status         - Filter by status (:active, :archived, :invited)
+   - :exclude-status - Exclude users with this status"
+  [db & {:keys [q status exclude-status]}]
   (let [columns (:store/columns (m/properties spec/User))]
     (->> (cond-> {:select columns
                   :from :user
                   :order-by [:full_name :email]}
-           (or q status) (assoc :where (build-where-clause {:q q :status status})))
+           (or q status exclude-status)
+           (assoc :where (build-where-clause {:q q :status status :exclude-status exclude-status})))
          (db.i/execute! db)
          (map #(store.i/coerce spec/User %)))))
 
