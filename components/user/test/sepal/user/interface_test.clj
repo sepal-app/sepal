@@ -18,7 +18,8 @@
 (deftest test-create!
   (let [db *db*]
     (tf/testing "user.i/create!"
-      (let [data (mg/generate user.spec/CreateUser)
+      ;; Dissoc :id to let SQLite auto-generate it, avoiding collisions
+      (let [data (dissoc (mg/generate user.spec/CreateUser) :id)
             user (user.i/create! db data)]
         (is (not (error.i/error? user)))
         (is (m/validate user.spec/User user))
@@ -26,12 +27,13 @@
         (is (not= (:password data)
                   (-> (db.i/execute-one! db {:select :password
                                              :from :user
-                                             :where [:= :id (:id data)]})
+                                             :where [:= :id (:user/id user)]})
                       :password)))
         (jdbc.sql/delete! db :user {:id (:user/id user)})))
 
     (tf/testing "user.i/create! - with id"
-      (let [id (mg/generate pos-int?)
+      ;; Use a large ID range to avoid conflicts with auto-generated IDs
+      (let [id (+ 1000000 (mg/generate [:int {:min 0 :max 999999}]))
             data (-> (mg/generate user.spec/CreateUser)
                      (assoc :id id))
             user (user.i/create! db data)]
