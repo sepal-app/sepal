@@ -58,7 +58,7 @@
               (pw/wait-for-url #"/settings/profile")
 
               ;; Verify we're back on the profile page with updated values
-              (pw/wait-for-selector "input[name=\"full_name\"]")
+              (pw/wait-for-selector "input[name=\"full-name\"]")
               (is (re-find #"/settings/profile" (pw/get-url))
                   "Should redirect back to profile page after update"))
 
