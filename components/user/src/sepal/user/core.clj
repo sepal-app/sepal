@@ -56,6 +56,11 @@
                   :from :user
                   :where [:= :role (name role)]}))
 
+;; NOTE: scrypt is intentionally slow (~100ms per hash) to prevent brute-force attacks.
+;; This adds up in tests when many users are created. Future optimization options:
+;; - Use a faster hash (e.g., bcrypt with low rounds) in test mode
+;; - Pre-compute and reuse hashed passwords in test factories
+;; - Create users without passwords when not testing auth flows
 (defn- encrypt-password [password]
   (-> (Password/hash password)
       (.addRandomSalt)
