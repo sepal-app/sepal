@@ -47,10 +47,10 @@
 
             (testing "3. Update profile settings"
               ;; Should be on profile page by default
-              (pw/wait-for-selector "input[name=\"full_name\"]")
+              (pw/wait-for-selector "input[name=\"full-name\"]")
 
               ;; Fill profile form
-              (pw/fill "input[name=\"full_name\"]" "Test User")
+              (pw/fill "input[name=\"full-name\"]" "Test User")
               (pw/fill "input[name=\"email\"]" "updated@example.com")
 
               ;; Submit and wait for redirect back to profile
