@@ -24,6 +24,7 @@
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]
+            [zodiac.ext.headers :as z.headers]
             [zodiac.ext.sql :as z.sql]))
 
 (defn routes []
@@ -103,9 +104,25 @@
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))
 
-(defmethod ig/init-key ::zodiac [_ options]
-  (z/start (merge options
-                  {:routes #'routes})))
+;; CSP policy for Alpine.js and HTMX
+;; - 'unsafe-eval' required for Alpine.js expression evaluation (x-show, x-bind, etc.)
+;; - 'unsafe-inline' for script-src allows inline <script> tags (e.g., module imports)
+;; - 'unsafe-inline' for style-src allows inline styles and x-cloak CSS
+;; - 'data:' for img-src allows inline SVG data URIs
+;; TODO: Consider switching to @alpinejs/csp build and nonces to tighten CSP
+(def csp-headers
+  (assoc z.headers/web
+         :content-security-policy
+         (str "default-src 'self'; "
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+              "style-src 'self' 'unsafe-inline'; "
+              "img-src 'self' data:")))
+
+(defmethod ig/init-key ::zodiac [_ {:keys [extensions] :as options}]
+  (let [extensions (conj extensions (z.headers/init {:headers csp-headers}))]
+    (z/start (merge options
+                    {:routes #'routes
+                     :extensions extensions}))))
 
 (defmethod ig/halt-key! ::zodiac [_ zodiac]
   (z/stop zodiac))
