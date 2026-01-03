@@ -152,21 +152,21 @@
                   taxon (conj {:label "Taxon"
                                :value (:taxon/name taxon)
                                :clear-href (uri/uri-str
-                                            {:path uri
-                                             :query (uri/map->query-string
-                                                     (dissoc query-params "taxon-id" "page"))})})
+                                             {:path uri
+                                              :query (uri/map->query-string
+                                                       (dissoc query-params "taxon-id" "page"))})})
                   accession (conj {:label "Accession"
                                    :value (:accession/code accession)
                                    :clear-href (uri/uri-str
-                                                {:path uri
-                                                 :query (uri/map->query-string
-                                                         (dissoc query-params "accession-id" "page"))})})
+                                                 {:path uri
+                                                  :query (uri/map->query-string
+                                                           (dissoc query-params "accession-id" "page"))})})
                   location (conj {:label "Location"
                                   :value (:location/name location)
                                   :clear-href (uri/uri-str
-                                               {:path uri
-                                                :query (uri/map->query-string
-                                                        (dissoc query-params "location-id" "page"))})}))]
+                                                {:path uri
+                                                 :query (uri/map->query-string
+                                                          (dissoc query-params "location-id" "page"))})}))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [material rows]
