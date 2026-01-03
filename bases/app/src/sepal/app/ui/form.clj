@@ -119,8 +119,9 @@
    [:option ""]
    (for [[val label] (map #(vector (value-fn %) (label-fn %))
                           (->> enum rest (filter filter-fn)))]
+     ;; Compare using value-fn on both sides to handle keyword vs string
      [:option {:value val
-               :selected (when (= val value)
+               :selected (when (= val (some-> value value-fn))
                            "selected")}
       label])])
 
