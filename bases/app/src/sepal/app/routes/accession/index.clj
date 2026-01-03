@@ -120,15 +120,15 @@
                   taxon (conj {:label "Taxon"
                                :value (:taxon/name taxon)
                                :clear-href (uri/uri-str
-                                            {:path uri
-                                             :query (uri/map->query-string
-                                                     (dissoc query-params "taxon-id" "page"))})})
+                                             {:path uri
+                                              :query (uri/map->query-string
+                                                       (dissoc query-params "taxon-id" "page"))})})
                   supplier (conj {:label "Supplier"
                                   :value (:contact/name supplier)
                                   :clear-href (uri/uri-str
-                                               {:path uri
-                                                :query (uri/map->query-string
-                                                        (dissoc query-params "supplier-contact-id" "page"))})}))]
+                                                {:path uri
+                                                 :query (uri/map->query-string
+                                                          (dissoc query-params "supplier-contact-id" "page"))})}))]
 
     (if (= (get headers "accept") "application/json")
       ;; TODO: json response
