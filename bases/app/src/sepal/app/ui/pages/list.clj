@@ -4,6 +4,33 @@
 
 (def list-container-id "list-container")
 
+(defn filter-badge
+  "A single filter badge with label, value, and clear button.
+
+   Options:
+   - :label      - Filter label (e.g., \"Taxon\")
+   - :value      - Filter value to display (e.g., \"Quercus alba\")
+   - :clear-href - URL to navigate to when clearing this filter"
+  [{:keys [label value clear-href]}]
+  [:div {:class "badge badge-neutral gap-1"}
+   [:span (str label ": ")]
+   [:span {:class "font-semibold"} value]
+   [:a {:href clear-href
+        :class "hover:text-error"
+        :aria-label (str "Clear " label " filter")}
+    (lucide/x :class "w-3 h-3")]])
+
+(defn filter-badges
+  "Renders a list of active filter badges.
+
+   Options:
+   - :filters - Sequence of filter maps with :label, :value, :clear-href"
+  [filters]
+  (when (seq filters)
+    [:div {:class "flex flex-wrap gap-2 mt-2"}
+     (for [filter filters]
+       (filter-badge filter))]))
+
 (defn search-field [q]
   [:div {:class "flex flex-row"}
    [:input {:name "q"
@@ -42,8 +69,9 @@
 
    Options:
    - :table-actions - Action buttons/forms above table
-   - :content       - Main table content"
-  [& {:keys [table-actions content]}]
+   - :content       - Main table content
+   - :filters       - Sequence of active filter maps with :label, :value, :clear-href"
+  [& {:keys [table-actions content filters]}]
   [:div {:x-data "{ panelOpen: false, selectedId: null }"}
    [:div {:class "mt-8"}
     [:form {:method "get"
@@ -56,15 +84,17 @@
      [:div {:class "flex justify-between"}
       [:div {:class "flex flex-row items-center"}
        table-actions]]]
+    ;; Active filter badges
+    (filter-badges filters)
     ;; Table and panel in same row, outside the form
     [:div {:class "mt-4 flex flex-row gap-8"}
      ;; Table content
      [:div {:id list-container-id
             :class "flex-1 min-w-0"}
       content]
-     ;; Preview panel
+     ;; Preview panel - hidden until a row is selected
      [:div {:class "w-80 shrink-0 bg-base-100 border-1 rounded-(--radius-box) border-base-300 overflow-y-auto"
-            :x-show "panelOpen"}
+            :x-show "selectedId"}
       ;; Panel header with close button
       [:div {:class "sticky top-0 bg-base-100 border-b border-base-300 p-2 flex justify-end"}
        [:button {:class "btn btn-ghost btn-sm btn-square"

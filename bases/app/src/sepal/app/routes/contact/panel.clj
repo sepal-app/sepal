@@ -49,7 +49,7 @@
           (panel/statistics-section
             :stats [{:label "Accessions supplied"
                      :value accession-count
-                     :href (z/url-for accession.routes/index {:supplier-contact-id id})}]))
+                     :href (z/url-for accession.routes/index nil {:supplier-contact-id id})}]))
 
         ;; Activity section
         (panel/collapsible-section

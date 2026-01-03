@@ -6,6 +6,7 @@
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.resource-panel :as panel]
@@ -87,9 +88,10 @@
           (panel/statistics-section
             :stats [{:label "Accessions"
                      :value accession-count
-                     :href (z/url-for accession.routes/index {:taxon-id id})}
+                     :href (z/url-for accession.routes/index nil {:taxon-id id})}
                     {:label "Materials"
-                     :value material-count}]))
+                     :value material-count
+                     :href (z/url-for material.routes/index nil {:taxon-id id})}]))
 
         ;; External links section
         (panel/collapsible-section

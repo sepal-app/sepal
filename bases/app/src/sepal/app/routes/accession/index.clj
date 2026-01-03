@@ -5,10 +5,12 @@
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
+            [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -56,7 +58,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [viewer href page page-size rows taxon total]}]
+(defn render [& {:keys [filters viewer href page page-size rows supplier taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -64,6 +66,7 @@
                                :page-size page-size
                                :rows rows
                                :total total)
+               :filters filters
                :table-actions (pages.list/search-field (-> href uri/query-map :q)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
@@ -71,6 +74,10 @@
                                [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
                                     :class "italic"}
                                 (:taxon/name taxon)])
+                   supplier (conj [:a {:href (z/url-for contact.routes/index)}
+                                   "Contacts"]
+                                  [:a {:href (z/url-for contact.routes/detail {:id (:contact/id supplier)})}
+                                   (:contact/name supplier)])
                    :always
                    (conj "Accessions"))
     :page-title-buttons (when (authz/user-has-permission? viewer accession.perm/create)
@@ -81,11 +88,12 @@
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]
+   [:supplier-contact-id {:min 0} :int]
    [:taxon-id {:min 0} :int]])
 
 (defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
-        {:keys [page page-size q taxon-id]} (params/decode Params query-params)
+        {:keys [page page-size q supplier-contact-id taxon-id]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [:*]
               :from [[:accession :a]]
@@ -96,14 +104,31 @@
                         [:like :a.code (format "%%%s%%" q)]
                         :true)
                       (when taxon-id
-                        [:= :t.id taxon-id])]}
+                        [:= :t.id taxon-id])
+                      (when supplier-contact-id
+                        [:= :a.supplier_contact_id supplier-contact-id])]}
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
                                       :order-by [:code]))
         taxon (when taxon-id
-                (taxon.i/get-by-id db taxon-id))]
+                (taxon.i/get-by-id db taxon-id))
+        supplier (when supplier-contact-id
+                   (contact.i/get-by-id db supplier-contact-id))
+        filters (cond-> []
+                  taxon (conj {:label "Taxon"
+                               :value (:taxon/name taxon)
+                               :clear-href (uri/uri-str
+                                            {:path uri
+                                             :query (uri/map->query-string
+                                                     (dissoc query-params "taxon-id" "page"))})})
+                  supplier (conj {:label "Supplier"
+                                  :value (:contact/name supplier)
+                                  :clear-href (uri/uri-str
+                                               {:path uri
+                                                :query (uri/map->query-string
+                                                        (dissoc query-params "supplier-contact-id" "page"))})}))]
 
     (if (= (get headers "accept") "application/json")
       ;; TODO: json response
@@ -114,10 +139,12 @@
                              :code (:accession/code row)
                              :id (:accession/id row)}))
       (render :viewer viewer
+              :filters filters
               :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
               :rows rows
               :page page
               :page-size page-size
+              :supplier supplier
               :taxon taxon
               :total total))))

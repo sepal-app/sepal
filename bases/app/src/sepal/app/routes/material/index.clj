@@ -12,6 +12,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.location.interface :as location.i]
             [sepal.material.interface.permission :as material.perm]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -73,7 +74,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [viewer accession href page page-size rows taxon total]}]
+(defn render [& {:keys [filters viewer accession href location page page-size rows taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -81,6 +82,7 @@
                                :page-size page-size
                                :rows rows
                                :total total)
+               :filters filters
                :table-actions (pages.list/search-field (-> href uri/query-map :q)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
@@ -91,6 +93,9 @@
                                    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})
                                         :class "italic"}
                                     (:accession/code accession)])
+                   location (conj [:a {:href (z/url-for location.routes/index)} "Locations"]
+                                  [:a {:href (z/url-for location.routes/detail {:id (:location/id location)})}
+                                   (:location/name location)])
                    :always (conj "Materials"))
     :page-title-buttons (when (authz/user-has-permission? viewer material.perm/create)
                           (create-button))))
@@ -101,14 +106,12 @@
    [:page-size {:default 25} :int]
    [:q :string]
    [:accession-id {:min 0} :int]
+   [:location-id {:min 0} :int]
    [:taxon-id {:min 0} :int]])
 
 (defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
-        ;; TODO: validate page and page size
-        ;; {:strs [page page-size q]
-        ;;  :or {page-size default-page-size}} query-params
-        {:keys [accession-id page page-size q taxon-id]} (params/decode Params query-params)
+        {:keys [accession-id location-id page page-size q taxon-id]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         stmt {:select [:*]
               :from [[:material :m]]
@@ -127,12 +130,16 @@
                       (when taxon-id
                         [:= :t.id taxon-id])
                       (when (and accession-id (not taxon-id))
-                        [:= :a.id accession-id])]}
+                        [:= :a.id accession-id])
+                      (when location-id
+                        [:= :l.id location-id])]}
         total (db.i/count db stmt)
         taxon (when taxon-id
                 (taxon.i/get-by-id db taxon-id))
         accession (when (and accession-id (not taxon-id))
                     (accession.i/get-by-id db accession-id))
+        location (when location-id
+                   (location.i/get-by-id db location-id))
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
@@ -140,7 +147,26 @@
                                       ;; timestamp audit columns to our models
                                       ;; or join against the activity feed
                                       ;; :order-by [[:m.created_at :desc]]
-                                      ))]
+                                      ))
+        filters (cond-> []
+                  taxon (conj {:label "Taxon"
+                               :value (:taxon/name taxon)
+                               :clear-href (uri/uri-str
+                                            {:path uri
+                                             :query (uri/map->query-string
+                                                     (dissoc query-params "taxon-id" "page"))})})
+                  accession (conj {:label "Accession"
+                                   :value (:accession/code accession)
+                                   :clear-href (uri/uri-str
+                                                {:path uri
+                                                 :query (uri/map->query-string
+                                                         (dissoc query-params "accession-id" "page"))})})
+                  location (conj {:label "Location"
+                                  :value (:location/name location)
+                                  :clear-href (uri/uri-str
+                                               {:path uri
+                                                :query (uri/map->query-string
+                                                        (dissoc query-params "location-id" "page"))})}))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [material rows]
@@ -153,8 +179,10 @@
                              :accession-id (:material/accession-id material)}))
       (render :viewer viewer
               :accession accession
+              :filters filters
               :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string query-params)})
+              :location location
               :rows rows
               :page page
               :page-size page-size

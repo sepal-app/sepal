@@ -72,7 +72,7 @@
           (panel/statistics-section
             :stats [{:label "Materials"
                      :value material-count
-                     :href (z/url-for material.routes/index {:accession-id id})}]))
+                     :href (z/url-for material.routes/index nil {:accession-id id})}]))
 
         ;; Activity section
         (panel/collapsible-section
