@@ -47,9 +47,9 @@
    children])
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
-  [:nav {:class "navbar w-full bg-base-200"}
+  [:nav {:class "navbar w-full bg-base-100"}
    [:div {:class "w-full flex flex-row justify-between items-center"}
-    [:div {:class "flex flex-row"}
+    [:div {:class "flex flex-row items-center"}
      [:label {:for "sidebar-drawer-toggle",
               :aria-label "open sidebar",
               :class "btn btn-square btn-ghost"}
@@ -72,7 +72,7 @@
             :aria-label "close sidebar",
             :class "drawer-overlay"}]
    [:div {:class
-          "flex min-h-full flex-col items-start bg-base-300 is-drawer-close:w-16 is-drawer-open:w-64"}
+          "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-16 is-drawer-open:w-64"}
     ;; (comment "Sidebar content here")
     [:ul {:class "menu w-full grow flex flex-col justify-between"}
      ;; (comment "List item")

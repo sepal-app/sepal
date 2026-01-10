@@ -210,7 +210,7 @@
    - :children - Panel content
    - :class    - Additional CSS classes"
   [& {:keys [children class]}]
-  [:div {:class (html/attr "divide-y divide-base-300" class)}
+  [:div {:class (html/attr "divide-y divide-base-200" class)}
    children])
 
 (defn panel-header
