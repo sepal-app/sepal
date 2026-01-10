@@ -3,7 +3,7 @@ import collapse from "@alpinejs/collapse"
 import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
-import "htmx.org"
+// htmx not needed on auth pages - forms use regular POST
 
 window.Alpine = Alpine
 

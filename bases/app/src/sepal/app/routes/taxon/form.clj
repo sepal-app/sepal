@@ -40,7 +40,7 @@
     [:name [:string {:min 1}]]
     [:author :string]
     [:rank [:string {:min 1}]]
-    [:parent-id [:maybe :string]]
+    [:parent-id {:optional true} [:maybe :string]]
     [:vernacular-names [:* [:map
                             [:name [:string {:min 1}]]
                             [:language [:maybe :string]]]]]]])

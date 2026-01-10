@@ -4,6 +4,7 @@ import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
 import htmx from "htmx.org"
+import "htmx-ext-alpine-morph"
 
 window.htmx = htmx
 
