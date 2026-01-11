@@ -26,15 +26,26 @@ ${MIGRATE_SH} apply "$DB_PATH"
 # Populate the database from the WFO database
 #
 sqlite3 -cmd "attach database \"${WFO_DATABASE_PATH}\" as wfo;" "$DB_PATH" <<'EOSQL'
- insert into taxon (wfo_taxon_id, name, author, rank, read_only)
- select
-   wfo_t.ID wfo_taxon_id,
-   wfo_n.scientificName name,
-   wfo_n.authorship author,
-   wfo_n.rank rank,
-   true
- from wfo.taxon wfo_t
- join wfo.name wfo_n on wfo_n.ID = wfo_t.nameID
+-- Insert all taxa from WFO
+insert into taxon (wfo_taxon_id, name, author, rank, read_only)
+select
+  wfo_t.ID wfo_taxon_id,
+  wfo_n.scientificName name,
+  wfo_n.authorship author,
+  wfo_n.rank rank,
+  true
+from wfo.taxon wfo_t
+join wfo.name wfo_n on wfo_n.ID = wfo_t.nameID;
+
+-- Update parent_id by mapping WFO parentID to Sepal taxon id
+update taxon
+set parent_id = (
+  select parent.id
+  from taxon parent
+  join wfo.taxon wfo_t on wfo_t.ID = taxon.wfo_taxon_id
+  where parent.wfo_taxon_id = wfo_t.parentID
+)
+where wfo_taxon_id is not null;
 EOSQL
 
 #
