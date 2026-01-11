@@ -27,13 +27,12 @@ ${MIGRATE_SH} apply "$DB_PATH"
 #
 sqlite3 -cmd "attach database \"${WFO_DATABASE_PATH}\" as wfo;" "$DB_PATH" <<'EOSQL'
 -- Insert all taxa from WFO
-insert into taxon (wfo_taxon_id, name, author, rank, read_only)
+insert into taxon (wfo_taxon_id, name, author, rank)
 select
   wfo_t.ID wfo_taxon_id,
   wfo_n.scientificName name,
   wfo_n.authorship author,
-  wfo_n.rank rank,
-  true
+  wfo_n.rank rank
 from wfo.taxon wfo_t
 join wfo.name wfo_n on wfo_n.ID = wfo_t.nameID;
 

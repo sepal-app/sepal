@@ -23,7 +23,8 @@
 (defn page-content [& {:keys [errors taxon values]}]
   [:div {:class "flex flex-col gap-2"}
    (taxon.shared/tabs taxon taxon.shared/name-tab)
-   (let [read-only? (:taxon/read-only taxon)]
+   ;; TODO: Re-enable read-only for WFO-imported taxa when we decide how to handle them
+   (let [read-only? false]
      [:div
       (when read-only?
         (alert/info "Taxa from the WFO Plantlist are not editable."))

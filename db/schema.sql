@@ -47,7 +47,6 @@ CREATE TABLE taxon (
     'variety'
   )),
   wfo_taxon_id text,
-  read_only integer not null default 0 check(read_only in (0, 1)),
   vernacular_names text not null default '[]' check(json_valid(vernacular_names)),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))

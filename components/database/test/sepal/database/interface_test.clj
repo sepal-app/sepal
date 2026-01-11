@@ -79,12 +79,16 @@
 (deftest sqlite-booleans-returned-as-integers
   (testing "SQLite boolean columns are returned as integers (0/1)"
     ;; Insert a test record with boolean field, select it, then clean up
-    (db.i/execute-one! *db* ["insert into taxon (name, rank, read_only) values ('Test', 'genus', 0)"])
-    (let [result (db.i/execute-one! *db* ["select read_only from taxon limit 1"])]
+    (db.i/execute-one! *db* ["insert into taxon (name, rank) values ('Test', 'genus')"])
+    (let [taxon (db.i/execute-one! *db* ["select id from taxon limit 1"])
+          _ (db.i/execute-one! *db* ["insert into accession (code, taxon_id, private) values ('test', ?, 0)"
+                                     (:taxon/id taxon)])
+          result (db.i/execute-one! *db* ["select private from accession limit 1"])]
+      (db.i/execute-one! *db* ["delete from accession"])
       (db.i/execute-one! *db* ["delete from taxon"])
-      (is (some? result) "Expected a result from taxon table")
+      (is (some? result) "Expected a result from accession table")
       ;; SQLite returns integers for boolean columns
-      (is (integer? (:taxon/read-only result))))))
+      (is (integer? (:accession/private result))))))
 
 ;;; Edge cases
 

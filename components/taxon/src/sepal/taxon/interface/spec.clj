@@ -41,9 +41,6 @@
            :unranked
            :variety])
 
-(def read-only [:boolean {:decode/store #(and (int? %) (= % 1))
-                          :encode/store #(if (true? %) 1 0)}])
-
 (def VernacularName
   [:map {:closed true
          :encode/store #(when % (cske/transform-keys csk/->kebab-case-string %))}
@@ -58,7 +55,6 @@
     rank]
    [:taxon/author [:maybe author]]
    [:taxon/name name]
-   [:taxon/read-only read-only]
    ;; TODO: If the parent-id is none then use the parent of the taxon that
    ;; wfo-plantlist-name-id references. What about if we want to set the parent
    ;; id to something else? Maybe we just don't allow it as long as it
