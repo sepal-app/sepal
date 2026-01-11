@@ -4,7 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.settings.layout :as settings.layout]
-            [sepal.app.routes.settings.users.routes :as users.routes]
+            [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.table :as table]
             [sepal.user.interface :as user.i]
@@ -39,7 +39,7 @@
     [:select {:id (str "role-select-" (:user/id user) "-" (name current-role))
               :class "select select-ghost select-sm leading-none"
               :autocomplete "off"
-              :hx-post (z/url-for users.routes/update-role {:id (:user/id user)})
+              :hx-post (z/url-for settings.routes/users-update-role {:id (:user/id user)})
               :hx-swap "outerHTML"
               :hx-target "#users-table"
               :hx-vals (csrf-hx-vals)
@@ -59,7 +59,7 @@
      (when (= :invited (:user/status user))
        [:button {:class "btn btn-ghost btn-xs"
                  :title "Resend invitation"
-                 :hx-post (z/url-for users.routes/resend-invitation {:id (:user/id user)})
+                 :hx-post (z/url-for settings.routes/users-resend-invitation {:id (:user/id user)})
                  :hx-swap "none"
                  :hx-vals (csrf-hx-vals)
                  :hx-confirm "Resend invitation to this user?"}
@@ -68,14 +68,14 @@
      (if (= :archived (:user/status user))
        [:button {:class "btn btn-ghost btn-xs"
                  :title "Activate user"
-                 :hx-post (z/url-for users.routes/activate {:id (:user/id user)})
+                 :hx-post (z/url-for settings.routes/users-activate {:id (:user/id user)})
                  :hx-swap "outerHTML"
                  :hx-target "#users-table"
                  :hx-vals (csrf-hx-vals)}
         (lucide/user-check :class "w-4 h-4")]
        [:button {:class "btn btn-ghost btn-xs"
                  :title "Archive user"
-                 :hx-post (z/url-for users.routes/archive {:id (:user/id user)})
+                 :hx-post (z/url-for settings.routes/users-archive {:id (:user/id user)})
                  :hx-swap "outerHTML"
                  :hx-target "#users-table"
                  :hx-vals (csrf-hx-vals)
@@ -124,7 +124,7 @@
              :value (:q params)
              :placeholder "Search..."
              :class "input input-md bg-white w-96"
-             :hx-get (z/url-for users.routes/index)
+             :hx-get (z/url-for settings.routes/users)
              :hx-trigger "keyup changed delay:300ms"
              :hx-select "#users-table"
              :hx-target "#users-table"
@@ -137,13 +137,13 @@
               :value "true"
               :checked (:show-archived params)
               :class "ml-4"
-              :hx-get (z/url-for users.routes/index)
+              :hx-get (z/url-for settings.routes/users)
               :hx-trigger "change"
               :hx-select "#users-table"
               :hx-target "#users-table"
               :hx-swap "outerHTML"
               :hx-include "[name='q']"}]]]
-   [:a {:href (z/url-for users.routes/invite)
+   [:a {:href (z/url-for settings.routes/users-invite)
         :class "btn btn-primary"}
     (lucide/user-plus :class "w-4 h-4 mr-2")
     "Invite User"]])
@@ -151,7 +151,7 @@
 (defn render [& {:keys [db viewer params]}]
   (settings.layout/layout
     :viewer viewer
-    :current-route users.routes/index
+    :current-route settings.routes/users
     :category "Organization"
     :title "Users"
     :content-class "flex-1"

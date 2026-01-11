@@ -15,6 +15,7 @@
                         "components/malli/test"
                         "components/material/test"
                         "components/media/test"
+                        "components/scheduler/test"
                         "components/settings/test"
                         "components/store/test"
                         "components/taxon/test"

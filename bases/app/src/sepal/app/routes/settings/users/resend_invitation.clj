@@ -3,7 +3,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
-            [sepal.app.routes.settings.users.routes :as users.routes]
+            [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.mail.interface :as mail.i]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
@@ -33,12 +33,12 @@
     (cond
       ;; User not found
       (nil? user)
-      (-> (http/see-other users.routes/index)
+      (-> (http/see-other settings.routes/users)
           (flash/error "User not found"))
 
       ;; User is not in invited status
       (not= :invited (:user/status user))
-      (-> (http/see-other users.routes/index)
+      (-> (http/see-other settings.routes/users)
           (flash/error "Can only resend invitations for users with 'invited' status"))
 
       ;; User is invited - resend
@@ -59,9 +59,9 @@
                                   :accept-url accept-url
                                   :from invitation-email-from
                                   :subject invitation-email-subject})
-          (-> (http/see-other users.routes/index)
+          (-> (http/see-other settings.routes/users)
               (flash/add-message (str "Invitation resent to " email)))
           (catch Exception e
             (println (str "Error: Could not resend invitation email: " (ex-message e)))
-            (-> (http/see-other users.routes/index)
+            (-> (http/see-other settings.routes/users)
                 (flash/error "Failed to send invitation email"))))))))

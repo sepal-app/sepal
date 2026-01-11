@@ -4,7 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.settings.layout :as layout]
-            [sepal.app.routes.settings.users.routes :as users.routes]
+            [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
             [sepal.mail.interface :as mail.i]
@@ -49,7 +49,7 @@
 (defn- page-content [& {:keys [errors values]}]
   [:div
    [:h1 {:class "text-2xl font-bold mb-6"} "Invite User"]
-   (form/form {:action (z/url-for users.routes/invite)
+   (form/form {:action (z/url-for settings.routes/users-invite)
                :method "post"}
               [(form/anti-forgery-field)
                (form/input-field :label "Email"
@@ -69,14 +69,14 @@
                 "An invitation email will be sent to this address. The invitation expires in 24 hours."]
                [:div {:class "flex gap-4 mt-6"}
                 (form/submit-button {:class "btn btn-primary"} "Send Invitation")
-                [:a {:href (z/url-for users.routes/index)
+                [:a {:href (z/url-for settings.routes/users)
                      :class "btn"}
                  "Cancel"]]])])
 
 (defn- render [& {:keys [errors values viewer]}]
   (layout/layout
     :viewer viewer
-    :current-route users.routes/invite
+    :current-route settings.routes/users-invite
     :category "Organization"
     :title "Invite User"
     :content (page-content :errors errors :values values)))
@@ -143,11 +143,11 @@
                                               :accept-url accept-url
                                               :from invitation-email-from
                                               :subject invitation-email-subject})
-                      (-> (http/see-other users.routes/index)
+                      (-> (http/see-other settings.routes/users)
                           (flash/add-message (str "Invitation sent to " email)))
                       (catch Exception e
                         (println (str "Error: Could not send invitation email: " (ex-message e)))
-                        (-> (http/see-other users.routes/index)
+                        (-> (http/see-other settings.routes/users)
                             (flash/error "User created but failed to send invitation email")))))))))))
 
       ;; GET

@@ -66,4 +66,14 @@
   :username #env SMTP_USERNAME
   :password #env SMTP_PASSWORD
   :auth #or [#env SMTP_AUTH "true"]
-  :tls #or [#env SMTP_TLS "starttls"]}}
+  :tls #or [#env SMTP_TLS "starttls"]}
+
+ ;; Scheduler for background jobs
+ :sepal.scheduler.interface/scheduler {}
+
+ ;; Backup job - registers with scheduler on startup
+ :sepal.app.backup/job
+ {:scheduler #ig/ref :sepal.scheduler.interface/scheduler
+  :zodiac #ig/ref :sepal.app.server/zodiac
+  :mail #ig/ref :sepal.mail.interface/client
+  :app-domain #env APP_DOMAIN}}

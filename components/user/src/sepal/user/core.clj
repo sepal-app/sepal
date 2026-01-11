@@ -56,6 +56,19 @@
                   :from :user
                   :where [:= :role (name role)]}))
 
+(defn get-by-role
+  "Returns all users with the given role."
+  [db role]
+  (let [columns (:store/columns (m/properties spec/User))]
+    (->> {:select columns
+          :from :user
+          :where [:and
+                  [:= :role (name role)]
+                  [:= :status "active"]]
+          :order-by [:full_name :email]}
+         (db.i/execute! db)
+         (map #(store.i/coerce spec/User %)))))
+
 ;; NOTE: scrypt is intentionally slow (~100ms per hash) to prevent brute-force attacks.
 ;; This adds up in tests when many users are created. Future optimization options:
 ;; - Use a faster hash (e.g., bcrypt with low rounds) in test mode

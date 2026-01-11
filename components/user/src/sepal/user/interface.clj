@@ -20,6 +20,11 @@
 (defn count-by-role [db role]
   (core/count-by-role db role))
 
+(defn get-by-role
+  "Returns all active users with the given role."
+  [db role]
+  (core/get-by-role db role))
+
 (defn exists? [db email]
   (core/exists? db email))
 

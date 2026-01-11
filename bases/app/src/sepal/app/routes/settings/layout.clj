@@ -2,7 +2,6 @@
   (:require [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.routes.settings.routes :as settings.routes]
-            [sepal.app.routes.settings.users.routes :as users.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [zodiac.core :as z]))
@@ -42,9 +41,12 @@
          (sidebar-item :href (z/url-for settings.routes/organization)
                        :label "General"
                        :current? (= current-route settings.routes/organization))
-         (sidebar-item :href (z/url-for users.routes/index)
+         (sidebar-item :href (z/url-for settings.routes/users)
                        :label "Users"
-                       :current? (= current-route users.routes/index)))))])
+                       :current? (= current-route settings.routes/users))
+         (sidebar-item :href (z/url-for settings.routes/backups)
+                       :label "Backups"
+                       :current? (= current-route settings.routes/backups)))))])
 
 (defn layout [& {:keys [viewer current-route category title content flash content-class]}]
   (page/page
