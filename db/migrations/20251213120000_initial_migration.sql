@@ -319,7 +319,6 @@ create table collection (
   country text,
   province text,
   locality text,
-  geo_coordinates blob,
   geo_uncertainty integer check(geo_uncertainty > 0),
   elevation integer,
   accession_id integer unique constraint collection_accession_id_fkey references accession (id) on delete cascade,

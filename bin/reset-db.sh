@@ -22,6 +22,10 @@ sqlite3 "$DB_PATH" <"$SCHEMA_DUMP_FILE"
 # Apply any pending migrations
 ${MIGRATE_SH} apply "$DB_PATH"
 
+# Initialize SpatiaLite metadata and register geometry column
+sqlite3 "$DB_PATH" "SELECT InitSpatialMetaData(1);" 2>/dev/null || true
+sqlite3 "$DB_PATH" "SELECT RecoverGeometryColumn('collection', 'geo_coordinates', 4326, 'POINT', 'XY');" 2>/dev/null || true
+
 #
 # Populate the database from the WFO database
 #
