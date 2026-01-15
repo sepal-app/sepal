@@ -48,6 +48,7 @@ COPY --from=clojure-builder /root/.m2 /root/.m2
 # Copy application code
 COPY deps.edn ./
 COPY db ./db
+COPY bin/lib ./bin/lib
 COPY components ./components
 COPY bases ./bases
 COPY projects ./projects
