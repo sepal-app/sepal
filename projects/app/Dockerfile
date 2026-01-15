@@ -28,7 +28,7 @@ FROM eclipse-temurin:25-jre-noble
 
 WORKDIR /app
 
-# Install SpatiaLite and curl (for migrate.sh)
+# Install SpatiaLite, sqlite3, and Clojure CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libsqlite3-mod-spatialite \
@@ -36,7 +36,10 @@ RUN apt-get update && \
         curl \
         bash && \
     rm -rf /var/lib/apt/lists/* && \
-    echo ".load mod_spatialite" > ~/.sqliterc
+    echo ".load mod_spatialite" > ~/.sqliterc && \
+    sqlite3 --version && \
+    curl -fsSL https://download.clojure.org/install/linux-install.sh | bash && \
+    clojure --version
 
 # Download migrate.sh
 RUN mkdir -p bin && \

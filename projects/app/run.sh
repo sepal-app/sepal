@@ -10,6 +10,7 @@ DB_PATH="$SEPAL_DATA_HOME/sepal.db"
 
 export SEPAL_DATA_HOME
 export MIGRATIONS_DIR=db/migrations
+export SCHEMA_DUMP_FILE=/dev/null
 
 # Ensure directory and database file exist, then apply migrations
 mkdir -p "$SEPAL_DATA_HOME"

@@ -332,7 +332,7 @@ begin
   update collection set updated_at = datetime('now') where id = NEW.id;
 end;
 
--- Register the geometry column with SpatiaLite metadata
--- This enables spatial functions and proper geometry handling
+-- Initialize SpatiaLite metadata tables and register the geometry column
 -- Note: Requires SpatiaLite extension to be loaded before running this migration
+SELECT InitSpatialMetaData(1);
 SELECT AddGeometryColumn('collection', 'geo_coordinates', 4326, 'POINT', 'XY');
