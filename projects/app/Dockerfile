@@ -32,9 +32,11 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libsqlite3-mod-spatialite \
+        sqlite3 \
         curl \
         bash && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    echo ".load mod_spatialite" > ~/.sqliterc
 
 # Download migrate.sh
 RUN mkdir -p bin && \
