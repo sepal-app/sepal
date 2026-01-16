@@ -47,8 +47,8 @@
                                 "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
      "Upload"])
 
-(defn thumbnail-url [host key]
-  (uri/uri-str {:scheme "https"
-                :host host
-                :path (str "/" key)
-                :query (uri/map->query-string {:max-h 300 :max-w 300 :fit "crop"})}))
+(defn thumbnail-url
+  "Generate a thumbnail URL for a media item."
+  [media-id & {:keys [w h fit] :or {w 300 h 300 fit "crop"}}]
+  (str (z/url-for media.routes/transform {:id media-id})
+       "?" (uri/map->query-string {:w w :h h :fit fit})))

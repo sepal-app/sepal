@@ -78,7 +78,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db imgix-media-domain resource]} context
+  (let [{:keys [db resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -89,8 +89,7 @@
                                        (:material/id resource)
                                        :offset offset
                                        :limit limit)
-                   (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url imgix-media-domain
-                                                                          (:media/s3-key %)))))]
+                   (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))]
 
     ;; TODO: if a media instance is unlinked then we need to remove it from the
     ;; resource media list page

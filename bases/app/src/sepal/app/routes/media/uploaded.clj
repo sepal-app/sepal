@@ -18,7 +18,7 @@
    [:size :int]])
 
 (defn handler [& {:keys [::z/context form-params viewer] :as _request}]
-  (let [{:keys [db imgix-media-domain]} context
+  (let [{:keys [db]} context
         {filename :filename
          content-type :contentType
          link-resource-type :linkResourceType
@@ -26,32 +26,33 @@
          s3-bucket :s3Bucket
          s3-key :s3Key
          size :size} (params/decode FormParams form-params)
-        result  (-> (media.i/create! db
-                                     {:media-type content-type
-                                      :s3-bucket s3-bucket
-                                      :s3-key s3-key
-                                      :size-in-bytes size
-                                      :title filename})
-                    (assoc :thumbnail-url (media.ui/thumbnail-url imgix-media-domain s3-key)))]
+        result (media.i/create! db
+                                {:media-type content-type
+                                 :s3-bucket s3-bucket
+                                 :s3-key s3-key
+                                 :size-in-bytes size
+                                 :title filename
+                                 :created-by (:user/id viewer)})]
 
-    (when-not (error.i/error? result)
-      ;; Create activity record for the media creation
-      (media.activity/create! db
-                              media.activity/created
-                              (:user/id viewer)
-                              result)
+    (if (error.i/error? result)
+      ;; TODO: handle error properly
+      (throw (ex-info "Failed to create media" {:error result}))
 
-      ;; If we were sent a resource type and resource id to link then link
-      ;; the media and the resource
-      (when (and (some? link-resource-type)
-                 (some? link-resource-id))
-        (media.i/link! db
-                       (:media/id result)
-                       link-resource-id
-                       link-resource-type)))
+      (let [media (assoc result :thumbnail-url (media.ui/thumbnail-url (:media/id result)))]
+        ;; Create activity record for the media creation
+        (media.activity/create! db
+                                media.activity/created
+                                (:user/id viewer)
+                                media)
 
-    (if-not (error.i/error? result)
-      (->  (media.ui/media-item :item result)
-           (html/render-partial))
-      ;; TODO: handle error
-      (throw result))))
+        ;; If we were sent a resource type and resource id to link then link
+        ;; the media and the resource
+        (when (and (some? link-resource-type)
+                   (some? link-resource-id))
+          (media.i/link! db
+                         (:media/id media)
+                         link-resource-id
+                         link-resource-type))
+
+        (-> (media.ui/media-item :item media)
+            (html/render-partial))))))

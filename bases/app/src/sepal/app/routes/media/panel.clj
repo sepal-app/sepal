@@ -1,12 +1,12 @@
 (ns sepal.app.routes.media.panel
   "Resource panel content for media.
    Displays media summary, preview thumbnail, and linked resources."
-  (:require [lambdaisland.uri :as uri]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.database.interface :as db.i]
             [sepal.media.interface :as media.i]
@@ -54,14 +54,6 @@
        :url (link-url link)
        :type (:media-link/resource-type link)})))
 
-(defn- thumbnail-url
-  "Generate thumbnail URL for media preview."
-  [imgix-host s3-key]
-  (uri/uri-str {:scheme "https"
-                :host imgix-host
-                :path (str "/" s3-key)
-                :query (uri/map->query-string {:max-h 200 :max-w 200 :fit "crop"})}))
-
 (defn panel-content
   "Render the media panel content.
 
@@ -107,18 +99,18 @@
 (defn fetch-panel-data
   "Fetch all data needed for the media panel.
    Returns a map with :media, :thumbnail-url, :link-info."
-  [db imgix-media-domain media]
+  [db media]
   (let [link (media.i/get-link db (:media/id media))
         link-info (get-link-info db link)]
     {:media media
-     :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key media))
+     :thumbnail-url (media.ui/thumbnail-url (:media/id media) :w 200 :h 200)
      :link-info link-info}))
 
 (defn handler
   "Handler for media panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db imgix-media-domain resource]} context
-        panel-data (fetch-panel-data db imgix-media-domain resource)]
+  (let [{:keys [db resource]} context
+        panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
         :media (:media panel-data)

@@ -21,6 +21,12 @@
 (defn delete-object [client bucket key]
   (core/delete-object client bucket key))
 
+(defn get-object
+  "Download an object from S3 to a local file.
+   Returns the destination path on success."
+  [client bucket key dest-path]
+  (core/get-object client bucket key dest-path))
+
 ;; TODO: The credentials-provider component isn't specific to s3
 (defmethod ig/init-key ::credentials-provider [_ {:keys [access-key-id secret-access-key]}]
   (core/credentials-provider access-key-id secret-access-key))

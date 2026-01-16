@@ -38,14 +38,15 @@
    [:linkResourceId [:maybe :string]]])
 
 (defn handler [& {:keys [::z/context form-params] :as _request}]
-  (let [{:keys [s3-presigner media-upload-bucket]} context
+  (let [{:keys [s3-presigner media-upload-bucket media-key-prefix]} context
         {files :files
          link-resource-type :linkResourceType
          link-resource-id :linkResourceId
          :as params} (params/decode FormParams form-params)
         files (if (sequential? files) files [files])
         s3-key-fn (fn [filename]
-                    (format "%s.%s"
+                    (format "%s%s.%s"
+                            media-key-prefix
                             (random-hex 20)
                             (fs/extension filename)))
         presign-fn (fn [file]
@@ -59,6 +60,8 @@
     ;; that form will be inserted into the media by htmx.
     (->> files
          (mapv #(json/parse-str % {:key-fn csk/->kebab-case-keyword}))
+         ;; Lowercase content-type to match presigned URL signature
+         (mapv #(update % :content-type s/lower-case))
          (mapv #(merge % {:link-resource-type link-resource-type
                           :link-resource-id link-resource-id
                           :s3-bucket media-upload-bucket

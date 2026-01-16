@@ -1,6 +1,7 @@
 (ns sepal.app.routes.media.detail
   (:require [lambdaisland.uri :as uri]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [ring.util.codec :as codec]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
@@ -11,6 +12,18 @@
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
+
+(defn- transform-url
+  "Generate a transform URL for the media."
+  [media-id params]
+  (str (z/url-for media.routes/transform {:id media-id})
+       "?" (uri/map->query-string params)))
+
+(defn- download-url
+  "Generate a download URL for the media."
+  [media-id filename]
+  (str (z/url-for media.routes/transform {:id media-id})
+       "?dl=" (codec/url-encode filename)))
 
 (defn zoom-view [& {:keys [zoom-url]}]
   [:div {:class "relative z-10"}
@@ -71,34 +84,17 @@
                                                      :dl-url dl-url)))
 
 (defn handler [& {:keys [::z/context request-method] :as _request}]
-  (let [{:keys [db resource imgix-media-domain s3-client]} context
-        srcset-opts {;;:h 2048
-                     ;;:w 2048
-                     ;; :fit "clip"
-                     :fit "max"
-                     :auto "compress,format"
-                     :cs "srgb"}
-        preview-url (uri/uri-str {:scheme "https"
-                                  :host imgix-media-domain
-                                  :path (str "/" (:media/s3-key resource))
-                                  :query (uri/map->query-string {:fix "max"})})
-        img-path (str "/" (:media/s3-key resource))
-        srcset-urls {:1x (uri/uri-str {:scheme "https"
-                                       :host imgix-media-domain
-                                       :path img-path
-                                       :query (uri/map->query-string (merge srcset-opts {:dpr 1}))})
-                     :2x (uri/uri-str {:scheme "https"
-                                       :host imgix-media-domain
-                                       :path img-path
-                                       :query (uri/map->query-string (merge srcset-opts {:dpr 2}))})
-                     :3x (uri/uri-str {:scheme "https"
-                                       :host imgix-media-domain
-                                       :path img-path
-                                       :query (uri/map->query-string (merge srcset-opts {:dpr 3}))})}
-        dl-url (uri/uri-str {:scheme "https"
-                             :host imgix-media-domain
-                             :path (str "/" (:media/s3-key resource))
-                             :query (uri/map->query-string {:dl (:media/title resource)})})]
+  (let [{:keys [db resource s3-client]} context
+        media-id (:media/id resource)
+        ;; Generate srcset URLs with different sizes for responsive images
+        ;; Using width multipliers instead of DPR for simpler implementation
+        srcset-urls {:1x (transform-url media-id {:w 800 :h 600 :fit "contain" :q 85})
+                     :2x (transform-url media-id {:w 1600 :h 1200 :fit "contain" :q 85})
+                     :3x (transform-url media-id {:w 2400 :h 1800 :fit "contain" :q 85})}
+        ;; Preview/zoom URL - larger size
+        preview-url (transform-url media-id {:w 2048 :h 2048 :fit "contain"})
+        ;; Download URL
+        dl-url (download-url media-id (:media/title resource))]
 
     (case request-method
       :delete

@@ -9,6 +9,7 @@
                         "components/contact/test"
                         "components/database/test"
                         "components/error/test"
+                        "components/media-transform/test"
                         "components/location/test"
                         "components/logging/test"
                         "components/mail/test"

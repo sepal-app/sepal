@@ -116,7 +116,8 @@
          (str "default-src 'self'; "
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
               "style-src 'self' 'unsafe-inline'; "
-              "img-src 'self' data:")))
+              "img-src 'self' data: blob:; "
+              "connect-src 'self' https:")))
 
 (defmethod ig/init-key ::zodiac [_ {:keys [extensions] :as options}]
   (let [extensions (conj extensions (z.headers/init {:headers csp-headers}))]

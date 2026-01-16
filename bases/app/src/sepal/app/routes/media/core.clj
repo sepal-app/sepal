@@ -6,6 +6,7 @@
             [sepal.app.routes.media.panel :as panel]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.media.s3 :as s3]
+            [sepal.app.routes.media.transform :as transform]
             [sepal.app.routes.media.uploaded :as uploaded]
             [sepal.media.interface :as media.i]))
 
@@ -33,4 +34,6 @@
                :middleware [[middleware/require-editor-or-admin]]
                :handler #'link/handler}]
     ["/panel/" {:name media.routes/panel
-                :handler #'panel/handler}]]])
+                :handler #'panel/handler}]
+    ["/transform" {:name media.routes/transform
+                   :get #'transform/handler}]]])

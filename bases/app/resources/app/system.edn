@@ -13,6 +13,12 @@
  {:endpoint-override #env AWS_S3_ENDPOINT
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
+ :sepal.media-transform.interface/service
+ {:cache-dir #join [#or [#env SEPAL_DATA_HOME
+                         #join [#env HOME "/.local/share/Sepal"]]
+                    "/cache"]
+  :max-cache-size-mb #long #or [#env IMAGE_CACHE_SIZE_MB 500]}
+
  :sepal.app.server/zodiac-sql
  {;; database-path is optional - defaults to $SEPAL_DATA_HOME/sepal.db
   ;; SQLite pragmas are set via JDBC URL query parameters
@@ -49,7 +55,8 @@
                     :mail #ig/ref :sepal.mail.interface/client
                     :app-domain #env APP_DOMAIN
                     :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
-                    :imgix-media-domain #env IMGIX_MEDIA_DOMAIN}
+                    :media-key-prefix #or [#env MEDIA_KEY_PREFIX "media/"]
+                    :media-transform-service #ig/ref :sepal.media-transform.interface/service}
   :reload-per-request? #profile {:local true
                                  :default false}
   :cookie-secret #env COOKIE_SECRET

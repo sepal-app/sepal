@@ -61,11 +61,11 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 | Variable | Description |
 |----------|-------------|
 | `MEDIA_UPLOAD_BUCKET` | S3 bucket for media uploads |
-| `IMGIX_MEDIA_DOMAIN` | Imgix domain for serving media |
 | `AWS_S3_ENDPOINT` | S3-compatible endpoint |
 | `AWS_ACCESS_KEY_ID` | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `AWS_REGION` | AWS region |
+| `IMAGE_CACHE_SIZE_MB` | Max size for image thumbnail cache in MB (default: 500) |
 
 **Optional - Email Customization:**
 

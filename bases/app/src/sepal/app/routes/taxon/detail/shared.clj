@@ -16,7 +16,8 @@
 
 (defn tabs [taxon active]
   [:div {:class "flex flex-row justify-center"
-         :x-data "taxonTabs"}
+         ;; :x-data "taxonTabs"
+         }
    (ui.tabs/tabs (items :taxon taxon
                         :active active))])
 

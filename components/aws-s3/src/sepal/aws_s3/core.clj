@@ -2,12 +2,14 @@
   (:require [camel-snake-kebab.core :as csk]
             [camel-snake-kebab.extras :as cske]
             [clojure.string :as s])
-  (:import [java.net URI]
+  (:import [java.io File]
+           [java.net URI]
+           [java.nio.file Path]
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
            [software.amazon.awssdk.services.s3.model
-            ListObjectsV2Request PutObjectRequest DeleteObjectRequest]
+            GetObjectRequest ListObjectsV2Request PutObjectRequest DeleteObjectRequest]
            [software.amazon.awssdk.services.s3.presigner S3Presigner]
            [software.amazon.awssdk.services.s3.presigner.model PutObjectPresignRequest]))
 
@@ -84,3 +86,23 @@
                 (.key key)
                 (.build))]
     (.deleteObject client req)))
+
+(defn get-object
+  "Download an object from S3 to a local file.
+   Returns the destination path on success."
+  [client bucket key dest-path]
+  (let [req (-> (GetObjectRequest/builder)
+                (.bucket bucket)
+                (.key key)
+                (.build))
+        dest-file (if (instance? File dest-path)
+                    dest-path
+                    (File. (str dest-path)))
+        dest (if (instance? Path dest-path)
+               dest-path
+               (.toPath dest-file))]
+    ;; Ensure parent directory exists
+    (when-let [parent (.getParentFile dest-file)]
+      (.mkdirs parent))
+    (.getObject client req dest)
+    dest-path))

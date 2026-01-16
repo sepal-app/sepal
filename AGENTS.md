@@ -178,7 +178,7 @@ Copy `.env.local.example` to `.env.local` and set:
 Additional env vars for production (see `bases/app/resources/app/system.edn`):
 - AWS credentials for S3/media storage
 - SMTP configuration for email (SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_AUTH, SMTP_TLS)
-- `APP_DOMAIN`, `IMGIX_MEDIA_DOMAIN`
+- `APP_DOMAIN`, `IMAGE_CACHE_SIZE_MB`
 
 ## Configuration
 

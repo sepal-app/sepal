@@ -1,6 +1,5 @@
 (ns sepal.app.routes.media.index
-  (:require [lambdaisland.uri :as uri]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
@@ -9,12 +8,6 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]))
-
-(defn thumbnail-url [host key]
-  (uri/uri-str {:scheme "https"
-                :host host
-                :path (str "/" key)
-                :query (uri/map->query-string {:max-h 300 :max-w 300 :fit "crop"})}))
 
 (defn title-buttons []
   [:button {:id "upload-button"
@@ -57,7 +50,7 @@
    [:page-size {:default 20} :int]])
 
 (defn handler [& {:keys [::z/context htmx-boosted? htmx-request? query-params] :as _request}]
-  (let [{:keys [db imgix-media-domain]} context
+  (let [{:keys [db]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         media (->> (db.i/execute! db {:select :*
@@ -71,7 +64,7 @@
                                       ;; :order-by [[:created-at :desc]]
                                       })
                    (mapv #(assoc %
-                                 :thumbnail-url (thumbnail-url imgix-media-domain (:media/s3-key %)))))]
+                                 :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))]
 
     (if (and htmx-request? (not htmx-boosted?))
       (-> (media.ui/media-list-items :media media

@@ -4,14 +4,8 @@ import Dashboard from "@uppy/dashboard"
 import htmx from "htmx.org"
 
 export default (el, directive, { cleanup, evaluate }) => {
-    const {
-        trigger,
-        antiForgeryToken,
-        signingUrl,
-        organizationId,
-        linkResourceType,
-        linkResourceId,
-    } = evaluate(directive.expression)
+    const { trigger, antiForgeryToken, signingUrl, linkResourceType, linkResourceId } =
+        evaluate(directive.expression)
     const uppy = new Uppy({
         logger: {
             // debug: (...args) => console.log("DEBUG: ", ...args),
@@ -49,19 +43,25 @@ export default (el, directive, { cleanup, evaluate }) => {
         .on("upload-success", (file) => {
             const formId = file?.id.replace(/\//g, "_")
             // trigger form that will post to /media/uploaded
-            htmx.trigger(`form#${formId}`, "submit", {}).then("DONE")
+            htmx.trigger(`form#${formId}`, "submit", {})
         })
 
     uppy.addPreProcessor(async (fileIds) => {
         const files = fileIds.map((id) => {
             const f = uppy.getFile(id)
-            return { filename: f.name, contentType: f.type, size: f.size, id: id }
+            // Stringify each file object - backend expects JSON strings
+            return JSON.stringify({
+                filename: f.name,
+                contentType: f.type,
+                size: f.size,
+                id: id,
+            })
         })
 
         // avoid sending "undefined" for linkResourceType and linkResourceId
         const values = linkResourceType
-            ? { files, organizationId, linkResourceType, linkResourceId }
-            : { files, organizationId }
+            ? { files, linkResourceType, linkResourceId }
+            : { files }
 
         // This will populate #upload-success-forms with forms that including
         // inputs with the signing and when submitted will create the media
@@ -69,6 +69,7 @@ export default (el, directive, { cleanup, evaluate }) => {
         await htmx.ajax("POST", signingUrl, {
             values,
             target: "#upload-success-forms",
+            swap: "beforeend",
             headers: {
                 "X-CSRF-Token": antiForgeryToken,
             },
