@@ -90,7 +90,7 @@
         q (:q decoded)
         include-taxon? (parse-bool (:include_taxon decoded))
         include-collection? (parse-bool (:include_collection decoded))
-        
+
         ;; Parse search query
         ast (search.i/parse q)
 
@@ -105,7 +105,7 @@
                            :from [[:accession :a]]}
                     include-taxon?
                     (assoc :join [[:taxon :t] [:= :t.id :a.taxon_id]])
-                    
+
                     include-collection?
                     (assoc :left-join [[:collection :c] [:= :c.accession_id :a.id]]))
 
@@ -116,7 +116,7 @@
 
         ;; Generate CSV
         csv-content (csv/rows->csv cols rows)
-        
+
         ;; Filename includes date and time (colons replaced for filesystem safety)
         filename (format "accessions-%s.csv"
                          (.format (LocalDateTime/now)

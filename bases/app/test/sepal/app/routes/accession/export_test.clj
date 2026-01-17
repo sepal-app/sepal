@@ -1,7 +1,7 @@
 (ns sepal.app.routes.accession.export-test
   "Unit tests for accession CSV export handler."
   (:require [clojure.string :as str]
-            [clojure.test :refer [deftest is testing use-fixtures]]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [sepal.accession.interface :as accession.i]
             [sepal.app.routes.accession.export :as export]
@@ -46,7 +46,7 @@
   (tf/testing "excludes taxon columns when include_taxon is false"
     {[::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/acc] {:db *db* :taxon (ig/ref :key/taxon)}}
-    (fn [{:keys [acc]}]
+    (fn [{:keys [_acc]}]
       (let [response (call-handler *db* {:q ""
                                          :include_taxon "false"
                                          :include_collection "false"})
@@ -64,7 +64,7 @@
     {[::taxon.i/factory :key/taxon] {:db *db*}
      [::accession.i/factory :key/acc1] {:db *db* :taxon (ig/ref :key/taxon)}
      [::accession.i/factory :key/acc2] {:db *db* :taxon (ig/ref :key/taxon)}}
-    (fn [{:keys [acc1 acc2]}]
+    (fn [{:keys [acc1 _acc2]}]
       ;; Search for specific accession code (use first few chars for prefix match)
       (let [search-term (subs (:accession/code acc1) 0 5)
             response (call-handler *db* {:q (str "code:" search-term)

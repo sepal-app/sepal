@@ -85,7 +85,7 @@
         ;; Build query - taxon requires joining through accession
         ;; Even if accession columns aren't selected, we need the join for taxon
         needs-accession-join? (or include-taxon? include-accession?)
-        
+
         base-stmt (cond-> {:select (mapv :column cols)
                            :from [[:material :m]]
                            ;; Location is always joined (required FK)
@@ -93,7 +93,7 @@
                     ;; Join accession if needed for taxon or accession data
                     needs-accession-join?
                     (update :join into [[:accession :a] [:= :a.id :m.accession_id]])
-                    
+
                     ;; Join taxon through accession
                     include-taxon?
                     (update :join into [[:taxon :t] [:= :t.id :a.taxon_id]]))

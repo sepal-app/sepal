@@ -80,7 +80,7 @@
             :hx-push-url "true"
             :hx-swap "outerHTML"}
      [:div {:class "w-full"}
-       table-actions]]
+      table-actions]]
     ;; Table and panel in same row, outside the form
     [:div {:class "mt-4 flex flex-row gap-8"}
      ;; Table content

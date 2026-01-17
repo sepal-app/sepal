@@ -1,7 +1,7 @@
 (ns sepal.app.csv
   "CSV export utilities."
   (:require [clojure.data.csv :as csv])
-  (:import [java.time LocalDate LocalDateTime]
+  (:import [java.time LocalDate]
            [java.time.format DateTimeFormatter DateTimeParseException]))
 
 (def ^:private date-formatter (DateTimeFormatter/ofPattern "yyyy-MM-dd"))
