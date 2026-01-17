@@ -217,15 +217,15 @@
 
     (cond-> base-stmt
         ;; Add/replace joins if we have any new ones
-        has-filter-joins?
-        (assoc :join all-joins)
+      has-filter-joins?
+      (assoc :join all-joins)
 
         ;; Add WHERE clause
-        where-clause
-        (assoc :where where-clause)
+      where-clause
+      (assoc :where where-clause)
 
         ;; Use DISTINCT when filter joins are added to avoid duplicates
         ;; (base joins are typically 1:1 for display, filter joins may be 1:many)
-        has-filter-joins?
-        (-> (dissoc :select)
-            (assoc :select-distinct (or (:select base-stmt) [:*]))))))
+      has-filter-joins?
+      (-> (dissoc :select)
+          (assoc :select-distinct (or (:select base-stmt) [:*]))))))

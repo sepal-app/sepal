@@ -101,8 +101,8 @@
   (testing "get-or-transform creates cached file on miss"
     (let [source (create-test-image (io/file *temp-dir* "source.jpg") 400 300)
           result (media-transform.i/get-or-transform *cache-ds* *temp-dir*
-                                           1 source
-                                           {:width 100 :height 100})]
+                                                     1 source
+                                                     {:width 100 :height 100})]
       (is (false? (:hit? result)) "Should be a cache miss")
       (is (.exists (io/file (:path result))) "Cached file should exist"))))
 
@@ -122,8 +122,8 @@
       ;; Create several cached transforms
       (doseq [i (range 5)]
         (media-transform.i/get-or-transform *cache-ds* *temp-dir*
-                                  i source
-                                  {:width (* 100 (inc i)) :height 100})
+                                            i source
+                                            {:width (* 100 (inc i)) :height 100})
         ;; Small delay to ensure different timestamps
         (Thread/sleep 10))
 

@@ -45,8 +45,6 @@
      [:template {:x-for "val in currentFieldValues" :key "val"}
       [:option {:x-bind:value "val" :x-text "val"}]]]]])
 
-
-
 (defn- add-button
   "Button to add the filter to the query."
   []

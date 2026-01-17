@@ -1,7 +1,6 @@
 (ns sepal.app.routes.location.index
   (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
-            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.location.routes :as location.routes]

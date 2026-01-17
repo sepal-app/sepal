@@ -17,6 +17,7 @@
         poly/malli {:local/root "../../components/malli"}
         poly/material {:local/root "../../components/material"}
         poly/media {:local/root "../../components/media"}
+        poly/search {:local/root "../../components/search"}
         poly/settings {:local/root "../../components/settings"}
         poly/store {:local/root "../../components/store"}
         poly/taxon {:local/root "../../components/taxon"}

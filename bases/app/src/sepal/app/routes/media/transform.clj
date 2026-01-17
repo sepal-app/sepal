@@ -108,7 +108,7 @@
                 temp-file (download-from-s3 s3-client media-upload-bucket s3-key)
                 {:keys [path]} (try
                                  (media-transform.i/get-or-transform cache-ds cache-dir
-                                                           media-id temp-file opts)
+                                                                     media-id temp-file opts)
                                  (finally
                                    ;; Clean up temp file
                                    (.delete temp-file)))]
