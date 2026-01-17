@@ -89,7 +89,10 @@
       (is (nil? (token.i/valid? service (str "x" token)))))
     (testing "character substituted"
       (let [mid (/ (count token) 2)
-            tampered (str (subs token 0 mid) "X" (subs token (inc mid)))]
+            orig-char (nth token mid)
+            ;; Ensure we substitute with a different character
+            new-char (if (= orig-char \X) \Y \X)
+            tampered (str (subs token 0 mid) new-char (subs token (inc mid)))]
         (is (nil? (token.i/valid? service tampered)))))
     (testing "truncated"
       (is (nil? (token.i/valid? service (subs token 0 (- (count token) 5))))))))
