@@ -32,7 +32,7 @@
                     :name "code"
                     :errors (:code errors)
                     :input [:input {:autocomplete "off"
-                                    :class "input input-bordered input-sm w-full max-w-xs bg-white"
+                                    :class "input input-bordered w-full max-w-xs"
                                     :placeholder "Required"
                                     :required true
                                     :id "code"
@@ -69,8 +69,8 @@
                     :name "quantity"
                     :errors (:quantity errors)
                     :input [:input {:autocomplete "off"
-                                    :class "input input-bordered input-sm w-full max-w-xs bg-white"
-                                    :id "code"
+                                    :class "input input-bordered w-full max-w-xs"
+                                    :id "quantity"
                                     :name "quantity"
                                     :type "number"
                                     :min 1
