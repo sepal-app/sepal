@@ -26,7 +26,7 @@
   "Generate HTMX attributes for clickable table rows that open the preview panel."
   [contact]
   (let [id (:contact/id contact)]
-    {:class (html/attr "cursor-pointer" "hover:bg-base-200")
+    {:class "cursor-pointer hover:bg-base-200/50"
      :hx-get (z/url-for contact.routes/panel {:id id})
      :hx-target "#preview-panel-content"
      :hx-swap "innerHTML"

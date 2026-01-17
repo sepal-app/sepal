@@ -26,7 +26,7 @@
   [row]
   (let [id (:accession/id row)
         panel-url (z/url-for accession.routes/panel {:id id})]
-    {:class "hover:bg-base-200 cursor-pointer"
+    {:class "hover:bg-base-200/50 cursor-pointer"
      :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
      :x-on:click (str "selectedId = " id "; panelOpen = true")
      :hx-get panel-url
