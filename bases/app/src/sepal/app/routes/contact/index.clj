@@ -29,10 +29,11 @@
   (let [id (:contact/id contact)]
     {:class "cursor-pointer hover:bg-base-200/50"
      :hx-get (z/url-for contact.routes/panel {:id id})
+     :hx-trigger "panel-select"
      :hx-target "#preview-panel-content"
      :hx-swap "innerHTML"
      :hx-push-url "false"
-     :x-on:click "panelOpen = true"
+     :x-on:click (str "selectRow(" id ", $el)")
      :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")}))
 
 (defn table-columns []

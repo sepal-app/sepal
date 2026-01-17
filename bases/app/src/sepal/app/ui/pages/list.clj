@@ -70,7 +70,7 @@
    - :table-actions - Action buttons/forms above table
    - :content       - Main table content"
   [& {:keys [table-actions content]}]
-  [:div {:x-data "{ panelOpen: false, selectedId: null }"}
+  [:div {:x-data "{ selectedId: null, selectRow(id, el) { if (this.selectedId === id) { this.selectedId = null; } else { this.selectedId = id; el.dispatchEvent(new Event('panel-select')); } } }"}
    [:div {:class "mt-8"}
     [:form {:method "get"
             :hx-get " "
@@ -90,11 +90,5 @@
      ;; Preview panel - hidden until a row is selected
      [:div {:class "w-80 shrink-0 bg-base-100 border-1 rounded-(--radius-box) border-base-300 overflow-y-auto"
             :x-show "selectedId"}
-      ;; Panel header with close button
-      [:div {:class "sticky top-0 bg-base-100 border-b border-base-300 p-2 flex justify-end"}
-       [:button {:class "btn btn-ghost btn-sm btn-square"
-                 :x-on:click "panelOpen = false; selectedId = null"
-                 :aria-label "Close panel"}
-        (lucide/x :class "w-5 h-5")]]
       ;; Panel content - loaded via HTMX
       [:div {:id panel-container-id}]]]]])

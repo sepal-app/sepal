@@ -49,8 +49,9 @@
         panel-url (z/url-for taxon.routes/panel {:id id})]
     {:class "hover:bg-base-200/50 cursor-pointer"
      :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
-     :x-on:click (str "selectedId = " id "; panelOpen = true")
+     :x-on:click (str "selectRow(" id ", $el)")
      :hx-get panel-url
+     :hx-trigger "panel-select"
      :hx-target (str "#" pages.list/panel-container-id)
      :hx-swap "innerHTML"
      :hx-push-url "false"}))
