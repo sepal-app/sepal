@@ -47,7 +47,7 @@
    children])
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
-  [:nav {:class "navbar w-full bg-base-100"}
+  [:nav {:class "navbar w-full bg-base-100 py-4"}
    [:div {:class "w-full flex flex-row justify-between items-center px-2 sm:px-4 lg:px-6"}
     [:div {:class "flex flex-row items-center"}
      [:label {:for "sidebar-drawer-toggle",
@@ -56,14 +56,14 @@
       ;; (comment "Sidebar toggle icon")
       (sidebar-toggle-icon)]
      (when breadcrumbs
-       [:div {:class "breadcrumbs t-[-3px] ml-4"}
+       [:div {:class "breadcrumbs ml-4"}
         [:ul
          (for [item (butlast breadcrumbs)]
            [:li item])
          [:li [:span {:class "font-semibold"}
                (last breadcrumbs)]]]])]
 
-    [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
+    [:div {:class "sm:flex flex-row gap-2"}
      page-title-buttons]]])
 
 (defn sidebar []
