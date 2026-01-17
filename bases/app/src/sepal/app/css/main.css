@@ -9,6 +9,11 @@
     themes: emerald --default;
 }
 
+/* Override DaisyUI's circular checkboxes with rounded squares */
+.checkbox {
+    border-radius: 0.25rem;
+}
+
 @theme {
     --font-sans: "Inter var", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
