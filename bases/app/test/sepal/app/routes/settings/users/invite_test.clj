@@ -4,7 +4,7 @@
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
-            [sepal.app.test.system :refer [*app* *db* *mail-client* default-system-fixture]]
+            [sepal.app.test.system :refer [*db* *mail-client* default-system-fixture]]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
 

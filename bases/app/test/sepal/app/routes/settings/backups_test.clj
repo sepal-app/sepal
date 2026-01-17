@@ -84,14 +84,14 @@
           admin-email (create-user! *db* :admin password)
           admin-sess (app.test/login admin-email password)
           {:keys [response]} (peri/request admin-sess "/settings/backups")
-          token (test.i/response-anti-forgery-token response)]
-      ;; Try to POST as editor
-      (let [sess (app.test/login editor-email password)
-            {:keys [response]} (peri/request sess "/settings/backups"
-                                             :request-method :post
-                                             :params {:__anti-forgery-token token
-                                                      :frequency "daily"})]
-        (is (= 403 (:status response)))))))
+          token (test.i/response-anti-forgery-token response)
+          ;; Try to POST as editor
+          sess (app.test/login editor-email password)
+          {:keys [response]} (peri/request sess "/settings/backups"
+                                           :request-method :post
+                                           :params {:__anti-forgery-token token
+                                                    :frequency "daily"})]
+      (is (= 403 (:status response))))))
 
 (deftest test-download-backup
   (testing "GET /settings/backups/:filename/download returns backup file"
