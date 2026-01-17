@@ -73,7 +73,9 @@
    [:id-qualifier-rank {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier-rank]]
    [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]
    [:wild-provenance-status {:decode/form validation.i/empty->nil} [:maybe accession.spec/wild-provenance-status]]
-   [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]])
+   [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
+   [:date-received [:maybe validation.i/date]]
+   [:date-accessioned [:maybe validation.i/date]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource]} context
@@ -87,7 +89,9 @@
                 :id-qualifier (:accession/id-qualifier resource)
                 :id-qualifier-rank (:accession/id-qualifier-rank resource)
                 :provenance-type (:accession/provenance-type resource)
-                :wild-provenance-status (:accession/wild-provenance-status resource)}]
+                :wild-provenance-status (:accession/wild-provenance-status resource)
+                :date-received (:accession/date-received resource)
+                :date-accessioned (:accession/date-accessioned resource)}]
 
     (case request-method
       :post

@@ -67,7 +67,9 @@
    [:accession/id-qualifier-rank [:maybe id-qualifier-rank]]
    [:accession/provenance-type [:maybe provenance-type]]
    [:accession/wild-provenance-status [:maybe wild-provenance-status]]
-   [:accession/supplier-contact-id [:maybe supplier-contact-id]]])
+   [:accession/supplier-contact-id [:maybe supplier-contact-id]]
+   [:accession/date-received [:maybe :string]]
+   [:accession/date-accessioned [:maybe :string]]])
 
 (def CreateAccession
   [:map {:closed true}
@@ -79,7 +81,9 @@
    [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
    [:provenance-type {:optional true} [:maybe provenance-type]]
    [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
-   [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]])
+   [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]
+   [:date-received {:optional true} [:maybe :string]]
+   [:date-accessioned {:optional true} [:maybe :string]]])
 
 (def UpdateAccession
   (mu/optional-keys
@@ -91,4 +95,6 @@
      [:id-qualifier-rank {:optional true} [:maybe id-qualifier-rank]]
      [:provenance-type {:optional true} [:maybe provenance-type]]
      [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
-     [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]]))
+     [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]
+     [:date-received {:optional true} [:maybe :string]]
+     [:date-accessioned {:optional true} [:maybe :string]]]))

@@ -43,7 +43,9 @@
 (def FormParams
   [:map {:closed true}
    [:code [:string {:min 1}]]
-   [:taxon-id [:int {:min 0}]]])
+   [:taxon-id [:int {:min 0}]]
+   [:date-received [:maybe validation.i/date]]
+   [:date-accessioned [:maybe validation.i/date]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context]

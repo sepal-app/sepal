@@ -174,7 +174,7 @@
 
 (def FormParams
   [:map {:closed true}
-   [:collected-date {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:collected-date [:maybe validation.i/date]]
    [:collector {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:habitat {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:taxa {:decode/form validation.i/empty->nil} [:maybe :string]]

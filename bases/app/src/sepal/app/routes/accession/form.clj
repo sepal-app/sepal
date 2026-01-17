@@ -80,8 +80,21 @@
                                        :id "supplier-contact-id"
                                        :name "supplier-contact-id"
                                        :autocomplete "off"}
-                              (when (:contact/id supplier) #_(:supplier-contact-id values)
-                                    [:option {:value  (:contact/id supplier) #_(:supplier-contact-id values)}
-                                     (:contact/name supplier)])])]])
+                              [:option {:value "" :data-placeholder "true"} ""]
+                              (when (:contact/id supplier)
+                                [:option {:value (:contact/id supplier)}
+                                 (:contact/name supplier)])])]
+
+      [:div {:class "grid grid-cols-2 gap-8 mt-4"}
+       (ui.form/input-field :label "Date Received"
+                            :name "date-received"
+                            :type "date"
+                            :value (:date-received values)
+                            :errors (:date-received errors))
+       (ui.form/input-field :label "Date Accessioned"
+                            :name "date-accessioned"
+                            :type "date"
+                            :value (:date-accessioned values)
+                            :errors (:date-accessioned errors))]])
    [:script {:type "module"
              :src (html/static-url "app/routes/accession/form.ts")}]])

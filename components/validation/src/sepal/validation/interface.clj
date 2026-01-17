@@ -54,3 +54,27 @@
   "Converts empty strings to nil. Useful as a form decoder for optional fields."
   [s]
   (when (seq s) s))
+
+(defn parse-date
+  "Parse and validate ISO-8601 date string (YYYY-MM-DD).
+   Returns the date string if valid, nil if empty, or ::invalid-date if malformed.
+   Used as a form decoder for date fields."
+  [s]
+  (if (or (nil? s) (= "" s))
+    nil
+    (try
+      (java.time.LocalDate/parse s)
+      s  ; Return original string if valid
+      (catch Exception _
+        ::invalid-date))))
+
+(def date
+  "Malli schema for ISO-8601 date strings (YYYY-MM-DD).
+   Decodes form input with parse-date, rejects invalid dates.
+   Accepts nil (for optional fields) or valid date strings."
+  [:fn {:decode/form parse-date
+        :error/message "must be a valid date (YYYY-MM-DD)"}
+   #(or (nil? %)
+        (and (string? %)
+             (not= % ::invalid-date)
+             (re-matches #"^\d{4}-\d{2}-\d{2}$" %)))])
