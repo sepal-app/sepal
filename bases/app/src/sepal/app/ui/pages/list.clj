@@ -78,7 +78,8 @@
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"
-            :hx-swap "outerHTML"}
+            :hx-swap "outerHTML"
+            :x-on:htmx:before-request (str "selectedId = null; document.getElementById('" panel-container-id "').innerHTML = ''")}
      [:div {:class "w-full"}
       table-actions]]
     ;; Table and panel in same row, outside the form
