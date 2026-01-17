@@ -41,7 +41,11 @@ jobs:
           key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
 
       - name: Prepare Dependencies
-        run: clojure -P -M:dev:test:clj-kondo:cljfmt:poly
+        run: |
+          clojure -P -M:dev:test:test-runner
+          clojure -P -M:clj-kondo
+          clojure -P -M:cljfmt
+          clojure -P -M:poly
 
       - name: Lint
         run: bin/lint
@@ -88,7 +92,7 @@ jobs:
           key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
 
       - name: Prepare Clojure Dependencies
-        run: clojure -P -M:dev:test:test-e2e
+        run: clojure -P -M:dev:test:test-e2e:test-runner
 
       - name: Build Frontend Assets
         run: |
