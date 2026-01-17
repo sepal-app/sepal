@@ -48,11 +48,11 @@
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
   [:nav {:class "navbar w-full bg-base-100"}
-   [:div {:class "w-full flex flex-row justify-between items-center"}
+   [:div {:class "w-full flex flex-row justify-between items-center px-2 sm:px-4 lg:px-6"}
     [:div {:class "flex flex-row items-center"}
      [:label {:for "sidebar-drawer-toggle",
               :aria-label "open sidebar",
-              :class "btn btn-square btn-ghost"}
+              :class "btn btn-square btn-ghost -ml-3"}
       ;; (comment "Sidebar toggle icon")
       (sidebar-toggle-icon)]
      (when breadcrumbs
