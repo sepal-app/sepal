@@ -148,19 +148,21 @@
 (defn- terms->clause
   "Convert free-text terms to an FTS clause.
 
-   Finds the first FTS-type field and uses its table for the match.
+   Finds the primary FTS-type field (one without joins) and uses its table
+   for the match. Falls back to any FTS field if none are joinless.
    Terms are joined with spaces and suffixed with * for prefix matching.
    Uses a subquery to properly correlate with joined tables."
   [terms fields]
   (when (seq terms)
-    (when-let [[_ {:keys [column fts-table]}]
-               (->> fields
-                    (filter (fn [[_ v]] (= :fts (:type v))))
-                    first)]
-      (let [id-column (column->id-column column)]
-        [:in id-column {:select [:rowid]
-                        :from [fts-table]
-                        :where [:match fts-table (str (str/join " " terms) "*")]}]))))
+    (let [fts-fields (filter (fn [[_ v]] (= :fts (:type v))) fields)
+          ;; Prefer FTS fields without joins (primary fields for this resource)
+          primary-fts (or (first (filter (fn [[_ v]] (nil? (:joins v))) fts-fields))
+                          (first fts-fields))]
+      (when-let [[_ {:keys [column fts-table]}] primary-fts]
+        (let [id-column (column->id-column column)]
+          [:in id-column {:select [:rowid]
+                          :from [fts-table]
+                          :where [:match fts-table (str (str/join " " terms) "*")]}])))))
 
 (defn compile-query
   "Compile a parsed AST into HoneySQL for a specific resource context.
