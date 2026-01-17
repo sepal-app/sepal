@@ -2,6 +2,7 @@
   "Resource panel content for taxa.
    Displays taxon summary, statistics, external links, and activity."
   (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
@@ -22,16 +23,24 @@
     (let [name-id (second (re-find #"^(wfo-\d{10})" wfo-taxon-id))]
       (str "https://wfoplantlist.org/taxon/" name-id))))
 
+(defn- iucn-redlist-url
+  "Generate IUCN Red List search URL for a taxon name."
+  [taxon-name]
+  (uri/uri-str {:scheme "https"
+                :host "www.iucnredlist.org"
+                :path "/search"
+                :query (uri/map->query-string {:query taxon-name})}))
+
 (defn- cites-checklist-url
   "Generate CITES Checklist search URL for a taxon name."
   [taxon-name]
+  ;; CITES uses hash-based routing, so we build the fragment manually
   (str "https://checklist.cites.org/#/en/search/"
-       "output_layout=alphabetical"
-       "&level_of_listing=0"
-       "&show_synonyms=1"
-       "&show_author=1"
-       "&scientific_name="
-       (java.net.URLEncoder/encode taxon-name "UTF-8")))
+       (uri/map->query-string {:output_layout "alphabetical"
+                               :level_of_listing 0
+                               :show_synonyms 1
+                               :show_author 1
+                               :scientific_name taxon-name})))
 
 (defn- format-rank
   "Format rank keyword for display."
@@ -55,6 +64,7 @@
   (let [{:taxon/keys [id name author rank wfo-taxon-id]} taxon
         {:keys [accession-count material-count]} stats
         wfo-url (wfo-plantlist-url wfo-taxon-id)
+        iucn-url (iucn-redlist-url name)
         cites-url (cites-checklist-url name)]
     (panel/panel-container
       :children
@@ -102,6 +112,9 @@
           (panel/external-links-section
             :links [{:label "WFO Plantlist"
                      :href wfo-url
+                     :icon (lucide/globe :class "w-4 h-4")}
+                    {:label "IUCN Red List"
+                     :href iucn-url
                      :icon (lucide/globe :class "w-4 h-4")}
                     {:label "CITES Checklist"
                      :href cites-url
