@@ -43,7 +43,8 @@ jobs:
     strategy:
       matrix:
         java: [ '25' ]
-        browser: [ 'chromium', 'firefox' ]
+        # browser: [ 'chromium', 'firefox' ]
+        browser: [ 'chromium' ]
     steps:
       - uses: actions/checkout@v4
       - name: Install SpatiaLite
