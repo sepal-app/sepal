@@ -69,9 +69,8 @@
 
    Options:
    - :table-actions - Action buttons/forms above table
-   - :content       - Main table content
-   - :filters       - Sequence of active filter maps with :label, :value, :clear-href"
-  [& {:keys [table-actions content filters]}]
+   - :content       - Main table content"
+  [& {:keys [table-actions content]}]
   [:div {:x-data "{ panelOpen: false, selectedId: null }"}
    [:div {:class "mt-8"}
     [:form {:method "get"
@@ -84,8 +83,6 @@
      [:div {:class "flex justify-between"}
       [:div {:class "flex flex-row items-center"}
        table-actions]]]
-    ;; Active filter badges
-    (filter-badges filters)
     ;; Table and panel in same row, outside the form
     [:div {:class "mt-4 flex flex-row gap-8"}
      ;; Table content

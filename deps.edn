@@ -25,6 +25,7 @@
                               poly/test {:local/root "components/test"}
                               poly/token {:local/root "components/token"}
                               poly/user {:local/root "components/user"}
+                              poly/search {:local/root "components/search"}
                               poly/validation {:local/root "components/validation"}
 
                               camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
@@ -57,6 +58,7 @@
                                 "components/material/test"
                                 "components/media/test"
                                 "components/scheduler/test"
+                                "components/search/test"
                                 "components/settings/test"
                                 "components/store/test"
                                 "components/taxon/test"

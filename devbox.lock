@@ -1,6 +1,102 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "babashka@latest": {
+      "last_modified": "2025-12-31T03:27:36Z",
+      "resolved": "github:NixOS/nixpkgs/f665af0cdb70ed27e1bd8f9fdfecaf451260fc55#babashka",
+      "source": "devbox-search",
+      "version": "1.12.209",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/z6wssch0phy2v7z3xyahzc5psjgrc253-babashka-1.12.209",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/z6wssch0phy2v7z3xyahzc5psjgrc253-babashka-1.12.209"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/v33mb000nqjq8fl03153wv52jsw5mph6-babashka-1.12.209",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/v33mb000nqjq8fl03153wv52jsw5mph6-babashka-1.12.209"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/35hrhyplakvjkpvvvjmzfvh6kn0zdbxv-babashka-1.12.209",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/35hrhyplakvjkpvvvjmzfvh6kn0zdbxv-babashka-1.12.209"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ggjy17id16sfjvwvkakjlb8g9plxbv9j-babashka-1.12.209",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ggjy17id16sfjvwvkakjlb8g9plxbv9j-babashka-1.12.209"
+        }
+      }
+    },
+    "bbin@latest": {
+      "last_modified": "2025-12-31T03:27:36Z",
+      "resolved": "github:NixOS/nixpkgs/f665af0cdb70ed27e1bd8f9fdfecaf451260fc55#bbin",
+      "source": "devbox-search",
+      "version": "0.2.4",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gbwvb7hs6albadgrmi9sp7kgjk3p9nw0-bbin-0.2.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gbwvb7hs6albadgrmi9sp7kgjk3p9nw0-bbin-0.2.4"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zszf0dmcbrgs6jbzf991c2alvgjr2kns-bbin-0.2.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zszf0dmcbrgs6jbzf991c2alvgjr2kns-bbin-0.2.4"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lf60pi5x60npan5844bcv8waazsczj26-bbin-0.2.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lf60pi5x60npan5844bcv8waazsczj26-bbin-0.2.4"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/hay72czrjwlsq7glzll621hyn0a7hjr2-bbin-0.2.4",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/hay72czrjwlsq7glzll621hyn0a7hjr2-bbin-0.2.4"
+        }
+      }
+    },
     "clj-kondo@latest": {
       "last_modified": "2025-09-19T06:08:23Z",
       "resolved": "github:NixOS/nixpkgs/12bd230118a1901a4a5d393f9f56b6ad7e571d01#clj-kondo",

@@ -1,17 +1,18 @@
 (ns sepal.app.routes.accession.index
   (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface.permission :as accession.perm]
+            [sepal.accession.interface.search]
             [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
-            [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
+            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
-            [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
+            [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -58,7 +59,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [filters viewer href page page-size rows supplier taxon total]}]
+(defn render [& {:keys [field-options viewer href page page-size rows taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -66,20 +67,16 @@
                                :page-size page-size
                                :rows rows
                                :total total)
-               :filters filters
-               :table-actions (pages.list/search-field (-> href uri/query-map :q)))
+               :table-actions (query-builder/search-field-with-builder
+                                :q (-> href uri/query-map :q)
+                                :fields field-options))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 "Taxa"]
-                               [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+                               [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "italic"}
                                 (:taxon/name taxon)])
-                   supplier (conj [:a {:href (z/url-for contact.routes/index)}
-                                   "Contacts"]
-                                  [:a {:href (z/url-for contact.routes/detail {:id (:contact/id supplier)})}
-                                   (:contact/name supplier)])
-                   :always
-                   (conj "Accessions"))
+                   :always (conj "Accessions"))
     :page-title-buttons (when (authz/user-has-permission? viewer accession.perm/create)
                           (create-button))))
 
@@ -88,50 +85,55 @@
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]
-   [:supplier-contact-id {:min 0} :int]
-   [:taxon-id {:min 0} :int]])
+   ;; Legacy params for backwards compatibility
+   [:supplier-contact-id {:optional true} :int]
+   [:taxon-id {:optional true} :int]])
+
+(defn- normalize-query
+  "Merge legacy filter params into q string for backwards compatibility."
+  [{:keys [q taxon-id supplier-contact-id]}]
+  (cond-> (or q "")
+    taxon-id (str " taxon.id:" taxon-id)
+    supplier-contact-id (str " supplier.id:" supplier-contact-id)))
+
+(defn- extract-filter-value
+  "Extract the value for a specific field from AST filters."
+  [ast field-name]
+  (->> (:filters ast)
+       (filter #(= (:field %) field-name))
+       first
+       :value))
 
 (defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
-        {:keys [page page-size q supplier-contact-id taxon-id]} (params/decode Params query-params)
+        {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
-        stmt {:select [:*]
-              :from [[:accession :a]]
-              :join [[:taxon :t]
-                     [:= :t.id :a.taxon_id]]
-              :where [:and
-                      (if q
-                        [:like :a.code (format "%%%s%%" q)]
-                        :true)
-                      (when taxon-id
-                        [:= :t.id taxon-id])
-                      (when supplier-contact-id
-                        [:= :a.supplier_contact_id supplier-contact-id])]}
+
+        ;; Normalize legacy params into search query
+        q (normalize-query decoded-params)
+        ast (search.i/parse q)
+
+        ;; Base statement with joins needed for display columns
+        ;; (taxon name is shown in table)
+        base-stmt {:select [:*]
+                   :from [[:accession :a]]
+                   :join [[:taxon :t] [:= :t.id :a.taxon_id]]}
+
+        ;; Compile search query (adds WHERE clause)
+        stmt (search.i/compile-query :accession ast base-stmt)
+
+        ;; Execute queries
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:code]))
-        taxon (when taxon-id
-                (taxon.i/get-by-id db taxon-id))
-        supplier (when supplier-contact-id
-                   (contact.i/get-by-id db supplier-contact-id))
-        filters (cond-> []
-                  taxon (conj {:label "Taxon"
-                               :value (:taxon/name taxon)
-                               :clear-href (uri/uri-str
-                                             {:path uri
-                                              :query (uri/map->query-string
-                                                       (dissoc query-params "taxon-id" "page"))})})
-                  supplier (conj {:label "Supplier"
-                                  :value (:contact/name supplier)
-                                  :clear-href (uri/uri-str
-                                                {:path uri
-                                                 :query (uri/map->query-string
-                                                          (dissoc query-params "supplier-contact-id" "page"))})}))]
+                                      :order-by [:a.code]))
+
+        ;; Fetch taxon for breadcrumb if filtering by taxon.id
+        taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
+        taxon (when taxon-id (taxon.i/get-by-id db taxon-id))]
 
     (if (= (get headers "accept") "application/json")
-      ;; TODO: json response
       (json/json-response (for [row rows]
                             {:text (format "%s (%s)"
                                            (:accession/code row)
@@ -139,12 +141,13 @@
                              :code (:accession/code row)
                              :id (:accession/id row)}))
       (render :viewer viewer
-              :filters filters
+              :field-options (search.i/field-options :accession)
               :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string query-params)})
+                                  :query (uri/map->query-string
+                                           (cond-> {:page page}
+                                             (seq q) (assoc :q q)))})
               :rows rows
               :page page
               :page-size page-size
-              :supplier supplier
               :taxon taxon
               :total total))))

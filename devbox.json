@@ -12,6 +12,8 @@
     "google-cloud-sdk": "latest",
     "sqlfluff":         "3.4.2",
     "sqlite":           "latest",
-    "libspatialite":    "5.1.0"
+    "libspatialite":    "5.1.0",
+    "bbin":             "latest",
+    "babashka":         "latest"
   }
 }

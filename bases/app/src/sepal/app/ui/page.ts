@@ -9,6 +9,7 @@ import "htmx-ext-alpine-morph"
 window.htmx = htmx
 
 import FormState from "~/js/form-state"
+import { queryBuilder, accessionsOnlyFilter } from "~/js/query-builder"
 
 window.Alpine = Alpine
 
@@ -20,6 +21,10 @@ Alpine.plugin(ui)
 document.addEventListener("alpine:init", () => {
     // setup global directives
     Alpine.directive("form-state", FormState)
+
+    // setup global data components
+    Alpine.data("queryBuilder", queryBuilder)
+    Alpine.data("accessionsOnlyFilter", accessionsOnlyFilter)
 })
 
 // Allow 422 responses to be processed by HTMX for OOB error swaps

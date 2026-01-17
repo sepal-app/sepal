@@ -3,12 +3,16 @@
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.params :as params]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
+            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.permission :as location.perm]
+            [sepal.location.interface.search]
+            [sepal.search.interface :as search.i]
             [zodiac.core :as z]))
 
 (def default-page-size 25)
@@ -53,7 +57,7 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [viewer href page-num page-size rows total]}]
+(defn render [& {:keys [field-options viewer href page-num page-size rows total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content (table :href href
@@ -61,30 +65,40 @@
                                :page-size page-size
                                :rows rows
                                :total total)
-               :table-actions (pages.list/search-field (-> href uri/query-map :q)))
+               :table-actions (query-builder/search-field-with-builder
+                                :q (-> href uri/query-map :q)
+                                :fields field-options))
     :breadcrumbs ["Locations"]
     :page-title-buttons (when (authz/user-has-permission? viewer location.perm/create)
                           (create-button))))
 
+(def Params
+  [:map
+   [:page {:default 1} :int]
+   [:page-size {:default default-page-size} :int]
+   [:q :string]])
+
 (defn handler [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
-        ;; TODO: validate page and page size
-        {:strs [page page-size q]
-         :or {page-size default-page-size}} query-params
-        page-num (or (when page (Integer/parseInt page)) 1)
-        offset (* page-size (- page-num 1))
-        stmt {:select [:l.*]
-              :from [[:location :l]]
-              :where (if q
-                       [:or
-                        [:like :name (format "%%%s%%" q)]
-                        [:like :code (format "%%%s%%" q)]]
-                       :true)}
+        {:keys [page page-size q]} (params/decode Params query-params)
+        offset (* page-size (- page 1))
+
+        ;; Parse search query
+        ast (search.i/parse q)
+
+        ;; Base statement
+        base-stmt {:select [:l.*]
+                   :from [[:location :l]]}
+
+        ;; Compile search query (adds WHERE clause and joins)
+        stmt (search.i/compile-query :location ast base-stmt)
+
+        ;; Execute queries
         total (db.i/count db stmt)
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:name]))]
+                                      :order-by [:l.name]))]
 
     (if (= (get headers "accept") "application/json")
       (json/json-response (for [location rows]
@@ -96,9 +110,12 @@
                              :code (:location/code location)
                              :description (:location/description location)}))
       (render :viewer viewer
+              :field-options (search.i/field-options :location)
               :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string query-params)})
+                                  :query (uri/map->query-string
+                                           (cond-> {:page page}
+                                             (seq q) (assoc :q q)))})
               :rows rows
-              :page-num page-num
+              :page-num page
               :page-size page-size
               :total total))))

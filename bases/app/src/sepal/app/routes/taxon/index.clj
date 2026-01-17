@@ -6,9 +6,12 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
+            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.search.interface :as search.i]
             [sepal.taxon.interface.permission :as taxon.perm]
+            [sepal.taxon.interface.search]
             [zodiac.core :as z]))
 
 (defn create-button []
@@ -61,33 +64,39 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [viewer href page page-size rows total]}]
-  (ui.page/page
-    :content (pages.list/page-content-with-panel
-               :content (table :href href
-                               :page page
-                               :page-size page-size
-                               :rows rows
-                               :total total)
-               :table-actions [(pages.list/search-field (-> href uri/query-map :q))
-                               [:label {:class "ml-8"}
-                                "Only taxa with accessions"
-                                ;; TODO: Pass this value in and set it here so
-                                ;; that it matches the url for form submissions
-                                [:input {:type "checkbox"
-                                         :name "accessions-only"
-                                         :value "1"
-                                         :class "ml-4"}]]])
+(defn- accessions-only-checkbox
+  "Checkbox that toggles `accessions:>0` filter in the search query.
+   Uses Alpine.js component from js/query-builder.ts"
+  [q]
+  (let [has-filter? (boolean (and q (re-find #"accessions:>0" q)))]
+    [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
+             :x-data (str "accessionsOnlyFilter('q', " has-filter? ")")}
+     [:input {:type "checkbox"
+              :class "checkbox checkbox-sm"
+              :x-bind:checked "checked"
+              :x-on:click.prevent "toggle()"}]
+     [:span "Only taxa with accessions"]]))
 
-    :breadcrumbs ["Taxa"]
-    :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
-                          (create-button))))
+(defn render [& {:keys [field-options viewer href page page-size rows total]}]
+  (let [q (-> href uri/query-map :q)]
+    (ui.page/page
+      :content (pages.list/page-content-with-panel
+                 :content (table :href href
+                                 :page page
+                                 :page-size page-size
+                                 :rows rows
+                                 :total total)
+                 :table-actions [(query-builder/search-field-with-builder
+                                   :q q
+                                   :fields field-options)
+                                 (accessions-only-checkbox q)])
+
+      :breadcrumbs ["Taxa"]
+      :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
+                            (create-button)))))
 
 (def Params
   [:map
-   [:accessions-only {:default false
-                      :decode/string #(= "1" %)}
-    :boolean]
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
    [:q :string]])
@@ -95,35 +104,37 @@
 (defn handler
   [& {:keys [::z/context headers query-params uri viewer]}]
   (let [{:keys [db]} context
-        {:keys [accessions-only page page-size q]} (params/decode Params query-params)
+        {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
-        columns (cond-> [[:t.id :id]
-                         [:t.name :name]
-                         [:t.rank :rank]
-                         [:t.author :author]
-                         [:t.parent_id :parent-id]
-                         [:p.name :parent_name]
-                         [:t.wfo_taxon_id :wfo_taxon_id]]
-                  (seq q) (conj [:fts.rank :search-rank]))
-        stmt {:select columns
-              :from [[:taxon :t]]
-              :join-by (cond-> [:left [[:taxon :p]
-                                       [:= :p.id :t.parent_id]]]
-                         (seq q)
-                         (conj :inner [[:taxon_fts :fts]
-                                       [:= :fts.rowid :t.id]])
-                         accessions-only
-                         (conj :inner [[:accession :a]
-                                       [:= :a.taxon_id :t.id]]))
-              :where (if (seq q)
-                       [:match :taxon_fts (str q "*")]
-                       :true)}
+
+        ;; Parse search query
+        ast (search.i/parse q)
+
+        ;; Columns to select (including parent name for display)
+        columns [[:t.id :id]
+                 [:t.name :name]
+                 [:t.rank :rank]
+                 [:t.author :author]
+                 [:t.parent_id :parent-id]
+                 [:p.name :parent_name]
+                 [:t.wfo_taxon_id :wfo_taxon_id]]
+
+        ;; Base statement with parent join for display
+        base-stmt {:select columns
+                   :from [[:taxon :t]]
+                   :left-join [[:taxon :p] [:= :p.id :t.parent_id]]}
+
+        ;; Compile search query (adds WHERE clause and any filter joins)
+        stmt (search.i/compile-query :taxon ast base-stmt)
+
+        ;; Execute queries in parallel
         [rows total] (pcalls
-                       #(->> (db.i/execute! db (assoc stmt
-                                                      :limit page-size
-                                                      :offset offset
-                                                      :order-by [[:t.name :asc]])))
-                       #(db.i/count db (assoc stmt :select 1)))]
+                       #(db.i/execute! db (assoc stmt
+                                                 :limit page-size
+                                                 :offset offset
+                                                 :order-by [[:t.name :asc]]))
+                       #(db.i/count db stmt))]
+
     (cond
       ;; We return JSON for autocomplete fields
       (= (get headers "accept") "application/json")
@@ -138,8 +149,11 @@
 
       :else
       (render :viewer viewer
+              :field-options (search.i/field-options :taxon)
               :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string query-params)})
+                                  :query (uri/map->query-string
+                                           (cond-> {:page page}
+                                             (seq q) (assoc :q q)))})
               :rows rows
               :page page
               :page-size page-size
