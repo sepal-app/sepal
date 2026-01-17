@@ -4,6 +4,7 @@
             [sepal.app.routes.taxon.detail :as detail]
             [sepal.app.routes.taxon.detail.media :as detail-media]
             [sepal.app.routes.taxon.detail.name :as detail-name]
+            [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
             [sepal.app.routes.taxon.routes :as routes]
@@ -16,6 +17,9 @@
   ["" {:middleware [[middleware/require-viewer]]}
    ["/" {:name routes/index
          :handler #'index/handler}]
+   ["/export/" {:name routes/export
+                :conflicting true
+                :handler #'export/handler}]
    ["/new/" {:name routes/new
              :middleware [[middleware/require-editor-or-admin]]
              :get #'create/get-handler

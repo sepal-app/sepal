@@ -7,6 +7,7 @@
             [sepal.app.routes.accession.detail.collection :as detail-collection]
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
+            [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.index :as index]
             [sepal.app.routes.accession.panel :as panel]
             [sepal.app.routes.accession.routes :as routes]))
@@ -21,6 +22,10 @@
    ["/"
     {:name routes/index
      :handler #'index/handler}]
+   ["/export/"
+    {:name routes/export
+     :conflicting true
+     :handler #'export/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

@@ -6,6 +6,7 @@
 (def detail-general ::detail-general)
 (def detail-collection ::detail-collection)
 (def detail-media ::detail-media)
+(def export ::export)
 
 (def panel ::panel)
 

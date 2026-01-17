@@ -4,6 +4,7 @@
             [sepal.app.routes.material.detail :as detail]
             [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.routes.material.detail.media :as detail-media]
+            [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.index :as index]
             [sepal.app.routes.material.panel :as panel]
             [sepal.app.routes.material.routes :as routes]
@@ -20,6 +21,10 @@
    ["/"
     {:name routes/index
      :handler #'index/handler}]
+   ["/export/"
+    {:name routes/export
+     :conflicting true
+     :handler #'export/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

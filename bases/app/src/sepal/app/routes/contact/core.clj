@@ -2,6 +2,7 @@
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.contact.create :as create]
             [sepal.app.routes.contact.detail :as detail]
+            [sepal.app.routes.contact.export :as export]
             [sepal.app.routes.contact.index :as index]
             [sepal.app.routes.contact.panel :as panel]
             [sepal.app.routes.contact.routes :as routes]
@@ -17,6 +18,10 @@
    ["/"
     {:name routes/index
      :handler #'index/handler}]
+   ["/export/"
+    {:name routes/export
+     :conflicting true
+     :handler #'export/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

@@ -1,5 +1,6 @@
 {:paths ["src" "resources"]
- :deps {babashka/fs {:mvn/version "0.5.30"}
+ :deps {org.clojure/data.csv {:mvn/version "1.1.0"}
+        babashka/fs {:mvn/version "0.5.30"}
         com.github.brettatoms/zodiac {:mvn/version "0.8.89"}
         com.github.brettatoms/zodiac-assets {:mvn/version "0.4.34"}
         com.github.brettatoms/zodiac-headers {:mvn/version "0.1.2"}

@@ -55,9 +55,8 @@
           :hx-target (str "#" list-container-id)
           :hx-push-url "true"
           :hx-swap "outerHTML"}
-   [:div {:class "flex justify-between mt-8"}
-    [:div {:class "flex flex-row items-center"}
-     table-actions]]
+   [:div {:class "w-full mt-8"}
+    table-actions]
    [:div {:id list-container-id
           :class "mt-4 flex flex-col"}
     content]])
@@ -80,9 +79,8 @@
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"
             :hx-swap "outerHTML"}
-     [:div {:class "flex justify-between"}
-      [:div {:class "flex flex-row items-center"}
-       table-actions]]]
+     [:div {:class "w-full"}
+       table-actions]]
     ;; Table and panel in same row, outside the form
     [:div {:class "mt-4 flex flex-row gap-8"}
      ;; Table content

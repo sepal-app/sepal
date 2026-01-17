@@ -3,7 +3,9 @@
             [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.contact.export :as export]
             [sepal.app.routes.contact.routes :as contact.routes]
+            [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
@@ -58,17 +60,25 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [field-options viewer href page-num page-size rows total]}]
+(defn render [& {:keys [field-options viewer href page-num page-size rows search-query total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
-               :content (table :href href
-                               :page-num page-num
-                               :page-size page-size
-                               :rows rows
-                               :total total)
-               :table-actions (query-builder/search-field-with-builder
-                                :q (-> href uri/query-map :q)
-                                :fields field-options))
+               :content [:div
+                         (table :href href
+                                :page-num page-num
+                                :page-size page-size
+                                :rows rows
+                                :total total)
+                         (ui.export/export-modal
+                           :total total
+                           :search-query search-query
+                           :export-action (z/url-for contact.routes/export)
+                           :options export/export-options)]
+               :table-actions [:div {:class "flex items-center justify-between w-full"}
+                               (query-builder/search-field-with-builder
+                                 :q search-query
+                                 :fields field-options)
+                               (ui.export/export-button)])
     :breadcrumbs ["Contacts"]
     :page-title-buttons (when (authz/user-has-permission? viewer contact.perm/create)
                           (create-button))))
@@ -119,4 +129,5 @@
               :rows rows
               :page-num page
               :page-size page-size
+              :search-query q
               :total total))))

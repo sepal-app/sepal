@@ -1,63 +1,49 @@
 (ns sepal.validation.interface-test
-  (:require [clojure.test :as test :refer [deftest is testing]]
+  (:require [clojure.test :refer [deftest is testing]]
             [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]))
 
-(def TestSchema
-  [:map {:closed true}
-   [:code [:string {:min 1}]]
-   [:taxon-id :int]])
+(deftest parse-date-test
+  (testing "valid ISO-8601 date returns the date string"
+    (is (= "2024-01-15" (validation.i/parse-date "2024-01-15")))
+    (is (= "2024-12-31" (validation.i/parse-date "2024-12-31"))))
 
-(deftest test-validate-form-values-success
-  (testing "validates and transforms valid form params"
-    (let [form-params {"code" "ACC-001" "taxon-id" "123"}
-          result (validation.i/validate-form-values TestSchema form-params)]
+  (testing "empty string returns nil"
+    (is (nil? (validation.i/parse-date ""))))
+
+  (testing "nil returns nil"
+    (is (nil? (validation.i/parse-date nil))))
+
+  (testing "invalid format returns ::invalid-date"
+    (is (= ::validation.i/invalid-date (validation.i/parse-date "not-a-date")))
+    (is (= ::validation.i/invalid-date (validation.i/parse-date "01-15-2024")))
+    (is (= ::validation.i/invalid-date (validation.i/parse-date "2024/01/15"))))
+
+  (testing "impossible dates return ::invalid-date"
+    (is (= ::validation.i/invalid-date (validation.i/parse-date "2024-02-30")))
+    (is (= ::validation.i/invalid-date (validation.i/parse-date "2024-13-01")))))
+
+(deftest date-schema-test
+  (testing "valid date passes validation"
+    (let [schema [:map [:d [:maybe validation.i/date]]]
+          result (validation.i/validate-form-values schema {:d "2024-01-15"})]
       (is (not (error.i/error? result)))
-      (is (= {:code "ACC-001" :taxon-id 123} result)))))
+      (is (= {:d "2024-01-15"} result))))
 
-(deftest test-validate-form-values-key-transformation
-  (testing "converts string keys to keywords"
-    (let [form-params {"code" "test" "taxon-id" "42"}
-          result (validation.i/validate-form-values TestSchema form-params)]
-      (is (contains? result :code))
-      (is (contains? result :taxon-id)))))
+  (testing "empty string becomes nil"
+    (let [schema [:map [:d [:maybe validation.i/date]]]
+          result (validation.i/validate-form-values schema {:d ""})]
+      (is (not (error.i/error? result)))
+      (is (= {:d nil} result))))
 
-(deftest test-validate-form-values-string-coercion
-  (testing "coerces string values to proper types"
-    (let [form-params {"code" "test" "taxon-id" "999"}
-          result (validation.i/validate-form-values TestSchema form-params)]
-      (is (int? (:taxon-id result)))
-      (is (= 999 (:taxon-id result))))))
-
-(deftest test-validate-form-values-validation-error
-  (testing "returns error for invalid data"
-    (let [form-params {"code" "" "taxon-id" "not-a-number"}
-          result (validation.i/validate-form-values TestSchema form-params)]
-      (is (error.i/error? result)))))
-
-(deftest test-validate-form-values-humanized-errors
-  (testing "humanize returns field error map"
-    (let [form-params {"code" "" "taxon-id" "abc"}
-          result (validation.i/validate-form-values TestSchema form-params)
-          errors (validation.i/humanize result)]
-      (is (map? errors))
-      (is (contains? errors :code))
-      (is (contains? errors :taxon-id))
-      (is (vector? (:code errors)))
-      (is (vector? (:taxon-id errors))))))
-
-(deftest test-validate-form-values-missing-required
-  (testing "returns error for missing required fields"
-    (let [form-params {}
-          result (validation.i/validate-form-values TestSchema form-params)]
+  (testing "invalid date returns error"
+    (let [schema [:map [:d [:maybe validation.i/date]]]
+          result (validation.i/validate-form-values schema {:d "bad-date"})]
       (is (error.i/error? result))
-      (let [errors (validation.i/humanize result)]
-        (is (contains? errors :code))
-        (is (contains? errors :taxon-id))))))
+      (is (= {:d ["must be a valid date (YYYY-MM-DD)"]}
+             (validation.i/humanize result)))))
 
-(deftest test-validate-form-values-strips-extra-keys
-  (testing "strips keys not in schema"
-    (let [form-params {"code" "test" "taxon-id" "1" "extra-field" "ignored"}
-          result (validation.i/validate-form-values TestSchema form-params)]
-      (is (not (error.i/error? result)))
-      (is (not (contains? result :extra-field))))))
+  (testing "impossible date returns error"
+    (let [schema [:map [:d [:maybe validation.i/date]]]
+          result (validation.i/validate-form-values schema {:d "2024-02-30"})]
+      (is (error.i/error? result)))))

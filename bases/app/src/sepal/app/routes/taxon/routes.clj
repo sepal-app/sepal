@@ -5,5 +5,6 @@
 (def detail ::detail)
 (def detail-name ::detail-name)
 (def detail-media ::detail-media)
+(def export ::export)
 
 (def panel ::panel)

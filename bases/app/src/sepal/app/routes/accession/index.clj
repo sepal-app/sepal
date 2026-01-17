@@ -5,8 +5,10 @@
             [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
@@ -59,17 +61,26 @@
                       :page-size page-size
                       :total total))])
 
-(defn render [& {:keys [field-options viewer href page page-size rows taxon total]}]
+(defn render [& {:keys [field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
-               :content (table :href href
-                               :page page
-                               :page-size page-size
-                               :rows rows
-                               :total total)
-               :table-actions (query-builder/search-field-with-builder
-                                :q (-> href uri/query-map :q)
-                                :fields field-options))
+               :content [:div
+                         (table :href href
+                                :page page
+                                :page-size page-size
+                                :rows rows
+                                :total total)
+                         ;; Export modal (hidden until triggered)
+                         (ui.export/export-modal
+                           :total total
+                           :search-query search-query
+                           :export-action (z/url-for accession.routes/export)
+                           :options export/export-options)]
+               :table-actions [:div {:class "flex items-center justify-between w-full"}
+                               (query-builder/search-field-with-builder
+                                 :q search-query
+                                 :fields field-options)
+                               (ui.export/export-button)])
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 "Taxa"]
@@ -149,5 +160,6 @@
               :rows rows
               :page page
               :page-size page-size
+              :search-query q
               :taxon taxon
               :total total))))

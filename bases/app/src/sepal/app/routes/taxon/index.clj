@@ -3,7 +3,9 @@
             [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
+            [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
@@ -77,23 +79,31 @@
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))
 
-(defn render [& {:keys [field-options viewer href page page-size rows total]}]
-  (let [q (-> href uri/query-map :q)]
-    (ui.page/page
-      :content (pages.list/page-content-with-panel
-                 :content (table :href href
-                                 :page page
-                                 :page-size page-size
-                                 :rows rows
-                                 :total total)
-                 :table-actions [(query-builder/search-field-with-builder
-                                   :q q
-                                   :fields field-options)
-                                 (accessions-only-checkbox q)])
+(defn render [& {:keys [field-options viewer href page page-size rows search-query total]}]
+  (ui.page/page
+    :content (pages.list/page-content-with-panel
+               :content [:div
+                         (table :href href
+                                :page page
+                                :page-size page-size
+                                :rows rows
+                                :total total)
+                         (ui.export/export-modal
+                           :total total
+                           :search-query search-query
+                           :export-action (z/url-for taxon.routes/export)
+                           :options export/export-options)]
+               :table-actions [:div {:class "flex items-center justify-between w-full"}
+                               [:div {:class "flex items-center gap-2"}
+                                (query-builder/search-field-with-builder
+                                  :q search-query
+                                  :fields field-options)
+                                (accessions-only-checkbox search-query)]
+                               (ui.export/export-button)])
 
-      :breadcrumbs ["Taxa"]
-      :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
-                            (create-button)))))
+    :breadcrumbs ["Taxa"]
+    :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
+                          (create-button))))
 
 (def Params
   [:map
@@ -157,4 +167,5 @@
               :rows rows
               :page page
               :page-size page-size
+              :search-query q
               :total total))))
