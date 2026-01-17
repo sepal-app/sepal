@@ -60,7 +60,7 @@
         [:ul
          (for [item (butlast breadcrumbs)]
            [:li item])
-         [:li [:span {:class "font-semibold text-xl"}
+         [:li [:span {:class "font-semibold"}
                (last breadcrumbs)]]]])]
 
     [:div {:class "mt-4 sm:mt-0 sm:ml-16 sm:flex flex-row gap-2"}
