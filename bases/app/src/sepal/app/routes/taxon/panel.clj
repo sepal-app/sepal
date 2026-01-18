@@ -26,13 +26,14 @@
   "Render the taxon panel content.
 
    Options:
-   - :taxon      - The taxon map
-   - :parent     - Optional parent taxon map
-   - :stats      - Map with :accession-count, :material-count
-   - :activities - Recent activities for this taxon
+   - :taxon          - The taxon map
+   - :parent         - Optional parent taxon map
+   - :stats          - Map with :accession-count, :material-count
+   - :activities     - Recent activities for this taxon
    - :activity-count - Total activity count
-   - :on-close   - Optional close handler (for list page)"
-  [& {:keys [taxon parent stats activities activity-count on-close]}]
+   - :timezone       - Timezone string for formatting timestamps
+   - :on-close       - Optional close handler (for list page)"
+  [& {:keys [taxon parent stats activities activity-count timezone on-close]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id]} taxon
         {:keys [accession-count material-count]} stats]
     (panel/panel-container
@@ -92,7 +93,8 @@
           :children
           (panel/activity-section
             :activities activities
-            :total-count activity-count))))))
+            :total-count activity-count
+            :timezone timezone))))))
 
 (defn fetch-panel-data
   "Fetch all data needed for the taxon panel.
@@ -120,7 +122,7 @@
 (defn handler
   "Handler for taxon panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
@@ -128,4 +130,5 @@
         :parent (:parent panel-data)
         :stats (:stats panel-data)
         :activities (:activities panel-data)
-        :activity-count (:activity-count panel-data)))))
+        :activity-count (:activity-count panel-data)
+        :timezone timezone))))

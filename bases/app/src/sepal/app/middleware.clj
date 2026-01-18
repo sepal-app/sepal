@@ -8,6 +8,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.error.interface :as error.i]
+            [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
 
@@ -167,3 +168,15 @@
             (update :flash dissoc :messages))  ;; Clear from session since we rendered it
         ;; Regular response or redirect: leave flash in session
         response))))
+
+(defn wrap-org-settings
+  "Middleware that loads organization settings into the request context.
+   Currently loads:
+   - :timezone - Organization timezone string (defaults to 'UTC')"
+  [handler]
+  (fn [{:keys [::z/context] :as request}]
+    (let [{:keys [db]} context
+          timezone (or (settings.i/get-value db "organization.timezone") "UTC")]
+      (-> request
+          (assoc-in [::z/context :timezone] timezone)
+          handler))))

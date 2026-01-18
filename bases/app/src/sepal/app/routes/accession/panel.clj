@@ -32,8 +32,9 @@
    - :stats          - Map with :material-count
    - :activities     - Recent activities for this accession
    - :activity-count - Total activity count
+   - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [accession taxon supplier stats activities activity-count on-close]}]
+  [& {:keys [accession taxon supplier stats activities activity-count timezone on-close]}]
   (let [{:accession/keys [id code provenance-type]} accession
         {:keys [material-count]} stats
         taxon-name (:taxon/name taxon)]
@@ -92,7 +93,8 @@
           :children
           (panel/activity-section
             :activities activities
-            :total-count activity-count))))))
+            :total-count activity-count
+            :timezone timezone))))))
 
 (defn fetch-panel-data
   "Fetch all data needed for the accession panel.
@@ -121,7 +123,7 @@
 (defn handler
   "Handler for accession panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
@@ -130,4 +132,5 @@
         :supplier (:supplier panel-data)
         :stats (:stats panel-data)
         :activities (:activities panel-data)
-        :activity-count (:activity-count panel-data)))))
+        :activity-count (:activity-count panel-data)
+        :timezone timezone))))

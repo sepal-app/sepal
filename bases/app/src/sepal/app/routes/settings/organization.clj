@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.organization
-  (:require [sepal.app.flash :as flash]
+  (:require [clojure.string :as str]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
@@ -8,7 +9,40 @@
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
-            [zodiac.core :as z]))
+            [zodiac.core :as z])
+  (:import [java.time ZoneId ZonedDateTime]))
+
+(defn timezone-options
+  "Returns all canonical IANA timezone options with UTC offset labels.
+   Filters to Region/City format and excludes Etc/ zones."
+  []
+  (->> (ZoneId/getAvailableZoneIds)
+       (filter #(re-matches #"^[A-Z][a-z]+/[A-Za-z_/]+" %))
+       (remove #(str/starts-with? % "Etc/"))
+       sort
+       (mapv (fn [zone-id]
+               (let [zone (ZoneId/of zone-id)
+                     offset (.getOffset (ZonedDateTime/now zone))]
+                 {:value zone-id
+                  :label (format "(UTC%s) %s" offset zone-id)})))))
+
+(defn timezone-select
+  "Render a searchable select for timezone selection."
+  [& {:keys [value errors]}]
+  (form/field
+    :label "Timezone"
+    :name "timezone"
+    :errors errors
+    :input [:select {:name "timezone"
+                     :id "timezone"
+                     :x-timezone-field true
+                     :required true}
+            [:option {:value ""} "Select a timezone..."]
+            (for [{opt-value :value opt-label :label} (timezone-options)]
+              [:option {:value opt-value
+                        :selected (when (= opt-value value)
+                                    "selected")}
+               opt-label])]))
 
 (defn org-form [& {:keys [values errors]}]
   (form/form
@@ -67,7 +101,12 @@
       (form/input-field :label "Country"
                         :name "address_country"
                         :value (:address_country values)
-                        :errors (:address_country errors))]]
+                        :errors (:address_country errors))]
+
+     [:div
+      [:h3 {:class "text-lg font-medium mb-4"} "Regional Settings"]
+      (timezone-select :value (:timezone values)
+                       :errors (:timezone errors))]]
 
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
@@ -93,7 +132,8 @@
    [:address_street {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:address_city {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:address_postal_code {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:address_country {:decode/form validation.i/empty->nil} [:maybe :string]]])
+   [:address_country {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:timezone [:string {:min 1}]]])
 
 (def form-key->setting-key
   {:long_name "organization.long_name"
@@ -105,7 +145,8 @@
    :address_street "organization.address_street"
    :address_city "organization.address_city"
    :address_postal_code "organization.address_postal_code"
-   :address_country "organization.address_country"})
+   :address_country "organization.address_country"
+   :timezone "organization.timezone"})
 
 (defn settings->form-values [settings]
   (into {} (map (fn [[form-key setting-key]]

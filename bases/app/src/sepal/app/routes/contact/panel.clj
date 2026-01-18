@@ -16,8 +16,9 @@
    - :stats          - Map with :accession-count
    - :activities     - Recent activities for this contact
    - :activity-count - Total activity count
+   - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [contact stats activities activity-count on-close]}]
+  [& {:keys [contact stats activities activity-count timezone on-close]}]
   (let [{:contact/keys [id name email phone business]} contact
         {:keys [accession-count]} stats]
     (panel/panel-container
@@ -61,7 +62,8 @@
           :children
           (panel/activity-section
             :activities activities
-            :total-count activity-count))))))
+            :total-count activity-count
+            :timezone timezone))))))
 
 (defn fetch-panel-data
   "Fetch all data needed for the contact panel.
@@ -84,11 +86,12 @@
 (defn handler
   "Handler for contact panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
         :contact (:contact panel-data)
         :stats (:stats panel-data)
         :activities (:activities panel-data)
-        :activity-count (:activity-count panel-data)))))
+        :activity-count (:activity-count panel-data)
+        :timezone timezone))))

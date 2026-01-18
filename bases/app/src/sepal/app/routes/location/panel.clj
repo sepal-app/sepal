@@ -16,8 +16,9 @@
    - :stats          - Map with :material-count
    - :activities     - Recent activities for this location
    - :activity-count - Total activity count
+   - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [location stats activities activity-count on-close]}]
+  [& {:keys [location stats activities activity-count timezone on-close]}]
   (let [{:location/keys [id name code description]} location
         {:keys [material-count]} stats]
     (panel/panel-container
@@ -60,7 +61,8 @@
           :children
           (panel/activity-section
             :activities activities
-            :total-count activity-count))))))
+            :total-count activity-count
+            :timezone timezone))))))
 
 (defn fetch-panel-data
   "Fetch all data needed for the location panel.
@@ -83,11 +85,12 @@
 (defn handler
   "Handler for location panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
         :location (:location panel-data)
         :stats (:stats panel-data)
         :activities (:activities panel-data)
-        :activity-count (:activity-count panel-data)))))
+        :activity-count (:activity-count panel-data)
+        :timezone timezone))))

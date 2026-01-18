@@ -7,6 +7,7 @@
             [clojure.tools.logging :as log]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
+            [sepal.app.ui.datetime :as datetime]
             [sepal.database.interface :as db.i]
             [sepal.mail.interface :as mail.i]
             [sepal.scheduler.interface :as scheduler.i]
@@ -154,7 +155,7 @@
 
 (defn create-backup!
   "Create a timestamped backup ZIP file.
-   
+
    Returns {:filename \"...\" :size-bytes N :created-at #inst} on success,
    or throws an exception on failure."
   [db backup-path]
@@ -243,11 +244,10 @@
        (filter some?)))
 
 (defn- format-datetime-for-email
-  "Format an instant for display in email."
-  [instant]
-  (let [formatter (-> (DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a z")
-                      (.withZone (ZoneId/systemDefault)))]
-    (.format formatter instant)))
+  "Format an instant for display in email using org timezone."
+  [db instant]
+  (let [timezone (datetime/get-timezone db)]
+    (datetime/format-for-email instant timezone)))
 
 (defn- send-backup-success-email!
   "Send backup success notification to all admin users."
@@ -259,7 +259,7 @@
         body (str "A database backup was completed successfully.\n\n"
                   "Filename: " (:filename backup-result) "\n"
                   "Size: " (format "%.2f MB" (/ (:size-bytes backup-result) 1048576.0)) "\n"
-                  "Created: " (format-datetime-for-email (:created-at backup-result)) "\n\n"
+                  "Created: " (format-datetime-for-email db (:created-at backup-result)) "\n\n"
                   "Download: " download-url "\n")]
     (doseq [email admin-emails]
       (try

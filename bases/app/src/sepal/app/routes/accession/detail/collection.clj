@@ -131,7 +131,7 @@
              :x-on:click "$dispatch('collection-form:submit')"}
     "Save"]])
 
-(defn render [& {:keys [errors accession taxon values panel-data]}]
+(defn render [& {:keys [errors accession taxon values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :errors errors
                                                :accession accession
@@ -142,7 +142,8 @@
                                          :supplier (:supplier panel-data)
                                          :stats (:stats panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs (accession.shared/breadcrumbs taxon accession)
              :footer (ui.form/footer :buttons (footer-buttons))))
 
@@ -198,7 +199,7 @@
       base-data)))
 
 (defn handler [{:keys [::z/context form-params request-method]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         accession resource
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
         collection (coll.i/get-by-accession-id db (:accession/id accession))
@@ -222,4 +223,5 @@
         (render :accession accession
                 :taxon taxon
                 :values values
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))

@@ -52,7 +52,7 @@
    [:script {:type "module"
              :src (html/static-url "app/routes/media/media.ts")}]])
 
-(defn render [& {:keys [page page-size media accession taxon panel-data]}]
+(defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (title-buttons)
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :page page
@@ -65,7 +65,8 @@
                                             :supplier (:supplier panel-data)
                                             :stats (:stats panel-data)
                                             :activities (:activities panel-data)
-                                            :activity-count (:activity-count panel-data)))
+                                            :activity-count (:activity-count panel-data)
+                                            :timezone timezone))
                 :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (def Params
@@ -74,7 +75,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -102,4 +103,5 @@
                 :page-size page-size
                 :accession resource
                 :taxon taxon
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))

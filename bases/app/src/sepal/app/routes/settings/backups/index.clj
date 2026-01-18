@@ -4,6 +4,7 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
+            [sepal.app.ui.datetime :as datetime]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.error.interface :as error.i]
@@ -23,14 +24,6 @@
     (< bytes (* 1024 1024)) (format "%.1f KB" (/ bytes 1024.0))
     (< bytes (* 1024 1024 1024)) (format "%.1f MB" (/ bytes (* 1024.0 1024)))
     :else (format "%.1f GB" (/ bytes (* 1024.0 1024 1024)))))
-
-(defn- format-datetime
-  "Format an Instant for display."
-  [instant]
-  (when instant
-    (let [formatter (java.time.format.DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a")
-          zoned (.atZone instant (java.time.ZoneId/systemDefault))]
-      (.format zoned formatter))))
 
 ;; -----------------------------------------------------------------------------
 ;; Form
@@ -60,7 +53,7 @@
                :selected (when (= val (some-> value name)) "selected")}
       label])])
 
-(defn- backup-form [& {:keys [config errors]}]
+(defn- backup-form [& {:keys [config errors timezone]}]
   (let [next-backup (when (and (:frequency config)
                                (not= :disabled (:frequency config)))
                       (backup/get-next-backup-time (:frequency config)))]
@@ -81,16 +74,16 @@
 
         (when next-backup
           [:p {:class "text-sm text-base-content/70 -mt-2"}
-           "Next backup: " (format-datetime next-backup)])]
+           "Next backup: " (datetime/datetime next-backup timezone)])]
 
        (when (:last-run-at config)
          [:div {:class "text-sm text-base-content/70"}
-          [:p "Last backup: " (format-datetime (:last-run-at config))]])]
+          [:p "Last backup: " (datetime/datetime (:last-run-at config) timezone)]])]
 
       [:div {:class "mt-4"}
        (layout/save-button "Save changes")])))
 
-(defn- backups-table [backups]
+(defn- backups-table [backups timezone]
   [:div {:class "mt-8"}
    [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
    (if (seq backups)
@@ -107,7 +100,7 @@
           [:tr
            [:td {:class "font-mono text-sm"} filename]
            [:td (format-bytes size-bytes)]
-           [:td (format-datetime created-at)]
+           [:td (datetime/datetime created-at timezone)]
            [:td
             [:a {:href (z/url-for settings.routes/backup-download {:filename filename})
                  :class "btn btn-sm btn-ghost"}
@@ -118,7 +111,7 @@
 ;; -----------------------------------------------------------------------------
 ;; Render
 
-(defn render [& {:keys [viewer config errors flash backups]}]
+(defn render [& {:keys [viewer config errors flash backups timezone]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/backups
@@ -128,14 +121,14 @@
     :content
     [:div
      (alert-note)
-     (backup-form :config config :errors errors)
-     (backups-table backups)]))
+     (backup-form :config config :errors errors :timezone timezone)
+     (backups-table backups timezone)]))
 
 ;; -----------------------------------------------------------------------------
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         config (backup/get-config db)]
     (case request-method
       :post
@@ -156,4 +149,5 @@
         (render :viewer viewer
                 :config config
                 :flash flash
-                :backups backups)))))
+                :backups backups
+                :timezone timezone)))))

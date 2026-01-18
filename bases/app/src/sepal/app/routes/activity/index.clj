@@ -12,6 +12,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.activity :as ui.activity]
             [sepal.app.ui.avatar :as ui.avatar]
+            [sepal.app.ui.datetime :as datetime]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.activity :as location.activity]
@@ -23,40 +24,9 @@
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z])
-  (:import [java.time Duration Instant ZoneId]
-           [java.time.format DateTimeFormatter FormatStyle]
+  (:import [java.time Instant ZoneId]
+           [java.time.format DateTimeFormatter]
            [java.time.temporal ChronoUnit]))
-
-;;; Time formatting helpers
-
-(def ^:private default-timezone (ZoneId/of "UTC"))
-
-(def ^:private full-datetime-formatter
-  (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT))
-
-(defn relative-time
-  "Format an Instant as a relative time string (e.g., '2 hours ago', 'yesterday')."
-  [^Instant instant]
-  (let [now (Instant/now)
-        duration (Duration/between instant now)
-        minutes (.toMinutes duration)
-        hours (.toHours duration)
-        days (.toDays duration)]
-    (cond
-      (< minutes 1) "just now"
-      (< minutes 60) (str minutes (if (= minutes 1) " minute ago" " minutes ago"))
-      (< hours 24) (str hours (if (= hours 1) " hour ago" " hours ago"))
-      (< days 2) "yesterday"
-      (< days 7) (str days " days ago")
-      (< days 30) (str (quot days 7) (if (= (quot days 7) 1) " week ago" " weeks ago"))
-      :else (str days " days ago"))))
-
-(defn format-full-datetime
-  "Format an Instant as a full date/time string in the given timezone."
-  [^Instant instant ^ZoneId timezone]
-  (let [tz (or timezone default-timezone)
-        zdt (.atZone instant tz)]
-    (.format full-datetime-formatter zdt)))
 
 ;;; Legacy components (to be removed after refactor)
 
@@ -307,9 +277,7 @@
      [:div {:class (html/attr "flex" "items-center" "gap-3")}
       (ui.avatar/avatar :email (:user/email user) :size :sm)
       [:span {:class "font-medium"} (:user/email user)]]
-     [:time {:class (html/attr "text-sm" "text-base-content/60")
-             :title (format-full-datetime time timezone)}
-      (relative-time time)]]
+     (datetime/relative-time time timezone :class (html/attr "text-sm" "text-base-content/60"))]
     ;; Divider
     [:div {:class (html/attr "divider" "my-2")}]
     ;; Activity items
@@ -340,8 +308,9 @@
 
 (defn- format-day-header
   "Format an Instant as a day header string (e.g., 'Monday, December 8, 2025')."
-  [^Instant instant ^ZoneId timezone]
-  (let [today (-> (Instant/now)
+  [^Instant instant timezone-str]
+  (let [timezone (ZoneId/of (or timezone-str "UTC"))
+        today (-> (Instant/now)
                   (.atZone timezone)
                   (.truncatedTo ChronoUnit/DAYS))
         yesterday (.minusDays today 1)
@@ -371,8 +340,7 @@
 (defn timeline-content
   "Render just the activity content (day sections with cards) without page wrapper.
    Used for both initial render and HTMX partial responses."
-  [& {:keys [activity timezone page page-size]
-      :or {timezone default-timezone}}]
+  [& {:keys [activity page page-size timezone]}]
   (let [activity-by-date (group-by #(.truncatedTo (:activity/created-at %)
                                                   ChronoUnit/DAYS)
                                    activity)
@@ -395,29 +363,30 @@
 
 (defn timeline
   "Render the activity timeline grouped by day and consecutive user."
-  [& {:keys [activity timezone page page-size]
-      :or {timezone default-timezone
-           page 1
+  [& {:keys [activity page page-size timezone]
+      :or {page 1
            page-size 25}}]
   [:div {:id "activity-feed"}
    (timeline-content :activity activity
-                     :timezone timezone
                      :page page
-                     :page-size page-size)])
+                     :page-size page-size
+                     :timezone timezone)])
 
-(defn render [& {:keys [activity page page-size]}]
+(defn render [& {:keys [activity page page-size timezone]}]
   (ui.page/page :content (timeline :activity activity
                                    :page page
-                                   :page-size page-size)
+                                   :page-size page-size
+                                   :timezone timezone)
                 :breadcrumbs ["Activity"]))
 
 (defn render-partial
   "Render just the activity content for HTMX requests (no page wrapper)."
-  [& {:keys [activity page page-size]}]
+  [& {:keys [activity page page-size timezone]}]
   (html/render-partial
     (timeline-content :activity activity
                       :page page
-                      :page-size page-size)))
+                      :page-size page-size
+                      :timezone timezone)))
 
 (def Activity
   (-> activity.i/Activity
@@ -492,14 +461,16 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context headers query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)
         htmx-request? (get headers "hx-request")]
     (if htmx-request?
       (render-partial :activity activity
                       :page page
-                      :page-size page-size)
+                      :page-size page-size
+                      :timezone timezone)
       (render :activity activity
               :page page
-              :page-size page-size))))
+              :page-size page-size
+              :timezone timezone))))

@@ -29,6 +29,7 @@
 
 (defn routes []
   ["" {:middleware [middleware/htmx-request
+                    middleware/wrap-org-settings
                     middleware/wrap-flash-messages
                     stacktrace/wrap-stacktrace-web]}
    ;; Auth routes (inlined so they're under the root middleware)

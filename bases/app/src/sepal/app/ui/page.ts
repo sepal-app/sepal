@@ -10,6 +10,7 @@ window.htmx = htmx
 
 import FormState from "~/js/form-state"
 import { queryBuilder, accessionsOnlyFilter } from "~/js/query-builder"
+import TimezoneField from "~/js/timezone-field"
 
 window.Alpine = Alpine
 
@@ -21,6 +22,7 @@ Alpine.plugin(ui)
 document.addEventListener("alpine:init", () => {
     // setup global directives
     Alpine.directive("form-state", FormState)
+    Alpine.directive("timezone-field", TimezoneField)
 
     // setup global data components
     Alpine.data("queryBuilder", queryBuilder)

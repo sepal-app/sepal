@@ -36,7 +36,8 @@
                                                              :address_street ""
                                                              :address_city ""
                                                              :address_postal_code ""
-                                                             :address_country ""})
+                                                             :address_country ""
+                                                             :timezone "America/New_York"})
           _ (is (= 303 (:status response)) "Should redirect after successful update")
           {:keys [response]} (peri/follow-redirect sess)]
       (is (= 200 (:status response)))

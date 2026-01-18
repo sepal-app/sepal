@@ -9,8 +9,8 @@
    - card card-compact for activity items
    - drawer drawer-end for mobile sidebar"
   (:require [sepal.app.html :as html]
-            [sepal.app.routes.activity.index :as activity.index]
             [sepal.app.ui.activity :as ui.activity]
+            [sepal.app.ui.datetime :as datetime]
             [sepal.app.ui.icons.lucide :as lucide]))
 
 ;;; ---------------------------------------------------------------------------
@@ -161,16 +161,14 @@
 (defn activity-item-compact
   "Compact activity item for the resource panel.
    Shows badge + time + user only. Uses DaisyUI card component."
-  [activity]
+  [activity timezone]
   [:div {:class "card card-compact bg-base-100 shadow-sm"}
    [:div {:class "card-body p-3"}
     ;; Top row: badge + relative time
     [:div {:class "flex items-center justify-between"}
      (ui.activity/action-badge (:activity/type activity))
-     [:time {:class "text-sm text-base-content/80"
-             :title (activity.index/format-full-datetime
-                      (:activity/created-at activity) nil)}
-      (activity.index/relative-time (:activity/created-at activity))]]
+     (datetime/relative-time (:activity/created-at activity) timezone
+                             :class "text-sm text-base-content/80")]
     ;; Bottom row: user email
     [:div {:class "text-sm text-base-content/80"}
      (:user/email (:activity/user activity))]]])
@@ -181,15 +179,16 @@
    Options:
    - :activities   - Sequence of activity maps to display
    - :total-count  - Total number of activities (for 'Load more' button)
-   - :load-more-url - URL for loading more activities via HTMX"
-  [& {:keys [activities total-count load-more-url]}]
+   - :load-more-url - URL for loading more activities via HTMX
+   - :timezone     - Timezone string for formatting timestamps"
+  [& {:keys [activities total-count load-more-url timezone]}]
   (let [showing (count activities)
         remaining (when total-count (- total-count showing))]
     [:div {:class "space-y-2"}
      ;; Activity items
      (for [activity activities]
        ^{:key (:activity/id activity)}
-       (activity-item-compact activity))
+       (activity-item-compact activity timezone))
      ;; Load more button
      (when (and load-more-url remaining (pos? remaining))
        [:button {:class "btn btn-ghost btn-sm w-full"

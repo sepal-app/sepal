@@ -37,7 +37,7 @@
              :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]])
 
-(defn render [& {:keys [errors org accession supplier taxon values panel-data]}]
+(defn render [& {:keys [errors org accession supplier taxon values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :errors errors
                                                :org org
@@ -51,7 +51,8 @@
                                          :supplier (:supplier panel-data)
                                          :stats (:stats panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs (accession.shared/breadcrumbs taxon accession)
              :footer (ui.form/footer :buttons (footer-buttons))))
 
@@ -78,7 +79,7 @@
    [:date-accessioned [:maybe validation.i/date]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db organization resource]} context
+  (let [{:keys [db organization resource timezone]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         supplier (contact.i/get-by-id db (:accession/supplier-contact-id resource))
         values {:id (:accession/id resource)
@@ -109,4 +110,5 @@
                 :supplier supplier
                 :taxon taxon
                 :values values
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))
