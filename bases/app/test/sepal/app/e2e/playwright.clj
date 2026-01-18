@@ -147,13 +147,20 @@
   (.url *page*))
 
 (defn wait-for-enabled
-  "Wait for element to be enabled (not disabled)"
+  "Wait for element to be enabled (not disabled).
+   Uses Playwright's Locator API to support Playwright selectors like :has-text()."
   ([selector]
    (wait-for-enabled selector 5000))
   ([selector timeout-ms]
-   ;; Use waitForFunction to wait until the element is not disabled
-   (.waitForFunction *page*
-                     (str "() => { const el = document.querySelector('" selector "'); return el && !el.disabled; }")
-                     nil
-                     (doto (com.microsoft.playwright.Page$WaitForFunctionOptions.)
-                       (.setTimeout (double timeout-ms))))))
+   (let [locator (.locator *page* selector)
+         start-time (System/currentTimeMillis)
+         poll-interval 100]
+     (loop []
+       (if (.isEnabled locator)
+         true
+         (if (> (- (System/currentTimeMillis) start-time) timeout-ms)
+           (throw (ex-info (str "Timeout waiting for element to be enabled: " selector)
+                           {:selector selector :timeout-ms timeout-ms}))
+           (do
+             (Thread/sleep poll-interval)
+             (recur))))))))
