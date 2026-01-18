@@ -15,7 +15,8 @@
 }
 
 @theme {
-    --font-sans: "Inter var", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    --font-sans:
+        "Inter var", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     /* --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; */
     /* --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", */
@@ -52,4 +53,12 @@ td {
 /* Hide elements with x-cloak until Alpine.js initializes */
 [x-cloak] {
     display: none !important;
+}
+
+/* Grid for form layouts - columns never exceed 576px with consistent gaps */
+.form-grid {
+    display: grid;
+    row-gap: 1rem;
+    column-gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(0, 36rem));
 }

@@ -19,19 +19,18 @@
       :x-on:location-form:submit.window "$el.requestSubmit()"
       :x-on:location-form:reset.window "$el.reset()"}
      [(form/anti-forgery-field)
-      (form/input-field :label "Name"
-                        :name "name"
-                        :required true
-                        :value (:name values)
-                        :errors (:name errors))
-
-      (form/input-field :label "Code"
-                        :name "code"
-                        :required true
-                        :value (:code values)
-                        :errors (:code errors))
-
-      (form/textarea-field :label "Description"
-                           :name "description"
-                           :value (:description values)
-                           :errors (:description errors))])])
+      [:div {:class "form-grid"}
+       (form/input-field :label "Name"
+                         :name "name"
+                         :required true
+                         :value (:name values)
+                         :errors (:name errors))
+       (form/input-field :label "Code"
+                         :name "code"
+                         :required true
+                         :value (:code values)
+                         :errors (:code errors))
+       (form/textarea-field :label "Description"
+                            :name "description"
+                            :value (:description values)
+                            :errors (:description errors))]])])

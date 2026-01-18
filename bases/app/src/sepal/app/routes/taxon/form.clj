@@ -56,7 +56,7 @@
         :x-on:taxon-form:submit.window "$el.requestSubmit()"
         :x-on:taxon-form:reset.window "$el.reset()"}
        [(form/anti-forgery-field)
-        [:div {:class "flex flex-row md:flex-nowrap sm:flex-wrap gap-2"}
+        [:div {:class "form-grid"}
          (form/input-field :label "Name"
                            :name "name"
                            :required true
@@ -67,37 +67,28 @@
                            :name "author"
                            :read-only read-only
                            :value (:author values)
-                           :errors (:author errors))]
-
-        (if read-only
-          [:div {:class "w-1/2"}
+                           :errors (:author errors))
+         (if read-only
            (form/input-field :label "Parent"
                              :name "parent-id"
-                             ;; :required true
                              :read-only read-only
-                             :value (:parent-name values))]
-
-          (let [url (z/url-for taxon.routes/index)]
-            [:div {:class "w-1/2"}
+                             :value (:parent-name values))
+           (let [url (z/url-for taxon.routes/index)]
              (form/field :label "Parent"
                          :name "parent-id"
                          :input [:select {:x-taxon-field (json/js {:url url})
                                           :name "parent-id"
                                           :id "parent-id"
-                                          ;; :required true
                                           :read-only read-only
                                           :autocomplete "off"}
                                  (when (:parent-id values)
                                    [:option {:value (:parent-id values)}
-                                    (:parent-name values)])])]))
-
-        (if read-only
-          [:div {:class "w-1/2"}
+                                    (:parent-name values)])])))
+         (if read-only
            (form/input-field :label "Rank"
                              :name "rank"
                              :read-only read-only
-                             :value (:rank values))]
-          [:div  {:class "w-1/2"}
+                             :value (:rank values))
            (form/field :label "Rank"
                        :name "rank"
                        :input [:select {:name "rank"
@@ -111,7 +102,7 @@
                                  [:option {:value rank
                                            :selected (when (= rank (some-> values :rank name))
                                                        "selected")}
-                                  rank])])])]
+                                  rank])]))]]
        [:fieldset {:class "fieldset mt-6"
                    :x-data (json/js {:vernacularNames (or (:vernacular-names values)
                                                           [])})}

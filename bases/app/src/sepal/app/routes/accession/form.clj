@@ -67,23 +67,23 @@
                                                    :label-fn enum-label-fn))
 
         ;; TODO: This should only be set when the provenance type is "wild"
-        (ui.form/field :label "Wile Provenance Status"
+        (ui.form/field :label "Wild Provenance Status"
                        :name "wild-provenance-status"
                        :input (ui.form/enum-select "wild-provenance-status"
                                                    accession.spec/wild-provenance-status
                                                    (:wild-provenance-status values)
-                                                   :label-fn enum-label-fn))]
+                                                   :label-fn enum-label-fn))]]
 
-       (ui.form/field :label "Supplier"
-                      :name "supplier-contact-id"
-                      :input [:select {:x-contact-field (json/js {:url (z/url-for contact.routes/index)})
-                                       :id "supplier-contact-id"
-                                       :name "supplier-contact-id"
-                                       :autocomplete "off"}
-                              [:option {:value "" :data-placeholder "true"} ""]
-                              (when (:contact/id supplier)
-                                [:option {:value (:contact/id supplier)}
-                                 (:contact/name supplier)])])]
+      (ui.form/field :label "Supplier"
+                     :name "supplier-contact-id"
+                     :input [:select {:x-contact-field (json/js {:url (z/url-for contact.routes/index)})
+                                      :id "supplier-contact-id"
+                                      :name "supplier-contact-id"
+                                      :autocomplete "off"}
+                             [:option {:value "" :data-placeholder "true"} ""]
+                             (when (:contact/id supplier)
+                               [:option {:value (:contact/id supplier)}
+                                (:contact/name supplier)])])
 
       [:div {:class "grid grid-cols-2 gap-8 mt-4"}
        (ui.form/input-field :label "Date Received"
