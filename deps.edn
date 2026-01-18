@@ -85,7 +85,7 @@
 
            ;; Run clj-kondo.  Also see ./clj-kondo/config.edn for other configuration settings.
            ;; clojure -M:clj-kondo
-           :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2025.10.23"}}
+           :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2026.01.12"}}
                        :main-opts ["-m" "clj-kondo.main"]}
 
            ;; clojure -M:cljfmt check|fix components bases projects

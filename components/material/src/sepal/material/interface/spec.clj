@@ -1,5 +1,5 @@
 (ns sepal.material.interface.spec
-  (:refer-clojure :exclude [name type])
+  (:refer-clojure :exclude [type])
   (:require [camel-snake-kebab.core :as csk]
             [malli.util :as mu]
             [sepal.validation.interface :as validate.i]))
