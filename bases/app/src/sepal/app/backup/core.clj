@@ -7,7 +7,7 @@
             [clojure.tools.logging :as log]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
-            [sepal.app.ui.datetime :as datetime]
+            [sepal.app.datetime :as datetime]
             [sepal.database.interface :as db.i]
             [sepal.mail.interface :as mail.i]
             [sepal.scheduler.interface :as scheduler.i]

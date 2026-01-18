@@ -57,8 +57,12 @@ bases/app/resources/app/build/
 
 # AI/LLM
 .serena
+.claude/
+.gemini/
 
 sepal.db
 sepal.db*
 wfo_plantlist*.db
 .local/
+plans/
+plans

@@ -66,7 +66,8 @@
      [::accession.i/factory :key/acc2] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [acc1 _acc2]}]
       ;; Search for specific accession code (use first few chars for prefix match)
-      (let [search-term (subs (:accession/code acc1) 0 5)
+      (let [code (:accession/code acc1)
+            search-term (subs code 0 (min 5 (count code)))
             response (call-handler *db* {:q (str "code:" search-term)
                                          :include_taxon "false"
                                          :include_collection "false"})

@@ -53,7 +53,8 @@
               (pw/fill "input[name=\"full-name\"]" "Test User")
               (pw/fill "input[name=\"email\"]" "updated@example.com")
 
-              ;; Submit and wait for redirect back to profile
+              ;; Wait for button to be enabled (Alpine.js form-state tracks dirty/valid)
+              (pw/wait-for-enabled "button:has-text(\"Save changes\")")
               (pw/click "button:has-text(\"Save changes\")")
               (pw/wait-for-url #"/settings/profile")
 
@@ -73,7 +74,8 @@
               (pw/fill "input[name=\"new_password\"]" "NewPassword456!")
               (pw/fill "input[name=\"confirm_password\"]" "NewPassword456!")
 
-              ;; Submit and wait for redirect
+              ;; Wait for button to be enabled and submit
+              (pw/wait-for-enabled "button:has-text(\"Change password\")")
               (pw/click "button:has-text(\"Change password\")")
               (pw/wait-for-url #"/settings/security")
 
@@ -100,7 +102,8 @@
               (pw/fill "input[name=\"address_postal_code\"]" "12345")
               (pw/fill "input[name=\"address_country\"]" "Canada")
 
-              ;; Submit and wait for redirect
+              ;; Wait for button to be enabled and submit
+              (pw/wait-for-enabled "button:has-text(\"Save changes\")")
               (pw/click "button:has-text(\"Save changes\")")
               (pw/wait-for-url #"/settings/organization")
 

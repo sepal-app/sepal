@@ -35,13 +35,11 @@
     :errors errors
     :input [:select {:name "timezone"
                      :id "timezone"
-                     :x-timezone-field true
-                     :required true}
+                     :x-timezone-field true}
             [:option {:value ""} "Select a timezone..."]
             (for [{opt-value :value opt-label :label} (timezone-options)]
               [:option {:value opt-value
-                        :selected (when (= opt-value value)
-                                    "selected")}
+                        :selected (= opt-value value)}
                opt-label])]))
 
 (defn org-form [& {:keys [values errors]}]
@@ -149,9 +147,11 @@
    :timezone "organization.timezone"})
 
 (defn settings->form-values [settings]
-  (into {} (map (fn [[form-key setting-key]]
-                  [form-key (get settings setting-key)])
-                form-key->setting-key)))
+  (-> (into {} (map (fn [[form-key setting-key]]
+                      [form-key (get settings setting-key)])
+                    form-key->setting-key))
+      ;; Default timezone to UTC if not set
+      (update :timezone #(or % "UTC"))))
 
 (defn form-values->settings [form-values]
   (into {} (map (fn [[form-key setting-key]]
@@ -164,7 +164,9 @@
         values (settings->form-values current-settings)]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
+      (let [;; Default empty timezone to UTC before validation
+            form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))
+            result (validation.i/validate-form-values FormParams form-params)]
         (if (error.i/error? result)
           (http/validation-errors (validation.i/humanize result))
           (let [new-settings (form-values->settings result)]

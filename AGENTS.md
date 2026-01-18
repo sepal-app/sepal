@@ -25,7 +25,7 @@ This is a **Polylith** monorepo with the following structure:
 **Bases** (`bases/`) contain application-specific code:
 - `bases/app/` - The web application
   - Routes (`routes/<resource>/`)
-  - UI helpers (`ui/`)
+  - Generic UI components (`ui/`) - reusable elements (forms, tables, buttons); resource-specific UI belongs in routes
   - Frontend assets (TypeScript, CSS in `src/sepal/app/`)
   - App-specific test helpers (`test/sepal/app/test.clj`)
 

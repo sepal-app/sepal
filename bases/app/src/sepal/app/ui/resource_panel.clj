@@ -8,9 +8,9 @@
    - collapse collapse-arrow for collapsible sections
    - card card-compact for activity items
    - drawer drawer-end for mobile sidebar"
-  (:require [sepal.app.html :as html]
+  (:require [sepal.app.datetime :as datetime]
+            [sepal.app.html :as html]
             [sepal.app.ui.activity :as ui.activity]
-            [sepal.app.ui.datetime :as datetime]
             [sepal.app.ui.icons.lucide :as lucide]))
 
 ;;; ---------------------------------------------------------------------------
