@@ -2,45 +2,17 @@
   "Resource panel content for taxa.
    Displays taxon summary, statistics, external links, and activity."
   (:require [clojure.string :as str]
-            [lambdaisland.uri :as uri]
             [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
-            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
-
-(defn- wfo-plantlist-url
-  "Generate WFO Plantlist URL for a taxon."
-  [wfo-taxon-id]
-  (when wfo-taxon-id
-    ;; Extract the name ID from the taxon ID (wfo-NNNNNNNNNN-YYYY-MM -> wfo-NNNNNNNNNN)
-    (let [name-id (second (re-find #"^(wfo-\d{10})" wfo-taxon-id))]
-      (str "https://wfoplantlist.org/taxon/" name-id))))
-
-(defn- iucn-redlist-url
-  "Generate IUCN Red List search URL for a taxon name."
-  [taxon-name]
-  (uri/uri-str {:scheme "https"
-                :host "www.iucnredlist.org"
-                :path "/search"
-                :query (uri/map->query-string {:query taxon-name})}))
-
-(defn- cites-checklist-url
-  "Generate CITES Checklist search URL for a taxon name."
-  [taxon-name]
-  ;; CITES uses hash-based routing, so we build the fragment manually
-  (str "https://checklist.cites.org/#/en/search/"
-       (uri/map->query-string {:output_layout "alphabetical"
-                               :level_of_listing 0
-                               :show_synonyms 1
-                               :show_author 1
-                               :scientific_name taxon-name})))
 
 (defn- format-rank
   "Format rank keyword for display."
@@ -62,10 +34,7 @@
    - :on-close   - Optional close handler (for list page)"
   [& {:keys [taxon parent stats activities activity-count on-close]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id]} taxon
-        {:keys [accession-count material-count]} stats
-        wfo-url (wfo-plantlist-url wfo-taxon-id)
-        iucn-url (iucn-redlist-url name)
-        cites-url (cites-checklist-url name)]
+        {:keys [accession-count material-count]} stats]
     (panel/panel-container
       :children
       (list
@@ -106,19 +75,12 @@
         ;; External links section
         (panel/collapsible-section
           :title "External Links"
-          :disabled? (not wfo-url)
+          :disabled? (not wfo-taxon-id)
           :empty-label "no WFO ID"
           :children
-          (panel/external-links-section
-            :links [{:label "WFO Plantlist"
-                     :href wfo-url
-                     :icon (lucide/globe :class "w-4 h-4")}
-                    {:label "IUCN Red List"
-                     :href iucn-url
-                     :icon (lucide/globe :class "w-4 h-4")}
-                    {:label "CITES Checklist"
-                     :href cites-url
-                     :icon (lucide/globe :class "w-4 h-4")}]))
+          (external-links/taxonomic-links-section
+            :taxon-name name
+            :wfo-taxon-id wfo-taxon-id))
 
         ;; Activity section
         (panel/collapsible-section

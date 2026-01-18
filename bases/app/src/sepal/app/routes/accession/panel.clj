@@ -7,6 +7,7 @@
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.contact.interface :as contact.i]
             [sepal.material.interface :as mat.i]
@@ -34,14 +35,15 @@
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [accession taxon supplier stats activities activity-count on-close]}]
   (let [{:accession/keys [id code provenance-type]} accession
-        {:keys [material-count]} stats]
+        {:keys [material-count]} stats
+        taxon-name (:taxon/name taxon)]
     (panel/panel-container
       :children
       (list
         ;; Header
         (panel/panel-header
           :title code
-          :subtitle (when taxon [:em (:taxon/name taxon)])
+          :subtitle (when taxon [:em taxon-name])
           :on-close on-close)
 
         ;; Summary section
@@ -54,7 +56,7 @@
                       :value (when taxon
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "text-primary hover:underline"}
-                                [:em (:taxon/name taxon)]])}
+                                [:em taxon-name]])}
                      {:label "Provenance" :value (format-provenance-type provenance-type)}
                      {:label "Supplier"
                       :value (when supplier
@@ -73,6 +75,12 @@
             :stats [{:label "Materials"
                      :value material-count
                      :href (z/url-for material.routes/index nil {:accession-id id})}]))
+
+        ;; External links section
+        (panel/collapsible-section
+          :title "External Links"
+          :children
+          (external-links/taxonomic-links-section :taxon-name taxon-name))
 
         ;; Activity section
         (panel/collapsible-section

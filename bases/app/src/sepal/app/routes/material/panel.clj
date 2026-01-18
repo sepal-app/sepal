@@ -8,6 +8,7 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.location.interface :as loc.i]
             [sepal.taxon.interface :as taxon.i]
@@ -33,7 +34,8 @@
    - :activity-count - Total activity count
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [material accession taxon location activities activity-count on-close]}]
-  (let [{:material/keys [code material-type quantity status]} material]
+  (let [{:material/keys [code material-type quantity status]} material
+        taxon-name (:taxon/name taxon)]
     (panel/panel-container
       :children
       (list
@@ -61,12 +63,18 @@
                       :value (when taxon
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "text-primary hover:underline"}
-                                [:em (:taxon/name taxon)]])}
+                                [:em taxon-name]])}
                      {:label "Location"
                       :value (when location
                                [:a {:href (z/url-for location.routes/detail {:id (:location/id location)})
                                     :class "text-primary hover:underline"}
                                 (:location/name location)])}]))
+
+        ;; External links section
+        (panel/collapsible-section
+          :title "External Links"
+          :children
+          (external-links/taxonomic-links-section :taxon-name taxon-name))
 
         ;; Activity section
         (panel/collapsible-section
