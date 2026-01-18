@@ -8,8 +8,8 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
-            [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.location.interface :as loc.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
