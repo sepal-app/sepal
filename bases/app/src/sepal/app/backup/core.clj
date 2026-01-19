@@ -55,11 +55,13 @@
                           Instant/parse)}))
 
 (defn set-config!
-  "Save backup configuration to settings."
+  "Save backup configuration to settings.
+   A nil frequency means backups are disabled."
   [db config]
   (let [settings (cond-> {}
-                   (:frequency config)
-                   (assoc (:frequency setting-keys) (name (:frequency config)))
+                   (contains? config :frequency)
+                   (assoc (:frequency setting-keys)
+                          (some-> (:frequency config) name))
 
                    (contains? config :last-run-at)
                    (assoc (:last-run-at setting-keys)
@@ -318,7 +320,7 @@
 
 (defn get-next-backup-time
   "Calculate the next scheduled backup time for the given frequency.
-   Returns an Instant, or nil if frequency is :disabled or nil."
+   Returns an Instant, or nil if frequency is nil (disabled)."
   [frequency]
   (when-let [schedule (backup-schedule frequency)]
     (.toInstant ^ZonedDateTime (first schedule))))
@@ -342,19 +344,22 @@
 
 (defn register-backup-job!
   "Register the backup job with the scheduler based on current config.
-   Called on app startup and when config changes."
+   Called on app startup and when config changes.
+   
+   Frequency of nil means backups are disabled."
   [scheduler db mail app-domain]
-  (let [config (get-config db)]
-    (if (not= :disabled (:frequency config))
+  (let [config (get-config db)
+        frequency (:frequency config)]
+    (if frequency
       (do
-        (log/info "Registering backup job with frequency:" (:frequency config))
+        (log/info "Registering backup job with frequency:" frequency)
         (scheduler.i/schedule! scheduler
                                :backup
                                (map #(.toInstant ^ZonedDateTime %)
-                                    (backup-schedule (:frequency config)))
+                                    (backup-schedule frequency))
                                (backup-task db mail app-domain)))
       (do
-        (log/info "Backup disabled, cancelling any existing job")
+        (log/info "Backup not configured, cancelling any existing job")
         (scheduler.i/cancel! scheduler :backup)))))
 
 ;; -----------------------------------------------------------------------------

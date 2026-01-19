@@ -31,7 +31,8 @@
 (def FormParams
   [:map {:closed true}
    form/AntiForgeryField
-   [:frequency [:enum "disabled" "daily" "weekly" "monthly"]]])
+   [:frequency {:decode/form validation.i/empty->nil}
+    [:maybe [:enum "daily" "weekly" "monthly"]]]])
 
 ;; -----------------------------------------------------------------------------
 ;; UI Components
@@ -45,7 +46,7 @@
   [:select {:name "frequency"
             :id "frequency"
             :class "select select-bordered w-full max-w-xs"}
-   (for [[val label] [["disabled" "Disabled"]
+   (for [[val label] [["" "Disabled"]
                       ["daily" "Daily"]
                       ["weekly" "Weekly"]
                       ["monthly" "Monthly"]]]
@@ -54,8 +55,7 @@
       label])])
 
 (defn- backup-form [& {:keys [config errors timezone]}]
-  (let [next-backup (when (and (:frequency config)
-                               (not= :disabled (:frequency config)))
+  (let [next-backup (when (:frequency config)
                       (backup/get-next-backup-time (:frequency config)))]
     (form/form
       {:method "post"
@@ -135,12 +135,12 @@
       (let [result (validation.i/validate-form-values FormParams form-params)]
         (if (error.i/error? result)
           (http/validation-errors (validation.i/humanize result))
-          (do
-            (backup/set-config! db {:frequency (keyword (:frequency result))})
+          (let [frequency (some-> (:frequency result) keyword)]
+            (backup/set-config! db {:frequency frequency})
             (settings.activity/create! db
                                        settings.activity/updated
                                        (:user/id viewer)
-                                       {:changes {"backup.frequency" (:frequency result)}})
+                                       {:changes {"backup.frequency" (or (:frequency result) "disabled")}})
             (-> (http/see-other settings.routes/backups)
                 (flash/success "Backup settings updated successfully")))))
 

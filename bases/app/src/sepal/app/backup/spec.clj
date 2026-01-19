@@ -2,7 +2,8 @@
   "Malli schemas for backup configuration and metadata.")
 
 (def Frequency
-  [:enum :disabled :daily :weekly :monthly])
+  "Backup frequency. nil means disabled."
+  [:enum :daily :weekly :monthly])
 
 (def Config
   [:map
