@@ -1,8 +1,10 @@
 (ns sepal.app.e2e.server
   "Server lifecycle management for e2e tests"
   (:require [integrant.core :as ig]
+            [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.server] ;; Load Integrant methods
-            [sepal.malli.interface]) ;; Load Malli Integrant methods
+            [sepal.malli.interface] ;; Load Malli Integrant methods
+            [zodiac.ext.sql :as z.sql])
   (:import [java.io File]
            [java.net ServerSocket]))
 
@@ -74,7 +76,10 @@
   []
   (let [port (find-available-port)
         config (create-test-config port)
-        system (ig/init config)]
+        system (ig/init config)
+        db (-> system :sepal.app.server/zodiac ::z.sql/db)]
+    ;; Mark setup as complete so e2e tests bypass the setup wizard
+    (setup.shared/complete-setup! db)
     ;; Wait for server to be ready before returning
     (wait-for-server-ready port 50) ;; 50 attempts * 100ms = 5 seconds max
     (assoc system ::port port)))
