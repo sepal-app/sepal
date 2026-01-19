@@ -118,6 +118,11 @@
   [db id data]
   (store.i/update! db :user id data spec/UpdateUser spec/User))
 
+(defn delete-all!
+  "Delete all users. For testing only."
+  [db]
+  (db.i/execute-one! db {:delete-from :user}))
+
 (create-ns 'sepal.user.interface)
 (alias 'user.i 'sepal.user.interface)
 

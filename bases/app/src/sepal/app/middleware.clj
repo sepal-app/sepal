@@ -7,6 +7,8 @@
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.setup.routes :as setup.routes]
+            [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i]
@@ -180,3 +182,26 @@
       (-> request
           (assoc-in [::z/context :timezone] timezone)
           handler))))
+
+(defn- setup-excluded-path?
+  "Returns true if the path should be excluded from setup redirect."
+  [path]
+  (or (str/starts-with? path "/setup")
+      (str/starts-with? path "/login")
+      (str/starts-with? path "/logout")
+      (str/starts-with? path "/forgot-password")
+      (str/starts-with? path "/reset-password")
+      (str/starts-with? path "/accept-invitation")
+      (str/starts-with? path "/static")
+      (= path "/ok")))
+
+(defn wrap-setup-required
+  "Middleware that redirects to setup wizard if setup is not complete.
+   Excludes setup routes, auth routes, static assets, and health checks."
+  [handler]
+  (fn [{:keys [::z/context uri] :as request}]
+    (let [{:keys [db]} context]
+      (if (or (setup-excluded-path? uri)
+              (setup.shared/setup-complete? db))
+        (handler request)
+        (http/see-other setup.routes/index)))))

@@ -1,5 +1,6 @@
 (ns sepal.app.test.system
   (:require [integrant.core :as ig]
+            [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.config.interface :as config.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.test.interface :as test.i]
@@ -69,7 +70,8 @@
     (test.i/create-system-fixture system-config
                                   (fn [system f]
                                     (let [db (-> system :sepal.app.server/zodiac ::z.sql/db)]
-                                      ;; Load schema for in-memory test database
+                                      ;; Mark setup as complete so tests bypass the setup wizard
+                                      (setup.shared/complete-setup! db)
                                       (binding [*system* system
                                                 *db* db
                                                 *app* (-> system :sepal.app.server/zodiac ::z/app)

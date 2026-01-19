@@ -21,3 +21,8 @@
   "Set multiple settings at once. Takes a map of key -> value."
   [db settings]
   (core/set-values! db settings))
+
+(defn delete!
+  "Delete a setting by key."
+  [db key]
+  (core/delete! db key))

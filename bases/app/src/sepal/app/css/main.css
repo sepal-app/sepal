@@ -28,10 +28,11 @@
     font-size: 0.9rem;
 }
 
-/* Make the SlimSelect match DaisyUI */
+/* Make the SlimSelect match DaisyUI input styling */
 .ss-main {
     @apply shadow-primary;
     border-radius: var(--radius-field);
+    width: 100%;
 }
 
 .ss-main:focus {
@@ -42,6 +43,11 @@
     box-shadow: 0 1px
         color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
     border-color: var(--input-color);
+}
+
+/* Ensure SlimSelect dropdown content doesn't inherit unwanted styles */
+.ss-content {
+    text-align: left;
 }
 
 td {

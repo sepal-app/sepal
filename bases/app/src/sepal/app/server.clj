@@ -1,6 +1,7 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
             [clojure.string :as str]
+            [clojure.tools.logging :as log]
             [integrant.core :as ig]
             [lambdaisland.uri :as uri]
             [reitit.ring]
@@ -20,6 +21,7 @@
             [sepal.app.routes.material.core :as material]
             [sepal.app.routes.media.core :as media]
             [sepal.app.routes.settings.core :as settings]
+            [sepal.app.routes.setup.core :as setup]
             [sepal.app.routes.taxon.core :as taxon]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]
@@ -31,6 +33,7 @@
   ["" {:middleware [middleware/htmx-request
                     middleware/wrap-org-settings
                     middleware/wrap-flash-messages
+                    middleware/wrap-setup-required
                     stacktrace/wrap-stacktrace-web]}
    ;; Auth routes (inlined so they're under the root middleware)
    ["/login" {:name auth.routes/login
@@ -43,6 +46,8 @@
                        :handler #'reset-password/handler}]
    ["/accept-invitation" {:name auth.routes/accept-invitation
                           :handler #'accept-invitation/handler}]
+   ;; Setup wizard routes (before app routes so setup-required middleware can redirect)
+   ["/setup" (setup/routes)]
    ;; App routes
    ["/" (dashboard/routes)]
    ["/ok" {:name :ok
@@ -87,7 +92,9 @@
         (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
         (str (fs/path (fs/xdg-data-home) "Sepal")))))
 
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key]}]
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key
+                                               schema-dump-file]
+                                        :or {schema-dump-file "db/schema.sql"}}]
   (let [db-path (or database-path
                     (str (fs/path (get-data-home) "sepal.db")))
         parent-dir (fs/parent db-path)
@@ -98,9 +105,18 @@
     (when (and parent-dir (not (fs/exists? parent-dir)))
       (fs/create-dirs parent-dir))
     (db.i/init)
-    (z.sql/init {:context-key context-key
-                 :jdbc-options db.i/jdbc-options
-                 :spec spec})))
+    ;; Initialize the connection pool
+    (let [sql-ext (z.sql/init {:context-key context-key
+                               :jdbc-options db.i/jdbc-options
+                               :spec spec})
+          db (::z.sql/db sql-ext)]
+      ;; Check if schema needs to be initialized
+      (when (and (fs/exists? schema-dump-file)
+                 (not (db.i/schema-initialized? db)))
+        (log/info "Initializing database schema from" schema-dump-file)
+        (db.i/load-schema! {:database-path db-path
+                            :schema-dump-file schema-dump-file}))
+      sql-ext)))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))

@@ -18,8 +18,16 @@
     (log/warn "Could not find the assets in the request context.")))
 
 (defn render-partial
-  "Return an html response without a doctype."
+  "Return an html response without a doctype (for HTMX partials)."
   [content]
   {:status 200
    :headers {"content-type" "text/html"}
    :body (chassis/html content)})
+
+(defn render-page
+  "Return a full HTML page response with <!DOCTYPE html>.
+   Content should already be wrapped with base/html."
+  [content]
+  {:status 200
+   :headers {"content-type" "text/html"}
+   :body (chassis/html [chassis/doctype-html5 content])})

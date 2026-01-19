@@ -3,6 +3,7 @@
             [clojure.java.shell :as shell]
             [clojure.string :as str]
             [honey.sql]
+            [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc.result-set])
   (:import [java.sql ResultSet ResultSetMetaData]))
 
@@ -83,8 +84,18 @@
    :builder-fn (make-builder-fn)})
 
 (defn load-schema!
-  "Load the SQLite schema into the test database.
+  "Load the SQLite schema into the database.
    Uses db/schema.sql which is maintained by migrate.sh."
   [{:keys [database-path schema-dump-file]
     :or {schema-dump-file "db/schema.sql"}}]
   (shell/sh "sqlite3" "-init" schema-dump-file database-path ""))
+
+(defn schema-initialized?
+  "Check if the database schema has been initialized by looking for core tables."
+  [db]
+  (try
+    (let [result (first (jdbc/execute! db
+                                       ["SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='user'"]))]
+      (pos? (:cnt result)))
+    (catch Exception _
+      false)))

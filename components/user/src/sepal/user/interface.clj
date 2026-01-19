@@ -46,5 +46,10 @@
 (defn activate! [db id]
   (core/update! db id {:status :active}))
 
+(defn delete-all!
+  "Delete all users. For testing only."
+  [db]
+  (core/delete-all! db))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

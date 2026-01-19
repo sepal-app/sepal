@@ -28,6 +28,8 @@
   ;; SQLite extensions to load on each connection
   :extensions ["mod_spatialite"]
   :extension-library-path #env EXTENSIONS_LIBRARY_PATH
+  ;; Schema file used to initialize new databases
+  :schema-dump-file "db/schema.sql"
   :context-key :db}
 
  :sepal.app.server/zodiac-assets

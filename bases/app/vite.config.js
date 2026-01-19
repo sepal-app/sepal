@@ -24,6 +24,7 @@ export default defineConfig({
                 "~/routes/media/css/media.css",
                 "~/routes/media/media.ts",
                 "~/routes/media/detail.ts",
+                "~/routes/setup/setup.ts",
                 "~/routes/taxon/form.ts",
                 "~/ui/page.ts",
             ],

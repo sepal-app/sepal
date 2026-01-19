@@ -33,6 +33,16 @@
   ;; THIS IS ONLY FOR LOADING THE DB SCHEMA INTO A TEST DATABASE
   (core/load-schema! config))
 
+(defn schema-initialized?
+  "Check if the database schema has been initialized."
+  [db]
+  (core/schema-initialized? db))
+
+(defn load-schema!
+  "Load the SQLite schema into the database."
+  [config]
+  (core/load-schema! config))
+
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction+options [~sym ~transactable ~opts]
      ~@body))

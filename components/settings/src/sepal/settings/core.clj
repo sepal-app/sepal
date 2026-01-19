@@ -31,3 +31,9 @@
   [db settings]
   (doseq [[key value] settings]
     (set-value! db key value)))
+
+(defn delete!
+  "Delete a setting by key."
+  [db key]
+  (db.i/execute-one! db {:delete-from :settings
+                         :where [:= :key key]}))
