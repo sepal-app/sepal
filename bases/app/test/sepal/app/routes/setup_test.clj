@@ -60,7 +60,7 @@
         ;; Should show login prompt since admin exists
         (is (body-contains? response "Admin Account Exists")))))
 
-  (tf/testing "logged-in admin is redirected to next step"
+  (tf/testing "logged-in admin sees read-only account view"
     {[::user.i/factory :key/admin] {:db *db*
                                     :role :admin
                                     :email "setup-admin@test.com"
@@ -68,9 +68,11 @@
     (fn [_]
       (let [sess (app.test/login "setup-admin@test.com" "password123")
             {:keys [response]} (peri/request sess "/setup/admin")]
-        ;; Should redirect to server step
-        (is (redirect? response))
-        (is (.contains (get-in response [:headers "Location"]) "/setup/server"))))))
+        ;; Should show read-only admin view with success message
+        (is (= 200 (:status response)))
+        (is (body-contains? response "Admin Account"))
+        (is (body-contains? response "has been created"))
+        (is (body-contains? response "setup-admin@test.com"))))))
 
 (deftest setup-wizard-steps-accessible-when-logged-in-test
   (tf/testing "all wizard steps are accessible when logged in"
@@ -160,7 +162,8 @@
                                                         :email "validation-test@test.com"
                                                         :password "password123"
                                                         :password_confirmation "different"})]
-          (is (= 422 (:status response)))
+          ;; Form re-renders with validation error
+          (is (= 200 (:status response)))
           (is (body-contains? response "Passwords do not match")))
         ;; Admin already exists (from another test) - just verify we got the right page
         (is (body-contains? response "Admin Account Exists"))))))

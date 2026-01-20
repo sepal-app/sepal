@@ -60,6 +60,7 @@ OUTPUT_PATH="$DB_FILE" "$SCRIPT_DIR/create-init-db.sh"
 SCHEMA_VERSION=$(sqlite3 "$DB_FILE" "SELECT value FROM metadata WHERE key = 'schema_version';")
 WFO_VERSION=$(sqlite3 "$DB_FILE" "SELECT value FROM metadata WHERE key = 'wfo_plant_list.version';")
 SIZE_MB=$(du -m "$DB_FILE" | cut -f1)
+SHA256=$(sha256sum "$DB_FILE" | awk '{print $1}')
 
 echo ""
 echo "Building manifest..."
@@ -73,7 +74,8 @@ NEW_ENTRY=$(jq -n \
     --arg wv "$WFO_VERSION" \
     --argjson sz "$SIZE_MB" \
     --arg url "$DB_URL" \
-    '{"schema_version": $sv, "wfo_plant_list.version": $wv, "size_mb": $sz, "url": $url}')
+    --arg sha "$SHA256" \
+    '{"schema_version": $sv, "wfo_plant_list.version": $wv, "size_mb": $sz, "sha256": $sha, "url": $url}')
 
 # Use temp file for manifest (never rely on local copy)
 MANIFEST_FILE=$(mktemp --suffix=-sepal-init-manifest.json)

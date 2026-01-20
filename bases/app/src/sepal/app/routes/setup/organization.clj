@@ -41,9 +41,7 @@
 (defn org-form [& {:keys [values errors]}]
   (form/form
     {:method "post"
-     :action (z/url-for setup.routes/organization)
-     :hx-post (z/url-for setup.routes/organization)
-     :hx-swap "none"}
+     :action (z/url-for setup.routes/organization)}
     (form/anti-forgery-field)
 
     [:div {:class "space-y-4"}
@@ -103,12 +101,13 @@
       :post
       (let [result (validation.i/validate-form-values FormParams form-params)]
         (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
+          (html/render-page (render :values form-params
+                                    :errors (validation.i/humanize result)))
           (let [new-settings (form-values->settings result)]
             (when (seq new-settings)
               (settings.i/set-values! db new-settings))
             (setup.shared/set-current-step! db 4)
-            (-> (http/hx-redirect setup.routes/regional)
+            (-> (http/see-other setup.routes/regional)
                 (flash/success "Organization information saved")))))
 
       ;; GET

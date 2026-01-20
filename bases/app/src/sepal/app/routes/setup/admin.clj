@@ -29,9 +29,7 @@
 (defn admin-form [& {:keys [values errors]}]
   (form/form
     {:method "post"
-     :action (z/url-for setup.routes/admin)
-     :hx-post (z/url-for setup.routes/admin)
-     :hx-swap "none"}
+     :action (z/url-for setup.routes/admin)}
     (form/anti-forgery-field)
 
     (form/input-field :label "Full name"
@@ -86,6 +84,35 @@
            :class "btn btn-primary"}
        "Log in to continue →"])))
 
+(defn render-admin-complete
+  "Render read-only view of admin account when already created and logged in."
+  [& {:keys [user flash-messages]}]
+  (layout/layout
+    :current-step 1
+    :flash-messages flash-messages
+    :content
+    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
+     [:div {:class "card-body"}
+      [:h2 {:class "card-title text-2xl mb-4"} "Admin Account"]
+      [:div {:class "alert alert-success mb-4"}
+       [:span "✓ Admin account has been created"]]
+
+      [:div {:class "space-y-4"}
+       (form/input-field :label "Full name"
+                         :name "full_name"
+                         :value (:user/full-name user)
+                         :input-attrs {:disabled true})
+       (form/input-field :label "Email"
+                         :name "email"
+                         :type "email"
+                         :value (:user/email user)
+                         :input-attrs {:disabled true})]
+
+      [:div {:class "flex justify-end mt-6"}
+       [:a {:href (z/url-for setup.routes/server)
+            :class "btn btn-primary"}
+        "Next →"]]]]))
+
 (defn render-create-admin
   "Render the admin creation form."
   [& {:keys [values errors flash-messages]}]
@@ -105,12 +132,13 @@
         admin-exists? (setup.shared/admin-exists? db)
         logged-in? (some? (:user/id session))]
 
-    ;; If admin exists and user is logged in, redirect to next step
+    ;; If admin exists and user is logged in, show read-only view
     (cond
       (and admin-exists? logged-in?)
-      (do
-        (setup.shared/set-current-step! db 2)
-        (http/see-other setup.routes/server))
+      (let [user (user.i/get-by-id db (:user/id session))]
+        (setup.shared/set-current-step! db 1)
+        (html/render-page (render-admin-complete :user user
+                                                 :flash-messages (:messages flash))))
 
       ;; If admin exists but not logged in, show login prompt
       admin-exists?
@@ -122,11 +150,13 @@
         :post
         (let [result (validation.i/validate-form-values FormParams form-params)]
           (if (error.i/error? result)
-            (http/validation-errors (validation.i/humanize result))
+            (html/render-page (render-create-admin :values form-params
+                                                   :errors (validation.i/humanize result)))
             (let [{:keys [email password full_name]} result]
               (if (user.i/exists? db email)
                 ;; Check email doesn't already exist
-                (http/validation-errors {:email ["An account with this email already exists"]})
+                (html/render-page (render-create-admin :values form-params
+                                                       :errors {:email ["An account with this email already exists"]}))
                 ;; Create the admin user
                 (let [user-result (user.i/create! db {:email email
                                                       :password password
@@ -138,7 +168,7 @@
                         (flash/error "Failed to create admin account"))
                     (do
                       (setup.shared/set-current-step! db 2)
-                      (-> (http/hx-redirect setup.routes/server)
+                      (-> (http/see-other setup.routes/server)
                           (flash/success "Admin account created successfully")
                           ;; Log the user in
                           (assoc :session {:user/id (:user/id user-result)})))))))))

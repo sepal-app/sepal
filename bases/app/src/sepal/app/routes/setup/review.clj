@@ -24,9 +24,9 @@
         [:dt {:class "w-1/3 text-base-content/70"} label]
         [:dd {:class "w-2/3 font-medium"} value]])]]])
 
-(defn render [& {:keys [admin org-settings timezone taxa-count wfo-imported? flash-messages]}]
+(defn render [& {:keys [admin org-settings timezone taxa-count wfo-version flash-messages]}]
   (layout/layout
-    :current-step 5
+    :current-step 6
     :flash-messages flash-messages
     :content
     [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
@@ -58,15 +58,16 @@
       (summary-section "Taxonomy"
                        [["Taxa count" (when (pos? taxa-count)
                                         (format "%,d taxa" taxa-count))]
-                        ["WFO imported?" (if wfo-imported? "Yes" "No")]])
+                        ["WFO Plant List" (or wfo-version "Not imported")]])
 
       ;; Complete button
       [:div {:class "card-actions justify-between mt-6"}
-       [:a {:href (z/url-for setup.routes/regional)
+       [:a {:href (z/url-for setup.routes/taxonomy)
             :class "btn btn-ghost"}
         "← Back"]
        [:form {:method "post"
-               :action (z/url-for setup.routes/review)}
+               :action (z/url-for setup.routes/review)
+               :hx-boost "false"}
         [:input {:type "hidden"
                  :name "__anti-forgery-token"
                  :value (force *anti-forgery-token*)}]
@@ -81,7 +82,7 @@
         org-settings (settings.i/get-values db "organization")
         timezone (or (get org-settings "organization.timezone") "UTC")
         taxa-count (db.i/count db {:select [:id] :from [:taxon]})
-        wfo-imported? (= "true" (settings.i/get-value db "setup.wfo_imported"))]
+        wfo-version (settings.i/get-value db "setup.wfo_plant_list_version")]
 
     (case request-method
       :post
@@ -101,10 +102,10 @@
 
       ;; GET
       (do
-        (setup.shared/set-current-step! db 5)
+        (setup.shared/set-current-step! db 6)
         (html/render-page (render :admin admin
                                   :org-settings org-settings
                                   :timezone timezone
                                   :taxa-count taxa-count
-                                  :wfo-imported? wfo-imported?
+                                  :wfo-version wfo-version
                                   :flash-messages (:messages flash)))))))

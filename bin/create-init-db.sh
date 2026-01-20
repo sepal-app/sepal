@@ -100,6 +100,7 @@ sqlite3 "$OUTPUT_PATH" "VACUUM;"
 # Print summary
 TAXON_COUNT=$(sqlite3 "$OUTPUT_PATH" "SELECT COUNT(*) FROM taxon;")
 FILE_SIZE=$(ls -lh "$OUTPUT_PATH" | awk '{print $5}')
+SHA256=$(sha256sum "$OUTPUT_PATH" | awk '{print $1}')
 
 echo ""
 echo "Init database created successfully!"
@@ -108,5 +109,6 @@ echo "  Size: $FILE_SIZE"
 echo "  Taxa: $TAXON_COUNT"
 echo "  WFO Plant List version: $WFO_VERSION"
 echo "  Schema version: $SCHEMA_VERSION"
+echo "  SHA256: $SHA256"
 echo ""
 echo "Update manifest and upload to GitHub Releases"

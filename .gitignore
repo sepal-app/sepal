@@ -62,6 +62,8 @@ bases/app/resources/app/build/
 
 sepal.db
 sepal.db*
+sepal.dev.db*
+dist/
 wfo_plantlist*.db
 .local/
 plans/

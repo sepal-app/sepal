@@ -49,9 +49,7 @@
 (defn regional-form [& {:keys [values errors]}]
   (form/form
     {:method "post"
-     :action (z/url-for setup.routes/regional)
-     :hx-post (z/url-for setup.routes/regional)
-     :hx-swap "none"}
+     :action (z/url-for setup.routes/regional)}
     (form/anti-forgery-field)
     (timezone-select :value (:timezone values)
                      :errors (:timezone errors))
@@ -87,11 +85,12 @@
             form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))
             result (validation.i/validate-form-values FormParams form-params)]
         (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
+          (html/render-page (render :values form-params
+                                    :errors (validation.i/humanize result)))
           (do
             (settings.i/set-value! db "organization.timezone" (:timezone result))
             (setup.shared/set-current-step! db 5)
-            (-> (http/hx-redirect setup.routes/review)
+            (-> (http/see-other setup.routes/taxonomy)
                 (flash/success "Timezone saved")))))
 
       ;; GET

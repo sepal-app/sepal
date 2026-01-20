@@ -5,6 +5,7 @@
             [sepal.app.routes.setup.layout :as layout]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
+            [sepal.app.ui.form :as form]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]))
 
@@ -50,23 +51,26 @@
        [:div {:class "bg-base-200 p-4 rounded-lg"}
         [:h4 {:class "font-medium mb-2"} "What you'll get:"]
         [:ul {:class "list-disc list-inside text-sm text-base-content/70 space-y-1"}
-         [:li "Over 350,000 accepted plant species"]
+         [:li "Over 450,000 plant taxa"]
          [:li "Scientific names with authors"]
-         [:li "Taxonomic hierarchy (family, genus, species)"]
-         [:li "Synonym relationships"]]]
-
-       [:div {:class "alert alert-warning"}
-        [:span "The import may take 30+ seconds. Please don't close this page."]]
+         [:li "Taxonomic hierarchy (family, genus, species)"]]]
 
        [:div {:class "flex gap-3 mt-4"}
         [:form {:method "post"
-                :action (z/url-for setup.routes/taxonomy)}
+                :action (z/url-for setup.routes/taxonomy)
+                :x-data "{ submitting: false }"
+                :x-on:submit "submitting = true"}
+         (form/anti-forgery-field)
          [:input {:type "hidden" :name "action" :value "import"}]
          [:button {:type "submit"
-                   :class "btn btn-success"}
-          "Import WFO Data"]]
+                   :class "btn btn-success"
+                   :x-bind:disabled "submitting"
+                   :x-bind:class "submitting && 'loading'"}
+          [:span {:x-show "!submitting"} "Import WFO Plant List"]
+          [:span {:x-show "submitting" :x-cloak true} "Importing... this may take a minute"]]]
         [:a {:href (z/url-for setup.routes/review)
-             :class "btn btn-ghost"}
+             :class "btn btn-ghost"
+             :x-show "!submitting"}
          "Skip for now"]]]
       :next-button nil)))
 

@@ -3,7 +3,6 @@
             [sepal.app.html :as html]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.spec :as spec]
-            [sepal.app.ui.base :as base]
             [zodiac.core :as z]))
 
 (defn steps-indicator
@@ -37,30 +36,40 @@
 (defn layout
   "Minimal app shell layout for the setup wizard."
   [& {:keys [current-step content flash-messages]}]
-  (-> [:div {:x-data true
-             :x-cloak true
-             :class "min-h-screen bg-base-200"}
-       ;; Header
-       [:header {:class "navbar bg-base-100 shadow-sm"}
-        [:div {:class "flex-1"}
-         [:a {:href (z/url-for setup.routes/index)
-              :class "btn btn-ghost text-xl"}
-          "🌱 Sepal Setup"]]]
+  [:html
+   [:head
+    [:meta {:charset "utf-8"}]
+    [:meta {:http-equiv "x-ua-compatible" :content "ie=edge"}]
 
-       ;; Main content
-       [:main {:class "container mx-auto px-4 py-8"}
-        ;; Steps indicator
-        [:div {:class "mb-8"}
-         (steps-indicator current-step)]
+    [:title "Sepal Setup"]
+    [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
+    [:style "[x-cloak] {display: none !important;}"]
+    [:link {:rel "stylesheet" :href (html/static-url "app/css/main.css")}]
+    [:script "var PREVENT_FUOC_ON_FIREFOX"]]
+   [:body {:hx-boost "true"}
+    [:div {:x-data true
+           :x-cloak true
+           :class "min-h-screen bg-base-200"}
+     ;; Header
+     [:header {:class "navbar bg-base-100 shadow-sm"}
+      [:div {:class "flex-1"}
+       [:a {:href (z/url-for setup.routes/index)
+            :class "btn btn-ghost text-xl"}
+        "🌱 Sepal Setup"]]]
 
-        ;; Centered card
-        [:div {:class "flex justify-center"}
-         content]]
+     ;; Main content
+     [:main {:class "container mx-auto px-4 py-8"}
+      ;; Steps indicator
+      [:div {:class "mb-8"}
+       (steps-indicator current-step)]
 
-       ;; Flash messages
-       (flash/banner flash-messages)
+      ;; Centered card
+      [:div {:class "flex justify-center"}
+       content]]
 
-       ;; Setup wizard script (minimal Alpine.js, HTMX)
-       [:script {:type "module"
-                 :src (html/static-url "app/routes/setup/setup.ts")}]]
-      (base/html)))
+     ;; Flash messages
+     (flash/banner flash-messages)
+
+     ;; Setup wizard script
+     [:script {:type "module"
+               :src (html/static-url "app/routes/setup/setup.ts")}]]]])
