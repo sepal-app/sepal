@@ -51,11 +51,12 @@ rm -f "$OUTPUT_PATH" "${OUTPUT_PATH}-wal" "${OUTPUT_PATH}-shm"
 # Create minimal schema for distribution
 sqlite3 "$OUTPUT_PATH" <<'EOSQL'
 CREATE TABLE taxon (
-  wfo_taxon_id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
+  wfo_taxon_id TEXT NOT NULL,
   name TEXT NOT NULL,
   author TEXT,
   rank TEXT NOT NULL,
-  parent_wfo_id TEXT
+  parent_id INTEGER
 ) STRICT;
 
 CREATE TABLE metadata (
@@ -66,15 +67,25 @@ EOSQL
 
 # Populate taxon data from WFO database
 sqlite3 -cmd "attach database \"${WFO_DATABASE_PATH}\" as wfo;" "$OUTPUT_PATH" <<'EOSQL'
-INSERT INTO taxon (wfo_taxon_id, name, author, rank, parent_wfo_id)
+-- Insert all taxa from WFO
+INSERT INTO taxon (wfo_taxon_id, name, author, rank)
 SELECT
   wfo_t.ID,
   wfo_n.scientificName,
   wfo_n.authorship,
-  wfo_n.rank,
-  wfo_t.parentID
+  wfo_n.rank
 FROM wfo.taxon wfo_t
 JOIN wfo.name wfo_n ON wfo_n.ID = wfo_t.nameID;
+
+-- Resolve parent_id by mapping WFO parentID to taxon id
+UPDATE taxon
+SET parent_id = (
+  SELECT parent.id
+  FROM taxon parent
+  JOIN wfo.taxon wfo_t ON wfo_t.ID = taxon.wfo_taxon_id
+  WHERE parent.wfo_taxon_id = wfo_t.parentID
+)
+WHERE wfo_taxon_id IS NOT NULL;
 EOSQL
 
 # Record metadata
