@@ -81,6 +81,7 @@
                               "bg-base-100" "border" "border-base-300"
                               "rounded-box" "shadow-lg" "p-3"
                               "min-w-80")
+            :x-cloak true
             :x-show "open"
             :x-on:click.outside "open = false"
             :x-transition:enter "transition ease-out duration-100"
