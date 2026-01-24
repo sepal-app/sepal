@@ -63,7 +63,8 @@
                                  :default false}
   :cookie-secret #env COOKIE_SECRET
   :print-request-diffs? false
-  :port #long #or [#env PORT 3000]}
+  :jetty {:host #or [#env HOST "0.0.0.0"]
+          :port #long #or [#env PORT 3000]}}
 
  :sepal.logging.interface/logging {:level #or [#env LOG_LEVEL "DEBUG"]}
 
