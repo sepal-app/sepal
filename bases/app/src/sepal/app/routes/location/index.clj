@@ -76,7 +76,8 @@
                :table-actions [:div {:class "flex items-center justify-between w-full"}
                                (query-builder/search-field-with-builder
                                  :q search-query
-                                 :fields field-options)
+                                 :fields field-options
+                                 :placeholder "Search... (e.g., taxon:Quercus)")
                                (ui.export/export-button)])
     :breadcrumbs ["Locations"]
     :page-title-buttons (when (authz/user-has-permission? viewer location.perm/create)

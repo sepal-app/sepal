@@ -98,7 +98,8 @@
                                [:div {:class "flex items-center gap-2"}
                                 (query-builder/search-field-with-builder
                                   :q search-query
-                                  :fields field-options)
+                                  :fields field-options
+                                  :placeholder "Search... (e.g., rank:species Quercus)")
                                 (accessions-only-checkbox search-query)]
                                (ui.export/export-button)])
 

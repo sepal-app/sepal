@@ -80,7 +80,8 @@
                :table-actions [:div {:class "flex items-center justify-between w-full"}
                                (query-builder/search-field-with-builder
                                  :q search-query
-                                 :fields field-options)
+                                 :fields field-options
+                                 :placeholder "Search... (e.g., taxon:Quercus provenance:wild)")
                                (ui.export/export-button)])
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}

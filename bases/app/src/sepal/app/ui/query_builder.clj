@@ -115,14 +115,16 @@
    Options:
    - :q - Current query string value
    - :fields - Field options for the builder
-   - :input-id - ID for the input (default: \"q\")"
-  [& {:keys [q fields input-id]
-      :or {input-id "q"}}]
+   - :input-id - ID for the input (default: \"q\")
+   - :placeholder - Placeholder text for the input"
+  [& {:keys [q fields input-id placeholder]
+      :or {input-id "q"
+           placeholder "Search..."}}]
   [:div {:class "flex flex-row gap-2 items-center"}
    [:input {:name input-id
             :id input-id
             :class "input input-md bg-white w-96"
             :type "search"
             :value q
-            :placeholder "Search... (e.g., taxon:Quercus type:seed)"}]
+            :placeholder placeholder}]
    (query-builder-dropdown :fields fields :input-id input-id)])
