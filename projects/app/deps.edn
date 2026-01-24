@@ -27,5 +27,6 @@
         poly/validation {:local/root "../../components/validation"}}
  :aliases {:test {:extra-paths []
                   :extra-deps  {}}
-           :main {:jvm-opts ["-Duser.timezone=UTC"]
+           :main {:jvm-opts ["-Duser.timezone=UTC"
+                            "--enable-native-access=ALL-UNNAMED"]
                   :main-opts ["-m" "sepal.app.main"]}}}

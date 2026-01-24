@@ -39,7 +39,8 @@
                  ;; OmitStackTraceInFastThrow add stacktraces when running in a
                  ;; repl that might otherwise have been optimized out, see
                  ;; https://docs.cider.mx/cider/troubleshooting.html#empty-java-stacktraces
-                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]}
+                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                            "--enable-native-access=ALL-UNNAMED"]}
 
            :test {:extra-paths ["bases/app/test"
                                 "components/accession/test"
