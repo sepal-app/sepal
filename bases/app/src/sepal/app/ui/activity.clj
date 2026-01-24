@@ -15,6 +15,7 @@
     :location (heroicons/outline-map-pin :size size)
     :media (heroicons/outline-photo :size size)
     :contact (lucide/contact-round)
+    :setup (lucide/circle-check :size size)
     ;; Default fallback
     nil))
 
@@ -27,6 +28,7 @@
                       "created" "badge-success"
                       "updated" "badge-info"
                       "deleted" "badge-error"
+                      "completed" "badge-success"
                       "badge-ghost")]
     [:span {:class (html/attr "badge" "badge-soft" "badge-sm" badge-class)}
      action]))

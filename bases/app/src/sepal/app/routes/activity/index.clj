@@ -10,6 +10,7 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.setup.activity :as setup.activity]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.activity :as ui.activity]
             [sepal.app.ui.avatar :as ui.avatar]
@@ -228,6 +229,12 @@
      :resource-url (z/url-for material.routes/detail {:id (:material/id material)})
      :context "Material"}))
 
+(defmethod activity-data setup.activity/completed [_activity]
+  {:resource-type :setup
+   :resource-name "Setup wizard"
+   :resource-url nil
+   :context "Initial setup completed"})
+
 ;;; Grouping logic
 
 (defn group-consecutive-by-user
@@ -260,9 +267,11 @@
      ;; Flexible content column
      [:div {:class "min-w-0 flex-1"}
       [:div {:class (html/attr "flex" "items-center" "gap-2")}
-       [:a {:class "spl-link font-medium"
-            :href resource-url}
-        resource-name]
+       (if resource-url
+         [:a {:class "spl-link font-medium"
+              :href resource-url}
+          resource-name]
+         [:span {:class "font-medium"} resource-name])
        (ui.activity/action-badge (:activity/type activity))]
       [:div {:class "text-sm text-base-content/60"}
        context]]]))
