@@ -22,7 +22,7 @@
                       :name "email"
                       :required true
                       :type "email")
-    (form/submit-button "Send")]])
+    (form/submit-button {:class "btn btn-primary mt-4"} "Send")]])
 
 (defn render [& {:keys [errors flash]}]
   (page/page :content (page-content :errors errors)

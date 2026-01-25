@@ -26,7 +26,7 @@
                                  :minlength 8
                                  :required true
                                  :data-error-msg "The passwords do not match")
-               (form/submit-button "Send")])])
+               (form/submit-button {:class "btn btn-primary mt-4"} "Reset Password")])])
 
 (defn render [& {:keys [email errors flash token]}]
   (page/page :content (page-content :email email
