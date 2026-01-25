@@ -81,7 +81,7 @@
 
 (defn banner [messages]
   [:div {:class (html/attr "pointer-events-none" "fixed" "inset-x-0" "bottom-0" "flex"
-                           "justify-center" "px-6" "pb-5" "lg:px-8" "z-50"
+                           "items-center" "px-6" "pb-5" "lg:px-8" "z-50"
                            "flex-col" "gap-4")}
    (for [message messages]
      (banner-message message))])
