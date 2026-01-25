@@ -184,15 +184,13 @@
           handler))))
 
 (defn- setup-excluded-path?
-  "Returns true if the path should be excluded from setup redirect."
+  "Returns true if the path should be excluded from setup redirect.
+   Only setup routes, static assets, and health check are excluded.
+   Auth routes are NOT excluded - if setup isn't complete, there's no user to log in as."
   [path]
   (or (str/starts-with? path "/setup")
-      (str/starts-with? path "/login")
-      (str/starts-with? path "/logout")
-      (str/starts-with? path "/forgot-password")
-      (str/starts-with? path "/reset-password")
-      (str/starts-with? path "/accept-invitation")
       (str/starts-with? path "/static")
+      (str/starts-with? path "/assets")
       (= path "/ok")))
 
 (defn wrap-setup-required
