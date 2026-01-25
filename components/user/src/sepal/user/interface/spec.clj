@@ -1,8 +1,20 @@
 (ns sepal.user.interface.spec
-  (:require [sepal.validation.interface :refer [email-re]]))
+  (:require [clojure.string :as str]
+            [sepal.validation.interface :refer [email-re]]))
 
 (def id pos-int?)
-(def email [:re {:error/message "invalid email"} email-re])
+
+(defn normalize-email
+  "Normalize email to lowercase for consistent storage and comparison."
+  [email]
+  (some-> email str/lower-case))
+
+(def email
+  [:re {:error/message "invalid email"
+        :encode/store normalize-email
+        :decode/form normalize-email}
+   email-re])
+
 (def password [:string {:min 8}])
 
 (defn- name-encoder [v]

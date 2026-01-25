@@ -1,5 +1,6 @@
 (ns sepal.user.core
-  (:require [integrant.core :as ig]
+  (:require [clojure.string :as str]
+            [integrant.core :as ig]
             [malli.core :as m]
             [malli.experimental.time.generator]
             [malli.generator :as mg]
@@ -17,11 +18,12 @@
 
 (defn get-by-email
   [db email]
-  (some->> {:select :*
-            :from :user
-            :where [:= :email email]}
-           (db.i/execute-one! db)
-           (store.i/coerce spec/User)))
+  (when email
+    (some->> {:select :*
+              :from :user
+              :where [:= [:lower :email] (str/lower-case email)]}
+             (db.i/execute-one! db)
+             (store.i/coerce spec/User))))
 
 (defn- build-where-clause [{:keys [q status exclude-status]}]
   (let [conditions (cond-> [:and]
@@ -90,9 +92,10 @@
     (store.i/create! db :user data spec/CreateUser spec/User)))
 
 (defn exists? [db email]
-  (db.i/exists? db {:select 1
-                    :from :user
-                    :where [:= :email email]}))
+  (when email
+    (db.i/exists? db {:select 1
+                      :from :user
+                      :where [:= [:lower :email] (str/lower-case email)]})))
 
 (defn set-password! [db id password]
   (store.i/update! db
@@ -103,15 +106,16 @@
                    spec/User))
 
 (defn verify-password [db email password]
-  (when-let [user (->> {:select [:id :email :password :full_name :role :status]
-                        :from :user
-                        :where [:and
-                                [:= :email email]
-                                [:= :status "active"]]}
-                       (db.i/execute-one! db))]
-    (when (-> (Password/check password (:user/password user))
-              (.withScrypt))
-      (store.i/coerce spec/User (dissoc user :user/password)))))
+  (when (and email password)
+    (when-let [user (->> {:select [:id :email :password :full_name :role :status]
+                          :from :user
+                          :where [:and
+                                  [:= [:lower :email] (str/lower-case email)]
+                                  [:= :status "active"]]}
+                         (db.i/execute-one! db))]
+      (when (-> (Password/check password (:user/password user))
+                (.withScrypt))
+        (store.i/coerce spec/User (dissoc user :user/password))))))
 
 (defn update!
   "Update user (full_name, email)."
