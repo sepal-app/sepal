@@ -53,7 +53,7 @@
 (defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [app-domain db mail token-service forgot-password-email-from
                 forgot-password-email-subject]} context
-        {:keys [email]} params]
+        {:strs [email]} params]
     (case request-method
       :post
       ;; Only send reset email for active users (prevents enumeration)
