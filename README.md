@@ -85,7 +85,7 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 
 ### User Management
 
-User registration is disabled. Users must be created via the CLI.
+User registration is disabled. Users must be invited or created via the CLI.
 
 **Roles:**
 - `admin` - Full access: organization settings, user management, all CRUD operations

@@ -2,7 +2,7 @@
   "CLI command to print the route tree."
   (:require [clojure.string :as str]
             [reitit.core :as r]
-            [sepal.app.server :as server]))
+            [sepal.malli.interface :as malli.i]))
 
 (defn- format-route [[path data]]
   (let [name (:name data)
@@ -63,7 +63,11 @@
    - :format - :table (default) or :tree"
   ([] (print-route-tree {}))
   ([{:keys [format] :or {format :table}}]
-   (let [router (r/router (server/routes))
+   ;; Initialize malli before loading server (which has schemas using :time/instant)
+   (malli.i/init)
+   (require 'sepal.app.server)
+   (let [routes-fn (ns-resolve 'sepal.app.server 'routes)
+         router (r/router (routes-fn))
          routes (r/compiled-routes router)]
      (case format
        :table (print-routes-table routes)

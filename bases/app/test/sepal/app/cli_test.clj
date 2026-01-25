@@ -1,9 +1,30 @@
 (ns sepal.app.cli-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.java.shell :as shell]
+            [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
+
+;; =============================================================================
+;; CLI load test - verifies CLI namespace loads without malli initialization errors
+;; =============================================================================
+
+(deftest cli-loads-without-error-test
+  (testing "CLI namespace loads successfully (catches malli registry issues)"
+    ;; This runs the CLI help in a subprocess to verify it loads cleanly
+    ;; without depending on test system's malli initialization
+    (let [{:keys [exit out err]} (shell/sh "clojure" "-M:dev:cli" "list-users" "--help"
+                                           :dir (System/getProperty "user.dir"))]
+      (is (= 0 exit)
+          (str "CLI failed to load. stderr: " err))
+      (is (str/includes? out "list-users")
+          "Expected help output"))))
+
+;; =============================================================================
+;; User interface tests (using test system)
+;; =============================================================================
 
 (deftest create-user-test
   (testing "creates user with valid data"
