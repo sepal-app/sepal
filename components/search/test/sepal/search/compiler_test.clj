@@ -348,3 +348,51 @@
              test-fields
              {:terms [] :filters [{:field "unknown" :value "x" :negated false}]}
              base-stmt)))))
+
+(deftest compile-existing-join-test
+  (testing "filter join already in base-stmt :join is not duplicated"
+    (let [;; Use location field which has a single join
+          base-with-join {:select [:*]
+                          :from [[:material :m]]
+                          :join [[:location :l] [:= :l.id :m.location_id]]}
+          result (compiler/compile-query
+                   test-fields
+                   {:terms [] :filters [{:field "location" :value "GH" :negated false}]}
+                   base-with-join)]
+      ;; Should not add duplicate join, and should not use select-distinct
+      ;; since no new joins were added
+      (is (= [[:location :l] [:= :l.id :m.location_id]] (:join result)))
+      (is (contains? result :select))
+      (is (not (contains? result :select-distinct)))))
+
+  (testing "filter join already in base-stmt :left-join is not duplicated"
+    (let [base-with-left-join {:select [:*]
+                               :from [[:material :m]]
+                               :left-join [[:location :l] [:= :l.id :m.location_id]]}
+          result (compiler/compile-query
+                   test-fields
+                   {:terms [] :filters [{:field "location" :value "GH" :negated false}]}
+                   base-with-left-join)]
+      ;; Should not add any :join since the table is already left-joined
+      (is (not (contains? result :join)))
+      (is (= [[:location :l] [:= :l.id :m.location_id]] (:left-join result)))
+      ;; Should keep :select since no new joins added
+      (is (contains? result :select))
+      (is (not (contains? result :select-distinct)))))
+
+  (testing "filter with partial overlap - some joins exist, some don't"
+    (let [;; Base has accession join but not taxon
+          ;; taxon field requires both [:accession :a] and [:taxon :t]
+          base-with-partial {:select [:*]
+                             :from [[:material :m]]
+                             :join [[:accession :a] [:= :a.id :m.accession_id]]}
+          result (compiler/compile-query
+                   test-fields
+                   {:terms [] :filters [{:field "taxon" :value "Quercus" :negated false}]}
+                   base-with-partial)]
+      ;; Should add only the taxon join, not duplicate accession
+      (is (= [[:accession :a] [:= :a.id :m.accession_id]
+              [:taxon :t] [:= :t.id :a.taxon_id]]
+             (:join result)))
+      ;; Should use select-distinct since new join was added
+      (is (contains? result :select-distinct)))))

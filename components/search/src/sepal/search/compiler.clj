@@ -128,22 +128,30 @@
   "Gather unique joins from all filters, preserving order.
 
    Joins are deduplicated by table alias to avoid duplicate joins
-   when multiple filters use the same related table."
-  [filters fields]
-  (->> filters
-       (mapcat (fn [{:keys [field]}]
-                 (get-in fields [(keyword field) :joins])))
-       (partition-all 2)
-       (reduce (fn [seen [tbl _condition :as join]]
-                 (if (or (nil? tbl)
-                         ;; Check if we've already seen this table alias
-                         ;; tbl is like [:taxon :t], we compare the whole pair
-                         (some #(= (first %) tbl) seen))
-                   seen
-                   (conj seen join)))
-               [])
-       (apply concat)
-       vec))
+   when multiple filters use the same related table, or when a join
+   already exists in the base statement (either :join or :left-join)."
+  [filters fields base-stmt]
+  (let [;; Extract existing table aliases from base statement joins
+        existing-aliases (->> (concat (:join base-stmt) (:left-join base-stmt))
+                              (partition-all 2)
+                              (map first)  ; get [table alias] pairs
+                              set)]
+    (->> filters
+         (mapcat (fn [{:keys [field]}]
+                   (get-in fields [(keyword field) :joins])))
+         (partition-all 2)
+         (reduce (fn [seen [tbl _condition :as join]]
+                   (if (or (nil? tbl)
+                           ;; Check if already in base statement
+                           (contains? existing-aliases tbl)
+                           ;; Check if we've already seen this table alias
+                           ;; tbl is like [:taxon :t], we compare the whole pair
+                           (some #(= (first %) tbl) seen))
+                     seen
+                     (conj seen join)))
+                 [])
+         (apply concat)
+         vec)))
 
 (defn- terms->clause
   "Convert free-text terms to an FTS clause.
@@ -203,8 +211,8 @@
         all-clauses (cond-> (vec filter-clauses)
                       term-clause (conj term-clause))
 
-        ;; Collect joins from all filters
-        joins (collect-joins filters fields)
+        ;; Collect joins from all filters (excluding those already in base-stmt)
+        joins (collect-joins filters fields base-stmt)
 
         ;; Build final WHERE clause
         where-clause (when (seq all-clauses)
