@@ -1,6 +1,7 @@
 (ns sepal.app.routes.settings.profile
   (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
+            [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as ui.form]
@@ -28,6 +29,14 @@
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
 
+(defn page-content [& {:keys [values errors]}]
+  [:div
+   [:div {:class "flex justify-end mb-6"}
+    [:a {:href (z/url-for auth.routes/logout)
+         :class "btn btn-outline btn-error btn-sm"}
+     "Logout"]]
+   (profile-form :values values :errors errors)])
+
 (defn render [& {:keys [viewer values errors flash]}]
   (layout/layout
     :viewer viewer
@@ -35,7 +44,7 @@
     :category "Account"
     :title "Profile"
     :flash flash
-    :content (profile-form :values values :errors errors)))
+    :content (page-content :values values :errors errors)))
 
 (def FormParams
   [:map {:closed true}
