@@ -66,13 +66,17 @@
                                     :email "setup-admin@test.com"
                                     :password "password123"}}
     (fn [_]
-      (let [sess (app.test/login "setup-admin@test.com" "password123")
-            {:keys [response]} (peri/request sess "/setup/admin")]
-        ;; Should show read-only admin view with success message
-        (is (= 200 (:status response)))
-        (is (body-contains? response "Admin Account"))
-        (is (body-contains? response "has been created"))
-        (is (body-contains? response "setup-admin@test.com"))))))
+      ;; Must complete setup to access /login
+      (setup.shared/complete-setup! *db*)
+      (let [sess (app.test/login "setup-admin@test.com" "password123")]
+        ;; Reset setup so we can test the wizard page
+        (setup.shared/reset-setup! *db*)
+        (let [{:keys [response]} (peri/request sess "/setup/admin")]
+          ;; Should show read-only admin view with success message
+          (is (= 200 (:status response)))
+          (is (body-contains? response "Admin Account"))
+          (is (body-contains? response "has been created"))
+          (is (body-contains? response "setup-admin@test.com")))))))
 
 (deftest setup-wizard-steps-accessible-when-logged-in-test
   (tf/testing "all wizard steps are accessible when logged in"
@@ -81,7 +85,12 @@
                                     :email "wizard-test@test.com"
                                     :password "password123"}}
     (fn [_]
+      ;; Must complete setup to access /login
+      (setup.shared/complete-setup! *db*)
       (let [sess (app.test/login "wizard-test@test.com" "password123")]
+        ;; Reset setup so we can test the wizard pages
+        (setup.shared/reset-setup! *db*)
+
         ;; Server step
         (let [{:keys [response]} (peri/request sess "/setup/server")]
           (is (= 200 (:status response)))
@@ -114,23 +123,27 @@
                                     :email "org-save-test@test.com"
                                     :password "password123"}}
     (fn [_]
-      (let [sess (app.test/login "org-save-test@test.com" "password123")
-            {:keys [response] :as sess} (peri/request sess "/setup/organization")
-            token (get-anti-forgery-token response)
-            {:keys [response]} (peri/request sess "/setup/organization"
-                                             :request-method :post
-                                             :params {:__anti-forgery-token token
-                                                      :long_name "Integration Test Garden"
-                                                      :short_name "ITG"
-                                                      :abbreviation ""
-                                                      :email ""
-                                                      :phone ""})]
-        ;; Should succeed (200 with HX-Redirect or 303)
-        (is (or (= 200 (:status response))
-                (redirect? response)))
-        ;; Setting should be saved
-        (is (= "Integration Test Garden"
-               (settings.i/get-value *db* "organization.long_name")))))))
+      ;; Must complete setup to access /login
+      (setup.shared/complete-setup! *db*)
+      (let [sess (app.test/login "org-save-test@test.com" "password123")]
+        ;; Reset setup so we can test the wizard page
+        (setup.shared/reset-setup! *db*)
+        (let [{:keys [response] :as sess} (peri/request sess "/setup/organization")
+              token (get-anti-forgery-token response)
+              {:keys [response]} (peri/request sess "/setup/organization"
+                                               :request-method :post
+                                               :params {:__anti-forgery-token token
+                                                        :long_name "Integration Test Garden"
+                                                        :short_name "ITG"
+                                                        :abbreviation ""
+                                                        :email ""
+                                                        :phone ""})]
+          ;; Should succeed (200 with HX-Redirect or 303)
+          (is (or (= 200 (:status response))
+                  (redirect? response)))
+          ;; Setting should be saved
+          (is (= "Integration Test Garden"
+                 (settings.i/get-value *db* "organization.long_name"))))))))
 
 (deftest setup-wizard-review-page-test
   (tf/testing "review page shows summary and has complete button"
@@ -139,12 +152,16 @@
                                     :email "review-page@test.com"
                                     :password "password123"}}
     (fn [_]
-      (let [sess (app.test/login "review-page@test.com" "password123")
-            {:keys [response]} (peri/request sess "/setup/review")]
-        (is (= 200 (:status response)))
-        (is (body-contains? response "Review"))
-        (is (body-contains? response "Complete Setup"))
-        (is (body-contains? response "__anti-forgery-token"))))))
+      ;; Must complete setup to access /login
+      (setup.shared/complete-setup! *db*)
+      (let [sess (app.test/login "review-page@test.com" "password123")]
+        ;; Reset setup so we can test the wizard page
+        (setup.shared/reset-setup! *db*)
+        (let [{:keys [response]} (peri/request sess "/setup/review")]
+          (is (= 200 (:status response)))
+          (is (body-contains? response "Review"))
+          (is (body-contains? response "Complete Setup"))
+          (is (body-contains? response "__anti-forgery-token")))))))
 
 (deftest admin-form-validation-test
   (testing "password confirmation must match"
