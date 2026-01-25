@@ -1,4 +1,5 @@
 {:paths ["src" "resources"]
- :deps {}
+ :deps {com.taoensso/telemere {:mvn/version "1.2.1"}
+        com.taoensso/telemere-slf4j {:mvn/version "1.2.1"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}
