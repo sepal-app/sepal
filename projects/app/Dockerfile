@@ -55,6 +55,9 @@ COPY db ./db
 COPY bin/lib ./bin/lib
 COPY projects/app/run.sh ./run.sh
 
+# Don't rebuild assets at startup (they're pre-built in the uberjar)
+ENV BUILD_ASSETS=false
+
 # Copy the uberjar from builder
 COPY --from=clojure-builder /build/projects/app/target/sepal.jar ./sepal.jar
 
