@@ -80,9 +80,9 @@
       (icon/outline-x :color "text-white")]]))
 
 (defn banner [messages]
-  [:div {:class (html/attr "pointer-events-none" "fixed" "inset-x-0" "bottom-0" "sm:flex"
-                           "sm:justify-center" "sm:px-6" "sm:pb-5" "lg:px-8" "z-50"
-                           "flex" "flex-col" "gap-4")}
+  [:div {:class (html/attr "pointer-events-none" "fixed" "inset-x-0" "bottom-0" "flex"
+                           "justify-center" "px-6" "pb-5" "lg:px-8" "z-50"
+                           "flex-col" "gap-4")}
    (for [message messages]
      (banner-message message))])
 
