@@ -3,7 +3,14 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../../bin/lib/env.sh"
+
+# When running from Docker, bin/lib is at ./bin/lib relative to /app
+# When running locally from projects/app, it's at ../../bin/lib
+if [[ -f "$SCRIPT_DIR/bin/lib/env.sh" ]]; then
+    source "$SCRIPT_DIR/bin/lib/env.sh"
+else
+    source "$SCRIPT_DIR/../../bin/lib/env.sh"
+fi
 
 SEPAL_DATA_HOME=$(get_sepal_data_home)
 DB_PATH="$SEPAL_DATA_HOME/sepal.db"
@@ -25,6 +32,10 @@ bin/migrate.sh apply "$DB_PATH"
 # Ensure SpatiaLite metadata is initialized and geometry column is registered
 # (idempotent - safe to run on every startup)
 sqlite3 "$DB_PATH" "SELECT InitSpatialMetaData(1);" 2>/dev/null || true
-sqlite3 "$DB_PATH" "SELECT RecoverGeometryColumn('collection', 'geo_coordinates', 4326, 'POINT', 'XY');" 2>/dev/null || true &&
-    cd projects/app &&
-    clojure -M:main
+sqlite3 "$DB_PATH" "SELECT RecoverGeometryColumn('collection', 'geo_coordinates', 4326, 'POINT', 'XY');" 2>/dev/null || true
+
+# Run the application
+exec java \
+    -Duser.timezone=UTC \
+    --enable-native-access=ALL-UNNAMED \
+    -jar sepal.jar

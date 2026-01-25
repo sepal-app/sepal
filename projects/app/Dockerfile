@@ -11,24 +11,30 @@ RUN cd bases/app && npm ci
 COPY bases/app ./bases/app
 RUN cd bases/app && npm run build
 
-# Stage 2: Prepare Clojure dependencies
+# Stage 2: Build uberjar
 FROM clojure:temurin-25-trixie-slim AS clojure-builder
 
 WORKDIR /build
+
+# Copy project files needed for dependency resolution and building
 COPY deps.edn ./
 COPY components ./components
 COPY bases ./bases
 COPY projects ./projects
 
-# Download all dependencies
-RUN cd projects/app && clojure -P -M:main
+# Copy built frontend assets into the build context
+COPY --from=frontend-builder /build/bases/app/resources/app/build \
+    ./bases/app/resources/app/build
+
+# Download dependencies and build uberjar
+RUN cd projects/app && clojure -T:build uber
 
 # Stage 3: Runtime image
 FROM eclipse-temurin:25-jre-noble
 
 WORKDIR /app
 
-# Install SpatiaLite, sqlite3, and Clojure CLI
+# Install SpatiaLite and sqlite3 for migrations and geo-coordinate support
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libsqlite3-mod-spatialite \
@@ -36,10 +42,7 @@ RUN apt-get update && \
         curl \
         bash && \
     rm -rf /var/lib/apt/lists/* && \
-    echo ".load mod_spatialite" > ~/.sqliterc && \
-    sqlite3 --version && \
-    curl -fsSL https://download.clojure.org/install/linux-install.sh | bash && \
-    clojure --version
+    echo ".load mod_spatialite" > ~/.sqliterc
 
 # Download migrate.sh
 RUN mkdir -p bin && \
@@ -47,26 +50,16 @@ RUN mkdir -p bin && \
         https://raw.githubusercontent.com/brettatoms/sqlite-migrate/main/migrate.sh && \
     chmod +x bin/migrate.sh
 
-# Copy Maven cache from builder
-COPY --from=clojure-builder /root/.m2 /root/.m2
-
-# Copy application code
-COPY deps.edn ./
+# Copy application files
 COPY db ./db
 COPY bin/lib ./bin/lib
-COPY components ./components
-COPY bases ./bases
-COPY projects ./projects
+COPY projects/app/run.sh ./run.sh
 
-# Copy built frontend assets
-COPY --from=frontend-builder /build/bases/app/resources/app/build \
-    ./bases/app/resources/app/build
+# Copy the uberjar from builder
+COPY --from=clojure-builder /build/projects/app/target/sepal.jar ./sepal.jar
 
-# Don't rebuild assets at startup
-ENV BUILD_ASSETS=false
-
-RUN chmod +x projects/app/run.sh
+RUN chmod +x run.sh
 
 EXPOSE 3000
 
-CMD ["projects/app/run.sh"]
+CMD ["./run.sh"]

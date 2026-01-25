@@ -28,5 +28,7 @@
  :aliases {:test {:extra-paths []
                   :extra-deps  {}}
            :main {:jvm-opts ["-Duser.timezone=UTC"
-                            "--enable-native-access=ALL-UNNAMED"]
-                  :main-opts ["-m" "sepal.app.main"]}}}
+                             "--enable-native-access=ALL-UNNAMED"]
+                  :main-opts ["-m" "sepal.app.main"]}
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.6"}}
+                   :ns-default build}}}
