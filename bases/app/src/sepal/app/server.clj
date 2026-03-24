@@ -27,6 +27,7 @@
             [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]
             [zodiac.ext.headers :as z.headers]
+            [zodiac.ext.hot-reload :as z.hot-reload]
             [zodiac.ext.sql :as z.sql]))
 
 (defn routes []
@@ -121,6 +122,10 @@
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))
 
+(defmethod ig/init-key ::zodiac-hot-reload [_ options]
+  (when options
+    (z.hot-reload/init options)))
+
 ;; CSP policy for Alpine.js and HTMX
 ;; - 'unsafe-eval' required for Alpine.js expression evaluation (x-show, x-bind, etc.)
 ;; - 'unsafe-inline' for script-src allows inline <script> tags (e.g., module imports)
@@ -131,13 +136,15 @@
   (assoc z.headers/web
          :content-security-policy
          (str "default-src 'self'; "
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-              "style-src 'self' 'unsafe-inline'; "
-              "img-src 'self' data: blob:; "
-              "connect-src 'self' https:")))
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; "
+              "style-src 'self' 'unsafe-inline' http://localhost:5173; "
+              "img-src 'self' data: blob: http://localhost:5173; "
+              "connect-src 'self' https: ws://localhost:5173")))
 
 (defmethod ig/init-key ::zodiac [_ {:keys [extensions] :as options}]
-  (let [extensions (conj extensions (z.headers/init {:headers csp-headers}))]
+  (let [extensions (-> extensions
+                       (conj (z.headers/init {:headers csp-headers}))
+                       (->> (filterv some?)))]
     (z/start (merge options
                     {:routes #'routes
                      :extensions extensions}))))

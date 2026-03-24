@@ -33,16 +33,23 @@
   :context-key :db}
 
  :sepal.app.server/zodiac-assets
- {:build? #boolean #or [#env BUILD_ASSETS "true"]
-  :config-file #profile {:local "bases/app/vite.config.dev.js"
-                         :default "bases/app/vite.config.js"}
-  :manifest-path  "app/build/.vite/manifest.json"
+ {:manifest-path  "app/build/.vite/manifest.json"
   :asset-resource-path "app/build/assets"
-  :package-json-dir "bases/app"}
+  :vite #profile {:local {:mode :dev-server
+                          :config-file "vite.config.dev.js"
+                          :package-json-dir "bases/app"}
+                  :default {:mode :build
+                            :package-json-dir "bases/app"}}}
+
+ :sepal.app.server/zodiac-hot-reload
+ #profile {:local {:watch-paths ["bases/app/src"]
+                   :watch-extensions #{".clj" ".cljc" ".edn" ".html"}}
+           :default nil}
 
  :sepal.app.server/zodiac
  {:extensions [#ig/ref :sepal.app.server/zodiac-sql
-               #ig/ref :sepal.app.server/zodiac-assets]
+               #ig/ref :sepal.app.server/zodiac-assets
+               #ig/ref :sepal.app.server/zodiac-hot-reload]
   :request-context {:forgot-password-email-from #or [#env FORGOT_PASSWORD_EMAIL_FROM
                                                      "support@sepal.app"]
                     :forgot-password-email-subject #or [#env FORGOT_PASSWORD_EMAIL_SUBJECT
