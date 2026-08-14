@@ -5,6 +5,7 @@
             [next.jdbc.date-time]
             [sepal.database.core :as core]
             [sepal.database.honeysql :as honeysql]
+            [sepal.database.migrate :as migrate]
             [sepal.database.sqlite :as sqlite]
             [zodiac.ext.sql :as z.sql]))
 
@@ -44,6 +45,13 @@
   (core/load-schema! config))
 
 (def schema-resource #'core/schema-resource)
+
+(def migration-files #'migrate/migration-files)
+(def latest-version #'migrate/latest-version)
+(def schema-version #'migrate/schema-version)
+(def pending #'migrate/pending)
+(def migrate! #'migrate/migrate!)
+(def preflight! #'migrate/preflight!)
 
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction+options [~sym ~transactable ~opts]
