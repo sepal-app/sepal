@@ -340,6 +340,21 @@
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
 
+(deftest test-schema-lifecycle-through-the-instance-api
+  (let [dir (fs/create-temp-dir {:prefix "sepal-schema-api"})
+        db-path (str (fs/path dir "sepal.db"))]
+    (try
+      (instance/provision! {:db-path db-path})
+      (testing "a provisioned database is at the latest version"
+        (is (= (instance/latest-schema-version)
+               (instance/schema-version {:db-path db-path}))))
+
+      (testing "preflight! passes and migrate! is a no-op when nothing is pending"
+        (is (:ok? (instance/preflight! {:db-path db-path})))
+        (is (= {:applied []} (instance/migrate! {:db-path db-path}))))
+      (finally
+        (fs/delete-tree dir)))))
+
 (defn- follow-all
   "Follow up to n redirects and return the final response."
   [session n]

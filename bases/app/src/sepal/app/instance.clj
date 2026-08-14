@@ -133,6 +133,29 @@
                        :stderr err}))))
   {:db-path db-path})
 
+;; Schema versioning, exposed on the instance API so the control plane never
+;; needs to require a component namespace. Thin wrappers over sepal.database.
+
+(defn schema-version
+  "The migration version a database is at, or nil."
+  [{:keys [db-path]}]
+  (db.i/schema-version {:db-path db-path}))
+
+(defn latest-schema-version
+  "The migration version this build of Sepal expects."
+  []
+  (db.i/latest-version))
+
+(defn migrate!
+  "Apply pending migrations to a database, one transaction each."
+  [{:keys [db-path]}]
+  (db.i/migrate! {:db-path db-path}))
+
+(defn preflight!
+  "Migrate a VACUUM INTO snapshot and report, leaving the live database alone."
+  [{:keys [db-path]}]
+  (db.i/preflight! {:db-path db-path}))
+
 (defn- process-config
   [{:keys [log-level smtp s3]}]
   (cond-> {:sepal.logging.interface/logging {:level log-level}
