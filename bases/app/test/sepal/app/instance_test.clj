@@ -4,6 +4,7 @@
             [next.jdbc :as jdbc]
             [peridot.core :as peri]
             [sepal.app.instance :as instance]
+            [sepal.database.interface :as db.i]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]))
 
@@ -243,6 +244,101 @@
               (is (some? (media-transform.i/get-entry (:cache-ds cache-a) hash)))
               (is (nil? (media-transform.i/get-entry (:cache-ds cache-b) hash))
                   "garden B must not see garden A's cached derivative"))))))))
+
+(defn- garden-opts
+  "Complete instance opts for slug rooted under dir."
+  [dir slug]
+  {:slug slug
+   :db-path (str (fs/path dir slug "sepal.db"))
+   :app-domain (str slug ".localhost")
+   :media-key-prefix (str slug "/")
+   :media-cache-dir (str (fs/path dir slug "cache"))
+   :backup-dir (str (fs/path dir slug "backups"))})
+
+(defn- test-process []
+  (instance/start-process! {:log-level "WARN"
+                            :master-secret "master-secret-for-tests"
+                            :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")}))
+
+(deftest test-start-refuses-a-second-instance-on-one-database
+  (with-two-gardens
+    (fn [process a b]
+      (testing "the same database twice in one process is refused"
+        (let [thrown (try
+                       (instance/start! process (assoc (garden-opts "/tmp" "c")
+                                                       :db-path (:db-path a)))
+                       nil
+                       (catch clojure.lang.ExceptionInfo e e))]
+          (is (some? thrown) "two instances on one database must be refused")
+          (is (= :duplicate-database (:reason (ex-data thrown))))))
+
+      (testing "the same slug twice in one process is refused"
+        ;; b's database is real and current, so start! gets past the existence
+        ;; and version checks and reaches the slug claim.
+        (let [thrown (try
+                       (instance/start! process (assoc (garden-opts "/tmp" (:slug a))
+                                                       :db-path (:db-path b)))
+                       nil
+                       (catch clojure.lang.ExceptionInfo e e))]
+          (is (some? thrown) "two instances on one slug must be refused")
+          (is (= :duplicate-slug (:reason (ex-data thrown)))))))))
+
+(deftest test-stopping-releases-the-claim
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        opts (garden-opts dir "a")]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      (testing "a stopped instance can be started again"
+        (instance/stop! (instance/start! process opts))
+        (let [restarted (instance/start! process opts)]
+          (is (fn? (instance/handler restarted)))
+          (instance/stop! restarted)))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-start-refuses-a-database-behind-the-code
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        opts (garden-opts dir "old")]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      ;; Rewind the database one migration behind the code.
+      (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" (:db-path opts))})]
+        (jdbc/execute! ds ["delete from schema_version where version = ?"
+                           (db.i/latest-version)]))
+      (testing "a database behind the code refuses to start"
+        (let [thrown (try
+                       (instance/start! process opts)
+                       nil
+                       (catch clojure.lang.ExceptionInfo e e))]
+          (is (some? thrown) "start! should refuse an out-of-date database")
+          (is (= :schema-version-behind (:reason (ex-data thrown))))
+          (is (= (db.i/latest-version) (:expected (ex-data thrown))))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-start-refuses-an-unusable-database
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        opts (garden-opts dir "broken")]
+    (try
+      ;; A provisioned database, then corrupted in place.
+      (instance/provision! {:db-path (:db-path opts)})
+      (spit (:db-path opts) "this is not a sqlite database")
+      (testing "a corrupt database fails at start!, not on the first request"
+        (let [thrown (try
+                       (instance/start! process opts)
+                       nil
+                       (catch clojure.lang.ExceptionInfo e e))]
+          (is (some? thrown) "start! should refuse a corrupt database")
+          (is (contains? #{:database-unusable :schema-version-behind}
+                         (:reason (ex-data thrown))))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
 
 (defn- follow-all
   "Follow up to n redirects and return the final response."

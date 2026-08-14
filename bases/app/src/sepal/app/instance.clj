@@ -170,7 +170,12 @@
      :media-upload-bucket (get-in opts [:s3 :media-upload-bucket])
      :mail (:sepal.mail.interface/client system)
      :s3-client (:sepal.aws-s3.interface/s3-client system)
-     :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)}))
+     :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
+     ;; The slugs and databases already running in this process. Two instances
+     ;; on one database silently merge two gardens; two on one slug silently
+     ;; share a cookie key and token secret. Neither is detectable after the
+     ;; fact, so both are refused at start!.
+     :registry (atom {:slugs #{} :db-paths #{}})}))
 
 (defn stop-process! [process]
   (ig/halt! (:system process))
@@ -228,6 +233,39 @@
                       :invitation-email-from "noreply@sepal.app"
                       :invitation-email-subject "You've been invited to Sepal"}}})
 
+(defn- claim!
+  "Record a slug and database as in use by this process, or throw. Held under a
+  lock rather than inside swap! because the check and the write must not be
+  retried independently. Returns the canonical db path."
+  [process slug db-path]
+  (let [canonical (str (fs/canonicalize db-path {:nofollow-links true}))
+        registry (:registry process)]
+    (locking registry
+      (let [{:keys [slugs db-paths]} @registry]
+        (when (contains? slugs slug)
+          (throw (ex-info (format "Slug %s is already running in this process" slug)
+                          {:reason :duplicate-slug :slug slug})))
+        (when (contains? db-paths canonical)
+          (throw (ex-info (format "Database %s is already open in this process" canonical)
+                          {:reason :duplicate-database :slug slug :db-path canonical})))
+        (swap! registry #(-> % (update :slugs conj slug)
+                             (update :db-paths conj canonical)))))
+    canonical))
+
+(defn- release!
+  [process slug canonical-db-path]
+  (swap! (:registry process)
+         #(-> % (update :slugs disj slug)
+              (update :db-paths disj canonical-db-path))))
+
+(defn- probe!
+  "Force a real connection so a corrupt database or a failed load_extension
+  fails here rather than on a customer's first request. The pool is lazy: the
+  datasource exists after ig/init but connects on first use."
+  [system]
+  (let [db (get-in system [:sepal.app.server/zodiac ::z.sql/db])]
+    (jdbc/execute-one! db ["select 1"])))
+
 (defn start!
   "Start one garden. Returns an opaque instance value."
   [process {:keys [slug db-path media-cache-dir] :as opts}]
@@ -235,12 +273,42 @@
   (when-not (fs/exists? db-path)
     (throw (ex-info (format "No database at %s" db-path)
                     {:reason :database-missing :slug slug :db-path db-path})))
-  (fs/create-dirs media-cache-dir)
-  (let [config (instance-config process opts)]
-    (ig/load-namespaces config)
-    {:slug slug
-     :db-path db-path
-     :system (ig/init config)}))
+  (let [current (try
+                  (db.i/schema-version {:db-path db-path})
+                  (catch Exception e
+                    ;; A file we cannot even read the version from is unusable —
+                    ;; corrupt, or not a SQLite database at all.
+                    (throw (ex-info (format "Database %s could not be read" db-path)
+                                    {:reason :database-unusable :slug slug :db-path db-path}
+                                    e))))
+        expected (db.i/latest-version)]
+    (when-not (= current expected)
+      (throw (ex-info (format "Database %s is at schema version %s, code expects %s"
+                              db-path current expected)
+                      {:reason :schema-version-behind
+                       :slug slug :db-path db-path
+                       :current current :expected expected}))))
+  (let [canonical (claim! process slug db-path)]
+    (try
+      (fs/create-dirs media-cache-dir)
+      (let [config (instance-config process opts)
+            _ (ig/load-namespaces config)
+            system (ig/init config)]
+        (try
+          (probe! system)
+          {:slug slug
+           :db-path db-path
+           :canonical-db-path canonical
+           :process process
+           :system system}
+          (catch Throwable e
+            (ig/halt! system)
+            (throw (ex-info (format "Database %s could not be opened" db-path)
+                            {:reason :database-unusable :slug slug :db-path db-path}
+                            e)))))
+      (catch Throwable e
+        (release! process slug canonical)
+        (throw e)))))
 
 (defn handler
   "The ring handler for an instance."
@@ -248,7 +316,10 @@
   (get-in instance [:system :sepal.app.server/zodiac ::z/app]))
 
 (defn stop! [instance]
-  (ig/halt! (:system instance))
+  (let [{:keys [process slug canonical-db-path]} instance]
+    (ig/halt! (:system instance))
+    (when process
+      (release! process slug canonical-db-path)))
   nil)
 
 (defn- instance-db
