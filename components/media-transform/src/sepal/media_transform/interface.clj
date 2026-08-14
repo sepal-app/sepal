@@ -24,6 +24,16 @@
   [media-id params]
   (cache/cache-key media-id params))
 
+(defn get-entry
+  "Get a cache entry by hash. Returns nil if absent."
+  [cache-ds hash]
+  (cache/get-entry cache-ds hash))
+
+(defn put-entry!
+  "Record a cache entry. Takes {:hash :media-id :size-bytes}."
+  [cache-ds entry]
+  (cache/put! cache-ds entry))
+
 (defn get-or-transform
   "Get cached transform or generate and cache it.
    

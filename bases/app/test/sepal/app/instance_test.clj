@@ -4,6 +4,7 @@
             [next.jdbc :as jdbc]
             [peridot.core :as peri]
             [sepal.app.instance :as instance]
+            [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]))
 
 (def ^:private master "master-secret-for-tests")
@@ -55,6 +56,61 @@
                   "34007208d5b887185865")
              (#'instance/->hex okm))))))
 
+(def ^:private valid-instance-opts
+  {:slug "brooklyn"
+   :db-path "/tmp/sepal-nonexistent/sepal.db"
+   :app-domain "brooklyn.sepal.app"
+   :media-key-prefix "brooklyn/"
+   :media-cache-dir "/tmp/sepal-nonexistent/cache"
+   :backup-dir "/tmp/sepal-nonexistent/backups"})
+
+(deftest test-instance-opts-are-closed
+  (testing "a complete opts map validates"
+    (is (nil? (#'instance/validate! instance/InstanceOpts valid-instance-opts "instance opts"))))
+
+  (testing "an unknown key is rejected rather than ignored"
+    (let [thrown (try
+                   (#'instance/validate! instance/InstanceOpts
+                                         (assoc valid-instance-opts :db-paht "/oops")
+                                         "instance opts")
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (some? thrown) "a typo'd key must not be silently ignored")
+      (is (= :invalid-opts (:reason (ex-data thrown))))))
+
+  (testing "each tenant-bearing key is required"
+    (doseq [k [:slug :db-path :app-domain :media-key-prefix :media-cache-dir :backup-dir]]
+      (let [thrown (try
+                     (#'instance/validate! instance/InstanceOpts
+                                           (dissoc valid-instance-opts k)
+                                           "instance opts")
+                     nil
+                     (catch clojure.lang.ExceptionInfo e e))]
+        (is (some? thrown) (str k " must be required")))))
+
+  (testing "a slug that would be unsafe as a salt or an S3 prefix is rejected"
+    (doseq [slug ["" "../etc" "Brooklyn" "brook lyn" "brooklyn/"]]
+      (let [thrown (try
+                     (#'instance/validate! instance/InstanceOpts
+                                           (assoc valid-instance-opts :slug slug)
+                                           "instance opts")
+                     nil
+                     (catch clojure.lang.ExceptionInfo e e))]
+        (is (some? thrown) (str "slug " (pr-str slug) " must be rejected"))))))
+
+(deftest test-process-opts-are-closed
+  (testing "a master secret of at least 16 characters is required"
+    (is (nil? (#'instance/validate! instance/ProcessOpts
+                                    {:master-secret "master-secret-for-tests"}
+                                    "process opts")))
+    (doseq [opts [{} {:master-secret "short"} {:master-secret "master-secret-for-tests"
+                                               :log-levle "INFO"}]]
+      (let [thrown (try
+                     (#'instance/validate! instance/ProcessOpts opts "process opts")
+                     nil
+                     (catch clojure.lang.ExceptionInfo e e))]
+        (is (some? thrown) (str (pr-str opts) " must be rejected"))))))
+
 (defn- table-names [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
     (->> (jdbc/execute! ds ["select name from sqlite_master where type = 'table'"])
@@ -99,14 +155,16 @@
         process (instance/start-process!
                   {:log-level "WARN"
                    :master-secret "master-secret-for-tests"
-                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")
-                   :media-cache-dir (str (fs/path dir "cache"))})
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})
         start (fn [slug]
                 (let [db-path (str (fs/path dir slug "sepal.db"))]
                   (instance/provision! {:db-path db-path})
                   (instance/start! process {:slug slug
                                             :db-path db-path
-                                            :app-domain (str slug ".localhost")})))
+                                            :app-domain (str slug ".localhost")
+                                            :media-key-prefix (str slug "/")
+                                            :media-cache-dir (str (fs/path dir slug "cache"))
+                                            :backup-dir (str (fs/path dir slug "backups"))})))
         a (start "a")
         b (start "b")]
     (try
@@ -150,7 +208,10 @@
       (let [thrown (try
                      (instance/start! process {:slug "ghost"
                                                :db-path (str (fs/path dir "nope.db"))
-                                               :app-domain "ghost.localhost"})
+                                               :app-domain "ghost.localhost"
+                                               :media-key-prefix "ghost/"
+                                               :media-cache-dir (str (fs/path dir "ghost" "cache"))
+                                               :backup-dir (str (fs/path dir "ghost" "backups"))})
                      nil
                      (catch clojure.lang.ExceptionInfo e e))]
         (is (some? thrown) "start! should have thrown")
@@ -158,6 +219,30 @@
       (finally
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
+
+(deftest test-media-cache-is-per-instance
+  (with-two-gardens
+    (fn [process a b]
+      (testing "the process holds no media cache"
+        (is (nil? (:media-transform-service process))))
+
+      (testing "each instance has its own cache directory and cache database"
+        (let [cache-of (fn [instance]
+                         (get-in instance [:system :sepal.media-transform.interface/service]))
+              cache-a (cache-of a)
+              cache-b (cache-of b)]
+          (is (not= (:cache-dir cache-a) (:cache-dir cache-b)))
+          (is (not= (:cache-ds cache-a) (:cache-ds cache-b)))
+
+          (testing "and an entry in one is invisible to the other"
+            ;; The same media id and params in two gardens hash identically;
+            ;; separate cache databases are what keeps them apart.
+            (let [hash (media-transform.i/cache-key 1 {:width 200})]
+              (media-transform.i/put-entry! (:cache-ds cache-a)
+                                            {:hash hash :media-id 1 :size-bytes 123})
+              (is (some? (media-transform.i/get-entry (:cache-ds cache-a) hash)))
+              (is (nil? (media-transform.i/get-entry (:cache-ds cache-b) hash))
+                  "garden B must not see garden A's cached derivative"))))))))
 
 (defn- follow-all
   "Follow up to n redirects and return the final response."

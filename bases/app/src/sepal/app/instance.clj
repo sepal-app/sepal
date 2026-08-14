@@ -8,6 +8,8 @@
   (:require [babashka.fs :as fs]
             [clojure.string :as str]
             [integrant.core :as ig]
+            [malli.core :as m]
+            [malli.error :as me]
             [next.jdbc :as jdbc]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
@@ -19,6 +21,57 @@
            [javax.crypto.spec HKDFParameterSpec]))
 
 (set! *warn-on-reflection* true)
+
+;; -----------------------------------------------------------------------------
+;; Opts
+
+(def ^:private Slug
+  ;; Lowercase, no dots or slashes: the slug is an HKDF salt, an S3 key prefix
+  ;; and a hostname label, so it must be safe in all three.
+  [:re #"^[a-z0-9][a-z0-9-]{0,62}$"])
+
+(def ProcessOpts
+  [:map {:closed true}
+   [:master-secret [:string {:min 16}]]
+   [:log-level {:optional true} [:maybe :string]]
+   [:extensions-library-path {:optional true} [:maybe :string]]
+   [:smtp {:optional true}
+    [:maybe [:map {:closed true}
+             [:host :string]
+             [:port {:optional true} [:or :string :int]]
+             [:username {:optional true} [:maybe :string]]
+             [:password {:optional true} [:maybe :string]]
+             [:auth {:optional true} [:or :string :boolean]]
+             [:tls {:optional true} [:maybe :string]]]]]
+   [:s3 {:optional true}
+    [:maybe [:map {:closed true}
+             [:endpoint-override {:optional true} [:maybe :string]]
+             [:access-key-id :string]
+             [:secret-access-key :string]
+             [:media-upload-bucket :string]]]]])
+
+(def InstanceOpts
+  [:map {:closed true}
+   [:slug Slug]
+   [:db-path [:string {:min 1}]]
+   [:app-domain [:string {:min 1}]]
+   ;; Required, not derived: every tenant-bearing path is the caller's explicit
+   ;; decision, so a missing one fails here instead of colliding at runtime.
+   [:media-key-prefix [:string {:min 1}]]
+   [:media-cache-dir [:string {:min 1}]]
+   [:backup-dir [:string {:min 1}]]
+   [:media-cache-size-mb {:optional true} pos-int?]])
+
+(defn- validate!
+  [schema opts what]
+  (when-not (m/validate schema opts)
+    (throw (ex-info (format "Invalid %s" what)
+                    {:reason :invalid-opts
+                     :errors (me/humanize (m/explain schema opts))})))
+  nil)
+
+;; -----------------------------------------------------------------------------
+;; Secrets
 
 (defn- ->hex [^bytes bs]
   (str/join (map #(format "%02x" (bit-and % 0xff)) bs)))
@@ -81,14 +134,9 @@
   {:db-path db-path})
 
 (defn- process-config
-  [{:keys [log-level media-cache-dir media-cache-size-mb smtp s3]}]
+  [{:keys [log-level smtp s3]}]
   (cond-> {:sepal.logging.interface/logging {:level log-level}
            :sepal.malli.interface/init {}}
-
-    media-cache-dir
-    (assoc :sepal.media-transform.interface/service
-           {:cache-dir media-cache-dir
-            :max-cache-size-mb (or media-cache-size-mb 500)})
 
     smtp
     (assoc :sepal.mail.interface/client smtp)
@@ -109,12 +157,10 @@
 (defn start-process!
   "Initialize what cannot be per instance and build the shared collaborators.
   Returns an opaque process value to pass to start!. :smtp and :s3 may be
-  omitted, in which case mail and media are unavailable to every instance."
-  [{:keys [master-secret extensions-library-path media-cache-dir] :as opts}]
-  (when (str/blank? master-secret)
-    (throw (ex-info "A master-secret is required" {:reason :missing-master-secret})))
-  (when media-cache-dir
-    (fs/create-dirs media-cache-dir))
+  omitted, in which case mail and media uploads are unavailable to every
+  instance."
+  [{:keys [master-secret extensions-library-path] :as opts}]
+  (validate! ProcessOpts opts "process opts")
   (let [config (process-config opts)
         _ (ig/load-namespaces config)
         system (ig/init config)]
@@ -124,8 +170,7 @@
      :media-upload-bucket (get-in opts [:s3 :media-upload-bucket])
      :mail (:sepal.mail.interface/client system)
      :s3-client (:sepal.aws-s3.interface/s3-client system)
-     :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
-     :media-transform-service (:sepal.media-transform.interface/service system)}))
+     :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)}))
 
 (defn stop-process! [process]
   (ig/halt! (:system process))
@@ -137,9 +182,16 @@
    :enable_load_extension "true"})
 
 (defn- instance-config
-  [process {:keys [slug db-path app-domain media-key-prefix]}]
+  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb]}]
   {:sepal.token.interface/service
    {:secret (token-secret (:master-secret process) slug)}
+
+   :sepal.media-transform.interface/service
+   ;; Per instance, not shared: cache-key is SHA-256 over a per-database row id,
+   ;; so two gardens sharing one cache directory would serve each other's
+   ;; derivatives for the same id. Separate directories remove the collision.
+   {:cache-dir media-cache-dir
+    :max-cache-size-mb (or media-cache-size-mb 500)}
 
    :sepal.app.server/zodiac-sql
    ;; No :schema-dump-file: it drives a dead guard in server.clj that would
@@ -168,9 +220,9 @@
                       :token-service (ig/ref :sepal.token.interface/service)
                       :s3-client (:s3-client process)
                       :s3-presigner (:s3-presigner process)
-                      :media-transform-service (:media-transform-service process)
+                      :media-transform-service (ig/ref :sepal.media-transform.interface/service)
                       :media-upload-bucket (:media-upload-bucket process)
-                      :media-key-prefix (or media-key-prefix (str slug "/"))
+                      :media-key-prefix media-key-prefix
                       :forgot-password-email-from "support@sepal.app"
                       :forgot-password-email-subject "Sepal - Reset Password"
                       :invitation-email-from "noreply@sepal.app"
@@ -178,10 +230,12 @@
 
 (defn start!
   "Start one garden. Returns an opaque instance value."
-  [process {:keys [slug db-path] :as opts}]
+  [process {:keys [slug db-path media-cache-dir] :as opts}]
+  (validate! InstanceOpts opts "instance opts")
   (when-not (fs/exists? db-path)
     (throw (ex-info (format "No database at %s" db-path)
                     {:reason :database-missing :slug slug :db-path db-path})))
+  (fs/create-dirs media-cache-dir)
   (let [config (instance-config process opts)]
     (ig/load-namespaces config)
     {:slug slug
