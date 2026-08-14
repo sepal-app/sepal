@@ -15,37 +15,43 @@
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
-  (:import [javax.crypto Mac]
-           [javax.crypto.spec SecretKeySpec]))
+  (:import [javax.crypto KDF]
+           [javax.crypto.spec HKDFParameterSpec]))
 
 (set! *warn-on-reflection* true)
-
-(def ^:private hmac-algorithm "HmacSHA256")
-
-(defn- hmac-sha256
-  ^bytes [^String secret ^String message]
-  (let [mac (Mac/getInstance hmac-algorithm)]
-    (.init mac (SecretKeySpec. (.getBytes secret "UTF-8") hmac-algorithm))
-    (.doFinal mac (.getBytes message "UTF-8"))))
 
 (defn- ->hex [^bytes bs]
   (str/join (map #(format "%02x" (bit-and % 0xff)) bs)))
 
+(defn- hkdf
+  "HKDF-SHA256 per RFC 5869. Requires JDK 25 or later for javax.crypto.KDF."
+  ^bytes [^bytes ikm ^bytes salt ^bytes info length]
+  (let [kdf (KDF/getInstance "HKDF-SHA256")
+        spec (-> (HKDFParameterSpec/ofExtract)
+                 (.addIKM ikm)
+                 (.addSalt salt)
+                 (.thenExpand info length))]
+    (.deriveData kdf spec)))
+
 (defn- derive-secret
-  "HMAC-SHA256(master-secret, slug/purpose). A stand-in for HKDF with the same
-  call shape and no key-stretching claim."
-  ^bytes [master-secret slug purpose]
-  (hmac-sha256 master-secret (str slug "/" purpose)))
+  "Per-instance key material. The slug is the salt, so two instances provably
+  get different keys; the purpose is the info, so one instance's cookie key and
+  token secret are independent."
+  ^bytes [^String master-secret ^String slug ^String purpose length]
+  (hkdf (.getBytes master-secret "UTF-8")
+        (.getBytes slug "UTF-8")
+        (.getBytes purpose "UTF-8")
+        length))
 
 (defn- cookie-key
   "16 raw bytes, which is what zodiac's :cookie-secret takes."
   ^bytes [master-secret slug]
-  (byte-array (take 16 (derive-secret master-secret slug "cookie"))))
+  (derive-secret master-secret slug "cookie" 16))
 
 (defn- token-secret
   "64 hex characters. sepal.token requires a string of at least 16."
   [master-secret slug]
-  (->hex (derive-secret master-secret slug "token")))
+  (->hex (derive-secret master-secret slug "token" 32)))
 
 (defn- table-exists?
   [db-path table]

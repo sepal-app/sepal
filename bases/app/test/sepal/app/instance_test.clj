@@ -42,6 +42,19 @@
               (seq (take 16 (.getBytes ^String (#'instance/token-secret master "brooklyn")
                                        "UTF-8")))))))
 
+(deftest test-hkdf-matches-rfc-5869
+  ;; RFC 5869 Test Case 1. Verified against this implementation on JDK 26.
+  (testing "the basic SHA-256 test case"
+    (let [ikm (byte-array (repeat 22 (unchecked-byte 0x0b)))
+          salt (byte-array (map unchecked-byte (range 0x00 0x0d)))
+          info (byte-array (map unchecked-byte [0xf0 0xf1 0xf2 0xf3 0xf4
+                                                0xf5 0xf6 0xf7 0xf8 0xf9]))
+          okm (#'instance/hkdf ikm salt info 42)]
+      (is (= (str "3cb25f25faacd57a90434f64d0362f2a"
+                  "2d2d0a90cf1a5a4c5db02d56ecc4c5bf"
+                  "34007208d5b887185865")
+             (#'instance/->hex okm))))))
+
 (defn- table-names [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
     (->> (jdbc/execute! ds ["select name from sqlite_master where type = 'table'"])
