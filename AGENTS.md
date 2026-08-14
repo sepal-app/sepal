@@ -1,7 +1,5 @@
 # AGENTS.md
 
-## Project Overview
-
 Sepal is a botanical collection management system for managing plant accessions, materials, locations, and taxonomic data. It integrates with the World Flora Online (WFO) Plantlist database for taxonomy reference.
 
 ## Architecture
@@ -170,10 +168,28 @@ clojure -M:poly check
 
 ### Environment Setup
 
-Copy `.env.local.example` to `.env.local` and set:
-- `SEPAL_DATA_HOME` - Data directory (defaults to $XDG_DATA_HOME/Sepal)
+Dependencies come from devenv, entered by direnv:
+
+```bash
+direnv allow          # once
+devenv shell          # or just cd, with direnv active
+```
+
+`devenv.nix` owns every value that has to be an absolute path —
+`EXTENSIONS_LIBRARY_PATH`, `MIGRATIONS_DIR`, `SCHEMA_DUMP_FILE`,
+`SEPAL_DATA_HOME`, `VITE_CONFIG_FILE` — so they follow the project directory
+instead of breaking when it moves. Don't set those in `.env.local`.
+
+Copy `.env.local.example` to `.env.local` for everything else:
 - `WFO_DATABASE_PATH` - World Flora Online database
-- `COOKIE_SECRET` - Session encryption (16+ chars)
+- `COOKIE_SECRET` - Session encryption, exactly 16 characters
+- `TOKEN_SECRET` - Password reset and invitation tokens
+- `MIGRATE_SH` - Absolute path to the sqlite-migrate script
+
+**Don't quote values in `.env.local`, and don't use `$HOME` or `${PWD}`.**
+devenv's dotenv reader is not a shell: it keeps quotes as part of the value and
+does not expand variables. `COOKIE_SECRET="..."` arrives 18 characters long and
+fails zodiac's exact-16 check at startup.
 
 Additional env vars for production (see `bases/app/resources/app/system.edn`):
 - AWS credentials for S3/media storage
@@ -308,8 +324,8 @@ Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_li
 The project uses SQLite with the SpatiaLite extension for spatial data. Geo-coordinates are stored as GeoJSON with SRID (spatial reference ID).
 
 **Environment setup:**
-- `EXTENSIONS_LIBRARY_PATH` may need to be set to the directory containing `mod_spatialite` if SQLite has trouble loading extensions
-- With devbox, this is typically `${PWD}/.devbox/nix/profile/default/lib` (see `.env.local.example`)
+- `EXTENSIONS_LIBRARY_PATH` must point at the directory containing `mod_spatialite`
+- `devenv.nix` sets it to `${pkgs.libspatialite}/lib`, so it works out of the box in the dev shell
 
 **Coordinate reference systems:**
 - Defined in `sepal.collection.interface.datum` with EPSG SRID codes

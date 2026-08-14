@@ -51,6 +51,7 @@ bases/app/resources/app/dist/
 bases/app/resources/app/build/
 
 .env.*
+.envrc
 .rebl
 .dir-locals.el
 .projectile-cache.eld
@@ -66,5 +67,11 @@ sepal.dev.db*
 dist/
 wfo_plantlist*.db
 .local/
-plans/
-plans
+
+# devenv — devenv.lock is tracked deliberately, it pins the nixpkgs revision
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
