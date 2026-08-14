@@ -56,26 +56,21 @@
     (pos? (or (first (vals row)) 0))))
 
 (defn provision!
-  "Create a database at :db-path and load :schema-file into it. Refuses to touch
-  an existing file. Returns {:db-path ...}."
-  [{:keys [db-path schema-file]}]
+  "Create a database at :db-path and load the current schema into it. Refuses to
+  touch an existing file. Returns {:db-path ...}."
+  [{:keys [db-path]}]
   (when (fs/exists? db-path)
     (throw (ex-info (format "A database already exists at %s" db-path)
                     {:reason :database-exists :db-path db-path})))
-  (when-not (fs/exists? schema-file)
-    (throw (ex-info (format "No schema file at %s" schema-file)
-                    {:reason :schema-file-missing :schema-file schema-file})))
   (when-let [parent (fs/parent db-path)]
     (fs/create-dirs parent))
-  (let [{:keys [err]} (db.i/load-schema! {:database-path db-path
-                                          :schema-dump-file schema-file})]
+  (let [{:keys [err]} (db.i/load-schema! {:db-path db-path})]
     ;; sqlite3 -init reports errors on stderr and still exits 0, so check the
     ;; result rather than the exit code.
     (when-not (table-exists? db-path "user")
       (throw (ex-info (format "The schema did not load into %s" db-path)
                       {:reason :schema-load-failed
                        :db-path db-path
-                       :schema-file schema-file
                        :stderr err}))))
   {:db-path db-path})
 

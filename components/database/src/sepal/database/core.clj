@@ -1,11 +1,13 @@
 (ns sepal.database.core
   (:require [camel-snake-kebab.core :as csk]
+            [clojure.java.io :as io]
             [clojure.java.shell :as shell]
             [clojure.string :as str]
             [honey.sql]
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc.result-set])
-  (:import [java.sql ResultSet ResultSetMetaData]))
+  (:import [java.io File]
+           [java.sql ResultSet ResultSetMetaData]))
 
 (defn ->kebab-case
   "Same as csk/->kebab-case but only use '_' as the separator.
@@ -83,12 +85,28 @@
    :table-fn   csk/->snake_case
    :builder-fn (make-builder-fn)})
 
+(defn schema-resource
+  "Extract the schema to a temp file and return it. The schema lives on the
+  classpath so a jar carries it, and sqlite3 needs a real path. Callers delete
+  the file when done."
+  ^File []
+  (if-let [resource (io/resource "database/schema.sql")]
+    (let [file (File/createTempFile "sepal-schema" ".sql")]
+      (.deleteOnExit file)
+      (with-open [in (io/input-stream resource)]
+        (io/copy in file))
+      file)
+    (throw (ex-info "database/schema.sql is not on the classpath"
+                    {:reason :schema-resource-missing}))))
+
 (defn load-schema!
-  "Load the SQLite schema into the database.
-   Uses db/schema.sql which is maintained by migrate.sh."
-  [{:keys [database-path schema-dump-file]
-    :or {schema-dump-file "db/schema.sql"}}]
-  (shell/sh "sqlite3" "-init" schema-dump-file database-path ""))
+  "Load the schema from the classpath into the database at :db-path."
+  [{:keys [db-path]}]
+  (let [schema (schema-resource)]
+    (try
+      (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath schema) db-path "")
+      (finally
+        (.delete schema)))))
 
 (defn schema-initialized?
   "Check if the database schema has been initialized by looking for core tables."

@@ -42,10 +42,6 @@
               (seq (take 16 (.getBytes ^String (#'instance/token-secret master "brooklyn")
                                        "UTF-8")))))))
 
-(defn- schema-file []
-  (or (System/getenv "SCHEMA_DUMP_FILE")
-      (throw (ex-info "SCHEMA_DUMP_FILE is not set — run inside the devenv shell" {}))))
-
 (defn- table-names [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
     (->> (jdbc/execute! ds ["select name from sqlite_master where type = 'table'"])
@@ -58,7 +54,7 @@
           db-path (str (fs/path dir "garden" "sepal.db"))]
       (try
         (is (= {:db-path db-path}
-               (instance/provision! {:db-path db-path :schema-file (schema-file)})))
+               (instance/provision! {:db-path db-path})))
         (is (fs/exists? db-path))
         (let [tables (table-names db-path)]
           (is (contains? tables "user"))
@@ -73,27 +69,12 @@
       (try
         (spit db-path "not a database")
         (let [thrown (try
-                       (instance/provision! {:db-path db-path :schema-file (schema-file)})
+                       (instance/provision! {:db-path db-path})
                        nil
                        (catch clojure.lang.ExceptionInfo e e))]
           (is (some? thrown) "provision! should have thrown")
           (is (= :database-exists (:reason (ex-data thrown)))))
         (is (= "not a database" (slurp db-path)))
-        (finally
-          (fs/delete-tree dir)))))
-
-  (testing "a missing schema file is refused"
-    (let [dir (fs/create-temp-dir {:prefix "sepal-provision"})
-          db-path (str (fs/path dir "sepal.db"))]
-      (try
-        (let [thrown (try
-                       (instance/provision! {:db-path db-path
-                                             :schema-file (str (fs/path dir "nope.sql"))})
-                       nil
-                       (catch clojure.lang.ExceptionInfo e e))]
-          (is (some? thrown) "provision! should have thrown")
-          (is (= :schema-file-missing (:reason (ex-data thrown)))))
-        (is (not (fs/exists? db-path)))
         (finally
           (fs/delete-tree dir))))))
 
@@ -109,7 +90,7 @@
                    :media-cache-dir (str (fs/path dir "cache"))})
         start (fn [slug]
                 (let [db-path (str (fs/path dir slug "sepal.db"))]
-                  (instance/provision! {:db-path db-path :schema-file (schema-file)})
+                  (instance/provision! {:db-path db-path})
                   (instance/start! process {:slug slug
                                             :db-path db-path
                                             :app-domain (str slug ".localhost")})))

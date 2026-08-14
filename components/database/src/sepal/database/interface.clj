@@ -39,9 +39,11 @@
   (core/schema-initialized? db))
 
 (defn load-schema!
-  "Load the SQLite schema into the database."
+  "Load the SQLite schema from the classpath into the database at :db-path."
   [config]
   (core/load-schema! config))
+
+(def schema-resource #'core/schema-resource)
 
 (defmacro with-transaction [[sym transactable opts] & body]
   `(jdbc/with-transaction+options [~sym ~transactable ~opts]

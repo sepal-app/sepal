@@ -18,7 +18,6 @@
 
 (defn- create-test-config [port]
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-e2e-test" ".db"))
-        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")
         extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
     {:sepal.app.server/zodiac-sql
      {:database-path db-path
@@ -49,8 +48,7 @@
       :start-server? true}
 
      :sepal.database.interface/schema
-     {:database-path db-path
-      :schema-dump-file schema-dump-file}
+     {:db-path db-path}
 
      :sepal.malli.interface/init {}}))
 

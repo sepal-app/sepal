@@ -1,5 +1,7 @@
 (ns sepal.database.interface-test
-  (:require [clojure.test :as test :refer :all]
+  (:require [babashka.fs :as fs]
+            [clojure.test :as test :refer :all]
+            [next.jdbc :as jdbc]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]))
 
@@ -101,3 +103,21 @@
 (deftest null-values-preserved
   (is (= {:x nil}
          (db.i/execute-one! *db* ["select null as x"]))))
+
+;;; Schema loading from the classpath
+
+(deftest test-load-schema-from-classpath
+  (testing "loads the schema into a fresh database with no path argument"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-schema"})
+          db-path (str (fs/path dir "sepal.db"))]
+      (try
+        (db.i/load-schema! {:db-path db-path})
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
+              tables (->> (jdbc/execute! ds ["select name from sqlite_master where type = 'table'"])
+                          (map (comp first vals))
+                          set)]
+          (is (contains? tables "user"))
+          (is (contains? tables "accession"))
+          (is (contains? tables "schema_version")))
+        (finally
+          (fs/delete-tree dir))))))
