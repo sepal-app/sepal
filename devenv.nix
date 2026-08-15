@@ -18,6 +18,9 @@
   ] ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.glibcLocales ];
 
   languages.clojure.enable = true;
+  # sepal.app.instance derives per-instance secrets with javax.crypto.KDF,
+  # finalized in JDK 25. The default JDK here is 21, which cannot load it.
+  languages.java.jdk.package = pkgs.jdk25;
   languages.javascript = {
     enable = true;
     package = pkgs.nodejs_22;
