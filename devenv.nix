@@ -34,7 +34,6 @@
   env = {
     EXTENSIONS_LIBRARY_PATH = "${pkgs.libspatialite}/lib";
     MIGRATIONS_DIR = "${config.devenv.root}/components/database/resources/database/migrations";
-    SCHEMA_DUMP_FILE = "${config.devenv.root}/components/database/resources/database/schema.sql";
     SEPAL_DATA_HOME = "${config.devenv.root}/.local";
     VITE_CONFIG_FILE = "${config.devenv.root}/bases/app/vite.config.dev.js";
   };
