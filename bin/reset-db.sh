@@ -13,14 +13,15 @@ mkdir -p "$SEPAL_DATA_HOME"
 
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
 MIGRATE_SH=${MIGRATE_SH:-migrate.sh}
-SCHEMA_DUMP_FILE=${SCHEMA_DUMP_FILE:-db/schema.sql}
+SCHEMA_DUMP_FILE=${SCHEMA_DUMP_FILE:-components/database/resources/database/schema.sql}
+MIGRATIONS_DIR=${MIGRATIONS_DIR:-components/database/resources/database/migrations}
 
 # Remove existing database and SQLite WAL/SHM files
 rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"
 sqlite3 "$DB_PATH" <"$SCHEMA_DUMP_FILE"
 
 # Apply any pending migrations
-${MIGRATE_SH} apply "$DB_PATH"
+MIGRATIONS_DIR="$MIGRATIONS_DIR" ${MIGRATE_SH} apply "$DB_PATH"
 
 # Initialize SpatiaLite metadata and register geometry column
 sqlite3 "$DB_PATH" "SELECT InitSpatialMetaData(1);" 2>/dev/null || true
