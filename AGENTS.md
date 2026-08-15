@@ -182,12 +182,13 @@ instead of breaking when it moves. Don't set those in `.env.local`.
 
 Copy `.env.local.example` to `.env.local` for everything else:
 - `WFO_DATABASE_PATH` - World Flora Online database
-- `COOKIE_SECRET` - Session encryption, exactly 16 characters
+- `SEPAL_SECRET` - The secret everything else is derived from. Was called
+  `COOKIE_SECRET` until it came to cover the token secret too
 - `TOKEN_SECRET` - Password reset and invitation tokens. Read only by
   `system.edn`, so it applies to the REPL and not to `-main`
 - `MIGRATE_SH` - Absolute path to the sqlite-migrate script
 
-`COOKIE_SECRET` means two different things depending on how Sepal is started.
+`SEPAL_SECRET` means two different things depending on how Sepal is started.
 `system.edn` uses it directly as zodiac's cookie key, which is why it must be
 exactly 16 characters. `sepal.app.main/-main` passes it to the instance API as
 the *master secret*, and the cookie key and token secret are HKDF-derived from
@@ -197,7 +198,7 @@ not the old literal one, so every session is invalidated once.
 
 **Don't quote values in `.env.local`, and don't use `$HOME` or `${PWD}`.**
 devenv's dotenv reader is not a shell: it keeps quotes as part of the value and
-does not expand variables. `COOKIE_SECRET="..."` arrives 18 characters long and
+does not expand variables. `SEPAL_SECRET="..."` arrives 18 characters long and
 fails zodiac's exact-16 check at startup.
 
 Additional env vars for production (see `bases/app/resources/app/system.edn`):
@@ -208,7 +209,7 @@ Additional env vars for production (see `bases/app/resources/app/system.edn`):
 ## Configuration
 
 - **Main Configuration**: The primary system configuration is defined as an [Integrant](https://github.com/weavejester/integrant) file at `bases/app/resources/app/system.edn`.
-- **Dynamic Setup with Aero**: The configuration is processed by [Aero](https://github.com/juxt/aero), which enables environment-specific setups using profiles (e.g., `:local`, `:default`, `:test`) and environment variable injection (e.g., `#env COOKIE_SECRET`).
+- **Dynamic Setup with Aero**: The configuration is processed by [Aero](https://github.com/juxt/aero), which enables environment-specific setups using profiles (e.g., `:local`, `:default`, `:test`) and environment variable injection (e.g., `#env SEPAL_SECRET`).
 - **Database Configuration**: Database path defaults to `$SEPAL_DATA_HOME/sepal.db`. The JDBC URL is generated from this path at startup. Tests use temporary files or in-memory databases.
 
 ## Code Patterns

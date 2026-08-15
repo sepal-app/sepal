@@ -12,7 +12,7 @@
   (testing "the opts built from the environment are valid, so self-hosted boot
             cannot fail on a schema the library enforces"
     (let [{:keys [process instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
-                                                     "COOKIE_SECRET" "1234567890123456"
+                                                     "SEPAL_SECRET" "1234567890123456"
                                                      "APP_DOMAIN" "sepal.example.org"})]
       (is (m/validate instance/ProcessOpts process)
           (str "invalid process opts: " (pr-str process)))
@@ -20,10 +20,10 @@
           (str "invalid instance opts: " (pr-str instance))))))
 
 (deftest test-one-variable-install-satisfies-both-schemas
-  (testing "COOKIE_SECRET alone is enough for a self-hosted install: every
+  (testing "SEPAL_SECRET alone is enough for a self-hosted install: every
             other opt is derived, so the next required opt could otherwise
             silently break the one-variable install"
-    (let [{:keys [process instance]} (main/env-opts {"COOKIE_SECRET" "1234567890123456"})
+    (let [{:keys [process instance]} (main/env-opts {"SEPAL_SECRET" "1234567890123456"})
           home (config.i/data-home {})]
       (is (m/validate instance/ProcessOpts process)
           (str "invalid process opts: " (pr-str process)))
@@ -33,30 +33,30 @@
       (is (= (str (fs/path home "cache")) (:media-cache-dir instance)))
       (is (= (str (fs/path home "backups")) (:backup-dir instance))))))
 
-(deftest test-a-missing-cookie-secret-is-refused
-  (testing "an unset COOKIE_SECRET fails loudly rather than defaulting to a
+(deftest test-a-missing-sepal-secret-is-refused
+  (testing "an unset SEPAL_SECRET fails loudly rather than defaulting to a
             master secret that is published in this repository"
     (let [thrown (try
                    (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"})
                    nil
                    (catch clojure.lang.ExceptionInfo e e))]
       (is (some? thrown) "env-opts should have thrown")
-      (is (= :missing-cookie-secret (:reason (ex-data thrown))))
-      (is (re-find #"COOKIE_SECRET" (ex-message thrown))
+      (is (= :missing-sepal-secret (:reason (ex-data thrown))))
+      (is (re-find #"SEPAL_SECRET" (ex-message thrown))
           "the message must name the variable the operator has to set")))
 
-  (testing "an empty COOKIE_SECRET is the same as an unset one"
+  (testing "an empty SEPAL_SECRET is the same as an unset one"
     (let [thrown (try
                    (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
-                                   "COOKIE_SECRET" ""})
+                                   "SEPAL_SECRET" ""})
                    nil
                    (catch clojure.lang.ExceptionInfo e e))]
-      (is (= :missing-cookie-secret (:reason (ex-data thrown)))))))
+      (is (= :missing-sepal-secret (:reason (ex-data thrown)))))))
 
 (deftest test-self-hosted-uses-one-fixed-slug-and-database
   (testing "a self-hosted install is one garden under SEPAL_DATA_HOME"
     (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
-                                             "COOKIE_SECRET" "1234567890123456"})]
+                                             "SEPAL_SECRET" "1234567890123456"})]
       (is (= "self-hosted" (:slug instance)))
       (is (= "/tmp/sepal-selfhosted/sepal.db" (:db-path instance)))
       (is (= "/tmp/sepal-selfhosted/backups" (:backup-dir instance)))
@@ -65,7 +65,7 @@
 (deftest test-env-opts-honours-host-cache-size-and-email-vars
   (testing "env vars system.edn used to read are not silently dropped by env-opts"
     (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
-                                             "COOKIE_SECRET" "1234567890123456"
+                                             "SEPAL_SECRET" "1234567890123456"
                                              "HOST" "127.0.0.1"
                                              "IMAGE_CACHE_SIZE_MB" "250"
                                              "FORGOT_PASSWORD_EMAIL_FROM" "reset@example.org"
@@ -81,7 +81,7 @@
 
   (testing "absent, none of the four are present at all (optional keys, not nil)"
     (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
-                                             "COOKIE_SECRET" "1234567890123456"})]
+                                             "SEPAL_SECRET" "1234567890123456"})]
       (doseq [k [:jetty-host :media-cache-size-mb :forgot-password-email-from
                  :forgot-password-email-subject :invitation-email-from
                  :invitation-email-subject]]
@@ -93,7 +93,7 @@
           port (with-open [socket (ServerSocket. 0)]
                  (.getLocalPort socket))
           {:keys [process instance]} (main/env-opts {"SEPAL_DATA_HOME" (str dir)
-                                                     "COOKIE_SECRET" "1234567890123456"
+                                                     "SEPAL_SECRET" "1234567890123456"
                                                      "APP_DOMAIN" "sepal.example.org"
                                                      "EXTENSIONS_LIBRARY_PATH" (System/getenv "EXTENSIONS_LIBRARY_PATH")
                                                      "PORT" (str port)})]

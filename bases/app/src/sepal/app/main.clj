@@ -11,22 +11,23 @@
 (def ^:private self-hosted-slug "self-hosted")
 
 (defn- master-secret
-  "COOKIE_SECRET, with no default. The session cookie key and the token secret
+  "SEPAL_SECRET, with no default. The session cookie key and the token secret
   are both derived from it, so any default published here would be one session
   key and one password-reset secret shared by every install that forgot to set
   it. The length rule lives in sepal.app.instance/ProcessOpts, which rejects a
   short value at start-process!."
   [env]
-  (or (not-empty (get env "COOKIE_SECRET"))
-      (throw (ex-info (str "COOKIE_SECRET is not set. Sepal derives the session cookie key "
+  (or (not-empty (get env "SEPAL_SECRET"))
+      (throw (ex-info (str "SEPAL_SECRET is not set. Sepal derives the session cookie key "
                            "and the password reset token secret from it, so it has no default. "
                            "Set it to at least 16 random characters, for example "
-                           "COOKIE_SECRET=$(openssl rand -hex 16).")
-                      {:reason :missing-cookie-secret}))))
+                           "SEPAL_SECRET=$(openssl rand -hex 16). "
+                           "This was called COOKIE_SECRET before it came to cover both secrets.")
+                      {:reason :missing-sepal-secret}))))
 
 (defn env-opts
   "Build process and instance opts from an environment map. Throws when
-  COOKIE_SECRET is missing."
+  SEPAL_SECRET is missing."
   [env]
   (let [home (config.i/data-home env)
         jetty-port (some-> (get env "PORT") parse-long)

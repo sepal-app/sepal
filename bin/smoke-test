@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Smoke-test the Docker image the way an operator runs it: build it, start a
-# container against an empty volume with only COOKIE_SECRET set, and confirm
+# container against an empty volume with only SEPAL_SECRET set, and confirm
 # it provisions its database, migrates, loads SpatiaLite and serves real
 # HTTP -- all from one variable.
 #
@@ -18,7 +18,7 @@ cd "$PROJECT_ROOT"
 IMAGE_TAG="sepal-smoke-test"
 CONTAINER_NAME="sepal-smoke-test-$$"
 HOST_PORT=38765
-COOKIE_SECRET="0123456789abcdef"
+SEPAL_SECRET="0123456789abcdef"
 
 if ! docker info > /dev/null 2>&1; then
     echo "Error: no Docker daemon is reachable. Start Docker and try again." >&2
@@ -34,10 +34,10 @@ echo "Building image from projects/app/Dockerfile..."
 docker build -f projects/app/Dockerfile -t "$IMAGE_TAG" .
 
 echo ""
-echo "Starting container with only COOKIE_SECRET set..."
+echo "Starting container with only SEPAL_SECRET set..."
 docker run -d --name "$CONTAINER_NAME" \
     -p "$HOST_PORT:3000" \
-    -e COOKIE_SECRET="$COOKIE_SECRET" \
+    -e SEPAL_SECRET="$SEPAL_SECRET" \
     "$IMAGE_TAG" > /dev/null
 
 echo "Waiting for the app to answer on /ok..."
