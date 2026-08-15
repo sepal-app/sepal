@@ -326,7 +326,16 @@
       (fs/create-dirs media-cache-dir)
       (let [config (instance-config process opts)
             _ (ig/load-namespaces config)
-            system (ig/init config)]
+            system (try
+                     (ig/init config)
+                     (catch clojure.lang.ExceptionInfo e
+                       ;; A later key (e.g. the backup job, which queries the
+                       ;; database) can throw after earlier keys already built
+                       ;; a connection pool. ig/init does not halt what it
+                       ;; built, so this must, or the pool leaks.
+                       (when-let [partial-system (:system (ex-data e))]
+                         (ig/halt! partial-system))
+                       (throw e)))]
         (try
           (probe! system)
           {:slug slug

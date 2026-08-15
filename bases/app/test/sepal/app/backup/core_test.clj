@@ -32,7 +32,7 @@
   (testing "get-config returns nil frequency when not set"
     (let [config (backup/get-config *db* (str (fs/path (fs/create-temp-dir) "backups")))]
       (is (nil? (:frequency config)))
-      (is (string? (:path config))) ; path comes from env/default, always present
+      (is (string? (:path config))) ; :path is exactly the backup-dir passed in
       (is (nil? (:last-run-at config)))))
 
   (testing "set-config! and get-config round-trip"

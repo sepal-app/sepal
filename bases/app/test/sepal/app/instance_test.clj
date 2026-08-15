@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing]]
             [next.jdbc :as jdbc]
             [peridot.core :as peri]
+            [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
             [sepal.database.interface :as db.i]
             [sepal.media-transform.interface :as media-transform.i]
@@ -301,6 +302,33 @@
       (instance/provision! {:db-path (:db-path opts)})
       (testing "a stopped instance can be started again"
         (instance/stop! (instance/start! process opts))
+        (let [restarted (instance/start! process opts)]
+          (is (fn? (instance/handler restarted)))
+          (instance/stop! restarted)))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-a-failed-init-halts-the-partial-system-and-releases-the-claim
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        opts (garden-opts dir "leaky")]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      (testing "a late init-key throwing halts what was already built and releases the claim"
+        (let [thrown (with-redefs [backup/register-backup-job! (fn [& _] (throw (ex-info "boom" {})))]
+                       (try
+                         (instance/start! process opts)
+                         nil
+                         (catch clojure.lang.ExceptionInfo e e)))]
+          (is (some? thrown) "start! should have thrown")
+          (testing "the pool from the partially built system is dead, not leaked"
+            (let [partial-system (:system (ex-data thrown))
+                  db (get-in partial-system [:sepal.app.server/zodiac :zodiac.ext.sql/db])]
+              (is (some? db) "the partially built system should still include the connection pool")
+              (is (thrown? Exception (jdbc/execute-one! db ["select 1"]))
+                  "a halted pool must refuse queries")))))
+      (testing "the slug and database were released, so starting again succeeds"
         (let [restarted (instance/start! process opts)]
           (is (fn? (instance/handler restarted)))
           (instance/stop! restarted)))

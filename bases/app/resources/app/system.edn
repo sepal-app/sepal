@@ -66,10 +66,11 @@
                     :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
                     :media-key-prefix #or [#env MEDIA_KEY_PREFIX "media/"]
                     :media-transform-service #ig/ref :sepal.media-transform.interface/service
+                    ;; Must resolve to the same directory as :sepal.app.backup/job's :backup-dir below.
                     :backup-dir #or [#env BACKUP_PATH
-                                    #join [#or [#env SEPAL_DATA_HOME
-                                                #join [#env HOME "/.local/share/Sepal"]]
-                                           "/backups"]]}
+                                     #join [#or [#env SEPAL_DATA_HOME
+                                                 #join [#env HOME "/.local/share/Sepal"]]
+                                            "/backups"]]}
   :reload-per-request? #profile {:local true
                                  :default false}
   :cookie-secret #env COOKIE_SECRET
