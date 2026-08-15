@@ -1,7 +1,6 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
             [clojure.string :as str]
-            [clojure.tools.logging :as log]
             [integrant.core :as ig]
             [lambdaisland.uri :as uri]
             [reitit.ring]
@@ -82,42 +81,21 @@
                   (format "SELECT load_extension('%s')" ext-path))))
          (str/join "; "))))
 
-(defn- get-data-home
-  "Get Sepal data home directory.
-   Priority: SEPAL_DATA_HOME > XDG_DATA_HOME/Sepal > platform default"
-  []
-  (or (System/getenv "SEPAL_DATA_HOME")
-      (when-let [xdg (System/getenv "XDG_DATA_HOME")]
-        (str (fs/path xdg "Sepal")))
-      (if (= "Mac OS X" (System/getProperty "os.name"))
-        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
-        (str (fs/path (fs/xdg-data-home) "Sepal")))))
-
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions extension-library-path context-key
-                                               schema-dump-file]
-                                        :or {schema-dump-file "db/schema.sql"}}]
-  (let [db-path (or database-path
-                    (str (fs/path (get-data-home) "sepal.db")))
-        parent-dir (fs/parent db-path)
-        jdbc-url (build-jdbc-url db-path pragmas)
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions
+                                               extension-library-path context-key]}]
+  (when-not database-path
+    (throw (ex-info "::zodiac-sql requires a :database-path" {:reason :missing-database-path})))
+  (let [parent-dir (fs/parent database-path)
+        jdbc-url (build-jdbc-url database-path pragmas)
         connection-init-sql (build-connection-init-sql extensions extension-library-path)
         spec (cond-> (assoc spec :jdbcUrl jdbc-url)
                connection-init-sql (assoc :connectionInitSql connection-init-sql))]
     (when (and parent-dir (not (fs/exists? parent-dir)))
       (fs/create-dirs parent-dir))
     (db.i/init)
-    ;; Initialize the connection pool
-    (let [sql-ext (z.sql/init {:context-key context-key
-                               :jdbc-options db.i/jdbc-options
-                               :spec spec})
-          db (::z.sql/db sql-ext)]
-      ;; Check if schema needs to be initialized
-      (when (and (fs/exists? schema-dump-file)
-                 (not (db.i/schema-initialized? db)))
-        (log/info "Initializing database schema from" schema-dump-file)
-        (db.i/load-schema! {:database-path db-path
-                            :schema-dump-file schema-dump-file}))
-      sql-ext)))
+    (z.sql/init {:context-key context-key
+                 :jdbc-options db.i/jdbc-options
+                 :spec spec})))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))

@@ -1,7 +1,6 @@
 (ns sepal.app.backup.core
   "Core backup functionality for Sepal database."
-  (:require [babashka.fs :as fs]
-            [clojure.data.json :as json]
+  (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.tools.logging :as log]
@@ -27,23 +26,6 @@
 (def ^:private setting-keys
   {:frequency "backup.frequency"
    :last-run-at "backup.last_run_at"})
-
-(defn- get-data-home
-  "Get Sepal data home directory."
-  []
-  (or (System/getenv "SEPAL_DATA_HOME")
-      (when-let [xdg (System/getenv "XDG_DATA_HOME")]
-        (str (fs/path xdg "Sepal")))
-      (if (= "Mac OS X" (System/getProperty "os.name"))
-        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
-        (str (fs/path (fs/xdg-data-home) "Sepal")))))
-
-(defn default-backup-dir
-  "The backup directory for a self-hosted install. Hosted instances are given
-  their own directory through instance opts and never call this."
-  []
-  (or (System/getenv "BACKUP_PATH")
-      (str (fs/path (get-data-home) "backups"))))
 
 (defn get-config
   "Get backup configuration from settings, for the given backup directory."

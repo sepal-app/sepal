@@ -20,7 +20,9 @@
   :max-cache-size-mb #long #or [#env IMAGE_CACHE_SIZE_MB 500]}
 
  :sepal.app.server/zodiac-sql
- {;; database-path is optional - defaults to $SEPAL_DATA_HOME/sepal.db
+ {:database-path #join [#or [#env SEPAL_DATA_HOME
+                             #join [#env HOME "/.local/share/Sepal"]]
+                        "/sepal.db"]
   ;; SQLite pragmas are set via JDBC URL query parameters
   :pragmas {:journal_mode "WAL"
             :foreign_keys "ON"
@@ -28,8 +30,6 @@
   ;; SQLite extensions to load on each connection
   :extensions ["mod_spatialite"]
   :extension-library-path #env EXTENSIONS_LIBRARY_PATH
-  ;; Schema file used to initialize new databases
-  :schema-dump-file "db/schema.sql"
   :context-key :db}
 
  :sepal.app.server/zodiac-assets

@@ -43,11 +43,6 @@
     ;; Clean up
     (settings.i/set-values! *db* {"backup.frequency" nil})))
 
-(deftest test-default-backup-dir
-  (testing "returns a usable path for self-hosted installs"
-    (is (string? (backup/default-backup-dir)))
-    (is (pos? (count (backup/default-backup-dir))))))
-
 (deftest test-backup-dir-is-explicit
   (testing "two directories stay separate, with no environment involved"
     (let [dir (fs/create-temp-dir {:prefix "sepal-backups"})

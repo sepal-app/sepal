@@ -66,7 +66,14 @@
    [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
-   [:media-cache-size-mb {:optional true} pos-int?]])
+   [:media-cache-size-mb {:optional true} pos-int?]
+   [:start-server? {:optional true} :boolean]
+   [:jetty-host {:optional true} [:maybe :string]]
+   [:jetty-port {:optional true} pos-int?]
+   [:forgot-password-email-from {:optional true} [:string {:min 1}]]
+   [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
+   [:invitation-email-from {:optional true} [:string {:min 1}]]
+   [:invitation-email-subject {:optional true} [:string {:min 1}]]])
 
 (defn- validate!
   [schema opts what]
@@ -216,7 +223,10 @@
    :enable_load_extension "true"})
 
 (defn- instance-config
-  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir]}]
+  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir
+                   start-server? jetty-host jetty-port
+                   forgot-password-email-from forgot-password-email-subject
+                   invitation-email-from invitation-email-subject]}]
   {:sepal.token.interface/service
    {:secret (token-secret (:master-secret process) slug)}
 
@@ -228,8 +238,8 @@
     :max-cache-size-mb (or media-cache-size-mb 500)}
 
    :sepal.app.server/zodiac-sql
-   ;; No :schema-dump-file: it drives a dead guard in server.clj that would
-   ;; re-run load-schema! on every start. provision! owns schema loading.
+   ;; No :schema-dump-file: ::zodiac-sql no longer loads a schema on its own.
+   ;; provision! owns schema loading.
    {:database-path db-path
     :pragmas sqlite-pragmas
     :extensions ["mod_spatialite"]
@@ -248,7 +258,8 @@
    {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
                  (ig/ref :sepal.app.server/zodiac-assets)]
     :cookie-secret (cookie-key (:master-secret process) slug)
-    :start-server? false
+    :start-server? (boolean start-server?)
+    :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}
     :request-context {:app-domain app-domain
                       :mail (:mail process)
                       :token-service (ig/ref :sepal.token.interface/service)
@@ -258,10 +269,10 @@
                       :media-upload-bucket (:media-upload-bucket process)
                       :media-key-prefix media-key-prefix
                       :backup-dir backup-dir
-                      :forgot-password-email-from "support@sepal.app"
-                      :forgot-password-email-subject "Sepal - Reset Password"
-                      :invitation-email-from "noreply@sepal.app"
-                      :invitation-email-subject "You've been invited to Sepal"}}
+                      :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
+                      :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
+                      :invitation-email-from (or invitation-email-from "noreply@sepal.app")
+                      :invitation-email-subject (or invitation-email-subject "You've been invited to Sepal")}}
 
    :sepal.scheduler.interface/scheduler {}
 
