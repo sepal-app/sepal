@@ -2,11 +2,11 @@
  :deps {org.clojure/data.csv {:mvn/version "1.1.0"}
         babashka/fs {:mvn/version "0.5.30"}
         hato/hato {:mvn/version "1.0.0"}
-        com.github.brettatoms/zodiac {:mvn/version "0.9.98"}
-        com.github.brettatoms/zodiac-assets {:mvn/version "0.6.48"}
-        com.github.brettatoms/zodiac-hot-reload {:mvn/version "0.1.2"}
+        com.github.brettatoms/zodiac {:mvn/version "1.0.119"}
+        com.github.brettatoms/zodiac-assets {:mvn/version "0.6.55"}
+        com.github.brettatoms/zodiac-hot-reload {:mvn/version "0.1.5"}
         com.github.brettatoms/zodiac-headers {:mvn/version "0.1.2"}
-        com.github.brettatoms/zodiac-sql {:mvn/version "0.2.22"}
+        com.github.brettatoms/zodiac-sql {:mvn/version "0.3.27"}
         com.taoensso/nippy {:mvn/version "3.6.0"}
         lambdaisland/uri {:mvn/version "1.19.155"}
         metosin/ring-http-response {:mvn/version "0.9.4"}
