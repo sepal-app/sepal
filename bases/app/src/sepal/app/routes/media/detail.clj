@@ -1,9 +1,11 @@
 (ns sepal.app.routes.media.detail
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.tools.logging :as log]
+            [lambdaisland.uri :as uri]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [ring.util.codec :as codec]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
+            [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.routes.media.keys :as media.keys]
             [sepal.app.routes.media.routes :as media.routes]
@@ -99,19 +101,21 @@
 
     (case request-method
       :delete
-      (let [_ (when-not (media.keys/own-key? context resource)
-                (throw (ex-info "Refusing to delete media outside this instance's prefix"
-                                {:reason :foreign-media-key
-                                 :s3-key (:media/s3-key resource)})))
-            _ (media.i/delete! db (:media/id resource))
-            _ (try
-                (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))
-                (catch Exception ex
-                  (error.i/ex->error ex)))]
-        ;; TODO: handle errors
-        (-> {:status 204
-             :headers {"HX-Redirect" (z/url-for media.routes/index)}}
-            (flash/add-message "Deleted media.")))
+      (if-not (media.keys/own-key? context resource)
+        ;; Not this instance's object, so as far as this garden is concerned
+        ;; there is no such media. Same answer the transform route gives.
+        (do (log/warn "Refusing to delete media outside this instance's prefix"
+                      {:s3-key (:media/s3-key resource)})
+            (http/not-found))
+        (let [_ (media.i/delete! db (:media/id resource))
+              _ (try
+                  (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))
+                  (catch Exception ex
+                    (error.i/ex->error ex)))]
+          ;; TODO: handle errors
+          (-> {:status 204
+               :headers {"HX-Redirect" (z/url-for media.routes/index)}}
+              (flash/add-message "Deleted media."))))
       (render :dl-url dl-url
               :media resource
               :preview-url preview-url

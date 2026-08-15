@@ -19,8 +19,23 @@
         (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
         (str (fs/path (fs/xdg-data-home) "Sepal")))))
 
+(defn- master-secret
+  "COOKIE_SECRET, with no default. The session cookie key and the token secret
+  are both derived from it, so any default published here would be one session
+  key and one password-reset secret shared by every install that forgot to set
+  it. The length rule lives in sepal.app.instance/ProcessOpts, which rejects a
+  short value at start-process!."
+  [env]
+  (or (not-empty (get env "COOKIE_SECRET"))
+      (throw (ex-info (str "COOKIE_SECRET is not set. Sepal derives the session cookie key "
+                           "and the password reset token secret from it, so it has no default. "
+                           "Set it to at least 16 random characters, for example "
+                           "COOKIE_SECRET=$(openssl rand -hex 16).")
+                      {:reason :missing-cookie-secret}))))
+
 (defn env-opts
-  "Build process and instance opts from an environment map."
+  "Build process and instance opts from an environment map. Throws when
+  COOKIE_SECRET is missing."
   [env]
   (let [home (data-home env)
         jetty-port (some-> (get env "PORT") parse-long)
@@ -30,8 +45,7 @@
         forgot-password-email-subject (get env "FORGOT_PASSWORD_EMAIL_SUBJECT")
         invitation-email-from (get env "INVITATION_EMAIL_FROM")
         invitation-email-subject (get env "INVITATION_EMAIL_SUBJECT")]
-    {:process (cond-> {:master-secret (or (get env "COOKIE_SECRET")
-                                          "sepal-self-hosted-default-secret")
+    {:process (cond-> {:master-secret (master-secret env)
                        :log-level (get env "LOG_LEVEL" "DEBUG")
                        :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")}
                 (get env "SMTP_HOST")

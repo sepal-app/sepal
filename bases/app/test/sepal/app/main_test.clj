@@ -18,9 +18,30 @@
       (is (m/validate instance/InstanceOpts instance)
           (str "invalid instance opts: " (pr-str instance))))))
 
+(deftest test-a-missing-cookie-secret-is-refused
+  (testing "an unset COOKIE_SECRET fails loudly rather than defaulting to a
+            master secret that is published in this repository"
+    (let [thrown (try
+                   (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"})
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (some? thrown) "env-opts should have thrown")
+      (is (= :missing-cookie-secret (:reason (ex-data thrown))))
+      (is (re-find #"COOKIE_SECRET" (ex-message thrown))
+          "the message must name the variable the operator has to set")))
+
+  (testing "an empty COOKIE_SECRET is the same as an unset one"
+    (let [thrown (try
+                   (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
+                                   "COOKIE_SECRET" ""})
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (= :missing-cookie-secret (:reason (ex-data thrown)))))))
+
 (deftest test-self-hosted-uses-one-fixed-slug-and-database
   (testing "a self-hosted install is one garden under SEPAL_DATA_HOME"
-    (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"})]
+    (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
+                                             "COOKIE_SECRET" "1234567890123456"})]
       (is (= "self-hosted" (:slug instance)))
       (is (= "/tmp/sepal-selfhosted/sepal.db" (:db-path instance)))
       (is (= "/tmp/sepal-selfhosted/backups" (:backup-dir instance)))
@@ -29,6 +50,7 @@
 (deftest test-env-opts-honours-host-cache-size-and-email-vars
   (testing "env vars system.edn used to read are not silently dropped by env-opts"
     (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
+                                             "COOKIE_SECRET" "1234567890123456"
                                              "HOST" "127.0.0.1"
                                              "IMAGE_CACHE_SIZE_MB" "250"
                                              "FORGOT_PASSWORD_EMAIL_FROM" "reset@example.org"
@@ -43,7 +65,8 @@
       (is (= "You're in" (:invitation-email-subject instance)))))
 
   (testing "absent, none of the four are present at all (optional keys, not nil)"
-    (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"})]
+    (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
+                                             "COOKIE_SECRET" "1234567890123456"})]
       (doseq [k [:jetty-host :media-cache-size-mb :forgot-password-email-from
                  :forgot-password-email-subject :invitation-email-from
                  :invitation-email-subject]]

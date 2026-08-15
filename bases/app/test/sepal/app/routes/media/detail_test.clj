@@ -28,7 +28,7 @@
             {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/")
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
-        (is (= 500 (:status response))
-            "a foreign key must be refused rather than deleted")
+        (is (= 404 (:status response))
+            "media outside this instance's prefix is no media of ours, not a server error")
         (is (some? (media.i/get-by-id *db* (:media/id media)))
             "the media row must still exist after a refused delete")))))
