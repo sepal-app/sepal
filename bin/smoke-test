@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#
+# Smoke-test the Docker image the way an operator runs it: build it, start a
+# container against an empty volume with only COOKIE_SECRET set, and confirm
+# it provisions its database, migrates, loads SpatiaLite and serves real
+# HTTP -- all from one variable.
+#
+# Usage: bin/smoke-test
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+IMAGE_TAG="sepal-smoke-test"
+CONTAINER_NAME="sepal-smoke-test-$$"
+HOST_PORT=38765
+COOKIE_SECRET="0123456789abcdef"
+
+if ! docker info > /dev/null 2>&1; then
+    echo "Error: no Docker daemon is reachable. Start Docker and try again." >&2
+    exit 1
+fi
+
+cleanup() {
+    docker rm -f "$CONTAINER_NAME" > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+echo "Building image from projects/app/Dockerfile..."
+docker build -f projects/app/Dockerfile -t "$IMAGE_TAG" .
+
+echo ""
+echo "Starting container with only COOKIE_SECRET set..."
+docker run -d --name "$CONTAINER_NAME" \
+    -p "$HOST_PORT:3000" \
+    -e COOKIE_SECRET="$COOKIE_SECRET" \
+    "$IMAGE_TAG" > /dev/null
+
+echo "Waiting for the app to answer on /ok..."
+ready=false
+for _ in $(seq 1 60); do
+    if curl -sf -o /dev/null "http://localhost:$HOST_PORT/ok"; then
+        ready=true
+        break
+    fi
+    sleep 1
+done
+
+if [[ "$ready" != "true" ]]; then
+    echo "Error: the app did not answer within 60 seconds" >&2
+    echo "--- container logs ---" >&2
+    docker logs "$CONTAINER_NAME" >&2
+    exit 1
+fi
+
+status=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$HOST_PORT/ok")
+if [[ "$status" != "204" ]]; then
+    echo "Error: /ok returned $status, expected 204" >&2
+    docker logs "$CONTAINER_NAME" >&2
+    exit 1
+fi
+echo "/ok returned 204"
+
+echo ""
+echo "Confirming the database was provisioned at the resolved data home..."
+db_path=$(docker exec "$CONTAINER_NAME" bash -c 'source bin/lib/env.sh && echo "$(get_sepal_data_home)/sepal.db"')
+if ! docker exec "$CONTAINER_NAME" test -f "$db_path"; then
+    echo "Error: no database found at $db_path inside the container" >&2
+    exit 1
+fi
+echo "Database provisioned at $db_path"
+
+echo ""
+echo "Smoke test passed."

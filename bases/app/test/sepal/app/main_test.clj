@@ -4,7 +4,8 @@
             [hato.client :as http]
             [malli.core :as m]
             [sepal.app.instance :as instance]
-            [sepal.app.main :as main])
+            [sepal.app.main :as main]
+            [sepal.config.interface :as config.i])
   (:import [java.net ServerSocket]))
 
 (deftest test-env-opts-satisfy-the-instance-schemas
@@ -17,6 +18,20 @@
           (str "invalid process opts: " (pr-str process)))
       (is (m/validate instance/InstanceOpts instance)
           (str "invalid instance opts: " (pr-str instance))))))
+
+(deftest test-one-variable-install-satisfies-both-schemas
+  (testing "COOKIE_SECRET alone is enough for a self-hosted install: every
+            other opt is derived, so the next required opt could otherwise
+            silently break the one-variable install"
+    (let [{:keys [process instance]} (main/env-opts {"COOKIE_SECRET" "1234567890123456"})
+          home (config.i/data-home {})]
+      (is (m/validate instance/ProcessOpts process)
+          (str "invalid process opts: " (pr-str process)))
+      (is (m/validate instance/InstanceOpts instance)
+          (str "invalid instance opts: " (pr-str instance)))
+      (is (= (str (fs/path home "sepal.db")) (:db-path instance)))
+      (is (= (str (fs/path home "cache")) (:media-cache-dir instance)))
+      (is (= (str (fs/path home "backups")) (:backup-dir instance))))))
 
 (deftest test-a-missing-cookie-secret-is-refused
   (testing "an unset COOKIE_SECRET fails loudly rather than defaulting to a

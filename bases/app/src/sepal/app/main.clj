@@ -4,20 +4,11 @@
   This is the only namespace in Sepal that reads environment variables. The
   library takes opts."
   (:require [babashka.fs :as fs]
-            [sepal.app.instance :as instance])
+            [sepal.app.instance :as instance]
+            [sepal.config.interface :as config.i])
   (:gen-class))
 
 (def ^:private self-hosted-slug "self-hosted")
-
-(defn- data-home
-  "Priority: SEPAL_DATA_HOME > XDG_DATA_HOME/Sepal > platform default."
-  [env]
-  (or (get env "SEPAL_DATA_HOME")
-      (when-let [xdg (get env "XDG_DATA_HOME")]
-        (str (fs/path xdg "Sepal")))
-      (if (= "Mac OS X" (System/getProperty "os.name"))
-        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
-        (str (fs/path (fs/xdg-data-home) "Sepal")))))
 
 (defn- master-secret
   "COOKIE_SECRET, with no default. The session cookie key and the token secret
@@ -37,7 +28,7 @@
   "Build process and instance opts from an environment map. Throws when
   COOKIE_SECRET is missing."
   [env]
-  (let [home (data-home env)
+  (let [home (config.i/data-home env)
         jetty-port (some-> (get env "PORT") parse-long)
         jetty-host (get env "HOST")
         media-cache-size-mb (some-> (get env "IMAGE_CACHE_SIZE_MB") parse-long)

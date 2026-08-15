@@ -14,15 +14,11 @@
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
  :sepal.media-transform.interface/service
- {:cache-dir #join [#or [#env SEPAL_DATA_HOME
-                         #join [#env HOME "/.local/share/Sepal"]]
-                    "/cache"]
+ {:cache-dir #data-home "cache"
   :max-cache-size-mb #long #or [#env IMAGE_CACHE_SIZE_MB 500]}
 
  :sepal.app.server/zodiac-sql
- {:database-path #join [#or [#env SEPAL_DATA_HOME
-                             #join [#env HOME "/.local/share/Sepal"]]
-                        "/sepal.db"]
+ {:database-path #data-home "sepal.db"
   ;; SQLite pragmas are set via JDBC URL query parameters
   :pragmas {:journal_mode "WAL"
             :foreign_keys "ON"
@@ -68,9 +64,7 @@
                     :media-transform-service #ig/ref :sepal.media-transform.interface/service
                     ;; Must resolve to the same directory as :sepal.app.backup/job's :backup-dir below.
                     :backup-dir #or [#env BACKUP_PATH
-                                     #join [#or [#env SEPAL_DATA_HOME
-                                                 #join [#env HOME "/.local/share/Sepal"]]
-                                            "/backups"]]}
+                                     #data-home "backups"]}
   :reload-per-request? #profile {:local true
                                  :default false}
   :cookie-secret #env COOKIE_SECRET
@@ -100,6 +94,4 @@
   :mail #ig/ref :sepal.mail.interface/client
   :app-domain #env APP_DOMAIN
   :backup-dir #or [#env BACKUP_PATH
-                   #join [#or [#env SEPAL_DATA_HOME
-                               #join [#env HOME "/.local/share/Sepal"]]
-                          "/backups"]]}}
+                   #data-home "backups"]}}
