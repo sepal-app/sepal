@@ -10,7 +10,7 @@ This is a **Polylith** monorepo with the following structure:
 - `components/` - Domain components with public interfaces
 - `development/` - REPL development entry point
 - `projects/` - Deployable artifacts
-- `db/migrations/` - SQL migrations managed by migrate.sh
+- `components/database/resources/database/` - Schema and SQL migrations, read from the classpath
 
 ### Bases vs Components
 
@@ -183,8 +183,17 @@ instead of breaking when it moves. Don't set those in `.env.local`.
 Copy `.env.local.example` to `.env.local` for everything else:
 - `WFO_DATABASE_PATH` - World Flora Online database
 - `COOKIE_SECRET` - Session encryption, exactly 16 characters
-- `TOKEN_SECRET` - Password reset and invitation tokens
+- `TOKEN_SECRET` - Password reset and invitation tokens. Read only by
+  `system.edn`, so it applies to the REPL and not to `-main`
 - `MIGRATE_SH` - Absolute path to the sqlite-migrate script
+
+`COOKIE_SECRET` means two different things depending on how Sepal is started.
+`system.edn` uses it directly as zodiac's cookie key, which is why it must be
+exactly 16 characters. `sepal.app.main/-main` passes it to the instance API as
+the *master secret*, and the cookie key and token secret are HKDF-derived from
+it per instance — so `-main` ignores `TOKEN_SECRET` entirely. One consequence
+worth knowing before you upgrade a running install: the derived cookie key is
+not the old literal one, so every session is invalidated once.
 
 **Don't quote values in `.env.local`, and don't use `$HOME` or `${PWD}`.**
 devenv's dotenv reader is not a shell: it keeps quotes as part of the value and
@@ -314,8 +323,10 @@ Use Chassis for HTML generation:
 
 - **SQLite** with JSON columns and FTS5 for full-text search
 - **SpatiaLite** extension for geo-coordinates
-- Migrations in `db/migrations/` (plain SQL files)
-- Schema dumped to `db/schema.sql`
+- Migrations in `components/database/resources/database/migrations/` (plain SQL files)
+- Schema in `components/database/resources/database/schema.sql`
+- Both are classpath resources, so a jar carries them; `sepal.database.migrate`
+  enumerates the migrations directory from the classpath rather than from an index file
 
 Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `collection`, `settings`
 
