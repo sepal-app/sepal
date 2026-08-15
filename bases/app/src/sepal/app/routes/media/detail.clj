@@ -5,6 +5,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
+            [sepal.app.routes.media.keys :as media.keys]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
@@ -98,7 +99,11 @@
 
     (case request-method
       :delete
-      (let [_ (media.i/delete! db (:media/id resource))
+      (let [_ (when-not (media.keys/own-key? context resource)
+                (throw (ex-info "Refusing to delete media outside this instance's prefix"
+                                {:reason :foreign-media-key
+                                 :s3-key (:media/s3-key resource)})))
+            _ (media.i/delete! db (:media/id resource))
             _ (try
                 (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))
                 (catch Exception ex

@@ -61,7 +61,9 @@
                                                  :token-service (ig/ref ::token.i/service)
                                                  :app-domain "test.sepal.app"
                                                  :mail (ig/ref ::mock-mail-client)
-                                                 :backup-dir backup-dir}
+                                                 :backup-dir backup-dir
+                                                 :media-key-prefix "media/"
+                                                 :media-upload-bucket "sepal-test-media"}
                                :cookie-secret "1234567890123456"
                                :start-server? false}
      :sepal.database.interface/schema {:db-path db-path}

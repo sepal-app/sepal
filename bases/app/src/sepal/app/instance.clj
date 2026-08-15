@@ -30,6 +30,12 @@
   ;; and a hostname label, so it must be safe in all three.
   [:re #"^[a-z0-9][a-z0-9-]{0,62}$"])
 
+(def ^:private MediaKeyPrefix
+  ;; Must end in a slash: sepal.app.routes.media.keys/own-key? tells instances
+  ;; apart with str/starts-with? on the raw key, so a slashless prefix like
+  ;; "brooklyn" would also accept a sibling instance's "brooklynheights/...".
+  [:re #"^.+/$"])
+
 (def ProcessOpts
   [:map {:closed true}
    [:master-secret [:string {:min 16}]]
@@ -57,7 +63,7 @@
    [:app-domain [:string {:min 1}]]
    ;; Required, not derived: every tenant-bearing path is the caller's explicit
    ;; decision, so a missing one fails here instead of colliding at runtime.
-   [:media-key-prefix [:string {:min 1}]]
+   [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
    [:media-cache-size-mb {:optional true} pos-int?]])

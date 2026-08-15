@@ -98,7 +98,19 @@
                                            "instance opts")
                      nil
                      (catch clojure.lang.ExceptionInfo e e))]
-        (is (some? thrown) (str "slug " (pr-str slug) " must be rejected"))))))
+        (is (some? thrown) (str "slug " (pr-str slug) " must be rejected")))))
+
+  (testing "a media-key-prefix without a trailing slash is rejected"
+    ;; own-key? refuses a key with str/starts-with? on the raw prefix, so a
+    ;; slashless prefix like "brooklyn" would also accept "brooklynheights/...".
+    (let [thrown (try
+                   (#'instance/validate! instance/InstanceOpts
+                                         (assoc valid-instance-opts :media-key-prefix "brooklyn")
+                                         "instance opts")
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (some? thrown) "a prefix without a trailing slash must be rejected")
+      (is (= :invalid-opts (:reason (ex-data thrown)))))))
 
 (deftest test-process-opts-are-closed
   (testing "a master secret of at least 16 characters is required"

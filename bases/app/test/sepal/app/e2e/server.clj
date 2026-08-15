@@ -45,7 +45,9 @@
                         :forgot-password-email-subject "Sepal - Reset Password"
                         :reset-password-secret "1234"
                         :app-domain (str "localhost:" port)
-                        :backup-dir backup-dir}
+                        :backup-dir backup-dir
+                        :media-key-prefix "media/"
+                        :media-upload-bucket "sepal-test-media"}
       :cookie-secret "1234567890123456"
       :port port
       :start-server? true}
