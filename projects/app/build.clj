@@ -30,7 +30,7 @@
              :main 'sepal.app.main}))
   (println "Built:" uber-file))
 
-(def lib 'com.github.brettatoms/sepal)
+(def lib 'com.github.sepal-app/sepal)
 (def version (or (System/getenv "SEPAL_VERSION") "0.1.0-SNAPSHOT"))
 (def jar-file (format "target/%s-%s.jar" (name lib) version))
 
