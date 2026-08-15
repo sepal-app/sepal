@@ -245,6 +245,16 @@
               (is (nil? (media-transform.i/get-entry (:cache-ds cache-b) hash))
                   "garden B must not see garden A's cached derivative"))))))))
 
+(deftest test-backup-directory-is-per-instance
+  (with-two-gardens
+    (fn [_process a b]
+      (testing "each instance reports its own backup directory in its context"
+        ;; The directory is visible on the started backup job, which is the
+        ;; component that writes archives.
+        (is (not= (get-in a [:system :sepal.app.backup/job :backup-dir])
+                  (get-in b [:system :sepal.app.backup/job :backup-dir])))
+        (is (some? (get-in a [:system :sepal.app.backup/job :backup-dir])))))))
+
 (defn- garden-opts
   "Complete instance opts for slug rooted under dir."
   [dir slug]

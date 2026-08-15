@@ -1,5 +1,6 @@
 (ns sepal.app.test.system
-  (:require [integrant.core :as ig]
+  (:require [babashka.fs :as fs]
+            [integrant.core :as ig]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.config.interface :as config.i]
             [sepal.mail.interface.protocols :as mail.p]
@@ -28,13 +29,15 @@
 (def ^:dynamic *cookie-store* nil)
 (def ^:dynamic *mail-client* nil)
 (def ^:dynamic *token-service* nil)
+(def ^:dynamic *backup-dir* nil)
 
 (defn load-config [config]
   (config.i/read-config config {:profile :test}))
 
 (defn default-system-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-test" ".db"))
-        extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
+        extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")
+        backup-dir (str (fs/create-temp-dir {:prefix "sepal-test-backups"}))]
     {:sepal.app.server/zodiac-sql {:database-path db-path
                                    :pragmas {:journal_mode "WAL"
                                              :foreign_keys "ON"
@@ -57,14 +60,16 @@
                                                  :invitation-email-subject "You've been invited to Sepal"
                                                  :token-service (ig/ref ::token.i/service)
                                                  :app-domain "test.sepal.app"
-                                                 :mail (ig/ref ::mock-mail-client)}
+                                                 :mail (ig/ref ::mock-mail-client)
+                                                 :backup-dir backup-dir}
                                :cookie-secret "1234567890123456"
                                :start-server? false}
      :sepal.database.interface/schema {:db-path db-path}
      :sepal.malli.interface/init {}}))
 
 (def default-system-fixture
-  (let [system-config (default-system-config)]
+  (let [system-config (default-system-config)
+        backup-dir (get-in system-config [:sepal.app.server/zodiac :request-context :backup-dir])]
     (test.i/create-system-fixture system-config
                                   (fn [system f]
                                     (let [db (-> system :sepal.app.server/zodiac ::z.sql/db)]
@@ -75,6 +80,7 @@
                                                 *app* (-> system :sepal.app.server/zodiac ::z/app)
                                                 *cookie-store* (-> system :sepal.app.server/zodiac ::z/cookie-store)
                                                 *mail-client* (-> system ::mock-mail-client)
-                                                *token-service* (-> system ::token.i/service)]
+                                                *token-service* (-> system ::token.i/service)
+                                                *backup-dir* backup-dir]
                                         (f))))
                                   (keys system-config))))

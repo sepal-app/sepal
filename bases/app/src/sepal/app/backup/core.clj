@@ -38,19 +38,20 @@
         (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
         (str (fs/path (fs/xdg-data-home) "Sepal")))))
 
-(defn get-backup-path
-  "Get the backup directory path from env var or default."
+(defn default-backup-dir
+  "The backup directory for a self-hosted install. Hosted instances are given
+  their own directory through instance opts and never call this."
   []
   (or (System/getenv "BACKUP_PATH")
       (str (fs/path (get-data-home) "backups"))))
 
 (defn get-config
-  "Get backup configuration from settings."
-  [db]
+  "Get backup configuration from settings, for the given backup directory."
+  [db backup-dir]
   (let [settings (settings.i/get-values db "backup")]
     {:frequency (some-> (get settings (:frequency setting-keys))
                         keyword)
-     :path (get-backup-path)
+     :path backup-dir
      :last-run-at (some-> (get settings (:last-run-at setting-keys))
                           Instant/parse)}))
 
@@ -71,8 +72,8 @@
 (defn ensure-backup-dir!
   "Ensure the backup directory exists. Creates it if necessary.
    Returns {:valid? true :path path} or {:valid? false :error \"message\"}."
-  []
-  (let [path (get-backup-path)
+  [backup-dir]
+  (let [path backup-dir
         dir (io/file path)]
     (try
       (when-not (.exists dir)
@@ -327,9 +328,9 @@
 
 (defn- backup-task
   "Create a backup task function for the scheduler."
-  [db mail app-domain]
+  [db mail app-domain backup-dir]
   (fn [_scheduled-time]
-    (let [dir-check (ensure-backup-dir!)]
+    (let [dir-check (ensure-backup-dir! backup-dir)]
       (if-not (:valid? dir-check)
         (do
           (log/error "Backup directory check failed:" (:error dir-check))
@@ -345,10 +346,10 @@
 (defn register-backup-job!
   "Register the backup job with the scheduler based on current config.
    Called on app startup and when config changes.
-   
+
    Frequency of nil means backups are disabled."
-  [scheduler db mail app-domain]
-  (let [config (get-config db)
+  [scheduler db mail app-domain backup-dir]
+  (let [config (get-config db backup-dir)
         frequency (:frequency config)]
     (if frequency
       (do
@@ -357,7 +358,7 @@
                                :backup
                                (map #(.toInstant ^ZonedDateTime %)
                                     (backup-schedule frequency))
-                               (backup-task db mail app-domain)))
+                               (backup-task db mail app-domain backup-dir)))
       (do
         (log/info "Backup not configured, cancelling any existing job")
         (scheduler.i/cancel! scheduler :backup)))))
@@ -365,10 +366,10 @@
 ;; -----------------------------------------------------------------------------
 ;; Integrant lifecycle
 
-(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-domain]}]
+(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-domain backup-dir]}]
   (let [db (get zodiac :zodiac.ext.sql/db)]
-    (register-backup-job! scheduler db mail app-domain)
-    {:scheduler scheduler :db db :mail mail :app-domain app-domain}))
+    (register-backup-job! scheduler db mail app-domain backup-dir)
+    {:scheduler scheduler :db db :mail mail :app-domain app-domain :backup-dir backup-dir}))
 
 (defmethod ig/halt-key! :sepal.app.backup/job [_ {:keys [scheduler]}]
   (scheduler.i/cancel! scheduler :backup))

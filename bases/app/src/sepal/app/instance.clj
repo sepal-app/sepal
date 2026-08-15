@@ -210,7 +210,7 @@
    :enable_load_extension "true"})
 
 (defn- instance-config
-  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb]}]
+  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir]}]
   {:sepal.token.interface/service
    {:secret (token-secret (:master-secret process) slug)}
 
@@ -251,10 +251,20 @@
                       :media-transform-service (ig/ref :sepal.media-transform.interface/service)
                       :media-upload-bucket (:media-upload-bucket process)
                       :media-key-prefix media-key-prefix
+                      :backup-dir backup-dir
                       :forgot-password-email-from "support@sepal.app"
                       :forgot-password-email-subject "Sepal - Reset Password"
                       :invitation-email-from "noreply@sepal.app"
-                      :invitation-email-subject "You've been invited to Sepal"}}})
+                      :invitation-email-subject "You've been invited to Sepal"}}
+
+   :sepal.scheduler.interface/scheduler {}
+
+   :sepal.app.backup/job
+   {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
+    :zodiac (ig/ref :sepal.app.server/zodiac)
+    :mail (:mail process)
+    :app-domain app-domain
+    :backup-dir backup-dir}})
 
 (defn- claim!
   "Record a slug and database as in use by this process, or throw. Held under a

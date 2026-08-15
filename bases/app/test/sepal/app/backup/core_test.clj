@@ -1,5 +1,6 @@
 (ns sepal.app.backup.core-test
-  (:require [clojure.data.json :as json]
+  (:require [babashka.fs :as fs]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
@@ -29,23 +30,36 @@
 
 (deftest test-get-set-config
   (testing "get-config returns nil frequency when not set"
-    (let [config (backup/get-config *db*)]
+    (let [config (backup/get-config *db* (str (fs/path (fs/create-temp-dir) "backups")))]
       (is (nil? (:frequency config)))
       (is (string? (:path config))) ; path comes from env/default, always present
       (is (nil? (:last-run-at config)))))
 
   (testing "set-config! and get-config round-trip"
     (backup/set-config! *db* {:frequency :daily})
-    (let [config (backup/get-config *db*)]
+    (let [config (backup/get-config *db* (str (fs/path (fs/create-temp-dir) "backups")))]
       (is (= :daily (:frequency config))))
 
     ;; Clean up
     (settings.i/set-values! *db* {"backup.frequency" nil})))
 
-(deftest test-get-backup-path
-  (testing "returns a path string"
-    (is (string? (backup/get-backup-path)))
-    (is (pos? (count (backup/get-backup-path))))))
+(deftest test-default-backup-dir
+  (testing "returns a usable path for self-hosted installs"
+    (is (string? (backup/default-backup-dir)))
+    (is (pos? (count (backup/default-backup-dir))))))
+
+(deftest test-backup-dir-is-explicit
+  (testing "two directories stay separate, with no environment involved"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-backups"})
+          a (str (fs/path dir "a"))
+          b (str (fs/path dir "b"))]
+      (try
+        (is (= {:valid? true :path a} (backup/ensure-backup-dir! a)))
+        (is (= {:valid? true :path b} (backup/ensure-backup-dir! b)))
+        (is (= a (:path (backup/get-config *db* a))))
+        (is (= b (:path (backup/get-config *db* b))))
+        (finally
+          (fs/delete-tree dir))))))
 
 (deftest test-ensure-backup-dir
   (testing "creates directory if it doesn't exist"
@@ -55,13 +69,11 @@
         ;; Directory doesn't exist yet
         (is (not (.exists (io/file backup-path))))
 
-        ;; Use with-redefs to test ensure-backup-dir! with our temp path
-        (with-redefs [backup/get-backup-path (constantly backup-path)]
-          (let [result (backup/ensure-backup-dir!)]
-            (is (:valid? result))
-            (is (= backup-path (:path result)))
-            (is (.exists (io/file backup-path)))
-            (is (.isDirectory (io/file backup-path)))))
+        (let [result (backup/ensure-backup-dir! backup-path)]
+          (is (:valid? result))
+          (is (= backup-path (:path result)))
+          (is (.exists (io/file backup-path)))
+          (is (.isDirectory (io/file backup-path))))
         (finally
           ;; Clean up
           (when (.exists (io/file backup-path))
