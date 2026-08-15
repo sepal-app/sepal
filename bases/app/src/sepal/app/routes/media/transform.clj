@@ -1,7 +1,10 @@
 (ns sepal.app.routes.media.transform
   "Route handler for serving transformed/cached images."
   (:require [clojure.java.io :as io]
+            [clojure.tools.logging :as log]
             [ring.util.response :as response]
+            [sepal.app.http-response :as http]
+            [sepal.app.routes.media.keys :as media.keys]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.media-transform.interface :as media-transform.i]
             [zodiac.core :as z])
@@ -81,7 +84,13 @@
         media resource
         s3-key (:media/s3-key media)]
 
-    (if (media-transform.i/image-content-type? (:media/media-type media))
+    (cond
+      (not (media.keys/own-key? context media))
+      (do (log/warn "Refusing media outside this instance's prefix"
+                    {:s3-key (:media/s3-key media)})
+          (http/not-found))
+
+      (media-transform.i/image-content-type? (:media/media-type media))
       ;; Image - transform and serve
       (let [;; Parse params
             width (some-> w parse-long)
@@ -120,5 +129,6 @@
             ;; TODO: Consider streaming directly from S3 for large files
             (serve-file temp-file dl))))
 
+      :else
       ;; Non-image - serve icon placeholder
       (serve-icon (:media/media-type media)))))

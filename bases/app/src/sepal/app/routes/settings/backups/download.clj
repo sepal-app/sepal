@@ -5,9 +5,9 @@
             [zodiac.core :as z]))
 
 (defn handler [{:keys [path-params ::z/context]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db backup-dir]} context
         {:keys [filename]} path-params
-        config (backup/get-config db)
+        config (backup/get-config db backup-dir)
         file (backup/get-backup-file (:path config) filename)]
     (if file
       {:status 200

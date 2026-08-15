@@ -39,19 +39,11 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libsqlite3-mod-spatialite \
         sqlite3 \
-        curl \
         bash && \
     rm -rf /var/lib/apt/lists/* && \
     echo ".load mod_spatialite" > ~/.sqliterc
 
-# Download migrate.sh
-RUN mkdir -p bin && \
-    curl -fsSL -o bin/migrate.sh \
-        https://raw.githubusercontent.com/brettatoms/sqlite-migrate/main/migrate.sh && \
-    chmod +x bin/migrate.sh
-
 # Copy application files
-COPY db ./db
 COPY bin/lib ./bin/lib
 COPY projects/app/run.sh ./run.sh
 

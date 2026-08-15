@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing]]
             [next.jdbc :as jdbc]
             [peridot.core :as peri]
+            [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
             [sepal.database.interface :as db.i]
             [sepal.media-transform.interface :as media-transform.i]
@@ -97,7 +98,19 @@
                                            "instance opts")
                      nil
                      (catch clojure.lang.ExceptionInfo e e))]
-        (is (some? thrown) (str "slug " (pr-str slug) " must be rejected"))))))
+        (is (some? thrown) (str "slug " (pr-str slug) " must be rejected")))))
+
+  (testing "a media-key-prefix without a trailing slash is rejected"
+    ;; own-key? refuses a key with str/starts-with? on the raw prefix, so a
+    ;; slashless prefix like "brooklyn" would also accept "brooklynheights/...".
+    (let [thrown (try
+                   (#'instance/validate! instance/InstanceOpts
+                                         (assoc valid-instance-opts :media-key-prefix "brooklyn")
+                                         "instance opts")
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (some? thrown) "a prefix without a trailing slash must be rejected")
+      (is (= :invalid-opts (:reason (ex-data thrown)))))))
 
 (deftest test-process-opts-are-closed
   (testing "a master secret of at least 16 characters is required"
@@ -245,6 +258,16 @@
               (is (nil? (media-transform.i/get-entry (:cache-ds cache-b) hash))
                   "garden B must not see garden A's cached derivative"))))))))
 
+(deftest test-backup-directory-is-per-instance
+  (with-two-gardens
+    (fn [_process a b]
+      (testing "each instance reports its own backup directory in its context"
+        ;; The directory is visible on the started backup job, which is the
+        ;; component that writes archives.
+        (is (not= (get-in a [:system :sepal.app.backup/job :backup-dir])
+                  (get-in b [:system :sepal.app.backup/job :backup-dir])))
+        (is (some? (get-in a [:system :sepal.app.backup/job :backup-dir])))))))
+
 (defn- garden-opts
   "Complete instance opts for slug rooted under dir."
   [dir slug]
@@ -283,6 +306,57 @@
           (is (some? thrown) "two instances on one slug must be refused")
           (is (= :duplicate-slug (:reason (ex-data thrown)))))))))
 
+(deftest test-start-refuses-a-shared-directory-or-media-key-prefix
+  ;; The control plane derives these three from the slug, so they are distinct
+  ;; today by convention. A shared backup directory would list and serve one
+  ;; garden's archives from another's /settings/backups; a shared media cache
+  ;; would serve one garden's derivatives for the other's row ids; an
+  ;; overlapping key prefix would make own-key? accept the other's objects.
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        a (garden-opts dir "a")
+        b (garden-opts dir "b")
+        refused (fn [opts]
+                  (try
+                    (instance/stop! (instance/start! process opts))
+                    nil
+                    (catch clojure.lang.ExceptionInfo e e)))]
+    (try
+      (instance/provision! {:db-path (:db-path a)})
+      (instance/provision! {:db-path (:db-path b)})
+      (let [started (instance/start! process a)]
+        (try
+          (testing "a second instance on the first's backup directory is refused"
+            (let [thrown (refused (assoc b :backup-dir (:backup-dir a)))]
+              (is (some? thrown) "a shared backup directory must be refused")
+              (is (= :duplicate-backup-dir (:reason (ex-data thrown))))))
+
+          (testing "another spelling of the same backup directory is still refused"
+            (let [thrown (refused (assoc b :backup-dir (str (fs/path dir "b" ".." "a" "backups"))))]
+              (is (some? thrown) "the claim must compare canonical paths")
+              (is (= :duplicate-backup-dir (:reason (ex-data thrown))))))
+
+          (testing "a second instance on the first's media cache directory is refused"
+            (let [thrown (refused (assoc b :media-cache-dir (:media-cache-dir a)))]
+              (is (some? thrown) "a shared media cache directory must be refused")
+              (is (= :duplicate-media-cache-dir (:reason (ex-data thrown))))))
+
+          (testing "a media key prefix that overlaps the first's is refused"
+            (doseq [prefix [(:media-key-prefix a) (str (:media-key-prefix a) "nested/")]]
+              (let [thrown (refused (assoc b :media-key-prefix prefix))]
+                (is (some? thrown) (str "prefix " (pr-str prefix) " must be refused"))
+                (is (= :overlapping-media-key-prefix (:reason (ex-data thrown)))))))
+
+          (testing "a garden whose own values are all distinct still starts"
+            (let [started-b (instance/start! process b)]
+              (is (fn? (instance/handler started-b)))
+              (instance/stop! started-b)))
+          (finally
+            (instance/stop! started))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
 (deftest test-stopping-releases-the-claim
   (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
         process (test-process)
@@ -291,6 +365,55 @@
       (instance/provision! {:db-path (:db-path opts)})
       (testing "a stopped instance can be started again"
         (instance/stop! (instance/start! process opts))
+        (let [restarted (instance/start! process opts)]
+          (is (fn? (instance/handler restarted)))
+          (instance/stop! restarted)))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-a-failed-init-halts-the-partial-system-and-releases-the-claim
+  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
+        process (test-process)
+        opts (garden-opts dir "leaky")]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      (testing "a late init-key throwing halts what was already built and releases the claim"
+        (let [thrown (with-redefs [backup/register-backup-job! (fn [& _] (throw (ex-info "boom" {})))]
+                       (try
+                         (instance/start! process opts)
+                         nil
+                         (catch clojure.lang.ExceptionInfo e e)))]
+          (is (some? thrown) "start! should have thrown")
+          (testing "the failure is reported as a build failure, naming the key"
+            ;; integrant's own :integrant.core/build-threw-exception tells the
+            ;; control plane's dispatcher nothing when it logs :reason.
+            (is (= :instance-init-failed (:reason (ex-data thrown))))
+            (is (= :sepal.app.backup/job (:key (ex-data thrown))))
+            (is (= "boom" (ex-message (ex-cause (ex-cause thrown))))
+                "the original exception must survive as a cause"))
+          (testing "the pool from the partially built system is dead, not leaked"
+            (let [partial-system (:system (ex-data thrown))
+                  db (get-in partial-system [:sepal.app.server/zodiac :zodiac.ext.sql/db])]
+              (is (some? db) "the partially built system should still include the connection pool")
+              (is (thrown? Exception (jdbc/execute-one! db ["select 1"]))
+                  "a halted pool must refuse queries")))))
+
+      (testing "a query failing inside ig/init is reported as an unusable database"
+        ;; The backup job reads settings during ig/init, ahead of probe!, so a
+        ;; pooled-connection failure (a missing SpatiaLite extension, say)
+        ;; surfaces here rather than at probe!.
+        (let [thrown (with-redefs [backup/register-backup-job!
+                                   (fn [& _]
+                                     (throw (java.sql.SQLException. "no such function: load_extension")))]
+                       (try
+                         (instance/start! process opts)
+                         nil
+                         (catch clojure.lang.ExceptionInfo e e)))]
+          (is (some? thrown) "start! should have thrown")
+          (is (= :database-unusable (:reason (ex-data thrown))))))
+
+      (testing "the slug and database were released, so starting again succeeds"
         (let [restarted (instance/start! process opts)]
           (is (fn? (instance/handler restarted)))
           (instance/stop! restarted)))

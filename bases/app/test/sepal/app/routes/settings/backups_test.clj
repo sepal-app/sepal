@@ -3,12 +3,11 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.test :as app.test]
-            [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.app.test.system :refer [*backup-dir* *db* default-system-fixture]]
             [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
-  (:import [java.nio.file Files]
-           [org.jsoup Jsoup]))
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -71,7 +70,7 @@
         (is (= 200 (:status response)))
         (is (= "Backup settings updated successfully" (flash-banner-text body)))
         ;; Verify setting was saved
-        (is (= :daily (:frequency (backup/get-config *db*)))))
+        (is (= :daily (:frequency (backup/get-config *db* *backup-dir*)))))
 
       ;; Clean up
       (settings.i/set-values! *db* {"backup.frequency" nil}))))
@@ -97,23 +96,19 @@
   (testing "GET /settings/backups/:filename/download returns backup file"
     (let [password "testpassword123"
           email (create-user! *db* :admin password)
-          ;; Create a backup first
-          temp-dir (Files/createTempDirectory "backup-test" (into-array java.nio.file.attribute.FileAttribute []))
-          backup-path (str temp-dir)]
+          ;; Create a backup in the shared test system's backup directory, since
+          ;; that's where the route looks.
+          result (backup/create-backup! *db* *backup-dir*)]
       (try
-        (with-redefs [backup/get-backup-path (constantly backup-path)]
-          (let [result (backup/create-backup! *db* backup-path)
-                sess (app.test/login email password)
-                {:keys [response]} (peri/request sess (str "/settings/backups/" (:filename result) "/download"))]
-            (is (= 200 (:status response)))
-            (is (= "application/zip" (get-in response [:headers "Content-Type"])))
-            (is (.contains (get-in response [:headers "Content-Disposition"])
-                           (:filename result)))))
+        (let [sess (app.test/login email password)
+              {:keys [response]} (peri/request sess (str "/settings/backups/" (:filename result) "/download"))]
+          (is (= 200 (:status response)))
+          (is (= "application/zip" (get-in response [:headers "Content-Type"])))
+          (is (.contains (get-in response [:headers "Content-Disposition"])
+                         (:filename result))))
         (finally
           ;; Clean up
-          (doseq [f (file-seq (java.io.File. backup-path))]
-            (when (.isFile f) (.delete f)))
-          (Files/delete temp-dir))))))
+          (.delete (java.io.File. ^String *backup-dir* ^String (:filename result))))))))
 
 (deftest test-download-backup-not-found
   (testing "GET /settings/backups/:filename/download returns 404 for non-existent file"

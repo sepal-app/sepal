@@ -17,10 +17,13 @@
     (met/schemas)))
 
 (defn start! [profile]
-  (let [system-config (config.i/read-config "app/system.edn"
-                                            {:profile profile})]
+  (let [system-config (config.i/read-config "app/system.edn" {:profile profile})]
     (ig/load-namespaces system-config)
-    (alter-var-root #'*system* (constantly (ig/init system-config)))))
+    (let [system (ig/init system-config)]
+      ;; The global stays for REPL and self-hosted convenience; the library path
+      ;; never touches it.
+      (alter-var-root #'*system* (constantly system))
+      system)))
 
 (defn stop! [system]
   (ig/halt! system))

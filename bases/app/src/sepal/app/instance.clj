@@ -17,7 +17,8 @@
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
-  (:import [javax.crypto KDF]
+  (:import [java.sql SQLException]
+           [javax.crypto KDF]
            [javax.crypto.spec HKDFParameterSpec]))
 
 (set! *warn-on-reflection* true)
@@ -29,6 +30,12 @@
   ;; Lowercase, no dots or slashes: the slug is an HKDF salt, an S3 key prefix
   ;; and a hostname label, so it must be safe in all three.
   [:re #"^[a-z0-9][a-z0-9-]{0,62}$"])
+
+(def ^:private MediaKeyPrefix
+  ;; Must end in a slash: sepal.app.routes.media.keys/own-key? tells instances
+  ;; apart with str/starts-with? on the raw key, so a slashless prefix like
+  ;; "brooklyn" would also accept a sibling instance's "brooklynheights/...".
+  [:re #"^.+/$"])
 
 (def ProcessOpts
   [:map {:closed true}
@@ -57,10 +64,17 @@
    [:app-domain [:string {:min 1}]]
    ;; Required, not derived: every tenant-bearing path is the caller's explicit
    ;; decision, so a missing one fails here instead of colliding at runtime.
-   [:media-key-prefix [:string {:min 1}]]
+   [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
-   [:media-cache-size-mb {:optional true} pos-int?]])
+   [:media-cache-size-mb {:optional true} pos-int?]
+   [:start-server? {:optional true} :boolean]
+   [:jetty-host {:optional true} [:maybe :string]]
+   [:jetty-port {:optional true} pos-int?]
+   [:forgot-password-email-from {:optional true} [:string {:min 1}]]
+   [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
+   [:invitation-email-from {:optional true} [:string {:min 1}]]
+   [:invitation-email-subject {:optional true} [:string {:min 1}]]])
 
 (defn- validate!
   [schema opts what]
@@ -194,11 +208,17 @@
      :mail (:sepal.mail.interface/client system)
      :s3-client (:sepal.aws-s3.interface/s3-client system)
      :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
-     ;; The slugs and databases already running in this process. Two instances
-     ;; on one database silently merge two gardens; two on one slug silently
-     ;; share a cookie key and token secret. Neither is detectable after the
-     ;; fact, so both are refused at start!.
-     :registry (atom {:slugs #{} :db-paths #{}})}))
+     ;; Everything already running in this process that no two instances may
+     ;; share. Two instances on one database silently merge two gardens; two on
+     ;; one slug silently share a cookie key and token secret; two on one backup
+     ;; directory, media cache directory or media key prefix each read the
+     ;; other's archives, derivatives or S3 objects. None of it is detectable
+     ;; after the fact, so all of it is refused at start!.
+     :registry (atom {:slugs #{}
+                      :db-paths #{}
+                      :backup-dirs #{}
+                      :media-cache-dirs #{}
+                      :media-key-prefixes #{}})}))
 
 (defn stop-process! [process]
   (ig/halt! (:system process))
@@ -210,7 +230,10 @@
    :enable_load_extension "true"})
 
 (defn- instance-config
-  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb]}]
+  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir
+                   start-server? jetty-host jetty-port
+                   forgot-password-email-from forgot-password-email-subject
+                   invitation-email-from invitation-email-subject]}]
   {:sepal.token.interface/service
    {:secret (token-secret (:master-secret process) slug)}
 
@@ -222,8 +245,8 @@
     :max-cache-size-mb (or media-cache-size-mb 500)}
 
    :sepal.app.server/zodiac-sql
-   ;; No :schema-dump-file: it drives a dead guard in server.clj that would
-   ;; re-run load-schema! on every start. provision! owns schema loading.
+   ;; No :schema-dump-file: ::zodiac-sql no longer loads a schema on its own.
+   ;; provision! owns schema loading.
    {:database-path db-path
     :pragmas sqlite-pragmas
     :extensions ["mod_spatialite"]
@@ -242,7 +265,8 @@
    {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
                  (ig/ref :sepal.app.server/zodiac-assets)]
     :cookie-secret (cookie-key (:master-secret process) slug)
-    :start-server? false
+    :start-server? (boolean start-server?)
+    :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}
     :request-context {:app-domain app-domain
                       :mail (:mail process)
                       :token-service (ig/ref :sepal.token.interface/service)
@@ -251,35 +275,108 @@
                       :media-transform-service (ig/ref :sepal.media-transform.interface/service)
                       :media-upload-bucket (:media-upload-bucket process)
                       :media-key-prefix media-key-prefix
-                      :forgot-password-email-from "support@sepal.app"
-                      :forgot-password-email-subject "Sepal - Reset Password"
-                      :invitation-email-from "noreply@sepal.app"
-                      :invitation-email-subject "You've been invited to Sepal"}}})
+                      :backup-dir backup-dir
+                      :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
+                      :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
+                      :invitation-email-from (or invitation-email-from "noreply@sepal.app")
+                      :invitation-email-subject (or invitation-email-subject "You've been invited to Sepal")}}
+
+   :sepal.scheduler.interface/scheduler {}
+
+   :sepal.app.backup/job
+   {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
+    :zodiac (ig/ref :sepal.app.server/zodiac)
+    :mail (:mail process)
+    :app-domain app-domain
+    :backup-dir backup-dir}})
+
+(defn- canonical-path
+  [path]
+  (str (fs/canonicalize path {:nofollow-links true})))
 
 (defn- claim!
-  "Record a slug and database as in use by this process, or throw. Held under a
-  lock rather than inside swap! because the check and the write must not be
-  retried independently. Returns the canonical db path."
-  [process slug db-path]
-  (let [canonical (str (fs/canonicalize db-path {:nofollow-links true}))
+  "Record everything this instance takes exclusive use of, or throw. Paths are
+  compared canonically so two spellings of one directory are one claim. Held
+  under a lock rather than inside swap! because the check and the write must not
+  be retried independently. Returns the claim, for release!."
+  [process {:keys [slug db-path backup-dir media-cache-dir media-key-prefix]}]
+  (let [db (canonical-path db-path)
+        backups (canonical-path backup-dir)
+        cache (canonical-path media-cache-dir)
+        claim {:slug slug
+               :db-path db
+               :backup-dir backups
+               :media-cache-dir cache
+               :media-key-prefix media-key-prefix}
         registry (:registry process)]
     (locking registry
-      (let [{:keys [slugs db-paths]} @registry]
+      (let [{:keys [slugs db-paths backup-dirs media-cache-dirs media-key-prefixes]} @registry]
         (when (contains? slugs slug)
           (throw (ex-info (format "Slug %s is already running in this process" slug)
                           {:reason :duplicate-slug :slug slug})))
-        (when (contains? db-paths canonical)
-          (throw (ex-info (format "Database %s is already open in this process" canonical)
-                          {:reason :duplicate-database :slug slug :db-path canonical})))
+        (when (contains? db-paths db)
+          (throw (ex-info (format "Database %s is already open in this process" db)
+                          {:reason :duplicate-database :slug slug :db-path db})))
+        (when (contains? backup-dirs backups)
+          (throw (ex-info (format "Backup directory %s is already in use in this process" backups)
+                          {:reason :duplicate-backup-dir :slug slug :backup-dir backups})))
+        (when (contains? media-cache-dirs cache)
+          (throw (ex-info (format "Media cache directory %s is already in use in this process" cache)
+                          {:reason :duplicate-media-cache-dir :slug slug :media-cache-dir cache})))
+        ;; Overlap, not equality: own-key? matches with str/starts-with?, so an
+        ;; instance holding "a/" would also accept the objects of one holding
+        ;; "a/nested/".
+        (when-let [other (some #(when (or (str/starts-with? % media-key-prefix)
+                                          (str/starts-with? media-key-prefix %))
+                                  %)
+                               media-key-prefixes)]
+          (throw (ex-info (format "Media key prefix %s overlaps %s, already in use in this process"
+                                  media-key-prefix other)
+                          {:reason :overlapping-media-key-prefix
+                           :slug slug
+                           :media-key-prefix media-key-prefix
+                           :other-media-key-prefix other})))
         (swap! registry #(-> % (update :slugs conj slug)
-                             (update :db-paths conj canonical)))))
-    canonical))
+                             (update :db-paths conj db)
+                             (update :backup-dirs conj backups)
+                             (update :media-cache-dirs conj cache)
+                             (update :media-key-prefixes conj media-key-prefix)))))
+    claim))
 
 (defn- release!
-  [process slug canonical-db-path]
+  [process claim]
   (swap! (:registry process)
-         #(-> % (update :slugs disj slug)
-              (update :db-paths disj canonical-db-path))))
+         #(-> % (update :slugs disj (:slug claim))
+              (update :db-paths disj (:db-path claim))
+              (update :backup-dirs disj (:backup-dir claim))
+              (update :media-cache-dirs disj (:media-cache-dir claim))
+              (update :media-key-prefixes disj (:media-key-prefix claim)))))
+
+(defn- sql-failure?
+  "Whether a SQLException appears anywhere in the cause chain."
+  [^Throwable e]
+  (boolean (some #(instance? SQLException %)
+                 (take-while some? (iterate #(.getCause ^Throwable %) e)))))
+
+(defn- init-failure
+  "Reclassify integrant's :integrant.core/build-threw-exception, which tells a
+  caller nothing. The backup job queries the instance database during ig/init,
+  ahead of probe!, so a pooled-connection failure lands here — but a component
+  that simply would not build is not a database problem, and is not labelled as
+  one. Keeps integrant's key and partial system, and the original as the cause."
+  [slug db-path e]
+  (let [{:keys [key system]} (ex-data e)
+        database? (sql-failure? e)]
+    (ex-info (if database?
+               (format "Database %s could not be opened" db-path)
+               ;; integrant's message names the key it failed on.
+               (format "Instance %s could not be built: %s" slug (ex-message e)))
+             {:reason (if database? :database-unusable :instance-init-failed)
+              :slug slug
+              :db-path db-path
+              :key key
+              :system system}
+             e)))
 
 (defn- probe!
   "Force a real connection so a corrupt database or a failed load_extension
@@ -311,17 +408,26 @@
                       {:reason :schema-version-behind
                        :slug slug :db-path db-path
                        :current current :expected expected}))))
-  (let [canonical (claim! process slug db-path)]
+  (let [claim (claim! process opts)]
     (try
       (fs/create-dirs media-cache-dir)
       (let [config (instance-config process opts)
             _ (ig/load-namespaces config)
-            system (ig/init config)]
+            system (try
+                     (ig/init config)
+                     (catch clojure.lang.ExceptionInfo e
+                       ;; A later key (e.g. the backup job, which queries the
+                       ;; database) can throw after earlier keys already built
+                       ;; a connection pool. ig/init does not halt what it
+                       ;; built, so this must, or the pool leaks.
+                       (when-let [partial-system (:system (ex-data e))]
+                         (ig/halt! partial-system))
+                       (throw (init-failure slug db-path e))))]
         (try
           (probe! system)
           {:slug slug
            :db-path db-path
-           :canonical-db-path canonical
+           :claim claim
            :process process
            :system system}
           (catch Throwable e
@@ -330,7 +436,7 @@
                             {:reason :database-unusable :slug slug :db-path db-path}
                             e)))))
       (catch Throwable e
-        (release! process slug canonical)
+        (release! process claim)
         (throw e)))))
 
 (defn handler
@@ -339,10 +445,10 @@
   (get-in instance [:system :sepal.app.server/zodiac ::z/app]))
 
 (defn stop! [instance]
-  (let [{:keys [process slug canonical-db-path]} instance]
+  (let [{:keys [process claim]} instance]
     (ig/halt! (:system instance))
     (when process
-      (release! process slug canonical-db-path)))
+      (release! process claim)))
   nil)
 
 (defn- instance-db

@@ -38,8 +38,8 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 
 | Variable | Description |
 |----------|-------------|
-| `COOKIE_SECRET` | Secret for encrypting cookies |
-| `TOKEN_SECRET` | Secret for encrypting tokens (password reset, invitations) - min 16 chars |
+| `SEPAL_SECRET` | Master secret. The cookie key and the token secret are derived from it - min 16 chars |
+| `TOKEN_SECRET` | Only used when running from the REPL; `-main` derives the token secret from `SEPAL_SECRET` - min 16 chars |
 | `APP_DOMAIN` | Domain for email links (e.g., reset password) |
 | `SMTP_HOST` | SMTP server hostname |
 | `SMTP_PORT` | SMTP server port (e.g., 587 for STARTTLS, 465 for SSL) |

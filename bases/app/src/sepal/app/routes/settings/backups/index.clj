@@ -128,8 +128,8 @@
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db timezone]} context
-        config (backup/get-config db)]
+  (let [{:keys [db timezone backup-dir]} context
+        config (backup/get-config db backup-dir)]
     (case request-method
       :post
       (let [result (validation.i/validate-form-values FormParams form-params)]

@@ -1,6 +1,7 @@
 (ns sepal.app.e2e.server
   "Server lifecycle management for e2e tests"
-  (:require [integrant.core :as ig]
+  (:require [babashka.fs :as fs]
+            [integrant.core :as ig]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.server] ;; Load Integrant methods
             [sepal.malli.interface] ;; Load Malli Integrant methods
@@ -18,6 +19,7 @@
 
 (defn- create-test-config [port]
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-e2e-test" ".db"))
+        backup-dir (str (fs/create-temp-dir {:prefix "sepal-e2e-backups"}))
         extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
     {:sepal.app.server/zodiac-sql
      {:database-path db-path
@@ -42,7 +44,10 @@
       :request-context {:forgot-password-email-from "support@sepal.app"
                         :forgot-password-email-subject "Sepal - Reset Password"
                         :reset-password-secret "1234"
-                        :app-domain (str "localhost:" port)}
+                        :app-domain (str "localhost:" port)
+                        :backup-dir backup-dir
+                        :media-key-prefix "media/"
+                        :media-upload-bucket "sepal-test-media"}
       :cookie-secret "1234567890123456"
       :port port
       :start-server? true}

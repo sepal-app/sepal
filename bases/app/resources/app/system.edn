@@ -14,13 +14,11 @@
   :credentials-provider #ig/ref :sepal.aws-s3.interface/credentials-provider}
 
  :sepal.media-transform.interface/service
- {:cache-dir #join [#or [#env SEPAL_DATA_HOME
-                         #join [#env HOME "/.local/share/Sepal"]]
-                    "/cache"]
+ {:cache-dir #data-home "cache"
   :max-cache-size-mb #long #or [#env IMAGE_CACHE_SIZE_MB 500]}
 
  :sepal.app.server/zodiac-sql
- {;; database-path is optional - defaults to $SEPAL_DATA_HOME/sepal.db
+ {:database-path #data-home "sepal.db"
   ;; SQLite pragmas are set via JDBC URL query parameters
   :pragmas {:journal_mode "WAL"
             :foreign_keys "ON"
@@ -28,8 +26,6 @@
   ;; SQLite extensions to load on each connection
   :extensions ["mod_spatialite"]
   :extension-library-path #env EXTENSIONS_LIBRARY_PATH
-  ;; Schema file used to initialize new databases
-  :schema-dump-file "db/schema.sql"
   :context-key :db}
 
  :sepal.app.server/zodiac-assets
@@ -65,10 +61,13 @@
                     :app-domain #env APP_DOMAIN
                     :media-upload-bucket #env MEDIA_UPLOAD_BUCKET
                     :media-key-prefix #or [#env MEDIA_KEY_PREFIX "media/"]
-                    :media-transform-service #ig/ref :sepal.media-transform.interface/service}
+                    :media-transform-service #ig/ref :sepal.media-transform.interface/service
+                    ;; Must resolve to the same directory as :sepal.app.backup/job's :backup-dir below.
+                    :backup-dir #or [#env BACKUP_PATH
+                                     #data-home "backups"]}
   :reload-per-request? #profile {:local true
                                  :default false}
-  :cookie-secret #env COOKIE_SECRET
+  :cookie-secret #env SEPAL_SECRET
   :print-request-diffs? false
   :jetty {:host #or [#env HOST "0.0.0.0"]
           :port #long #or [#env PORT 3000]}}
@@ -93,4 +92,6 @@
  {:scheduler #ig/ref :sepal.scheduler.interface/scheduler
   :zodiac #ig/ref :sepal.app.server/zodiac
   :mail #ig/ref :sepal.mail.interface/client
-  :app-domain #env APP_DOMAIN}}
+  :app-domain #env APP_DOMAIN
+  :backup-dir #or [#env BACKUP_PATH
+                   #data-home "backups"]}}
