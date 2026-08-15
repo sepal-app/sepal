@@ -13,10 +13,11 @@ mkdir -p "$SEPAL_DATA_HOME"
 
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
 MIGRATE_SH=${MIGRATE_SH:-migrate.sh}
-# Nothing else needs this path any more — the app loads the schema from the
-# classpath — so this script carries it rather than reading the environment.
+# Nothing else needs these paths any more — the app reads the schema and the
+# migrations off the classpath — so this script carries them rather than
+# reading the environment. migrate.sh is external, so it still needs the path.
 SCHEMA_DUMP_FILE=$SCRIPT_DIR/../components/database/resources/database/schema.sql
-MIGRATIONS_DIR=${MIGRATIONS_DIR:-components/database/resources/database/migrations}
+MIGRATIONS_DIR=$SCRIPT_DIR/../components/database/resources/database/migrations
 
 # Remove existing database and SQLite WAL/SHM files
 rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"
