@@ -113,3 +113,21 @@ ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret bin/reset-db.sh
 
 1. Build frontend assets: `cd bases/app && npm run build`
 2. Build uberjar or deploy as appropriate
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening
+a pull request — it covers the development workflow and the [Contributor License
+Agreement](CLA.md), which first-time contributors need to sign.
+
+## License
+
+Sepal is free software, licensed under the [GNU Affero General Public License
+version 3.0](LICENSE). You can run it, read it, modify it, and host it yourself.
+If you host a modified version as a network service, the AGPL requires you to
+make your modifications available to its users.
+
+Copyright © Sepal LLC.
+
+Sepal LLC also offers Sepal under commercial license terms for organizations that
+cannot use AGPL-licensed software. Contact brett@sepal.app.
