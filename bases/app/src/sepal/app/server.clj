@@ -1,8 +1,6 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
-            [clojure.string :as str]
             [integrant.core :as ig]
-            [lambdaisland.uri :as uri]
             [reitit.ring]
             [ring.middleware.stacktrace :as stacktrace]
             [sepal.app.middleware :as middleware]
@@ -61,41 +59,20 @@
    ["/media" (media/routes)]
    ["/settings" (settings/routes)]])
 
-(defn- build-jdbc-url
-  "Build a SQLite JDBC URL with optional pragma query parameters."
-  [db-path pragmas]
-  (if (seq pragmas)
-    (format "jdbc:sqlite:%s?%s" db-path (uri/map->query-string pragmas))
-    (format "jdbc:sqlite:%s" db-path)))
-
-(defn- build-connection-init-sql
-  "Build connectionInitSql string to load SQLite extensions.
-   Takes a list of extension names and an optional library path."
-  [extensions extension-library-path]
-  (when (seq extensions)
-    (->> extensions
-         (map (fn [ext]
-                (let [ext-path (if extension-library-path
-                                 (str (fs/path extension-library-path ext))
-                                 ext)]
-                  (format "SELECT load_extension('%s')" ext-path))))
-         (str/join "; "))))
-
-(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path pragmas spec extensions
+(defmethod ig/init-key ::zodiac-sql [_ {:keys [database-path spec
                                                extension-library-path context-key]}]
   (when-not database-path
     (throw (ex-info "::zodiac-sql requires a :database-path" {:reason :missing-database-path})))
-  (let [parent-dir (fs/parent database-path)
-        jdbc-url (build-jdbc-url database-path pragmas)
-        connection-init-sql (build-connection-init-sql extensions extension-library-path)
-        spec (cond-> (assoc spec :jdbcUrl jdbc-url)
-               connection-init-sql (assoc :connectionInitSql connection-init-sql))]
+  (let [parent-dir (fs/parent database-path)]
     (when (and parent-dir (not (fs/exists? parent-dir)))
       (fs/create-dirs parent-dir))
     (db.i/init)
     (z.sql/init {:context-key context-key
                  :jdbc-options db.i/jdbc-options
-                 :spec spec})))
+                 ;; Pragmas and extensions come from sepal.database.interface, so
+                 ;; every pool in the process agrees about what a Sepal database is.
+                 :spec (merge spec (db.i/hikari-spec {:db-path database-path
+                                                      :extension-library-path extension-library-path}))})))
 
 (defmethod ig/init-key ::zodiac-assets [_ options]
   (z.assets/init options))

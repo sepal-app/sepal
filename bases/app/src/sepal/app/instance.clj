@@ -224,11 +224,6 @@
   (ig/halt! (:system process))
   nil)
 
-(def ^:private sqlite-pragmas
-  {:journal_mode "WAL"
-   :foreign_keys "ON"
-   :enable_load_extension "true"})
-
 (defn- instance-config
   [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
@@ -246,10 +241,9 @@
 
    :sepal.app.server/zodiac-sql
    ;; No :schema-dump-file: ::zodiac-sql no longer loads a schema on its own.
-   ;; provision! owns schema loading.
+   ;; provision! owns schema loading. Pragmas and extensions come from
+   ;; sepal.database.interface, so every pool in the process agrees.
    {:database-path db-path
-    :pragmas sqlite-pragmas
-    :extensions ["mod_spatialite"]
     :extension-library-path (:extensions-library-path process)
     :context-key :db}
 

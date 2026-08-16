@@ -1,11 +1,10 @@
 (ns sepal.app.cli.system
-  "Minimal Integrant system for CLI operations.
-
-   Similar to sepal.app.test.system but without the web server."
+  "Minimal Integrant system for CLI operations: the malli registry and a small
+   connection pool, opened the same way every other Sepal pool is."
   (:require [babashka.fs :as fs]
             [integrant.core :as ig]
-            [lambdaisland.uri :as uri]
             [next.jdbc.connection :as connection]
+            [sepal.config.interface :as config.i]
             [sepal.database.interface :as db.i]
             [sepal.malli.interface :as malli.i])
   (:import [com.zaxxer.hikari HikariDataSource]))
@@ -14,22 +13,15 @@
 ;; Integrant keys
 ;; =============================================================================
 
-(defn- build-jdbc-url
-  "Build a SQLite JDBC URL with pragma query parameters."
-  [db-path pragmas]
-  (let [base-url (format "jdbc:sqlite:%s" db-path)]
-    (if (seq pragmas)
-      (format "%s?%s" base-url (uri/map->query-string pragmas))
-      base-url)))
-
-(defmethod ig/init-key ::datasource [_ {:keys [database-path pragmas]}]
-  (when-not (fs/exists? database-path)
-    (throw (ex-info (format "Database not found at: %s" database-path)
-                    {:database-path database-path})))
+(defmethod ig/init-key ::datasource [_ {:keys [db-path extension-library-path]}]
+  (when-not (fs/exists? db-path)
+    (throw (ex-info (format "Database not found at: %s" db-path)
+                    {:database-path db-path})))
   (db.i/init)
-  (let [jdbc-url (build-jdbc-url database-path pragmas)]
-    (connection/->pool HikariDataSource {:jdbcUrl jdbc-url
-                                         :maximumPoolSize 2})))
+  (connection/->pool HikariDataSource
+                     (assoc (db.i/hikari-spec {:db-path db-path
+                                               :extension-library-path extension-library-path})
+                            :maximumPoolSize 2)))
 
 (defmethod ig/halt-key! ::datasource [_ ds]
   (.close ^HikariDataSource ds))
@@ -38,35 +30,20 @@
 ;; System configuration
 ;; =============================================================================
 
-(defn- get-data-home
-  "Get Sepal data home directory.
-   Priority: SEPAL_DATA_HOME > XDG_DATA_HOME/Sepal > platform default"
-  []
-  (or (System/getenv "SEPAL_DATA_HOME")
-      (when-let [xdg (System/getenv "XDG_DATA_HOME")]
-        (str (fs/path xdg "Sepal")))
-      (if (= "Mac OS X" (System/getProperty "os.name"))
-        (str (fs/path (System/getProperty "user.home") "Library" "Application Support" "Sepal"))
-        (str (fs/path (fs/xdg-data-home) "Sepal")))))
-
-(defn- get-database-path
-  "Get database path from SEPAL_DATA_HOME."
-  []
-  (str (fs/path (get-data-home) "sepal.db")))
-
 (defn system-config
   "Create CLI system configuration.
 
    Includes:
    - Malli initialization (for schema decode/encode transformers)
-   - Database connection pool"
-  []
-  (let [db-path (get-database-path)]
-    {::malli.i/init {}
-     ::datasource {:database-path db-path
-                   :pragmas {:journal_mode "WAL"
-                             :foreign_keys "ON"
-                             :busy_timeout "5000"}}}))
+   - Database connection pool
+
+   :db-path defaults to sepal.db under the data home."
+  ([] (system-config {}))
+  ([{:keys [db-path extension-library-path]}]
+   {::malli.i/init {}
+    ::datasource {:db-path (or db-path (str (fs/path (config.i/data-home) "sepal.db")))
+                  :extension-library-path (or extension-library-path
+                                              (System/getenv "EXTENSIONS_LIBRARY_PATH"))}}))
 
 ;; =============================================================================
 ;; System lifecycle
@@ -74,9 +51,9 @@
 
 (defn start-system
   "Start the CLI system and return it."
-  []
-  (let [config (system-config)]
-    (ig/init config)))
+  ([] (start-system {}))
+  ([opts]
+   (ig/init (system-config opts))))
 
 (defn stop-system
   "Stop the CLI system."
