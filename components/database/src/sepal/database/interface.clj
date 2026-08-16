@@ -3,6 +3,7 @@
   (:require [integrant.core :as ig]
             [next.jdbc :as jdbc]
             [next.jdbc.date-time]
+            [sepal.database.connection :as connection]
             [sepal.database.core :as core]
             [sepal.database.honeysql :as honeysql]
             [sepal.database.migrate :as migrate]
@@ -22,6 +23,8 @@
 (def execute-one! #'z.sql/execute-one!)
 (def count #'z.sql/count)
 (def exists? #'z.sql/exists?)
+
+(def hikari-spec #'connection/hikari-spec)
 
 (defmethod ig/init-key ::extensions [_ {:keys [zodiac extensions] :as config}]
   (let [db (::z.sql/db zodiac)

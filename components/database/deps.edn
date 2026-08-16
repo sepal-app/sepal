@@ -1,5 +1,7 @@
 {:paths ["src" "resources"]
- :deps {integrant/integrant {:mvn/version "1.0.1"}
+ :deps {babashka/fs {:mvn/version "0.5.30"}
+        integrant/integrant {:mvn/version "1.0.1"}
+        lambdaisland/uri {:mvn/version "1.19.155"}
         org.clojure/data.json {:mvn/version "2.4.0"}
         org.xerial/sqlite-jdbc {:mvn/version "3.51.1.0"}}
  :aliases {:test {:extra-paths ["test"]
