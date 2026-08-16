@@ -5,16 +5,15 @@
             [sepal.app.e2e.playwright :as pw]
             [sepal.app.e2e.server :as server]
             [sepal.user.interface :as user.i]
-            [sepal.user.interface.spec :as user.spec]
-            [zodiac.ext.sql :as z.sql]))
+            [sepal.user.interface.spec :as user.spec]))
 
 (deftest ^:e2e happy-path-flow
   ;; "Complete user flow: login -> create contact -> create taxa -> create accession -> create location -> create material"
   (testing "Server and browser setup"
     (server/with-server
-      (fn [system]
-        (let [base-url (server/server-url system)
-              db (-> system :sepal.app.server/zodiac ::z.sql/db)
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
               ;; Create test user programmatically (registration is disabled)
               email (mg/generate user.spec/email)
               password "TestPassword123!"]

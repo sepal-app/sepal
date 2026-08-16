@@ -1,61 +1,19 @@
 (ns sepal.app.e2e.server
-  "Server lifecycle management for e2e tests"
+  "Server lifecycle management for e2e tests.
+
+  Built from the same instance API production uses, so the browser-driven suite
+  exercises the real startup path rather than a config maintained only here."
   (:require [babashka.fs :as fs]
-            [integrant.core :as ig]
+            [sepal.app.instance :as instance]
             [sepal.app.routes.setup.shared :as setup.shared]
-            [sepal.app.server] ;; Load Integrant methods
-            [sepal.malli.interface] ;; Load Malli Integrant methods
             [zodiac.ext.sql :as z.sql])
-  (:import [java.io File]
-           [java.net ServerSocket]))
+  (:import [java.net ServerSocket]))
 
 (defn- find-available-port
   "Find an available port by letting the OS assign one"
   []
   (with-open [socket (ServerSocket. 0)]
     (.getLocalPort socket)))
-
-(defonce ^:dynamic *server-port* nil)
-
-(defn- create-test-config [port]
-  (let [db-path (.getAbsolutePath (File/createTempFile "sepal-e2e-test" ".db"))
-        backup-dir (str (fs/create-temp-dir {:prefix "sepal-e2e-backups"}))
-        extension-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")]
-    {:sepal.app.server/zodiac-sql
-     {:database-path db-path
-      :pragmas {:journal_mode "WAL"
-                :foreign_keys "ON"
-                :enable_load_extension "true"}
-      :extensions ["mod_spatialite"]
-      :extension-library-path extension-library-path
-      :context-key :db}
-
-     :sepal.app.server/zodiac-assets
-     {:build? false
-      :manifest-path (or (System/getenv "ASSET_MANIFEST_PATH")
-                         "app/build/.vite/manifest.json")
-      :asset-resource-path (or (System/getenv "ASSET_RESOURCE_PATH")
-                               "app/build/assets")
-      :package-json-dir "bases/app"}
-
-     :sepal.app.server/zodiac
-     {:extensions [(ig/ref :sepal.app.server/zodiac-sql)
-                   (ig/ref :sepal.app.server/zodiac-assets)]
-      :request-context {:forgot-password-email-from "support@sepal.app"
-                        :forgot-password-email-subject "Sepal - Reset Password"
-                        :reset-password-secret "1234"
-                        :app-domain (str "localhost:" port)
-                        :backup-dir backup-dir
-                        :media-key-prefix "media/"
-                        :media-upload-bucket "sepal-test-media"}
-      :cookie-secret "1234567890123456"
-      :port port
-      :start-server? true}
-
-     :sepal.database.interface/schema
-     {:db-path db-path}
-
-     :sepal.malli.interface/init {}}))
 
 (defn- wait-for-server-ready
   "Wait for server to be ready by polling the health endpoint"
@@ -74,34 +32,59 @@
             (Thread/sleep 100)
             (recur (inc attempts))))))))
 
+(defn db
+  "The database connection for a started server."
+  [started]
+  (get-in started [:garden :system :sepal.app.server/zodiac ::z.sql/db]))
+
 (defn start-server!
-  "Start web server on a random available port and return system map"
+  "Start web server on a random available port and return a started value."
   []
   (let [port (find-available-port)
-        config (create-test-config port)
-        system (ig/init config)
-        db (-> system :sepal.app.server/zodiac ::z.sql/db)]
-    ;; Mark setup as complete so e2e tests bypass the setup wizard
-    (setup.shared/complete-setup! db)
-    ;; Wait for server to be ready before returning
-    (wait-for-server-ready port 50) ;; 50 attempts * 100ms = 5 seconds max
-    (assoc system ::port port)))
-
-(defn stop-server!
-  "Stop web server"
-  [system]
-  (ig/halt! system))
+        dir (fs/create-temp-dir {:prefix "sepal-e2e"})
+        db-path (str (fs/path dir "sepal.db"))
+        backup-dir (str (fs/path dir "backups"))
+        process (instance/start-process!
+                  {:master-secret "1234567890123456"
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+    (fs/create-dirs backup-dir)
+    (instance/provision! {:db-path db-path})
+    (when (not= (instance/schema-version {:db-path db-path})
+                (instance/latest-schema-version))
+      (instance/migrate! {:db-path db-path}))
+    (let [garden (instance/start! process
+                                  {:slug "e2e"
+                                   :db-path db-path
+                                   :app-domain (str "localhost:" port)
+                                   :media-key-prefix "media/"
+                                   :media-cache-dir (str (fs/path dir "cache"))
+                                   :backup-dir backup-dir
+                                   :start-server? true
+                                   :jetty-port port})
+          started {:dir dir :process process :garden garden :port port}]
+      ;; Mark setup as complete so e2e tests bypass the setup wizard
+      (setup.shared/complete-setup! (db started))
+      ;; Wait for server to be ready before returning
+      (wait-for-server-ready port 50) ;; 50 attempts * 100ms = 5 seconds max
+      started)))
 
 (defn server-url
   "Get the base URL for the running server"
-  [system]
-  (str "http://localhost:" (::port system)))
+  [started]
+  (str "http://localhost:" (:port started)))
+
+(defn stop-server!
+  "Stop web server"
+  [started]
+  (instance/stop! (:garden started))
+  (instance/stop-process! (:process started))
+  (fs/delete-tree (:dir started)))
 
 (defn with-server
   "Fixture to start/stop server around tests"
   [test-fn]
-  (let [system (start-server!)]
+  (let [started (start-server!)]
     (try
-      (test-fn system)
+      (test-fn started)
       (finally
-        (stop-server! system)))))
+        (stop-server! started)))))
