@@ -1,10 +1,6 @@
 (ns sepal.test.interface
   (:require [sepal.test.core :as core]))
 
-(defn create-system-fixture
-  [config invoke keys]
-  (core/create-system-fixture config invoke keys))
-
 (defn response-anti-forgery-token [resp]
   (core/response-anti-forgery-token resp))
 

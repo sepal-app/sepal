@@ -1,17 +1,6 @@
 (ns sepal.test.core
-  (:require [integrant.core :as ig]
-            [lambdaisland.uri.normalize :as uri.normalize])
+  (:require [lambdaisland.uri.normalize :as uri.normalize])
   (:import [org.jsoup Jsoup]))
-
-(defn create-system-fixture
-  [config invoke keys]
-  (fn [f]
-    (ig/load-namespaces config)
-    (let [system (ig/init config keys)]
-      (try
-        (invoke system f)
-        (finally
-          (ig/halt! system))))))
 
 (defn response-anti-forgery-token [resp]
   (-> resp
