@@ -34,6 +34,5 @@
   env = {
     EXTENSIONS_LIBRARY_PATH = "${pkgs.libspatialite}/lib";
     SEPAL_DATA_HOME = "${config.devenv.root}/.local";
-    VITE_CONFIG_FILE = "${config.devenv.root}/bases/app/vite.config.dev.js";
   };
 }

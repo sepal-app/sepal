@@ -2,7 +2,6 @@
   (:require [babashka.fs :as fs]
             [integrant.core :as ig]
             [sepal.app.routes.setup.shared :as setup.shared]
-            [sepal.config.interface :as config.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.test.interface :as test.i]
             [sepal.token.interface :as token.i]
@@ -30,9 +29,6 @@
 (def ^:dynamic *mail-client* nil)
 (def ^:dynamic *token-service* nil)
 (def ^:dynamic *backup-dir* nil)
-
-(defn load-config [config]
-  (config.i/read-config config {:profile :test}))
 
 (defn default-system-config []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-test" ".db"))
