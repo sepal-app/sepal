@@ -14,6 +14,7 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.mail.interface.protocols :as mail.p]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
@@ -55,7 +56,10 @@
              [:endpoint-override {:optional true} [:maybe :string]]
              [:access-key-id :string]
              [:secret-access-key :string]
-             [:media-upload-bucket :string]]]]])
+             [:media-upload-bucket :string]]]]
+   ;; A caller may bring its own client rather than have one built from :smtp.
+   ;; When present, :smtp is not used and no client is built.
+   [:mail {:optional true} [:fn #(satisfies? mail.p/MailClient %)]]])
 
 (def InstanceOpts
   [:map {:closed true}
@@ -179,11 +183,11 @@
   (db.i/preflight! {:db-path db-path}))
 
 (defn- process-config
-  [{:keys [log-level smtp s3]}]
+  [{:keys [log-level smtp s3 mail]}]
   (cond-> {:sepal.logging.interface/logging {:level log-level}
            :sepal.malli.interface/init {}}
 
-    smtp
+    (and smtp (not mail))
     (assoc :sepal.mail.interface/client smtp)
 
     s3
@@ -213,7 +217,7 @@
      :master-secret master-secret
      :extensions-library-path extensions-library-path
      :media-upload-bucket (get-in opts [:s3 :media-upload-bucket])
-     :mail (:sepal.mail.interface/client system)
+     :mail (or (:mail opts) (:sepal.mail.interface/client system))
      :s3-client (:sepal.aws-s3.interface/s3-client system)
      :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
      ;; Everything already running in this process that no two instances may

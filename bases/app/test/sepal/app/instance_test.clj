@@ -8,6 +8,7 @@
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
             [sepal.database.interface :as db.i]
+            [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]))
 
@@ -588,3 +589,31 @@
   (testing "a typo in a dev opt fails at start! rather than being ignored"
     (is (not (m/validate instance/InstanceOpts
                          (assoc valid-instance-opts :reload-per-reqest? true))))))
+
+(defrecord RecordingMailClient [sent]
+  mail.p/MailClient
+  (send-message [_ message]
+    (swap! sent conj message)
+    {:status :sent}))
+
+(deftest test-a-supplied-mail-client-is-used-as-is
+  (testing "a caller may bring its own mail client, so tests reach the same
+            start-process! the dispatcher calls instead of reaching around it"
+    (let [mail (->RecordingMailClient (atom []))
+          process (instance/start-process! {:master-secret master :mail mail})]
+      (try
+        (is (identical? mail (:mail process)))
+        (finally
+          (instance/stop-process! process))))))
+
+(deftest test-a-supplied-mail-client-wins-over-smtp
+  (testing "passing both is a caller error worth resolving predictably rather
+            than building two clients"
+    (let [mail (->RecordingMailClient (atom []))
+          process (instance/start-process! {:master-secret master
+                                            :mail mail
+                                            :smtp {:host "smtp.example.org"}})]
+      (try
+        (is (identical? mail (:mail process)))
+        (finally
+          (instance/stop-process! process))))))
