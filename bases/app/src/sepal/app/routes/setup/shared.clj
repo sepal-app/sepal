@@ -48,25 +48,25 @@
 
 ;; Server configuration checks
 
-(defn- check-env-vars
-  "Check if environment variables are set (non-empty)."
-  [& var-names]
-  (every? #(not (str/blank? (System/getenv %))) var-names))
+;; These read the request context rather than the environment. In a hosted
+;; process the environment belongs to no particular garden, so an env read gives
+;; every garden the same answer — and the control plane passes these as opts
+;; rather than as variables, so the variables are not set at all.
 
-(defn- check-smtp-configured []
-  (if (check-env-vars "SMTP_HOST" "SMTP_USERNAME" "SMTP_PASSWORD")
+(defn- check-smtp-configured [{:keys [mail]}]
+  (if mail
     {:status :ok :message "SMTP is configured"}
     {:status :warning
      :message "Email not configured. Password reset, user invitations, and backup notifications will not work."}))
 
-(defn- check-s3-configured []
-  (if (check-env-vars "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "MEDIA_UPLOAD_BUCKET")
+(defn- check-s3-configured [{:keys [s3-client media-upload-bucket]}]
+  (if (and s3-client (not (str/blank? media-upload-bucket)))
     {:status :ok :message "Media storage (S3) is configured"}
     {:status :warning
      :message "Media storage not configured. Cannot upload images or documents to records."}))
 
-(defn- check-app-domain []
-  (if (check-env-vars "APP_DOMAIN")
+(defn- check-app-domain [{:keys [app-domain]}]
+  (if-not (str/blank? app-domain)
     {:status :ok :message "App domain is configured"}
     {:status :warning
      :message "App domain not set. Links in emails will be incorrect."}))
@@ -82,11 +82,12 @@
        :message "SpatiaLite not available. Geo-coordinates for collections will not work."})))
 
 (defn check-server-config
-  "Run server configuration checks and return results."
-  [db]
-  {:smtp (check-smtp-configured)
-   :s3 (check-s3-configured)
-   :app-domain (check-app-domain)
+  "Run server configuration checks and return results. Takes the zodiac request
+  context, which carries the collaborators this instance was actually given."
+  [{:keys [db] :as context}]
+  {:smtp (check-smtp-configured context)
+   :s3 (check-s3-configured context)
+   :app-domain (check-app-domain context)
    :spatialite (check-spatialite db)})
 
 ;; WFO Taxonomy Import

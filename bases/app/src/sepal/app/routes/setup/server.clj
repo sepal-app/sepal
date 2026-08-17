@@ -74,7 +74,7 @@
 
 (defn handler [{:keys [::z/context flash]}]
   (let [{:keys [db]} context
-        checks (setup.shared/check-server-config db)]
+        checks (setup.shared/check-server-config context)]
     (setup.shared/set-current-step! db 2)
     (html/render-page (render :checks checks
                               :flash-messages (:messages flash)))))

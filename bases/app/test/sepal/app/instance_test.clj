@@ -1,11 +1,14 @@
 (ns sepal.app.instance-test
   (:require [babashka.fs :as fs]
             [clojure.test :refer [deftest is testing]]
+            [integrant.core :as ig]
+            [malli.core :as m]
             [next.jdbc :as jdbc]
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
             [sepal.database.interface :as db.i]
+            [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]))
 
@@ -552,3 +555,65 @@
                        (catch clojure.lang.ExceptionInfo e e))]
           (is (some? thrown) "create-admin-user! should have thrown")
           (is (= :user-exists (:reason (ex-data thrown)))))))))
+
+(deftest test-dev-opts-default-to-production-shapes
+  (testing "omitted, :vite is still emitted explicitly as nil — an absent :vite
+            means {:mode :build} to zodiac-assets, which would run npm and vite
+            once per instance"
+    (let [config (#'instance/instance-config {:master-secret master} valid-instance-opts)]
+      (is (contains? (:sepal.app.server/zodiac-assets config) :vite))
+      (is (nil? (get-in config [:sepal.app.server/zodiac-assets :vite])))
+      (is (not (contains? config :sepal.app.server/zodiac-hot-reload)))
+      (is (false? (get-in config [:sepal.app.server/zodiac :reload-per-request?]))))))
+
+(deftest test-dev-opts-reach-the-config-when-set
+  (testing "the three REPL-only knobs land where zodiac expects them"
+    (let [vite {:mode :dev-server
+                :config-file "vite.config.dev.js"
+                :package-json-dir "bases/app"}
+          hot-reload {:watch-paths ["bases/app/src"]
+                      :watch-extensions #{".clj" ".cljc" ".edn" ".html"}}
+          config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts
+                                                    :vite vite
+                                                    :hot-reload hot-reload
+                                                    :reload-per-request? true))]
+      (is (= vite (get-in config [:sepal.app.server/zodiac-assets :vite])))
+      (is (= hot-reload (:sepal.app.server/zodiac-hot-reload config)))
+      (is (true? (get-in config [:sepal.app.server/zodiac :reload-per-request?])))
+      (is (some #{(ig/ref :sepal.app.server/zodiac-hot-reload)}
+                (get-in config [:sepal.app.server/zodiac :extensions]))
+          "the hot-reload key must be wired into zodiac's extensions or it does nothing"))))
+
+(deftest test-dev-opts-are-schema-checked
+  (testing "a typo in a dev opt fails at start! rather than being ignored"
+    (is (not (m/validate instance/InstanceOpts
+                         (assoc valid-instance-opts :reload-per-reqest? true))))))
+
+(defrecord RecordingMailClient [sent]
+  mail.p/MailClient
+  (send-message [_ message]
+    (swap! sent conj message)
+    {:status :sent}))
+
+(deftest test-a-supplied-mail-client-is-used-as-is
+  (testing "a caller may bring its own mail client, so tests reach the same
+            start-process! the dispatcher calls instead of reaching around it"
+    (let [mail (->RecordingMailClient (atom []))
+          process (instance/start-process! {:master-secret master :mail mail})]
+      (try
+        (is (identical? mail (:mail process)))
+        (finally
+          (instance/stop-process! process))))))
+
+(deftest test-a-supplied-mail-client-wins-over-smtp
+  (testing "passing both is a caller error worth resolving predictably rather
+            than building two clients"
+    (let [mail (->RecordingMailClient (atom []))
+          process (instance/start-process! {:master-secret master
+                                            :mail mail
+                                            :smtp {:host "smtp.example.org"}})]
+      (try
+        (is (identical? mail (:mail process)))
+        (finally
+          (instance/stop-process! process))))))

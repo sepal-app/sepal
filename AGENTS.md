@@ -114,14 +114,21 @@ The `go`, `stop`, and `restart` functions for managing the system during develop
 
 Start REPL with dev alias, then:
 ```clojure
-(go)         ; Start system with :local profile
+(go)         ; Start system
 (stop)       ; Stop system
 (restart)    ; Restart system
 ```
 
-After starting the system with `(go)`, two dynamic vars become available in the `user` namespace for interactive development:
+`(go)` builds its options with `sepal.app.main/env-opts` from the real
+environment, exactly as the self-hosted entry point does, then adds the three
+development options — the vite dev server, hot reload, and per-request reload.
+It needs `SEPAL_SECRET` set in `.env.local` and fails with a message naming the
+variable if it is not.
+
+After starting the system with `(go)`, four dynamic vars become available in the `user` namespace for interactive development:
 - `*system*`: An Integrant map containing all running components of the application.
 - `*db*`: A `next.jdbc` database connection pool for direct database queries.
+- `*process*` and `*garden*`: the process and instance values, for `sepal.app.instance` calls.
 
 ### Common Commands
 
@@ -201,16 +208,18 @@ devenv's dotenv reader is not a shell: it keeps quotes as part of the value and
 does not expand variables. `SEPAL_SECRET="..."` arrives 18 characters long and
 fails zodiac's exact-16 check at startup.
 
-Additional env vars for production (see `bases/app/resources/app/system.edn`):
+Additional env vars for production (see `sepal.app.main/env-opts`, which is the
+only place Sepal reads the environment):
 - AWS credentials for S3/media storage
 - SMTP configuration for email (SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_AUTH, SMTP_TLS)
 - `APP_DOMAIN`, `IMAGE_CACHE_SIZE_MB`
 
 ## Configuration
 
-- **Main Configuration**: The primary system configuration is defined as an [Integrant](https://github.com/weavejester/integrant) file at `bases/app/resources/app/system.edn`.
-- **Dynamic Setup with Aero**: The configuration is processed by [Aero](https://github.com/juxt/aero), which enables environment-specific setups using profiles (e.g., `:local`, `:default`, `:test`) and environment variable injection (e.g., `#env SEPAL_SECRET`).
-- **Database Configuration**: Database path defaults to `$SEPAL_DATA_HOME/sepal.db`. The JDBC URL is generated from this path at startup. Tests use temporary files or in-memory databases.
+- **Main Configuration**: `sepal.app.instance` is the single definition of the system. It builds two [Integrant](https://github.com/weavejester/integrant) configs, split by lifetime: `start-process!` builds what exists once per JVM, and `start!` builds one instance. Both take an options map validated against the closed `ProcessOpts` and `InstanceOpts` schemas. There is no configuration file.
+- **Environment**: `sepal.app.main/env-opts` maps an environment map to those options, and is the only place Sepal reads environment variables. It takes the map as an argument, so it is tested without mutating the process environment.
+- **Callers**: `-main` (self-hosted), `development/src/user.clj` (REPL), `sepal.app.cli` (a small pool only), the test and e2e fixtures, and the control-plane dispatcher all go through that one vocabulary.
+- **Database Configuration**: Database path defaults to `$SEPAL_DATA_HOME/sepal.db`. Pragmas and the SpatiaLite extension come from `sepal.database.interface/hikari-spec`, so every connection pool in the process opens a database the same way. Tests use temporary files.
 
 ## Code Patterns
 

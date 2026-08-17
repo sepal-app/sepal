@@ -110,3 +110,63 @@
           (finally
             (instance/stop-process! started)
             (fs/delete-tree dir)))))))
+
+(deftest test-every-system-edn-variable-still-has-a-home
+  (testing "each environment variable the deleted system.edn read reaches the
+            opts. This is the audit that deletion demands, written down so it
+            runs rather than being performed once by reading."
+    (let [{:keys [process instance]}
+          (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-audit"
+                          "SEPAL_SECRET" "1234567890123456"
+                          "LOG_LEVEL" "INFO"
+                          "EXTENSIONS_LIBRARY_PATH" "/nix/store/spatialite/lib"
+                          "APP_DOMAIN" "garden.example.org"
+                          "PORT" "8080"
+                          "HOST" "127.0.0.1"
+                          "BACKUP_PATH" "/srv/backups"
+                          "MEDIA_KEY_PREFIX" "garden/"
+                          "MEDIA_UPLOAD_BUCKET" "garden-media"
+                          "IMAGE_CACHE_SIZE_MB" "250"
+                          "AWS_ACCESS_KEY_ID" "key-id"
+                          "AWS_SECRET_ACCESS_KEY" "secret-key"
+                          "AWS_S3_ENDPOINT" "https://s3.example.org"
+                          "SMTP_HOST" "smtp.example.org"
+                          "SMTP_PORT" "2525"
+                          "SMTP_USERNAME" "postmaster"
+                          "SMTP_PASSWORD" "hunter2"
+                          "SMTP_AUTH" "false"
+                          "SMTP_TLS" "tls"})]
+      (testing "process scope"
+        (is (= "INFO" (:log-level process)))
+        (is (= "/nix/store/spatialite/lib" (:extensions-library-path process)))
+        (is (= {:host "smtp.example.org"
+                :port "2525"
+                :username "postmaster"
+                :password "hunter2"
+                :auth "false"
+                :tls "tls"}
+               (:smtp process)))
+        (is (= {:endpoint-override "https://s3.example.org"
+                :access-key-id "key-id"
+                :secret-access-key "secret-key"
+                :media-upload-bucket "garden-media"}
+               (:s3 process))))
+
+      (testing "instance scope"
+        (is (= "garden.example.org" (:app-domain instance)))
+        (is (= 8080 (:jetty-port instance)))
+        (is (= "127.0.0.1" (:jetty-host instance)))
+        (is (= "/srv/backups" (:backup-dir instance)))
+        (is (= "garden/" (:media-key-prefix instance)))
+        (is (= 250 (:media-cache-size-mb instance)))
+        (is (= "/tmp/sepal-audit/sepal.db" (:db-path instance)))
+        (is (= "/tmp/sepal-audit/cache" (:media-cache-dir instance)))))))
+
+(deftest test-token-secret-is-derived-not-read
+  (testing "system.edn read TOKEN_SECRET; secrets are derived from SEPAL_SECRET
+            now, so the variable must not quietly come back"
+    (let [{:keys [process instance]}
+          (main/env-opts {"SEPAL_SECRET" "1234567890123456"
+                          "TOKEN_SECRET" "should-be-ignored"})]
+      (is (not-any? #(= "should-be-ignored" %) (vals process)))
+      (is (not-any? #(= "should-be-ignored" %) (vals instance))))))
