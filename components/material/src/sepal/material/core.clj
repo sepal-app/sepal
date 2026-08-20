@@ -37,6 +37,12 @@
                   :join [[:accession :a] [:= :m.accession_id :a.id]]
                   :where [:= :a.taxon_id taxon-id]}))
 
+(defn count-all
+  "Count every material in the garden."
+  [db]
+  (db.i/count db {:select [:id]
+                  :from [:material]}))
+
 (create-ns 'sepal.material.interface)
 (alias 'mat.i 'sepal.material.interface)
 

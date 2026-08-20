@@ -58,6 +58,12 @@
                   :from :user
                   :where [:= :role (name role)]}))
 
+(defn count-all
+  "Returns the count of every user in the garden, whatever their role or status."
+  [db]
+  (db.i/count db {:select [1]
+                  :from :user}))
+
 (defn get-by-role
   "Returns all users with the given role."
   [db role]

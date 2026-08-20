@@ -28,5 +28,10 @@
 (defn unlink! [db id]
   (core/unlink! db id))
 
+(defn total-size-in-bytes
+  "Sum of every media row's size, 0 when the garden has no media."
+  [db]
+  (core/total-size-in-bytes db))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

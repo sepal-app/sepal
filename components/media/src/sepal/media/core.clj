@@ -64,6 +64,14 @@
   (db.i/execute-one! db {:delete-from :media_link
                          :where [:= :media-id media-id]}))
 
+(defn total-size-in-bytes
+  "Sum of every media row's size. A sum over no rows is nil in SQLite, so an empty
+  garden reports 0 — callers count bytes and cannot use a nil."
+  [db]
+  (or (:total (db.i/execute-one! db {:select [[[:sum :size_in_bytes] :total]]
+                                     :from [:media]}))
+      0))
+
 (create-ns 'sepal.media.interface)
 (alias 'media.i 'sepal.media.interface)
 

@@ -617,3 +617,23 @@
         (is (identical? mail (:mail process)))
         (finally
           (instance/stop-process! process))))))
+
+(deftest test-usage
+  (with-two-gardens
+    (fn [_process a b]
+      (testing "an empty garden reports zeros, not nils"
+        (is (= {:accessions 0 :materials 0 :users 0 :media-bytes 0}
+               (instance/usage a))))
+
+      (testing "the map is closed — no key appears without this test changing"
+        (is (= #{:accessions :materials :users :media-bytes}
+               (set (keys (instance/usage a))))))
+
+      (instance/create-admin-user! a {:email "admin@a.example.com"
+                                      :password "a-password"})
+
+      (testing "the admin user is counted"
+        (is (= 1 (:users (instance/usage a)))))
+
+      (testing "counting one garden never sees another's rows"
+        (is (= 0 (:users (instance/usage b))))))))

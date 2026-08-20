@@ -26,5 +26,10 @@
   [db taxon-id]
   (core/count-by-taxon-id db taxon-id))
 
+(defn count-all
+  "Count every material in the garden."
+  [db]
+  (core/count-all db))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

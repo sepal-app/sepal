@@ -11,10 +11,13 @@
             [malli.core :as m]
             [malli.error :as me]
             [next.jdbc :as jdbc]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.mail.interface.protocols :as mail.p]
+            [sepal.material.interface :as material.i]
+            [sepal.media.interface :as media.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
@@ -87,6 +90,15 @@
    [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
    [:invitation-email-from {:optional true} [:string {:min 1}]]
    [:invitation-email-subject {:optional true} [:string {:min 1}]]])
+
+(def Usage
+  "The countable things in a garden. Closed, so adding one is a deliberate change
+  to this published API rather than a silent widening under its consumers."
+  [:map {:closed true}
+   [:accessions [:int {:min 0}]]
+   [:materials [:int {:min 0}]]
+   [:users [:int {:min 0}]]
+   [:media-bytes [:int {:min 0}]]])
 
 (defn- validate!
   [schema opts what]
@@ -487,3 +499,21 @@
                         {:reason :create-user-failed :error user :email email})))
       (setup.shared/complete-setup! db)
       {:user-id (:user/id user)})))
+
+(defn usage
+  "The countable things in a running instance, for tier accounting by a caller
+  that hosts it. One map rather than a family of getters, validated before it is
+  returned so a caller cannot receive a shape that quietly changed.
+
+  Takes the instance rather than a path, like `create-admin-user!`: the caller
+  never holds a database handle, and this reads through the pool the instance
+  already owns. Media bytes are summed from the rows here rather than listed from
+  object storage, so this makes no network call."
+  [instance]
+  (let [db (instance-db instance)
+        result {:accessions (accession.i/count-all db)
+                :materials (material.i/count-all db)
+                :users (user.i/count-all db)
+                :media-bytes (media.i/total-size-in-bytes db)}]
+    (validate! Usage result "usage")
+    result))

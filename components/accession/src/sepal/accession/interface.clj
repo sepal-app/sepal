@@ -21,5 +21,10 @@
   [db contact-id]
   (core/count-by-supplier-contact-id db contact-id))
 
+(defn count-all
+  "Count every accession in the garden."
+  [db]
+  (core/count-all db))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

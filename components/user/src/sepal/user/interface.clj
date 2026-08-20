@@ -20,6 +20,11 @@
 (defn count-by-role [db role]
   (core/count-by-role db role))
 
+(defn count-all
+  "Returns the count of every user in the garden, whatever their role or status."
+  [db]
+  (core/count-all db))
+
 (defn get-by-role
   "Returns all active users with the given role."
   [db role]

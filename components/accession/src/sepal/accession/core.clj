@@ -29,6 +29,12 @@
                   :from [:accession]
                   :where [:= :supplier_contact_id contact-id]}))
 
+(defn count-all
+  "Count every accession in the garden."
+  [db]
+  (db.i/count db {:select [:id]
+                  :from [:accession]}))
+
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)
 
