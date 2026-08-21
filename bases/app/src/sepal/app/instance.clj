@@ -11,13 +11,17 @@
             [malli.core :as m]
             [malli.error :as me]
             [next.jdbc :as jdbc]
+            [pogonos.core :as mustache]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.mail.interface :as mail.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
+            [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]
             [zodiac.ext.sql :as z.sql])
@@ -248,6 +252,13 @@
   (ig/halt! (:system process))
   nil)
 
+;; The request context's defaults for invitation mail. Named because invite-owner!
+;; resolves them too and the two must not drift: one address sends for every
+;; garden, so a per-garden default appearing here would be a change to how mail is
+;; sent and not a detail.
+(def ^:private default-invitation-email-from "noreply@sepal.app")
+(def ^:private default-invitation-email-subject "You've been invited to Sepal")
+
 (defn- instance-config
   [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
@@ -301,8 +312,8 @@
                         :backup-dir backup-dir
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
-                        :invitation-email-from (or invitation-email-from "noreply@sepal.app")
-                        :invitation-email-subject (or invitation-email-subject "You've been invited to Sepal")}}
+                        :invitation-email-from (or invitation-email-from default-invitation-email-from)
+                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)}}
 
      :sepal.scheduler.interface/scheduler {}
 
@@ -455,7 +466,12 @@
            :db-path db-path
            :claim claim
            :process process
-           :system system}
+           :system system
+           ;; Kept because zodiac closes its :request-context over middleware
+           ;; rather than putting it in the system map, so app-domain and the
+           ;; invitation mail settings are unreadable from a started instance.
+           ;; invite-owner! needs all three.
+           :opts opts}
           (catch Throwable e
             (ig/halt! system)
             (throw (ex-info (format "Database %s could not be opened" db-path)
@@ -499,6 +515,91 @@
                         {:reason :create-user-failed :error user :email email})))
       (setup.shared/complete-setup! db)
       {:user-id (:user/id user)})))
+
+(defn- random-password
+  "A 32-character password that is never revealed. The owner sets their own
+  through the accept link, exactly as an invited user does in the app."
+  []
+  (let [chars "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"]
+    (apply str (repeatedly 32 #(rand-nth chars)))))
+
+(defn- accept-url
+  "The absolute accept-invitation URL for one garden.
+
+  The path comes from the route table rather than a literal, which means binding
+  a router: z/url-for reads the one bound to the current request, and there is no
+  request here. ::z/router is a factory, so this builds a router per call — once
+  per invitation, which is rare."
+  [instance token]
+  (let [router-factory (get-in instance [:system :sepal.app.server/zodiac ::z/router])
+        app-domain (get-in instance [:opts :app-domain])]
+    (when-not (fn? router-factory)
+      (throw (ex-info "No router on this instance, so no accept URL can be built"
+                      {:reason :router-unavailable :slug (:slug instance)})))
+    (binding [z/*router* (router-factory)]
+      (format "https://%s%s"
+              app-domain
+              (z/url-for auth.routes/accept-invitation nil {:token token})))))
+
+(defn- send-owner-invitation-email
+  [mail {:keys [to accept-url from subject]}]
+  (let [content (mustache/render-resource "app/email/owner-invitation.mustache"
+                                          {:accept-url accept-url})]
+    (mail.i/send-message mail {:from from
+                               :to to
+                               :subject subject
+                               :body content})))
+
+(defn invite-owner!
+  "Create the owner of a managed garden and mail them a link to set their own
+  password. Returns {:user-id ... :accept-url ...}.
+
+  No password is passed in and none is returned: the user is created with a random
+  one that is never revealed, and the accept link is how a password gets set. The
+  user is :invited rather than :active, because that is the status
+  sepal.app.routes.auth.accept-invitation requires before it will honour the link.
+
+  Completing setup is part of the contract. A garden created this way is
+  configured by whoever hosts it, not by its owner, so the setup wizard has
+  nothing to ask — and sepal.app.middleware forces that wizard until
+  setup.completed_at is set.
+
+  The sender is one address for every garden, defaulting to noreply@sepal.app:
+  SPF does not inherit to subdomains, so a per-garden sender would need its own
+  record and would fragment sending reputation."
+  [instance {:keys [email]}]
+  (let [db (instance-db instance)
+        mail (get-in instance [:process :mail])
+        token-service (get-in instance [:system :sepal.token.interface/service])
+        {:keys [invitation-email-from invitation-email-subject]} (:opts instance)]
+    ;; Checked before the user is created, not after: an owner row with no
+    ;; invitation sent is a garden nobody can enter, and it would make the retry
+    ;; fail too, on :user-exists.
+    (when (nil? mail)
+      (throw (ex-info "This process has no mail client, so no owner can be invited"
+                      {:reason :mail-not-configured :email email :slug (:slug instance)})))
+    (when (user.i/exists? db email)
+      (throw (ex-info (format "A user already exists for %s" email)
+                      {:reason :user-exists :email email :slug (:slug instance)})))
+    (let [user (user.i/create! db {:email email
+                                   :password (random-password)
+                                   :role :admin
+                                   :status :invited})]
+      (when (error.i/error? user)
+        (throw (ex-info "Could not create the owner"
+                        {:reason :create-user-failed :error user :email email})))
+      (let [token (token.i/encode token-service {:email email
+                                                 :expires-at (token.i/expires-in-hours 24)})
+            url (accept-url instance token)]
+        (send-owner-invitation-email mail
+                                     {:to email
+                                      :accept-url url
+                                      :from (or invitation-email-from
+                                                default-invitation-email-from)
+                                      :subject (or invitation-email-subject
+                                                   default-invitation-email-subject)})
+        (setup.shared/complete-setup! db)
+        {:user-id (:user/id user) :accept-url url}))))
 
 (defn usage
   "The countable things in a running instance, for tier accounting by a caller

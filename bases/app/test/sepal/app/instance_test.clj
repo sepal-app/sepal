@@ -1,5 +1,6 @@
 (ns sepal.app.instance-test
   (:require [babashka.fs :as fs]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [integrant.core :as ig]
             [malli.core :as m]
@@ -164,6 +165,12 @@
         (finally
           (fs/delete-tree dir))))))
 
+(defrecord RecordingMailClient [sent]
+  mail.p/MailClient
+  (send-message [_ message]
+    (swap! sent conj message)
+    {:status :sent}))
+
 (defn- with-two-gardens
   "Provision two gardens in one temp dir, start a process and both instances,
   call (f process instance-a instance-b), then tear everything down."
@@ -172,6 +179,9 @@
         process (instance/start-process!
                   {:log-level "WARN"
                    :master-secret "master-secret-for-tests"
+                   ;; A client rather than none: invite-owner! refuses a process
+                   ;; that cannot mail anyone. Reachable as (:sent (:mail process)).
+                   :mail (->RecordingMailClient (atom []))
                    :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})
         start (fn [slug]
                 (let [db-path (str (fs/path dir slug "sepal.db"))]
@@ -556,6 +566,49 @@
           (is (some? thrown) "create-admin-user! should have thrown")
           (is (= :user-exists (:reason (ex-data thrown)))))))))
 
+(deftest test-invite-owner
+  (with-two-gardens
+    (fn [_process a b]
+      (let [result (instance/invite-owner! a {:email "owner@example.com"})]
+
+        (testing "an invited admin user exists for that address"
+          (is (pos-int? (:user-id result))))
+
+        (testing "the accept url points at this garden, not a configured host"
+          ;; With no card collected at signup the invitation is the only way into
+          ;; a garden, so a link to the wrong host is a customer who cannot get in.
+          (is (str/starts-with? (:accept-url result) "https://a.localhost/"))
+          (is (str/includes? (:accept-url result) "token=")))
+
+        (testing "setup is complete, so the wizard is skipped"
+          ;; This is the whole mechanism by which a managed garden has no wizard.
+          (let [response (:response (-> (peri/session (instance/handler a))
+                                        (peri/request "/login")))]
+            (is (= 200 (:status response)))))
+
+        (testing "the other garden is untouched — still in setup"
+          (let [response (:response (-> (peri/session (instance/handler b))
+                                        (peri/request "/login")))]
+            (is (= 303 (:status response)))
+            (is (= "/setup" (get-in response [:headers "Location"])))))
+
+        (testing "the accept link is one accept_invitation.clj will honour"
+          ;; It reads :email out of the token and requires the user to be
+          ;; :invited, so a token carrying anything else is a dead link.
+          (let [response (:response (-> (peri/session (instance/handler a))
+                                        (peri/request (str/replace (:accept-url result)
+                                                                   "https://a.localhost" ""))))]
+            (is (= 200 (:status response)))
+            (is (re-find #"(?i)accept invitation" (str (:body response))))))
+
+        (testing "inviting the same address twice is refused rather than silent"
+          (let [thrown (try
+                         (instance/invite-owner! a {:email "owner@example.com"})
+                         nil
+                         (catch clojure.lang.ExceptionInfo e e))]
+            (is (some? thrown) "invite-owner! should have thrown")
+            (is (= :user-exists (:reason (ex-data thrown))))))))))
+
 (deftest test-dev-opts-default-to-production-shapes
   (testing "omitted, :vite is still emitted explicitly as nil — an absent :vite
             means {:mode :build} to zodiac-assets, which would run npm and vite
@@ -589,12 +642,6 @@
   (testing "a typo in a dev opt fails at start! rather than being ignored"
     (is (not (m/validate instance/InstanceOpts
                          (assoc valid-instance-opts :reload-per-reqest? true))))))
-
-(defrecord RecordingMailClient [sent]
-  mail.p/MailClient
-  (send-message [_ message]
-    (swap! sent conj message)
-    {:status :sent}))
 
 (deftest test-a-supplied-mail-client-is-used-as-is
   (testing "a caller may bring its own mail client, so tests reach the same
@@ -637,3 +684,81 @@
 
       (testing "counting one garden never sees another's rows"
         (is (= 0 (:users (instance/usage b))))))))
+
+(deftest test-inviting-an-owner-with-no-mail-client-configured
+  (let [dir (fs/create-temp-dir {:prefix "sepal-invite-nomail"})
+        db-path (str (fs/path dir "sepal.db"))
+        process (instance/start-process!
+                  {:log-level "WARN"
+                   :master-secret master
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+    (try
+      (instance/provision! {:db-path db-path})
+      (let [garden (instance/start! process {:slug "nomail"
+                                             :db-path db-path
+                                             :app-domain "nomail.localhost"
+                                             :media-key-prefix "nomail/"
+                                             :media-cache-dir (str (fs/path dir "cache"))
+                                             :backup-dir (str (fs/path dir "backups"))})]
+        (try
+          (let [thrown (try
+                         (instance/invite-owner! garden {:email "owner@example.com"})
+                         nil
+                         (catch clojure.lang.ExceptionInfo e e))]
+            (testing "it refuses, naming the reason"
+              (is (some? thrown) "invite-owner! should have thrown")
+              (is (= :mail-not-configured (:reason (ex-data thrown)))))
+
+            (testing "and no owner row is left behind, so a retry can succeed"
+              ;; A user created without an invitation sent is a garden nobody can
+              ;; enter, and the retry would fail on :user-exists instead.
+              (is (= 0 (:users (instance/usage garden))))))
+          (finally
+            (instance/stop! garden))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-the-invitation-sender-is-the-one-configured-address
+  (let [sent (atom [])
+        mail (->RecordingMailClient sent)
+        dir (fs/create-temp-dir {:prefix "sepal-invite-from"})
+        db-path (str (fs/path dir "sepal.db"))
+        process (instance/start-process!
+                  {:log-level "WARN"
+                   :master-secret master
+                   :mail mail
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+    (try
+      (instance/provision! {:db-path db-path})
+      (let [garden (instance/start! process {:slug "harlem"
+                                             :db-path db-path
+                                             :app-domain "harlem.localhost"
+                                             :media-key-prefix "harlem/"
+                                             :media-cache-dir (str (fs/path dir "cache"))
+                                             :backup-dir (str (fs/path dir "backups"))})]
+        (try
+          (instance/invite-owner! garden {:email "owner@example.com"})
+
+          (testing "one message went out, to the address invited"
+            (is (= 1 (count @sent)))
+            (is (= "owner@example.com" (:to (first @sent)))))
+
+          (testing "from the single configured address, not one derived per garden"
+            ;; SPF does not inherit to subdomains, so a per-garden sender would
+            ;; need a record per garden and would fragment sending reputation —
+            ;; and this is the one piece of mail that has to arrive.
+            (is (= "noreply@sepal.app" (:from (first @sent)))))
+
+          (testing "and the body links to this garden's own domain"
+            (is (re-find #"https://harlem\.localhost/" (:body (first @sent)))))
+
+          (testing "with no dangling inviter, since a managed garden has none"
+            ;; The in-app template says "{inviter-name} ({inviter-email}) has
+            ;; invited you"; rendered with nils that reads " () has invited you".
+            (is (not (re-find #"\(\) has invited" (:body (first @sent))))))
+          (finally
+            (instance/stop! garden))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
