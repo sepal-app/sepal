@@ -566,40 +566,52 @@
 
   The sender is one address for every garden, defaulting to noreply@sepal.app:
   SPF does not inherit to subdomains, so a per-garden sender would need its own
-  record and would fragment sending reputation."
+  record and would fragment sending reputation.
+
+  Calling it again for the same address resends. A first send can fail — a mail
+  provider misconfigured, a network blip — and throwing on the second call would
+  leave that garden permanently unenterable, since the owner exists and no link
+  ever arrived. An owner who has already activated is a different matter and does
+  throw."
   [instance {:keys [email]}]
   (let [db (instance-db instance)
         mail (get-in instance [:process :mail])
         token-service (get-in instance [:system :sepal.token.interface/service])
         {:keys [invitation-email-from invitation-email-subject]} (:opts instance)]
     ;; Checked before the user is created, not after: an owner row with no
-    ;; invitation sent is a garden nobody can enter, and it would make the retry
-    ;; fail too, on :user-exists.
+    ;; invitation sent is a garden nobody can enter.
     (when (nil? mail)
       (throw (ex-info "This process has no mail client, so no owner can be invited"
                       {:reason :mail-not-configured :email email :slug (:slug instance)})))
-    (when (user.i/exists? db email)
-      (throw (ex-info (format "A user already exists for %s" email)
-                      {:reason :user-exists :email email :slug (:slug instance)})))
-    (let [user (user.i/create! db {:email email
-                                   :password (random-password)
-                                   :role :admin
-                                   :status :invited})]
-      (when (error.i/error? user)
-        (throw (ex-info "Could not create the owner"
-                        {:reason :create-user-failed :error user :email email})))
-      (let [token (token.i/encode token-service {:email email
-                                                 :expires-at (token.i/expires-in-hours 24)})
-            url (accept-url instance token)]
-        (send-owner-invitation-email mail
-                                     {:to email
-                                      :accept-url url
-                                      :from (or invitation-email-from
-                                                default-invitation-email-from)
-                                      :subject (or invitation-email-subject
-                                                   default-invitation-email-subject)})
-        (setup.shared/complete-setup! db)
-        {:user-id (:user/id user) :accept-url url}))))
+    (let [existing (user.i/get-by-email db email)
+          _ (when (and existing (not= :invited (:user/status existing)))
+              (throw (ex-info (format "A user already exists for %s and has activated" email)
+                              {:reason :user-active :email email :slug (:slug instance)})))
+          user (or existing
+                   (let [created (user.i/create! db {:email email
+                                                     :password (random-password)
+                                                     :role :admin
+                                                     :status :invited})]
+                     (when (error.i/error? created)
+                       (throw (ex-info "Could not create the owner"
+                                       {:reason :create-user-failed :error created :email email})))
+                     created))
+          token (token.i/encode token-service {:email email
+                                               :expires-at (token.i/expires-in-hours 24)})
+          url (accept-url instance token)]
+      ;; Before the mail, deliberately. Whether a message arrived has nothing to do
+      ;; with whether this garden is configured, and a provider that refused once
+      ;; used to leave a fully provisioned garden showing a wizard its owner cannot
+      ;; act on — found in production.
+      (setup.shared/complete-setup! db)
+      (send-owner-invitation-email mail
+                                   {:to email
+                                    :accept-url url
+                                    :from (or invitation-email-from
+                                              default-invitation-email-from)
+                                    :subject (or invitation-email-subject
+                                                 default-invitation-email-subject)})
+      {:user-id (:user/id user) :accept-url url})))
 
 (defn usage
   "The countable things in a running instance, for tier accounting by a caller

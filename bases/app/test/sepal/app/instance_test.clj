@@ -11,7 +11,8 @@
             [sepal.database.interface :as db.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
-            [sepal.test.interface :as test.i]))
+            [sepal.test.interface :as test.i]
+            [sepal.user.interface :as user.i]))
 
 (def ^:private master "master-secret-for-tests")
 
@@ -601,13 +602,23 @@
             (is (= 200 (:status response)))
             (is (re-find #"(?i)accept invitation" (str (:body response))))))
 
-        (testing "inviting the same address twice is refused rather than silent"
-          (let [thrown (try
-                         (instance/invite-owner! a {:email "owner@example.com"})
-                         nil
-                         (catch clojure.lang.ExceptionInfo e e))]
+        (testing "inviting the same address again resends rather than refusing"
+          ;; The first send can fail — a mail provider misconfigured, a network
+          ;; blip — and the owner is then a user with no way in. Throwing on the
+          ;; second call left that garden unrecoverable. An invited user may be
+          ;; resent, which is the same rule resend_invitation.clj applies.
+          (let [again (instance/invite-owner! a {:email "owner@example.com"})]
+            (is (= (:user-id result) (:user-id again)) "the same user, not a second one")
+            (is (str/starts-with? (:accept-url again) "https://a.localhost/"))))
+
+        (testing "but an owner who has already activated is a real conflict"
+          (let [db (#'instance/instance-db a)
+                thrown (do (user.i/activate! db (:user-id result))
+                           (try (instance/invite-owner! a {:email "owner@example.com"})
+                                nil
+                                (catch clojure.lang.ExceptionInfo e e)))]
             (is (some? thrown) "invite-owner! should have thrown")
-            (is (= :user-exists (:reason (ex-data thrown))))))))))
+            (is (= :user-active (:reason (ex-data thrown))))))))))
 
 (deftest test-dev-opts-default-to-production-shapes
   (testing "omitted, :vite is still emitted explicitly as nil — an absent :vite
@@ -710,9 +721,61 @@
               (is (= :mail-not-configured (:reason (ex-data thrown)))))
 
             (testing "and no owner row is left behind, so a retry can succeed"
-              ;; A user created without an invitation sent is a garden nobody can
-              ;; enter, and the retry would fail on :user-exists instead.
+              ;; Nothing was created, because the check happens before the user is.
               (is (= 0 (:users (instance/usage garden))))))
+          (finally
+            (instance/stop! garden))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(deftest test-setup-is-completed-even-when-the-invitation-cannot-be-sent
+  (let [dir (fs/create-temp-dir {:prefix "sepal-invite-refused"})
+        db-path (str (fs/path dir "sepal.db"))
+        broken? (atom true)
+        sent (atom [])
+        ;; Refuses while broken, then works — a provider with a wrong hostname
+        ;; that gets corrected, which is what happened in production.
+        refusing (reify mail.p/MailClient
+                   (send-message [_ message]
+                     (if @broken?
+                       (throw (ex-info "Couldn't connect to host" {}))
+                       (do (swap! sent conj message) {:status :sent}))))
+        process (instance/start-process!
+                  {:log-level "WARN"
+                   :master-secret master
+                   :mail refusing
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+    (try
+      (instance/provision! {:db-path db-path})
+      (let [garden (instance/start! process {:slug "refused"
+                                             :db-path db-path
+                                             :app-domain "refused.localhost"
+                                             :media-key-prefix "refused/"
+                                             :media-cache-dir (str (fs/path dir "cache"))
+                                             :backup-dir (str (fs/path dir "backups"))})]
+        (try
+          (testing "the failure propagates, so the caller records which step broke"
+            (is (thrown? clojure.lang.ExceptionInfo
+                         (instance/invite-owner! garden {:email "owner@example.com"}))))
+
+          (testing "but the wizard is still skipped"
+            ;; Found in production: a mail provider with a wrong hostname left a
+            ;; fully provisioned garden showing a configuration wizard its owner
+            ;; cannot act on. Whether the email arrived has nothing to do with
+            ;; whether the garden is configured.
+            (let [response (:response (-> (peri/session (instance/handler garden))
+                                          (peri/request "/login")))]
+              (is (= 200 (:status response)))))
+
+          (testing "and the invitation can be sent again once mail works"
+            (reset! broken? false)
+            (is (some? (:accept-url (instance/invite-owner! garden {:email "owner@example.com"}))))
+            (is (= 1 (count @sent)) "one message, on the retry")
+            (is (= "owner@example.com" (:to (first @sent)))))
+
+          (testing "with one owner, not two"
+            (is (= 1 (:users (instance/usage garden)))))
           (finally
             (instance/stop! garden))))
       (finally
