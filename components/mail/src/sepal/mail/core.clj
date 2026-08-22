@@ -12,12 +12,17 @@
      :username - SMTP auth username
      :password - SMTP auth password
      :auth     - Enable SMTP authentication (boolean)
-     :tls      - TLS mode: \"starttls\", \"ssl\", or \"none\""
-  [{:keys [host port username password auth tls]}]
+     :tls      - TLS mode: \"starttls\", \"ssl\", or \"none\"
+     :debug    - Log the SMTP conversation to stdout. The only way to see which
+                 auth mechanism was chosen and what the server replied, which is
+                 otherwise invisible: a refused message and an accepted one both
+                 return {:status :sent} to the caller."
+  [{:keys [host port username password auth tls debug]}]
   (let [props (doto (Properties.)
                 (.put "mail.smtp.host" (str host))
                 (.put "mail.smtp.port" (str port))
                 (.put "mail.smtp.auth" (str (boolean auth))))
+        debug? (contains? #{true "true"} debug)
         _ (case tls
             "starttls" (.put props "mail.smtp.starttls.enable" "true")
             "ssl" (.put props "mail.smtp.ssl.enable" "true")
@@ -27,7 +32,10 @@
                         (proxy [Authenticator] []
                           (getPasswordAuthentication []
                             (PasswordAuthentication. username password))))]
-    (Session/getInstance props authenticator)))
+    (when debug?
+      (.put props "mail.debug" "true"))
+    (doto (Session/getInstance props authenticator)
+      (.setDebug debug?))))
 
 (defn- to-internet-addresses
   "Convert a string or collection of strings to InternetAddress array."

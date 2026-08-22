@@ -48,3 +48,15 @@
                                                :tls "starttls"})]
       (is (some? client))
       (is (satisfies? mail.p/MailClient client)))))
+
+(deftest test-debug-is-off-unless-asked-for
+  (testing "a session logs nothing by default"
+    ;; It prints every address and every server reply, so it is not something to
+    ;; leave on.
+    (is (false? (.getDebug (core/create-session {:host "smtp.example.org" :port 587})))))
+
+  (testing "and can be turned on, by boolean or by the string an env var gives"
+    ;; Without it a refused message and an accepted one are indistinguishable to
+    ;; the caller: send-message returns {:status :sent} either way.
+    (is (true? (.getDebug (core/create-session {:host "h" :debug true}))))
+    (is (true? (.getDebug (core/create-session {:host "h" :debug "true"}))))))

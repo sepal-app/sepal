@@ -57,7 +57,10 @@
              [:username {:optional true} [:maybe :string]]
              [:password {:optional true} [:maybe :string]]
              [:auth {:optional true} [:or :string :boolean]]
-             [:tls {:optional true} [:maybe :string]]]]]
+             [:tls {:optional true} [:maybe :string]]
+             ;; Logs the SMTP conversation. Off unless asked for: it prints
+             ;; addresses and every server reply.
+             [:debug {:optional true} [:or :string :boolean]]]]]
    [:s3 {:optional true}
     [:maybe [:map {:closed true}
              [:endpoint-override {:optional true} [:maybe :string]]
