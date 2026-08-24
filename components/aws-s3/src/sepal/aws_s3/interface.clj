@@ -34,14 +34,17 @@
 (defmethod ig/init-key ::s3-presigner [_ {:keys [accelerate-mode-enabled
                                                  checksum-validation-enabled
                                                  endpoint-override
+                                                 region
                                                  credentials-provider]}]
   (core/s3-presigner :accelerate-mode-enabled accelerate-mode-enabled
                      :checksum-validation-enabled checksum-validation-enabled
                      :endpoint-override endpoint-override
+                     :region region
                      :credentials-provider credentials-provider))
 
 ;; TODO: Don't initi s3 client if s3 keys not set
 
-(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override]}]
+(defmethod ig/init-key ::s3-client [_ {:keys [credentials-provider endpoint-override region]}]
   (core/s3-client :credentials-provider credentials-provider
-                  :endpoint-override endpoint-override))
+                  :endpoint-override endpoint-override
+                  :region region))

@@ -64,6 +64,7 @@
    [:s3 {:optional true}
     [:maybe [:map {:closed true}
              [:endpoint-override {:optional true} [:maybe :string]]
+             [:region {:optional true} [:maybe :string]]
              [:access-key-id :string]
              [:secret-access-key :string]
              [:media-upload-bucket :string]]]]
@@ -216,10 +217,12 @@
 
            :sepal.aws-s3.interface/s3-client
            {:endpoint-override (:endpoint-override s3)
+            :region (:region s3)
             :credentials-provider (ig/ref :sepal.aws-s3.interface/credentials-provider)}
 
            :sepal.aws-s3.interface/s3-presigner
            {:endpoint-override (:endpoint-override s3)
+            :region (:region s3)
             :credentials-provider (ig/ref :sepal.aws-s3.interface/credentials-provider)})))
 
 (defn start-process!

@@ -129,6 +129,7 @@
                           "IMAGE_CACHE_SIZE_MB" "250"
                           "AWS_ACCESS_KEY_ID" "key-id"
                           "AWS_SECRET_ACCESS_KEY" "secret-key"
+                          "AWS_REGION" "auto"
                           "AWS_S3_ENDPOINT" "https://s3.example.org"
                           "SMTP_HOST" "smtp.example.org"
                           "SMTP_PORT" "2525"
@@ -147,6 +148,7 @@
                 :tls "tls"}
                (:smtp process)))
         (is (= {:endpoint-override "https://s3.example.org"
+                :region "auto"
                 :access-key-id "key-id"
                 :secret-access-key "secret-key"
                 :media-upload-bucket "garden-media"}

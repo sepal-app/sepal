@@ -50,6 +50,7 @@
 
                 (get env "AWS_ACCESS_KEY_ID")
                 (assoc :s3 {:endpoint-override (get env "AWS_S3_ENDPOINT")
+                            :region (get env "AWS_REGION")
                             :access-key-id (get env "AWS_ACCESS_KEY_ID")
                             :secret-access-key (get env "AWS_SECRET_ACCESS_KEY")
                             :media-upload-bucket (get env "MEDIA_UPLOAD_BUCKET" "media")}))

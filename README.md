@@ -58,14 +58,27 @@ Copy `.env.local.example` to `.env.local` and configure the following:
 
 **Optional - Media Uploads:**
 
+Any S3-compatible store works, including Cloudflare R2. All five variables are
+read by the app itself — there is no other configuration path (the dispatcher
+reads its own `S3_*` vocabulary for hosted gardens; see the cloud repo).
+
 | Variable | Description |
 |----------|-------------|
 | `MEDIA_UPLOAD_BUCKET` | S3 bucket for media uploads |
-| `AWS_S3_ENDPOINT` | S3-compatible endpoint |
-| `AWS_ACCESS_KEY_ID` | AWS access key |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
-| `AWS_REGION` | AWS region |
+| `AWS_S3_ENDPOINT` | S3-compatible endpoint, e.g. `https://<accountid>.r2.cloudflarestorage.com` |
+| `AWS_ACCESS_KEY_ID` | Access key |
+| `AWS_SECRET_ACCESS_KEY` | Secret key |
+| `AWS_REGION` | Region used for request signing. With R2, use `auto`. |
 | `IMAGE_CACHE_SIZE_MB` | Max size for image thumbnail cache in MB (default: 500) |
+
+With Cloudflare R2 specifically:
+
+- Use an API token scoped to the one bucket.
+- Set `AWS_REGION=auto`. The region is only used to sign requests; R2 accepts
+  `auto` for all buckets.
+- The browser uploads directly to the bucket with a presigned PUT, so the bucket
+  needs a CORS rule allowing `PUT` from your app's origin with the
+  `content-type` header. Reads need no CORS rule: the app proxies them.
 
 **Optional - Email Customization:**
 

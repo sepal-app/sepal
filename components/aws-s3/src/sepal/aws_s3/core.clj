@@ -6,6 +6,7 @@
            [java.net URI]
            [java.nio.file Path]
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
+           [software.amazon.awssdk.regions Region]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
            [software.amazon.awssdk.services.s3.model
@@ -19,6 +20,7 @@
   ([& {:keys [accelerate-mode-enabled
               checksum-validation-enabled
               endpoint-override
+              region
               credentials-provider]
        :or {checksum-validation-enabled true}}]
    (let [s3config (cond-> (S3Configuration/builder)
@@ -28,7 +30,8 @@
      (cond-> (doto (S3Presigner/builder)
                (.serviceConfiguration s3config))
        credentials-provider  (.credentialsProvider credentials-provider)
-       endpoint-override (.endpointOverride (URI. endpoint-override))
+       region                (.region (Region/of region))
+       endpoint-override     (.endpointOverride (URI. endpoint-override))
        :always (.build)))))
 
 (defn credentials-provider
@@ -36,11 +39,11 @@
   (let [credentials  (AwsBasicCredentials/create access-key-id secret-access-key)]
     (StaticCredentialsProvider/create credentials)))
 
-(defn s3-client [& {:keys [credentials-provider endpoint-override]}]
+(defn s3-client [& {:keys [credentials-provider endpoint-override region]}]
   (cond-> (S3Client/builder)
     credentials-provider  (.credentialsProvider credentials-provider)
-    endpoint-override (.endpointOverride (URI. endpoint-override))
-
+    region                (.region (Region/of region))
+    endpoint-override     (.endpointOverride (URI. endpoint-override))
     :always (.build)))
 
 (defn presign-put-url
