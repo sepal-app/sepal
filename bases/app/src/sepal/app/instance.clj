@@ -616,6 +616,18 @@
                                                  default-invitation-email-subject)})
       {:user-id (:user/id user) :accept-url url})))
 
+(defn complete-setup!
+  "Mark a garden configured, so sepal.app.middleware stops forcing the setup
+  wizard.
+
+  Provisioning's job, not the invitation's. A managed garden is configured by
+  whoever hosts it, and until this is set the wizard is reachable by anyone who
+  finds the hostname — and it creates an active admin from an anonymous POST.
+  invite-owner! also calls it, which is harmless: it is an upsert of one setting."
+  [instance]
+  (setup.shared/complete-setup! (instance-db instance))
+  nil)
+
 (defn usage
   "The countable things in a running instance, for tier accounting by a caller
   that hosts it. One map rather than a family of getters, validated before it is

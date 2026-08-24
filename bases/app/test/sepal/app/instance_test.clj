@@ -620,6 +620,41 @@
             (is (some? thrown) "invite-owner! should have thrown")
             (is (= :user-active (:reason (ex-data thrown))))))))))
 
+(deftest test-complete-setup
+  (with-two-gardens
+    (fn [_process a b]
+      (testing "until it runs, even /login is forced to the setup wizard"
+        ;; Which is the whole risk: the wizard's POST creates an active admin
+        ;; from an anonymous request, so a garden left here belongs to whoever
+        ;; finds the hostname.
+        (let [response (:response (-> (peri/session (instance/handler a))
+                                      (peri/request "/login")))]
+          (is (= 303 (:status response)))
+          (is (= "/setup" (get-in response [:headers "Location"])))))
+
+      (testing "after it, /login serves"
+        (is (nil? (instance/complete-setup! a)))
+        (let [response (:response (-> (peri/session (instance/handler a))
+                                      (peri/request "/login")))]
+          (is (= 200 (:status response)))
+          (is (re-find #"(?i)password" (str (:body response))))))
+
+      (testing "and it invited nobody, so the garden still has no users"
+        ;; Configuring a garden and handing it to its owner are separate steps.
+        ;; This is the one provisioning owes; the invitation comes later.
+        (is (= 0 (:users (instance/usage a)))))
+
+      (testing "calling it again is harmless — it is an upsert of one setting"
+        (is (nil? (instance/complete-setup! a)))
+        (is (= 200 (:status (:response (-> (peri/session (instance/handler a))
+                                           (peri/request "/login")))))))
+
+      (testing "the other garden is untouched — still in setup"
+        (let [response (:response (-> (peri/session (instance/handler b))
+                                      (peri/request "/login")))]
+          (is (= 303 (:status response)))
+          (is (= "/setup" (get-in response [:headers "Location"]))))))))
+
 (deftest test-dev-opts-default-to-production-shapes
   (testing "omitted, :vite is still emitted explicitly as nil — an absent :vite
             means {:mode :build} to zodiac-assets, which would run npm and vite
