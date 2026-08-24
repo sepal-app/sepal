@@ -224,8 +224,13 @@
           (flash/error {} "Error: Could not unlink resource")))
 
       :get
+      ;; Only when there is a link: link-anchor dispatches link-text on the
+      ;; resource type and runs a case over it, and neither has a default, so a
+      ;; media item with no link throws rather than rendering. render already
+      ;; handles nil by offering the link control instead.
       (let [link (media.i/get-link db (:media/id resource))
-            anchor (link-anchor :db db :link link)]
+            anchor (when link
+                     (link-anchor :db db :link link))]
         (render :anchor anchor
                 :link link
                 :media resource)))))

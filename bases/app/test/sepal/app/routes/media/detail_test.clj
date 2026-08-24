@@ -32,3 +32,22 @@
             "media outside this instance's prefix is no media of ours, not a server error")
         (is (some? (media.i/get-by-id *db* (:media/id media)))
             "the media row must still exist after a refused delete")))))
+
+(deftest test-link-widget-renders-for-media-with-no-link
+  (tf/testing "GET on the link widget for media with no link offers the link control rather than 500ing"
+    ;; Media uploaded from /media/ carries no linkResourceType/linkResourceId, so
+    ;; it has no media_link row. That is the ordinary case, not an edge.
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :title "unlinked.jpg"
+                                     :s3-key "media/unlinked.jpg"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [user media]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/link/"))]
+        (is (= 200 (:status response))
+            "no link is a state the widget renders, not a server error")
+        (is (nil? (media.i/get-link *db* (:media/id media)))
+            "and the media really has no link, so the nil path was the one exercised")))))
+
