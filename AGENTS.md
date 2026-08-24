@@ -182,37 +182,40 @@ direnv allow          # once
 devenv shell          # or just cd, with direnv active
 ```
 
-`devenv.nix` owns every value that has to be an absolute path —
-`EXTENSIONS_LIBRARY_PATH`, `MIGRATIONS_DIR`, `SCHEMA_DUMP_FILE`,
-`SEPAL_DATA_HOME`, `VITE_CONFIG_FILE` — so they follow the project directory
-instead of breaking when it moves. Don't set those in `.env.local`.
+`devenv.nix` sets the two values that have to be absolute paths,
+`EXTENSIONS_LIBRARY_PATH` and `SEPAL_DATA_HOME`, so they follow the project
+directory instead of breaking when it moves. Don't set those in `.env.local`.
+`bin/reset-db.sh` carries `MIGRATIONS_DIR` and `SCHEMA_DUMP_FILE` itself,
+derived from its own location; nothing reads them from the environment.
 
-Copy `.env.local.example` to `.env.local` for everything else:
-- `WFO_DATABASE_PATH` - World Flora Online database
-- `SEPAL_SECRET` - The secret everything else is derived from. Was called
-  `COOKIE_SECRET` until it came to cover the token secret too
-- `TOKEN_SECRET` - Password reset and invitation tokens. Read only by
-  `system.edn`, so it applies to the REPL and not to `-main`
-- `MIGRATE_SH` - Absolute path to the sqlite-migrate script
+Copy `.env.local.example` to `.env.local` for everything else. Only
+`SEPAL_SECRET` is required. The full variable list, with defaults, is in
+`README.md`; the three worth knowing here are:
+- `SEPAL_SECRET` - The master secret everything else is derived from. Was
+  called `COOKIE_SECRET` until it came to cover the token secret too
+- `WFO_DATABASE_PATH` - World Flora Online database, read by `bin/reset-db.sh`
+- `MIGRATE_SH` - Absolute path to the sqlite-migrate script, same
 
-`SEPAL_SECRET` means two different things depending on how Sepal is started.
-`system.edn` uses it directly as zodiac's cookie key, which is why it must be
-exactly 16 characters. `sepal.app.main/-main` passes it to the instance API as
-the *master secret*, and the cookie key and token secret are HKDF-derived from
-it per instance — so `-main` ignores `TOKEN_SECRET` entirely. One consequence
-worth knowing before you upgrade a running install: the derived cookie key is
-not the old literal one, so every session is invalidated once.
+`sepal.app.main/-main` passes `SEPAL_SECRET` to the instance API as the *master
+secret*, and the cookie key and token secret are HKDF-derived from it per
+instance. `ProcessOpts` requires at least 16 characters; there is no upper
+bound, and the old exactly-16 rule went away with `system.edn`. `TOKEN_SECRET`
+went with it — nothing reads it now, and
+`main-test/test-token-secret-is-derived-not-read` exists to keep it from
+coming back. One consequence worth knowing before you upgrade an install that
+predates the derivation: the derived cookie key is not the old literal one, so
+every session is invalidated once.
 
 **Don't quote values in `.env.local`, and don't use `$HOME` or `${PWD}`.**
 devenv's dotenv reader is not a shell: it keeps quotes as part of the value and
-does not expand variables. `SEPAL_SECRET="..."` arrives 18 characters long and
-fails zodiac's exact-16 check at startup.
+does not expand variables. `SEPAL_SECRET="..."` arrives 18 characters long, and
+a quoted path arrives with the quotes attached.
 
-Additional env vars for production (see `sepal.app.main/env-opts`, which is the
-only place Sepal reads the environment):
-- AWS credentials for S3/media storage
-- SMTP configuration for email (SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_AUTH, SMTP_TLS)
-- `APP_DOMAIN`, `IMAGE_CACHE_SIZE_MB`
+Two gates are worth knowing because an empty value is not the same as an unset
+one. `env-opts` builds `:smtp` only when `SMTP_HOST` is truthy and `:s3` only
+when `AWS_ACCESS_KEY_ID` is truthy, and `""` is truthy in Clojure — so a blank
+assignment in `.env.local` turns the subsystem on with unusable settings rather
+than leaving it off. Comment the line out instead.
 
 ## Configuration
 
@@ -275,6 +278,14 @@ The `sepal.app.test` namespace provides HTTP testing utilities:
 Routes are defined per-resource in `bases/app/src/sepal/app/routes/<resource>/`:
 - `core.clj` - Route definitions
 - `index.clj`, `create.clj`, `detail.clj` - Handlers
+
+`routes/setup/` is the first-run wizard, and is how a standalone install gets
+its first admin user and its taxon data: the taxonomy step reads the
+`sepal-init-manifest.json` published on the GitHub releases page, downloads the
+matching init database and imports from it (`routes/setup/shared.clj`). That
+init database is built by `bin/create-init-db.sh` and published by
+`bin/publish-sepal-init.sh`. `bin/reset-db.sh` is the other path to taxa, for a
+development database rebuilt from a full WFO Plantlist.
 
 ### Frontend Assets
 

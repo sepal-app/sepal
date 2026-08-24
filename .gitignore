@@ -51,6 +51,7 @@ bases/app/resources/app/dist/
 bases/app/resources/app/build/
 
 .env.*
+!.env.local.example
 .envrc
 .rebl
 .dir-locals.el

@@ -164,6 +164,23 @@
         (is (= "/tmp/sepal-audit/sepal.db" (:db-path instance)))
         (is (= "/tmp/sepal-audit/cache" (:media-cache-dir instance)))))))
 
+(deftest test-smtp-debug-is-opt-in
+  (testing "SMTP_DEBUG reaches the smtp opts, so the conversation can be logged
+            from a self-hosted start rather than only from a caller that builds
+            opts by hand"
+    (let [{:keys [process]} (main/env-opts {"SEPAL_SECRET" "1234567890123456"
+                                            "SMTP_HOST" "smtp.example.org"
+                                            "SMTP_DEBUG" "true"})]
+      (is (= "true" (:debug (:smtp process))))
+      (is (m/validate instance/ProcessOpts process)
+          (str "invalid process opts: " (pr-str process)))))
+
+  (testing "without SMTP_DEBUG the key is absent, so the default stays off and
+            the opts map does not grow a nil"
+    (let [{:keys [process]} (main/env-opts {"SEPAL_SECRET" "1234567890123456"
+                                            "SMTP_HOST" "smtp.example.org"})]
+      (is (not (contains? (:smtp process) :debug))))))
+
 (deftest test-token-secret-is-derived-not-read
   (testing "system.edn read TOKEN_SECRET; secrets are derived from SEPAL_SECRET
             now, so the variable must not quietly come back"

@@ -41,12 +41,17 @@
                        :log-level (get env "LOG_LEVEL" "DEBUG")
                        :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")}
                 (get env "SMTP_HOST")
-                (assoc :smtp {:host (get env "SMTP_HOST")
-                              :port (get env "SMTP_PORT" "587")
-                              :username (get env "SMTP_USERNAME")
-                              :password (get env "SMTP_PASSWORD")
-                              :auth (get env "SMTP_AUTH" "true")
-                              :tls (get env "SMTP_TLS" "starttls")})
+                (assoc :smtp (cond-> {:host (get env "SMTP_HOST")
+                                      :port (get env "SMTP_PORT" "587")
+                                      :username (get env "SMTP_USERNAME")
+                                      :password (get env "SMTP_PASSWORD")
+                                      :auth (get env "SMTP_AUTH" "true")
+                                      :tls (get env "SMTP_TLS" "starttls")}
+                               ;; Added only when asked for. The key stays absent
+                               ;; otherwise, because the log prints addresses and
+                               ;; every server reply.
+                               (get env "SMTP_DEBUG")
+                               (assoc :debug (get env "SMTP_DEBUG"))))
 
                 (get env "AWS_ACCESS_KEY_ID")
                 (assoc :s3 {:endpoint-override (get env "AWS_S3_ENDPOINT")
