@@ -180,11 +180,11 @@
     (let [admin-email (create-admin-user! *db*)
           temp-dir (Files/createTempDirectory "backup-test" (into-array java.nio.file.attribute.FileAttribute []))
           backup-path (str temp-dir)
-          app-domain "test.sepal.app"]
+          app-base-url "https://test.sepal.app"]
       (try
         (clear-sent-messages!)
         (let [result (backup/create-backup! *db* backup-path)]
-          (#'backup/send-backup-success-email! *mail-client* *db* app-domain result)
+          (#'backup/send-backup-success-email! *mail-client* *db* app-base-url result)
 
           ;; Verify emails were sent to admin users
           (let [messages (sent-messages)
@@ -195,7 +195,7 @@
             (let [msg (first (filter #(= admin-email (:to %)) messages))]
               (is (= "Sepal Backup Completed Successfully" (:subject msg)))
               (is (str/includes? (:body msg) (:filename result)))
-              (is (str/includes? (:body msg) app-domain))
+              (is (str/includes? (:body msg) (str app-base-url "/settings/backups/")))
               (is (str/includes? (:body msg) "Download:")))))
         (finally
           (doseq [f (file-seq (io/file backup-path))]

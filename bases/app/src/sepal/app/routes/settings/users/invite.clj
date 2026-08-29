@@ -81,10 +81,8 @@
     :title "Invite User"
     :content (page-content :errors errors :values values)))
 
-(defn- build-accept-url [app-domain token]
-  (format "https://%s%s"
-          app-domain
-          (z/url-for auth.routes/accept-invitation nil {:token token})))
+(defn- build-accept-url [app-base-url token]
+  (str app-base-url (z/url-for auth.routes/accept-invitation nil {:token token})))
 
 (defn- send-invitation-email [mail {:keys [to full-name inviter-name inviter-email accept-url from subject]}]
   (let [content (mustache/render-resource "app/email/invitation.mustache"
@@ -104,7 +102,7 @@
       {:email ["This email is already registered"]})))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [app-domain db mail token-service
+  (let [{:keys [app-base-url db mail token-service
                 invitation-email-from invitation-email-subject]} context]
     (case request-method
       :post
@@ -132,7 +130,7 @@
                   (let [token (token.i/encode token-service
                                               {:email email
                                                :expires-at (token.i/expires-in-hours 24)})
-                        accept-url (build-accept-url app-domain token)
+                        accept-url (build-accept-url app-base-url token)
                         inviter-name (or (:user/full-name viewer) (:user/email viewer))]
                     (try
                       (send-invitation-email mail

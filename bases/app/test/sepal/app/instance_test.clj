@@ -567,6 +567,38 @@
           (is (some? thrown) "create-admin-user! should have thrown")
           (is (= :user-exists (:reason (ex-data thrown)))))))))
 
+(deftest test-invite-owner-honours-app-base-url
+  ;; :app-domain is the dispatcher's routing key, matched against a Host header
+  ;; with its port stripped, so it cannot carry one — and every link this code
+  ;; sends hardcoded https. A garden not on 443 behind TLS therefore had no
+  ;; openable way in: the accept link is the only way into a garden with no card
+  ;; collected at signup.
+  (let [dir (fs/create-temp-dir {:prefix "sepal-base-url"})
+        process (instance/start-process!
+                  {:log-level "WARN"
+                   :master-secret "master-secret-for-tests"
+                   :mail (->RecordingMailClient (atom []))
+                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+    (try
+      (let [opts (assoc (garden-opts dir "a") :app-base-url "http://a.localhost:3000")]
+        (instance/provision! {:db-path (:db-path opts)})
+        (let [a (instance/start! process opts)]
+          (try
+            (let [result (instance/invite-owner! a {:email "owner@example.com"})]
+              (testing "the accept url carries the configured scheme and port"
+                (is (str/starts-with? (:accept-url result) "http://a.localhost:3000/")))
+
+              (testing "and the garden still honours the link it just built"
+                (let [response (:response
+                                 (-> (peri/session (instance/handler a))
+                                     (peri/request (str/replace (:accept-url result)
+                                                                "http://a.localhost:3000" ""))))]
+                  (is (= 200 (:status response))))))
+            (finally (instance/stop! a)))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
 (deftest test-invite-owner
   (with-two-gardens
     (fn [_process a b]

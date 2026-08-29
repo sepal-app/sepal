@@ -77,6 +77,15 @@
    [:slug Slug]
    [:db-path [:string {:min 1}]]
    [:app-domain [:string {:min 1}]]
+   ;; Scheme, host and port for the links this instance mails out. Optional, and
+   ;; https on :app-domain without it, which is what a deployed garden is.
+   ;;
+   ;; Separate from :app-domain because that is also the dispatcher's routing
+   ;; key, matched against a Host header with its port stripped — so it cannot
+   ;; carry one. A garden not reached on 443 over TLS has no openable invitation
+   ;; link without this, and with no card collected at signup the invitation is
+   ;; the only way in.
+   [:app-base-url {:optional true} [:string {:min 1}]]
    ;; Required, not derived: every tenant-bearing path is the caller's explicit
    ;; decision, so a missing one fails here instead of colliding at runtime.
    [:media-key-prefix MediaKeyPrefix]
@@ -265,12 +274,18 @@
 (def ^:private default-invitation-email-from "noreply@sepal.app")
 (def ^:private default-invitation-email-subject "You've been invited to Sepal")
 
+(defn- base-url
+  "Scheme, host and port for the links an instance sends out. See :app-base-url
+  on InstanceOpts for why this is not derived from :app-domain alone."
+  [{:keys [app-base-url app-domain]}]
+  (or app-base-url (str "https://" app-domain)))
+
 (defn- instance-config
-  [process {:keys [slug db-path app-domain media-key-prefix media-cache-dir media-cache-size-mb backup-dir
+  [process {:keys [slug db-path app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request?
                    forgot-password-email-from forgot-password-email-subject
-                   invitation-email-from invitation-email-subject]}]
+                   invitation-email-from invitation-email-subject] :as opts}]
   (cond->
     {:sepal.token.interface/service
      {:secret (token-secret (:master-secret process) slug)}
@@ -307,7 +322,11 @@
       :start-server? (boolean start-server?)
       :reload-per-request? (boolean reload-per-request?)
       :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}
-      :request-context {:app-domain app-domain
+      :request-context {;; Kept for setup/shared's health check, which reports
+                        ;; whether a domain is configured at all. Links are built
+                        ;; from :app-base-url, which carries scheme and port too.
+                        :app-domain app-domain
+                        :app-base-url (base-url opts)
                         :mail (:mail process)
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
@@ -327,7 +346,7 @@
      {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
       :zodiac (ig/ref :sepal.app.server/zodiac)
       :mail (:mail process)
-      :app-domain app-domain
+      :app-base-url (base-url opts)
       :backup-dir backup-dir}}
 
     hot-reload
@@ -538,14 +557,12 @@
   per invitation, which is rare."
   [instance token]
   (let [router-factory (get-in instance [:system :sepal.app.server/zodiac ::z/router])
-        app-domain (get-in instance [:opts :app-domain])]
+        base (base-url (:opts instance))]
     (when-not (fn? router-factory)
       (throw (ex-info "No router on this instance, so no accept URL can be built"
                       {:reason :router-unavailable :slug (:slug instance)})))
     (binding [z/*router* (router-factory)]
-      (format "https://%s%s"
-              app-domain
-              (z/url-for auth.routes/accept-invitation nil {:token token})))))
+      (str base (z/url-for auth.routes/accept-invitation nil {:token token})))))
 
 (defn- send-owner-invitation-email
   [mail {:keys [to accept-url from subject]}]

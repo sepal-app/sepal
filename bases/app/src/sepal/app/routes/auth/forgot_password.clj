@@ -51,7 +51,7 @@
        (= :active (:user/status user))))
 
 (defn handler [{:keys [::z/context flash params request-method]}]
-  (let [{:keys [app-domain db mail token-service forgot-password-email-from
+  (let [{:keys [app-base-url db mail token-service forgot-password-email-from
                 forgot-password-email-subject]} context
         {:strs [email]} params]
     (case request-method
@@ -60,12 +60,10 @@
       (let [user (user.i/get-by-email db email)]
         (if (active-user? user)
           (let [token (reset-password-token token-service email)
-                ;; TODO: This needs to be an absolute url
-                reset-password-url (format "https://%s%s"
-                                           app-domain
-                                           (z/url-for auth.routes/reset-password
-                                                      nil
-                                                      {:token token}))]
+                reset-password-url (str app-base-url
+                                        (z/url-for auth.routes/reset-password
+                                                   nil
+                                                   {:token token}))]
             (try
               (send-reset-password-email mail
                                          email

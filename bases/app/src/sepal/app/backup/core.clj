@@ -236,9 +236,9 @@
 
 (defn- send-backup-success-email!
   "Send backup success notification to all admin users."
-  [mail db app-domain backup-result]
+  [mail db app-base-url backup-result]
   (let [admin-emails (get-admin-emails db)
-        download-url (str "https://" app-domain "/settings/backups/"
+        download-url (str app-base-url "/settings/backups/"
                           (:filename backup-result) "/download")
         subject "Sepal Backup Completed Successfully"
         body (str "A database backup was completed successfully.\n\n"
@@ -310,7 +310,7 @@
 
 (defn- backup-task
   "Create a backup task function for the scheduler."
-  [db mail app-domain backup-dir]
+  [db mail app-base-url backup-dir]
   (fn [_scheduled-time]
     (let [dir-check (ensure-backup-dir! backup-dir)]
       (if-not (:valid? dir-check)
@@ -320,7 +320,7 @@
         (try
           (let [result (create-backup! db (:path dir-check))]
             (set-config! db {:last-run-at (Instant/now)})
-            (send-backup-success-email! mail db app-domain result))
+            (send-backup-success-email! mail db app-base-url result))
           (catch Exception e
             (log/error e "Scheduled backup failed")
             (send-backup-failure-email! mail db (.getMessage e))))))))
@@ -330,7 +330,7 @@
    Called on app startup and when config changes.
 
    Frequency of nil means backups are disabled."
-  [scheduler db mail app-domain backup-dir]
+  [scheduler db mail app-base-url backup-dir]
   (let [config (get-config db backup-dir)
         frequency (:frequency config)]
     (if frequency
@@ -340,7 +340,7 @@
                                :backup
                                (map #(.toInstant ^ZonedDateTime %)
                                     (backup-schedule frequency))
-                               (backup-task db mail app-domain backup-dir)))
+                               (backup-task db mail app-base-url backup-dir)))
       (do
         (log/info "Backup not configured, cancelling any existing job")
         (scheduler.i/cancel! scheduler :backup)))))
@@ -348,10 +348,10 @@
 ;; -----------------------------------------------------------------------------
 ;; Integrant lifecycle
 
-(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-domain backup-dir]}]
+(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-base-url backup-dir]}]
   (let [db (get zodiac :zodiac.ext.sql/db)]
-    (register-backup-job! scheduler db mail app-domain backup-dir)
-    {:scheduler scheduler :db db :mail mail :app-domain app-domain :backup-dir backup-dir}))
+    (register-backup-job! scheduler db mail app-base-url backup-dir)
+    {:scheduler scheduler :db db :mail mail :app-base-url app-base-url :backup-dir backup-dir}))
 
 (defmethod ig/halt-key! :sepal.app.backup/job [_ {:keys [scheduler]}]
   (scheduler.i/cancel! scheduler :backup))
