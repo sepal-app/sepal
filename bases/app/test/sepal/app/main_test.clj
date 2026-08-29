@@ -164,6 +164,25 @@
         (is (= "/tmp/sepal-audit/sepal.db" (:db-path instance)))
         (is (= "/tmp/sepal-audit/cache" (:media-cache-dir instance)))))))
 
+(deftest test-app-url-scheme-is-configured-not-guessed
+  ;; Every link a garden mails — invitations, password resets, backup downloads —
+  ;; is built from this. It is a variable rather than something inferred from the
+  ;; hostname: an install reached over plain HTTP is a deployment decision, and a
+  ;; rule like "localhost means http" would be wrong for the first person who
+  ;; puts a garden on a private hostname behind TLS, or on http elsewhere.
+  (testing "unset, no base url is passed and the instance builds https itself"
+    (let [{:keys [instance]} (main/env-opts {"SEPAL_SECRET" "1234567890123456"
+                                             "APP_DOMAIN" "garden.example.org"})]
+      (is (nil? (:app-base-url instance)))))
+
+  (testing "set, it carries the scheme with whatever APP_DOMAIN holds"
+    ;; APP_DOMAIN may include a port here, unlike under the dispatcher, because
+    ;; nothing routes on it in a self-hosted install.
+    (let [{:keys [instance]} (main/env-opts {"SEPAL_SECRET" "1234567890123456"
+                                             "APP_DOMAIN" "localhost:8000"
+                                             "APP_URL_SCHEME" "http"})]
+      (is (= "http://localhost:8000" (:app-base-url instance))))))
+
 (deftest test-smtp-debug-is-opt-in
   (testing "SMTP_DEBUG reaches the smtp opts, so the conversation can be logged
             from a self-hosted start rather than only from a caller that builds

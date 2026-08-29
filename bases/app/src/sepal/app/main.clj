@@ -36,7 +36,14 @@
         forgot-password-email-from (get env "FORGOT_PASSWORD_EMAIL_FROM")
         forgot-password-email-subject (get env "FORGOT_PASSWORD_EMAIL_SUBJECT")
         invitation-email-from (get env "INVITATION_EMAIL_FROM")
-        invitation-email-subject (get env "INVITATION_EMAIL_SUBJECT")]
+        invitation-email-subject (get env "INVITATION_EMAIL_SUBJECT")
+        ;; Configured, never inferred. An install reached over plain HTTP is a
+        ;; deployment decision, and a rule like "localhost means http" would be
+        ;; wrong for a garden on a private hostname behind TLS, and for one on
+        ;; http anywhere else. Unset, no :app-base-url is passed and start!
+        ;; builds https on :app-domain, which is what a served garden is.
+        app-url-scheme (get env "APP_URL_SCHEME")
+        app-domain (get env "APP_DOMAIN" "localhost")]
     {:process (cond-> {:master-secret (master-secret env)
                        :log-level (get env "LOG_LEVEL" "DEBUG")
                        :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")}
@@ -61,7 +68,7 @@
                             :media-upload-bucket (get env "MEDIA_UPLOAD_BUCKET" "media")}))
      :instance (cond-> {:slug self-hosted-slug
                         :db-path (str (fs/path home "sepal.db"))
-                        :app-domain (get env "APP_DOMAIN" "localhost")
+                        :app-domain app-domain
                         ;; Not normalized: an operator's slashless value must fail
                         ;; validation at start! rather than silently be corrected to
                         ;; point somewhere an existing install never wrote.
@@ -74,7 +81,10 @@
                  forgot-password-email-from (assoc :forgot-password-email-from forgot-password-email-from)
                  forgot-password-email-subject (assoc :forgot-password-email-subject forgot-password-email-subject)
                  invitation-email-from (assoc :invitation-email-from invitation-email-from)
-                 invitation-email-subject (assoc :invitation-email-subject invitation-email-subject))}))
+                 invitation-email-subject (assoc :invitation-email-subject invitation-email-subject)
+                 ;; APP_DOMAIN may carry a port here, unlike under the dispatcher,
+                 ;; because nothing routes on it in a self-hosted install.
+                 app-url-scheme (assoc :app-base-url (str app-url-scheme "://" app-domain)))}))
 
 (defn -main [& _]
   (try

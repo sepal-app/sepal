@@ -73,7 +73,8 @@ Everything it reads is listed here; anything not listed is not read.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_DOMAIN` | `localhost` | Domain used to build links in outgoing email |
+| `APP_DOMAIN` | `localhost` | Host used to build links in outgoing email. May include a port |
+| `APP_URL_SCHEME` | `https` | Scheme for those links. Set to `http` for an install not behind TLS |
 | `HOST` | `0.0.0.0` | Jetty bind address |
 | `PORT` | `3000` | Jetty port |
 | `LOG_LEVEL` | `DEBUG` | `DEBUG`, `INFO`, `WARN` or `ERROR` |
