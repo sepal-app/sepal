@@ -6,13 +6,34 @@
            [java.net URI]
            [java.nio.file Path]
            [software.amazon.awssdk.auth.credentials AwsBasicCredentials StaticCredentialsProvider]
+           [software.amazon.awssdk.core.exception SdkClientException]
            [software.amazon.awssdk.regions Region]
+           [software.amazon.awssdk.regions.providers DefaultAwsRegionProviderChain]
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
            [software.amazon.awssdk.services.s3.model
             GetObjectRequest ListObjectsV2Request PutObjectRequest DeleteObjectRequest]
            [software.amazon.awssdk.services.s3.presigner S3Presigner]
            [software.amazon.awssdk.services.s3.presigner.model PutObjectPresignRequest]))
+
+(defn- resolve-region
+  "The `Region` to build with, or nil to leave the choice to the builder.
+
+  An explicit `region` wins. Otherwise the SDK's default chain (AWS_REGION,
+  `~/.aws/config`, EC2 metadata) is consulted here rather than inside the
+  builder, so that an exhausted chain can be told from a resolved one.
+
+  An exhausted chain with an `endpoint-override` set means an S3-compatible
+  store, where the region only signs the request and any valid one will do.
+  Without an override the region selects the AWS endpoint, so return nil and
+  let the builder raise."
+  [region endpoint-override]
+  (if region
+    (Region/of region)
+    (or (try
+          (.getRegion (DefaultAwsRegionProviderChain.))
+          (catch SdkClientException _ nil))
+        (when endpoint-override Region/US_EAST_1))))
 
 (defn s3-presigner
   ([]
@@ -26,11 +47,12 @@
    (let [s3config (cond-> (S3Configuration/builder)
                     accelerate-mode-enabled (.accelerateModeEnabled accelerate-mode-enabled)
                     checksum-validation-enabled (.checksumValidationEnabled checksum-validation-enabled)
-                    :always (.build))]
+                    :always (.build))
+         region (resolve-region region endpoint-override)]
      (cond-> (doto (S3Presigner/builder)
                (.serviceConfiguration s3config))
        credentials-provider  (.credentialsProvider credentials-provider)
-       region                (.region (Region/of region))
+       region                (.region region)
        endpoint-override     (.endpointOverride (URI. endpoint-override))
        :always (.build)))))
 
@@ -40,11 +62,12 @@
     (StaticCredentialsProvider/create credentials)))
 
 (defn s3-client [& {:keys [credentials-provider endpoint-override region]}]
-  (cond-> (S3Client/builder)
-    credentials-provider  (.credentialsProvider credentials-provider)
-    region                (.region (Region/of region))
-    endpoint-override     (.endpointOverride (URI. endpoint-override))
-    :always (.build)))
+  (let [region (resolve-region region endpoint-override)]
+    (cond-> (S3Client/builder)
+      credentials-provider  (.credentialsProvider credentials-provider)
+      region                (.region region)
+      endpoint-override     (.endpointOverride (URI. endpoint-override))
+      :always (.build))))
 
 (defn presign-put-url
   "Given a `bucket`, key (`k`), `content-type`, and java.time `duration`

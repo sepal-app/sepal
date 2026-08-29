@@ -17,12 +17,21 @@
     (.close client)))
 
 (deftest s3-client-builds-without-a-region
-  ;; The SDK default chain still has to work: a self-hoster with AWS_REGION
-  ;; exported in the environment relies on it.
+  ;; An endpoint override means an S3-compatible store, where the region only
+  ;; signs the request. Building must not need AWS_REGION or an ~/.aws/config
+  ;; on the host, neither of which a CI runner has.
   (let [client (ig/init-key ::aws-s3.i/s3-client
-                            {:credentials-provider test-creds})]
+                            {:endpoint-override "https://example.r2.cloudflarestorage.com"
+                             :credentials-provider test-creds})]
     (is (instance? S3Client client))
     (.close client)))
+
+(deftest presigner-builds-without-a-region
+  (let [presigner (ig/init-key ::aws-s3.i/s3-presigner
+                               {:endpoint-override "https://example.r2.cloudflarestorage.com"
+                                :credentials-provider test-creds})]
+    (is (some? presigner))
+    (.close presigner)))
 
 (deftest presigner-signs-with-the-given-region
   ;; No network: presigning is local computation. The region appears in the
