@@ -4,16 +4,19 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.setup.activity :as setup.activity]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.activity :as ui.activity]
             [sepal.app.ui.avatar :as ui.avatar]
+            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.activity :as location.activity]
@@ -301,6 +304,36 @@
                            "first:mt-0")}
    date-str])
 
+(defn empty-state
+  "Render what the feed shows when it has nothing to render.
+
+  This is the landing page of a new instance — sepal.app.routes.dashboard.index
+  redirects / here — so it says what the page is for and offers the first steps
+  the viewer's role allows. A reader can create nothing, so they get the
+  explanation alone."
+  [viewer]
+  [:div {:class (html/attr "card" "bg-base-100" "shadow-sm" "mt-6")}
+   [:div {:class (html/attr "card-body" "items-center" "text-center" "py-12")}
+    [:div {:class "text-base-content/30"}
+     (heroicons/outline-clock :size 48)]
+    [:h2 {:class (html/attr "card-title" "mt-4")}
+     "No activity yet"]
+    [:p {:class (html/attr "text-base-content/60" "max-w-md")}
+     "Records created, edited and uploaded by you and your collaborators show up here."]
+    (when (authz/can-edit? viewer)
+      [:div {:class (html/attr "card-actions" "mt-6")}
+       [:a {:class "btn btn-primary"
+            :href (z/url-for location.routes/new)}
+        "Add a location"]
+       [:a {:class "btn btn-ghost"
+            :href (z/url-for accession.routes/new)}
+        "Add an accession"]])
+    (when (authz/user-has-permission? viewer authz/users-create)
+      [:div {:class (html/attr "mt-4" "text-sm")}
+       [:a {:class "spl-link"
+            :href (z/url-for settings.routes/users-invite)}
+        "Invite someone to your organization"]])]])
+
 ;;; Legacy timeline-section (kept for reference during migration)
 
 (defn timeline-section [date activity]
@@ -349,53 +382,61 @@
 (defn timeline-content
   "Render just the activity content (day sections with cards) without page wrapper.
    Used for both initial render and HTMX partial responses."
-  [& {:keys [activity page page-size timezone]}]
-  (let [activity-by-date (group-by #(.truncatedTo (:activity/created-at %)
+  [& {:keys [activity page page-size timezone viewer]}]
+  (let [;; Filter out activities that don't have data. Done before grouping, so
+        ;; that a page whose every row lacks an activity-data method counts as
+        ;; empty rather than rendering a run of empty day sections.
+        renderable (filter #(some? (activity-data %)) activity)
+        activity-by-date (group-by #(.truncatedTo (:activity/created-at %)
                                                   ChronoUnit/DAYS)
-                                   activity)
+                                   renderable)
         ;; dates in descending order (most recent first)
         dates (sort #(.isAfter %1 %2) (keys activity-by-date))
         has-more? (= (count activity) page-size)]
-    [:div
-     (for [date dates]
-       (let [day-activities (get activity-by-date date)
-             ;; Filter out activities that don't have data
-             valid-activities (filter #(some? (activity-data %)) day-activities)
-             user-groups (group-consecutive-by-user valid-activities)]
-         (when (seq user-groups)
+    ;; Only on the first page. The infinite-scroll sentinel swaps later pages in
+    ;; with beforeend, so without the page check a final page that came back
+    ;; empty would append the empty state below a populated feed.
+    (if (and (empty? renderable) (= page 1))
+      (empty-state viewer)
+      [:div
+       (for [date dates]
+         (let [user-groups (group-consecutive-by-user (get activity-by-date date))]
            [:div {:key (str date)}
             (day-header (format-day-header date timezone))
             (for [group user-groups]
-              (activity-card group timezone))])))
-     (when has-more?
-       (infinite-scroll-sentinel (next-page-url page page-size)))]))
+              (activity-card group timezone))]))
+       (when has-more?
+         (infinite-scroll-sentinel (next-page-url page page-size)))])))
 
 (defn timeline
   "Render the activity timeline grouped by day and consecutive user."
-  [& {:keys [activity page page-size timezone]
+  [& {:keys [activity page page-size timezone viewer]
       :or {page 1
            page-size 25}}]
   [:div {:id "activity-feed"}
    (timeline-content :activity activity
                      :page page
                      :page-size page-size
-                     :timezone timezone)])
+                     :timezone timezone
+                     :viewer viewer)])
 
-(defn render [& {:keys [activity page page-size timezone]}]
+(defn render [& {:keys [activity page page-size timezone viewer]}]
   (ui.page/page :content (timeline :activity activity
                                    :page page
                                    :page-size page-size
-                                   :timezone timezone)
+                                   :timezone timezone
+                                   :viewer viewer)
                 :breadcrumbs ["Activity"]))
 
 (defn render-partial
   "Render just the activity content for HTMX requests (no page wrapper)."
-  [& {:keys [activity page page-size timezone]}]
+  [& {:keys [activity page page-size timezone viewer]}]
   (html/render-partial
     (timeline-content :activity activity
                       :page page
                       :page-size page-size
-                      :timezone timezone)))
+                      :timezone timezone
+                      :viewer viewer)))
 
 (def Activity
   (-> activity.i/Activity
@@ -469,7 +510,7 @@
    [:page-size {:default 25} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context headers query-params]}]
+(defn handler [& {:keys [::z/context headers query-params viewer]}]
   (let [{:keys [db timezone]} context
         {:keys [page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)
@@ -478,8 +519,10 @@
       (render-partial :activity activity
                       :page page
                       :page-size page-size
-                      :timezone timezone)
+                      :timezone timezone
+                      :viewer viewer)
       (render :activity activity
               :page page
               :page-size page-size
-              :timezone timezone))))
+              :timezone timezone
+              :viewer viewer))))
