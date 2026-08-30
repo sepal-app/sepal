@@ -58,6 +58,18 @@ Everything Sepal writes — the database, the thumbnail cache, backups — goes 
 `~/Library/Application Support/Sepal` on macOS or `~/.local/share/Sepal`
 elsewhere.
 
+### Schema versions
+
+Sepal records applied migrations in a `schema_version` table inside the database
+and refuses to start against one older than its supported minimum, reporting
+`:schema-version-unsupported`. A database at or above that minimum works,
+including one newer than the running build — so rolling back to a previous
+release does not strand a database that has already been migrated.
+
+Self-hosted installs apply pending migrations automatically at startup, so this
+rarely comes up. It matters when running several gardens from one process, where
+migration and deploy are separate steps.
+
 ## Configuration
 
 `sepal.app.main/env-opts` is the only place Sepal reads the environment.
