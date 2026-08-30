@@ -77,24 +77,28 @@
 
 (defn- migration-sources
   "Pairs of [version sql-text], ordered. :migrations-dir overrides the classpath
-  index and is for tests."
-  [migrations-dir]
-  (if migrations-dir
-    (->> (fs/list-dir migrations-dir)
-         (map str)
-         (filter #(str/ends-with? % ".sql"))
-         sort
-         (mapv (fn [path] [(version-of (str (fs/file-name path))) (slurp path)])))
-    (mapv (fn [filename]
-            [(version-of filename)
-             (slurp (io/resource (str "database/migrations/" filename)))])
-          (migration-files))))
+  index and is for tests. :up-to, when given, drops migrations newer than it,
+  which is how a database is built at a version the code no longer defaults to."
+  [migrations-dir up-to]
+  (let [all (if migrations-dir
+              (->> (fs/list-dir migrations-dir)
+                   (map str)
+                   (filter #(str/ends-with? % ".sql"))
+                   sort
+                   (mapv (fn [path] [(version-of (str (fs/file-name path))) (slurp path)])))
+              (mapv (fn [filename]
+                      [(version-of filename)
+                       (slurp (io/resource (str "database/migrations/" filename)))])
+                    (migration-files)))]
+    (if up-to
+      (filterv (fn [[version _]] (<= (parse-long version) (parse-long up-to))) all)
+      all)))
 
 (defn pending
   "Ordered versions not yet applied to this database."
-  [{:keys [db-path migrations-dir]}]
+  [{:keys [db-path migrations-dir up-to]}]
   (let [applied (applied-versions db-path)]
-    (->> (migration-sources migrations-dir)
+    (->> (migration-sources migrations-dir up-to)
          (remove (comp applied first))
          (mapv first))))
 
@@ -122,10 +126,13 @@
 
 (defn migrate!
   "Apply every pending migration, oldest first, one transaction each. Stops at
-  the first failure with the database at its previous version."
-  [{:keys [db-path migrations-dir]}]
+  the first failure with the database at its previous version.
+
+  :up-to caps how far it goes. Migrations newer than it stay pending, which is
+  what lets a test build a database at the supported-version floor."
+  [{:keys [db-path migrations-dir up-to]}]
   (let [applied (applied-versions db-path)
-        todo (remove (comp applied first) (migration-sources migrations-dir))]
+        todo (remove (comp applied first) (migration-sources migrations-dir up-to))]
     (doseq [migration todo]
       (apply-one! db-path migration))
     {:applied (mapv first todo)}))
@@ -134,7 +141,7 @@
   "Copy the database with VACUUM INTO, migrate the copy, and report. The live
   database is never opened for writing. VACUUM INTO gives a consistent snapshot
   of a live database, so no downtime is needed."
-  [{:keys [db-path migrations-dir]}]
+  [{:keys [db-path migrations-dir up-to]}]
   (let [dir (fs/create-temp-dir {:prefix "sepal-preflight"})
         snapshot (str (fs/path dir "snapshot.db"))]
     (try
@@ -146,7 +153,8 @@
       (try
         {:ok? true
          :applied (:applied (migrate! {:db-path snapshot
-                                       :migrations-dir migrations-dir}))}
+                                       :migrations-dir migrations-dir
+                                       :up-to up-to}))}
         (catch clojure.lang.ExceptionInfo e
           {:ok? false
            :version (:version (ex-data e))
