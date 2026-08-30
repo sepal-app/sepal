@@ -10,6 +10,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.collection.interface :as coll.i]
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -17,9 +18,9 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org accession supplier taxon values]}]
+(defn page-content [& {:keys [errors org accession supplier taxon values collection-available?]}]
   [:div {:class "flex flex-col gap-2"}
-   (accession.shared/tabs accession accession.shared/general-tab)
+   (accession.shared/tabs accession accession.shared/general-tab collection-available?)
    (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                         :errors errors
                         :supplier supplier
@@ -37,9 +38,11 @@
              :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]])
 
-(defn render [& {:keys [errors org accession supplier taxon values panel-data timezone]}]
+(defn render [& {:keys [errors org accession supplier taxon values panel-data timezone
+                        collection-available?]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :collection-available? collection-available?
+                                               :errors errors
                                                :org org
                                                :accession accession
                                                :supplier supplier
@@ -104,8 +107,11 @@
               (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
               (http/validation-errors (validation.i/humanize saved))))))
 
-      (let [panel-data (accession.panel/fetch-panel-data db resource)]
-        (render :org organization
+      (let [panel-data (accession.panel/fetch-panel-data db resource)
+            collection (coll.i/get-by-accession-id db (:accession/id resource))]
+        (render :collection-available? (accession.shared/collection-available?
+                                         resource (some? collection))
+                :org organization
                 :accession resource
                 :supplier supplier
                 :taxon taxon

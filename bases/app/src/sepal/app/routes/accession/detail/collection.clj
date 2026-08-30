@@ -118,7 +118,8 @@
 
 (defn page-content [& {:keys [errors accession values]}]
   [:div {:class "flex flex-col gap-2"}
-   (accession.shared/tabs accession accession.shared/collection-tab)
+   ;; Reachable only when the tab is available, so it is always enabled here.
+   (accession.shared/tabs accession accession.shared/collection-tab true)
    (form :action (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
          :errors errors
          :values values)])
@@ -207,21 +208,26 @@
                  (collection->values collection)
                  {})]
 
-    (case request-method
-      :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [coll-data (form-params->collection-data result)
-                saved (save! db (:accession/id accession) coll-data)]
-            (if-not (error.i/error? saved)
-              (http/hx-redirect (z/url-for accession.routes/detail-collection
-                                           {:id (:accession/id accession)}))
-              (http/validation-errors (validation.i/humanize saved))))))
+    ;; A disabled tab is not a security control — the route exists either way,
+    ;; so guard it here. Available when provenance is wild, or when the record
+    ;; already carries collection data.
+    (if-not (accession.shared/collection-available? accession (some? collection))
+      (http/not-found)
+      (case request-method
+        :post
+        (let [result (validation.i/validate-form-values FormParams form-params)]
+          (if (error.i/error? result)
+            (http/validation-errors (validation.i/humanize result))
+            (let [coll-data (form-params->collection-data result)
+                  saved (save! db (:accession/id accession) coll-data)]
+              (if-not (error.i/error? saved)
+                (http/hx-redirect (z/url-for accession.routes/detail-collection
+                                             {:id (:accession/id accession)}))
+                (http/validation-errors (validation.i/humanize saved))))))
 
-      (let [panel-data (accession.panel/fetch-panel-data db accession)]
-        (render :accession accession
-                :taxon taxon
-                :values values
-                :panel-data panel-data
-                :timezone timezone)))))
+        (let [panel-data (accession.panel/fetch-panel-data db accession)]
+          (render :accession accession
+                  :taxon taxon
+                  :values values
+                  :panel-data panel-data
+                  :timezone timezone))))))
