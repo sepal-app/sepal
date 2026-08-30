@@ -43,6 +43,20 @@
     ;; use. Tests are handed *backup-dir* to write into directly, so make it
     ;; usable here.
     (fs/create-dirs backup-dir)
+    (when (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION"))
+      ;; The tripwire. While the floor IS the latest, a floor database and a
+      ;; latest database are the same thing, so this leg provisions normally and
+      ;; only proves the matrix is wired. The moment the floor lags — the first
+      ;; migration after the floor is set — this assertion fires and CI says
+      ;; exactly what to do. Building the snapshot loader now would be a code
+      ;; path with no snapshot to load and no way to test it.
+      (assert (= (instance/minimum-schema-version) (instance/latest-schema-version))
+              (str "The floor (" (instance/minimum-schema-version) ") is behind latest ("
+                   (instance/latest-schema-version) "), so this leg is no longer testing the "
+                   "floor. Snapshot the dump as it stood at the floor into test resources as "
+                   "schema-" (instance/minimum-schema-version) ".sql and load it here. Do not "
+                   "replay migrations from empty: that runs InitSpatialMetaData and produces "
+                   "~20 SpatiaLite tables no real garden has.")))
     (instance/provision! {:db-path db-path})
     (when (not= (instance/schema-version {:db-path db-path})
                 (instance/latest-schema-version))
