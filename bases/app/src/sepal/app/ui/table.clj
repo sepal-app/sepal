@@ -23,6 +23,9 @@
                 column and compared rather than read.
     :priority — 1 never sheds. Higher numbers are hidden first as the viewport
                 narrows, and are what a future column picker reads.
+    :attrs    — optional (fn [row] …) returning extra attributes for this
+                column's <td>. Used to carry `data-stacked`, the summary shown
+                when the table collapses to one column on a phone.
 
   rows: A list of data. Each row is passed to (:cell column)
   row-attrs: Optional function (row) -> attrs map for each <tr> element.
@@ -44,14 +47,18 @@
     (for [row rows]
       [:tr (when row-attrs (row-attrs row))
        (for [col columns]
-         [:td {:class (column-classes col)}
+         [:td (merge {:class (column-classes col)}
+                     (when-let [f (:attrs col)] (f row)))
           ((:cell col) row)])])]])
 
 (defn card-table
   ([table]
    (card-table table nil))
   ([table paginator]
-   [:div {:class "overflow-x-auto rounded-box border bg-base-100 border-base-300"}
+   ;; One surface level: a bordered card on the tinted page. The table inside
+   ;; draws no box of its own — principle 5 caps nesting, and rules separate
+   ;; peers rather than regions.
+   [:div {:class "spl-table-card"}
     table
     paginator]))
 

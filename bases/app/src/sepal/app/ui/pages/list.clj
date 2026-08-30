@@ -70,7 +70,15 @@
    - :table-actions - Action buttons/forms above table
    - :content       - Main table content"
   [& {:keys [table-actions content]}]
-  [:div {:x-data "{ selectedId: null, selectRow(id, el) { if (this.selectedId === id) { this.selectedId = null; } else { this.selectedId = id; el.dispatchEvent(new Event('panel-select')); } } }"}
+  [:div {:x-data "{ selectedId: null,
+                    selectRow(id, el) {
+                      if (this.selectedId === id) { this.closePanel(); }
+                      else { this.selectedId = id; el.dispatchEvent(new Event('panel-select')); }
+                    },
+                    closePanel() {
+                      this.selectedId = null;
+                      document.getElementById('preview-panel-content').innerHTML = '';
+                    } }"}
    [:div {:class "mt-8"}
     [:form {:method "get"
             :hx-get " "
@@ -88,8 +96,18 @@
      [:div {:id list-container-id
             :class "flex-1 min-w-0"}
       content]
-     ;; Preview panel - hidden until a row is selected
-     [:div {:class "w-80 shrink-0 bg-base-100 border-1 rounded-(--radius-box) border-base-300 overflow-y-auto"
-            :x-show "selectedId"}
+     ;; Preview panel — appears on row click, and must be dismissible. Escape
+     ;; closes it too, so a keyboard user is never trapped with it open.
+     [:div {:class "spl-panel"
+            :x-show "selectedId"
+            :x-cloak ""
+            :x-on:keydown.escape.window "closePanel()"}
+      [:div {:class "spl-panel-head"}
+       [:button {:type "button"
+                 :class "spl-panel-close"
+                 :data-panel-close ""
+                 :aria-label "Close panel"
+                 :x-on:click "closePanel()"}
+        "✕"]]
       ;; Panel content - loaded via HTMX
       [:div {:id panel-container-id}]]]]])

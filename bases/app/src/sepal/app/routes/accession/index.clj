@@ -1,15 +1,18 @@
 (ns sepal.app.routes.accession.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.search]
             [sepal.app.authorization :as authz]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.export :as export]
+            [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
@@ -19,17 +22,20 @@
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "btn btn-primary"
+  [:a {:class "spl-btn spl-btn--primary"
        :href (z/url-for accession.routes/new)}
-   "Create"])
+   "New accession"])
 
 (defn- row-attrs
-  "Generate attributes for a table row to enable panel preview."
+  "Generate attributes for a table row to enable panel preview.
+
+  The click handler is an enhancement — the anchor inside the Code cell is the
+  real affordance and is what a keyboard user reaches."
   [row]
   (let [id (:accession/id row)
         panel-url (z/url-for accession.routes/panel {:id id})]
-    {:class "hover:bg-base-200/50 cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
+    {:class "spl-row"
+     :x-bind:class (str "selectedId === " id " ? 'spl-row--selected' : ''")
      :x-on:click (str "selectRow(" id ", $el)")
      :hx-get panel-url
      :hx-trigger "panel-select"
@@ -37,19 +43,45 @@
      :hx-swap "innerHTML"
      :hx-push-url "false"}))
 
+(defn- provenance-label [row]
+  (some-> (:accession/provenance-type row) (accession.form/enum-label-fn)))
+
+(defn- stacked-summary
+  "What the identifier cell shows below 640px, where the table collapses to a
+  single column. Taxon and date are what tell two accessions apart in the
+  field, so they are what survives."
+  [row]
+  (->> [(:taxon/name row)
+        (:accession/date-received row)]
+       (remove str/blank?)
+       (str/join " · ")))
+
 (defn table-columns []
   [{:name "Code"
+    :type :identifier
+    :priority 1
+    :attrs (fn [row] {:data-stacked (stacked-summary row)})
     :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
                                           {:id (:accession/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:accession/code row)])}
    {:name "Taxon"
+    :type :name
+    :priority 1
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
                                           {:id (:taxon/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:taxon/name row)])}])
+                     (taxon-name/render (:taxon/name row))])}
+   {:name "Provenance"
+    :type :text
+    :priority 3
+    :cell provenance-label}
+   {:name "Received"
+    :type :date
+    :priority 2
+    :cell :accession/date-received}])
 
 (defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}

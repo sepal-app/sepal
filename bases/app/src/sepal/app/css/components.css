@@ -334,6 +334,62 @@
 }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
+/* One surface level around a list: bordered card on the tinted page. The
+ * separation is border plus a soft shadow rather than a background shift,
+ * which leaves surface-alt in reserve for the header row inside. */
+.spl-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(18 33 30 / .04), 0 12px 28px -20px rgb(18 33 30 / .22);
+}
+
+.spl-row { cursor: pointer; }
+.spl-row:hover { background: var(--color-surface-alt); }
+.spl-row--selected { background: var(--color-brand-tint); }
+
+/* ── Detail panel ──────────────────────────────────────────────────────────
+ * Appears on row click; dismissible by its close control or Escape. */
+.spl-panel {
+  width: 288px;
+  flex: none;
+  background: var(--color-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow-y: auto;
+}
+.spl-panel-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+}
+.spl-panel-close {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  line-height: 1;
+}
+.spl-panel-close:hover { color: var(--color-text); }
+
+/* On a phone the panel is a sheet from the bottom rather than a side column —
+ * 288px beside a list does not fit, and a sheet is reachable one-handed. */
+@media (max-width: 639px) {
+  .spl-panel {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    max-height: 70vh;
+    z-index: 50;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    box-shadow: 0 -10px 30px -14px rgb(18 33 30 / .4);
+  }
+}
+
 /* Responsive shedding, by column priority. */
 @media (max-width: 1023px) { .spl-shed-3 { display: none; } }
 @media (max-width: 767px)  { .spl-shed-2 { display: none; } }
