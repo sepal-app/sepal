@@ -198,7 +198,23 @@
 .spl-tab--disabled { color: var(--color-text-dim); cursor: default; }
 .spl-tab--disabled:hover { color: var(--color-text-dim); }
 
+.spl-settings-layout { display: flex; gap: 32px; }
+
 .spl-subnav { flex: 0 0 256px; }
+.spl-subnav-group { margin-bottom: 24px; }
+/* Vertical at desktop width: the shared .spl-tab underline becomes a left
+   marker instead, so one class serves both orientations. */
+.spl-subnav-item {
+  display: block;
+  padding: 7px 12px;
+  border-bottom: 0;
+  margin-bottom: 0;
+  border-radius: var(--radius-control);
+}
+.spl-subnav-item.spl-tab--current {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
 .spl-subnav-heading {
   font: 600 10px/1.4 var(--font-mono);
   letter-spacing: .07em;
@@ -206,9 +222,33 @@
   color: var(--color-text-dim);
   padding: 0 12px 8px;
 }
+/* Below 1024px the aside becomes the same horizontal strip the accession edit
+   tabs use, groups flattened. It cannot become a second drawer — the section
+   rail already is one at this width. */
 @media (max-width: 1023px) {
-  .spl-subnav { flex: none; width: 100%; }
+  .spl-settings-layout { flex-direction: column; gap: 16px; }
+  .spl-subnav {
+    flex: none;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    border-bottom: 1px solid var(--color-border-light);
+    overflow-x: auto;
+  }
+  .spl-subnav-group { display: contents; }
   .spl-subnav-heading { display: none; }
+  .spl-subnav-item {
+    display: inline-block;
+    padding: 11px 0 9px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .spl-subnav-item.spl-tab--current {
+    background: none;
+    border-bottom-color: var(--color-brand);
+  }
 }
 
 /* ── Shell ─────────────────────────────────────────────────────────────────
