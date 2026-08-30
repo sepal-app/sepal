@@ -88,7 +88,7 @@
    [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
    (if (seq backups)
      [:div {:class "overflow-x-auto"}
-      [:table {:class "table table-zebra"}
+      [:table {:class "spl-table "}
        [:thead
         [:tr
          [:th "Filename"]

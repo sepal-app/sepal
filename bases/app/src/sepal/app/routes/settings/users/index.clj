@@ -16,16 +16,16 @@
    [:show-archived {:optional true} :boolean]])
 
 (defn- role-badge [role]
-  (let [colors {:admin "badge-primary"
-                :editor "badge-accent"
+  (let [colors {:admin "spl-badge--info"
+                :editor "spl-badge--neutral"
                 :reader "badge-ghost"}]
     [:span {:class (html/attr "spl-badge " (get colors role "spl-badge--neutral"))}
      (name role)]))
 
 (defn- status-badge [status]
-  (let [colors {:active "badge-success"
-                :archived "badge-error"
-                :invited "badge-warning"}]
+  (let [colors {:active "spl-badge--ok"
+                :archived "spl-badge--danger"
+                :invited "spl-badge--danger"}]
     [:span {:class (html/attr "spl-badge " (get colors status "spl-badge--neutral"))}
      (name status)]))
 

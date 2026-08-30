@@ -11,7 +11,7 @@
   [:ul {:class "spl-steps  w-full"}
    (for [{:keys [id name]} spec/steps]
      [:li {:class (html/attr "spl-step"
-                             (when (<= id current-step) "step-primary"))}
+                             (when (<= id current-step) "spl-step--done"))}
       name])])
 
 (defn step-card
