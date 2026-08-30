@@ -18,10 +18,10 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]
-   [:button {:class "btn btn-primary"
+   [:button {:class "spl-btn spl-btn--primary"
              :x-on:click "$dispatch('accession-form:submit')"}
     "Save"]])
 

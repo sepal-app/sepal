@@ -17,7 +17,7 @@
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "btn btn-primary"
+  [:a {:class "spl-btn spl-btn--primary"
        :href (z/url-for taxon.routes/new)}
    "Create"])
 
@@ -47,8 +47,8 @@
   [row]
   (let [id (:taxon/id row)
         panel-url (z/url-for taxon.routes/panel {:id id})]
-    {:class "hover:bg-base-200/50 cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
+    {:class "hover:bg-surface-alt cursor-pointer"
+     :x-bind:class (str "selectedId === " id " ? 'bg-surface-alt' : ''")
      :x-on:click (str "selectRow(" id ", $el)")
      :hx-get panel-url
      :hx-trigger "panel-select"
@@ -75,7 +75,7 @@
     [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
              :x-data (str "accessionsOnlyFilter('q', " has-filter? ")")}
      [:input {:type "checkbox"
-              :class "checkbox checkbox-sm"
+              :class "spl-checkbox "
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))

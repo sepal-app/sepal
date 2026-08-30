@@ -48,7 +48,7 @@
                                  :minlength 8
                                  :required true
                                  :errors (:confirm-password errors))
-               (form/submit-button {:class "btn btn-primary mt-6"} "Set Password & Activate Account")])])
+               (form/submit-button {:class "spl-btn spl-btn--primary mt-6"} "Set Password & Activate Account")])])
 
 (defn- render [& {:keys [email full-name token errors flash]}]
   (page/page :content (page-content :email email

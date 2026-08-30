@@ -8,12 +8,12 @@
             [zodiac.core :as z]))
 
 (defn footer-buttons []
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
              ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]
-   [:button {:class "btn btn-primary"
+   [:button {:class "spl-btn spl-btn--primary"
              :x-on:click "$dispatch('taxon-form:submit')"
              :x-bind:disabled "!valid"}
     "Save"]])
@@ -103,13 +103,13 @@
                                            :selected (when (= rank (some-> values :rank name))
                                                        "selected")}
                                   rank])]))]]
-       [:fieldset {:class "fieldset mt-6"
+       [:fieldset {:class "spl-fieldsetmt-6"
                    :x-data (json/js {:vernacularNames (or (:vernacular-names values)
                                                           [])})}
-        [:legend {:class "fieldset-legend text-md"}
+        [:legend {:class "spl-label text-md"}
          "Vernacular names"
          [:button {:type "button"
-                   :class "btn btn-xs btn-circle"
+                   :class "spl-btn spl-btn--sm spl-btn--icon"
                    :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
                    :aria-label "Add vernacular name"}
           [:span {:aria-hidden true}
@@ -118,19 +118,19 @@
          [:template {:x-for "(vn, index) in vernacularNames"}
           [:div {:class "flex flex-row gap-2 items-center"}
            [:input {:name "vernacular-name-name"
-                    :class "input flex-grow"
+                    :class "spl-input flex-grow"
                     :x-model "vn.name"}]
            [:input {:name "vernacular-name-language"
-                    :class "input flex-grow"
+                    :class "spl-input flex-grow"
                     :x-model "vn.language"}]
            [:button {:type "button"
-                     :class "btn btn-soft btn-error hover:text-white"
+                     :class "spl-btn  spl-btn--danger hover:text-white"
                      :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
                      :aria-label "Delete"}
             [:span {:aria-hidden true}
              (heroicons/outline-trash)]]]]]
         [:div {:x-show "!vernacularNames?.length"
-               :class "bg-blue-50 p-6 rounded-xl"}
+               :class "bg-info-bg p-6 rounded-xl"}
          "This taxon doesn't have any vernacular names"]])
 
      [:script {:type "module"

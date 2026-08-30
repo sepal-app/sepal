@@ -12,11 +12,11 @@
    - :value      - Filter value to display (e.g., \"Quercus alba\")
    - :clear-href - URL to navigate to when clearing this filter"
   [{:keys [label value clear-href]}]
-  [:div {:class "badge badge-neutral gap-1"}
+  [:div {:class "spl-badge spl-badge--neutral gap-1"}
    [:span (str label ": ")]
    [:span {:class "font-semibold"} value]
    [:a {:href clear-href
-        :class "hover:text-error"
+        :class "hover:text-danger"
         :aria-label (str "Clear " label " filter")}
     (lucide/x :class "w-3 h-3")]])
 
@@ -34,7 +34,7 @@
 (defn search-field [q]
   [:div {:class "flex flex-row"}
    [:input {:name "q"
-            :class "input input-md w-fill max-w-xs bg-white w-96"
+            :class "spl-input  w-fill max-w-xs bg-surface w-96"
             :type "search"
             :value q
             :placeholder "Search..."}]

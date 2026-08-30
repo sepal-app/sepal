@@ -11,7 +11,7 @@
 
 (defn title-buttons []
   [:button {:id "upload-button"
-            :class "btn btn-primary"}
+            :class "spl-btn spl-btn--primary"}
    "Upload"])
 
 (defn next-page-url [& {:keys [current-page]}]

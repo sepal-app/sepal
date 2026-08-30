@@ -31,7 +31,7 @@
       :or {default-open? true
            disabled? false
            empty-label "none"}}]
-  [:div {:class (html/attr "collapse collapse-arrow rounded-none"
+  [:div {:class (html/attr "spl-collapse  rounded-none"
                            (when disabled? "opacity-50"))}
    ;; Hidden checkbox controls open/closed state
    [:input {:type "checkbox"
@@ -39,20 +39,20 @@
             :disabled disabled?
             :checked (when default-open? true)}]
    ;; Header (collapse-title)
-   [:div {:class (html/attr "collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
+   [:div {:class (html/attr "spl-collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
                             (if disabled?
                               "text-base-content/60 cursor-not-allowed"
                               "text-base-content/90"))}
     [:span {:class "flex items-center gap-2"}
      title
      (if disabled?
-       [:span {:class "text-base-content/30 normal-case font-normal"}
+       [:span {:class "text-text-dim normal-case font-normal"}
         (str "(" empty-label ")")]
        (when count
-         [:span {:class "text-base-content/40 normal-case font-normal"}
+         [:span {:class "text-text-dim normal-case font-normal"}
           (str "(" count ")")]))]]
    ;; Collapsible content
-   [:div {:class "collapse-content px-4"}
+   [:div {:class "spl-collapse-content px-4"}
     children]])
 
 ;;; ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@
   [& {:keys [label value]}]
   (when value
     [:div {:class "flex justify-between items-baseline gap-2"}
-     [:dt {:class "text-base-content/80 text-sm"} label]
+     [:dt {:class "text-text-soft text-sm"} label]
      [:dd {:class "text-sm font-medium text-right"} value]]))
 
 (defn summary-section
@@ -88,11 +88,11 @@
   "A single statistic with label and value."
   [& {:keys [label value href]}]
   (let [content [:div {:class "flex justify-between items-center"}
-                 [:span {:class "text-base-content/80 text-sm"} label]
+                 [:span {:class "text-text-soft text-sm"} label]
                  [:span {:class "text-sm font-semibold"} value]]]
     (if href
       [:a {:href href
-           :class "block hover:bg-base-200 -mx-2 px-2 py-1 rounded transition-colors"}
+           :class "block hover:bg-surface-alt -mx-2 px-2 py-1 rounded transition-colors"}
        content]
       [:div {:class "py-1"} content])))
 
@@ -114,9 +114,9 @@
   "A link to a related resource."
   [& {:keys [label href icon]}]
   [:a {:href href
-       :class "flex items-center gap-2 text-sm hover:bg-base-200 -mx-2 px-2 py-1.5 rounded transition-colors"}
+       :class "flex items-center gap-2 text-sm hover:bg-surface-alt -mx-2 px-2 py-1.5 rounded transition-colors"}
    (when icon
-     [:span {:class "text-base-content/40"} icon])
+     [:span {:class "text-text-dim"} icon])
    [:span {:class "text-primary hover:underline"} label]])
 
 (defn linked-resources-section
@@ -141,7 +141,7 @@
        :rel "noopener noreferrer"
        :class "flex items-center gap-2 text-sm text-primary hover:underline"}
    (when icon
-     [:span {:class "text-base-content/40"} icon])
+     [:span {:class "text-text-dim"} icon])
    label])
 
 (defn external-links-section
@@ -162,15 +162,15 @@
   "Compact activity item for the resource panel.
    Shows badge + time + user only. Uses DaisyUI card component."
   [activity timezone]
-  [:div {:class "card card-compact bg-base-100 shadow-sm"}
-   [:div {:class "card-body p-3"}
+  [:div {:class "spl-card  bg-surface shadow-sm"}
+   [:div {:class "spl-card-body p-3"}
     ;; Top row: badge + relative time
     [:div {:class "flex items-center justify-between"}
      (ui.activity/action-badge (:activity/type activity))
      (datetime/relative-time (:activity/created-at activity) timezone
-                             :class "text-sm text-base-content/80")]
+                             :class "text-sm text-text-soft")]
     ;; Bottom row: user email
-    [:div {:class "text-sm text-base-content/80"}
+    [:div {:class "text-sm text-text-soft"}
      (:user/email (:activity/user activity))]]])
 
 (defn activity-section
@@ -191,7 +191,7 @@
        (activity-item-compact activity timezone))
      ;; Load more button
      (when (and load-more-url remaining (pos? remaining))
-       [:button {:class "btn btn-ghost btn-sm w-full"
+       [:button {:class "spl-btn spl-btn--ghost spl-btn--sm w-full"
                  :hx-get load-more-url
                  :hx-target "closest .space-y-2"
                  :hx-swap "beforeend"}
@@ -224,8 +224,8 @@
    [:div
     [:h2 {:class "text-lg font-semibold"} title]
     (when subtitle
-      [:p {:class "text-sm text-base-content/80"} subtitle])]
+      [:p {:class "text-sm text-text-soft"} subtitle])]
    (when on-close
-     [:button {:class "btn btn-ghost btn-sm btn-square"
+     [:button {:class "spl-btn spl-btn--ghost spl-btn--sm spl-btn--icon"
                :x-on:click on-close}
       (lucide/x :class "w-5 h-5")])])

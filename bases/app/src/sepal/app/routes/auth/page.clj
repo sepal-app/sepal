@@ -12,8 +12,8 @@
                 :class "h-screen w-full object-cover object-center -z-10"
                 :alt "login banner"}]]
         [:div {:class "grid grid-cols-3"}
-         [:div {:class "col-start-1 col-span-3 lg:col-start-2 lg:col-span-1 flex flex-col justify-center z-10 lg:bg-white/60 h-screen shadow"}
-          [:div {:class "bg-white/95 lg:bg-white/80 p-8 lg:block sm:max-lg:flex sm:max-lg:flex-col sm:max-lg:items-center"}
+         [:div {:class "col-start-1 col-span-3 lg:col-start-2 lg:col-span-1 flex flex-col justify-center z-10 lg:bg-surface/60 h-screen shadow"}
+          [:div {:class "bg-surface/95 lg:bg-surface/80 p-8 lg:block sm:max-lg:flex sm:max-lg:flex-col sm:max-lg:items-center"}
            content]]]
 
         ;; TODO: Need to raise the z-index of the flash banner

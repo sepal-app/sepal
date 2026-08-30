@@ -26,6 +26,6 @@
                        :sm "w-8 text-sm"
                        :md "w-10 text-base"
                        :lg "w-12 text-lg")]
-    [:div {:class (html/attr "avatar" "avatar-placeholder")}
+    [:div {:class (html/attr "spl-avatar" "spl-avatar--placeholder")}
      [:div {:class (html/attr "bg-neutral text-neutral-content rounded-full" size-classes)}
       [:span initials]]]))

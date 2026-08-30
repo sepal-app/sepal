@@ -12,7 +12,7 @@
 (defn- field-select
   "Dropdown to select a field to filter on."
   []
-  [:select {:class "select select-bordered select-sm w-40 leading-none"
+  [:select {:class "spl-input spl-selectw-40 leading-none"
             :x-model "selectedField"
             :x-on:change "onFieldChange()"}
    [:option {:value ""} "Select field..."]
@@ -22,7 +22,7 @@
 (defn- operator-select
   "Dropdown to select the comparison operator."
   []
-  [:select {:class "select select-bordered select-sm w-44 leading-none"
+  [:select {:class "spl-input spl-selectw-44 leading-none"
             :x-model "selectedOpIndex"}
    [:template {:x-for "(op, index) in availableOps" :key "index"}
     [:option {:x-bind:value "index" :x-text "op.label"}]]])
@@ -34,12 +34,12 @@
    ;; Text input for text/fts/date/number/count fields
    [:template {:x-if "currentFieldType === 'text' || currentFieldType === 'fts' || currentFieldType === 'date' || currentFieldType === 'number' || currentFieldType === 'count'"}
     [:input {:type "text"
-             :class "input input-bordered input-sm w-full"
+             :class "spl-input   w-full"
              :placeholder "Value..."
              :x-model "selectedValue"}]]
    ;; Dropdown for enum fields
    [:template {:x-if "currentFieldType === 'enum'"}
-    [:select {:class "select select-bordered select-sm w-full leading-none"
+    [:select {:class "spl-input spl-selectw-full leading-none"
               :x-model "selectedValue"}
      [:option {:value ""} "Select value..."]
      [:template {:x-for "val in currentFieldValues" :key "val"}
@@ -49,7 +49,7 @@
   "Button to add the filter to the query."
   []
   [:button {:type "button"
-            :class "btn btn-primary btn-sm"
+            :class "spl-btn spl-btn--primary spl-btn--sm"
             :x-on:click "addFilter()"
             :x-bind:disabled "!canAddFilter"}
    (lucide/plus :class "w-4 h-4")
@@ -70,7 +70,7 @@
 
      ;; Toggle button
      [:button {:type "button"
-               :class (html/attr "btn" "btn-ghost" "btn-sm" "gap-1")
+               :class (html/attr "spl-btn" "spl-btn--ghost" "spl-btn--sm" "gap-1")
                :x-on:click "open = !open"
                :aria-label "Add filter"}
       (lucide/filter-icon :class "w-4 h-4")
@@ -124,7 +124,7 @@
   [:div {:class "flex flex-row gap-2 items-center"}
    [:input {:name input-id
             :id input-id
-            :class "input input-md bg-white w-96"
+            :class "spl-input  bg-surface w-96"
             :type "search"
             :value q
             :placeholder placeholder}]

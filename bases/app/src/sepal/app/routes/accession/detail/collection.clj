@@ -99,7 +99,7 @@
                         :errors (:srid errors)
                         :input [:select {:name "srid"
                                          :id "srid"
-                                         :class "select select-bordered select-md w-full"}
+                                         :class "spl-input spl-select   w-full"}
                                 (for [[srid label] datum/datum-options]
                                   [:option {:value srid
                                             :selected (when (= srid current-srid) "selected")}
@@ -125,10 +125,10 @@
          :values values)])
 
 (defn footer-buttons []
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]
-   [:button {:class "btn btn-primary"
+   [:button {:class "spl-btn spl-btn--primary"
              :x-on:click "$dispatch('collection-form:submit')"}
     "Save"]])
 

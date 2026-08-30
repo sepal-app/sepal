@@ -35,7 +35,7 @@
    (media-list-items :media media
                      :next-page-url next-page-url)
    (when (zero? (count media))
-     [:div {:class "flex items-center justify-center bg-blue-50 p-6 rounded-xl"}
+     [:div {:class "flex items-center justify-center bg-info-bg p-6 rounded-xl"}
       [:span "No media"]])])
 
 #_(defn upload-button []

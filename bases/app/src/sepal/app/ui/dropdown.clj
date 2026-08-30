@@ -19,7 +19,7 @@ close(focusAfter) {
 
 (defn item [href text]
   [:a {:href href
-       :class "flex items-center gap-2 w-full first-of-type:rounded-t-md last-of-type:rounded-b-md px-4 py-2.5 text-left text-sm hover:bg-gray-50 disabled:text-gray-500"}
+       :class "flex items-center gap-2 w-full first-of-type:rounded-t-md last-of-type:rounded-b-md px-4 py-2.5 text-left text-sm hover:bg-surface-alt disabled:text-text-dim"}
    text])
 
 (defn dropdown [label items]
@@ -35,11 +35,11 @@ close(focusAfter) {
               ::aria-expanded "open",
               ::aria-controls "$id('dropdown-button')",
               :type "button",
-              :class "flex items-center gap-2 bg-white px-5 py-2.5 rounded-md shadow"}
+              :class "flex items-center gap-2 bg-surface px-5 py-2.5 rounded-md shadow"}
      label
      ;; "Heroicon: chevron-down"
      [:svg {:xmlns "http://www.w3.org/2000/svg",
-            :class "h-5 w-5 text-gray-400",
+            :class "h-5 w-5 text-text-dim",
             :viewBox "0 0 20 20",
             :fill "currentColor"}
       [:path {:fill-rule "evenodd",
@@ -52,5 +52,5 @@ close(focusAfter) {
            :x-on:click.outside "close($refs.button)",
            ::id "$id('dropdown-button')",
            :style "display: none;",
-           :class "absolute left-0 mt-2 w-40 rounded-md bg-white shadow-md z-10"}
+           :class "absolute left-0 mt-2 w-40 rounded-md bg-surface shadow-md z-10"}
      items]]])

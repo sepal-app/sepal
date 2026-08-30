@@ -16,12 +16,12 @@
 (defn summary-section [title items]
   [:div {:class "mb-6"}
    [:h3 {:class "font-medium text-lg mb-2"} title]
-   [:div {:class "bg-base-200 rounded-lg p-4"}
+   [:div {:class "bg-surface-alt rounded-lg p-4"}
     [:dl {:class "space-y-2"}
      (for [[label value] items
            :when value]
        [:div {:class "flex"}
-        [:dt {:class "w-1/3 text-base-content/70"} label]
+        [:dt {:class "w-1/3 text-text-muted"} label]
         [:dd {:class "w-2/3 font-medium"} value]])]]])
 
 (defn render [& {:keys [admin org-settings timezone taxa-count wfo-version flash-messages]}]
@@ -29,11 +29,11 @@
     :current-step 6
     :flash-messages flash-messages
     :content
-    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
-     [:div {:class "card-body"}
-      [:h2 {:class "card-title text-2xl mb-4"} "Review & Complete"]
+    [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
+     [:div {:class "spl-card-body"}
+      [:h2 {:class "spl-card-title text-2xl mb-4"} "Review & Complete"]
 
-      [:p {:class "text-base-content/70 mb-6"}
+      [:p {:class "text-text-muted mb-6"}
        "Review your settings below. You can change these later in the Settings pages."]
 
       ;; Admin account
@@ -61,9 +61,9 @@
                         ["WFO Plant List" (or wfo-version "Not imported")]])
 
       ;; Complete button
-      [:div {:class "card-actions justify-between mt-6"}
+      [:div {:class "spl-card-actions justify-between mt-6"}
        [:a {:href (z/url-for setup.routes/taxonomy)
-            :class "btn btn-ghost"}
+            :class "spl-btn spl-btn--ghost"}
         "← Back"]
        [:form {:method "post"
                :action (z/url-for setup.routes/review)
@@ -72,7 +72,7 @@
                  :name "__anti-forgery-token"
                  :value (force *anti-forgery-token*)}]
         [:button {:type "submit"
-                  :class "btn btn-primary btn-lg"}
+                  :class "spl-btn spl-btn--primary "}
          "Complete Setup"]]]]]))
 
 (defn handler [{:keys [::z/context flash request-method session]}]

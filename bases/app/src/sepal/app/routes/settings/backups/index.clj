@@ -38,14 +38,14 @@
 ;; UI Components
 
 (defn- alert-note []
-  [:div {:class "alert alert-warning mb-6"}
+  [:div {:class "spl-alert spl-alert--warning mb-6"}
    (lucide/triangle-alert :class "size-5 shrink-0")
    [:span "Backups include the database only. Media files are stored separately and must be backed up manually."]])
 
 (defn- frequency-select [value]
   [:select {:name "frequency"
             :id "frequency"
-            :class "select select-bordered w-full max-w-xs"}
+            :class "spl-input spl-select  w-full max-w-xs"}
    (for [[val label] [["" "Disabled"]
                       ["daily" "Daily"]
                       ["weekly" "Weekly"]
@@ -73,11 +73,11 @@
           :input (frequency-select (:frequency config)))
 
         (when next-backup
-          [:p {:class "text-sm text-base-content/70 -mt-2"}
+          [:p {:class "text-sm text-text-muted -mt-2"}
            "Next backup: " (datetime/datetime next-backup timezone)])]
 
        (when (:last-run-at config)
-         [:div {:class "text-sm text-base-content/70"}
+         [:div {:class "text-sm text-text-muted"}
           [:p "Last backup: " (datetime/datetime (:last-run-at config) timezone)]])]
 
       [:div {:class "mt-4"}
@@ -103,10 +103,10 @@
            [:td (datetime/datetime created-at timezone)]
            [:td
             [:a {:href (z/url-for settings.routes/backup-download {:filename filename})
-                 :class "btn btn-sm btn-ghost"}
+                 :class "spl-btn spl-btn--sm spl-btn--ghost"}
              (lucide/download :class "size-4")
              "Download"]]])]]]
-     [:p {:class "text-base-content/70"} "No backups yet."])])
+     [:p {:class "text-text-muted"} "No backups yet."])])
 
 ;; -----------------------------------------------------------------------------
 ;; Render

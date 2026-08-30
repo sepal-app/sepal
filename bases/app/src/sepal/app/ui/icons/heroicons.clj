@@ -103,7 +103,7 @@
     :viewBox "0 0 24 24"
     :width size
     :height size
-    :class [color "group-hover:text-gray-500 flex-shrink-0"]}
+    :class [color "group-hover:text-text-dim flex-shrink-0"]}
    [:path
     {:stroke-linecap "round"
      :stroke-linejoin "round"

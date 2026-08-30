@@ -33,7 +33,7 @@
                      :name "code"
                      :errors (:code errors)
                      :input [:input {:autocomplete "off"
-                                     :class "input input-bordered w-full"
+                                     :class "spl-input  w-full"
                                      :placeholder "Required"
                                      :required true
                                      :id "code"
@@ -70,7 +70,7 @@
                      :name "quantity"
                      :errors (:quantity errors)
                      :input [:input {:autocomplete "off"
-                                     :class "input input-bordered w-full"
+                                     :class "spl-input  w-full"
                                      :id "quantity"
                                      :name "quantity"
                                      :type "number"

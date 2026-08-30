@@ -18,23 +18,8 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
 
-@plugin "daisyui" {
-    themes: emerald --default;
-}
-
-/* Override DaisyUI's circular checkboxes with rounded squares */
-.checkbox {
-    border-radius: 0.25rem;
-}
-
-.fieldset {
-    gap: 0;
-    font-size: 0.9rem;
-}
-
-/* Make the SlimSelect match DaisyUI input styling */
+/* Make the SlimSelect match the spl- input styling */
 .ss-main {
-    @apply shadow-primary;
     border-radius: var(--radius-field);
     width: 100%;
 }

@@ -37,7 +37,7 @@
 
 (defn timeline-activity [& {:keys [_icon title _description]}]
   [:div {:class "items-center block p-3 sm:flex"}
-   [:div {:class "text-gray-600"}
+   [:div {:class "text-text-muted"}
     [:div {:class "text-base font-normal"}
      title]]])
 
@@ -362,20 +362,20 @@
   the viewer's role allows. A reader can create nothing, so they get the
   explanation alone."
   [viewer]
-  [:div {:class (html/attr "card" "bg-base-100" "shadow-sm" "mt-6")}
-   [:div {:class (html/attr "card-body" "items-center" "text-center" "py-12")}
-    [:div {:class "text-base-content/30"}
+  [:div {:class (html/attr "spl-card" "bg-surface" "shadow-sm" "mt-6")}
+   [:div {:class (html/attr "spl-card-body" "items-center" "text-center" "py-12")}
+    [:div {:class "text-text-dim"}
      (heroicons/outline-clock :size 48)]
-    [:h2 {:class (html/attr "card-title" "mt-4")}
+    [:h2 {:class (html/attr "spl-card-title" "mt-4")}
      "No activity yet"]
-    [:p {:class (html/attr "text-base-content/60" "max-w-md")}
+    [:p {:class (html/attr "text-text-dim" "max-w-md")}
      "Records created, edited and uploaded by you and your collaborators show up here."]
     (when (authz/can-edit? viewer)
-      [:div {:class (html/attr "card-actions" "mt-6")}
-       [:a {:class "btn btn-primary"
+      [:div {:class (html/attr "spl-card-actions" "mt-6")}
+       [:a {:class "spl-btn spl-btn--primary"
             :href (z/url-for location.routes/new)}
         "Add a location"]
-       [:a {:class "btn btn-ghost"
+       [:a {:class "spl-btn spl-btn--ghost"
             :href (z/url-for accession.routes/new)}
         "Add an accession"]])
     (when (authz/user-has-permission? viewer authz/users-create)
@@ -387,11 +387,11 @@
 ;;; Legacy timeline-section (kept for reference during migration)
 
 (defn timeline-section [date activity]
-  [:div {:class (html/attr "p-5" "mb-4" "rounded-lg" "bg-white" "shadow-sm"
+  [:div {:class (html/attr "p-5" "mb-4" "rounded-lg" "bg-surface" "shadow-sm"
                            "ring-1" "ring-black/5")}
-   [:time {:class "text-lg font-semibold text-gray-900 dark:text-white"}
+   [:time {:class "text-lg font-semibold text-text dark:text-white"}
     date]
-   [:ol {:class "mt-3 divide-y divider-gray-200 dark:divide-gray-700"}
+   [:ol {:class "mt-3 divide-y divide-hairline"}
     (for [item activity]
       [:li item])]])
 

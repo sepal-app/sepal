@@ -56,10 +56,10 @@
     ;; Submit button inside the form
     [:div {:class "flex justify-between mt-6"}
      [:a {:href (z/url-for setup.routes/organization)
-          :class "btn btn-ghost"}
+          :class "spl-btn spl-btn--ghost"}
       "← Back"]
      [:button {:type "submit"
-               :class "btn btn-primary"}
+               :class "spl-btn spl-btn--primary"}
       "Next →"]]))
 
 (defn render [& {:keys [values errors flash-messages]}]
@@ -67,10 +67,10 @@
     :current-step 4
     :flash-messages flash-messages
     :content
-    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
-     [:div {:class "card-body"}
-      [:h2 {:class "card-title text-2xl mb-4"} "Regional Settings"]
-      [:p {:class "mb-4 text-base-content/70"}
+    [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
+     [:div {:class "spl-card-body"}
+      [:h2 {:class "spl-card-title text-2xl mb-4"} "Regional Settings"]
+      [:p {:class "mb-4 text-text-muted"}
        "Select your organization's timezone. All timestamps in Sepal will be displayed in this timezone."]
       (regional-form :values values :errors errors)]]))
 

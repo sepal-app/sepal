@@ -19,7 +19,7 @@
 (def default-page-size 25)
 
 (defn create-button []
-  [:a {:class "btn btn-primary"
+  [:a {:class "spl-btn spl-btn--primary"
        :href (z/url-for contact.routes/new)}
    "Create"])
 
@@ -27,14 +27,14 @@
   "Generate HTMX attributes for clickable table rows that open the preview panel."
   [contact]
   (let [id (:contact/id contact)]
-    {:class "cursor-pointer hover:bg-base-200/50"
+    {:class "cursor-pointer hover:bg-surface-alt"
      :hx-get (z/url-for contact.routes/panel {:id id})
      :hx-trigger "panel-select"
      :hx-target "#preview-panel-content"
      :hx-swap "innerHTML"
      :hx-push-url "false"
      :x-on:click (str "selectRow(" id ", $el)")
-     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")}))
+     :x-bind:class (str "selectedId === " id " ? 'bg-surface-alt' : ''")}))
 
 (defn table-columns []
   [{:name "Name"

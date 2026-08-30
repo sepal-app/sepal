@@ -19,14 +19,14 @@
   (let [colors {:admin "badge-primary"
                 :editor "badge-accent"
                 :reader "badge-ghost"}]
-    [:span {:class (html/attr "badge badge-sm" (get colors role "badge-ghost"))}
+    [:span {:class (html/attr "spl-badge " (get colors role "spl-badge--neutral"))}
      (name role)]))
 
 (defn- status-badge [status]
   (let [colors {:active "badge-success"
                 :archived "badge-error"
                 :invited "badge-warning"}]
-    [:span {:class (html/attr "badge badge-sm" (get colors status "badge-ghost"))}
+    [:span {:class (html/attr "spl-badge " (get colors status "spl-badge--neutral"))}
      (name status)]))
 
 (defn- csrf-hx-vals []
@@ -37,7 +37,7 @@
   [user]
   (let [current-role (:user/role user)]
     [:select {:id (str "role-select-" (:user/id user) "-" (name current-role))
-              :class "select select-ghost select-sm leading-none"
+              :class "spl-input spl-select   leading-none"
               :autocomplete "off"
               :hx-post (z/url-for settings.routes/users-update-role {:id (:user/id user)})
               :hx-swap "outerHTML"
@@ -57,7 +57,7 @@
     [:div {:class "flex gap-1"}
      ;; Resend invitation button for invited users
      (when (= :invited (:user/status user))
-       [:button {:class "btn btn-ghost btn-xs"
+       [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
                  :title "Resend invitation"
                  :hx-post (z/url-for settings.routes/users-resend-invitation {:id (:user/id user)})
                  :hx-swap "none"
@@ -66,14 +66,14 @@
         (lucide/mail :class "w-4 h-4")])
      ;; Archive/Activate buttons
      (if (= :archived (:user/status user))
-       [:button {:class "btn btn-ghost btn-xs"
+       [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
                  :title "Activate user"
                  :hx-post (z/url-for settings.routes/users-activate {:id (:user/id user)})
                  :hx-swap "outerHTML"
                  :hx-target "#users-table"
                  :hx-vals (csrf-hx-vals)}
         (lucide/user-check :class "w-4 h-4")]
-       [:button {:class "btn btn-ghost btn-xs"
+       [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
                  :title "Archive user"
                  :hx-post (z/url-for settings.routes/users-archive {:id (:user/id user)})
                  :hx-swap "outerHTML"
@@ -123,7 +123,7 @@
              :type "search"
              :value (:q params)
              :placeholder "Search..."
-             :class "input input-md bg-white w-96"
+             :class "spl-input  bg-surface w-96"
              :hx-get (z/url-for settings.routes/users)
              :hx-trigger "keyup changed delay:300ms"
              :hx-select "#users-table"
@@ -144,7 +144,7 @@
               :hx-swap "outerHTML"
               :hx-include "[name='q']"}]]]
    [:a {:href (z/url-for settings.routes/users-invite)
-        :class "btn btn-primary"}
+        :class "spl-btn spl-btn--primary"}
     (lucide/user-plus :class "w-4 h-4 mr-2")
     "Invite User"]])
 

@@ -29,7 +29,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-taxon-field (json/js {:url url})
               :id (or id name)
-              :class "input input-bordered input-sm"
+              :class "spl-input  "
               :name name
               :autocomplete "off"
               :required true}
@@ -41,7 +41,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-accession-field (json/js {:url url})
               :id (or id name)
-              :class "input input-bordered input-sm"
+              :class "spl-input  "
               :name name
               :autocomplete "off"
               :required true}
@@ -54,7 +54,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-location-field (json/js {:url url})
               :id (or id name)
-              :class "input input-bordered input-sm"
+              :class "spl-input  "
               :name name
               :autocomplete "off"
               :required true}
@@ -66,7 +66,7 @@
   (let [url (z/url-for material.routes/index)]
     [:select {:x-material-field (json/js {:url url})
               :id (or id name)
-              :class "select select-bordered select-md w-full max-w-xs px-2"
+              :class "spl-input spl-select   w-full max-w-xs px-2"
               :name name
               :autocomplete "off"
               :required true}
@@ -83,7 +83,7 @@
      (form/field :label "Resource type"
                  :name "resource-type"
                  :input [:select {:name "resource-type"
-                                  :class "select select-bordered select-sm w-full max-w-xs leading-4"
+                                  :class "spl-input spl-select   w-full max-w-xs leading-4"
                                   :autocomplete "off"
                                   :id "resource-type"
                                   :x-model "resourceType"
@@ -108,9 +108,9 @@
                           [:template {:x-if "resourceType === 'taxon'"}
                            (taxon-field :name "resource-id")]])
 
-      (form/submit-button {:class "btn btn-sm btn-primary mb-4"}  "Save")
+      (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"}  "Save")
       [:button {:type "button"
-                :class "btn btn-sm mb-4"
+                :class "spl-btn spl-btn--sm mb-4"
                 :x-on:click "editLink=false"}
        "Cancel"]]]))
 
@@ -177,7 +177,7 @@
 
 (defn delete-button [& {:keys [media]}]
   [:btn {:href "#"
-         :class "btn btn-sm btn-square btn-outline btn-error *:hover:text-white"
+         :class "spl-btn spl-btn--sm spl-btn--icon  spl-btn--danger *:hover:text-white"
          :hx-confirm "Are you sure you want to remove this link?"
          :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
          :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})
@@ -194,7 +194,7 @@
            anchor
            (delete-button :media media)]
           [:btn {:href "#"
-                 :class "btn btn-sm btn-square my-2"
+                 :class "spl-btn spl-btn--sm spl-btn--icon my-2"
                  :x-on:click "editLink=true"
                  :alt "Link"}
            (heroicons/outline-link)])]

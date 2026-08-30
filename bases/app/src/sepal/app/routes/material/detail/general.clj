@@ -27,12 +27,12 @@
                        :values values)])
 
 (defn footer-buttons []
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
              ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
              :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
     "Cancel"]
-   [:button {:class "btn btn-primary"
+   [:button {:class "spl-btn spl-btn--primary"
              :x-on:click "$dispatch('material-form:submit')"}
     "Save"]])
 

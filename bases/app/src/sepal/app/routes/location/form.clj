@@ -2,10 +2,10 @@
   (:require [sepal.app.ui.form :as form]))
 
 (defn footer-buttons []
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]
-   [:button {:class "btn btn-primary"
+   [:button {:class "spl-btn spl-btn--primary"
              :x-on:click "$dispatch('location-form:submit')"
              :x-bind:disabled "!valid"}
     "Save"]])

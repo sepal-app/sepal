@@ -63,12 +63,10 @@
     paginator]))
 
 (defn- page-button [& {:keys [active? label href]}]
-  [:a {:href href
-       :class (cond->> "relative inline-flex items-center px-4 py-2 border text-sm font-medium"
-                active?
-                (str " z-10 bg-blue-50 border-blue-500 text-blue-600 r")
-                :always
-                (str " bg-base-100 border-gray-300 text-gray-500 hover:bg-gray-50"))}
+  [:a (cond-> {:href href
+               :class (cond-> ["spl-page"]
+                        active? (conj "spl-page--current"))}
+        active? (assoc :aria-current "page"))
    label])
 
 (defn paginator [& {:keys [current-page page-size total href]
@@ -95,64 +93,28 @@
         next-page-href (if (= current-page num-pages)
                          "#"
                          (page-href (+ current-page 1)))
-        buttons (cond
-                  ;; If there are fewer than 5 pages, just build that many
-                  (< num-pages 6)
-                  [:div (for [page (range 1 (inc num-pages))]
-                          (page-button :label page
-                                       :active? (= current-page page)
-                                       :href (page-href page)))]
-                  ;; There are more than 5 pages of results, make sure we don't
-                  ;; have negative page buttons for small current pages
-                  (< current-page 4)
-                  [:div (for [page (range 1 6)]
-                          (page-button :label page
-                                       :active? (= current-page page)
-                                       :href (page-href page)))]
-                  :else
-                  [:div (for [page (range (- current-page 2) (+ current-page 3))]
-                          (page-button :label page
-                                       :active? (= current-page page)
-                                       :href (page-href page)))])]
+        pages (cond
+                (< num-pages 6) (range 1 (inc num-pages))
+                (< current-page 4) (range 1 6)
+                :else (range (- current-page 2) (+ current-page 3)))]
 
-    [:div {:class "bg-base-100 px-4 py-3 flex items-center justify-between sm:px-6"}
-     [:div {:class "flex-1 flex justify-between sm:hidden"}
-      [:a {:href previous-page-href
-           :class "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"}
-       "Previous"]
-      [:a {:href next-page-href
-           :class "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-base-100 hover:bg-gray-50"}
-       "Next"]]
-     [:div {:class "hidden sm:flex-1 sm:flex sm:items-center sm:justify-between"}
-      [:div
-       [:p {:class "text-sm text-gray-700"}
-        "Showing "
-        [:span {:class "font-medium"} page-start]
-        " to "
-        [:span {:class "font-medium"} page-end]
-        " of "
-        [:span {:class "font-medium"} total]
-        " results"]]
-      [:div
-       [:nav {:class "relative z-0 inline-flex rounded-md -space-x-px"
-              :aria-label "Pagination"}
-        [:a {:href (page-href 1)
-             :class "relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-base-100 text-sm font-medium text-gray-500 hover:bg-gray-50"}
-         [:span {:class "sr-only"}
-          "First"]
-         (icon/backwards-left)]
-        [:a {:href previous-page-href
-             :class "relative inline-flex items-center px-2 py-2 border border-gray-300 bg-base-100 text-sm font-medium text-gray-500 hover:bg-gray-50"}
-         [:span {:class "sr-only"}
-          "Previous"]
-         (icon/chevron-left)]
-        buttons
-        [:a {:href next-page-href
-             :class "relative inline-flex items-center px-2 py-2 border border-gray-300 bg-base-100 text-sm font-medium text-gray-500 hover:bg-gray-50"}
-         [:span {:class "sr-only"} "Next"]
-         (icon/chevron-right)]
-        [:a {:href (page-href num-pages)
-             :class "relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-base-100 text-sm font-medium text-gray-500 hover:bg-gray-50"}
-         [:span {:class "sr-only"}
-          "Last"]
-         (icon/backwards-right)]]]]]))
+    [:div {:class "spl-paginator"}
+     [:p {:class "spl-count"}
+      (format "%s\u2013%s of %s" page-start page-end total)]
+     [:nav {:class "spl-pages" :aria-label "Pagination"}
+      [:a {:href (page-href 1) :class "spl-page"}
+       [:span {:class "sr-only"} "First page"]
+       (icon/backwards-left)]
+      [:a {:href previous-page-href :class "spl-page"}
+       [:span {:class "sr-only"} "Previous page"]
+       (icon/chevron-left)]
+      (for [page pages]
+        (page-button :label page
+                     :active? (= current-page page)
+                     :href (page-href page)))
+      [:a {:href next-page-href :class "spl-page"}
+       [:span {:class "sr-only"} "Next page"]
+       (icon/chevron-right)]
+      [:a {:href (page-href num-pages) :class "spl-page"}
+       [:span {:class "sr-only"} "Last page"]
+       (icon/backwards-right)]]]))
