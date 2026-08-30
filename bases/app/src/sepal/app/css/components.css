@@ -27,6 +27,18 @@
   text-decoration-color: currentColor;
 }
 
+/* Inside a table, drop the resting underline. WCAG 1.4.1 is about a link
+ * embedded in a block of text, where colour alone would not distinguish it —
+ * a cell whose entire content is the link, under a header naming the column,
+ * is not that case. With a link in every row it also turned the list into a
+ * wall of rules. Hover and focus still underline. */
+.spl-table .spl-link { text-decoration: none; }
+.spl-table .spl-link:hover,
+.spl-table .spl-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
 /* ── Scientific names ──────────────────────────────────────────────────────
  * Only the italicised run takes the serif. The hybrid marker, the connecting
  * terms and a cultivar epithet stay in the sans — see
@@ -369,7 +381,7 @@
  * wrapper and an actions row before anything you came to look at; that is what
  * made a restyle read as the old design in new colours. */
 .spl-inner { width: 100%; padding: 0 14px; }
-.spl-main { flex: 1; min-height: 0; padding-bottom: 5rem; }
+.spl-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 /* The list toolbar: same surface as the top bar, hairline beneath, no margins.
  * Search, filters and export live here; the table begins immediately below. */
@@ -382,12 +394,28 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
-.spl-panes { display: flex; gap: 16px; align-items: flex-start; padding: 14px; }
+/* Data goes to the edges. The rail touches the viewport edge on one side and
+ * the table on the other; the table runs to the far edge with no gutter and no
+ * card around it. Rows are separated by hairlines, which is all the structure
+ * a list needs. */
+.spl-panes { display: flex; align-items: stretch; }
 .spl-list { flex: 1; min-width: 0; }
 
+/* Below 640px the toolbar stacks. Its children are a route's own markup —
+ * usually one justify-between row — so the wrapping has to be forced from
+ * here rather than assumed of each caller. */
 @media (max-width: 639px) {
-  .spl-panes { padding: 10px; gap: 10px; }
-  .spl-toolbar { flex-wrap: wrap; }
+  .spl-toolbar { flex-direction: column; align-items: stretch; row-gap: 8px; }
+  .spl-toolbar > * { min-width: 0; }
+  .spl-toolbar > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .spl-search { flex: 1 0 100%; max-width: none; }
+  .spl-toolbar label { white-space: normal; }
 }
 
 .spl-page-title {
@@ -438,15 +466,12 @@
 }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
-/* One surface level around a list: bordered card on the tinted page. The
- * separation is border plus a soft shadow rather than a background shift,
- * which leaves surface-alt in reserve for the header row inside. */
+/* A list is not a card. It fills its pane edge to edge — no border, no radius,
+ * no shadow — because a box around a full-width table is a boundary that
+ * separates nothing from nothing. Hairlines between rows carry the structure. */
 .spl-table-card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgb(18 33 30 / .04), 0 12px 28px -20px rgb(18 33 30 / .22);
+  min-height: 100%;
 }
 
 .spl-row { cursor: pointer; }
@@ -455,12 +480,13 @@
 
 /* ── Detail panel ──────────────────────────────────────────────────────────
  * Appears on row click; dismissible by its close control or Escape. */
+/* The panel is a column of the pane, not a floating card: it shares the
+ * table's top edge and runs to the viewport's right edge. */
 .spl-panel {
   width: 288px;
   flex: none;
   background: var(--color-page);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-left: 1px solid var(--color-border);
   overflow-y: auto;
 }
 .spl-panel-head {
@@ -503,13 +529,16 @@
  * still a table to a screen reader; a grid of divs is not. */
 @media (max-width: 639px) {
   .spl-table thead { display: none; }
-  .spl-table td:not(.spl-col--identifier) { display: none; }
-  .spl-table td.spl-col--identifier {
+  /* Keep the FIRST cell, whatever its type. Keying this on
+     .spl-col--identifier hid every cell in any table without an identifier
+     column — the Taxa list is Name/Author/Rank/Parent, and rendered blank. */
+  .spl-table td:not(:first-child) { display: none; }
+  .spl-table td:first-child {
     width: auto;
     padding: 10px 12px;
     white-space: normal;
   }
-  .spl-table td.spl-col--identifier::after {
+  .spl-table td:first-child::after {
     content: attr(data-stacked);
     display: block;
     margin-top: 3px;

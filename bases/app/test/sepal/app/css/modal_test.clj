@@ -37,6 +37,17 @@
   (is (str/includes? (components-css) ".spl-modal::backdrop")
       "the scrim comes from ::backdrop rather than a positioned element"))
 
+(deftest test-phone-collapse-keeps-the-first-cell-not-a-column-type
+  (testing "regression: the sub-640px rule hid every td that was not
+            .spl-col--identifier. The Taxa list is Name/Author/Rank/Parent with
+            no identifier column, so every cell was hidden and the table
+            rendered blank on a phone. The rule must key on position."
+    (let [css (components-css)]
+      (is (str/includes? css ".spl-table td:not(:first-child)")
+          "the collapse hides by position")
+      (is (not (str/includes? css "td:not(.spl-col--identifier)"))
+          "and never by column type, which not every table has"))))
+
 (deftest test-dialog-backdrop-form-sits-behind-the-box
   (testing "the click-outside form must not cover the dialog's own controls"
     (let [body (rule-body (components-css) ".spl-modal-backdrop")]
