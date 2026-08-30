@@ -367,14 +367,13 @@ This is a constraint on the code. When you add a migration:
 - **CI runs the unit suite twice**, at the latest schema and at the floor, via the
   `schema` matrix in `.github/workflows/test.yml`. Reproduce the second locally
   with `SEPAL_TEST_SCHEMA_VERSION=floor clojure -M:dev:test:test-runner --focus :unit`.
-- **Bumping the floor drops support.** Only do it deliberately, and only once every
-  hosted garden is at or above the new value — a garden below it serves a
-  maintenance page and nothing else.
+- **Bumping the floor drops support.** Only do it deliberately, and only once no
+  database you still need to open is below the new value. One that is will not
+  start at all.
 
-Why the floor exists: hosted gardens are migrated by the dispatcher *after* a
-deploy, not during it (see `plans/022-fleet-migrations.md` in the workspace repo).
-Without a floor, every garden would be unstartable from the moment a
-schema-carrying release lands until something migrated it.
+Why the floor exists: a database is not always migrated by the build that starts
+it. Requiring an exact match makes any such database unstartable, with no way
+back; a floor keeps it serving and leaves migrating it a separate step.
 
 Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `collection`, `settings`
 

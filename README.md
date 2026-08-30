@@ -66,9 +66,9 @@ and refuses to start against one older than its supported minimum, reporting
 including one newer than the running build — so rolling back to a previous
 release does not strand a database that has already been migrated.
 
-Self-hosted installs apply pending migrations automatically at startup, so this
-rarely comes up. It matters when running several gardens from one process, where
-migration and deploy are separate steps.
+Sepal applies pending migrations automatically at startup, so a database it
+created and has kept current is always accepted. The minimum matters when a
+database has been migrated by a newer build than the one now running it.
 
 ## Configuration
 

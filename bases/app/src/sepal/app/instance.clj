@@ -470,10 +470,10 @@
                                     {:reason :database-unusable :slug slug :db-path db-path}
                                     e))))
         minimum (db.i/minimum-supported-version)]
-    ;; A floor rather than equality. A garden one migration behind keeps serving,
-    ;; so a deploy carrying a migration does not take the fleet down and a
-    ;; rollback does not strand the gardens that already moved forward. What pays
-    ;; for that is the rule in AGENTS.md: code must work at the floor.
+    ;; A database one migration behind still opens, and so does one migrated by a
+    ;; newer build than this one — so rolling back a release does not strand a
+    ;; database that already moved forward. What pays for that is the rule in
+    ;; AGENTS.md: code must work at the floor.
     (when (or (nil? current)
               (< (parse-long current) (parse-long minimum)))
       (throw (ex-info (format "Database %s is at schema version %s, below the supported minimum %s"

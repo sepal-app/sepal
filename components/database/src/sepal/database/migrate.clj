@@ -66,12 +66,12 @@
 
   Every database at or above this version must work against this code. That is a
   constraint on the code, not on the data: a feature needing a column added after
-  this version has to check the garden's schema version and fall back.
+  this version has to check the database's schema version and fall back.
 
   Bump it only when dropping support for a version is deliberate, and only after
-  confirming every hosted garden is at or above the new value — a garden below the
-  floor serves a maintenance page and nothing else. The CI matrix runs the unit
-  suite at this version, so raising it also narrows what CI is checking."
+  confirming no database you still need to open is below the new value, because
+  one that is will not start at all. The CI matrix runs the unit suite at this
+  version, so raising it also narrows what CI is checking."
   "20260113120000")
 
 (defn minimum-supported-version [] minimum-supported)
@@ -92,8 +92,8 @@
 
 (defn- migration-sources
   "Pairs of [version sql-text], ordered. :migrations-dir overrides the classpath
-  index and is for tests. :up-to, when given, drops migrations newer than it,
-  which is how a database is built at a version the code no longer defaults to."
+  index and is for tests. :up-to, when given, drops migrations newer than it, so
+  a caller can build a database at an older version than this build carries."
   [migrations-dir up-to]
   (let [all (if migrations-dir
               (->> (fs/list-dir migrations-dir)
