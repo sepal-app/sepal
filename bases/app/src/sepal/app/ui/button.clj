@@ -1,11 +1,16 @@
-(ns sepal.app.ui.button)
+(ns sepal.app.ui.button
+  "Buttons and button-shaped links.
 
-(defn button [& {:keys [type text]}]
-  [:button {:class "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+  These were Tailwind UI boilerplate hardcoded to bg-indigo-600 with an
+  indigo focus ring, in an app themed emerald — one of the four unrelated
+  accent families the design replaced with a single brand green.")
+
+(defn button [& {:keys [type text class]}]
+  [:button {:class (or class "spl-btn spl-btn--primary")
             :type (or type "button")}
    text])
 
-(defn link [& {:keys [text href]}]
-  [:a {:class "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+(defn link [& {:keys [text href class]}]
+  [:a {:class (or class "spl-btn spl-btn--primary")
        :href (or href "#")}
    text])
