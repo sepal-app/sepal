@@ -14,6 +14,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        schema: [ 'latest', 'floor' ]
     steps:
       - uses: actions/checkout@v4
 
@@ -50,7 +54,9 @@ jobs:
       - name: Lint
         run: bin/lint
 
-      - name: Run Unit Tests
+      - name: Run Unit Tests (schema ${{ matrix.schema }})
+        env:
+          SEPAL_TEST_SCHEMA_VERSION: ${{ matrix.schema }}
         run: clojure -M:dev:test:test-runner --focus :unit
 
   e2e-tests:

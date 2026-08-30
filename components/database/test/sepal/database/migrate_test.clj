@@ -100,3 +100,61 @@
           (is (= before (fs/size db-path)))
           (is (= bytes-before (vec (fs/read-all-bytes db-path)))))
         (finally (fs/delete-tree dir))))))
+
+(deftest test-migrate-up-to-stops-at-the-named-version
+  (testing ":up-to applies migrations at or below it and leaves the rest pending"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-migrate"})
+          migrations (fs/create-dirs (fs/path dir "migrations"))]
+      (try
+        (let [db-path (fresh-db dir)]
+          (spit (str (fs/path migrations "29990101000000_probe_one.sql"))
+                "create table probe_one (id integer primary key);\n")
+          (spit (str (fs/path migrations "29990102000000_probe_two.sql"))
+                "create table probe_two (id integer primary key);\n")
+          (is (= {:applied ["29990101000000"]}
+                 (db.i/migrate! {:db-path db-path
+                                 :migrations-dir (str migrations)
+                                 :up-to "29990101000000"})))
+          (is (seq (query db-path "select name from sqlite_master where name = 'probe_one'")))
+          (is (empty? (query db-path "select name from sqlite_master where name = 'probe_two'")))
+          (is (= ["29990102000000"]
+                 (db.i/pending {:db-path db-path
+                                :migrations-dir (str migrations)})))
+          (is (contains? (set (query db-path "select version from schema_version"))
+                         "29990101000000")
+              "the applied migration is recorded")
+          (is (not (contains? (set (query db-path "select version from schema_version"))
+                              "29990102000000"))
+              "the capped-out migration is not"))
+        (finally (fs/delete-tree dir))))))
+
+(deftest test-migrate-up-to-latest-is-the-same-as-no-up-to
+  (testing "an :up-to at or above the newest migration applies everything"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-migrate"})
+          migrations (fs/create-dirs (fs/path dir "migrations"))]
+      (try
+        (let [db-path (fresh-db dir)]
+          (spit (str (fs/path migrations "29990101000000_probe_one.sql"))
+                "create table probe_one (id integer primary key);\n")
+          (is (= {:applied ["29990101000000"]}
+                 (db.i/migrate! {:db-path db-path
+                                 :migrations-dir (str migrations)
+                                 :up-to "29991231000000"})))
+          (is (empty? (db.i/pending {:db-path db-path
+                                     :migrations-dir (str migrations)}))))
+        (finally (fs/delete-tree dir))))))
+
+(deftest test-migrate-up-to-below-everything-applies-nothing
+  (testing "an :up-to below the oldest pending migration is a no-op"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-migrate"})
+          migrations (fs/create-dirs (fs/path dir "migrations"))]
+      (try
+        (let [db-path (fresh-db dir)]
+          (spit (str (fs/path migrations "29990101000000_probe_one.sql"))
+                "create table probe_one (id integer primary key);\n")
+          (is (= {:applied []}
+                 (db.i/migrate! {:db-path db-path
+                                 :migrations-dir (str migrations)
+                                 :up-to "20000101000000"})))
+          (is (empty? (query db-path "select name from sqlite_master where name = 'probe_one'"))))
+        (finally (fs/delete-tree dir))))))

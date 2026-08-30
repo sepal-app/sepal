@@ -201,6 +201,12 @@
   []
   (db.i/latest-version))
 
+(defn minimum-schema-version
+  "The oldest schema version this build can serve. A database below it is
+  refused; one at or above it, including ahead of latest-schema-version, starts."
+  []
+  (db.i/minimum-supported-version))
+
 (defn migrate!
   "Apply pending migrations to a database, one transaction each."
   [{:keys [db-path]}]
@@ -463,13 +469,18 @@
                     (throw (ex-info (format "Database %s could not be read" db-path)
                                     {:reason :database-unusable :slug slug :db-path db-path}
                                     e))))
-        expected (db.i/latest-version)]
-    (when-not (= current expected)
-      (throw (ex-info (format "Database %s is at schema version %s, code expects %s"
-                              db-path current expected)
-                      {:reason :schema-version-behind
+        minimum (db.i/minimum-supported-version)]
+    ;; A database one migration behind still opens, and so does one migrated by a
+    ;; newer build than this one — so rolling back a release does not strand a
+    ;; database that already moved forward. What pays for that is the rule in
+    ;; AGENTS.md: code must work at the floor.
+    (when (or (nil? current)
+              (< (parse-long current) (parse-long minimum)))
+      (throw (ex-info (format "Database %s is at schema version %s, below the supported minimum %s"
+                              db-path current minimum)
+                      {:reason :schema-version-unsupported
                        :slug slug :db-path db-path
-                       :current current :expected expected}))))
+                       :current current :minimum minimum}))))
   (let [claim (claim! process opts)]
     (try
       (fs/create-dirs media-cache-dir)

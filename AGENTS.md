@@ -349,6 +349,32 @@ Use Chassis for HTML generation:
 - Both are classpath resources, so a jar carries them; `sepal.database.migrate`
   enumerates the migrations directory from the classpath rather than from an index file
 
+### Schema compatibility (N-1)
+
+Sepal refuses a database only when it is **below** `minimum-supported-version` in
+`components/database/src/sepal/database/migrate.clj`. A database at or above the
+floor must work against this code, including one that is *ahead* of it after a
+rollback.
+
+This is a constraint on the code. When you add a migration:
+
+- **Do not assume the column is there.** Code that touches something added after
+  the floor must check `schema-version` against the version that added it and fall
+  back. `select new_col from t` fails outright on a database without it; SQL does
+  not return null for a column that does not exist.
+- **Prefer additive migrations.** Adding a table, column or index keeps old code
+  working. Dropping or renaming breaks it, and breaks rollback with it.
+- **CI runs the unit suite twice**, at the latest schema and at the floor, via the
+  `schema` matrix in `.github/workflows/test.yml`. Reproduce the second locally
+  with `SEPAL_TEST_SCHEMA_VERSION=floor clojure -M:dev:test:test-runner --focus :unit`.
+- **Bumping the floor drops support.** Only do it deliberately, and only once no
+  database you still need to open is below the new value. One that is will not
+  start at all.
+
+Why the floor exists: a database is not always migrated by the build that starts
+it. Requiring an exact match makes any such database unstartable, with no way
+back; a floor keeps it serving and leaves migrating it a separate step.
+
 Tables: `user`, `taxon`, `accession`, `material`, `location`, `media`, `media_link`, `activity`, `contact`, `collection`, `settings`
 
 ### Geo-coordinates (SpatiaLite)
