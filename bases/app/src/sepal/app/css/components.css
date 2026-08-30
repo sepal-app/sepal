@@ -489,6 +489,58 @@
   }
 }
 
+/* ── Activity changelog ────────────────────────────────────────────────────
+ * Events carry no diff, so repeated "updated" lines say nothing new. The
+ * sentence collapses a run; the chips beneath name the records it touched. */
+.spl-changelog-day {
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  padding: 16px 0 8px;
+  margin: 0;
+}
+.spl-changelog-entry {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 11px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.spl-changelog-avatar { width: 26px; }
+.spl-changelog-body { min-width: 0; }
+.spl-changelog-line {
+  font: 400 13.5px/1.5 var(--font-sans);
+  color: var(--color-text-table);
+  margin: 0;
+}
+.spl-changelog-actor { font-weight: 600; color: var(--color-text); }
+.spl-changelog-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-text-dim);
+}
+.spl-changelog-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.spl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-table);
+  max-width: 100%;
+}
+.spl-chip-icon { width: 14px; height: 14px; flex: none; color: var(--color-text-dim); }
+.spl-chip-icon svg { width: 100%; height: 100%; }
+
 /* ── Focus ─────────────────────────────────────────────────────────────────
  * Owned here now that DaisyUI is on its way out. Brand measures 6.23:1 on the
  * page, comfortably past the 3:1 a focus indicator needs. */

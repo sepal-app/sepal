@@ -1,5 +1,6 @@
 (ns sepal.app.routes.activity.index
-  (:require [malli.core :as m]
+  (:require [clojure.string :as str]
+            [malli.core :as m]
             [malli.util :as mu]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
@@ -256,6 +257,62 @@
     []
     activities))
 
+;;; Collapsing a run into a sentence
+;;
+;; An activity event records who, what type and when — and nothing about what
+;; changed, because that was never stored (see plan 025). So four edits to one
+;; accession are four identical lines. Collapsing a run of one person's
+;; activity into "updated 3 accessions" is what makes the feed readable, and is
+;; the whole reason the changelog view was chosen over a raw stream.
+
+(def ^:private resource-nouns
+  "Singular and plural for each resource. Taxa, not taxons — a botanist
+  notices, and principle 2 says the domain's conventions are correctness."
+  {"accession" ["an accession" "accessions"]
+   "taxon" ["a taxon" "taxa"]
+   "material" ["a material" "materials"]
+   "location" ["a location" "locations"]
+   "contact" ["a contact" "contacts"]
+   "media" ["a media item" "media items"]
+   "setup" ["setup" "setup"]
+   "settings" ["settings" "settings"]})
+
+(defn- noun [resource n]
+  (let [[singular plural] (get resource-nouns resource [(str "a " resource)
+                                                        (str resource "s")])]
+    (if (= 1 n) singular (str n " " plural))))
+
+(defn- join-clauses [clauses]
+  (case (count clauses)
+    0 ""
+    1 (first clauses)
+    2 (str (first clauses) " and " (second clauses))
+    (str (str/join ", " (butlast clauses)) " and " (last clauses))))
+
+(defn summarise
+  "One sentence for a run of activities by the same person.
+
+  Groups by action and resource, preserving first-seen order so the sentence
+  reads in the order things happened: \"updated 2 taxa and deleted an
+  accession\"."
+  [activities]
+  (->> activities
+       (map (fn [a]
+              (let [t (:activity/type a)]
+                [(name t) (namespace t)])))
+       (reduce (fn [acc pair]
+                 (if (contains? (:seen acc) pair)
+                   (update-in acc [:counts pair] inc)
+                   (-> acc
+                       (update :order conj pair)
+                       (update :seen conj pair)
+                       (assoc-in [:counts pair] 1))))
+               {:order [] :seen #{} :counts {}})
+       ((fn [{:keys [order counts]}]
+          (for [[action resource :as pair] order]
+            (str action " " (noun resource (get counts pair))))))
+       (join-clauses)))
+
 ;;; New activity components
 
 (defn activity-item
@@ -263,46 +320,39 @@
   [activity]
   (when-let [{:keys [resource-type resource-name resource-url context]}
              (activity-data activity)]
-    [:div {:class (html/attr "flex" "items-start" "gap-3" "py-2")}
-     ;; Fixed-width icon column
-     [:div {:class (html/attr "flex-shrink-0" "w-5" "h-5" "text-base-content/60")}
+    ;; A chip naming one affected record. The sentence above already says what
+    ;; happened, so the chip carries identity and context only.
+    [:span {:class "spl-chip" :title context}
+     [:span {:class "spl-chip-icon" :aria-hidden "true"}
       (ui.activity/resource-icon resource-type)]
-     ;; Flexible content column
-     [:div {:class "min-w-0 flex-1"}
-      [:div {:class (html/attr "flex" "items-center" "gap-2")}
-       (if resource-url
-         [:a {:class "spl-link font-medium"
-              :href resource-url}
-          resource-name]
-         [:span {:class "font-medium"} resource-name])
-       (ui.activity/action-badge (:activity/type activity))]
-      [:div {:class "text-sm text-base-content/60"}
-       context]]]))
+     (if resource-url
+       [:a {:class "spl-link" :href resource-url} resource-name]
+       [:span resource-name])
+     (ui.activity/action-badge (:activity/type activity))]))
 
 (defn activity-card
-  "Render a card grouping activities by a single user."
+  "One run of consecutive activity by the same person, written as a sentence
+  with the affected records beneath it. Six events become one line and six
+  chips rather than six near-identical rows."
   [{:keys [user time activities]} timezone]
-  [:div {:class (html/attr "card" "bg-base-100" "shadow-sm" "mb-4")}
-   [:div {:class (html/attr "card-body" "p-4")}
-    ;; Header: avatar + email + time
-    [:div {:class (html/attr "flex" "items-center" "justify-between")}
-     [:div {:class (html/attr "flex" "items-center" "gap-3")}
-      (ui.avatar/avatar :email (:user/email user) :size :sm)
-      [:span {:class "font-medium"} (:user/email user)]]
-     (datetime/relative-time time timezone :class (html/attr "text-sm" "text-base-content/60"))]
-    ;; Divider
-    [:div {:class (html/attr "divider" "my-2")}]
-    ;; Activity items
-    [:div {:class (html/attr "flex" "flex-col")}
+  [:div {:class "spl-changelog-entry"}
+   [:div {:class "spl-changelog-avatar"}
+    (ui.avatar/avatar :email (:user/email user) :size :sm)]
+   [:div {:class "spl-changelog-body"}
+    [:p {:class "spl-changelog-line"}
+     [:span {:class "spl-changelog-actor"} (:user/email user)]
+     " "
+     (summarise activities)
+     " "
+     (datetime/relative-time time timezone :class "spl-changelog-time")]
+    [:div {:class "spl-changelog-refs"}
      (for [activity activities]
        (activity-item activity))]]])
 
 (defn day-header
   "Render a day section header."
   [date-str]
-  [:div {:class (html/attr "text-lg" "font-semibold" "text-base-content" "mb-4" "mt-6"
-                           "first:mt-0")}
-   date-str])
+  [:h2 {:class "spl-changelog-day"} date-str])
 
 (defn empty-state
   "Render what the feed shows when it has nothing to render.
