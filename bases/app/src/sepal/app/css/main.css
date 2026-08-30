@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./tokens.css";
 @import "slim-select/styles";
 
 @plugin "@tailwindcss/aspect-ratio";
@@ -12,15 +13,6 @@
 /* Override DaisyUI's circular checkboxes with rounded squares */
 .checkbox {
     border-radius: 0.25rem;
-}
-
-@theme {
-    --font-sans:
-        "Inter var", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    /* --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; */
-    /* --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", */
-    /*     "Courier New", monospace; /\* ... *\/ */
 }
 
 .fieldset {

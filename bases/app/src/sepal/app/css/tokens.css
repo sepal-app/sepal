@@ -1,0 +1,62 @@
+/* Sepal design tokens — the single source of colour, type and radius.
+ *
+ * Adopted from marketing/site.css, with the contrast failures corrected.
+ * Values are checked by sepal.app.css.tokens-test: every text token must clear
+ * WCAG AA (4.5:1) on every surface it is used on, and every control boundary
+ * must clear 3:1 (WCAG 1.4.11). A change that breaks either fails the build.
+ *
+ * @theme emits these onto :root, so an opt-in palette can later override them
+ * under a [data-theme] selector with no rework. That only holds while no colour
+ * is baked into a utility class anywhere else.
+ */
+
+@theme {
+  /* Brand. The only accent, meaning interactive or identifying. */
+  --color-brand: #0F6B5C;
+  --color-brand-hover: #0A4A40;
+  --color-brand-tint: #E4F1EE;
+
+  /* Surfaces. Three levels, no fourth. */
+  --color-page: #FBFCFB;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F6F9F8;
+
+  /* Text ramp, six steps. marketing/site.css has seven; its two dimmest
+   * (#7D908B at 3.28:1 and #9AACA7 at 2.31:1) both fail AA for small text and
+   * converge once corrected, so they collapse into one accessible step. */
+  --color-text: #12211E;
+  --color-text-table: #2C3E39;
+  --color-text-nav: #3B4B47;
+  --color-text-soft: #4A5C57;
+  --color-text-muted: #5C6E69;
+  --color-text-dim: #627771;
+
+  /* Borders. The first three are decorative hairlines and are exempt from
+   * 1.4.11; --color-control and --color-field bound real controls and are not. */
+  --color-hairline: #F3F6F5;
+  --color-border-light: #EEF2F1;
+  --color-border: #E3E8E6;
+  --color-control: #7F9A91;
+  --color-field: #679F92;
+
+  /* The four semantic colours. Never the sole carrier of meaning — the word is
+   * always present too. */
+  --color-ok: #1D6B45;
+  --color-ok-bg: #E3F1E9;
+  --color-info: #1B5A78;
+  --color-info-bg: #E2EEF4;
+  --color-danger: #8C2F26;
+  --color-danger-bg: #F6E7E5;
+  --color-neutral: #4A5C57;
+  --color-neutral-bg: #EEF2F1;
+
+  /* Faces. Sans for the interface, serif italic for the italicised part of a
+   * scientific name, mono for identifiers. Self-hosted; see main.css. */
+  --font-sans: "Source Sans 3 Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, serif;
+  --font-mono: "Source Code Pro Variable", ui-monospace, monospace;
+
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-pill: 100px;
+}
