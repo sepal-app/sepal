@@ -8,7 +8,6 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
-            [sepal.database.interface :as db.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]
@@ -435,27 +434,75 @@
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
 
-(deftest test-start-refuses-a-database-behind-the-code
-  (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
-        process (test-process)
-        opts (garden-opts dir "old")]
-    (try
-      (instance/provision! {:db-path (:db-path opts)})
-      ;; Rewind the database one migration behind the code.
-      (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" (:db-path opts))})]
-        (jdbc/execute! ds ["delete from schema_version where version = ?"
-                           (db.i/latest-version)]))
-      (testing "a database behind the code refuses to start"
-        (let [thrown (try
-                       (instance/start! process opts)
-                       nil
-                       (catch clojure.lang.ExceptionInfo e e))]
-          (is (some? thrown) "start! should refuse an out-of-date database")
-          (is (= :schema-version-behind (:reason (ex-data thrown))))
-          (is (= (db.i/latest-version) (:expected (ex-data thrown))))))
-      (finally
-        (instance/stop-process! process)
-        (fs/delete-tree dir)))))
+(deftest test-start-refuses-only-below-the-floor
+  (testing "a database below the supported floor is refused with :schema-version-unsupported"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-floor"})
+          db-path (str (fs/path dir "old.db"))]
+      (try
+        (instance/provision! {:db-path db-path})
+        ;; Drop the newest recorded version so the database reads as older than
+        ;; the floor. start! compares what schema_version holds, so that row is
+        ;; the whole subject of this test — the tables are irrelevant to it. This
+        ;; is the exact mirror of the ahead-of-code test below, which inserts a
+        ;; future row instead of deleting the current one.
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
+              floor (instance/minimum-schema-version)]
+          (jdbc/execute! ds ["delete from schema_version where version = ?" floor])
+          (let [current (instance/schema-version {:db-path db-path})]
+            (is (some? current) "precondition: an older version is still recorded")
+            (is (< (parse-long current) (parse-long floor))
+                "precondition: the database now reads as below the floor")
+            (let [process (instance/start-process!
+                            {:master-secret "1234567890123456"
+                             :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})
+                  thrown (try (instance/start! process
+                                               {:slug "old"
+                                                :db-path db-path
+                                                :app-domain "old.sepal.app"
+                                                :media-key-prefix "old/"
+                                                :media-cache-dir (str (fs/path dir "cache"))
+                                                :backup-dir (str (fs/path dir "backups"))})
+                              nil
+                              (catch clojure.lang.ExceptionInfo e e))]
+              (try
+                (is (some? thrown) "start! should have refused a below-floor database")
+                (is (= :schema-version-unsupported (:reason (ex-data thrown))))
+                (is (= current (:current (ex-data thrown))))
+                (is (= floor (:minimum (ex-data thrown))))
+                (finally (instance/stop-process! process))))))
+        (finally (fs/delete-tree dir))))))
+
+(deftest test-start-accepts-a-database-ahead-of-the-code
+  (testing "a database with a version newer than the build starts"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-ahead"})
+          db-path (str (fs/path dir "ahead.db"))]
+      (try
+        (instance/provision! {:db-path db-path})
+        ;; A version from the future, recorded the way a real migration records
+        ;; one. This is the rollback case: the file moved forward, the code did not.
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds ["insert into schema_version (version) values ('29990101000000')"]))
+        (is (= "29990101000000" (instance/schema-version {:db-path db-path})))
+        (let [process (instance/start-process!
+                        {:master-secret "1234567890123456"
+                         :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+          (try
+            (let [garden (instance/start! process
+                                          {:slug "ahead"
+                                           :db-path db-path
+                                           :app-domain "ahead.sepal.app"
+                                           :media-key-prefix "ahead/"
+                                           :media-cache-dir (str (fs/path dir "cache"))
+                                           :backup-dir (str (fs/path dir "backups"))})]
+              (is (some? garden) "a garden ahead of the code must still start")
+              (instance/stop! garden))
+            (finally (instance/stop-process! process))))
+        (finally (fs/delete-tree dir))))))
+
+(deftest test-minimum-schema-version-is-not-ahead-of-latest
+  (testing "the floor never exceeds what this build can produce"
+    (is (<= (parse-long (instance/minimum-schema-version))
+            (parse-long (instance/latest-schema-version))))))
 
 (deftest test-start-refuses-an-unusable-database
   (let [dir (fs/create-temp-dir {:prefix "sepal-instances"})
@@ -471,7 +518,7 @@
                        nil
                        (catch clojure.lang.ExceptionInfo e e))]
           (is (some? thrown) "start! should refuse a corrupt database")
-          (is (contains? #{:database-unusable :schema-version-behind}
+          (is (contains? #{:database-unusable :schema-version-unsupported}
                          (:reason (ex-data thrown))))))
       (finally
         (instance/stop-process! process)

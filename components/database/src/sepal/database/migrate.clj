@@ -61,6 +61,21 @@
 (defn latest-version []
   (some-> (migration-files) last version-of))
 
+(def ^:private minimum-supported
+  "The oldest schema version this build can serve.
+
+  Every database at or above this version must work against this code. That is a
+  constraint on the code, not on the data: a feature needing a column added after
+  this version has to check the garden's schema version and fall back.
+
+  Bump it only when dropping support for a version is deliberate, and only after
+  confirming every hosted garden is at or above the new value — a garden below the
+  floor serves a maintenance page and nothing else. The CI matrix runs the unit
+  suite at this version, so raising it also narrows what CI is checking."
+  "20260113120000")
+
+(defn minimum-supported-version [] minimum-supported)
+
 (defn- applied-versions
   [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
