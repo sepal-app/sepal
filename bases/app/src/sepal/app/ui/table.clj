@@ -2,27 +2,49 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.ui.icons.heroicons :as icon]))
 
+(defn- column-classes
+  "A column's type drives its width and face; its priority drives when it is
+   hidden as the viewport narrows. Priority 1 never sheds and carries no shed
+   class, so `spl-shed-1` never appears in the markup."
+  [{:keys [type priority]}]
+  (cond-> [(str "spl-col--" (name (or type :text)))]
+    (and priority (> priority 1)) (conj (str "spl-shed-" priority))))
+
 (defn table
   "A table component.
 
-  columns: A list of map with keys :name and :cell
+  columns: A list of maps with keys :name, :cell, :type and :priority.
+
+    :name     — the header text.
+    :cell     — (fn [row] …) returning the cell's content.
+    :type     — :identifier, :name, :date or :text. Defaults to :text.
+                Drives column width and typeface: identifiers and dates are
+                mono with tabular figures, because they are scanned down a
+                column and compared rather than read.
+    :priority — 1 never sheds. Higher numbers are hidden first as the viewport
+                narrows, and are what a future column picker reads.
+
   rows: A list of data. Each row is passed to (:cell column)
   row-attrs: Optional function (row) -> attrs map for each <tr> element.
-             Use this to add click handlers, HTMX attributes, etc."
+             Use this to add click handlers, HTMX attributes, etc.
+
+  Stays a real <table>. Layout comes from `table-layout: fixed` in the
+  stylesheet, never from display:grid or display:block on a row — those drop
+  the implicit ARIA roles a screen reader relies on to announce a cell's
+  column."
   [& {:keys [columns rows row-attrs]}]
-  [:table {:class "min-w-full border-separate"
-           :style {:border-spacing 0}}
-   [:thead {:class "bg-base-200"}
+  [:table {:class "spl-table"}
+   [:thead
     [:tr
      (for [col columns]
        [:th {:scope "col"
-             :class "sticky top-0 z-10 border-b border-base-300 bg-base-200 py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 backdrop-blur backdrop-filter sm:pl-6 lg:pl-8"}
+             :class (column-classes col)}
         (:name col)])]]
-   [:tbody {:class "bg-base-100"}
+   [:tbody
     (for [row rows]
       [:tr (when row-attrs (row-attrs row))
        (for [col columns]
-         [:td {:class "whitespace-nowrap border-b border-base-200 py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6 lg:pl-8"}
+         [:td {:class (column-classes col)}
           ((:cell col) row)])])]])
 
 (defn card-table

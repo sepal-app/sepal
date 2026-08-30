@@ -178,6 +178,73 @@
   .spl-subnav-heading { display: none; }
 }
 
+/* ── Tables ────────────────────────────────────────────────────────────────
+ * Lists are dense where forms are roomy: a curator sweeping 1,284 accessions
+ * wants rows they can scan. Hairline separators, no zebra striping, no vertical
+ * rules, no box around the table — hierarchy comes from weight and colour. */
+.spl-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.spl-table th {
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: .08em;
+  text-align: left;
+  color: var(--color-text-dim);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 8px 14px;
+}
+.spl-table td {
+  font: 400 13px/1.4 var(--font-sans);
+  color: var(--color-text-table);
+  border-bottom: 1px solid var(--color-hairline);
+  padding: 9px 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spl-col--identifier {
+  width: 104px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.spl-col--date {
+  width: 96px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-dim);
+}
+.spl-table td.spl-col--text { color: var(--color-text-muted); }
+
+/* Responsive shedding, by column priority. */
+@media (max-width: 1023px) { .spl-shed-3 { display: none; } }
+@media (max-width: 767px)  { .spl-shed-2 { display: none; } }
+
+/* Below 640px the table keeps its element and its semantics but collapses to a
+ * single column whose cell stacks the row's content. A one-column table is
+ * still a table to a screen reader; a grid of divs is not. */
+@media (max-width: 639px) {
+  .spl-table thead { display: none; }
+  .spl-table td:not(.spl-col--identifier) { display: none; }
+  .spl-table td.spl-col--identifier {
+    width: auto;
+    padding: 10px 12px;
+    white-space: normal;
+  }
+  .spl-table td.spl-col--identifier::after {
+    content: attr(data-stacked);
+    display: block;
+    margin-top: 3px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: normal;
+  }
+}
+
 /* ── Focus ─────────────────────────────────────────────────────────────────
  * Owned here now that DaisyUI is on its way out. Brand measures 6.23:1 on the
  * page, comfortably past the 3:1 a focus indicator needs. */
