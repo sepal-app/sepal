@@ -31,7 +31,7 @@
 (defn zoom-view [& {:keys [zoom-url]}]
   [:div {:class "relative z-10"}
    [:div {:x-on:click "console.log('zoom=false'); zoom=false"
-          :class "spl-modal-backdrop"}]
+          :class "spl-scrim-overlay"}]
    [:div {:class "fixed inset-0 z-10 w-screen overflow-y-auto"}
     [:div {:class "flex flex-col min-h-full items-end justify-center text-center sm:items-center sm:p-20"}
 

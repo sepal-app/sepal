@@ -576,25 +576,101 @@
 .spl-alert--warning,
 .spl-alert--danger { background: var(--color-danger-bg); color: var(--color-danger); }
 
-.spl-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; }
-.spl-modal-backdrop { position: fixed; inset: 0; background: rgb(18 33 30 / .45); }
+/* .spl-modal is on a native <dialog>. Do NOT set `display` on it: the UA
+ * stylesheet uses `dialog:not([open]) { display: none }`, and overriding that
+ * leaves every modal on screen from first paint. showModal() puts the dialog
+ * in the top layer and centres it; ::backdrop supplies the scrim. */
+.spl-modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: 640px;
+  width: calc(100% - 32px);
+  color: var(--color-text);
+}
+.spl-modal::backdrop { background: rgb(18 33 30 / .45); }
+
+/* The click-outside-to-close form inside the dialog. It covers the viewport
+ * behind the box, so a click anywhere outside submits and closes. No colour of
+ * its own — ::backdrop already darkens. */
+.spl-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+.spl-modal-backdrop button {
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  background: none;
+  border: 0;
+  color: transparent;
+}
+
+/* A scrim for overlays that are not a <dialog> — the media zoom view. */
+.spl-scrim-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(18 33 30 / .75);
+}
+
 .spl-modal-box {
   position: relative;
   background: var(--color-surface);
   border-radius: var(--radius-card);
   border: 1px solid var(--color-border);
   padding: 20px;
-  max-width: 640px;
-  width: calc(100% - 32px);
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 24px 60px -30px rgb(18 33 30 / .5);
 }
 .spl-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 
-.spl-collapse { border: 1px solid var(--color-border-light); border-radius: var(--radius-control); }
-.spl-collapse-title { padding: 10px 14px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
-.spl-collapse-content { padding: 0 14px 12px; }
+/* Collapse is driven by a hidden checkbox its siblings select on — the same
+ * no-JavaScript pattern as the rail. The content must default to hidden: it is
+ * the checkbox that reveals it, and a `display` that ignores the checkbox
+ * leaves every section permanently open with a toggle that does nothing. */
+.spl-collapse {
+  position: relative;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.spl-collapse > input[type="checkbox"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.spl-collapse > input[type="checkbox"]:disabled { cursor: not-allowed; }
+.spl-collapse-title {
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-text-soft);
+}
+.spl-collapse-title::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 17px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--color-text-dim);
+  border-bottom: 1.5px solid var(--color-text-dim);
+  transform: rotate(45deg);
+  transition: transform .15s;
+}
+.spl-collapse > input[type="checkbox"]:checked ~ .spl-collapse-title::after {
+  transform: rotate(-135deg);
+}
+.spl-collapse-content { display: none; padding: 0 14px 12px; }
+.spl-collapse > input[type="checkbox"]:checked ~ .spl-collapse-content {
+  display: block;
+}
 
 .spl-divider { height: 1px; background: var(--color-border-light); margin: 12px 0; border: 0; }
 

@@ -18,7 +18,7 @@
     [:p {:class "font-medium"} name]
     [:p {:class (html/attr "text-sm"
                            (case status
-                             :ok "text-base-content/70"
+                             :ok "text-text-muted"
                              :warning "text-warning"
                              :error "text-error"))}
      message]]])

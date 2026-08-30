@@ -17,6 +17,6 @@
      #_[:p {:class "mt-3 text-sm md:ml-6 md:mt-0"}
         [:a {:href "#",
              :class
-             "whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"}
+             "whitespace-nowrap font-medium text-info hover:text-brand-hover"}
          "Details"
          [:span {:aria-hidden "true"} "→"]]]]]])

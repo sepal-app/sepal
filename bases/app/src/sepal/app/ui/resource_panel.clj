@@ -41,8 +41,8 @@
    ;; Header (collapse-title)
    [:div {:class (html/attr "spl-collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
                             (if disabled?
-                              "text-base-content/60 cursor-not-allowed"
-                              "text-base-content/90"))}
+                              "text-text-dim cursor-not-allowed"
+                              "text-text-soft"))}
     [:span {:class "flex items-center gap-2"}
      title
      (if disabled?

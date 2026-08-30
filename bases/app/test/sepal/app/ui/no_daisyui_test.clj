@@ -13,12 +13,27 @@
        (filter #(.isFile ^java.io.File %))
        (filter #(str/ends-with? (.getName ^java.io.File %) ".clj"))))
 
+(def ^:private class-string-line
+  "A line holding only a string of lowercase class-like tokens, plus closing
+   delimiters — a continuation of a multi-line class expression. Docstrings are
+   excluded by requiring lowercase throughout: \"Export modal component for CSV
+   downloads.\" is also a lone string line, and matching it made this gate
+   report 27 findings of which 3 were real."
+  #"^\s*\"[a-z0-9 :/\[\]()%.,#-]*\"[\s)}\]]*$")
+
 (defn- class-lines
-  "Lines that carry a :class attribute, with their 1-based numbers."
+  "Lines that plausibly carry class names, with their 1-based numbers.
+
+   Scanning every line instead matches Clojure code — `(defn table`,
+   `table/card-table`, `:as select` — and drowns the real findings. Precision
+   matters more than reach here: a gate that cries wolf gets ignored."
   [f]
   (->> (str/split-lines (slurp f))
        (map-indexed (fn [i l] [(inc i) l]))
-       (filter (fn [[_ l]] (str/includes? l ":class")))))
+       (filter (fn [[_ l]]
+                 (or (str/includes? l ":class")
+                     (str/includes? l "html/attr")
+                     (re-matches class-string-line l))))))
 
 (def ^:private daisyui-classes
   "DaisyUI class names, matched as whole class tokens. Substring matching would
@@ -71,6 +86,18 @@
             [n line] (class-lines f)]
       (is (not (re-find #"(gray|indigo|blue|green|red|yellow|purple|slate)-[0-9]{2,3}" line))
           (format "%s:%d hardcodes a palette colour" (.getPath ^java.io.File f) n)))))
+
+(deftest test-no-opacity-suffixed-theme-colours
+  (testing "DaisyUI's theme colours also appear with an opacity suffix, which
+            exact-token matching does not catch. This one scans every line —
+            `base-content/70` cannot occur in Clojure code, so there is no
+            false-positive risk and no need to guess which lines hold classes."
+    (doseq [f (clj-sources)
+            [n line] (->> (str/split-lines (slurp f))
+                          (map-indexed (fn [i l] [(inc i) l])))]
+      (is (not (re-find #"base-(100|200|300|content)/\d+" line))
+          (format "%s:%d uses an opacity-suffixed DaisyUI colour"
+                  (.getPath ^java.io.File f) n)))))
 
 (deftest test-daisyui-is-not-a-dependency
   (is (not (str/includes? (slurp "bases/app/package.json") "daisyui"))))

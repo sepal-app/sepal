@@ -34,7 +34,7 @@
                                           "border-transparent" "shadow-sm" "text-sm" "font-medium"
                                           "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
                                           "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
-                                          "focus:ring-green-500")}
+                                          "focus:ring-brand")}
                "Login"]
               [:p
                [:a {:href (z/url-for auth.routes/forgot-password)}
