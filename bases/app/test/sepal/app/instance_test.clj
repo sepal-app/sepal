@@ -472,6 +472,43 @@
                 (finally (instance/stop-process! process))))))
         (finally (fs/delete-tree dir))))))
 
+(deftest test-start-refuses-a-database-with-no-recorded-version
+  (testing "a database with an empty schema_version table is refused with :schema-version-unsupported"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-empty"})
+          db-path (str (fs/path dir "empty.db"))]
+      (try
+        (instance/provision! {:db-path db-path})
+        ;; Empty the table entirely rather than deleting one row, so
+        ;; schema-version returns nil instead of an older version. This is
+        ;; the third sibling of the two tests above: below-floor deletes the
+        ;; newest row, ahead-of-code inserts a future row, and this one
+        ;; leaves no row at all, which start! must treat as below the floor
+        ;; rather than attempt to parse-long.
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds ["delete from schema_version"]))
+        (is (nil? (instance/schema-version {:db-path db-path}))
+            "precondition: no version is recorded")
+        (let [floor (instance/minimum-schema-version)
+              process (instance/start-process!
+                        {:master-secret "1234567890123456"
+                         :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})
+              thrown (try (instance/start! process
+                                           {:slug "empty"
+                                            :db-path db-path
+                                            :app-domain "empty.sepal.app"
+                                            :media-key-prefix "empty/"
+                                            :media-cache-dir (str (fs/path dir "cache"))
+                                            :backup-dir (str (fs/path dir "backups"))})
+                          nil
+                          (catch clojure.lang.ExceptionInfo e e))]
+          (try
+            (is (some? thrown) "start! should have refused a database with no recorded version")
+            (is (= :schema-version-unsupported (:reason (ex-data thrown))))
+            (is (nil? (:current (ex-data thrown))))
+            (is (= floor (:minimum (ex-data thrown))))
+            (finally (instance/stop-process! process))))
+        (finally (fs/delete-tree dir))))))
+
 (deftest test-start-accepts-a-database-ahead-of-the-code
   (testing "a database with a version newer than the build starts"
     (let [dir (fs/create-temp-dir {:prefix "sepal-ahead"})
