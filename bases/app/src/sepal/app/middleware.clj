@@ -27,12 +27,13 @@
   "Redirects to /login if there are no valid claims in the request.
    Also rejects non-active users (forces logout for archived, invited, or any future status)."
   [handler]
-  (fn [{:keys [::z/context session] :as request}]
+  (fn [{:keys [::z/context session uri] :as request}]
     (let [{:keys [db]} context
           user-id (:user/id session)
           viewer (when user-id (user.i/get-by-id db user-id))]
       (if (and viewer (= :active (:user/status viewer)))
-        (binding [g/*viewer* viewer]
+        (binding [g/*viewer* viewer
+                  g/*uri* uri]
           (-> request
               (assoc :viewer viewer)
               (handler)))

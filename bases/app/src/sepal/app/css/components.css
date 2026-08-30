@@ -178,6 +178,121 @@
   .spl-subnav-heading { display: none; }
 }
 
+/* ── Shell ─────────────────────────────────────────────────────────────────
+ * The rail's open state is a checkbox its siblings select on. No JavaScript,
+ * so the shell is right on first paint — which principle 6 requires. */
+.spl-drawer-toggle { position: absolute; opacity: 0; pointer-events: none; }
+
+.spl-shell { display: flex; min-height: 100vh; background: var(--color-page); }
+.spl-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.spl-rail {
+  flex: 0 0 64px;
+  background: var(--color-surface-alt);
+  border-right: 1px solid var(--color-border);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+}
+.spl-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.spl-nav-list--end { margin-top: auto; }
+
+.spl-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 7px;
+  color: var(--color-text-nav);
+  font: 400 13.5px/1 var(--font-sans);
+  text-decoration: none;
+}
+.spl-nav-item:hover { background: var(--color-border-light); }
+.spl-nav-item--current {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  font-weight: 600;
+}
+.spl-nav-icon { width: 20px; height: 20px; flex: none; display: flex; align-items: center; justify-content: center; }
+.spl-nav-icon svg { width: 100%; height: 100%; }
+
+/* Collapsed: icons only, centred. The label is display:none, which is why
+   sidebar-item sets aria-label explicitly. */
+.spl-nav-label { display: none; }
+.spl-drawer-toggle:checked ~ .spl-shell .spl-rail { flex-basis: 216px; }
+.spl-drawer-toggle:checked ~ .spl-shell .spl-nav-label { display: inline; }
+.spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+
+.spl-scrim { display: none; }
+
+/* Below 1024px the rail slides off-canvas over a scrim, which is the behaviour
+   `drawer lg:drawer-open` gave before. */
+@media (max-width: 1023px) {
+  .spl-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform .18s ease;
+  }
+  .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { transform: none; }
+  .spl-drawer-toggle:checked ~ .spl-shell .spl-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgb(18 33 30 / .34);
+  }
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.spl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+}
+.spl-topbar-spacer { flex: 1; }
+.spl-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.spl-toggle {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim);
+  cursor: pointer;
+}
+.spl-toggle:hover { background: var(--color-surface-alt); color: var(--color-text-soft); }
+
+.spl-crumbs ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  min-width: 0;
+}
+.spl-crumbs li { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.spl-crumbs li:not(:last-child)::after { content: "/"; color: var(--color-text-dim); font-size: 12px; }
+.spl-crumbs a { color: var(--color-brand); text-decoration: none; }
+.spl-crumbs a:hover { text-decoration: underline; }
+.spl-crumbs-current { font-weight: 600; color: var(--color-text); }
+
+.spl-page-title {
+  font: 600 21px/1.2 var(--font-sans);
+  letter-spacing: -.01em;
+  color: var(--color-text);
+  margin-bottom: 2rem;
+}
+
 /* ── Tables ────────────────────────────────────────────────────────────────
  * Lists are dense where forms are roomy: a curator sweeping 1,284 accessions
  * wants rows they can scan. Hairline separators, no zebra striping, no vertical
