@@ -10,6 +10,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface.permission :as taxon.perm]
@@ -23,15 +24,21 @@
 
 (defn table-columns []
   [{:name "Name"
+    :type :name
+    :priority 1
     :cell (fn [t]
             [:a {:href (z/url-for taxon.routes/detail
                                   {:id (:taxon/id t)})
                  :class "spl-link"
                  :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
-             (:taxon/name t)])}
+             (taxon-name/render (:taxon/name t))])}
    {:name "Author"
+    :type :text
+    :priority 2
     :cell :taxon/author}
    {:name "Rank"
+    :type :text
+    :priority 3
     :cell :taxon/rank}
    {:name "Parent"
     :cell (fn [t]

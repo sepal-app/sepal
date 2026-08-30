@@ -14,6 +14,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.search]
@@ -60,7 +61,7 @@
                                           {:id (:taxon/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:taxon/name row)])}
+                     (taxon-name/render (:taxon/name row))])}
    {:name "Location"
     :cell (fn [row] [:a {:href (z/url-for location.routes/detail
                                           {:id (:location/id row)})

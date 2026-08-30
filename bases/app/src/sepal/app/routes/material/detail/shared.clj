@@ -3,6 +3,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.tabs :as ui.tabs]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -25,9 +26,8 @@
 (defn breadcrumbs [& {:keys [accession material taxon]}]
   [[:a {:href (z/url-for taxon.routes/index)}
     "Taxa"]
-   [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
-        :class "italic"}
-    (:taxon/name taxon)]
+   [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
+    (taxon-name/render (:taxon/name taxon))]
    [:a {:href (z/url-for accession.routes/index {} {:taxon-id (:taxon/id taxon)})}
     "Accessions"]
    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})}
