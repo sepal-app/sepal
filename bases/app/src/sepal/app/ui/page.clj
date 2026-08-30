@@ -55,7 +55,9 @@
 ;; horizontal pages edges, e.g. the form footer lines up with the form fields
 
 (defn page-inner [& children]
-  [:div {:class "px-4 sm:px-6 lg:px-8 w-full"}
+  ;; Gutters match the top bar's, so a page's content lines up with the
+  ;; breadcrumb above it rather than sitting in a wider inset.
+  [:div {:class "spl-inner"}
    children])
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
@@ -142,14 +144,15 @@
         (navbar :breadcrumbs breadcrumbs
                 :page-title-buttons page-title-buttons)
         [:main
-         (page-inner
-           [:div {:class "mt-8"}
-            (when page-title
-              [:h1 {:class "spl-page-title"}
-               page-title])])
+         ;; No title block unless a page asks for one. The breadcrumb already
+         ;; names where you are, and an empty band of margin above every list
+         ;; is what made the redesign read as the old layout in new colours.
+         (when page-title
+           (page-inner
+             [:h1 {:class "spl-page-title"} page-title]))
 
-         [:div {:class "mb-32"} ;; mb to leave room for the footer
-          (page-inner content)]
+         [:div {:class "spl-main"}
+          content]
          [:div {:id "flash-container"}
           (flash/banner (:messages flash))]
 

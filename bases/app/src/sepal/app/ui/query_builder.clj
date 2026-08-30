@@ -121,11 +121,12 @@
   [& {:keys [q fields input-id placeholder]
       :or {input-id "q"
            placeholder "Search..."}}]
-  [:div {:class "flex flex-row gap-2 items-center"}
+  [:div {:class "spl-search"}
    [:input {:name input-id
             :id input-id
-            :class "spl-input  bg-surface w-96"
+            :class "spl-input spl-input--search"
             :type "search"
             :value q
+            :aria-label placeholder
             :placeholder placeholder}]
    (query-builder-dropdown :fields fields :input-id input-id)])

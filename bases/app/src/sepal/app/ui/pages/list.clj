@@ -55,10 +55,10 @@
           :hx-target (str "#" list-container-id)
           :hx-push-url "true"
           :hx-swap "outerHTML"}
-   [:div {:class "w-full mt-8"}
+   [:div {:class "spl-toolbar"}
     table-actions]
    [:div {:id list-container-id
-          :class "mt-4 flex flex-col"}
+          :class "spl-list"}
     content]])
 
 (def panel-container-id "preview-panel-content")
@@ -79,8 +79,13 @@
                       this.selectedId = null;
                       document.getElementById('preview-panel-content').innerHTML = '';
                     } }"}
-   [:div {:class "mt-8"}
-    [:form {:method "get"
+   ;; The toolbar is a bar under the top bar, not a padded band — search,
+   ;; filters and export sit on the same surface as the breadcrumbs, and the
+   ;; table starts immediately beneath. This is the shape the workbench mockup
+   ;; has: chrome, then data.
+   [:div
+    [:form {:class "spl-toolbar"
+            :method "get"
             :hx-get " "
             :hx-trigger "keyup delay:200ms,change"
             :hx-select (str "#" list-container-id)
@@ -88,10 +93,9 @@
             :hx-push-url "true"
             :hx-swap "outerHTML"
             :x-on:htmx:before-request (str "selectedId = null; document.getElementById('" panel-container-id "').innerHTML = ''")}
-     [:div {:class "w-full"}
-      table-actions]]
+     table-actions]
     ;; Table and panel in same row, outside the form
-    [:div {:class "mt-4 flex flex-row gap-8"}
+    [:div {:class "spl-panes"}
      ;; Table content
      [:div {:id list-container-id
             :class "flex-1 min-w-0"}

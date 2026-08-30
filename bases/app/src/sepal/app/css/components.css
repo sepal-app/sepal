@@ -91,6 +91,11 @@
 .spl-error { font-size: 12px; color: var(--color-danger); }
 
 .spl-textarea { min-height: 96px; resize: vertical; }
+
+/* The list search sits in the toolbar and takes the space it needs rather than
+ * a fixed 24rem, so the bar reads as one row at any width. */
+.spl-search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; max-width: 420px; }
+.spl-input--search { padding: 6px 10px; font-size: 12.5px; }
 .spl-select { appearance: auto; }
 
 /* Forms cap at 576px; pairs sit side by side inside that column and stack on a
@@ -358,6 +363,32 @@
 .spl-crumbs a { color: var(--color-brand); text-decoration: none; }
 .spl-crumbs a:hover { text-decoration: underline; }
 .spl-crumbs-current { font-weight: 600; color: var(--color-text); }
+
+/* ── Page composition ──────────────────────────────────────────────────────
+ * Chrome, then data. The old layout stacked a title band, a padded content
+ * wrapper and an actions row before anything you came to look at; that is what
+ * made a restyle read as the old design in new colours. */
+.spl-inner { width: 100%; padding: 0 14px; }
+.spl-main { flex: 1; min-height: 0; padding-bottom: 5rem; }
+
+/* The list toolbar: same surface as the top bar, hairline beneath, no margins.
+ * Search, filters and export live here; the table begins immediately below. */
+.spl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.spl-panes { display: flex; gap: 16px; align-items: flex-start; padding: 14px; }
+.spl-list { flex: 1; min-width: 0; }
+
+@media (max-width: 639px) {
+  .spl-panes { padding: 10px; gap: 10px; }
+  .spl-toolbar { flex-wrap: wrap; }
+}
 
 .spl-page-title {
   font: 600 21px/1.2 var(--font-sans);
