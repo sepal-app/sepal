@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.shared
   (:require [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
             [zodiac.core :as z]))
@@ -16,11 +17,20 @@
                   :active (= active media-tab)})])
 
 (defn tabs [taxon active]
-  [:div {:class "flex flex-row justify-center"
-         ;; :x-data "taxonTabs"
-         }
-   (ui.tabs/tabs (items :taxon taxon
-                        :active active))])
+  (ui.tabs/tabs {:label "Taxon sections"
+                 :items (items :taxon taxon :active active)}))
+
+(defn page
+  "A taxon's record page. Both sections render through the shared shell, so
+  neither can drift from the other. The rank fills the identifier slot: a taxon
+  has no code, and its rank is what qualifies the name above it."
+  [& {:keys [taxon active body footer]}]
+  (pages.record/page
+    :code (some-> (:taxon/rank taxon) clojure.core/name)
+    :name (taxon-name/render (:taxon/name taxon) :author (:taxon/author taxon))
+    :tabs (tabs taxon active)
+    :body body
+    :footer footer))
 
 (defn breadcrumbs [taxon]
   [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]

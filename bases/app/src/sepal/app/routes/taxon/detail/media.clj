@@ -28,29 +28,30 @@
              {:page (+ 1 current-page)}))
 
 (defn page-content [& {:keys [media page page-size taxon]}]
-
-  [:div {:x-data (json/js {:selected nil})
-         :class "flex flex-col gap-8"}
-   [:link {:rel "stylesheet"
-           :href (html/static-url "app/routes/media/css/media.css")}]
-   (taxon.shared/tabs taxon taxon.shared/media-tab)
-   [:div {:id "media-page"}
+  (taxon.shared/page
+    :taxon taxon
+    :active taxon.shared/media-tab
+    :body
+    [:div {:x-data (json/js {:selected nil})}
+     [:link {:rel "stylesheet"
+             :href (html/static-url "app/routes/media/css/media.css")}]
+     [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
-    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for media.routes/s3)
-                                       :linkResourceType "taxon"
-                                       :linkResourceId (:taxon/id taxon)
-                                       :trigger "#upload-button"})}]
-    (media.ui/media-list :media media
-                         :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :taxon taxon
-                                                         :current-page page)))
-    [:div {:id "upload-success-forms"
-           :class "hidden"}]]
-   [:script {:type "module"
-             :src (html/static-url "app/routes/media/media.ts")}]])
+      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                         :signingUrl (z/url-for media.routes/s3)
+                                         :linkResourceType "taxon"
+                                         :linkResourceId (:taxon/id taxon)
+                                         :trigger "#upload-button"})}]
+      (media.ui/media-list :media media
+                           :next-page-url (when (>= (count media) page-size)
+                                            (next-page-url :taxon taxon
+                                                           :current-page page)))
+      [:div {:id "upload-success-forms"
+             :class "hidden"}]]
+     [:script {:type "module"
+               :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media taxon panel-data]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
