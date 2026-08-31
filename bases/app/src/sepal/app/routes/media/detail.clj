@@ -35,7 +35,7 @@
    [:div {:class "fixed inset-0 z-10 w-screen overflow-y-auto"}
     [:div {:class "flex flex-col min-h-full items-end justify-center text-center sm:items-center sm:p-20"}
 
-     [:button {:class "text-white w-full text-right "
+     [:button {:class "text-white w-full text-right"
                :x-on:click "zoom=false"} "Close"]
      [:div
       [:img {:src zoom-url}]]]]])
@@ -54,7 +54,7 @@
         :hx-confirm "Are you sure you want to delete this media?"
         :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
         :aria-label "Delete"}
-    (heroicons/outline-trash :class "text-error")]])
+    (heroicons/outline-trash :class "text-danger")]])
 
 (defn page-content [& {:keys [media srcset-urls zoom-url]}]
   [[:div

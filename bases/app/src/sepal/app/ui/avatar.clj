@@ -27,5 +27,5 @@
                        :md "w-10 text-base"
                        :lg "w-12 text-lg")]
     [:div {:class (html/attr "spl-avatar" "spl-avatar--placeholder")}
-     [:div {:class (html/attr "bg-neutral text-neutral-content rounded-full" size-classes)}
+     [:div {:class (html/attr "bg-neutral text-white rounded-full" size-classes)}
       [:span initials]]]))

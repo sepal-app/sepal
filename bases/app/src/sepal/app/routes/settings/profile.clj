@@ -33,7 +33,7 @@
   [:div
    [:div {:class "flex justify-end mb-6"}
     [:a {:href (z/url-for auth.routes/logout)
-         :class "spl-btn  spl-btn--danger spl-btn--sm"}
+         :class "spl-btn spl-btn--danger spl-btn--sm"}
      "Logout"]]
    (profile-form :values values :errors errors)])
 

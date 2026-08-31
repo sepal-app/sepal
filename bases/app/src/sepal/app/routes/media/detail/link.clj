@@ -29,7 +29,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-taxon-field (json/js {:url url})
               :id (or id name)
-              :class "spl-input  "
+              :class "spl-input"
               :name name
               :autocomplete "off"
               :required true}
@@ -41,7 +41,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-accession-field (json/js {:url url})
               :id (or id name)
-              :class "spl-input  "
+              :class "spl-input"
               :name name
               :autocomplete "off"
               :required true}
@@ -54,7 +54,7 @@
   (let [url (z/url-for taxon.routes/index)]
     [:select {:x-location-field (json/js {:url url})
               :id (or id name)
-              :class "spl-input  "
+              :class "spl-input"
               :name name
               :autocomplete "off"
               :required true}
@@ -66,7 +66,7 @@
   (let [url (z/url-for material.routes/index)]
     [:select {:x-material-field (json/js {:url url})
               :id (or id name)
-              :class "spl-input spl-select   w-full max-w-xs px-2"
+              :class "spl-input spl-select w-full max-w-xs px-2"
               :name name
               :autocomplete "off"
               :required true}
@@ -83,7 +83,7 @@
      (form/field :label "Resource type"
                  :name "resource-type"
                  :input [:select {:name "resource-type"
-                                  :class "spl-input spl-select   w-full max-w-xs leading-4"
+                                  :class "spl-input spl-select w-full max-w-xs leading-4"
                                   :autocomplete "off"
                                   :id "resource-type"
                                   :x-model "resourceType"
@@ -177,7 +177,7 @@
 
 (defn delete-button [& {:keys [media]}]
   [:btn {:href "#"
-         :class "spl-btn spl-btn--sm spl-btn--icon  spl-btn--danger *:hover:text-white"
+         :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger *:hover:text-white"
          :hx-confirm "Are you sure you want to remove this link?"
          :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
          :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})

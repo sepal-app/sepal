@@ -10,6 +10,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -41,7 +42,7 @@
       (list
         ;; Header
         (panel/panel-header
-          :title [:em name]
+          :title (taxon-name/render name)
           :subtitle (when author author)
           :on-close on-close)
 
@@ -55,7 +56,7 @@
                       parent
                       (conj {:label "Parent"
                              :value [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id parent)})
-                                         :class "text-primary hover:underline"}
+                                         :class "spl-link"}
                                      (:taxon/name parent)]})
                       true
                       (conj {:label "WFO ID" :value wfo-taxon-id}))))

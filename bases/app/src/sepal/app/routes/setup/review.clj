@@ -31,7 +31,7 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title text-2xl mb-4"} "Review & Complete"]
+      [:h2 {:class "spl-card-title mb-4"} "Review & Complete"]
 
       [:p {:class "text-text-muted mb-6"}
        "Review your settings below. You can change these later in the Settings pages."]
@@ -72,7 +72,7 @@
                  :name "__anti-forgery-token"
                  :value (force *anti-forgery-token*)}]
         [:button {:type "submit"
-                  :class "spl-btn spl-btn--primary "}
+                  :class "spl-btn spl-btn--primary"}
          "Complete Setup"]]]]]))
 
 (defn handler [{:keys [::z/context flash request-method session]}]

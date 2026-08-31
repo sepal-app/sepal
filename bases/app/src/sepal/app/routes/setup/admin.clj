@@ -93,7 +93,7 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title text-2xl mb-4"} "Admin Account"]
+      [:h2 {:class "spl-card-title mb-4"} "Admin Account"]
       [:div {:class "spl-alert spl-alert--ok mb-4"}
        [:span "✓ Admin account has been created"]]
 
@@ -122,7 +122,7 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title text-2xl mb-4"} "Create Admin Account"]
+      [:h2 {:class "spl-card-title mb-4"} "Create Admin Account"]
       [:p {:class "mb-4 text-text-muted"}
        "Create the first administrator account for your Sepal instance."]
       (admin-form :values values :errors errors)]]))

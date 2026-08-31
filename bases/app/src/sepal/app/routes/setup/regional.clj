@@ -69,7 +69,7 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title text-2xl mb-4"} "Regional Settings"]
+      [:h2 {:class "spl-card-title mb-4"} "Regional Settings"]
       [:p {:class "mb-4 text-text-muted"}
        "Select your organization's timezone. All timestamps in Sepal will be displayed in this timezone."]
       (regional-form :values values :errors errors)]]))

@@ -45,7 +45,7 @@
 (defn- frequency-select [value]
   [:select {:name "frequency"
             :id "frequency"
-            :class "spl-input spl-select  w-full max-w-xs"}
+            :class "spl-input spl-select w-full max-w-xs"}
    (for [[val label] [["" "Disabled"]
                       ["daily" "Daily"]
                       ["weekly" "Weekly"]
@@ -88,7 +88,7 @@
    [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
    (if (seq backups)
      [:div {:class "overflow-x-auto"}
-      [:table {:class "spl-table "}
+      [:table {:class "spl-table"}
        [:thead
         [:tr
          [:th "Filename"]

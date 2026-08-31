@@ -63,13 +63,16 @@
 
        ;; Optional data checkboxes (resource-specific)
        (when (seq options)
-         [:div {:class "form-control gap-2"}
+         [:div {:class "flex flex-col gap-2"}
           (for [{:keys [id label]} options]
-            [:label {:class "label cursor-pointer justify-start gap-3" :key id}
+            ;; `label`, `label-text` and `form-control` were DaisyUI, and
+            ;; DaisyUI is what supplied the display:flex the gap needed. Without
+            ;; it the box sat on top of its own label.
+            [:label {:class "flex items-center gap-2 cursor-pointer" :key id}
              [:input {:type "checkbox"
                       :x-model id
-                      :class "spl-checkbox "}]
-             [:span {:class "label-text"} label]])])
+                      :class "spl-checkbox"}]
+             [:span label]])])
 
        ;; Actions
        [:div {:class "spl-modal-actions"}

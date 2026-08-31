@@ -12,7 +12,7 @@
 (defn- field-select
   "Dropdown to select a field to filter on."
   []
-  [:select {:class "spl-input spl-selectw-40 leading-none"
+  [:select {:class "spl-input spl-select w-40 leading-none"
             :x-model "selectedField"
             :x-on:change "onFieldChange()"}
    [:option {:value ""} "Select field..."]
@@ -22,7 +22,7 @@
 (defn- operator-select
   "Dropdown to select the comparison operator."
   []
-  [:select {:class "spl-input spl-selectw-44 leading-none"
+  [:select {:class "spl-input spl-select w-44 leading-none"
             :x-model "selectedOpIndex"}
    [:template {:x-for "(op, index) in availableOps" :key "index"}
     [:option {:x-bind:value "index" :x-text "op.label"}]]])
@@ -34,12 +34,12 @@
    ;; Text input for text/fts/date/number/count fields
    [:template {:x-if "currentFieldType === 'text' || currentFieldType === 'fts' || currentFieldType === 'date' || currentFieldType === 'number' || currentFieldType === 'count'"}
     [:input {:type "text"
-             :class "spl-input   w-full"
+             :class "spl-input w-full"
              :placeholder "Value..."
              :x-model "selectedValue"}]]
    ;; Dropdown for enum fields
    [:template {:x-if "currentFieldType === 'enum'"}
-    [:select {:class "spl-input spl-selectw-full leading-none"
+    [:select {:class "spl-input spl-select w-full leading-none"
               :x-model "selectedValue"}
      [:option {:value ""} "Select value..."]
      [:template {:x-for "val in currentFieldValues" :key "val"}
@@ -78,8 +78,8 @@
 
      ;; Dropdown panel
      [:div {:class (html/attr "absolute" "top-full" "left-0" "mt-1" "z-50"
-                              "bg-base-100" "border" "border-base-300"
-                              "rounded-box" "shadow-lg" "p-3"
+                              "bg-surface" "border" "border-border"
+                              "rounded-lg" "shadow-lg" "p-3"
                               "min-w-80")
             :x-cloak true
             :x-show "open"

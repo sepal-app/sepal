@@ -8,7 +8,7 @@
 (defn steps-indicator
   "Render the DaisyUI steps component showing progress through the wizard."
   [current-step]
-  [:ul {:class "spl-steps  w-full"}
+  [:ul {:class "spl-steps w-full"}
    (for [{:keys [id name]} spec/steps]
      [:li {:class (html/attr "spl-step"
                              (when (<= id current-step) "spl-step--done"))}
@@ -20,7 +20,7 @@
   [& {:keys [title content back-url next-button] :or {next-button :default}}]
   [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
    [:div {:class "spl-card-body"}
-    [:h2 {:class "spl-card-title text-2xl mb-4"} title]
+    [:h2 {:class "spl-card-title mb-4"} title]
     content
     [:div {:class "spl-card-actions justify-between mt-6"}
      (if back-url
@@ -51,7 +51,7 @@
            :x-cloak true
            :class "min-h-screen bg-surface-alt"}
      ;; Header
-     [:header {:class " bg-surface shadow-sm"}
+     [:header {:class "bg-surface shadow-sm"}
       [:div {:class "flex-1"}
        [:a {:href (z/url-for setup.routes/index)
             :class "spl-btn spl-btn--ghost text-xl"}

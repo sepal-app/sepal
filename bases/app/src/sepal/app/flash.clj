@@ -1,7 +1,7 @@
 (ns sepal.app.flash
   (:require [sepal.app.flash.category :as category]
             [sepal.app.html :as html]
-            [sepal.app.ui.icons :as icon]))
+            [sepal.app.ui.icons.lucide :as lucide]))
 
 (defn add-message
   ([response text]
@@ -49,20 +49,24 @@
 (defn field-error [request field]
   (get-in request [:flash :field-errors field]))
 
+(def ^:private variants
+  {category/error "spl-banner--danger"
+   category/warning "spl-banner--warning"
+   category/success "spl-banner--ok"
+   category/info "spl-banner--info"})
+
 (defn banner-message [message]
   (let [{:keys [text category]} message
-        color (condp = category
-                category/error "bg-red-600"
-                category/success "bg-green-600"
-                category/warning "bg-yellow-600"
-                "bg-info")
         ;; Errors don't auto-dismiss; success/info dismiss after 5s
         auto-dismiss? (not= category category/error)
         timeout-ms 5000]
-    [:div {:class (html/attr color "w-full" "pointer-events-auto" "flex" "items-center"
-                             "justify-between" "gap-x-6" "px-6" "py-2.5" "sm:rounded-xl"
-                             "sm:py-3" "sm:pl-4" "sm:pr-3.5" "min-w-[33%]" "max-w-lg"
-                             "text-center" "banner")
+    ;; `banner` and `banner-text` are kept alongside the design-system classes:
+    ;; the HTTP tests select on them to read a flash message.
+    [:div {:class (html/attr "spl-banner" "banner"
+                             (get variants category "spl-banner--info"))
+           ;; An error a reader has to act on, announced as soon as it lands;
+           ;; a success they can catch up with, announced politely.
+           :role (if (= category category/error) "alert" "status")
            :x-data "{show: true}"
            :x-show "show"
            :x-init (when auto-dismiss?
@@ -70,19 +74,17 @@
            :x-transition:leave "transition ease-in duration-300"
            :x-transition:leave-start "opacity-100"
            :x-transition:leave-end "opacity-0"}
-     [:p {:class (html/attr "text-sm" "leading-6" "text-white")}
-      [:strong {:class "font-semibold banner-text"}
-       text]]
+     [:p {:class "spl-banner-text banner-text"} text]
      [:button {:type "button"
-               :class "-m-1.5 flex-none p-1.5"
+               :class "spl-banner-dismiss"
+               :aria-label "Dismiss"
                :x-on:click "show = false"}
-      [:span {:class "sr-only"} "Dismiss"]
-      (icon/outline-x :color "text-white")]]))
+      ;; `icons/outline-x` renders an empty 5px svg — it has no path and its
+      ;; size is unitless. The banner needs a mark you can actually see.
+      (lucide/x :class "w-4 h-4")]]))
 
 (defn banner [messages]
-  [:div {:class (html/attr "pointer-events-none" "fixed" "inset-x-0" "bottom-0" "flex"
-                           "items-center" "px-6" "pb-5" "lg:px-8" "z-50"
-                           "flex-col" "gap-4")}
+  [:div {:class "spl-banner-stack"}
    (for [message messages]
      (banner-message message))])
 

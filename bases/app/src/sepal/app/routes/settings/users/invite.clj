@@ -37,7 +37,7 @@
       :errors errors
       :input [:select {:name "role"
                        :id "role"
-                       :class "spl-input spl-select   w-full max-w-sm"
+                       :class "spl-input spl-select w-full max-w-sm"
                        :required true}
               (for [{:keys [value label]} [{:value "reader" :label "Reader"}
                                            {:value "editor" :label "Editor"}

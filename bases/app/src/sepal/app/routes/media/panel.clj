@@ -93,7 +93,7 @@
                      {:label "Linked to"
                       :value (when link-info
                                [:a {:href (:url link-info)
-                                    :class "text-primary hover:underline"}
+                                    :class "spl-link"}
                                 (:text link-info)])}]))))))
 
 (defn fetch-panel-data

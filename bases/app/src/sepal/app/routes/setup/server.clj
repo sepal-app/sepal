@@ -7,9 +7,9 @@
 
 (defn status-icon [status]
   (case status
-    :ok [:span {:class "text-success text-xl"} "✓"]
-    :warning [:span {:class "text-warning text-xl"} "⚠"]
-    :error [:span {:class "text-error text-xl"} "✗"]))
+    :ok [:span {:class "text-ok text-xl"} "✓"]
+    :warning [:span {:class "text-danger text-xl"} "⚠"]
+    :error [:span {:class "text-danger text-xl"} "✗"]))
 
 (defn check-item [{:keys [name status message]}]
   [:div {:class "flex items-start gap-3 p-3 rounded-lg bg-surface-alt"}
@@ -19,8 +19,8 @@
     [:p {:class (html/attr "text-sm"
                            (case status
                              :ok "text-text-muted"
-                             :warning "text-warning"
-                             :error "text-error"))}
+                             :warning "text-danger"
+                             :error "text-danger"))}
      message]]])
 
 (defn checks-list [checks]
@@ -62,7 +62,7 @@
 
        [:div {:class "flex gap-2 mt-4"}
         [:a {:href (z/url-for setup.routes/server)
-             :class "spl-btn  spl-btn--sm"}
+             :class "spl-btn spl-btn--sm"}
          "Re-run Checks"]]]
       :next-button
       [:a {:href (z/url-for setup.routes/organization)

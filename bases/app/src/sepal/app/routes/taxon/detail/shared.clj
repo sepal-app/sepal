@@ -34,4 +34,4 @@
 
 (defn breadcrumbs [taxon]
   [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
-   [:span {:class "item"} (taxon-name/render (:taxon/name taxon))]])
+   [:span (taxon-name/render (:taxon/name taxon))]])

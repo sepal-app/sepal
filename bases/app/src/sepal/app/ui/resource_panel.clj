@@ -35,7 +35,6 @@
                            (when disabled? "opacity-50"))}
    ;; Hidden checkbox controls open/closed state
    [:input {:type "checkbox"
-            :class "peer"
             :disabled disabled?
             :checked (when default-open? true)}]
    ;; Header (collapse-title)
@@ -116,7 +115,7 @@
        :class "flex items-center gap-2 text-sm hover:bg-surface-alt -mx-2 px-2 py-1.5 rounded transition-colors"}
    (when icon
      [:span {:class "text-text-dim"} icon])
-   [:span {:class "text-primary hover:underline"} label]])
+   [:span {:class "spl-link"} label]])
 
 (defn linked-resources-section
   "Section showing links to related resources.
@@ -138,7 +137,7 @@
   [:a {:href href
        :target "_blank"
        :rel "noopener noreferrer"
-       :class "flex items-center gap-2 text-sm text-primary hover:underline"}
+       :class "spl-link flex items-center gap-2 text-sm"}
    (when icon
      [:span {:class "text-text-dim"} icon])
    label])
@@ -161,7 +160,7 @@
   "Compact activity item for the resource panel.
    Shows badge + time + user only. Uses DaisyUI card component."
   [activity timezone]
-  [:div {:class "spl-card  bg-surface shadow-sm"}
+  [:div {:class "spl-card bg-surface shadow-sm"}
    [:div {:class "spl-card-body p-3"}
     ;; Top row: badge + relative time
     [:div {:class "flex items-center justify-between"}
@@ -208,7 +207,7 @@
    - :children - Panel content
    - :class    - Additional CSS classes"
   [& {:keys [children class]}]
-  [:div {:class (html/attr "divide-y divide-base-200" class)}
+  [:div {:class (html/attr "divide-y divide-border-light" class)}
    children])
 
 (defn panel-header
