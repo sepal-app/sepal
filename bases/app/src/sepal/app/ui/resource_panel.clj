@@ -59,26 +59,25 @@
 ;;; Summary Section
 ;;; ---------------------------------------------------------------------------
 
-(defn summary-field
-  "A single field in the summary section.
-   Options:
-   - :label - Field label
-   - :value - Field value (can be hiccup)"
-  [& {:keys [label value]}]
-  (when value
-    [:div {:class "flex justify-between items-baseline gap-2"}
-     [:dt {:class "text-text-soft text-sm"} label]
-     [:dd {:class "text-sm font-medium text-right"} value]]))
-
 (defn summary-section
-  "Summary section showing key resource details.
+  "Key-value details for a resource.
+
+   Uses the shared `spl-kv` pair: a mono caps label in a fixed left column and
+   the value beside it. Labels sit in a column so the eye runs down them; the
+   previous treatment pushed label and value to opposite edges of the panel,
+   which left a ragged gap between them and read as two lists rather than
+   pairs.
+
    Takes a sequence of field maps with :label and :value keys."
   [& {:keys [fields]}]
-  [:dl {:class "space-y-1"}
+  [:dl {:class "spl-kv"}
+   ;; A seq splices into the parent, which is what puts each dt and dd directly
+   ;; in the grid. Chassis has no fragment element — `[:<> …]` renders a
+   ;; literal <<>> tag.
    (for [{:keys [label value]} fields
          :when value]
-     ^{:key label}
-     (summary-field :label label :value value))])
+     (list [:dt {:class "spl-k"} label]
+           [:dd {:class "spl-v"} value]))])
 
 ;;; ---------------------------------------------------------------------------
 ;;; Statistics Section
@@ -220,12 +219,18 @@
    - :subtitle  - Optional subtitle (e.g., taxon name)
    - :on-close  - When provided, shows close button (for list page panel)"
   [& {:keys [title subtitle on-close]}]
-  [:div {:class "flex items-start justify-between gap-2 p-4"}
-   [:div
-    [:h2 {:class "text-lg font-semibold"} title]
+  ;; Same identity treatment as a record page's header: the identifier in mono
+  ;; brand green above the name. The panel and the page it opens from should
+  ;; not label the same record two different ways.
+  [:div {:class "spl-panel-header"}
+   [:div {:class "spl-panel-identity"}
+    [:p {:class "spl-panel-code"} title]
     (when subtitle
-      [:p {:class "text-sm text-text-soft"} subtitle])]
+      [:p {:class "spl-panel-name"} subtitle])]
    (when on-close
-     [:button {:class "spl-btn spl-btn--ghost spl-btn--sm spl-btn--icon"
+     [:button {:class "spl-panel-close"
+               :type "button"
+               :data-panel-close ""
+               :aria-label "Close panel"
                :x-on:click on-close}
-      (lucide/x :class "w-5 h-5")])])
+      (lucide/x :class "w-4 h-4")])])
