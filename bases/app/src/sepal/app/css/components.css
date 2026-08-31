@@ -133,25 +133,57 @@
  * width — the old form ran Code at 320px, Taxon at 768px and the selects at
  * 366px, which read as accidental because it was. */
 /* Forms get a real margin, unlike a list. A table is data and earns the full
- * width; a form is something you sit and work through, and wants air around
- * it. Tightens on a phone, where the gutter is a bigger share of the screen. */
-.spl-form { padding: 32px 32px 0; }
+ * width; a form is something you sit and work through, and wants air around it.
+ *
+ * A standalone form page owns its padding. Inside a record page the shell owns
+ * it — see .spl-record-body — and the form contributes none, so a section
+ * cannot end up spaced differently from its siblings. */
+.spl-form { padding: 26px 30px 20px; }
 @media (max-width: 639px) {
-  .spl-form { padding: 20px 16px 0; }
+  .spl-form { padding: 20px 16px 16px; }
+}
+
+/* ── Record header ─────────────────────────────────────────────────────────
+ * Code and name above the tab row — layout A of the edit-page design. */
+.spl-record { padding: 16px 22px 0; }
+.spl-record-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-brand);
+  margin: 0;
+}
+.spl-record-name {
+  font: 600 18px/1.3 var(--font-sans);
+  color: var(--color-text);
+  margin: 2px 0 0;
+}
+.spl-record + .spl-tabs { margin-top: 12px; }
+
+/* The record page shell. It owns the frame — header, section nav, padded body,
+ * action bar — and each section supplies only its body. The body's padding
+ * lives here and nowhere else, which is what stops one tab from being spaced
+ * differently from the next. */
+.spl-record-page { display: flex; flex-direction: column; min-height: 100%; }
+.spl-record-body { flex: 1; min-height: 0; padding: 22px 22px 16px; }
+.spl-record-body > .spl-form,
+.spl-record-body .spl-form { padding: 0; }
+@media (max-width: 639px) {
+  .spl-record-body { padding: 16px; }
 }
 .spl-form .spl-input,
 .spl-form select,
 .spl-form .ss-main { width: 100%; }
+/* In flow at the foot of the form, not pinned across the viewport: the action
+ * belongs to the form, and a bar spanning the window implied it belonged to
+ * the page. Right-aligned on the tinted surface with a hairline above. */
 .spl-form-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 0;
-  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 12px 30px;
+  background: var(--color-surface-alt);
   border-top: 1px solid var(--color-border-light);
-  box-shadow: 0 -4px 16px -12px rgb(18 33 30 / .3);
-  z-index: 20;
 }
 .spl-error {
   list-style: none;
@@ -308,6 +340,7 @@
   font-weight: 600;
   border-bottom-color: var(--color-brand);
 }
+.spl-tabs-actions { margin-left: auto; display: flex; gap: 7px; padding-bottom: 6px; }
 .spl-tab--disabled { color: var(--color-text-dim); cursor: default; position: relative; }
 .spl-tab--disabled:hover { color: var(--color-text-dim); }
 
@@ -342,6 +375,9 @@
 @media (max-width: 639px) {
   .spl-settings-layout { padding: 16px; }
 }
+
+.spl-settings-content { flex: 1; min-width: 0; max-width: 576px; }
+.spl-settings-content .spl-field + .spl-field { margin-top: 15px; }
 
 .spl-subnav { flex: 0 0 256px; }
 .spl-subnav-group { margin-bottom: 24px; }
@@ -399,8 +435,29 @@
  * so the shell is right on first paint — which principle 6 requires. */
 .spl-drawer-toggle { position: absolute; opacity: 0; pointer-events: none; }
 
-.spl-shell { display: flex; min-height: 100vh; background: var(--color-page); }
-.spl-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* The shell fills the viewport and never scrolls itself. Each pane scrolls
+ * inside its own bounds, which is what lets the rail stay put and the form's
+ * action bar stay pinned to the bottom of the screen. */
+.spl-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-page);
+}
+.spl-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.spl-content > main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 /* The rail is viewport-height and sticks, so Settings sits at the bottom of
  * the screen rather than the bottom of the document — otherwise a long list
@@ -521,7 +578,19 @@
  * wrapper and an actions row before anything you came to look at; that is what
  * made a restyle read as the old design in new colours. */
 .spl-inner { width: 100%; padding: 0 14px; }
-.spl-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* The scrolling region. Everything after it in <main> — notably the form's
+ * action bar — stays pinned below it at the foot of the screen. */
+.spl-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+/* When the page is a two-pane layout, the panes scroll themselves and this
+ * must not scroll too — otherwise the form's action bar, which lives at the
+ * foot of the form column, scrolls away with it. */
+.spl-main:has(.spl-panes) { overflow: hidden; }
 
 /* The list toolbar: same surface as the top bar, hairline beneath, no margins.
  * Search, filters and export live here; the table begins immediately below. */
@@ -538,8 +607,24 @@
  * the table on the other; the table runs to the far edge with no gutter and no
  * card around it. Rows are separated by hairlines, which is all the structure
  * a list needs. */
-.spl-panes { display: flex; align-items: stretch; }
-.spl-list { flex: 1; min-width: 0; }
+.spl-panes { display: flex; align-items: stretch; min-height: 0; flex: 1; }
+.spl-list { flex: 1; min-width: 0; overflow-y: auto; }
+
+/* Detail pages: form column on the left with its action bar pinned to the
+ * bottom of that column, panel on the right running to the viewport edge. */
+.spl-detail-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.spl-detail-content { flex: 1; min-height: 0; overflow-y: auto; }
+.spl-detail-panel {
+  width: 320px;
+  flex: none;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+@media (max-width: 1023px) {
+  .spl-panes { flex-direction: column; }
+  .spl-detail-panel { width: auto; border-left: 0; border-top: 1px solid var(--color-border); }
+}
 
 /* Below 640px the toolbar stacks. Its children are a route's own markup —
  * usually one justify-between row — so the wrapping has to be forced from

@@ -57,7 +57,9 @@
     :content
     [:div {:class "spl-settings-layout"}
      (settings-sidebar :current-route current-route :viewer viewer)
-     [:div {:class (or content-class "flex-1 max-w-2xl")}
+     ;; Same 576px column every other form uses, so a settings field is not a
+     ;; different width from an accession field for no reason.
+     [:div {:class (or content-class "spl-settings-content")}
       content]]))
 
 (defn save-button [label]

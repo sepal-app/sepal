@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.detail.shared
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
             [zodiac.core :as z]))
@@ -44,6 +45,21 @@
                   :items (items :accession accession
                                 :active active
                                 :collection-available? collection-available?)})))
+
+(defn page
+  "An accession's record page. Every section — general, collection, media —
+  renders through this, supplying only its own body, so no section can end up
+  with different padding or a different header from its siblings."
+  [& {:keys [accession taxon active body footer collection-available?]
+      :or {collection-available? true}}]
+  (pages.record/page
+    :code (:accession/code accession)
+    :name (when (:taxon/name taxon)
+            (taxon-name/render (:taxon/name taxon)
+                               :author (:taxon/author taxon)))
+    :tabs (tabs accession active collection-available?)
+    :body body
+    :footer footer))
 
 (defn breadcrumbs [taxon accession]
   [[:a {:href (z/url-for taxon.routes/index)}

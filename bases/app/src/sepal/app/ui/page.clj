@@ -124,6 +124,19 @@
                     :icon (lucide/settings)
                     :current? (current-section? uri "/settings/"))]]))
 
+(defn record-header
+  "The identity band above a record's tab row: its code in the mono face and
+  brand green, its name beneath.
+
+  Layout A of the edit-page design. The breadcrumb says where you are; this
+  says which record you are looking at, which is what someone arriving from a
+  link needs and what a breadcrumb ending in a bare code does not give them."
+  [& {:keys [code name]}]
+  (when (or code name)
+    [:div {:class "spl-record"}
+     (when code [:p {:class "spl-record-code"} code])
+     (when name [:p {:class "spl-record-name"} name])]))
+
 (defn page [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
   (base/html
     [:div (merge {:x-data true} attrs)

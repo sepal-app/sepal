@@ -1,7 +1,6 @@
 (ns sepal.app.ui.form
   (:require [clojure.string :as str]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.ui.page :as ui.page]))
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
 
 (def anti-forgery-field-name "__anti-forgery-token")
 
@@ -170,12 +169,13 @@
                            "selected")}
       label])])
 
-(defn footer [& {:keys [buttons]}]
-  [:div {:class "spl-form-footer"
-         :x-transition:enter "transition-transform ease-out duration-300"
-         :x-transition:enter-start "translate-y-20"
-         :x-transition:enter-end "translate-y-0"
-         :x-show "dirty"}
-   (ui.page/page-inner
-     [:div {:class "flex flex-row gap-4 "}
-      buttons])])
+(defn footer
+  "The form's action bar: right-aligned, on the tinted surface, with a hairline
+  above it.
+
+  Always present. It used to be `x-show=\"dirty\"`, so landing on a create page
+  showed no way to submit until you typed something — the primary action of the
+  screen was invisible on arrival."
+  [& {:keys [buttons]}]
+  [:div {:class "spl-form-footer"}
+   buttons])

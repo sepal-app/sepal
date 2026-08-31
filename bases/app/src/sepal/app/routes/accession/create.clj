@@ -18,7 +18,7 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn spl-btn--ghost"
+  [[:button {:class "spl-btn"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]
    [:button {:class "spl-btn spl-btn--primary"

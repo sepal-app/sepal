@@ -116,13 +116,17 @@
                             :value (:elevation values)
                             :errors (:elevation errors))]])])
 
-(defn page-content [& {:keys [errors accession values]}]
-  [:div {:class "flex flex-col gap-2"}
-   ;; Reachable only when the tab is available, so it is always enabled here.
-   (accession.shared/tabs accession accession.shared/collection-tab true)
-   (form :action (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
-         :errors errors
-         :values values)])
+(defn page-content [& {:keys [errors accession taxon values footer]}]
+  ;; Reachable only when the tab is available, so it is always enabled here.
+  (accession.shared/page
+    :accession accession
+    :taxon taxon
+    :active accession.shared/collection-tab
+    :footer footer
+    :body (form :action (z/url-for accession.routes/detail-collection
+                                   {:id (:accession/id accession)})
+                :errors errors
+                :values values)))
 
 (defn footer-buttons []
   [[:button {:class "spl-btn"
@@ -134,8 +138,10 @@
 
 (defn render [& {:keys [errors accession taxon values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
+                                               :errors errors
                                                :accession accession
+                                               :taxon taxon
                                                :values values)
                         :panel-content (accession.panel/panel-content
                                          :accession (:accession panel-data)
@@ -145,8 +151,7 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
-             :breadcrumbs (accession.shared/breadcrumbs taxon accession)
-             :footer (ui.form/footer :buttons (footer-buttons))))
+             :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (defn collection->values [collection]
   (when collection

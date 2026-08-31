@@ -18,15 +18,21 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org accession supplier taxon values collection-available?]}]
-  [:div {:class "flex flex-col gap-2"}
-   (accession.shared/tabs accession accession.shared/general-tab collection-available?)
-   (accession.form/form :action (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
-                        :errors errors
-                        :supplier supplier
-                        :taxon taxon
-                        :org org
-                        :values values)])
+(defn page-content [& {:keys [errors org accession supplier taxon values
+                              collection-available? footer]}]
+  (accession.shared/page
+    :accession accession
+    :taxon taxon
+    :active accession.shared/general-tab
+    :collection-available? collection-available?
+    :footer footer
+    :body (accession.form/form :action (z/url-for accession.routes/detail-general
+                                                  {:id (:accession/id accession)})
+                               :errors errors
+                               :supplier supplier
+                               :taxon taxon
+                               :org org
+                               :values values)))
 
 (defn footer-buttons []
   [[:button {:class "spl-btn"
@@ -42,6 +48,7 @@
                         collection-available?]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :collection-available? collection-available?
+                                               :footer (ui.form/footer :buttons (footer-buttons))
                                                :errors errors
                                                :org org
                                                :accession accession
@@ -56,8 +63,7 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
-             :breadcrumbs (accession.shared/breadcrumbs taxon accession)
-             :footer (ui.form/footer :buttons (footer-buttons))))
+             :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (defn save! [db accession-id updated-by data]
   (try

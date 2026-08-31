@@ -30,8 +30,15 @@
      label]))
 
 (defn tabs
-  "The section nav. `:label` names the landmark for a screen reader; `:items`
-  are the results of `item`."
-  [{:keys [label items]}]
+  "The section nav.
+
+  :label   names the landmark for a screen reader.
+  :items   the results of `item`.
+  :actions optional record-scoped controls, right-aligned on the same row —
+           Delete and the like, which belong to the record rather than to any
+           one section."
+  [{:keys [label items actions]}]
   [:nav {:class "spl-tabs" :aria-label (or label "Sections")}
-   items])
+   items
+   (when actions
+     [:span {:class "spl-tabs-actions"} actions])])
