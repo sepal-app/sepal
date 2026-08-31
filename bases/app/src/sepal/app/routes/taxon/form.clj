@@ -55,51 +55,51 @@
                  taxonomy."
           :children
           [(form/input-field :label "Name"
-                           :name "name"
-                           :required true
-                           :read-only read-only
-                           :value (:name values)
-                           :errors (:name errors))
-         (form/input-field :label "Author"
-                           :name "author"
-                           :read-only read-only
-                           :value (:author values)
-                           :errors (:author errors))
-         (if read-only
-           (form/input-field :label "Parent"
-                             :name "parent-id"
+                             :name "name"
+                             :required true
                              :read-only read-only
-                             :value (:parent-name values))
-           (let [url (z/url-for taxon.routes/index)]
-             (form/field :label "Parent"
-                         :name "parent-id"
-                         :input [:select {:x-taxon-field (json/js {:url url})
-                                          :name "parent-id"
-                                          :id "parent-id"
+                             :value (:name values)
+                             :errors (:name errors))
+           (form/input-field :label "Author"
+                             :name "author"
+                             :read-only read-only
+                             :value (:author values)
+                             :errors (:author errors))
+           (if read-only
+             (form/input-field :label "Parent"
+                               :name "parent-id"
+                               :read-only read-only
+                               :value (:parent-name values))
+             (let [url (z/url-for taxon.routes/index)]
+               (form/field :label "Parent"
+                           :name "parent-id"
+                           :input [:select {:x-taxon-field (json/js {:url url})
+                                            :name "parent-id"
+                                            :id "parent-id"
+                                            :read-only read-only
+                                            :autocomplete "off"}
+                                   (when (:parent-id values)
+                                     [:option {:value (:parent-id values)}
+                                      (:parent-name values)])])))
+           (if read-only
+             (form/input-field :label "Rank"
+                               :name "rank"
+                               :read-only read-only
+                               :value (:rank values))
+             (form/field :label "Rank"
+                         :name "rank"
+                         :input [:select {:name "rank"
+                                          :x-rank-field {}
+                                          :autocomplete "off"
+                                          :id "rank"
                                           :read-only read-only
-                                          :autocomplete "off"}
-                                 (when (:parent-id values)
-                                   [:option {:value (:parent-id values)}
-                                    (:parent-name values)])])))
-         (if read-only
-           (form/input-field :label "Rank"
-                             :name "rank"
-                             :read-only read-only
-                             :value (:rank values))
-           (form/field :label "Rank"
-                       :name "rank"
-                       :input [:select {:name "rank"
-                                        :x-rank-field {}
-                                        :autocomplete "off"
-                                        :id "rank"
-                                        :read-only read-only
-                                        :required true
-                                        :value (:rank values)}
-                               (for [rank ranks]
-                                 [:option {:value rank
-                                           :selected (when (= rank (some-> values :rank name))
-                                                       "selected")}
-                                  rank])]))])
+                                          :required true
+                                          :value (:rank values)}
+                                 (for [rank ranks]
+                                   [:option {:value rank
+                                             :selected (when (= rank (some-> values :rank name))
+                                                         "selected")}
+                                    rank])]))])
 
         [:fieldset {:class "spl-form-section spl-fieldset"
                     :x-data (json/js {:vernacularNames (or (:vernacular-names values)

@@ -186,12 +186,12 @@
           (:name col)])]]
      [:tbody {:id rows-container-id}
       (body-rows :columns columns
-                :rows rows
-                :row-attrs row-attrs
-                :next-url (next-page-url :href href
-                                         :page page
-                                         :page-size page-size
-                                         :total total))]]))
+                 :rows rows
+                 :row-attrs row-attrs
+                 :next-url (next-page-url :href href
+                                          :page page
+                                          :page-size page-size
+                                          :total total))]]))
 
 (defn card-table
   "The list surface. Rows scroll inside it; the header stays put.

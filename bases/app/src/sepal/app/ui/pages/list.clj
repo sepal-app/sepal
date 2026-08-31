@@ -1,7 +1,7 @@
 (ns sepal.app.ui.pages.list
-  (:require [sepal.app.ui.icons.heroicons :as heroicons]
+  (:require [sepal.app.ui.empty :as ui.empty]
+            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]
-            [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]))
 

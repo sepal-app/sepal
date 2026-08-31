@@ -1,6 +1,8 @@
 (ns sepal.app.routes.accession.create-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.set :as set]
+            [clojure.test :refer [deftest is use-fixtures]]
             [peridot.core :as peri]
+            [sepal.app.routes.accession.create :as create]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -94,3 +96,30 @@
 
         (is (some? (.selectFirst body "#taxon-id-errors"))
             "Taxon field should have error container with id taxon-id-errors")))))
+
+(deftest test-create-accepts-every-field-the-form-posts
+  (tf/testing "the schema is a closed map, so a field missing from it is
+               dropped in silence. Provenance, ID qualifier and supplier were
+               all discarded on create and could only be set by saving and then
+               editing — and with no provenance the Collection tab stays
+               permanently unavailable."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (-> sess (peri/request "/accession/new/") :response :body)
+            posted (->> (.select (Jsoup/parse ^String body) "#accession-form [name]")
+                        (map #(.attr % "name"))
+                        (remove #{"__anti-forgery-token"})
+                        set)
+            ;; `rest` also yields the schema's properties map, which is not
+            ;; an entry.
+            accepted (->> (rest create/FormParams)
+                          (filter vector?)
+                          (map (comp name first))
+                          set)]
+        (is (seq posted) "the form renders named controls")
+        (is (empty? (set/difference posted accepted))
+            (str "the form posts fields the schema drops: "
+                 (set/difference posted accepted)))))))

@@ -28,8 +28,8 @@
              (form/hidden-field :name "next" :value next)
              [:div {:class "flex flex-row mt-4 justify-between items-center"}
               [:button {:type "submit"
-               :class "spl-btn spl-btn--primary"}
-      "Login"]
+                        :class "spl-btn spl-btn--primary"}
+               "Login"]
               [:a {:class "spl-link text-sm"
                    :href (z/url-for auth.routes/forgot-password)}
                "Forgot password?"]]))

@@ -94,13 +94,13 @@
                            :export-action (z/url-for location.routes/export)
                            :options export/export-options)]
                :table-actions (pages.list/toolbar
-                               :q search-query
-                               :fields field-options
-                               :placeholder "Search... (e.g., taxon:Quercus)"
-                               :page page-num
-                               :page-size page-size
-                               :total total
-                               :actions (ui.export/export-button)))
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., taxon:Quercus)"
+                                :page page-num
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
     :breadcrumbs ["Locations"]
     :page-title-buttons (when (authz/user-has-permission? viewer location.perm/create)
                           (create-button))))

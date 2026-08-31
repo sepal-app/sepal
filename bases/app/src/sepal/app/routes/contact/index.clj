@@ -98,13 +98,13 @@
                            :export-action (z/url-for contact.routes/export)
                            :options export/export-options)]
                :table-actions (pages.list/toolbar
-                               :q search-query
-                               :fields field-options
-                               :placeholder "Search... (e.g., business:nursery)"
-                               :page page-num
-                               :page-size page-size
-                               :total total
-                               :actions (ui.export/export-button)))
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., business:nursery)"
+                                :page page-num
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
     :breadcrumbs ["Contacts"]
     :page-title-buttons (when (authz/user-has-permission? viewer contact.perm/create)
                           (create-button))))

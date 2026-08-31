@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.create
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.form :as accession.form]
@@ -45,9 +46,18 @@
       (error.i/ex->error ex))))
 
 (def FormParams
+  ;; Every field the form posts. The map is closed, so a key missing from here
+  ;; is dropped in silence: creating an accession discarded its provenance, ID
+  ;; qualifier and supplier, and you only got them by saving and then editing.
+  ;; This matches `detail/general.clj`, which had them all along.
   [:map {:closed true}
    [:code [:string {:min 1}]]
    [:taxon-id [:int {:min 0}]]
+   [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]
+   [:id-qualifier-rank {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier-rank]]
+   [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]
+   [:wild-provenance-status {:decode/form validation.i/empty->nil} [:maybe accession.spec/wild-provenance-status]]
+   [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
    [:date-accessioned [:maybe validation.i/date]]])
 

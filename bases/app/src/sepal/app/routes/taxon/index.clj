@@ -117,14 +117,14 @@
                            :export-action (z/url-for taxon.routes/export)
                            :options export/export-options)]
                :table-actions (pages.list/toolbar
-                               :q search-query
-                               :fields field-options
-                               :placeholder "Search... (e.g., rank:species Quercus)"
-                               :filters (accessions-only-checkbox search-query)
-                               :page page
-                               :page-size page-size
-                               :total total
-                               :actions (ui.export/export-button)))
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., rank:species Quercus)"
+                                :filters (accessions-only-checkbox search-query)
+                                :page page
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
 
     :breadcrumbs ["Taxa"]
     :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)

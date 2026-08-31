@@ -109,13 +109,13 @@
                            :export-action (z/url-for accession.routes/export)
                            :options export/export-options)]
                :table-actions (pages.list/toolbar
-                               :q search-query
-                               :fields field-options
-                               :placeholder "Search... (e.g., taxon:Quercus provenance:wild)"
-                               :page page
-                               :page-size page-size
-                               :total total
-                               :actions (ui.export/export-button)))
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., taxon:Quercus provenance:wild)"
+                                :page page
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 "Taxa"]

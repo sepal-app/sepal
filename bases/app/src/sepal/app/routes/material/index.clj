@@ -117,13 +117,13 @@
                            :export-action (z/url-for material.routes/export)
                            :options export/export-options)]
                :table-actions (pages.list/toolbar
-                               :q search-query
-                               :fields field-options
-                               :placeholder "Search... (e.g., type:seed status:alive)"
-                               :page page
-                               :page-size page-size
-                               :total total
-                               :actions (ui.export/export-button)))
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., type:seed status:alive)"
+                                :page page
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
