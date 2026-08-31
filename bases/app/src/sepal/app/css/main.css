@@ -18,26 +18,10 @@
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
 
-/* Make the SlimSelect match the spl- input styling */
-.ss-main {
-    border-radius: var(--radius-field);
-    width: 100%;
-}
-
-.ss-main:focus {
-    --input-color: var(--color-base-content);
-    box-shadow: none;
-    outline: 2px solid var(--input-color);
-    outline-offset: 2px;
-    box-shadow: 0 1px
-        color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
-    border-color: var(--input-color);
-}
-
-/* Ensure SlimSelect dropdown content doesn't inherit unwanted styles */
-.ss-content {
-    text-align: left;
-}
+/* SlimSelect is styled with the rest of the design system, in components.css.
+ * The rules that used to live here referenced DaisyUI variables
+ * (--radius-field, --color-base-content, --depth) that no longer exist, so
+ * they did nothing and the widget fell back to its own library styling. */
 
 td {
     a:hover {
