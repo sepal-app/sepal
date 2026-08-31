@@ -35,8 +35,10 @@
    [:div {:class "fixed inset-0 z-10 w-screen overflow-y-auto"}
     [:div {:class "flex flex-col min-h-full items-end justify-center text-center sm:items-center sm:p-20"}
 
-     [:button {:class "text-white w-full text-right"
-               :x-on:click "zoom=false"} "Close"]
+     [:button {:type "button"
+               :class "spl-btn spl-btn--ghost text-white self-end"
+               :x-on:click "zoom=false"}
+      "Close"]
      [:div
       [:img {:src zoom-url}]]]]])
 

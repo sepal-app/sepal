@@ -67,11 +67,13 @@
                             :errors (:role errors))
                [:p {:class "text-sm text-text-muted mt-4"}
                 "An invitation email will be sent to this address. The invitation expires in 24 hours."]
+               ;; Cancel then the primary action, the order every other form in
+               ;; the app uses.
                [:div {:class "flex gap-4 mt-6"}
-                (form/submit-button {:class "spl-btn spl-btn--primary"} "Send Invitation")
                 [:a {:href (z/url-for settings.routes/users)
                      :class "spl-btn"}
-                 "Cancel"]]])])
+                 "Cancel"]
+                (form/submit-button {:class "spl-btn spl-btn--primary"} "Send Invitation")]])])
 
 (defn- render [& {:keys [errors values viewer]}]
   (layout/layout

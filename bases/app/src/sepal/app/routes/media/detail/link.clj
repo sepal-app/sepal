@@ -98,21 +98,24 @@
             :class "flex flex-row gap-2 items-end flex-grow"}
       (form/field :label "Resource"
                   :name "resource-id"
-                  :input [:<>
-                          [:template {:x-if "resourceType === 'accession'"}
-                           (accession-field :name "resource-id")]
-                          [:template {:x-if "resourceType === 'location'"}
-                           (location-field :name "resource-id")]
-                          [:template {:x-if "resourceType === 'material'"}
-                           (material-field :name "resource-id")]
-                          [:template {:x-if "resourceType === 'taxon'"}
-                           (taxon-field :name "resource-id")]])
+                  ;; A seq, not `[:<>]`. Chassis has no fragment element, so
+                  ;; that rendered a literal <<>> around these templates.
+                  :input (list
+                           [:template {:x-if "resourceType === 'accession'"}
+                            (accession-field :name "resource-id")]
+                           [:template {:x-if "resourceType === 'location'"}
+                            (location-field :name "resource-id")]
+                           [:template {:x-if "resourceType === 'material'"}
+                            (material-field :name "resource-id")]
+                           [:template {:x-if "resourceType === 'taxon'"}
+                            (taxon-field :name "resource-id")]))
 
-      (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"}  "Save")
+      ;; Cancel then Save, the order every other form in the app uses.
       [:button {:type "button"
                 :class "spl-btn spl-btn--sm mb-4"
                 :x-on:click "editLink=false"}
-       "Cancel"]]]))
+       "Cancel"]
+      (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"} "Save")]]))
 
 ;; (ns-unmap *ns* 'link-text)
 
