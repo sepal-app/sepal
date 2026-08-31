@@ -158,3 +158,30 @@
                                  :up-to "20000101000000"})))
           (is (empty? (query db-path "select name from sqlite_master where name = 'probe_one'"))))
         (finally (fs/delete-tree dir))))))
+
+(deftest test-taxon-rank-lookup-migration
+  (testing "the rebuild keeps every taxon row, rebuilds FTS, and enforces the rank FK"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-rank-migration"})
+          db-path (str (fs/path dir "sepal.db"))]
+      (try
+        (db.i/load-schema! {:db-path db-path})
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
+          (db.i/migrate! {:db-path db-path})
+          (is (= 36 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_rank"]) :c))
+              "36 seeded ranks")
+          (is (= 1 (-> (jdbc/execute-one! ds ["select count(*) c from taxon"]) :c))
+              "the existing row survived the rebuild")
+          (is (= 1 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_fts where taxon_fts match 'palmatum'"]) :c))
+              "FTS was rebuilt and still matches")
+          (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum ''Sango-kaku''', 'cultivar')"])
+          (is (= 2 (-> (jdbc/execute-one! ds ["select count(*) c from taxon"]) :c))
+              "a cultivar-rank taxon inserts")
+          (is (empty? (jdbc/execute! ds ["pragma foreign_key_check"]))
+              "no dangling references")
+          (let [fk-ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path "?foreign_keys=on")})]
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into taxon (name, rank) values ('Bogus', 'notarank')"]))
+                "the foreign key refuses a rank absent from taxon_rank")))
+        (finally
+          (fs/delete-tree dir))))))

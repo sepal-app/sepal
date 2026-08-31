@@ -440,14 +440,19 @@
           db-path (str (fs/path dir "old.db"))]
       (try
         (instance/provision! {:db-path db-path})
-        ;; Drop the newest recorded version so the database reads as older than
-        ;; the floor. start! compares what schema_version holds, so that row is
-        ;; the whole subject of this test — the tables are irrelevant to it. This
-        ;; is the exact mirror of the ahead-of-code test below, which inserts a
-        ;; future row instead of deleting the current one.
+        ;; Drop every recorded version at or above the floor so the database
+        ;; reads as older than it. Deleting only the floor's own row is not
+        ;; enough: schema.sql can carry migrations recorded above the floor
+        ;; (that's the point of a floor lower than the newest migration), and
+        ;; leaving one of those behind would make it the new max, still at or
+        ;; above the floor. start! compares what schema_version holds, so
+        ;; those rows are the whole subject of this test — the tables are
+        ;; irrelevant to it. This is the exact mirror of the ahead-of-code
+        ;; test below, which inserts a future row instead of deleting current
+        ;; ones.
         (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
               floor (instance/minimum-schema-version)]
-          (jdbc/execute! ds ["delete from schema_version where version = ?" floor])
+          (jdbc/execute! ds ["delete from schema_version where version >= ?" floor])
           (let [current (instance/schema-version {:db-path db-path})]
             (is (some? current) "precondition: an older version is still recorded")
             (is (< (parse-long current) (parse-long floor))
