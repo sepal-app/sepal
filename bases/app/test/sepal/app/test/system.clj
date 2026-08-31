@@ -5,11 +5,14 @@
   config is the point: a config maintained only for tests is a config that lets
   the suite stay green while the path a real caller takes is broken."
   (:require [babashka.fs :as fs]
+            [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [sepal.app.instance :as instance]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.mail.interface.protocols :as mail.p]
             [zodiac.core :as z]
-            [zodiac.ext.sql :as z.sql]))
+            [zodiac.ext.sql :as z.sql])
+  (:import [java.io File]))
 
 ;; Mock mail client that records sent messages for testing
 (defrecord MockMailClient [sent-messages]
@@ -29,6 +32,38 @@
 (def ^:dynamic *token-service* nil)
 (def ^:dynamic *backup-dir* nil)
 
+(defn load-floor-schema!
+  "Build a database at minimum-schema-version from the snapshot in test
+  resources.
+
+  The floor leg cannot use provision!, which loads the *current* schema and so
+  builds the same database as the latest leg. It cannot replay migrations from
+  empty either: that runs InitSpatialMetaData and produces ~20 SpatiaLite
+  bookkeeping tables no real garden has. So it loads a dump of the schema as it
+  stood at the floor, which is what a garden at the floor actually looks like.
+
+  When the floor moves, snapshot the schema as it stands at the new floor -- the
+  error below names the file."
+  [{:keys [db-path]}]
+  (let [version (instance/minimum-schema-version)
+        resource-name (str "test/schema-" version ".sql")
+        resource (io/resource resource-name)]
+    (when-not resource
+      (throw (ex-info (str resource-name " is not on the test classpath. The floor moved; "
+                           "snapshot schema.sql as it stands at the new floor into "
+                           "components/test/resources/" resource-name ".")
+                      {:reason :floor-snapshot-missing :version version})))
+    (when-let [parent (fs/parent db-path)]
+      (fs/create-dirs parent))
+    (let [file (File/createTempFile "sepal-floor-schema" ".sql")]
+      (try
+        (with-open [in (io/input-stream resource)]
+          (io/copy in file))
+        (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")
+        (finally
+          (.delete file)))))
+  {:db-path db-path})
+
 (defn- start-test-instance []
   (let [dir (fs/create-temp-dir {:prefix "sepal-test"})
         db-path (str (fs/path dir "sepal.db"))
@@ -43,21 +78,14 @@
     ;; use. Tests are handed *backup-dir* to write into directly, so make it
     ;; usable here.
     (fs/create-dirs backup-dir)
-    (when (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION"))
-      ;; The tripwire. While the floor IS the latest, a floor database and a
-      ;; latest database are the same thing, so this leg provisions normally and
-      ;; only proves the matrix is wired. The moment the floor lags — the first
-      ;; migration after the floor is set — this assertion fires and CI says
-      ;; exactly what to do. Building the snapshot loader now would be a code
-      ;; path with no snapshot to load and no way to test it.
-      (assert (= (instance/minimum-schema-version) (instance/latest-schema-version))
-              (str "The floor (" (instance/minimum-schema-version) ") is behind latest ("
-                   (instance/latest-schema-version) "), so this leg is no longer testing the "
-                   "floor. Snapshot the dump as it stood at the floor into test resources as "
-                   "schema-" (instance/minimum-schema-version) ".sql and load it here. Do not "
-                   "replay migrations from empty: that runs InitSpatialMetaData and produces "
-                   "~20 SpatiaLite tables no real garden has.")))
-    (instance/provision! {:db-path db-path})
+    ;; The floor leg builds a database as it stood at the floor and lets
+    ;; migrate! below carry it up to latest, which is the N-1 path. The latest
+    ;; leg provisions from the current schema. 022 left an assertion here
+    ;; instead, because while the floor was the latest there was no snapshot to
+    ;; load; load-floor-schema! is what replaced it.
+    (if (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION"))
+      (load-floor-schema! {:db-path db-path})
+      (instance/provision! {:db-path db-path}))
     (when (not= (instance/schema-version {:db-path db-path})
                 (instance/latest-schema-version))
       (instance/migrate! {:db-path db-path}))
