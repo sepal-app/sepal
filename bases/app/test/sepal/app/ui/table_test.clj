@@ -93,7 +93,10 @@
                                           :next-page-url "/accession/?page=2&rows=1")))
         sentinel (.selectFirst body "tr.spl-sentinel")]
     (is (some? sentinel))
-    (is (= "revealed" (.attr sentinel "hx-trigger")))
+    (is (= "intersect once" (.attr sentinel "hx-trigger"))
+        "not `revealed` — htmx implements that against window scroll, and this
+         shell is viewport-locked, so it never fires. Verified in a browser:
+         25 rows before scrolling and 25 after.")
     (is (= "outerHTML" (.attr sentinel "hx-swap"))
         "the sentinel replaces itself, so exactly one is ever in the table")
     (is (= "/accession/?page=2&rows=1" (.attr sentinel "hx-get")))

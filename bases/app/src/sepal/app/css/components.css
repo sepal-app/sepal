@@ -613,10 +613,41 @@
 .spl-page-body { padding: 22px; }
 @media (max-width: 639px) { .spl-page-body { padding: 14px; } }
 
+/* The list page's outer wrapper. Every level between the viewport and the
+ * scrolling rows must flex; one content-sized block anywhere in the chain and
+ * nothing scrolls. */
+.spl-list-page,
+.spl-list-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The toolbar is fixed height; the panes below it take the rest. */
+.spl-list-body > .spl-toolbar { flex: none; }
+
 .spl-panes { display: flex; align-items: stretch; min-height: 0; flex: 1; }
-/* The column itself does not scroll — the rows inside it do, so the paginator
- * pinned beneath them stays on screen. */
-.spl-list { flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+/* The column itself does not scroll — the rows inside it do.
+ *
+ * The height chain has to be unbroken from the viewport down to
+ * .spl-table-scroll, or nothing is scrollable and infinite scroll never fires:
+ * the sentinel sits below a clipped region it can never be scrolled into. A
+ * route wrapping its table in a bare div is enough to break it, so the
+ * intermediate wrapper is stretched here rather than trusted to each caller. */
+.spl-list {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.spl-list > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Detail pages: form column on the left with its action bar pinned to the
  * bottom of that column, panel on the right running to the viewport edge. */
@@ -703,11 +734,16 @@
 /* A list is not a card. It fills its pane edge to edge — no border, no radius,
  * no shadow — because a box around a full-width table is a boundary that
  * separates nothing from nothing. Hairlines between rows carry the structure. */
+/* Flexes rather than claiming height:100%. As a flex item it defaults to
+ * `flex: 0 1 auto`, so a percentage height resolves against a container that
+ * is itself content-sized — the card grew to fit its rows, nothing scrolled,
+ * and the sentinel sat below a clipped region it could never be scrolled into.
+ * That is what stopped infinite scroll from ever firing. */
 .spl-table-card {
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
 }
 /* Rows scroll here; the header does not. */

@@ -83,15 +83,14 @@
                                                        :total total)))
 
 (defn table [& {:keys [rows page href page-size total]}]
-  [:div {:class "w-full"}
-   (table/card-table
-     (table/table :columns (table-columns)
-                  :rows rows
-                  :row-attrs row-attrs
-                  :next-page-url (table/next-page-url :href href
-                                                      :page page
-                                                      :page-size page-size
-                                                      :total total)))])
+  (table/card-table
+    (table/table :columns (table-columns)
+                 :rows rows
+                 :row-attrs row-attrs
+                 :next-page-url (table/next-page-url :href href
+                                                     :page page
+                                                     :page-size page-size
+                                                     :total total))))
 
 (defn render [& {:keys [accession field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page

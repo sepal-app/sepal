@@ -70,7 +70,11 @@
    - :table-actions - Action buttons/forms above table
    - :content       - Main table content"
   [& {:keys [table-actions content]}]
-  [:div {:x-data "{ selectedId: null,
+  ;; Classed and stretched: as a bare block div this sized to its content and
+  ;; broke the height chain from the viewport down to the scrolling rows, which
+  ;; is what stopped infinite scroll from ever firing.
+  [:div {:class "spl-list-page"
+         :x-data "{ selectedId: null,
                     selectRow(id, el) {
                       if (this.selectedId === id) { this.closePanel(); }
                       else { this.selectedId = id; el.dispatchEvent(new Event('panel-select')); }
@@ -83,7 +87,7 @@
    ;; filters and export sit on the same surface as the breadcrumbs, and the
    ;; table starts immediately beneath. This is the shape the workbench mockup
    ;; has: chrome, then data.
-   [:div
+   [:div {:class "spl-list-body"}
     [:form {:class "spl-toolbar"
             :method "get"
             :hx-get " "

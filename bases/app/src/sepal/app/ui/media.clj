@@ -9,7 +9,11 @@
   [:li (cond-> {:class "relative"}
          (some? next-page-url)
          (merge {:hx-get next-page-url
-                 :hx-trigger "revealed"
+                 ;; `intersect once` rather than `revealed`: htmx's `revealed` listens
+                 ;; for window scroll, and this shell is viewport-locked so the window
+                 ;; never scrolls. This worked before the redesign and stopped when the
+                 ;; panes began scrolling internally.
+                 :hx-trigger "intersect once"
                  :hx-target "#media-list"
                  :hx-swap "beforeend"}))
    [:div {:class (html/attr "group" "aspect-w-10" "aspect-h-7" "block" "w-full"

@@ -38,7 +38,13 @@
   [next-page-url column-count]
   [:tr {:class "spl-sentinel"
         :hx-get next-page-url
-        :hx-trigger "revealed"
+        ;; `intersect once`, not `revealed`. htmx implements `revealed` by
+        ;; listening for scroll on window and comparing against
+        ;; window.innerHeight, so it never fires inside a scrolling container —
+        ;; and this shell is viewport-locked, so the window never scrolls at
+        ;; all. `intersect` uses IntersectionObserver, which computes
+        ;; visibility through the clip chain and works in either layout.
+        :hx-trigger "intersect once"
         :hx-swap "outerHTML"}
    [:td {:colspan column-count}]])
 

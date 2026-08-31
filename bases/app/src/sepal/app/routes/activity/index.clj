@@ -425,7 +425,11 @@
   "Render an invisible sentinel element that triggers loading the next page."
   [next-url]
   [:div {:hx-get next-url
-         :hx-trigger "revealed"
+         ;; `intersect once` rather than `revealed`: htmx's `revealed` listens
+         ;; for window scroll, and this shell is viewport-locked so the window
+         ;; never scrolls. This worked before the redesign and stopped when the
+         ;; panes began scrolling internally.
+         :hx-trigger "intersect once"
          :hx-target "#activity-feed"
          :hx-swap "beforeend"}])
 
