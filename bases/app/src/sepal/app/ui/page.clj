@@ -145,9 +145,16 @@
       ;; JavaScript, so the shell is correct on first paint. Below 1024px the
       ;; rail is off-canvas over a scrim; above it, pinned. That is the
       ;; behaviour DaisyUI's `drawer lg:drawer-open` provided.
-      [:input {:id "sidebar-drawer-toggle"
-               :type "checkbox"
-               :class "spl-drawer-toggle"}]
+      ;; The checked state is rendered from a cookie, so the rail is already
+      ;; expanded on first paint rather than snapping open after a script runs.
+      ;; The handler writes the cookie back so the choice survives navigation.
+      [:input (cond-> {:id "sidebar-drawer-toggle"
+                       :type "checkbox"
+                       :class "spl-drawer-toggle"
+                       :onchange (str "document.cookie = 'spl-rail=' + "
+                                      "(this.checked ? '1' : '0') + "
+                                      "'; path=/; max-age=31536000; samesite=lax'")}
+                g/*rail-open?* (assoc :checked "checked"))]
       [:div {:class "spl-shell"}
        (sidebar)
        [:label {:for "sidebar-drawer-toggle"

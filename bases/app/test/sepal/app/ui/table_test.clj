@@ -40,7 +40,7 @@
 
 (deftest test-cells-render-through-the-cell-fn
   (let [body (parse)
-        cells (mapv #(.text %) (.select body "tbody td"))]
+        cells (mapv #(.text %) (.select body "tbody tr:not(.spl-end):not(.spl-sentinel) td"))]
     (is (= ["2024.0117" "Quercus alba" "North Woodland" "2024-03-14"] cells))))
 
 (deftest test-column-type-becomes-a-class
@@ -74,7 +74,43 @@
 (deftest test-empty-rows-render-a-table-with-no-body-rows
   (let [body (parse :rows [])]
     (is (some? (.selectFirst body "table")) "the header still renders")
-    (is (zero? (.size (.select body "tbody tr"))))))
+    (is (zero? (.size (.select body "tbody tr:not(.spl-end)")))
+        "no data rows")
+    (is (some? (.selectFirst body "tr.spl-end"))
+        "an empty list still shows where it ends")))
+
+(deftest test-last-page-ends-the-list
+  (testing "with no next page the list shows its bottom rather than stopping
+            silently, which is indistinguishable from still loading"
+    (let [body (parse)]
+      (is (some? (.selectFirst body "tr.spl-end")))
+      (is (nil? (.selectFirst body "tr.spl-sentinel"))))))
+
+(deftest test-more-pages-render-a-sentinel-instead
+  (let [body (Jsoup/parseBodyFragment
+               (chassis/html (table/table :columns columns
+                                          :rows rows
+                                          :next-page-url "/accession/?page=2&rows=1")))
+        sentinel (.selectFirst body "tr.spl-sentinel")]
+    (is (some? sentinel))
+    (is (= "revealed" (.attr sentinel "hx-trigger")))
+    (is (= "outerHTML" (.attr sentinel "hx-swap"))
+        "the sentinel replaces itself, so exactly one is ever in the table")
+    (is (= "/accession/?page=2&rows=1" (.attr sentinel "hx-get")))
+    (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
+
+(deftest test-rows-only-matches-what-the-table-renders
+  (testing "an appended row is built by the same code as a row present on load"
+    (let [in-table (Jsoup/parseBodyFragment
+                     (chassis/html (table/table :columns columns :rows rows)))
+          ;; Wrapped in a table because Jsoup discards a bare <tr>, which is
+          ;; also what a browser does — the real swap target is a <tbody>.
+          standalone (Jsoup/parseBodyFragment
+                       (str "<table><tbody>"
+                            (chassis/html (table/rows-only :columns columns :rows rows))
+                            "</tbody></table>"))]
+      (is (= (.html (.selectFirst in-table "tbody tr"))
+             (.html (.selectFirst standalone "tr")))))))
 
 (deftest test-no-daisyui-or-hardcoded-palette
   (testing "principle 7: the table emits no DaisyUI class and no literal colour"

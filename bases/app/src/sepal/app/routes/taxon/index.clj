@@ -1,6 +1,7 @@
 (ns sepal.app.routes.taxon.index
   (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.export :as export]
@@ -63,16 +64,28 @@
      :hx-swap "innerHTML"
      :hx-push-url "false"}))
 
+(defn index-rows
+  "The <tr>s alone, for an infinite-scroll response. Same renderer as the
+  initial load, so an appended row is built like one already present."
+  [& {:keys [rows page page-size href total]}]
+  (table/rows-only :columns (table-columns)
+                   :rows rows
+                   :row-attrs row-attrs
+                   :next-page-url (table/next-page-url :href href
+                                                       :page page
+                                                       :page-size page-size
+                                                       :total total)))
+
 (defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
                   :rows rows
-                  :row-attrs row-attrs)
-     (table/paginator :current-page page
-                      :href href
-                      :page-size page-size
-                      :total total))])
+                  :row-attrs row-attrs
+                  :next-page-url (table/next-page-url :href href
+                                                      :page page
+                                                      :page-size page-size
+                                                      :total total)))])
 
 (defn- accessions-only-checkbox
   "Checkbox that toggles `accessions:>0` filter in the search query.
@@ -108,6 +121,9 @@
                                   :fields field-options
                                   :placeholder "Search... (e.g., rank:species Quercus)")
                                 (accessions-only-checkbox search-query)]
+                               ;; The count sits with the search that changes it.
+                               (table/row-count :loaded (min (* page page-size) total)
+                                                :total total)
                                (ui.export/export-button)])
 
     :breadcrumbs ["Taxa"]
@@ -165,6 +181,18 @@
                              :author (:taxon/author taxon)
                              :parentId (:taxon/parent-id taxon)
                              :parentName (:taxon/parent-name taxon)}))
+
+      ;; Infinite scroll: the sentinel asks for the next page's rows alone and
+      ;; swaps itself out for them.
+      (some? (get query-params "rows"))
+      (html/render-partial
+        (index-rows :rows rows
+                    :page page
+                    :page-size page-size
+                    :total total
+                    :href (uri/uri-str {:path uri
+                                        :query (uri/map->query-string
+                                                 (cond-> {} (seq q) (assoc :q q)))})))
 
       :else
       (render :viewer viewer

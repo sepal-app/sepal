@@ -2,6 +2,7 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -69,16 +70,28 @@
                          :x-on:click.stop ""}
                      (:location/code row)])}])
 
+(defn index-rows
+  "The <tr>s alone, for an infinite-scroll response. Same renderer as the
+  initial load, so an appended row is built like one already present."
+  [& {:keys [rows page page-size href total]}]
+  (table/rows-only :columns (table-columns)
+                   :rows rows
+                   :row-attrs row-attrs
+                   :next-page-url (table/next-page-url :href href
+                                                       :page page
+                                                       :page-size page-size
+                                                       :total total)))
+
 (defn table [& {:keys [rows page href page-size total]}]
   [:div {:class "w-full"}
    (table/card-table
      (table/table :columns (table-columns)
                   :rows rows
-                  :row-attrs row-attrs)
-     (table/paginator :current-page page
-                      :href href
-                      :page-size page-size
-                      :total total))])
+                  :row-attrs row-attrs
+                  :next-page-url (table/next-page-url :href href
+                                                      :page page
+                                                      :page-size page-size
+                                                      :total total)))])
 
 (defn render [& {:keys [accession field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page
@@ -99,6 +112,9 @@
                                  :q search-query
                                  :fields field-options
                                  :placeholder "Search... (e.g., type:seed status:alive)")
+                               ;; The count sits with the search that changes it.
+                               (table/row-count :loaded (min (* page page-size) total)
+                                                :total total)
                                (ui.export/export-button)])
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
@@ -171,7 +187,8 @@
         taxon (when taxon-id (taxon.i/get-by-id db taxon-id))
         accession (when accession-id (accession.i/get-by-id db accession-id))]
 
-    (if (= (get headers "accept") "application/json")
+    (cond
+      (= (get headers "accept") "application/json")
       (json/json-response (for [material rows]
                             {:code (:material/code material)
                              :id (:material/id material)
@@ -180,6 +197,19 @@
                                            (:material/code material)
                                            (:taxon/name material))
                              :accession-id (:material/accession-id material)}))
+      ;; Infinite scroll: the sentinel asks for the next page's rows alone and
+      ;; swaps itself out for them.
+      (some? (get query-params "rows"))
+      (html/render-partial
+        (index-rows :rows rows
+                    :page page
+                    :page-size page-size
+                    :total total
+                    :href (uri/uri-str {:path uri
+                                        :query (uri/map->query-string
+                                                 (cond-> {} (seq q) (assoc :q q)))})))
+
+      :else
       (render :viewer viewer
               :accession accession
               :field-options (search.i/field-options :material)

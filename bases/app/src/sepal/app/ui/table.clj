@@ -2,6 +2,11 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.ui.icons.heroicons :as icon]))
 
+(def rows-container-id
+  "The tbody infinite scroll appends into. Shared so a route's partial response
+  and the page's initial render agree on the target without each list naming it."
+  "table-rows")
+
 (defn- column-classes
   "A column's type drives its width and face; its priority drives when it is
    hidden as the viewport narrows. Priority 1 never sheds and carries no shed
@@ -9,6 +14,58 @@
   [{:keys [type priority]}]
   (cond-> [(str "spl-col--" (name (or type :text)))]
     (and priority (> priority 1)) (conj (str "spl-shed-" priority))))
+
+(defn next-page-url
+  "The URL for the page after this one, or nil at the end of the list.
+
+  `rows=1` asks the handler for the <tr>s alone — the shape the sentinel swaps
+  itself out for. Shared so every list agrees on the parameter rather than each
+  inventing one."
+  [& {:keys [href page page-size total]}]
+  (when (and href page page-size total (< (* page page-size) total))
+    (-> href
+        (uri/parse)
+        (uri/assoc-query :page (inc page) :rows 1)
+        (uri/uri-str))))
+
+(defn sentinel-row
+  "An empty row that fetches the next page when it scrolls into view, and
+  replaces itself with those rows plus the next sentinel.
+
+  `hx-swap outerHTML` rather than beforeend: the sentinel is the last row, so
+  swapping itself out is what keeps exactly one sentinel in the table. Appending
+  would leave the spent sentinel behind and fetch the same page forever."
+  [next-page-url column-count]
+  [:tr {:class "spl-sentinel"
+        :hx-get next-page-url
+        :hx-trigger "revealed"
+        :hx-swap "outerHTML"}
+   [:td {:colspan column-count}]])
+
+(defn end-of-list
+  "Shown once every row has been loaded, so the list has a visible bottom
+  rather than simply stopping."
+  [column-count]
+  [:tr {:class "spl-end"}
+   [:td {:colspan column-count} "End of list"]])
+
+(defn rows-only
+  "Just the <tr>s, for the initial render and for an infinite-scroll response.
+
+  Both paths render through this so a row appended by scrolling is built the
+  same way as a row present on load."
+  [& {:keys [columns rows row-attrs next-page-url]}]
+  (let [n (count columns)]
+    (list
+      (for [row rows]
+        [:tr (when row-attrs (row-attrs row))
+         (for [col columns]
+           [:td (merge {:class (column-classes col)}
+                       (when-let [f (:attrs col)] (f row)))
+            ((:cell col) row)])])
+      (if next-page-url
+        (sentinel-row next-page-url n)
+        (end-of-list n)))))
 
 (defn table
   "A table component.
@@ -35,7 +92,7 @@
   stylesheet, never from display:grid or display:block on a row — those drop
   the implicit ARIA roles a screen reader relies on to announce a cell's
   column."
-  [& {:keys [columns rows row-attrs]}]
+  [& {:keys [columns rows row-attrs next-page-url]}]
   [:table {:class "spl-table"}
    [:thead
     [:tr
@@ -43,24 +100,31 @@
        [:th {:scope "col"
              :class (column-classes col)}
         (:name col)])]]
-   [:tbody
-    (for [row rows]
-      [:tr (when row-attrs (row-attrs row))
-       (for [col columns]
-         [:td (merge {:class (column-classes col)}
-                     (when-let [f (:attrs col)] (f row)))
-          ((:cell col) row)])])]])
+   [:tbody {:id rows-container-id}
+    (rows-only :columns columns
+               :rows rows
+               :row-attrs row-attrs
+               :next-page-url next-page-url)]])
 
 (defn card-table
+  "The list surface. Rows scroll inside it; the header stays put.
+
+  There is no pager: lists load the next page as you reach the bottom, and the
+  row count lives in the toolbar beside the search. See `sentinel-row`."
   ([table]
-   (card-table table nil))
-  ([table paginator]
-   ;; One surface level: a bordered card on the tinted page. The table inside
-   ;; draws no box of its own — principle 5 caps nesting, and rules separate
-   ;; peers rather than regions.
    [:div {:class "spl-table-card"}
-    table
-    paginator]))
+    [:div {:class "spl-table-scroll"} table]])
+  ([table _paginator]
+   (card-table table)))
+
+(defn row-count
+  "\"1–25 of 1,284\", for the toolbar. The count belongs beside the search that
+  changes it rather than at the foot of a list you have to reach to read."
+  [& {:keys [loaded total]}]
+  [:p {:class "spl-count"}
+   (if (or (nil? total) (zero? total))
+     "No rows"
+     (format "%,d of %,d" (or loaded 0) total))])
 
 (defn- page-button [& {:keys [active? label href]}]
   [:a (cond-> {:href href

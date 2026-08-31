@@ -60,16 +60,22 @@
    "border-base-100" "border-base-200" "border-base-300"
    "text-base-content"])
 
-(defn- uses-class?
-  "True when `line` uses `cls` as a whole class token.
+(defn- quoted-strings
+  "The contents of every double-quoted string on the line. A class name only
+   ever appears inside one; scanning the whole line matches Clojure symbols
+   too — `[:div {:class \"spl-table-scroll\"} table]` was reported as a use of
+   the DaisyUI `table` class because of the parameter at the end."
+  [line]
+  (map second (re-seq #"\"([^\"]*)\"" line)))
 
-   The lookbehind excludes `-`, word characters and `:`. The first two keep
-   `spl-btn--primary` from counting as a use of `btn-primary`; the colon keeps
-   Hiccup element keywords out of it, since `[:select {:class …}]` names an
-   HTML element rather than a DaisyUI class."
+(defn- uses-class?
+  "True when `line` uses `cls` as a whole class token inside a string literal.
+
+   The lookbehind excludes `-` and word characters, so `spl-btn--primary` does
+   not count as a use of `btn-primary`."
   [line cls]
-  (boolean (re-find (re-pattern (str "(?<![-\\w:])" (java.util.regex.Pattern/quote cls) "(?![-\\w])"))
-                    line)))
+  (let [pat (re-pattern (str "(?<![-\\w])" (java.util.regex.Pattern/quote cls) "(?![-\\w])"))]
+    (boolean (some #(re-find pat %) (quoted-strings line)))))
 
 (deftest test-no-daisyui-component-classes
   (testing "every DaisyUI class was migrated to the spl- layer"

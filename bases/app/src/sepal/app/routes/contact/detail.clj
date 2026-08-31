@@ -8,6 +8,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.permission :as contact.perm]
@@ -16,22 +17,26 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors contact values]}]
-  (contact.form/form :action (z/url-for contact.routes/detail {:id (:contact/id contact)})
-                     :errors errors
-                     :values values))
+(defn page-content [& {:keys [errors contact values footer]}]
+  (pages.record/page
+    :name (:contact/name contact)
+    :footer footer
+    :body
+    (contact.form/form :action (z/url-for contact.routes/detail {:id (:contact/id contact)})
+                       :errors errors
+                       :values values)))
 
 (defn render [& {:keys [errors contact values panel-data]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :footer (ui.form/footer :buttons (contact.form/footer-buttons))
+                                               :errors errors
                                                :contact contact
                                                :values values)
-                        :panel (contact.panel/panel-content
-                                 :contact (:contact panel-data)
-                                 :stats (:stats panel-data)
-                                 :activities (:activities panel-data)
-                                 :activity-count (:activity-count panel-data)))
-             :footer (ui.form/footer :buttons (contact.form/footer-buttons))
+                        :panel-content (contact.panel/panel-content
+                                         :contact (:contact panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
                            (:contact/name contact)]))
 

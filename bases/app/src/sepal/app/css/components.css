@@ -607,8 +607,16 @@
  * the table on the other; the table runs to the far edge with no gutter and no
  * card around it. Rows are separated by hairlines, which is all the structure
  * a list needs. */
+/* A page whose content is neither a table nor a form — the media grid, an
+ * empty state. Tables go to the edges because they are data; anything else
+ * takes the same gutter a form does. */
+.spl-page-body { padding: 22px; }
+@media (max-width: 639px) { .spl-page-body { padding: 14px; } }
+
 .spl-panes { display: flex; align-items: stretch; min-height: 0; flex: 1; }
-.spl-list { flex: 1; min-width: 0; overflow-y: auto; }
+/* The column itself does not scroll — the rows inside it do, so the paginator
+ * pinned beneath them stays on screen. */
+.spl-list { flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 
 /* Detail pages: form column on the left with its action bar pinned to the
  * bottom of that column, panel on the right running to the viewport edge. */
@@ -697,7 +705,37 @@
  * separates nothing from nothing. Hairlines between rows carry the structure. */
 .spl-table-card {
   background: var(--color-surface);
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+/* Rows scroll here; the header does not. */
+.spl-table-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* The header sticks to the top of the scroll region, so the column a value
+ * belongs to stays readable however far down the list you are. */
+.spl-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* The sentinel is an empty row that fetches the next page when revealed. It
+ * occupies a little height so it can be scrolled into view at all. */
+.spl-sentinel td { height: 8px; padding: 0; border: 0; }
+
+/* The list's visible bottom. Without it a list that has finished loading looks
+ * identical to one still waiting for the next page. */
+.spl-end td {
+  padding: 14px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  border-bottom: 0;
 }
 
 .spl-row { cursor: pointer; }
@@ -899,6 +937,11 @@
   background: transparent;
   max-width: 640px;
   width: calc(100% - 32px);
+  max-height: calc(100vh - 64px);
+  /* Centred explicitly rather than relying on the user agent's dialog
+     defaults, which differ between engines. `margin: auto` against the top
+     layer's insets centres on both axes. */
+  margin: auto;
   color: var(--color-text);
 }
 .spl-modal::backdrop { background: rgb(18 33 30 / .45); }

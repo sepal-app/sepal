@@ -98,7 +98,7 @@
     [:div {:class "spl-panes"}
      ;; Table content
      [:div {:id list-container-id
-            :class "flex-1 min-w-0"}
+            :class "spl-list"}
       content]
      ;; Preview panel — appears on row click, and must be dismissible. Escape
      ;; closes it too, so a keyboard user is never trapped with it open.

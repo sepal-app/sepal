@@ -28,82 +28,92 @@
         :x-on:material-form:submit.window "$el.requestSubmit()"
         :x-on:material-form:reset.window "$el.reset()"}
        [(form/anti-forgery-field)
-        [:div {:class "form-grid"}
-         (form/field :label "Code"
-                     :name "code"
-                     :errors (:code errors)
-                     :input [:input {:autocomplete "off"
-                                     :class "spl-input  w-full"
-                                     :placeholder "Required"
-                                     :required true
-                                     :id "code"
-                                     :name "code"
-                                     :type "text"
-                                     :value (:code values)}])
-         (let [url (z/url-for accession.routes/index)]
-           (form/field :label "Accession"
-                       :name "accession-id"
-                       :errors (:accession-id errors)
-                       :input [:select {:x-accession-field (json/js {:url url})
-                                        :placeholder "Required"
-                                        :name "accession-id"
-                                        :id "accession-id"
-                                        :required true}
-                               (when (:accession-id values)
-                                 [:option {:value (:accession-id values)}
-                                  (:accession-code values)])]))
-         (let [url (z/url-for location.routes/index)]
-           (form/field :label "Location"
-                       :name "location-id"
-                       :errors (:location-id errors)
-                       :input [:select {:x-location-field (json/js {:url url})
+        [:div {:class "spl-form"}
+         (form/section
+           :title "Identity"
+           :hint "Which accession this material came from, and where it lives."
+           :children
+           [(form/field :label "Code"
+                        :name "code"
+                        :errors (:code errors)
+                        :input [:input {:autocomplete "off"
+                                        :class "spl-input  w-full"
                                         :placeholder "Required"
                                         :required true
-                                        :name "location-id"
-                                        :id "location-id"}
-                               (when (:location-id values)
-                                 [:option {:value (:location-id values)}
-                                  (format "%s (%s)"
-                                          (:location-code values)
-                                          (:location-name values))])]))
-         (form/field :label "Quantity"
-                     :name "quantity"
-                     :errors (:quantity errors)
-                     :input [:input {:autocomplete "off"
-                                     :class "spl-input  w-full"
-                                     :id "quantity"
-                                     :name "quantity"
-                                     :type "number"
-                                     :min 1
-                                     :required true
-                                     :value (or (:quantity values) 1)}])
-         (form/field :label "Status"
-                     :name "status"
-                     :errors (:status errors)
-                     :input [:select {:name "status"
-                                      :x-material-status-field true
-                                      :autocomplete "off"
-                                      :id "status"
-                                      :required true
-                                      :value (:status values)}
-                             [(for [status statuses]
-                                [:option {:value status
-                                          :selected (when (= status (some-> values :status name))
-                                                      "selected")}
-                                 status])]])
-         (form/field :label "Type"
-                     :name "type"
-                     :errors (:type errors)
-                     :input [:select {:name "type"
-                                      :x-material-type-field true
-                                      :autocomplete "off"
-                                      :id "type"
-                                      :required true
-                                      :value (:type values)}
-                             [(for [type types]
-                                [:option {:value type
-                                          :selected (when (= type (some-> values :type name))
-                                                      "selected")}
-                                 type])]])]])
+                                        :id "code"
+                                        :name "code"
+                                        :type "text"
+                                        :value (:code values)}])
+            (let [url (z/url-for accession.routes/index)]
+              (form/field :label "Accession"
+                          :name "accession-id"
+                          :errors (:accession-id errors)
+                          :input [:select {:x-accession-field (json/js {:url url})
+                                           :placeholder "Required"
+                                           :name "accession-id"
+                                           :id "accession-id"
+                                           :required true}
+                                  (when (:accession-id values)
+                                    [:option {:value (:accession-id values)}
+                                     (:accession-code values)])]))
+            (let [url (z/url-for location.routes/index)]
+              (form/field :label "Location"
+                          :name "location-id"
+                          :errors (:location-id errors)
+                          :input [:select {:x-location-field (json/js {:url url})
+                                           :placeholder "Required"
+                                           :required true
+                                           :name "location-id"
+                                           :id "location-id"}
+                                  (when (:location-id values)
+                                    [:option {:value (:location-id values)}
+                                     (format "%s (%s)"
+                                             (:location-code values)
+                                             (:location-name values))])]))])
+
+         (form/section
+           :title "Holding"
+           :hint "How much there is, and what condition it is in."
+           :children
+           [[:div {:class "spl-form-pair"}
+             (form/field :label "Quantity"
+                         :name "quantity"
+                         :errors (:quantity errors)
+                         :input [:input {:autocomplete "off"
+                                         :class "spl-input  w-full"
+                                         :id "quantity"
+                                         :name "quantity"
+                                         :type "number"
+                                         :min 1
+                                         :required true
+                                         :value (or (:quantity values) 1)}])
+             (form/field :label "Status"
+                         :name "status"
+                         :errors (:status errors)
+                         :input [:select {:name "status"
+                                          :x-material-status-field true
+                                          :autocomplete "off"
+                                          :id "status"
+                                          :required true
+                                          :value (:status values)}
+                                 [(for [status statuses]
+                                    [:option {:value status
+                                              :selected (when (= status (some-> values :status name))
+                                                          "selected")}
+                                     status])]])]
+            (form/field :label "Type"
+                        :name "type"
+                        :errors (:type errors)
+                        :input [:select {:name "type"
+                                         :x-material-type-field true
+                                         :autocomplete "off"
+                                         :id "type"
+                                         :required true
+                                         :value (:type values)}
+                                [(for [type types]
+                                   [:option {:value type
+                                             :selected (when (= type (some-> values :type name))
+                                                         "selected")}
+                                    type])]])])]])
      [:script {:type "module"
                :src (html/static-url "app/routes/material/form.ts")}]]))
