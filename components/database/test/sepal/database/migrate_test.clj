@@ -1,10 +1,12 @@
 (ns sepal.database.migrate-test
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [next.jdbc :as jdbc]
-            [sepal.database.interface :as db.i]))
+            [sepal.database.interface :as db.i])
+  (:import [java.io File]))
 
 (defn- fresh-db
   "A database with the current schema loaded."
@@ -13,9 +15,38 @@
     (db.i/load-schema! {:db-path db-path})
     db-path))
 
+(defn- floor-db
+  "A database built from the Task 1 floor snapshot, at 20260113120000 --
+  before the taxon_rank migration, so migrate! has it to apply. schema.sql
+  now bakes that migration in, so load-schema! is at the latest version
+  already and cannot exercise it; this is what does."
+  [dir]
+  (let [db-path (str (fs/path dir "sepal.db"))
+        resource (io/resource "test/schema-20260113120000.sql")
+        file (File/createTempFile "sepal-floor-schema" ".sql")]
+    (try
+      (with-open [in (io/input-stream resource)]
+        (io/copy in file))
+      (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")
+      (finally
+        (.delete file)))
+    db-path))
+
 (defn- query [db-path sql]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
     (mapv (comp first vals) (jdbc/execute! ds [sql]))))
+
+(defn- schema-shape
+  "The non-schema_version rows of sqlite_master, as an ordered vector of
+  [type name tbl_name sql] tuples -- the shape of a database's schema,
+  independent of how it was built."
+  [db-path]
+  (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+    (->> (jdbc/execute! ds ["select type, name, tbl_name, sql from sqlite_master
+                             where name <> 'schema_version'
+                             order by type, name"])
+         (mapv (juxt :sqlite_master/type :sqlite_master/name
+                     :sqlite_master/tbl_name :sqlite_master/sql)))))
 
 (deftest test-migration-files-enumerated-in-order
   (testing "the shipped migrations are found on the classpath, timestamp-ordered"
@@ -161,13 +192,13 @@
 
 (deftest test-taxon-rank-lookup-migration
   (testing "the rebuild keeps every taxon row, rebuilds FTS, and enforces the rank FK"
-    (let [dir (fs/create-temp-dir {:prefix "sepal-rank-migration"})
-          db-path (str (fs/path dir "sepal.db"))]
+    (let [dir (fs/create-temp-dir {:prefix "sepal-rank-migration"})]
       (try
-        (db.i/load-schema! {:db-path db-path})
-        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+        (let [db-path (floor-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
           (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
-          (db.i/migrate! {:db-path db-path})
+          (is (= ["20260831120000"] (:applied (db.i/migrate! {:db-path db-path})))
+              "the migration actually ran, not a no-op against an already-current schema")
           (is (= 36 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_rank"]) :c))
               "36 seeded ranks")
           (is (= 1 (-> (jdbc/execute-one! ds ["select count(*) c from taxon"]) :c))
@@ -185,3 +216,17 @@
                 "the foreign key refuses a rank absent from taxon_rank")))
         (finally
           (fs/delete-tree dir))))))
+
+(deftest test-provisioned-and-migrated-schemas-match
+  (testing "a database provisioned from schema.sql matches one built from the floor snapshot and migrated"
+    (let [provisioned-dir (fs/create-temp-dir {:prefix "sepal-schema-parity-provisioned"})
+          migrated-dir (fs/create-temp-dir {:prefix "sepal-schema-parity-migrated"})]
+      (try
+        (let [provisioned-path (fresh-db provisioned-dir)
+              migrated-path (floor-db migrated-dir)]
+          (db.i/migrate! {:db-path migrated-path})
+          (is (= (schema-shape provisioned-path) (schema-shape migrated-path))
+              "a provisioned garden and a migrated one must have the same schema"))
+        (finally
+          (fs/delete-tree provisioned-dir)
+          (fs/delete-tree migrated-dir))))))

@@ -8,6 +8,12 @@
 # writable_schema, neither of which belongs in a baseline.
 #
 #   usage: bin/dump-schema.sh <db-path> > components/database/resources/database/schema.sql
+#
+# WARNING: `.schema` emits no data, so the output above has an empty
+# taxon_rank table. You must append the 36-row `INSERT INTO taxon_rank`
+# seed by hand, immediately before the `INSERT INTO "schema_version"`
+# lines, or a freshly provisioned database fails every taxon insert on the
+# rank foreign key. Copy it from the taxon_rank_lookup migration.
 set -Eeuo pipefail
 DB="$1"
 sqlite3 "file:$DB?mode=ro" ".schema" \
@@ -16,4 +22,4 @@ sqlite3 "file:$DB?mode=ro" ".schema" \
   | grep -vE "^CREATE TABLE '[a-z_]+_fts_(data|idx|docsize|config)'" \
   | perl -0pe "s{\n/\* [a-z_]+\([a-z_,]+\) \*/;}{;}g"
 sqlite3 "file:$DB?mode=ro" \
-  "select 'INSERT INTO \"schema_version\" (version, applied_at) VALUES ('''||version||''', '''||applied_at||''');' from (select distinct version, applied_at from schema_version) order by version;"
+  "select 'INSERT INTO \"schema_version\" (version, applied_at) VALUES ('''||version||''', '''||applied_at||''');' from (select version, min(applied_at) as applied_at from schema_version group by version) order by version;"

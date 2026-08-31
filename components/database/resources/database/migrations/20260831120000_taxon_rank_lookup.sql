@@ -1,7 +1,12 @@
--- Probe: the taxon rebuild that replaces the rank CHECK with a lookup table.
--- Run against a VACUUM INTO copy of a real database. See PROBE.md.
+-- Replaces the taxon.rank CHECK constraint with a taxon_rank lookup table
+-- and a foreign key, so adding a rank becomes a plain INSERT instead of a
+-- full table rebuild. SQLite cannot alter a CHECK constraint, so this
+-- rebuilds taxon: create taxon_new with the FK, copy every row across, drop
+-- the old table, rename taxon_new to taxon, then recreate the indexes,
+-- triggers and FTS content the rebuild dropped along with it.
+--
 -- Deliberately has no `begin transaction` / `commit`: migrate.clj/apply-one!
--- adds those, and this must be provable in the same shape it will run.
+-- wraps every migration in one, and adding a second here would nest it.
 
 CREATE TABLE taxon_rank (name text primary key) strict;
 
