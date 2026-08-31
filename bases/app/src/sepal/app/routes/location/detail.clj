@@ -32,11 +32,11 @@
                                                :errors errors
                                                :location location
                                                :values values)
-                        :panel-content (location.panel/panel-content)
-                        :location (:location panel-data)
-                        :stats (:stats panel-data)
-                        :activities (:activities panel-data)
-                        :activity-count (:activity-count panel-data))
+                        :panel-content (location.panel/panel-content
+                                         :location (:location panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs [[:a {:href (z/url-for location.routes/index)}
                             "Locations"]
                            (:location/name location)]))
