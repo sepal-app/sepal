@@ -124,6 +124,15 @@
   margin-bottom: 14px;
 }
 .spl-form-fields { display: flex; flex-direction: column; gap: 15px; }
+
+/* Forms are roomy where lists are dense. The gutter matches the bars above so
+ * the first label lines up with the breadcrumb, and every control is the same
+ * width — the old form ran Code at 320px, Taxon at 768px and the selects at
+ * 366px, which read as accidental because it was. */
+.spl-form { padding: 20px 14px 0; }
+.spl-form .spl-input,
+.spl-form select,
+.spl-form .ss-main { width: 100%; }
 .spl-form-footer {
   position: fixed;
   bottom: 0;
@@ -212,8 +221,33 @@
   font-weight: 600;
   border-bottom-color: var(--color-brand);
 }
-.spl-tab--disabled { color: var(--color-text-dim); cursor: default; }
+.spl-tab--disabled { color: var(--color-text-dim); cursor: default; position: relative; }
 .spl-tab--disabled:hover { color: var(--color-text-dim); }
+
+/* The reason a tab is unavailable. It must be a real element in the document
+ * so aria-describedby can point at it — a CSS ::after tooltip reaches neither
+ * a screen reader nor a keyboard. Visually hidden until hover or focus;
+ * without this it rendered inline and read as
+ * "CollectionAvailable when provenance is wild collected". */
+.spl-tab-reason {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 9px;
+  border-radius: var(--radius-control);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font: 400 11.5px/1.4 var(--font-sans);
+  box-shadow: 0 6px 18px -8px rgb(18 33 30 / .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+}
+.spl-tab--disabled:hover .spl-tab-reason,
+.spl-tab--disabled:focus-within .spl-tab-reason { opacity: 1; }
 
 .spl-settings-layout { display: flex; gap: 32px; }
 
@@ -552,6 +586,10 @@
 /* ── Activity changelog ────────────────────────────────────────────────────
  * Events carry no diff, so repeated "updated" lines say nothing new. The
  * sentence collapses a run; the chips beneath name the records it touched. */
+/* The feed is prose, not a table, so it takes a gutter rather than running to
+ * the edge — a sentence starting hard against the rail has nothing to sit
+ * against and is uncomfortable to read. */
+.spl-changelog { padding: 4px 20px 24px; }
 .spl-changelog-day {
   font: 400 10px/1.4 var(--font-mono);
   letter-spacing: .08em;

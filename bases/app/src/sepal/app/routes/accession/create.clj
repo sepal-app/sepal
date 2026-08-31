@@ -18,7 +18,7 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
+  [[:button {:class "spl-btn spl-btn--ghost"
              :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
     "Cancel"]
    [:button {:class "spl-btn spl-btn--primary"
@@ -26,10 +26,14 @@
     "Save"]])
 
 (defn render [& {:keys [errors values]}]
+  ;; Breadcrumbs rather than a page title: the top bar already answers "where
+  ;; am I", and a heading repeating it pushed the first field down the page.
   (ui.page/page :content (page-content :errors errors
                                        :values values)
                 :footer (ui.form/footer :buttons (footer-buttons))
-                :page-title "Create Accession"))
+                :breadcrumbs [[:a {:href (z/url-for accession.routes/index)}
+                               "Accessions"]
+                              "New accession"]))
 
 (defn create! [db created-by data]
   (try

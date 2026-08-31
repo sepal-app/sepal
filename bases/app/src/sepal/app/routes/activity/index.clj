@@ -448,7 +448,7 @@
     ;; empty would append the empty state below a populated feed.
     (if (and (empty? renderable) (= page 1))
       (empty-state viewer)
-      [:div
+      [:div {:class "spl-changelog"}
        (for [date dates]
          (let [user-groups (group-consecutive-by-user (get activity-by-date date))]
            [:div {:key (str date)}
