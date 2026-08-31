@@ -19,12 +19,7 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]
-   [:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('accession-form:submit')"}
-    "Save"]])
+  (ui.form/footer-buttons :form-event "accession-form" :on-cancel :back))
 
 (defn render [& {:keys [errors values]}]
   ;; Breadcrumbs rather than a page title: the top bar already answers "where

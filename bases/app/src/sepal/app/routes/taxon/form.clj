@@ -7,8 +7,13 @@
             [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 
-(defn footer-buttons []
-  (form/footer-buttons :form-event "taxon-form" :on-cancel :reload))
+(defn footer-buttons
+  "The create page and the edit page share this form, and they want different
+  things from Cancel. Reloading an edit page restores the saved values, which
+  is the point; reloading the create page hands back the same empty form, so
+  Cancel did nothing at all."
+  [& {:keys [on-cancel] :or {on-cancel :reload}}]
+  (form/footer-buttons :form-event "taxon-form" :on-cancel on-cancel))
 
 (defn- vernacular-name-decoder [form-data]
   (let [names (cond-> (:vernacular-name-name form-data)

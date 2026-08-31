@@ -21,7 +21,7 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :flash flash
-             :footer (form/footer :buttons (taxon.form/footer-buttons))
+             :footer (form/footer :buttons (taxon.form/footer-buttons :on-cancel :back))
              :breadcrumbs [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
                            "New taxon"]))
 

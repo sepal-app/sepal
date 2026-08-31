@@ -18,12 +18,9 @@
                       :values values))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('material-form:submit')"}
-    "Save"]
-   [:button {:class "spl-btn"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]])
+  ;; This one also had Save before Cancel, the opposite order from every other
+  ;; form in the app.
+  (ui.form/footer-buttons :form-event "material-form" :on-cancel :back))
 
 (defn render [& {:keys [errors values]}]
   ;; Breadcrumbs rather than a page title: the top bar already answers "where
