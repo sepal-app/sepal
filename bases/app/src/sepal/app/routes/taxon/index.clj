@@ -1,6 +1,7 @@
 (ns sepal.app.routes.taxon.index
   (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.export :as export]
@@ -8,8 +9,8 @@
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface.permission :as taxon.perm]
@@ -17,23 +18,36 @@
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "btn btn-primary"
-       :href (z/url-for taxon.routes/new)}
-   "Create"])
+  (pages.list/create-button :href (z/url-for taxon.routes/new)))
+
+(defn- stacked-summary
+  "What the name cell shows below 640px, where the table collapses to a single
+  column. Rank and author are what tell two similar names apart."
+  [t]
+  (table/summary (:taxon/rank t) (:taxon/author t)))
 
 (defn table-columns []
   [{:name "Name"
+    :type :name
+    :priority 1
+    :stacked stacked-summary
     :cell (fn [t]
             [:a {:href (z/url-for taxon.routes/detail
                                   {:id (:taxon/id t)})
                  :class "spl-link"
                  :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
-             (:taxon/name t)])}
+             (taxon-name/render (:taxon/name t))])}
    {:name "Author"
+    :type :text
+    :priority 2
     :cell :taxon/author}
    {:name "Rank"
+    :type :text
+    :priority 3
     :cell :taxon/rank}
    {:name "Parent"
+    :type :name
+    :priority 3
     :cell (fn [t]
             (when (:taxon/parent-id t)
               [:a {:href (z/url-for taxon.routes/detail
@@ -42,31 +56,38 @@
                    :x-on:click.stop ""} ; Stop propagation
                (:taxon/parent-name t)]))}])
 
-(defn- row-attrs
-  "Generate attributes for a table row to enable panel preview."
-  [row]
-  (let [id (:taxon/id row)
-        panel-url (z/url-for taxon.routes/panel {:id id})]
-    {:class "hover:bg-base-200/50 cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
-     :x-on:click (str "selectRow(" id ", $el)")
-     :hx-get panel-url
-     :hx-trigger "panel-select"
-     :hx-target (str "#" pages.list/panel-container-id)
-     :hx-swap "innerHTML"
-     :hx-push-url "false"}))
+(defn- row-attrs [row]
+  (let [id (:taxon/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for taxon.routes/panel {:id id}))))
 
-(defn table [& {:keys [rows page href page-size total]}]
-  [:div {:class "w-full"}
-   (table/card-table
-     (table/table :columns (table-columns)
-                  :rows rows
-                  :row-attrs row-attrs)
-     (table/paginator :current-page page
-                      :href href
-                      :page-size page-size
-                      :total total))])
+(defn index-rows
+  "The <tr>s alone, for an infinite-scroll response. Same renderer as the
+  initial load, so an appended row is built like one already present."
+  [& {:keys [rows page page-size href total]}]
+  (table/rows-only :columns (table-columns)
+                   :rows rows
+                   :row-attrs row-attrs
+                   :href href
+                   :page page
+                   :page-size page-size
+                   :total total))
 
+(defn table [& {:keys [rows page href page-size total search-query]}]
+  (table/card-table
+    (table/table :columns (table-columns)
+                 :rows rows
+                 :row-attrs row-attrs
+                 :href href
+                 :page page
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "taxa"
+                                :body "The taxonomy behind your collection. Import the World Flora Online list
+                              from Settings, or add a name by hand."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for taxon.routes/new)))))
 (defn- accessions-only-checkbox
   "Checkbox that toggles `accessions:>0` filter in the search query.
    Uses Alpine.js component from js/query-builder.ts"
@@ -75,7 +96,7 @@
     [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
              :x-data (str "accessionsOnlyFilter('q', " has-filter? ")")}
      [:input {:type "checkbox"
-              :class "checkbox checkbox-sm"
+              :class "spl-checkbox"
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))
@@ -88,20 +109,22 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for taxon.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               [:div {:class "flex items-center gap-2"}
-                                (query-builder/search-field-with-builder
-                                  :q search-query
-                                  :fields field-options
-                                  :placeholder "Search... (e.g., rank:species Quercus)")
-                                (accessions-only-checkbox search-query)]
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., rank:species Quercus)"
+                                :filters (accessions-only-checkbox search-query)
+                                :page page
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
 
     :breadcrumbs ["Taxa"]
     :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
@@ -158,6 +181,18 @@
                              :author (:taxon/author taxon)
                              :parentId (:taxon/parent-id taxon)
                              :parentName (:taxon/parent-name taxon)}))
+
+      ;; Infinite scroll: the sentinel asks for the next page's rows alone and
+      ;; swaps itself out for them.
+      (some? (get query-params "rows"))
+      (html/render-partial
+        (index-rows :rows rows
+                    :page page
+                    :page-size page-size
+                    :total total
+                    :href (uri/uri-str {:path uri
+                                        :query (uri/map->query-string
+                                                 (cond-> {} (seq q) (assoc :q q)))})))
 
       :else
       (render :viewer viewer

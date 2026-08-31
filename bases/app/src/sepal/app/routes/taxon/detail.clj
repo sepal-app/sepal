@@ -4,6 +4,7 @@
             [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.taxon.interface.permission :as taxon.perm]
             [zodiac.core :as z]))
 
@@ -12,7 +13,7 @@
   [& {:keys [taxon panel-data]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
-                  [:em (:taxon/name taxon)]]
+                  (taxon-name/render (:taxon/name taxon))]
     :content [:div {:class "max-w-2xl mx-auto"}
               (taxon.panel/panel-content
                 :taxon (:taxon panel-data)

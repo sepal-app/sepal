@@ -21,4 +21,4 @@
          :viewBox "0 0 24 24"
          :width size
          :height size
-         :class (str color " group-hover:text-gray-500 mr-4 flex-shrink-0")}])
+         :class (str color " group-hover:text-text-dim mr-4 flex-shrink-0")}])

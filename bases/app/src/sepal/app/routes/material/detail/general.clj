@@ -18,29 +18,29 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org material values]}]
-  [:div {:class "flex flex-col gap-2"}
-   (material.shared/tabs material material.shared/general-tab)
-   (material.form/form :action (z/url-for material.routes/detail-general {:id (:material/id material)})
-                       :errors errors
-                       :org org
-                       :values values)])
+(defn page-content [& {:keys [errors org material accession taxon values footer]}]
+  (material.shared/page
+    :material material
+    :accession accession
+    :taxon taxon
+    :active material.shared/general-tab
+    :footer footer
+    :body (material.form/form :action (z/url-for material.routes/detail-general
+                                                 {:id (:material/id material)})
+                              :errors errors
+                              :org org
+                              :values values)))
 
 (defn footer-buttons []
-  [[:button {:class "btn"
-             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
-             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
-             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]
-   [:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('material-form:submit')"}
-    "Save"]])
+  (ui.form/footer-buttons :form-event "material-form" :on-cancel :reload))
 
 (defn render [& {:keys [errors org material accession taxon values panel-data]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
+                                               :errors errors
                                                :org org
                                                :material material
+                                               :accession accession
                                                :values values
                                                :taxon taxon)
                         :panel-content (material.panel/panel-content
@@ -52,8 +52,7 @@
                                          :activity-count (:activity-count panel-data)))
              :breadcrumbs (material.shared/breadcrumbs :accession accession
                                                        :material material
-                                                       :taxon taxon)
-             :footer (ui.form/footer :buttons (footer-buttons))))
+                                                       :taxon taxon)))
 
 (defn save! [db material-id updated-by data]
   (try

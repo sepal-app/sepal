@@ -8,6 +8,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
@@ -16,25 +17,29 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors location values]}]
-  (location.form/form :action (z/url-for location.routes/detail {:id (:location/id location)})
-                      :errors errors
-                      :values values))
+(defn page-content [& {:keys [errors location values footer]}]
+  (pages.record/page
+    :name (:location/name location)
+    :footer footer
+    :body (location.form/form :action (z/url-for location.routes/detail
+                                                 {:id (:location/id location)})
+                              :errors errors
+                              :values values)))
 
 (defn render [& {:keys [errors location values panel-data]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :footer (ui.form/footer :buttons (location.form/footer-buttons))
+                                               :errors errors
                                                :location location
                                                :values values)
-                        :panel (location.panel/panel-content
-                                 :location (:location panel-data)
-                                 :stats (:stats panel-data)
-                                 :activities (:activities panel-data)
-                                 :activity-count (:activity-count panel-data)))
+                        :panel-content (location.panel/panel-content
+                                         :location (:location panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)))
              :breadcrumbs [[:a {:href (z/url-for location.routes/index)}
                             "Locations"]
-                           (:location/name location)]
-             :footer (ui.form/footer :buttons (location.form/footer-buttons))))
+                           (:location/name location)]))
 
 (defn update! [db location-id updated-by data]
   (try

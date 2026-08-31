@@ -1,28 +1,28 @@
 (ns sepal.app.routes.settings.layout
   (:require [sepal.app.authorization :as authz]
-            [sepal.app.html :as html]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [zodiac.core :as z]))
 
 (defn sidebar-item [& {:keys [href label current?]}]
-  [:a {:href href
-       :class (html/attr "block" "px-3" "py-2" "rounded-md" "text-sm"
-                         (if current?
-                           "bg-base-300 font-medium"
-                           "hover:bg-base-200"))}
+  [:a (cond-> {:href href
+               :class (cond-> ["spl-tab spl-subnav-item"]
+                        current? (conj "spl-tab--current"))}
+        current? (assoc :aria-current "page"))
    label])
 
 (defn sidebar-section [& {:keys [title children]}]
-  [:div {:class "mb-6"}
-   [:h3 {:class "px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"}
-    title]
-   [:nav {:class "space-y-1"}
-    children]])
+  [:div {:class "spl-subnav-group"}
+   [:h2 {:class "spl-subnav-heading"} title]
+   children])
 
 (defn settings-sidebar [& {:keys [current-route viewer]}]
-  [:aside {:class "w-64 shrink-0"}
+  ;; A third navigation surface, after the section rail and the breadcrumb, so
+  ;; it needs its own accessible name. Below 1024px it collapses into the same
+  ;; horizontal strip the accession edit tabs use — it cannot become a second
+  ;; drawer, because the rail already is one at that width.
+  [:nav {:class "spl-subnav" :aria-label "Settings sections"}
    (sidebar-section
      :title "Account"
      :children
@@ -55,15 +55,14 @@
                   title]
     :flash flash
     :content
-    [:div {:class "flex gap-8 ml-4"}
+    [:div {:class "spl-settings-layout"}
      (settings-sidebar :current-route current-route :viewer viewer)
-     [:div {:class (or content-class "flex-1 max-w-2xl")}
+     ;; Same 576px column every other form uses, so a settings field is not a
+     ;; different width from an accession field for no reason.
+     [:div {:class (or content-class "spl-settings-content")}
       content]]))
 
 (defn save-button [label]
-  ;; Handle the btn-disabled and btn-primary classes explicitly so that when the page
-  ;; first loads the button doesn't flash the primary color before becoming disabled
-  (ui.form/submit-button {:class "btn btn-disabled btn-primary"
-                          :x-bind:disabled "!dirty || !valid"
-                          :x-bind:class "{'btn-disabled' : !dirty && !valid }"}
+  (ui.form/submit-button {:class "spl-btn spl-btn--primary"
+                          :x-bind:disabled "!dirty || !valid"}
                          label))

@@ -21,16 +21,16 @@
       :back-url (z/url-for setup.routes/regional)
       :content
       [:div {:class "space-y-4"}
-       [:div {:class "alert alert-info"}
+       [:div {:class "spl-alert spl-alert--info"}
         [:div
          [:p {:class "font-medium"} "Taxonomy data already exists"]
          [:p (format "Your database already contains %,d taxa. The WFO Plant List import is only available for empty databases to avoid conflicts with existing taxonomic data."
                      taxa-count)]]]
-       [:p {:class "text-base-content/70"}
+       [:p {:class "text-text-muted"}
         "You can continue using your existing taxa, or contact an administrator to reset the database if you want to start fresh with WFO data."]]
       :next-button
       [:a {:href (z/url-for setup.routes/review)
-           :class "btn btn-primary"}
+           :class "spl-btn spl-btn--primary"}
        "Continue →"])))
 
 (defn render-import-available
@@ -45,12 +45,12 @@
       :back-url (z/url-for setup.routes/regional)
       :content
       [:div {:class "space-y-4"}
-       [:p {:class "text-base-content/70"}
+       [:p {:class "text-text-muted"}
         "Sepal can import the World Flora Online (WFO) Plant List, a comprehensive database of plant names and their taxonomic status."]
 
-       [:div {:class "bg-base-200 p-4 rounded-lg"}
+       [:div {:class "bg-surface-alt p-4 rounded-lg"}
         [:h4 {:class "font-medium mb-2"} "What you'll get:"]
-        [:ul {:class "list-disc list-inside text-sm text-base-content/70 space-y-1"}
+        [:ul {:class "list-disc list-inside text-sm text-text-muted space-y-1"}
          [:li "Over 450,000 plant taxa"]
          [:li "Scientific names with authors"]
          [:li "Taxonomic hierarchy (family, genus, species)"]]]
@@ -63,13 +63,13 @@
          (form/anti-forgery-field)
          [:input {:type "hidden" :name "action" :value "import"}]
          [:button {:type "submit"
-                   :class "btn btn-success"
+                   :class "spl-btn spl-btn--primary"
                    :x-bind:disabled "submitting"
-                   :x-bind:class "submitting && 'loading'"}
+                   :x-bind:class "submitting && 'spl-loading'"}
           [:span {:x-show "!submitting"} "Import WFO Plant List"]
           [:span {:x-show "submitting" :x-cloak true} "Importing... this may take a minute"]]]
         [:a {:href (z/url-for setup.routes/review)
-             :class "btn btn-ghost"
+             :class "spl-btn spl-btn--ghost"
              :x-show "!submitting"}
          "Skip for now"]]]
       :next-button nil)))

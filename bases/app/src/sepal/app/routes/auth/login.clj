@@ -1,6 +1,5 @@
 (ns sepal.app.routes.auth.login
   (:require [sepal.app.flash :as flash]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -23,26 +22,21 @@
              (when invitation
                (form/hidden-field :name "invitation" :value invitation))
              (form/input-field :label "Email" :name "email" :value email :type "email"
-                               :require true)
+                               :required true)
              (form/input-field :label "Password" :name "password" :type "password"
                                :required true)
              (form/hidden-field :name "next" :value next)
              [:div {:class "flex flex-row mt-4 justify-between items-center"}
               [:button {:type "submit"
-                         ;; :x-bind:disabled "submitting"
-                        :class (html/attr "inline-flex" "justify-center" "py-2" "px-4" "border"
-                                          "border-transparent" "shadow-sm" "text-sm" "font-medium"
-                                          "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
-                                          "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
-                                          "focus:ring-green-500")}
+                        :class "spl-btn spl-btn--primary"}
                "Login"]
-              [:p
-               [:a {:href (z/url-for auth.routes/forgot-password)}
-                "Forgot password?"]]]))
+              [:a {:class "spl-link text-sm"
+                   :href (z/url-for auth.routes/forgot-password)}
+               "Forgot password?"]]))
 
 (defn render [& {:keys [email #_field-errors invitation next flash]}]
   (page/page :content [:div
-                       [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+                       [:h1 {:class "spl-auth-title"} "Welcome to Sepal"]
                        (form :email email
                              :invitation invitation
                              :next next)]

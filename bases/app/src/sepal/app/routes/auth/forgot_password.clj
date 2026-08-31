@@ -12,7 +12,7 @@
 
 (defn page-content [& {:keys []}]
   [:div
-   [:h1 {:class "text-3xl pb-6"} "Forgot password"]
+   [:h1 {:class "spl-auth-title"} "Forgot password"]
    [:p {:class "py-4"} "If the email address exists in Sepal then we'll send you
    an email to help reset your password."]
    [:form {:method "post"
@@ -22,7 +22,7 @@
                       :name "email"
                       :required true
                       :type "email")
-    (form/submit-button {:class "btn btn-primary mt-4"} "Send")]])
+    (form/submit-button {:class "spl-btn spl-btn--primary mt-4"} "Send")]])
 
 (defn render [& {:keys [errors flash]}]
   (page/page :content (page-content :errors errors)

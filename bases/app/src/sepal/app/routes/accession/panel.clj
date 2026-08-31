@@ -9,6 +9,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.contact.interface :as contact.i]
             [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]
@@ -37,14 +38,14 @@
   [& {:keys [accession taxon supplier stats activities activity-count timezone on-close]}]
   (let [{:accession/keys [id code provenance-type]} accession
         {:keys [material-count]} stats
-        taxon-name (:taxon/name taxon)]
+        sci-name (:taxon/name taxon)]
     (panel/panel-container
       :children
       (list
         ;; Header
         (panel/panel-header
           :title code
-          :subtitle (when taxon [:em taxon-name])
+          :subtitle (when taxon (taxon-name/render sci-name))
           :on-close on-close)
 
         ;; Summary section
@@ -56,13 +57,13 @@
                      {:label "Taxon"
                       :value (when taxon
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
-                                    :class "text-primary hover:underline"}
-                                [:em taxon-name]])}
+                                    :class "spl-link"}
+                                (taxon-name/render sci-name)])}
                      {:label "Provenance" :value (format-provenance-type provenance-type)}
                      {:label "Supplier"
                       :value (when supplier
                                [:a {:href (z/url-for contact.routes/detail {:id (:contact/id supplier)})
-                                    :class "text-primary hover:underline"}
+                                    :class "spl-link"}
                                 (:contact/name supplier)])}]))
 
         ;; Statistics section
@@ -81,7 +82,7 @@
         (panel/collapsible-section
           :title "External Links"
           :children
-          (external-links/taxonomic-links-section :taxon-name taxon-name))
+          (external-links/taxonomic-links-section :taxon-name sci-name))
 
         ;; Activity section
         (panel/collapsible-section

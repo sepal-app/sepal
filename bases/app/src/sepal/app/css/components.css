@@ -1,0 +1,1388 @@
+/* Sepal component layer.
+ *
+ * Plain CSS reading the tokens from tokens.css. No @apply: it couples these
+ * rules to utility names and Tailwind 4 discourages it. Tailwind utilities are
+ * still used inline in the Clojure for one-off layout; anything that recurs
+ * belongs here, so one rule change reaches every screen.
+ *
+ * No literal colour may appear in this file. Every value is a token, which is
+ * what keeps a future opt-in palette a matter of overriding :root.
+ */
+
+/* ── Links ─────────────────────────────────────────────────────────────────
+ * spl-link has been on 24 elements since before this plan and never had a
+ * rule — every accession code and taxon name in the tables rendered as plain
+ * body text. The resting underline is not decoration: brand green alone would
+ * make colour the only signal, which fails WCAG 1.4.1. */
+.spl-link {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in oklab, var(--color-brand) 35%, transparent);
+}
+.spl-link:hover,
+.spl-link:focus-visible {
+  color: var(--color-brand-hover);
+  text-decoration-color: currentColor;
+}
+
+/* Inside a table, drop the resting underline. WCAG 1.4.1 is about a link
+ * embedded in a block of text, where colour alone would not distinguish it —
+ * a cell whose entire content is the link, under a header naming the column,
+ * is not that case. With a link in every row it also turned the list into a
+ * wall of rules. Hover and focus still underline. */
+.spl-table .spl-link { text-decoration: none; }
+.spl-table .spl-link:hover,
+.spl-table .spl-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+/* ── Scientific names ──────────────────────────────────────────────────────
+ * Only the italicised run takes the serif. The hybrid marker, the connecting
+ * terms and a cultivar epithet stay in the sans — see
+ * sepal.taxon.interface.name. */
+.spl-name { font-family: var(--font-sans); }
+.spl-sci {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.02em;
+}
+.spl-authority { color: var(--color-text-dim); }
+
+/* ── Identifiers ───────────────────────────────────────────────────────────
+ * Accession codes, dates, counts and coordinates are scanned down a column and
+ * compared, not read. */
+.spl-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.spl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 13px/1 var(--font-sans);
+  padding: 8px 13px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-control);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.spl-btn:hover { background: var(--color-surface-alt); }
+.spl-btn--primary {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: var(--color-surface);
+}
+.spl-btn--primary:hover { background: var(--color-brand-hover); }
+.spl-btn--danger { color: var(--color-danger); border-color: var(--color-danger); }
+.spl-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* ── Fields ────────────────────────────────────────────────────────────────
+ * Forms are roomy where lists are dense: volunteers use these occasionally and
+ * need space and unambiguous labels. */
+.spl-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.spl-label { font: 500 13px/1.3 var(--font-sans); color: var(--color-text-soft); }
+.spl-required { color: var(--color-brand); }
+.spl-input {
+  font: 400 13.5px/1.4 var(--font-sans);
+  color: var(--color-text-table);
+  padding: 8px 11px;
+  border: 1px solid var(--color-field);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  width: 100%;
+}
+.spl-input[aria-invalid="true"] { border-color: var(--color-danger); }
+.spl-help { font-size: 12px; color: var(--color-text-dim); }
+.spl-error { font-size: 12px; color: var(--color-danger); }
+
+.spl-textarea { min-height: 96px; resize: vertical; }
+
+/* The list search sits in the toolbar and takes the space it needs rather than
+ * a fixed 24rem, so the bar reads as one row at any width. */
+.spl-search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; max-width: 420px; }
+.spl-input--search { padding: 6px 10px; font-size: 12.5px; }
+.spl-select { appearance: auto; }
+
+/* Forms cap at 576px; pairs sit side by side inside that column and stack on a
+ * phone. Headings mark the regions, so no boxes and no rules between them. */
+.spl-form-section { max-width: 576px; margin-bottom: 30px; }
+.spl-form-section-title {
+  font: 600 14px/1.3 var(--font-sans);
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.spl-form-section-hint {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin-bottom: 14px;
+}
+.spl-form-fields { display: flex; flex-direction: column; gap: 15px; }
+/* A section without a hint has nothing between its heading and its first
+ * label, so the heading needs the space the hint would have supplied. */
+.spl-form-section-title + .spl-form-fields { margin-top: 12px; }
+
+/* Forms are roomy where lists are dense. The gutter matches the bars above so
+ * the first label lines up with the breadcrumb, and every control is the same
+ * width — the old form ran Code at 320px, Taxon at 768px and the selects at
+ * 366px, which read as accidental because it was. */
+/* Forms get a real margin, unlike a list. A table is data and earns the full
+ * width; a form is something you sit and work through, and wants air around it.
+ *
+ * A standalone form page owns its padding. Inside a record page the shell owns
+ * it — see .spl-record-body — and the form contributes none, so a section
+ * cannot end up spaced differently from its siblings. */
+.spl-form { padding: 26px 30px 20px; }
+@media (max-width: 639px) {
+  .spl-form { padding: 20px 16px 16px; }
+}
+
+/* ── Record header ─────────────────────────────────────────────────────────
+ * Code and name above the tab row — layout A of the edit-page design. */
+.spl-record { padding: 16px 22px 0; }
+.spl-record-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-brand);
+  margin: 0;
+}
+.spl-record-name {
+  font: 600 18px/1.3 var(--font-sans);
+  color: var(--color-text);
+  margin: 2px 0 0;
+}
+.spl-record + .spl-tabs { margin-top: 12px; }
+
+/* The record page shell. It owns the frame — header, section nav, padded body,
+ * action bar — and each section supplies only its body. The body's padding
+ * lives here and nowhere else, which is what stops one tab from being spaced
+ * differently from the next. */
+.spl-record-page { display: flex; flex-direction: column; min-height: 100%; }
+.spl-record-body { flex: 1; min-height: 0; padding: 22px 22px 16px; }
+.spl-record-body > .spl-form,
+.spl-record-body .spl-form { padding: 0; }
+@media (max-width: 639px) {
+  .spl-record-body { padding: 16px; }
+}
+.spl-form .spl-input,
+.spl-form select,
+.spl-form .ss-main { width: 100%; }
+/* In flow at the foot of the form, not pinned across the viewport: the action
+ * belongs to the form, and a bar spanning the window implied it belonged to
+ * the page. Right-aligned on the tinted surface with a hairline above. */
+.spl-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: 12px 30px;
+  background: var(--color-surface-alt);
+  border-top: 1px solid var(--color-border-light);
+}
+.spl-error {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+.spl-error:empty { display: none; }
+
+/* ── SlimSelect ────────────────────────────────────────────────────────────
+ * The taxon, contact, location and material pickers are SlimSelect, so they
+ * have to be indistinguishable from a plain field — a form where two controls
+ * doing the same job look different reads as unfinished. Every value below is
+ * the one .spl-input uses. */
+.ss-main {
+  font: 400 13.5px/1.4 var(--font-sans);
+  color: var(--color-text-table);
+  min-height: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--color-field);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  width: 100%;
+}
+.ss-main:focus,
+.ss-main:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-color: var(--color-field);
+  box-shadow: none;
+}
+.ss-main .ss-values .ss-placeholder { color: var(--color-text-dim); }
+.ss-main .ss-values .ss-single { color: var(--color-text-table); }
+.ss-main .ss-arrow { margin: 0 0 0 8px; }
+.ss-main .ss-arrow path { stroke: var(--color-text-dim); }
+
+/* A selected value in a multi-select reuses the badge shape. */
+.ss-main .ss-values .ss-value {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  border-radius: 4px;
+}
+.ss-main .ss-values .ss-value .ss-value-delete { border-left-color: var(--color-brand); }
+
+/* The dropdown is a raised surface: border plus shadow, no background shift. */
+.ss-content {
+  text-align: left;
+  font-family: var(--font-sans);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  box-shadow: 0 12px 28px -14px rgb(18 33 30 / .35);
+}
+.ss-content .ss-search input {
+  font: 400 13.5px/1.4 var(--font-sans);
+  color: var(--color-text-table);
+  padding: 7px 10px;
+  border: 1px solid var(--color-field);
+  border-radius: var(--radius-control);
+}
+.ss-content .ss-search input:focus {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+.ss-content .ss-list .ss-option {
+  font-size: 13.5px;
+  color: var(--color-text-table);
+  padding: 7px 11px;
+}
+.ss-content .ss-list .ss-option:hover,
+.ss-content .ss-list .ss-option.ss-highlighted {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+.ss-content .ss-list .ss-option.ss-selected {
+  background: var(--color-brand);
+  color: var(--color-surface);
+}
+.ss-content .ss-list .ss-option.ss-disabled {
+  color: var(--color-text-dim);
+  background: transparent;
+}
+/* Scientific names inside the dropdown keep the serif, since the picker is
+   where a curator is choosing between similar names. */
+.ss-content .ss-list .ss-option .spl-sci { font-family: var(--font-serif); }
+.spl-form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Three short controls on a line — a country/province/locality row, a pair of
+ * coordinates and their datum. Wider than a pair, so it drops to one column a
+ * step earlier. */
+.spl-form-trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+@media (max-width: 767px) {
+  .spl-form-trio { grid-template-columns: 1fr; }
+}
+@media (max-width: 639px) {
+  .spl-form-pair { grid-template-columns: 1fr; }
+}
+
+/* ── Badges ────────────────────────────────────────────────────────────────
+ * The four semantic colours. Each badge carries its own word as text, so the
+ * colour is never the only carrier of the meaning. */
+.spl-badge {
+  display: inline-block;
+  font: 500 11px/1.5 var(--font-sans);
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.spl-badge--ok { background: var(--color-ok-bg); color: var(--color-ok); }
+.spl-badge--info { background: var(--color-info-bg); color: var(--color-info); }
+.spl-badge--danger { background: var(--color-danger-bg); color: var(--color-danger); }
+.spl-badge--neutral { background: var(--color-neutral-bg); color: var(--color-neutral); }
+
+/* ── Key-value pairs ───────────────────────────────────────────────────────
+ * The detail panel and the resource panel. Stacks on a phone. */
+.spl-kv {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 6px 10px;
+  font-size: 12.5px;
+}
+.spl-k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--color-text-dim);
+  padding-top: 2px;
+}
+.spl-v { color: var(--color-text-table); }
+@media (max-width: 639px) {
+  .spl-kv { grid-template-columns: 1fr; gap: 2px 0; }
+  .spl-kv .spl-v { margin-bottom: 8px; }
+}
+
+/* ── Tabs and secondary navigation ─────────────────────────────────────────
+ * Used by the accession edit pages, and by settings, whose aside collapses
+ * into this same strip below 1024px. These are links to separate documents,
+ * so they are a nav — never role="tablist", which promises a screen reader a
+ * panel this document controls. */
+.spl-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 22px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--color-border-light);
+  overflow-x: auto;
+}
+.spl-tab {
+  font: 400 13.5px/1 var(--font-sans);
+  color: var(--color-text-muted);
+  padding: 11px 0 9px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.spl-tab:hover { color: var(--color-text); }
+.spl-tab--current {
+  color: var(--color-text);
+  font-weight: 600;
+  border-bottom-color: var(--color-brand);
+}
+.spl-tabs-actions { margin-left: auto; display: flex; gap: 7px; padding-bottom: 6px; }
+.spl-tab--disabled { color: var(--color-text-dim); cursor: default; position: relative; }
+.spl-tab--disabled:hover { color: var(--color-text-dim); }
+
+/* The reason a tab is unavailable. It must be a real element in the document
+ * so aria-describedby can point at it — a CSS ::after tooltip reaches neither
+ * a screen reader nor a keyboard. Visually hidden until hover or focus;
+ * without this it rendered inline and read as
+ * "CollectionAvailable when provenance is wild collected". */
+.spl-tab-reason {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 9px;
+  border-radius: var(--radius-control);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font: 400 11.5px/1.4 var(--font-sans);
+  box-shadow: 0 6px 18px -8px rgb(18 33 30 / .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+}
+.spl-tab--disabled:hover .spl-tab-reason,
+.spl-tab--disabled:focus-within .spl-tab-reason { opacity: 1; }
+
+/* Settings is a form page, so it takes the same air a form does rather than
+ * running to the edges like a list. */
+.spl-settings-layout { display: flex; gap: 40px; padding: 28px 32px; }
+@media (max-width: 639px) {
+  .spl-settings-layout { padding: 16px; }
+}
+
+.spl-settings-content { flex: 1; min-width: 0; max-width: 576px; }
+.spl-settings-content .spl-field + .spl-field { margin-top: 15px; }
+
+.spl-subnav { flex: 0 0 256px; }
+.spl-subnav-group { margin-bottom: 24px; }
+/* Vertical at desktop width: the shared .spl-tab underline becomes a left
+   marker instead, so one class serves both orientations. */
+.spl-subnav-item {
+  display: block;
+  padding: 7px 12px;
+  border-bottom: 0;
+  margin-bottom: 0;
+  border-radius: var(--radius-control);
+}
+.spl-subnav-item.spl-tab--current {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+.spl-subnav-heading {
+  font: 600 10px/1.4 var(--font-mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  padding: 0 12px 8px;
+}
+/* Below 1024px the aside becomes the same horizontal strip the accession edit
+   tabs use, groups flattened. It cannot become a second drawer — the section
+   rail already is one at this width. */
+@media (max-width: 1023px) {
+  .spl-settings-layout { flex-direction: column; gap: 16px; }
+  .spl-subnav {
+    flex: none;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    border-bottom: 1px solid var(--color-border-light);
+    overflow-x: auto;
+  }
+  .spl-subnav-group { display: contents; }
+  .spl-subnav-heading { display: none; }
+  .spl-subnav-item {
+    display: inline-block;
+    padding: 11px 0 9px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .spl-subnav-item.spl-tab--current {
+    background: none;
+    border-bottom-color: var(--color-brand);
+  }
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────────
+ * The rail's open state is a checkbox its siblings select on. No JavaScript,
+ * so the shell is right on first paint — which principle 6 requires. */
+.spl-drawer-toggle { position: absolute; opacity: 0; pointer-events: none; }
+
+/* The shell fills the viewport and never scrolls itself. Each pane scrolls
+ * inside its own bounds, which is what lets the rail stay put and the form's
+ * action bar stay pinned to the bottom of the screen. */
+.spl-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-page);
+}
+.spl-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.spl-content > main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The rail is viewport-height and sticks, so Settings sits at the bottom of
+ * the screen rather than the bottom of the document — otherwise a long list
+ * pushes it out of reach and you have to scroll a table to change a setting. */
+.spl-rail {
+  flex: 0 0 64px;
+  background: var(--color-surface-alt);
+  border-right: 1px solid var(--color-border);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  /* The rail scrolls only if the sections outgrow the viewport, and a scroll
+     that reaches its end must not rubber-band or chain to the page behind it —
+     the rail is fixed furniture, and bounce makes it feel loose. */
+  overscroll-behavior: none;
+}
+.spl-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.spl-nav-list--end { margin-top: auto; }
+
+.spl-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 7px;
+  color: var(--color-text-nav);
+  font: 400 13.5px/1 var(--font-sans);
+  text-decoration: none;
+}
+.spl-nav-item:hover { background: var(--color-border-light); }
+.spl-nav-item--current {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  font-weight: 600;
+}
+.spl-nav-icon { width: 20px; height: 20px; flex: none; display: flex; align-items: center; justify-content: center; }
+.spl-nav-icon svg { width: 100%; height: 100%; }
+
+/* Collapsed: icons only, centred. The label is display:none, which is why
+   sidebar-item sets aria-label explicitly. */
+.spl-nav-label { display: none; }
+.spl-drawer-toggle:checked ~ .spl-shell .spl-rail { flex-basis: 216px; }
+.spl-drawer-toggle:checked ~ .spl-shell .spl-nav-label { display: inline; }
+.spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+
+.spl-scrim { display: none; }
+
+/* Below 1024px the rail slides off-canvas over a scrim, which is the behaviour
+   `drawer lg:drawer-open` gave before. */
+@media (max-width: 1023px) {
+  .spl-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    height: auto;
+    align-self: auto;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform .18s ease;
+  }
+  .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { transform: none; }
+  .spl-drawer-toggle:checked ~ .spl-shell .spl-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgb(18 33 30 / .34);
+  }
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.spl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+}
+.spl-topbar-spacer { flex: 1; }
+.spl-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.spl-toggle {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dim);
+  cursor: pointer;
+}
+.spl-toggle:hover { background: var(--color-surface-alt); color: var(--color-text-soft); }
+
+.spl-crumbs ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  min-width: 0;
+}
+.spl-crumbs li { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.spl-crumbs li:not(:last-child)::after { content: "/"; color: var(--color-text-dim); font-size: 12px; }
+.spl-crumbs a { color: var(--color-brand); text-decoration: none; }
+.spl-crumbs a:hover { text-decoration: underline; }
+.spl-crumbs-current { font-weight: 600; color: var(--color-text); }
+
+/* ── Page composition ──────────────────────────────────────────────────────
+ * Chrome, then data. The old layout stacked a title band, a padded content
+ * wrapper and an actions row before anything you came to look at; that is what
+ * made a restyle read as the old design in new colours. */
+.spl-inner { width: 100%; padding: 0 14px; }
+/* The scrolling region. Everything after it in <main> — notably the form's
+ * action bar — stays pinned below it at the foot of the screen. */
+.spl-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+/* When the page is a two-pane layout, the panes scroll themselves and this
+ * must not scroll too — otherwise the form's action bar, which lives at the
+ * foot of the form column, scrolls away with it. */
+.spl-main:has(.spl-panes) { overflow: hidden; }
+
+/* The list toolbar: same surface as the top bar, hairline beneath, no margins.
+ * Search, filters and export live here; the table begins immediately below. */
+.spl-toolbar {
+  display: flex;
+  align-items: center;
+  /* Wraps rather than overflowing. At 390px the search, the filters and the
+   * action button do not fit on one line, and a toolbar that runs off the
+   * right edge takes its button with it. */
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+/* Groups inside the toolbar wrap too, and shrink before they overflow. */
+.spl-toolbar > * { min-width: 0; }
+
+.spl-toolbar-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.spl-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* On a phone the bar is two lines: search above, count and actions below,
+ * pushed to opposite ends so the count reads as a label on the list. */
+@media (max-width: 639px) {
+  .spl-toolbar-end {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Data goes to the edges. The rail touches the viewport edge on one side and
+ * the table on the other; the table runs to the far edge with no gutter and no
+ * card around it. Rows are separated by hairlines, which is all the structure
+ * a list needs. */
+/* A page whose content is neither a table nor a form — the media grid, an
+ * empty state. Tables go to the edges because they are data; anything else
+ * takes the same gutter a form does. */
+.spl-page-body { padding: 22px; }
+@media (max-width: 639px) { .spl-page-body { padding: 14px; } }
+
+/* The list page's outer wrapper. Every level between the viewport and the
+ * scrolling rows must flex; one content-sized block anywhere in the chain and
+ * nothing scrolls. */
+.spl-list-page,
+.spl-list-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The toolbar is fixed height; the panes below it take the rest. */
+.spl-list-body > .spl-toolbar { flex: none; }
+
+.spl-panes { display: flex; align-items: stretch; min-height: 0; flex: 1; }
+/* The column itself does not scroll — the rows inside it do.
+ *
+ * The height chain has to be unbroken from the viewport down to
+ * .spl-table-scroll, or nothing is scrollable and infinite scroll never fires:
+ * the sentinel sits below a clipped region it can never be scrolled into. A
+ * route wrapping its table in a bare div is enough to break it, so the
+ * intermediate wrapper is stretched here rather than trusted to each caller. */
+.spl-list {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.spl-list > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Detail pages: form column on the left with its action bar pinned to the
+ * bottom of that column, panel on the right running to the viewport edge. */
+.spl-detail-main { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.spl-detail-content { flex: 1; min-height: 0; overflow-y: auto; }
+.spl-detail-panel {
+  width: 320px;
+  flex: none;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+@media (max-width: 1023px) {
+  .spl-panes { flex-direction: column; }
+  .spl-detail-panel { width: auto; border-left: 0; border-top: 1px solid var(--color-border); }
+}
+
+/* Below 640px the search takes its own line and the bar wraps around it. The
+ * blanket `.spl-toolbar > div` rule that used to live here forced a layout on
+ * whatever markup a route passed in, and outranked the toolbar's own parts;
+ * the toolbar is a component now, so its pieces style themselves. */
+@media (max-width: 639px) {
+  .spl-search { flex: 1 0 100%; max-width: none; }
+  .spl-toolbar label { white-space: normal; }
+}
+
+.spl-page-title {
+  font: 600 21px/1.2 var(--font-sans);
+  letter-spacing: -.01em;
+  color: var(--color-text);
+  padding: 28px 18px 0;
+  margin: 0;
+}
+
+/* ── Tables ────────────────────────────────────────────────────────────────
+ * Lists are dense where forms are roomy: a curator sweeping 1,284 accessions
+ * wants rows they can scan. Hairline separators, no zebra striping, no vertical
+ * rules, no box around the table — hierarchy comes from weight and colour. */
+.spl-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.spl-table th {
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: .08em;
+  text-align: left;
+  color: var(--color-text-dim);
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: 8px 14px;
+}
+.spl-table td {
+  font: 400 13px/1.4 var(--font-sans);
+  color: var(--color-text-table);
+  border-bottom: 1px solid var(--color-hairline);
+  padding: 9px 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spl-col--identifier {
+  width: 104px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.spl-col--date {
+  width: 96px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-dim);
+}
+.spl-table td.spl-col--text { color: var(--color-text-muted); }
+
+/* A list is not a card. It fills its pane edge to edge — no border, no radius,
+ * no shadow — because a box around a full-width table is a boundary that
+ * separates nothing from nothing. Hairlines between rows carry the structure. */
+/* Flexes rather than claiming height:100%. As a flex item it defaults to
+ * `flex: 0 1 auto`, so a percentage height resolves against a container that
+ * is itself content-sized — the card grew to fit its rows, nothing scrolled,
+ * and the sentinel sat below a clipped region it could never be scrolled into.
+ * That is what stopped infinite scroll from ever firing. */
+.spl-table-card {
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+/* Rows scroll here; the header does not. */
+.spl-table-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* The header sticks to the top of the scroll region, so the column a value
+ * belongs to stays readable however far down the list you are. */
+.spl-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* The sentinel is where the next page lands and where its spinner shows. The
+ * fetch is triggered three rows above it, so by the time the reader arrives the
+ * rows are usually already here and the spinner never appears. It collapses to
+ * a sliver when idle so a loaded list has no permanent gap at its foot. */
+.spl-sentinel td {
+  height: 8px;
+  padding: 0;
+  border: 0;
+  text-align: center;
+}
+
+.spl-sentinel.htmx-request td { height: 44px; padding: 12px 0; }
+
+/* The prefetch trigger. It takes no space: it is a scroll position three rows
+ * above the bottom, not a row of the data. */
+.spl-prefetch td { height: 0; padding: 0; border: 0; }
+
+.spl-sentinel-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-control);
+  border-radius: 50%;
+  animation: spl-spin .7s linear infinite;
+}
+
+.spl-sentinel.htmx-request .spl-sentinel-spinner { display: block; }
+.spl-sentinel.htmx-request .spl-sentinel-loading { display: revert; }
+
+/* Hidden until the request starts. The live region around it is already in the
+ * DOM, so making this text appear is a change the region announces; a region
+ * inserted with its text already in place announces nothing. */
+.spl-sentinel-loading { display: none; }
+
+/* The live region itself. It carries no appearance — its whole job is to be in
+ * the DOM before its text appears — but it is named so the markup and the
+ * stylesheet agree that it exists. */
+.spl-sentinel-status { display: contents; }
+
+@keyframes spl-spin { to { transform: rotate(360deg); } }
+
+/* A pulse rather than a rotation, so the indicator still reads as active
+ * without the vestibular trigger of spinning. */
+@keyframes spl-pulse { 50% { opacity: .25; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spl-sentinel-spinner {
+    border-top-color: var(--color-border);
+    background: var(--color-control);
+    animation: spl-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+/* The same indicator for the media grid, which appends into a <ul> and so has
+ * no row to hang it on. */
+.spl-grid-sentinel {
+  display: flex;
+  justify-content: center;
+  height: 0;
+  overflow: hidden;
+}
+
+.spl-grid-sentinel.htmx-request { height: 44px; padding: 12px 0; }
+.spl-grid-sentinel.htmx-request .spl-sentinel-spinner { display: block; }
+.spl-grid-sentinel.htmx-request .spl-sentinel-loading { display: revert; }
+
+/* The list's visible bottom. Without it a list that has finished loading looks
+ * identical to one still waiting for the next page. */
+.spl-end td {
+  padding: 14px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  border-bottom: 0;
+}
+
+.spl-row { cursor: pointer; }
+.spl-row:hover { background: var(--color-surface-alt); }
+
+/* Selection is a tint plus a marker down the left edge. WCAG 1.4.1: the tint
+ * alone is a colour difference, and it sits one step from the hover state. */
+.spl-row--selected { background: var(--color-brand-tint); }
+.spl-row--selected > td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+/* ── Detail panel ──────────────────────────────────────────────────────────
+ * Appears on row click; dismissible by its close control or Escape. */
+/* The panel is a column of the pane, not a floating card: it shares the
+ * table's top edge and runs to the viewport's right edge. */
+.spl-panel {
+  width: 288px;
+  flex: none;
+  background: var(--color-page);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+.spl-panel-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 12px 0;
+}
+
+/* The panel's identity band. Same treatment as a record page's header, because
+ * the panel and the page it opens from are labelling the same record. */
+.spl-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.spl-panel-identity { min-width: 0; }
+.spl-panel-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-brand);
+  margin: 0;
+}
+.spl-panel-name {
+  font: 600 15px/1.3 var(--font-sans);
+  color: var(--color-text);
+  margin: 3px 0 0;
+}
+.spl-panel-close {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  line-height: 1;
+}
+.spl-panel-close:hover { color: var(--color-text); }
+
+/* On a phone the panel is a sheet from the bottom rather than a side column —
+ * 288px beside a list does not fit, and a sheet is reachable one-handed. */
+@media (max-width: 639px) {
+  .spl-panel {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: auto;
+    max-height: 70vh;
+    z-index: 50;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    box-shadow: 0 -10px 30px -14px rgb(18 33 30 / .4);
+  }
+}
+
+/* Responsive shedding, by column priority. */
+@media (max-width: 1023px) { .spl-shed-3 { display: none; } }
+@media (max-width: 767px)  { .spl-shed-2 { display: none; } }
+
+/* Below 640px the table keeps its element and its semantics but collapses to a
+ * single column whose cell stacks the row's content. A one-column table is
+ * still a table to a screen reader; a grid of divs is not. */
+@media (max-width: 639px) {
+  .spl-table thead { display: none; }
+  /* `fixed` keeps dividing the width by the column count even once the other
+     cells are display:none, so the one visible cell was left at a fifth of the
+     table. With one column per row there is nothing left for fixed layout to
+     buy. */
+  .spl-table { table-layout: auto; }
+  /* Keep the FIRST cell, whatever its type. Keying this on
+     .spl-col--identifier hid every cell in any table without an identifier
+     column — the Taxa list is Name/Author/Rank/Parent, and rendered blank. */
+  .spl-table td:not(:first-child) { display: none; }
+  .spl-table td:first-child {
+    width: auto;
+    padding: 10px 12px;
+    white-space: normal;
+    /* An email or a code is one long token; `normal` alone will not break it,
+       and the cell clips what does not fit. */
+    overflow: visible;
+    overflow-wrap: anywhere;
+  }
+  .spl-table td:first-child::after {
+    content: attr(data-stacked);
+    display: block;
+    margin-top: 3px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--color-text);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ── Activity changelog ────────────────────────────────────────────────────
+ * Events carry no diff, so repeated "updated" lines say nothing new. The
+ * sentence collapses a run; the chips beneath name the records it touched. */
+/* The feed is prose, not a table, so it takes a gutter rather than running to
+ * the edge — a sentence starting hard against the rail has nothing to sit
+ * against and is uncomfortable to read. */
+.spl-changelog { padding: 4px 20px 24px; }
+.spl-changelog-day {
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  padding: 16px 0 8px;
+  margin: 0;
+}
+.spl-changelog-entry {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 11px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.spl-changelog-avatar { width: 26px; }
+.spl-changelog-body { min-width: 0; }
+.spl-changelog-line {
+  font: 400 13.5px/1.5 var(--font-sans);
+  color: var(--color-text-table);
+  margin: 0;
+}
+.spl-changelog-actor { font-weight: 600; color: var(--color-text); }
+.spl-changelog-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-text-dim);
+}
+.spl-changelog-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.spl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-table);
+  max-width: 100%;
+}
+.spl-chip-icon { width: 14px; height: 14px; flex: none; color: var(--color-text-dim); }
+.spl-chip-icon svg { width: 100%; height: 100%; }
+
+/* ── Components carried over from DaisyUI ──────────────────────────────────
+ * Every screen uses the design system, so the pieces the other screens relied
+ * on get real definitions here rather than a framework's. */
+
+.spl-btn--ghost { border-color: transparent; background: transparent; }
+.spl-btn--ghost:hover { background: var(--color-surface-alt); }
+.spl-btn--sm { font-size: 12.5px; padding: 5px 10px; }
+.spl-btn--icon { padding: 0; width: 32px; height: 32px; justify-content: center; }
+
+.spl-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgb(18 33 30 / .04);
+}
+.spl-card-body { padding: 16px; }
+.spl-card-title { font: 600 15px/1.3 var(--font-sans); color: var(--color-text); }
+.spl-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.spl-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  font-size: 13px;
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral);
+}
+.spl-alert--info { background: var(--color-info-bg); color: var(--color-info); }
+.spl-alert--ok { background: var(--color-ok-bg); color: var(--color-ok); }
+.spl-alert--warning,
+.spl-alert--danger { background: var(--color-danger-bg); color: var(--color-danger); }
+
+/* ── Auth ──────────────────────────────────────────────────────────────────
+ * Login, register, the password flows. A card over a photograph, so it needs
+ * a surface of its own; everything inside it is the same type scale as the
+ * rest of the app. */
+.spl-auth-card {
+  padding: 32px;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border-radius: var(--radius-card);
+  box-shadow: 0 18px 50px -24px rgb(18 33 30 / .5);
+}
+
+.spl-auth-title {
+  font: 600 24px/1.25 var(--font-sans);
+  letter-spacing: -.015em;
+  color: var(--color-text);
+  margin-bottom: 22px;
+}
+
+@media (max-width: 639px) {
+  .spl-auth-card { padding: 24px; }
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────
+ * A list with nothing in it is still a page. Same surface and radius as a
+ * card, centred, with room for the one action that fills it. */
+.spl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 56px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+}
+
+.spl-empty-icon { color: var(--color-text-dim); }
+.spl-empty-title { font: 600 17px/1.3 var(--font-sans); color: var(--color-text); }
+.spl-empty-body { max-width: 34rem; font-size: 13.5px; line-height: 1.55; }
+.spl-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* ── Flash banner ──────────────────────────────────────────────────────────
+ * The transient message that slides up from the bottom. Same four categories
+ * as the alert, but reversed out: it sits over the page rather than in it, so
+ * it needs the weight of a solid fill. */
+.spl-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  min-width: 33%;
+  max-width: 32rem;
+  padding: 10px 14px 10px 16px;
+  border-radius: var(--radius-control);
+  box-shadow: 0 10px 30px -12px rgb(18 33 30 / .45);
+  pointer-events: auto;
+  background: var(--color-neutral);
+  color: #fff;
+}
+
+.spl-banner--info { background: var(--color-info); }
+.spl-banner--ok { background: var(--color-ok); }
+/* The palette has no amber. A warning reads as the danger colour here for the
+ * same reason `.spl-alert--warning` does — one attention colour, not two. */
+.spl-banner--warning,
+.spl-banner--danger { background: var(--color-danger); }
+
+.spl-banner-text { font: 600 13px/1.45 var(--font-sans); }
+
+.spl-banner-dismiss {
+  display: flex;
+  flex: none;
+  padding: 6px;
+  margin: -6px -6px -6px 0;
+  border-radius: var(--radius-control);
+  color: inherit;
+}
+.spl-banner-dismiss:hover { background: rgb(255 255 255 / .16); }
+
+.spl-banner-stack {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 20px;
+  pointer-events: none;
+}
+
+/* .spl-modal is on a native <dialog>. Do NOT set `display` on it: the UA
+ * stylesheet uses `dialog:not([open]) { display: none }`, and overriding that
+ * leaves every modal on screen from first paint. showModal() puts the dialog
+ * in the top layer and centres it; ::backdrop supplies the scrim. */
+.spl-modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: 640px;
+  width: calc(100% - 32px);
+  max-height: calc(100vh - 64px);
+  /* Centred explicitly rather than relying on the user agent's dialog
+     defaults, which differ between engines. `margin: auto` against the top
+     layer's insets centres on both axes. */
+  margin: auto;
+  color: var(--color-text);
+}
+.spl-modal::backdrop { background: rgb(18 33 30 / .45); }
+
+/* The click-outside-to-close form inside the dialog. It covers the viewport
+ * behind the box, so a click anywhere outside submits and closes. No colour of
+ * its own — ::backdrop already darkens. */
+.spl-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+.spl-modal-backdrop button {
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  background: none;
+  border: 0;
+  color: transparent;
+}
+
+/* The media detail image. `.preview` was in the markup with no rule behind it
+ * in any stylesheet, so the image rendered at its intrinsic size. */
+.preview {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-alt);
+}
+
+/* A scrim for overlays that are not a <dialog> — the media zoom view. */
+.spl-scrim-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(18 33 30 / .75);
+}
+
+.spl-modal-box {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  padding: 20px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px -30px rgb(18 33 30 / .5);
+}
+.spl-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+/* Collapse is driven by a hidden checkbox its siblings select on — the same
+ * no-JavaScript pattern as the rail. The content must default to hidden: it is
+ * the checkbox that reveals it, and a `display` that ignores the checkbox
+ * leaves every section permanently open with a toggle that does nothing. */
+.spl-collapse {
+  position: relative;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.spl-collapse > input[type="checkbox"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.spl-collapse > input[type="checkbox"]:disabled { cursor: not-allowed; }
+.spl-collapse-title {
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-text-soft);
+}
+.spl-collapse-title::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 17px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--color-text-dim);
+  border-bottom: 1.5px solid var(--color-text-dim);
+  transform: rotate(45deg);
+  transition: transform .15s;
+}
+.spl-collapse > input[type="checkbox"]:checked ~ .spl-collapse-title::after {
+  transform: rotate(-135deg);
+}
+.spl-collapse-content { display: none; padding: 0 14px 12px; }
+.spl-collapse > input[type="checkbox"]:checked ~ .spl-collapse-content {
+  display: block;
+}
+
+.spl-divider { height: 1px; background: var(--color-border-light); margin: 12px 0; border: 0; }
+
+.spl-menu { list-style: none; margin: 0; padding: 0; }
+
+.spl-steps { display: flex; gap: 8px; align-items: center; }
+.spl-step {
+  font-size: 12.5px;
+  color: var(--color-text-dim);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-light);
+}
+.spl-step--done {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.spl-avatar { border-radius: 50%; overflow: hidden; }
+.spl-avatar--placeholder {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+/* @tailwindcss/forms sets `appearance: none` on checkboxes and paints the
+ * checked state from `color`, which defaults to its own blue — `accent-color`
+ * has no effect once appearance is none, so both are set. */
+.spl-checkbox {
+  accent-color: var(--color-brand);
+  color: var(--color-brand);
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border-color: var(--color-control);
+  flex: none;
+}
+.spl-checkbox:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.spl-toggle { accent-color: var(--color-brand); }
+.spl-loading { opacity: .6; }
+.spl-fieldset { border: 0; padding: 0; margin: 0; }
+
+.spl-tooltip { position: relative; }
+
+/* ── Paginator ─────────────────────────────────────────────────────────── */
+.spl-paginator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  background: var(--color-surface-alt);
+  border-top: 1px solid var(--color-border-light);
+}
+.spl-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.spl-pages { display: flex; gap: 2px; align-items: center; }
+.spl-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--radius-control);
+  font: 400 11.5px/1 var(--font-mono);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.spl-page:hover { background: var(--color-border-light); }
+.spl-page--current {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  font-weight: 500;
+}
+.spl-page svg { width: 14px; height: 14px; }
+
+/* ── Focus ─────────────────────────────────────────────────────────────────
+ * Owned here now that DaisyUI is on its way out. Brand measures 6.23:1 on the
+ * page, comfortably past the 3:1 a focus indicator needs. */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}

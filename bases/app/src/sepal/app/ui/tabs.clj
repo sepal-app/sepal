@@ -1,15 +1,44 @@
-(ns sepal.app.ui.tabs)
+(ns sepal.app.ui.tabs
+  "Section navigation for a record's edit pages.
 
-(defn item [label & {:keys [active] :as props}]
-  (let [anchor-props (dissoc props :active :label)]
-    [:a (merge anchor-props
-               {:role "tab"
-                :class (cond-> "tab text-accent hover:text-accent px-6"
-                         active (str " tab-active"))})
-     [:span {:class "text-primary-content"}
-      label]]))
+  These are links to separate documents — /accession/1/general/,
+  /collection/, /media/ — so they are a nav, not a tablist. ARIA tab semantics
+  promise a panel in the same document that the tab controls; putting them on
+  cross-document links misdescribes the widget to a screen reader.")
 
-(defn tabs [items]
-  [:div {:role "tablist"
-         :class "tabs tabs-box"}
-   items])
+(defn item
+  "One section link.
+
+  :active   marks the current section, emitting aria-current=page.
+  :disabled is the reason the section is unavailable, as a string. A disabled
+            item renders as a span rather than an anchor, so it is neither
+            focusable nor activatable, and the reason is a real element
+            referenced by aria-describedby — a CSS tooltip reaches neither a
+            keyboard nor a screen reader."
+  [label & [{:keys [href active disabled]}]]
+  (if disabled
+    (let [reason-id (str "tab-reason-" (hash label))]
+      [:span {:class "spl-tab spl-tab--disabled"
+              :aria-disabled "true"
+              :aria-describedby reason-id}
+       label
+       [:span {:id reason-id :class "spl-tab-reason"} disabled]])
+    [:a (cond-> {:href href
+                 :class (cond-> ["spl-tab"]
+                          active (conj "spl-tab--current"))}
+          active (assoc :aria-current "page"))
+     label]))
+
+(defn tabs
+  "The section nav.
+
+  :label   names the landmark for a screen reader.
+  :items   the results of `item`.
+  :actions optional record-scoped controls, right-aligned on the same row —
+           Delete and the like, which belong to the record rather than to any
+           one section."
+  [{:keys [label items actions]}]
+  [:nav {:class "spl-tabs" :aria-label (or label "Sections")}
+   items
+   (when actions
+     [:span {:class "spl-tabs-actions"} actions])])

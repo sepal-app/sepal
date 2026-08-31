@@ -10,7 +10,7 @@
 
 (defn page-content [& {:keys [email token]}]
   [:div
-   [:h1 {:class "text-2xl pb-2"} "Reset the password for "]
+   [:h1 {:class "spl-auth-title"} "Reset the password for "]
    [:p {:class "text-lg pb-6"} email]
    (form/form {:method "post"
                :action (z/url-for auth.routes/reset-password)}
@@ -26,7 +26,7 @@
                                  :minlength 8
                                  :required true
                                  :data-error-msg "The passwords do not match")
-               (form/submit-button {:class "btn btn-primary mt-4"} "Reset Password")])])
+               (form/submit-button {:class "spl-btn spl-btn--primary mt-4"} "Reset Password")])])
 
 (defn render [& {:keys [email errors flash token]}]
   (page/page :content (page-content :email email

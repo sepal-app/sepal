@@ -37,7 +37,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}}
     (fn [{:keys [user accession]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             collection-url (str "/accession/" (:accession/id accession) "/collection/")
@@ -74,7 +77,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}
      [::coll.i/factory :key/coll] {:db *db*
                                    :accession (ig/ref :key/accession)
                                    :collector "John Doe"
@@ -100,7 +106,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}}
     (fn [{:keys [user accession]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             collection-url (str "/accession/" (:accession/id accession) "/collection/")
@@ -138,7 +147,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}
      [::coll.i/factory :key/coll] {:db *db*
                                    :accession (ig/ref :key/accession)
                                    :collector "Original Collector"
@@ -172,7 +184,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}}
     (fn [{:keys [user accession]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             collection-url (str "/accession/" (:accession/id accession) "/collection/")
@@ -206,7 +221,10 @@
                                    :password "testpassword123"
                                    :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             ;; The Collection tab is gated on provenance,
+                                             ;; and the factory generates a random one.
+                                             :data {:provenance-type :wild}}}
     (fn [{:keys [user accession]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             collection-url (str "/accession/" (:accession/id accession) "/collection/")
@@ -215,7 +233,45 @@
         (is (= 200 (:status response)))
 
         (let [body (Jsoup/parse ^String (:body response))
-              ;; Look for the active tab - it should have aria-current or active class
-              tabs (.select body "[role=\"tab\"]")]
-          (is (pos? (.size tabs))
-              "Should have tab elements"))))))
+              nav (.selectFirst body "nav[aria-label='Accession sections']")
+              current (.selectFirst body "nav[aria-label='Accession sections'] [aria-current=page]")]
+          (is (some? nav)
+              "sections are a nav, not a tablist — these links leave the page")
+          (is (some? current) "the current section is marked")
+          (is (= "Collection" (.text current))))))))
+
+(deftest test-collection-route-is-guarded-when-not-wild
+  (tf/testing "a disabled tab is not a security control — the route must refuse"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             :data {:provenance-type :not_wild}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/accession/"
+                                                      (:accession/id accession)
+                                                      "/collection/")))]
+        (is (= 404 (:status response)))))))
+
+(deftest test-collection-stays-reachable-when-data-already-exists
+  (tf/testing "changing provenance away from wild must not strand thirteen
+               fields behind a tab nobody can open"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             :data {:provenance-type :not_wild}}}
+    (fn [{:keys [user accession]}]
+      (coll.i/create! *db* {:accession-id (:accession/id accession)
+                            :collector "A. Curator"})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/accession/"
+                                                      (:accession/id accession)
+                                                      "/collection/")))]
+        (is (= 200 (:status response))
+            "the tab is available because the record already carries data")))))

@@ -15,42 +15,39 @@
             [zodiac.core :as z]))
 
 (defn title-buttons []
-  [:button {:id "upload-button"
-            :class (html/attr "inline-flex" "items-center" "justify-center" "rounded-md"
-                              "border" "border-transparent" "bg-indigo-600" "px-4" "py-2"
-                              "text-sm" "font-medium" "text-white" "shadow-sm"
-                              "hover:bg-indigo-700" "focus:outline-none" "focus:ring-2"
-                              "focus:ring-indigo-500" "focus:ring-offset-2" "sm:w-auto")}
-   "Upload"])
+  (media.ui/upload-button))
 
 (defn next-page-url [& {:keys [accession current-page]}]
   (z/url-for accession.routes/detail-media
              {:id (:accession/id accession)}
              {:page (+ 1 current-page)}))
 
-(defn page-content [& {:keys [media page page-size accession]}]
-  [:div {:x-data (json/js {:selected nil})
-         :class "flex flex-col gap-8"}
-   (accession.shared/tabs accession accession.shared/media-tab)
-   [:link {:rel "stylesheet"
-           :href (html/static-url "app/routes/media/css/media.css")}]
-   [:div {:id "media-page"}
+(defn page-content [& {:keys [media page page-size accession taxon]}]
+  (accession.shared/page
+    :accession accession
+    :taxon taxon
+    :active accession.shared/media-tab
+    :body
+    [:div {:x-data (json/js {:selected nil})}
+     [:link {:rel "stylesheet"
+             :href (html/static-url "app/routes/media/css/media.css")}]
+     [:div {:id "media-page"}
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
-    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for media.routes/s3)
-                                       :linkResourceType "accession"
-                                       :linkResourceId (:accession/id accession)
-                                       :trigger "#upload-button"})}]
-    (media.ui/media-list :media media
-                         :next-page-url (when (>= (count media) page-size)
-                                          (next-page-url :accession accession
-                                                         :current-page page)))
-    [:div {:id "upload-success-forms"
-           :class "hidden"}]]
-   [:script {:type "module"
-             :src (html/static-url "app/routes/media/media.ts")}]])
+      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                         :signingUrl (z/url-for media.routes/s3)
+                                         :linkResourceType "accession"
+                                         :linkResourceId (:accession/id accession)
+                                         :trigger "#upload-button"})}]
+      (media.ui/media-list :media media
+                           :next-page-url (when (>= (count media) page-size)
+                                            (next-page-url :accession accession
+                                                           :current-page page)))
+      [:div {:id "upload-success-forms"
+             :class "hidden"}]]
+     [:script {:type "module"
+               :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (title-buttons)
@@ -58,7 +55,8 @@
                            :content (page-content :page page
                                                   :page-size page-size
                                                   :media media
-                                                  :accession accession)
+                                                  :accession accession
+                                                  :taxon taxon)
                            :panel-content (accession.panel/panel-content
                                             :accession (:accession panel-data)
                                             :taxon (:taxon panel-data)

@@ -7,20 +7,20 @@
 
 (defn status-icon [status]
   (case status
-    :ok [:span {:class "text-success text-xl"} "✓"]
-    :warning [:span {:class "text-warning text-xl"} "⚠"]
-    :error [:span {:class "text-error text-xl"} "✗"]))
+    :ok [:span {:class "text-ok text-xl"} "✓"]
+    :warning [:span {:class "text-danger text-xl"} "⚠"]
+    :error [:span {:class "text-danger text-xl"} "✗"]))
 
 (defn check-item [{:keys [name status message]}]
-  [:div {:class "flex items-start gap-3 p-3 rounded-lg bg-base-200"}
+  [:div {:class "flex items-start gap-3 p-3 rounded-lg bg-surface-alt"}
    (status-icon status)
    [:div
     [:p {:class "font-medium"} name]
     [:p {:class (html/attr "text-sm"
                            (case status
-                             :ok "text-base-content/70"
-                             :warning "text-warning"
-                             :error "text-error"))}
+                             :ok "text-text-muted"
+                             :warning "text-danger"
+                             :error "text-danger"))}
      message]]])
 
 (defn checks-list [checks]
@@ -51,22 +51,22 @@
       :back-url (z/url-for setup.routes/admin)
       :content
       [:div {:class "space-y-4"}
-       [:p {:class "text-base-content/70"}
+       [:p {:class "text-text-muted"}
         "Checking your server configuration. These features are optional but recommended for full functionality."]
 
        (checks-list checks)
 
        (when (has-warnings? checks)
-         [:div {:class "alert alert-warning mt-4"}
+         [:div {:class "spl-alert spl-alert--warning mt-4"}
           [:span "Some features are not configured. You can continue and configure them later, but the affected features won't work until then."]])
 
        [:div {:class "flex gap-2 mt-4"}
         [:a {:href (z/url-for setup.routes/server)
-             :class "btn btn-outline btn-sm"}
+             :class "spl-btn spl-btn--sm"}
          "Re-run Checks"]]]
       :next-button
       [:a {:href (z/url-for setup.routes/organization)
-           :class "btn btn-primary"
+           :class "spl-btn spl-btn--primary"
            :hx-get (z/url-for setup.routes/organization)
            :hx-push-url "true"
            :hx-target "body"}

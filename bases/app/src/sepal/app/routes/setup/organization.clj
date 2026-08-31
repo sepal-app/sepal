@@ -74,10 +74,10 @@
     ;; Submit button inside the form
     [:div {:class "flex justify-between mt-6"}
      [:a {:href (z/url-for setup.routes/server)
-          :class "btn btn-ghost"}
+          :class "spl-btn spl-btn--ghost"}
       "← Back"]
      [:button {:type "submit"
-               :class "btn btn-primary"}
+               :class "spl-btn spl-btn--primary"}
       "Next →"]]))
 
 (defn render [& {:keys [values errors flash-messages]}]
@@ -85,10 +85,10 @@
     :current-step 3
     :flash-messages flash-messages
     :content
-    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
-     [:div {:class "card-body"}
-      [:h2 {:class "card-title text-2xl mb-4"} "Organization Information"]
-      [:p {:class "mb-4 text-base-content/70"}
+    [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
+     [:div {:class "spl-card-body"}
+      [:h2 {:class "spl-card-title text-2xl mb-4"} "Organization Information"]
+      [:p {:class "mb-4 text-text-muted"}
        "Tell us about your organization. You can update these settings later."]
       (org-form :values values :errors errors)]]))
 

@@ -11,14 +11,17 @@
 
 (defn title-buttons []
   [:button {:id "upload-button"
-            :class "btn btn-primary"}
+            :class "spl-btn spl-btn--primary"}
    "Upload"])
 
 (defn next-page-url [& {:keys [current-page]}]
   (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
 
 (defn page-content [& {:keys [media page page-size]}]
-  [:div {:x-data (json/js {:selected nil})}
+  ;; A grid rather than a table, so it takes the shared page gutter instead of
+  ;; running to the edges the way a list does.
+  [:div {:x-data (json/js {:selected nil})
+         :class "spl-page-body"}
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}

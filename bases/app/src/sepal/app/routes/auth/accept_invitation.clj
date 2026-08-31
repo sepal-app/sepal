@@ -25,7 +25,7 @@
 
 (defn- page-content [& {:keys [email full-name token errors]}]
   [:div
-   [:h1 {:class "text-2xl font-bold mb-2"} "Accept Invitation"]
+   [:h1 {:class "spl-auth-title"} "Accept Invitation"]
    [:p {:class "text-lg mb-6"} "Set up your account for " [:strong email]]
    (form/form {:action (z/url-for auth.routes/accept-invitation)
                :method "post"}
@@ -48,7 +48,7 @@
                                  :minlength 8
                                  :required true
                                  :errors (:confirm-password errors))
-               (form/submit-button {:class "btn btn-primary mt-6"} "Set Password & Activate Account")])])
+               (form/submit-button {:class "spl-btn spl-btn--primary mt-6"} "Set Password & Activate Account")])])
 
 (defn- render [& {:keys [email full-name token errors flash]}]
   (page/page :content (page-content :email email

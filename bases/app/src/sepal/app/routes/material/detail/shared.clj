@@ -2,7 +2,9 @@
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -17,17 +19,27 @@
                   :active (= active media-tab)})])
 
 (defn tabs [material active]
-  [:div {:class "flex flex-row justify-center"
-         :x-data "materialTabs"}
-   (ui.tabs/tabs (tab-items :material material
-                            :active active))])
+  (ui.tabs/tabs {:label "Material sections"
+                 :items (tab-items :material material :active active)}))
+
+(defn page
+  "A material's record page. Its identifier is the accession code and the
+  material code together, which is how a curator refers to it."
+  [& {:keys [material accession taxon active body footer]}]
+  (pages.record/page
+    :code (when (and accession material)
+            (str (:accession/code accession) "." (:material/code material)))
+    :name (when (:taxon/name taxon)
+            (taxon-name/render (:taxon/name taxon) :author (:taxon/author taxon)))
+    :tabs (tabs material active)
+    :body body
+    :footer footer))
 
 (defn breadcrumbs [& {:keys [accession material taxon]}]
   [[:a {:href (z/url-for taxon.routes/index)}
     "Taxa"]
-   [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
-        :class "italic"}
-    (:taxon/name taxon)]
+   [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
+    (taxon-name/render (:taxon/name taxon))]
    [:a {:href (z/url-for accession.routes/index {} {:taxon-id (:taxon/id taxon)})}
     "Accessions"]
    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})}

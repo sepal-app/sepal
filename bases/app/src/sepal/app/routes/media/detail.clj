@@ -31,30 +31,32 @@
 (defn zoom-view [& {:keys [zoom-url]}]
   [:div {:class "relative z-10"}
    [:div {:x-on:click "console.log('zoom=false'); zoom=false"
-          :class "fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"}]
+          :class "spl-scrim-overlay"}]
    [:div {:class "fixed inset-0 z-10 w-screen overflow-y-auto"}
     [:div {:class "flex flex-col min-h-full items-end justify-center text-center sm:items-center sm:p-20"}
 
-     [:button {:class "text-white w-full text-right "
-               :x-on:click "zoom=false"} "Close"]
+     [:button {:type "button"
+               :class "spl-btn spl-btn--ghost text-white self-end"
+               :x-on:click "zoom=false"}
+      "Close"]
      [:div
       [:img {:src zoom-url}]]]]])
 
 (defn page-title-buttons [& {:keys [delete-url dl-url]}]
-  [[:button {:class "btn"
+  [[:button {:class "spl-btn"
              :aria-label "Zoom"
              :x-on:click "zoom=true;"}
     (heroicons/magnifying-glass)]
-   [:a {:class "btn"
+   [:a {:class "spl-btn"
         :href dl-url
         :aria-label "Download"}
     (heroicons/outline-folder-arrow-down)]
-   [:a {:class "btn"
+   [:a {:class "spl-btn"
         :hx-delete delete-url
         :hx-confirm "Are you sure you want to delete this media?"
         :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
         :aria-label "Delete"}
-    (heroicons/outline-trash :class "text-error")]])
+    (heroicons/outline-trash :class "text-danger")]])
 
 (defn page-content [& {:keys [media srcset-urls zoom-url]}]
   [[:div

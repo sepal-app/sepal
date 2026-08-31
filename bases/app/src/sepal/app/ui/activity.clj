@@ -20,15 +20,18 @@
     nil))
 
 (defn action-badge
-  "Render a soft-style colored badge for an activity action type.
-   Extracts the action from the activity type keyword (e.g., :accession/created -> created)."
+  "A badge for an activity action — created, updated, deleted, completed.
+
+  Uses the four semantic colours principle 1 permits beyond the accent, and
+  always carries the action word as its own text, so the colour is never the
+  only carrier of the meaning."
   [activity-type]
   (let [action (name activity-type)
         badge-class (case action
-                      "created" "badge-success"
-                      "updated" "badge-info"
-                      "deleted" "badge-error"
-                      "completed" "badge-success"
-                      "badge-ghost")]
-    [:span {:class (html/attr "badge" "badge-soft" "badge-sm" badge-class)}
+                      "created" "spl-badge--ok"
+                      "completed" "spl-badge--ok"
+                      "updated" "spl-badge--info"
+                      "deleted" "spl-badge--danger"
+                      "spl-badge--neutral")]
+    [:span {:class (html/attr "spl-badge" badge-class)}
      action]))

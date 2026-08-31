@@ -20,22 +20,26 @@
   (dropdown/dropdown "Actions"
                      (dropdown/item (z/url-for taxon.routes/new) "Add a taxon")))
 
-(defn page-content [& {:keys [errors taxon values]}]
-  [:div {:class "flex flex-col gap-2"}
-   (taxon.shared/tabs taxon taxon.shared/name-tab)
-   ;; TODO: Re-enable read-only for WFO-imported taxa when we decide how to handle them
-   (let [read-only? false]
-     [:div
-      (when read-only?
-        (alert/info "Taxa from the WFO Plantlist are not editable."))
-      (taxon.form/form :action (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
-                       :errors errors
-                       :read-only read-only?
-                       :values values)])])
+(defn page-content [& {:keys [errors taxon values footer]}]
+  (taxon.shared/page
+    :taxon taxon
+    :active taxon.shared/name-tab
+    :footer footer
+    :body
+    ;; TODO: Re-enable read-only for WFO-imported taxa when we decide how to handle them
+    (let [read-only? false]
+      [:div
+       (when read-only?
+         (alert/info "Taxa from the WFO Plantlist are not editable."))
+       (taxon.form/form :action (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+                        :errors errors
+                        :read-only read-only?
+                        :values values)])))
 
 (defn render [& {:keys [errors taxon values panel-data]}]
   (page/page :content (pages.detail/page-content-with-panel
-                        :content (page-content :errors errors
+                        :content (page-content :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
+                                               :errors errors
                                                :taxon taxon
                                                :values values)
                         :panel-content (taxon.panel/panel-content
@@ -45,7 +49,6 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)))
              :breadcrumbs (taxon.shared/breadcrumbs taxon)
-             :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
              :page-title-buttons (page-title-buttons)))
 
 (defn save! [db taxon-id updated-by data]

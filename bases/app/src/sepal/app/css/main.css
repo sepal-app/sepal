@@ -1,54 +1,34 @@
 @import "tailwindcss";
-@import "slim-select/styles";
+
+/* The Source superfamily, self-hosted. A garden running Sepal itself behind a
+ * firewall has to keep working, so these are bundled by Vite rather than
+ * fetched from a CDN. Italic is loaded for the sans (running prose) and for the
+ * serif (the italicised part of every scientific name). */
+@import "@fontsource-variable/source-sans-3";
+@import "@fontsource-variable/source-sans-3/wght-italic.css";
+@import "@fontsource-variable/source-serif-4";
+@import "@fontsource-variable/source-serif-4/opsz-italic.css";
+@import "@fontsource-variable/source-code-pro";
+
+@import "./tokens.css";
+
+/* Both go in Tailwind's `components` layer so a utility in the markup wins.
+ * Unlayered they beat every utility no matter the specificity, which is why
+ * `class="spl-btn w-full"` used to ignore the w-full.
+ *
+ * SlimSelect comes first: within one layer the later rule wins a tie, and the
+ * point of the widget styling in components.css is to override the library. */
+@import "slim-select/styles" layer(components);
+@import "./components.css" layer(components);
 
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
 
-@plugin "daisyui" {
-    themes: emerald --default;
-}
-
-/* Override DaisyUI's circular checkboxes with rounded squares */
-.checkbox {
-    border-radius: 0.25rem;
-}
-
-@theme {
-    --font-sans:
-        "Inter var", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    /* --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; */
-    /* --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", */
-    /*     "Courier New", monospace; /\* ... *\/ */
-}
-
-.fieldset {
-    gap: 0;
-    font-size: 0.9rem;
-}
-
-/* Make the SlimSelect match DaisyUI input styling */
-.ss-main {
-    @apply shadow-primary;
-    border-radius: var(--radius-field);
-    width: 100%;
-}
-
-.ss-main:focus {
-    --input-color: var(--color-base-content);
-    box-shadow: none;
-    outline: 2px solid var(--input-color);
-    outline-offset: 2px;
-    box-shadow: 0 1px
-        color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
-    border-color: var(--input-color);
-}
-
-/* Ensure SlimSelect dropdown content doesn't inherit unwanted styles */
-.ss-content {
-    text-align: left;
-}
+/* SlimSelect is styled with the rest of the design system, in components.css.
+ * The rules that used to live here referenced DaisyUI variables
+ * (--radius-field, --color-base-content, --depth) that no longer exist, so
+ * they did nothing and the widget fell back to its own library styling. */
 
 td {
     a:hover {
@@ -61,10 +41,5 @@ td {
     display: none !important;
 }
 
-/* Grid for form layouts - columns never exceed 576px with consistent gaps */
-.form-grid {
-    display: grid;
-    row-gap: 1rem;
-    column-gap: 2rem;
-    grid-template-columns: repeat(auto-fit, minmax(0, 36rem));
-}
+/* `.form-grid` lived here. Its last user was the taxon form, which now goes
+ * through `ui.form/section` like every other form. */

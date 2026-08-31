@@ -31,54 +31,52 @@
       :or {default-open? true
            disabled? false
            empty-label "none"}}]
-  [:div {:class (html/attr "collapse collapse-arrow rounded-none"
+  [:div {:class (html/attr "spl-collapse  rounded-none"
                            (when disabled? "opacity-50"))}
    ;; Hidden checkbox controls open/closed state
    [:input {:type "checkbox"
-            :class "peer"
             :disabled disabled?
             :checked (when default-open? true)}]
    ;; Header (collapse-title)
-   [:div {:class (html/attr "collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
+   [:div {:class (html/attr "spl-collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
                             (if disabled?
-                              "text-base-content/60 cursor-not-allowed"
-                              "text-base-content/90"))}
+                              "text-text-dim cursor-not-allowed"
+                              "text-text-soft"))}
     [:span {:class "flex items-center gap-2"}
      title
      (if disabled?
-       [:span {:class "text-base-content/30 normal-case font-normal"}
+       [:span {:class "text-text-dim normal-case font-normal"}
         (str "(" empty-label ")")]
        (when count
-         [:span {:class "text-base-content/40 normal-case font-normal"}
+         [:span {:class "text-text-dim normal-case font-normal"}
           (str "(" count ")")]))]]
    ;; Collapsible content
-   [:div {:class "collapse-content px-4"}
+   [:div {:class "spl-collapse-content px-4"}
     children]])
 
 ;;; ---------------------------------------------------------------------------
 ;;; Summary Section
 ;;; ---------------------------------------------------------------------------
 
-(defn summary-field
-  "A single field in the summary section.
-   Options:
-   - :label - Field label
-   - :value - Field value (can be hiccup)"
-  [& {:keys [label value]}]
-  (when value
-    [:div {:class "flex justify-between items-baseline gap-2"}
-     [:dt {:class "text-base-content/80 text-sm"} label]
-     [:dd {:class "text-sm font-medium text-right"} value]]))
-
 (defn summary-section
-  "Summary section showing key resource details.
+  "Key-value details for a resource.
+
+   Uses the shared `spl-kv` pair: a mono caps label in a fixed left column and
+   the value beside it. Labels sit in a column so the eye runs down them; the
+   previous treatment pushed label and value to opposite edges of the panel,
+   which left a ragged gap between them and read as two lists rather than
+   pairs.
+
    Takes a sequence of field maps with :label and :value keys."
   [& {:keys [fields]}]
-  [:dl {:class "space-y-1"}
+  [:dl {:class "spl-kv"}
+   ;; A seq splices into the parent, which is what puts each dt and dd directly
+   ;; in the grid. Chassis has no fragment element — `[:<> …]` renders a
+   ;; literal <<>> tag.
    (for [{:keys [label value]} fields
          :when value]
-     ^{:key label}
-     (summary-field :label label :value value))])
+     (list [:dt {:class "spl-k"} label]
+           [:dd {:class "spl-v"} value]))])
 
 ;;; ---------------------------------------------------------------------------
 ;;; Statistics Section
@@ -88,11 +86,11 @@
   "A single statistic with label and value."
   [& {:keys [label value href]}]
   (let [content [:div {:class "flex justify-between items-center"}
-                 [:span {:class "text-base-content/80 text-sm"} label]
+                 [:span {:class "text-text-soft text-sm"} label]
                  [:span {:class "text-sm font-semibold"} value]]]
     (if href
       [:a {:href href
-           :class "block hover:bg-base-200 -mx-2 px-2 py-1 rounded transition-colors"}
+           :class "block hover:bg-surface-alt -mx-2 px-2 py-1 rounded transition-colors"}
        content]
       [:div {:class "py-1"} content])))
 
@@ -114,10 +112,10 @@
   "A link to a related resource."
   [& {:keys [label href icon]}]
   [:a {:href href
-       :class "flex items-center gap-2 text-sm hover:bg-base-200 -mx-2 px-2 py-1.5 rounded transition-colors"}
+       :class "flex items-center gap-2 text-sm hover:bg-surface-alt -mx-2 px-2 py-1.5 rounded transition-colors"}
    (when icon
-     [:span {:class "text-base-content/40"} icon])
-   [:span {:class "text-primary hover:underline"} label]])
+     [:span {:class "text-text-dim"} icon])
+   [:span {:class "spl-link"} label]])
 
 (defn linked-resources-section
   "Section showing links to related resources.
@@ -139,9 +137,9 @@
   [:a {:href href
        :target "_blank"
        :rel "noopener noreferrer"
-       :class "flex items-center gap-2 text-sm text-primary hover:underline"}
+       :class "spl-link flex items-center gap-2 text-sm"}
    (when icon
-     [:span {:class "text-base-content/40"} icon])
+     [:span {:class "text-text-dim"} icon])
    label])
 
 (defn external-links-section
@@ -162,15 +160,15 @@
   "Compact activity item for the resource panel.
    Shows badge + time + user only. Uses DaisyUI card component."
   [activity timezone]
-  [:div {:class "card card-compact bg-base-100 shadow-sm"}
-   [:div {:class "card-body p-3"}
+  [:div {:class "spl-card bg-surface shadow-sm"}
+   [:div {:class "spl-card-body p-3"}
     ;; Top row: badge + relative time
     [:div {:class "flex items-center justify-between"}
      (ui.activity/action-badge (:activity/type activity))
      (datetime/relative-time (:activity/created-at activity) timezone
-                             :class "text-sm text-base-content/80")]
+                             :class "text-sm text-text-soft")]
     ;; Bottom row: user email
-    [:div {:class "text-sm text-base-content/80"}
+    [:div {:class "text-sm text-text-soft"}
      (:user/email (:activity/user activity))]]])
 
 (defn activity-section
@@ -191,7 +189,7 @@
        (activity-item-compact activity timezone))
      ;; Load more button
      (when (and load-more-url remaining (pos? remaining))
-       [:button {:class "btn btn-ghost btn-sm w-full"
+       [:button {:class "spl-btn spl-btn--ghost spl-btn--sm w-full"
                  :hx-get load-more-url
                  :hx-target "closest .space-y-2"
                  :hx-swap "beforeend"}
@@ -209,7 +207,7 @@
    - :children - Panel content
    - :class    - Additional CSS classes"
   [& {:keys [children class]}]
-  [:div {:class (html/attr "divide-y divide-base-200" class)}
+  [:div {:class (html/attr "divide-y divide-border-light" class)}
    children])
 
 (defn panel-header
@@ -220,12 +218,18 @@
    - :subtitle  - Optional subtitle (e.g., taxon name)
    - :on-close  - When provided, shows close button (for list page panel)"
   [& {:keys [title subtitle on-close]}]
-  [:div {:class "flex items-start justify-between gap-2 p-4"}
-   [:div
-    [:h2 {:class "text-lg font-semibold"} title]
+  ;; Same identity treatment as a record page's header: the identifier in mono
+  ;; brand green above the name. The panel and the page it opens from should
+  ;; not label the same record two different ways.
+  [:div {:class "spl-panel-header"}
+   [:div {:class "spl-panel-identity"}
+    [:p {:class "spl-panel-code"} title]
     (when subtitle
-      [:p {:class "text-sm text-base-content/80"} subtitle])]
+      [:p {:class "spl-panel-name"} subtitle])]
    (when on-close
-     [:button {:class "btn btn-ghost btn-sm btn-square"
+     [:button {:class "spl-panel-close"
+               :type "button"
+               :data-panel-close ""
+               :aria-label "Close panel"
                :x-on:click on-close}
-      (lucide/x :class "w-5 h-5")])])
+      (lucide/x :class "w-4 h-4")])])

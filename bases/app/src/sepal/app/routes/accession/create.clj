@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.create
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.form :as accession.form]
@@ -18,18 +19,17 @@
                        :values values))
 
 (defn footer-buttons []
-  [[:button {:class "btn"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]
-   [:button {:class "btn btn-primary"
-             :x-on:click "$dispatch('accession-form:submit')"}
-    "Save"]])
+  (ui.form/footer-buttons :form-event "accession-form" :on-cancel :back))
 
 (defn render [& {:keys [errors values]}]
+  ;; Breadcrumbs rather than a page title: the top bar already answers "where
+  ;; am I", and a heading repeating it pushed the first field down the page.
   (ui.page/page :content (page-content :errors errors
                                        :values values)
                 :footer (ui.form/footer :buttons (footer-buttons))
-                :page-title "Create Accession"))
+                :breadcrumbs [[:a {:href (z/url-for accession.routes/index)}
+                               "Accessions"]
+                              "New accession"]))
 
 (defn create! [db created-by data]
   (try
@@ -41,9 +41,18 @@
       (error.i/ex->error ex))))
 
 (def FormParams
+  ;; Every field the form posts. The map is closed, so a key missing from here
+  ;; is dropped in silence: creating an accession discarded its provenance, ID
+  ;; qualifier and supplier, and you only got them by saving and then editing.
+  ;; This matches `detail/general.clj`, which had them all along.
   [:map {:closed true}
    [:code [:string {:min 1}]]
    [:taxon-id [:int {:min 0}]]
+   [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]
+   [:id-qualifier-rank {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier-rank]]
+   [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]
+   [:wild-provenance-status {:decode/form validation.i/empty->nil} [:maybe accession.spec/wild-provenance-status]]
+   [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
    [:date-accessioned [:maybe validation.i/date]]])
 

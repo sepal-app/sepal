@@ -124,6 +124,10 @@
               (pw/press "Tab")
               (pw/wait-for-hidden ".ss-content.ss-open")
 
+              ;; The Collection tab holds wild-collection data, so it is only
+              ;; available on a wild accession. Step 5.5 opens it.
+              (pw/select-option "select#provenance-type" "wild")
+
               ;; Submit
               (pw/click "button:has-text(\"Save\")")
 

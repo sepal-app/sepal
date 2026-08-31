@@ -11,10 +11,13 @@
          [:img {:src (html/static-url "app/routes/auth/img/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg")
                 :class "h-screen w-full object-cover object-center -z-10"
                 :alt "login banner"}]]
-        [:div {:class "grid grid-cols-3"}
-         [:div {:class "col-start-1 col-span-3 lg:col-start-2 lg:col-span-1 flex flex-col justify-center z-10 lg:bg-white/60 h-screen shadow"}
-          [:div {:class "bg-white/95 lg:bg-white/80 p-8 lg:block sm:max-lg:flex sm:max-lg:flex-col sm:max-lg:items-center"}
-           content]]]
+        ;; The card is centred in the viewport rather than stretched down a
+        ;; column: it used to fill the full height of a grid third, so on a
+        ;; phone the form sat against the top edge with the photograph behind
+        ;; the rest.
+        [:div {:class "min-h-screen flex items-center justify-center p-6 relative z-10"}
+         [:div {:class "spl-auth-card w-full max-w-md"}
+          content]]
 
         ;; TODO: Need to raise the z-index of the flash banner
         (flash/banner (:messages flash))]

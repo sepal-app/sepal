@@ -58,12 +58,14 @@
           (is (match? {:user/id (:user/id user)
                        :user/email (:user/email user)}
                       ring-session))
-          ;; Eventually redirects to the activity page
+          ;; Eventually redirects to the activity page. Asserted on the
+          ;; breadcrumb's aria-current rather than a class name, so a restyle
+          ;; cannot break it while the semantics hold.
           (is (= "Activity"
                  (-> response
                      :body
                      (Jsoup/parse)
-                     (.selectFirst ".breadcrumbs span")
+                     (.selectFirst "nav[aria-label=Breadcrumb] [aria-current=page]")
                      (.text)))))))
 
     (tf/testing "post - invalid password"

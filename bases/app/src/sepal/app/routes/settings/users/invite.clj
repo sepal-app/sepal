@@ -37,7 +37,7 @@
       :errors errors
       :input [:select {:name "role"
                        :id "role"
-                       :class "select select-bordered select-md w-full max-w-sm"
+                       :class "spl-input spl-select w-full max-w-sm"
                        :required true}
               (for [{:keys [value label]} [{:value "reader" :label "Reader"}
                                            {:value "editor" :label "Editor"}
@@ -65,13 +65,15 @@
                                  :errors (:full-name errors))
                (role-select :value (:role values)
                             :errors (:role errors))
-               [:p {:class "text-sm text-base-content/70 mt-4"}
+               [:p {:class "text-sm text-text-muted mt-4"}
                 "An invitation email will be sent to this address. The invitation expires in 24 hours."]
+               ;; Cancel then the primary action, the order every other form in
+               ;; the app uses.
                [:div {:class "flex gap-4 mt-6"}
-                (form/submit-button {:class "btn btn-primary"} "Send Invitation")
                 [:a {:href (z/url-for settings.routes/users)
-                     :class "btn"}
-                 "Cancel"]]])])
+                     :class "spl-btn"}
+                 "Cancel"]
+                (form/submit-button {:class "spl-btn spl-btn--primary"} "Send Invitation")]])])
 
 (defn- render [& {:keys [errors values viewer]}]
   (layout/layout

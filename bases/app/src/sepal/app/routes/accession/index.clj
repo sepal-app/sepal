@@ -3,64 +3,94 @@
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.search]
             [sepal.app.authorization :as authz]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.export :as export]
+            [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "btn btn-primary"
-       :href (z/url-for accession.routes/new)}
-   "Create"])
+  (pages.list/create-button :href (z/url-for accession.routes/new)
+                            :label "New accession"))
 
-(defn- row-attrs
-  "Generate attributes for a table row to enable panel preview."
+(defn- row-attrs [row]
+  (let [id (:accession/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for accession.routes/panel {:id id}))))
+
+(defn- provenance-label [row]
+  (some-> (:accession/provenance-type row) (accession.form/enum-label-fn)))
+
+(defn- stacked-summary
+  "What the identifier cell shows below 640px, where the table collapses to a
+  single column. Taxon and date are what tell two accessions apart in the
+  field, so they are what survives."
   [row]
-  (let [id (:accession/id row)
-        panel-url (z/url-for accession.routes/panel {:id id})]
-    {:class "hover:bg-base-200/50 cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-base-200' : ''")
-     :x-on:click (str "selectRow(" id ", $el)")
-     :hx-get panel-url
-     :hx-trigger "panel-select"
-     :hx-target (str "#" pages.list/panel-container-id)
-     :hx-swap "innerHTML"
-     :hx-push-url "false"}))
+  (table/summary (:taxon/name row) (:accession/date-received row)))
 
 (defn table-columns []
   [{:name "Code"
+    :type :identifier
+    :priority 1
+    :stacked stacked-summary
     :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
                                           {:id (:accession/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:accession/code row)])}
    {:name "Taxon"
+    :type :name
+    :priority 1
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
                                           {:id (:taxon/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:taxon/name row)])}])
+                     (taxon-name/render (:taxon/name row))])}
+   {:name "Provenance"
+    :type :text
+    :priority 3
+    :cell provenance-label}
+   {:name "Received"
+    :type :date
+    :priority 2
+    :cell :accession/date-received}])
 
-(defn table [& {:keys [rows page href page-size total]}]
-  [:div {:class "w-full"}
-   (table/card-table
-     (table/table :columns (table-columns)
-                  :rows rows
-                  :row-attrs row-attrs)
-     (table/paginator :current-page page
-                      :href href
-                      :page-size page-size
-                      :total total))])
+(defn index-rows [& {:keys [rows page page-size href total]}]
+  (table/rows-only :columns (table-columns)
+                   :rows rows
+                   :row-attrs row-attrs
+                   :href href
+                   :page page
+                   :page-size page-size
+                   :total total))
+
+(defn table [& {:keys [rows page href page-size total search-query]}]
+  (table/card-table
+    (table/table :columns (table-columns)
+                 :rows rows
+                 :row-attrs row-attrs
+                 :href href
+                 :page page
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "accessions"
+                                :body "An accession is a batch of plant material acquired at one time from one
+                              source."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for accession.routes/new)
+                                :create-label "New accession"))))
 
 (defn render [& {:keys [field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page
@@ -70,19 +100,22 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          ;; Export modal (hidden until triggered)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for accession.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               (query-builder/search-field-with-builder
-                                 :q search-query
-                                 :fields field-options
-                                 :placeholder "Search... (e.g., taxon:Quercus provenance:wild)")
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                                :q search-query
+                                :fields field-options
+                                :placeholder "Search... (e.g., taxon:Quercus provenance:wild)"
+                                :page page
+                                :page-size page-size
+                                :total total
+                                :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 "Taxa"]
@@ -146,13 +179,30 @@
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
         taxon (when taxon-id (taxon.i/get-by-id db taxon-id))]
 
-    (if (= (get headers "accept") "application/json")
+    (cond
+      (= (get headers "accept") "application/json")
       (json/json-response (for [row rows]
                             {:text (format "%s (%s)"
                                            (:accession/code row)
                                            (:taxon/name row))
                              :code (:accession/code row)
                              :id (:accession/id row)}))
+
+      ;; Infinite scroll: the sentinel asks for the next page's rows alone and
+      ;; swaps itself out for them, so this returns <tr>s with no page around
+      ;; them. Same renderer as the initial load, so an appended row is built
+      ;; exactly like one that was already there.
+      (some? (get query-params "rows"))
+      (html/render-partial
+        (index-rows :rows rows
+                    :page page
+                    :page-size page-size
+                    :total total
+                    :href (uri/uri-str {:path uri
+                                        :query (uri/map->query-string
+                                                 (cond-> {} (seq q) (assoc :q q)))})))
+
+      :else
       (render :viewer viewer
               :field-options (search.i/field-options :accession)
               :href (uri/uri-str {:path uri

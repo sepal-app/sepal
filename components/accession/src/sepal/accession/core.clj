@@ -38,11 +38,15 @@
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)
 
-(defn factory [{:keys [db taxon contact] :as args}]
-  (let [data (-> (mg/generate spec/CreateAccession)
-                 (assoc :taxon-id (:taxon/id taxon))
-                 (assoc :supplier-contact-id (when contact (:contact/id contact))))
-        result (create! db data)]
+(defn factory
+  "Build an accession for tests. Fields are generated from the spec unless
+  `:data` overrides them — which a test needs when behaviour depends on a
+  particular value, since a generated one differs run to run."
+  [{:keys [db taxon contact data] :as args}]
+  (let [generated (-> (mg/generate spec/CreateAccession)
+                      (assoc :taxon-id (:taxon/id taxon))
+                      (assoc :supplier-contact-id (when contact (:contact/id contact))))
+        result (create! db (merge generated data))]
     (vary-meta result assoc :db db)))
 
 (defmethod ig/halt-key! ::acc.i/factory [_ data]

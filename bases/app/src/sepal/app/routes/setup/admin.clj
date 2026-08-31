@@ -63,7 +63,7 @@
     ;; Submit button inside the form
     [:div {:class "flex justify-end mt-6"}
      [:button {:type "submit"
-               :class "btn btn-primary"}
+               :class "spl-btn spl-btn--primary"}
       "Create Account →"]]))
 
 (defn render-admin-exists
@@ -76,12 +76,12 @@
       :title "Admin Account Exists"
       :content
       [:div {:class "space-y-4"}
-       [:div {:class "alert alert-info"}
+       [:div {:class "spl-alert spl-alert--info"}
         [:span "An admin account already exists. Please log in to continue setup."]]
        [:p "If you created an admin account via the CLI, you need to log in before continuing with the setup wizard."]]
       :next-button
       [:a {:href (z/url-for auth.routes/login)
-           :class "btn btn-primary"}
+           :class "spl-btn spl-btn--primary"}
        "Log in to continue →"])))
 
 (defn render-admin-complete
@@ -91,10 +91,10 @@
     :current-step 1
     :flash-messages flash-messages
     :content
-    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
-     [:div {:class "card-body"}
-      [:h2 {:class "card-title text-2xl mb-4"} "Admin Account"]
-      [:div {:class "alert alert-success mb-4"}
+    [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
+     [:div {:class "spl-card-body"}
+      [:h2 {:class "spl-card-title mb-4"} "Admin Account"]
+      [:div {:class "spl-alert spl-alert--ok mb-4"}
        [:span "✓ Admin account has been created"]]
 
       [:div {:class "space-y-4"}
@@ -110,7 +110,7 @@
 
       [:div {:class "flex justify-end mt-6"}
        [:a {:href (z/url-for setup.routes/server)
-            :class "btn btn-primary"}
+            :class "spl-btn spl-btn--primary"}
         "Next →"]]]]))
 
 (defn render-create-admin
@@ -120,10 +120,10 @@
     :current-step 1
     :flash-messages flash-messages
     :content
-    [:div {:class "card bg-base-100 border border-base-300 shadow-sm w-full max-w-2xl"}
-     [:div {:class "card-body"}
-      [:h2 {:class "card-title text-2xl mb-4"} "Create Admin Account"]
-      [:p {:class "mb-4 text-base-content/70"}
+    [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
+     [:div {:class "spl-card-body"}
+      [:h2 {:class "spl-card-title mb-4"} "Create Admin Account"]
+      [:p {:class "mb-4 text-text-muted"}
        "Create the first administrator account for your Sepal instance."]
       (admin-form :values values :errors errors)]]))
 

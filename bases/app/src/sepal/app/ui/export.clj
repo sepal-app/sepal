@@ -7,7 +7,7 @@
   "Button that opens the export modal."
   []
   [:button {:type "button"
-            :class "btn btn-sm btn-ghost gap-1"
+            :class "spl-btn spl-btn--sm spl-btn--ghost gap-1"
             :onclick "export_modal.showModal()"}
    (lucide/download :class "size-4")
    [:span "Export"]])
@@ -38,8 +38,8 @@
                                 (str/join ", "))
                            " }")
                       "{}")]
-    [:dialog#export_modal {:class "modal"}
-     [:div {:class "modal-box"}
+    [:dialog#export_modal {:class "spl-modal"}
+     [:div {:class "spl-modal-box"}
       [:h3 {:class "font-bold text-lg"} "Export to CSV"]
 
       [:form {:method "GET"
@@ -57,32 +57,35 @@
        [:div {:class "py-4"}
         [:p (format "Exporting %,d results" total)]
         (when large-export?
-          [:div {:class "alert alert-warning mt-2"}
+          [:div {:class "spl-alert spl-alert--warning mt-2"}
            (lucide/triangle-alert :class "size-4")
            [:span "Large export — this may take a moment"]])]
 
        ;; Optional data checkboxes (resource-specific)
        (when (seq options)
-         [:div {:class "form-control gap-2"}
+         [:div {:class "flex flex-col gap-2"}
           (for [{:keys [id label]} options]
-            [:label {:class "label cursor-pointer justify-start gap-3" :key id}
+            ;; `label`, `label-text` and `form-control` were DaisyUI, and
+            ;; DaisyUI is what supplied the display:flex the gap needed. Without
+            ;; it the box sat on top of its own label.
+            [:label {:class "flex items-center gap-2 cursor-pointer" :key id}
              [:input {:type "checkbox"
                       :x-model id
-                      :class "checkbox checkbox-sm"}]
-             [:span {:class "label-text"} label]])])
+                      :class "spl-checkbox"}]
+             [:span label]])])
 
        ;; Actions
-       [:div {:class "modal-action"}
+       [:div {:class "spl-modal-actions"}
         [:button {:type "button"
-                  :class "btn"
+                  :class "spl-btn"
                   :onclick "export_modal.close()"}
          "Cancel"]
         [:button {:type "submit"
-                  :class "btn btn-primary"
+                  :class "spl-btn spl-btn--primary"
                   :onclick "setTimeout(() => export_modal.close(), 100)"}
          (lucide/download :class "size-4")
          "Export"]]]]
 
      ;; Click outside to close
-     [:form {:method "dialog" :class "modal-backdrop"}
+     [:form {:method "dialog" :class "spl-modal-backdrop"}
       [:button "close"]]]))
