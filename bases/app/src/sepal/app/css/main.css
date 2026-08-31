@@ -11,8 +11,15 @@
 @import "@fontsource-variable/source-code-pro";
 
 @import "./tokens.css";
-@import "./components.css";
-@import "slim-select/styles";
+
+/* Both go in Tailwind's `components` layer so a utility in the markup wins.
+ * Unlayered they beat every utility no matter the specificity, which is why
+ * `class="spl-btn w-full"` used to ignore the w-full.
+ *
+ * SlimSelect comes first: within one layer the later rule wins a tie, and the
+ * point of the widget styling in components.css is to override the library. */
+@import "slim-select/styles" layer(components);
+@import "./components.css" layer(components);
 
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
@@ -34,10 +41,5 @@ td {
     display: none !important;
 }
 
-/* Grid for form layouts - columns never exceed 576px with consistent gaps */
-.form-grid {
-    display: grid;
-    row-gap: 1rem;
-    column-gap: 2rem;
-    grid-template-columns: repeat(auto-fit, minmax(0, 36rem));
-}
+/* `.form-grid` lived here. Its last user was the taxon form, which now goes
+ * through `ui.form/section` like every other form. */
