@@ -16,21 +16,34 @@
     db-path))
 
 (defn- floor-db
-  "A database built from the Task 1 floor snapshot, at 20260113120000 --
+  "A database built from the floor snapshot, at minimum-supported-version --
   before the taxon_rank migration, so migrate! has it to apply. schema.sql
   now bakes that migration in, so load-schema! is at the latest version
   already and cannot exercise it; this is what does."
   [dir]
-  (let [db-path (str (fs/path dir "sepal.db"))
-        resource (io/resource "test/schema-20260113120000.sql")
-        file (File/createTempFile "sepal-floor-schema" ".sql")]
-    (try
-      (with-open [in (io/input-stream resource)]
-        (io/copy in file))
-      (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")
-      (finally
-        (.delete file)))
-    db-path))
+  (let [version (db.i/minimum-supported-version)
+        resource-name (str "test/schema-" version ".sql")
+        resource (io/resource resource-name)]
+    (when-not resource
+      (throw (ex-info (str resource-name " is not on the test classpath. The floor moved; "
+                           "snapshot schema.sql as it stands at the new floor into "
+                           "components/test/resources/" resource-name ".")
+                      {:reason :floor-snapshot-missing :version version})))
+    (let [db-path (str (fs/path dir "sepal.db"))
+          file (File/createTempFile "sepal-floor-schema" ".sql")]
+      (try
+        (with-open [in (io/input-stream resource)]
+          (io/copy in file))
+        (let [{:keys [exit err]} (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")]
+          (when-not (zero? exit)
+            (throw (ex-info (str "Loading " resource-name " into " db-path " failed")
+                            {:reason :floor-schema-load-failed
+                             :resource resource-name
+                             :db-path db-path
+                             :err err}))))
+        (finally
+          (.delete file)))
+      db-path)))
 
 (defn- query [db-path sql]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
@@ -226,7 +239,10 @@
               migrated-path (floor-db migrated-dir)]
           (db.i/migrate! {:db-path migrated-path})
           (is (= (schema-shape provisioned-path) (schema-shape migrated-path))
-              "a provisioned garden and a migrated one must have the same schema"))
+              "a provisioned garden and a migrated one must have the same schema")
+          (is (= (query provisioned-path "select name from taxon_rank order by name")
+                 (query migrated-path "select name from taxon_rank order by name"))
+              "the taxon_rank seed in schema.sql must match the one in the migration"))
         (finally
           (fs/delete-tree provisioned-dir)
           (fs/delete-tree migrated-dir))))))

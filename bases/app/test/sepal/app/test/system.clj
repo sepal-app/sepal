@@ -59,7 +59,13 @@
       (try
         (with-open [in (io/input-stream resource)]
           (io/copy in file))
-        (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")
+        (let [{:keys [exit err]} (shell/sh "sqlite3" "-bail" "-init" (.getAbsolutePath file) db-path "")]
+          (when-not (zero? exit)
+            (throw (ex-info (str "Loading " resource-name " into " db-path " failed")
+                            {:reason :floor-schema-load-failed
+                             :resource resource-name
+                             :db-path db-path
+                             :err err}))))
         (finally
           (.delete file)))))
   {:db-path db-path})
