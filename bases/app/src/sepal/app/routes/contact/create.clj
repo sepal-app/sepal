@@ -18,10 +18,13 @@
                      :values values))
 
 (defn render [& {:keys [errors values]}]
+  ;; Breadcrumbs rather than a page title: the top bar already answers "where
+  ;; am I", and a heading repeating it pushed the first field down the page.
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (contact.form/footer-buttons))
-             :page-title "Create Contact"))
+             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
+                           "New contact"]))
 
 (defn create! [db created-by data]
   (try

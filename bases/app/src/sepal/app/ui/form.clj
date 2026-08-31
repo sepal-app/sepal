@@ -140,6 +140,35 @@
                                       (describedby name {:help help :errors errors})))
                    value])))
 
+(defn footer-buttons
+  "Cancel and Save for a record form, as the footer expects them.
+
+  `form-event` names the Alpine event the form listens for — an accession form
+  listens for `accession-form:submit`, so pass \"accession-form\".
+
+  `on-cancel` is `:back` to leave the page or `:reload` to stay and discard.
+  Reloading is what a tab inside a record page wants; a create page wants back.
+
+  One definition rather than five near-copies, which had drifted: two asked
+  before discarding only when the form was dirty and three asked every time,
+  even with nothing to lose, and Save was disabled while invalid on three of
+  the five. `x-form-state` puts `dirty` and `valid` on every form this
+  namespace builds, so both are safe everywhere."
+  [& {:keys [form-event on-cancel] :or {on-cancel :back}}]
+  (let [discard (case on-cancel
+                  :reload "location.reload()"
+                  "history.back()")]
+    [[:button {:type "button"
+               :class "spl-btn"
+               :x-on:click (str "if (!dirty || confirm('Are you sure you want "
+                                "to lose your changes?')) " discard)}
+      "Cancel"]
+     [:button {:type "button"
+               :class "spl-btn spl-btn--primary"
+               :x-on:click (str "$dispatch('" form-event ":submit')")
+               :x-bind:disabled "!valid"}
+      "Save"]]))
+
 (defn submit-button
   ([children]
    (submit-button {} children))

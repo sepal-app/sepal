@@ -25,7 +25,7 @@
 
 (defn- page-content [& {:keys [email full-name token errors]}]
   [:div
-   [:h1 {:class "text-2xl font-bold mb-2"} "Accept Invitation"]
+   [:h1 {:class "spl-auth-title"} "Accept Invitation"]
    [:p {:class "text-lg mb-6"} "Set up your account for " [:strong email]]
    (form/form {:action (z/url-for auth.routes/accept-invitation)
                :method "post"}

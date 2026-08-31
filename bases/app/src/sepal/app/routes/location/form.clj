@@ -2,13 +2,7 @@
   (:require [sepal.app.ui.form :as form]))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]
-   [:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('location-form:submit')"
-             :x-bind:disabled "!valid"}
-    "Save"]])
+  (form/footer-buttons :form-event "location-form" :on-cancel :back))
 
 (defn form [& {:keys [action errors values]}]
   [:div

@@ -26,10 +26,13 @@
     "Cancel"]])
 
 (defn render [& {:keys [errors values]}]
+  ;; Breadcrumbs rather than a page title: the top bar already answers "where
+  ;; am I", and a heading repeating it pushed the first field down the page.
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (footer-buttons))
-             :page-title "Create Material"))
+             :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Material"]
+                           "New material"]))
 
 (defn create! [db created-by data]
   (try

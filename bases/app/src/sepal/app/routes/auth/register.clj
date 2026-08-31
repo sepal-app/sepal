@@ -46,21 +46,16 @@
 
     [:div {:class (html/attr "flex" "flex-row" "mt-4" "justify-between" "items-center")}
      [:button {:type "submit"
-               ;; :x-bind:disabled "submitting"
-               :class (html/attr "inline-flex" "justify-center" "py-2" "px-4" "border"
-                                 "border-transparent" "shadow-sm" "text-sm" "font-medium"
-                                 "rounded-md" "text-white" "bg-green-700" "hover:bg-green-700"
-                                 "focus:outline-none" "focus:ring-2" "focus:ring-offset-2"
-                                 "focus:ring-brand")}
+               :class "spl-btn spl-btn--primary"}
       "Create account"]]
 
     [:div {:class "mt-4"}
      ;; TODO
-     [:a {:href "/login"} "Already have an account?"]]))
+     [:a {:class "spl-link text-sm" :href "/login"} "Already have an account?"]]))
 
 (defn render [& {:keys [email field-errors invitation next flash]}]
   (page/page :content [:div
-                       [:h1 {:class "text-3xl pb-6"} "Welcome to Sepal"]
+                       [:h1 {:class "spl-auth-title"} "Welcome to Sepal"]
                        (form :email email
                              :invitation invitation
                              :next next

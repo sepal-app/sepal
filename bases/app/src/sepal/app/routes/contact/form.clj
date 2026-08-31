@@ -2,13 +2,7 @@
   (:require [sepal.app.ui.form :as ui.form]))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
-             :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && history.back()"}
-    "Cancel"]
-   [:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('contact-form:submit')"
-             :x-bind:disabled "!valid"}
-    "Save"]])
+  (ui.form/footer-buttons :form-event "contact-form" :on-cancel :back))
 
 (defn form [& {:keys [action errors values]}]
   (ui.form/form

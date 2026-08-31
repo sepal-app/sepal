@@ -8,15 +8,7 @@
             [zodiac.core :as z]))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
-             ;; TODO: form.reset() would be better but it doesn't reset the TomSelect of the rank field
-             ;; :x-on:click "dirty && confirm('Are you sure you want to lose your changes?') && $refs.taxonForm.reset()"
-             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]
-   [:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('taxon-form:submit')"
-             :x-bind:disabled "!valid"}
-    "Save"]])
+  (form/footer-buttons :form-event "taxon-form" :on-cancel :reload))
 
 (defn- vernacular-name-decoder [form-data]
   (let [names (cond-> (:vernacular-name-name form-data)
@@ -55,9 +47,14 @@
         :id "taxon-form"
         :x-on:taxon-form:submit.window "$el.requestSubmit()"
         :x-on:taxon-form:reset.window "$el.reset()"}
-       [(form/anti-forgery-field)
-        [:div {:class "form-grid"}
-         (form/input-field :label "Name"
+       [:div {:class "spl-form"}
+        (form/anti-forgery-field)
+        (form/section
+          :title "Identity"
+          :hint "The scientific name, its author, and where it sits in the
+                 taxonomy."
+          :children
+          [(form/input-field :label "Name"
                            :name "name"
                            :required true
                            :read-only read-only
@@ -102,36 +99,41 @@
                                  [:option {:value rank
                                            :selected (when (= rank (some-> values :rank name))
                                                        "selected")}
-                                  rank])]))]]
-       [:fieldset {:class "spl-fieldsetmt-6"
-                   :x-data (json/js {:vernacularNames (or (:vernacular-names values)
-                                                          [])})}
-        [:legend {:class "spl-label text-md"}
-         "Vernacular names"
-         [:button {:type "button"
-                   :class "spl-btn spl-btn--sm spl-btn--icon"
-                   :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
-                   :aria-label "Add vernacular name"}
-          [:span {:aria-hidden true}
-           (heroicons/plus-mini)]]]
-        [:div {:class "flex flex-col gap-2"}
-         [:template {:x-for "(vn, index) in vernacularNames"}
-          [:div {:class "flex flex-row gap-2 items-center"}
-           [:input {:name "vernacular-name-name"
-                    :class "spl-input flex-grow"
-                    :x-model "vn.name"}]
-           [:input {:name "vernacular-name-language"
-                    :class "spl-input flex-grow"
-                    :x-model "vn.language"}]
-           [:button {:type "button"
-                     :class "spl-btn  spl-btn--danger hover:text-white"
-                     :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
-                     :aria-label "Delete"}
-            [:span {:aria-hidden true}
-             (heroicons/outline-trash)]]]]]
-        [:div {:x-show "!vernacularNames?.length"
-               :class "bg-info-bg p-6 rounded-xl"}
-         "This taxon doesn't have any vernacular names"]])
+                                  rank])]))])
+
+        [:fieldset {:class "spl-form-section spl-fieldset"
+                    :x-data (json/js {:vernacularNames (or (:vernacular-names values)
+                                                           [])})}
+         [:legend {:class "spl-form-section-title flex items-center gap-2"}
+          "Vernacular names"
+          [:button {:type "button"
+                    :class "spl-btn spl-btn--sm spl-btn--icon"
+                    :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
+                    :aria-label "Add vernacular name"}
+           [:span {:aria-hidden true}
+            (heroicons/plus-mini)]]]
+         [:div {:class "spl-form-fields"}
+          [:template {:x-for "(vn, index) in vernacularNames"}
+           [:div {:class "flex flex-row gap-2 items-center"}
+            [:input {:name "vernacular-name-name"
+                     :class "spl-input flex-grow"
+                     :aria-label "Vernacular name"
+                     :x-model "vn.name"}]
+            [:input {:name "vernacular-name-language"
+                     :class "spl-input flex-grow"
+                     :aria-label "Language"
+                     :x-model "vn.language"}]
+            [:button {:type "button"
+                      :class "spl-btn spl-btn--danger spl-btn--icon"
+                      :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
+                      :aria-label "Delete"}
+             [:span {:aria-hidden true}
+              (heroicons/outline-trash)]]]]
+          ;; Inside the section, so it takes the same 576px column as the
+          ;; fields. As a bare div it ran the full width of the page.
+          [:p {:x-show "!vernacularNames?.length"
+               :class "spl-help"}
+           "None yet."]]]])
 
      [:script {:type "module"
                :src (html/static-url "app/routes/taxon/form.ts")}]]))

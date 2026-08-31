@@ -14,107 +14,107 @@
             [zodiac.core :as z]))
 
 (defn form [& {:keys [action errors values]}]
-  [:div
-   (ui.form/form
-     {:id "collection-form"
-      :hx-post action
-      :hx-swap "none"
-      :x-on:collection-form:submit.window "$el.requestSubmit()"
-      :x-on:collection-form:reset.window "$el.reset()"}
-     [:div {:class "max-w-3xl"}
-      (ui.form/anti-forgery-field)
+  (ui.form/form
+    {:id "collection-form"
+     :hx-post action
+     :hx-swap "none"
+     :x-on:collection-form:submit.window "$el.requestSubmit()"
+     :x-on:collection-form:reset.window "$el.reset()"}
+    [:div {:class "spl-form"}
+     (ui.form/anti-forgery-field)
 
-      ;; Collection metadata section
-      [:div {:class "grid grid-cols-2 gap-8"}
-       [:div
-        (ui.form/input-field :label "Collector"
-                             :name "collector"
-                             :value (:collector values)
-                             :errors (:collector errors))
-        (ui.form/input-field :label "Collection Date"
-                             :name "collected-date"
-                             :type "date"
-                             :value (:collected-date values)
-                             :errors (:collected-date errors))]
-       [:div
+     (ui.form/section
+       :title "Collection"
+       :hint "Who gathered this material, when, and from what."
+       :children
+       [[:div {:class "spl-form-pair"}
+         (ui.form/input-field :label "Collector"
+                              :name "collector"
+                              :value (:collector values)
+                              :errors (:collector errors))
+         (ui.form/input-field :label "Collection Date"
+                              :name "collected-date"
+                              :type "date"
+                              :value (:collected-date values)
+                              :errors (:collected-date errors))]
         (ui.form/textarea-field :label "Habitat"
                                 :name "habitat"
                                 :id "habitat"
                                 :value (:habitat values)
-                                :errors (:habitat errors))]]
-
-      ;; Taxa and remarks
-      [:div {:class "grid grid-cols-2 gap-8 mt-4"}
-       [:div
+                                :errors (:habitat errors))
         (ui.form/textarea-field :label "Associated Taxa"
                                 :name "taxa"
                                 :id "taxa"
                                 :value (:taxa values)
-                                :errors (:taxa errors))]
-       [:div
+                                :errors (:taxa errors))
         (ui.form/textarea-field :label "Remarks"
                                 :name "remarks"
                                 :id "remarks"
                                 :value (:remarks values)
-                                :errors (:remarks errors))]]
+                                :errors (:remarks errors))])
 
-      ;; Location section
-      [:h3 {:class "text-lg font-semibold mt-6 mb-4"} "Location"]
-      [:div {:class "grid grid-cols-3 gap-4"}
-       (ui.form/input-field :label "Country"
-                            :name "country"
-                            :value (:country values)
-                            :errors (:country errors))
-       (ui.form/input-field :label "Province/State"
-                            :name "province"
-                            :value (:province values)
-                            :errors (:province errors))
-       (ui.form/input-field :label "Locality"
-                            :name "locality"
-                            :value (:locality values)
-                            :errors (:locality errors))]
+     (ui.form/section
+       :title "Location"
+       :hint "Where it was collected, in words."
+       :children
+       [[:div {:class "spl-form-trio"}
+         (ui.form/input-field :label "Country"
+                              :name "country"
+                              :value (:country values)
+                              :errors (:country errors))
+         (ui.form/input-field :label "Province/State"
+                              :name "province"
+                              :value (:province values)
+                              :errors (:province errors))
+         (ui.form/input-field :label "Locality"
+                              :name "locality"
+                              :value (:locality values)
+                              :errors (:locality errors))]])
 
-      ;; Geo coordinates section
-      [:h3 {:class "text-lg font-semibold mt-6 mb-4"} "Coordinates"]
-      [:div {:class "grid grid-cols-5 gap-4"}
-       (ui.form/input-field :label "Latitude"
-                            :name "lat"
-                            :type "number"
-                            :value (:lat values)
-                            :errors (:lat errors)
-                            :input-attrs {:step "any"
-                                          :min "-90"
-                                          :max "90"})
-       (ui.form/input-field :label "Longitude"
-                            :name "lng"
-                            :type "number"
-                            :value (:lng values)
-                            :errors (:lng errors)
-                            :input-attrs {:step "any"
-                                          :min "-180"
-                                          :max "180"})
-       (let [current-srid (or (:srid values) datum/default-srid)]
-         (ui.form/field :label "Coordinate System"
-                        :name "srid"
-                        :errors (:srid errors)
-                        :input [:select {:name "srid"
-                                         :id "srid"
-                                         :class "spl-input spl-select   w-full"}
-                                (for [[srid label] datum/datum-options]
-                                  [:option {:value srid
-                                            :selected (when (= srid current-srid) "selected")}
-                                   label])]))
-       (ui.form/input-field :label "Uncertainty (m)"
-                            :name "geo-uncertainty"
-                            :type "number"
-                            :value (:geo-uncertainty values)
-                            :errors (:geo-uncertainty errors)
-                            :input-attrs {:min "1"})
-       (ui.form/input-field :label "Elevation (m)"
-                            :name "elevation"
-                            :type "number"
-                            :value (:elevation values)
-                            :errors (:elevation errors))]])])
+     (ui.form/section
+       :title "Coordinates"
+       :hint "Where it was collected, as a point."
+       :children
+       [[:div {:class "spl-form-pair"}
+         (ui.form/input-field :label "Latitude"
+                              :name "lat"
+                              :type "number"
+                              :value (:lat values)
+                              :errors (:lat errors)
+                              :input-attrs {:step "any"
+                                            :min "-90"
+                                            :max "90"})
+         (ui.form/input-field :label "Longitude"
+                              :name "lng"
+                              :type "number"
+                              :value (:lng values)
+                              :errors (:lng errors)
+                              :input-attrs {:step "any"
+                                            :min "-180"
+                                            :max "180"})]
+        (let [current-srid (or (:srid values) datum/default-srid)]
+          (ui.form/field :label "Coordinate System"
+                         :name "srid"
+                         :errors (:srid errors)
+                         :input [:select {:name "srid"
+                                          :id "srid"
+                                          :class "spl-input spl-select w-full"}
+                                 (for [[srid label] datum/datum-options]
+                                   [:option {:value srid
+                                             :selected (when (= srid current-srid) "selected")}
+                                    label])]))
+        [:div {:class "spl-form-pair"}
+         (ui.form/input-field :label "Uncertainty (m)"
+                              :name "geo-uncertainty"
+                              :type "number"
+                              :value (:geo-uncertainty values)
+                              :errors (:geo-uncertainty errors)
+                              :input-attrs {:min "1"})
+         (ui.form/input-field :label "Elevation (m)"
+                              :name "elevation"
+                              :type "number"
+                              :value (:elevation values)
+                              :errors (:elevation errors))]])]))
 
 (defn page-content [& {:keys [errors accession taxon values footer]}]
   ;; Reachable only when the tab is available, so it is always enabled here.
@@ -129,12 +129,7 @@
                 :values values)))
 
 (defn footer-buttons []
-  [[:button {:class "spl-btn"
-             :x-on:click "confirm('Are you sure you want to lose your changes?') && location.reload()"}
-    "Cancel"]
-   [:button {:class "spl-btn spl-btn--primary"
-             :x-on:click "$dispatch('collection-form:submit')"}
-    "Save"]])
+  (ui.form/footer-buttons :form-event "collection-form" :on-cancel :reload))
 
 (defn render [& {:keys [errors accession taxon values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
