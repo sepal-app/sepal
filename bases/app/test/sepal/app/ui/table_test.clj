@@ -86,21 +86,152 @@
       (is (some? (.selectFirst body "tr.spl-end")))
       (is (nil? (.selectFirst body "tr.spl-sentinel"))))))
 
+(def ^:private next-url "/accession/?page=2&rows=1")
+
+(defn- many-rows [n]
+  (mapv #(hash-map :code (format "2024.%04d" %)
+                   :taxon "Quercus alba"
+                   :location "North Woodland"
+                   :received "2024-03-14")
+        (range n)))
+
+(defn- with-next-page [rows]
+  (Jsoup/parseBodyFragment
+    (chassis/html (table/table :columns columns
+                               :rows rows
+                               :href "/accession/"
+                               :page 1
+                               :page-size 25
+                               :total 500))))
+
 (deftest test-more-pages-render-a-sentinel-instead
-  (let [body (Jsoup/parseBodyFragment
-               (chassis/html (table/table :columns columns
-                                          :rows rows
-                                          :next-page-url "/accession/?page=2&rows=1")))
+  (let [body (with-next-page rows)
         sentinel (.selectFirst body "tr.spl-sentinel")]
     (is (some? sentinel))
-    (is (= "intersect once" (.attr sentinel "hx-trigger"))
+    (is (= table/sentinel-id (.attr sentinel "id"))
+        "the trigger row targets it by id, so it needs one")
+    (is (str/blank? (.attr sentinel "hx-trigger"))
+        "the sentinel carries no trigger of its own — two triggers race, and a
+         fast scroll fetches the same page twice")
+    (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
+
+(deftest test-the-fetch-is-triggered-three-rows-early
+  (let [body (with-next-page (many-rows 25))
+        triggers (.select body "tbody tr.spl-prefetch")
+        trigger (.first triggers)
+        after (.select (.nextElementSiblings trigger) "tr:not(.spl-prefetch)")]
+    (is (= 1 (.size triggers))
+        "exactly one trigger, or the same page arrives twice")
+    (is (= 4 (.size after))
+        "three data rows plus the sentinel follow it, so the request is already
+         in flight when the reader reaches the end")
+    (is (= "2024.0022" (.text (.selectFirst (.first after) "td")))
+        "the 23rd of 25 rows")
+    (is (= "intersect once" (.attr trigger "hx-trigger"))
         "not `revealed` — htmx implements that against window scroll, and this
          shell is viewport-locked, so it never fires. Verified in a browser:
          25 rows before scrolling and 25 after.")
-    (is (= "outerHTML" (.attr sentinel "hx-swap"))
-        "the sentinel replaces itself, so exactly one is ever in the table")
-    (is (= "/accession/?page=2&rows=1" (.attr sentinel "hx-get")))
-    (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
+    (is (= "outerHTML" (.attr trigger "hx-swap"))
+        "the sentinel is replaced, so exactly one is ever in the table")
+    (is (= (str "#" table/sentinel-id) (.attr trigger "hx-target")))
+    (is (= (str "#" table/sentinel-id) (.attr trigger "hx-indicator"))
+        "the spinner shows where the rows will land, not on whichever row
+         happened to trigger the fetch")
+    (is (= next-url (.attr trigger "hx-get")))))
+
+(deftest test-a-short-page-still-triggers
+  (testing "fewer rows than the prefetch offset falls back to the top of the
+            page rather than to no trigger at all"
+    (let [body (with-next-page (many-rows 2))
+          triggers (.select body "tbody tr.spl-prefetch")]
+      (is (= 1 (.size triggers)))
+      (is (= "2024.0000"
+             (.text (.selectFirst (.nextElementSibling (.first triggers)) "td")))))))
+
+(deftest test-data-rows-keep-their-own-htmx-attributes
+  (testing "every list row already carries an hx-get that opens the resource
+            panel — the prefetch must not land on one and replace it"
+    (let [body (Jsoup/parseBodyFragment
+                 (chassis/html (table/table :columns columns
+                                            :rows (many-rows 25)
+                                            :row-attrs (fn [_]
+                                                         {:hx-get "/taxon/1/panel/"
+                                                          :hx-trigger "panel-select"})
+                                            :href "/accession/"
+                                            :page 1
+                                            :page-size 25
+                                            :total 500)))
+          data-rows (.select body "tbody tr:not(.spl-prefetch):not(.spl-sentinel)")]
+      (is (= 25 (.size data-rows)))
+      (is (every? #(= "panel-select" (.attr % "hx-trigger")) data-rows)
+          "no data row was turned into a scroll trigger")
+      (is (every? #(= "/taxon/1/panel/" (.attr % "hx-get")) data-rows)))))
+
+(deftest test-the-sentinel-announces-loading
+  (testing "a live region that is already in the DOM when its text appears —
+            one inserted with its text in place announces nothing"
+    (let [body (with-next-page rows)
+          sentinel (.selectFirst body "tr.spl-sentinel")]
+      (is (some? (.selectFirst sentinel ".spl-sentinel-spinner[aria-hidden=true]"))
+          "the spinner is decorative; the status text carries the meaning")
+      (is (= "status" (.attr (.selectFirst sentinel ".spl-sentinel-status") "role")))
+      (is (= "Loading more rows"
+             (.text (.selectFirst sentinel ".spl-sentinel-loading")))))))
+
+(deftest test-a-scroll-response-updates-the-toolbar-count
+  (testing "without this the count freezes at the first page while the list
+            grows under it"
+    (let [body (Jsoup/parseBodyFragment
+                 (str "<div>"
+                      (chassis/html (table/rows-only :columns columns
+                                                     :rows (many-rows 25)
+                                                     :href "/accession/"
+                                                     :page 3
+                                                     :page-size 25
+                                                     :total 500))
+                      "</div>"))
+          count-el (.selectFirst body (str "#" table/count-id))]
+      (is (some? count-el))
+      (is (= "true" (.attr count-el "hx-swap-oob")))
+      (is (= "75 of 500" (.text count-el))
+          "three pages loaded, not just the page in this response"))))
+
+(deftest test-the-page-itself-carries-no-out-of-band-count
+  (testing "an hx-swap-oob inside the initial <tbody> would be a stray <p> in
+            the table and a duplicate id"
+    (let [html (chassis/html (table/table :columns columns
+                                          :rows rows
+                                          :href "/accession/"
+                                          :page 1
+                                          :page-size 25
+                                          :total 500))]
+      (is (not (str/includes? html "hx-swap-oob"))))))
+
+(deftest test-a-fixed-list-has-no-scroll-machinery
+  (testing "settings tables pass no paging state and must not sprout a
+            sentinel, a trigger or a count"
+    (let [body (parse)]
+      (is (nil? (.selectFirst body "tr.spl-prefetch")))
+      (is (nil? (.selectFirst body "tr.spl-sentinel")))
+      (is (some? (.selectFirst body "tr.spl-end"))))))
+
+(deftest test-an-empty-list-explains-itself
+  (testing "a header row over nothing, with END OF LIST under it, reads as a
+            list that failed to load"
+    (let [body (Jsoup/parseBodyFragment
+                 (chassis/html (table/table :columns columns
+                                            :rows []
+                                            :empty-state [:p {:class "spl-empty"}
+                                                          "No contacts yet"])))]
+      (is (nil? (.selectFirst body "table")) "the table is replaced, not filled")
+      (is (nil? (.selectFirst body "tr.spl-end")))
+      (is (= "No contacts yet" (.text (.selectFirst body ".spl-empty")))))))
+
+(deftest test-a-list-with-no-empty-state-still-renders-a-table
+  (testing "settings tables pass none and must keep their header"
+    (let [body (parse :rows [])]
+      (is (some? (.selectFirst body "table")))
+      (is (some? (.selectFirst body "tr.spl-end"))))))
 
 (deftest test-rows-only-matches-what-the-table-renders
   (testing "an appended row is built by the same code as a row present on load"

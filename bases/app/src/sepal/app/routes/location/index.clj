@@ -9,7 +9,6 @@
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.permission :as location.perm]
@@ -20,33 +19,36 @@
 (def default-page-size 25)
 
 (defn create-button []
-  [:a {:class "spl-btn spl-btn--primary"
-       :href (z/url-for location.routes/new)}
-   "Create"])
+  (pages.list/create-button :href (z/url-for location.routes/new)))
 
-(defn row-attrs
-  "Generate HTMX attributes for clickable table rows that open the preview panel."
-  [location]
-  (let [id (:location/id location)]
-    {:class "cursor-pointer hover:bg-surface-alt"
-     :hx-get (z/url-for location.routes/panel {:id id})
-     :hx-trigger "panel-select"
-     :hx-target "#preview-panel-content"
-     :hx-swap "innerHTML"
-     :hx-push-url "false"
-     :x-on:click (str "selectRow(" id ", $el)")
-     :x-bind:class (str "selectedId === " id " ? 'bg-surface-alt' : ''")}))
+(defn row-attrs [row]
+  (let [id (:location/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for location.routes/panel {:id id}))))
+
+(defn- stacked-summary
+  "What the name cell shows below 640px, where the table collapses to a single
+  column."
+  [l]
+  (table/summary (:location/code l) (:location/description l)))
 
 (defn table-columns []
   [{:name "Name"
+    :type :text
+    :priority 1
+    :stacked stacked-summary
     :cell (fn [l] [:a {:href (z/url-for location.routes/detail
                                         {:id (:location/id l)})
                        :class "spl-link"
                        :x-on:click.stop ""}
                    (:location/name l)])}
    {:name "Code"
+    :type :identifier
+    :priority 2
     :cell :location/code}
    {:name "Description"
+    :type :text
+    :priority 3
     :cell :location/description}])
 
 (defn index-rows
@@ -56,20 +58,25 @@
   (table/rows-only :columns (table-columns)
                    :rows rows
                    :row-attrs row-attrs
-                   :next-page-url (table/next-page-url :href href
-                                                       :page page-num
-                                                       :page-size page-size
-                                                       :total total)))
+                   :href href
+                   :page page-num
+                   :page-size page-size
+                   :total total))
 
-(defn table [& {:keys [rows page-num href page-size total]}]
+(defn table [& {:keys [rows page-num href page-size total search-query]}]
   (table/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs
-                 :next-page-url (table/next-page-url :href href
-                                                     :page page-num
-                                                     :page-size page-size
-                                                     :total total))))
+                 :href href
+                 :page page-num
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "locations"
+                                :body "The beds, houses and stores that material lives in."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for location.routes/new)))))
 
 (defn render [& {:keys [field-options viewer href page-num page-size rows search-query total]}]
   (ui.page/page
@@ -79,21 +86,21 @@
                                 :page-num page-num
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for location.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               (query-builder/search-field-with-builder
-                                 :q search-query
-                                 :fields field-options
-                                 :placeholder "Search... (e.g., taxon:Quercus)")
-                               ;; The count sits with the search that changes it.
-                               (table/row-count :loaded (min (* page-num page-size) total)
-                                                :total total)
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                               :q search-query
+                               :fields field-options
+                               :placeholder "Search... (e.g., taxon:Quercus)"
+                               :page page-num
+                               :page-size page-size
+                               :total total
+                               :actions (ui.export/export-button)))
     :breadcrumbs ["Locations"]
     :page-title-buttons (when (authz/user-has-permission? viewer location.perm/create)
                           (create-button))))
@@ -141,7 +148,7 @@
       (some? (get query-params "rows"))
       (html/render-partial
         (index-rows :rows rows
-                    :page page
+                    :page-num page
                     :page-size page-size
                     :total total
                     :href (uri/uri-str {:path uri

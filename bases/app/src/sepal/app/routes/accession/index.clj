@@ -1,6 +1,5 @@
 (ns sepal.app.routes.accession.index
-  (:require [clojure.string :as str]
-            [lambdaisland.uri :as uri]
+  (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.search]
             [sepal.app.authorization :as authz]
@@ -14,7 +13,6 @@
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
@@ -23,26 +21,13 @@
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "spl-btn spl-btn--primary"
-       :href (z/url-for accession.routes/new)}
-   "New accession"])
+  (pages.list/create-button :href (z/url-for accession.routes/new)
+                            :label "New accession"))
 
-(defn- row-attrs
-  "Generate attributes for a table row to enable panel preview.
-
-  The click handler is an enhancement — the anchor inside the Code cell is the
-  real affordance and is what a keyboard user reaches."
-  [row]
-  (let [id (:accession/id row)
-        panel-url (z/url-for accession.routes/panel {:id id})]
-    {:class "spl-row"
-     :x-bind:class (str "selectedId === " id " ? 'spl-row--selected' : ''")
-     :x-on:click (str "selectRow(" id ", $el)")
-     :hx-get panel-url
-     :hx-trigger "panel-select"
-     :hx-target (str "#" pages.list/panel-container-id)
-     :hx-swap "innerHTML"
-     :hx-push-url "false"}))
+(defn- row-attrs [row]
+  (let [id (:accession/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for accession.routes/panel {:id id}))))
 
 (defn- provenance-label [row]
   (some-> (:accession/provenance-type row) (accession.form/enum-label-fn)))
@@ -52,16 +37,13 @@
   single column. Taxon and date are what tell two accessions apart in the
   field, so they are what survives."
   [row]
-  (->> [(:taxon/name row)
-        (:accession/date-received row)]
-       (remove str/blank?)
-       (str/join " · ")))
+  (table/summary (:taxon/name row) (:accession/date-received row)))
 
 (defn table-columns []
   [{:name "Code"
     :type :identifier
     :priority 1
-    :attrs (fn [row] {:data-stacked (stacked-summary row)})
+    :stacked stacked-summary
     :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
                                           {:id (:accession/id row)})
                          :class "spl-link"
@@ -88,20 +70,27 @@
   (table/rows-only :columns (table-columns)
                    :rows rows
                    :row-attrs row-attrs
-                   :next-page-url (table/next-page-url :href href
-                                                       :page page
-                                                       :page-size page-size
-                                                       :total total)))
+                   :href href
+                   :page page
+                   :page-size page-size
+                   :total total))
 
-(defn table [& {:keys [rows page href page-size total]}]
+(defn table [& {:keys [rows page href page-size total search-query]}]
   (table/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs
-                 :next-page-url (table/next-page-url :href href
-                                                     :page page
-                                                     :page-size page-size
-                                                     :total total))))
+                 :href href
+                 :page page
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "accessions"
+                                :body "An accession is a batch of plant material acquired at one time from one
+                              source."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for accession.routes/new)
+                                :create-label "New accession"))))
 
 (defn render [& {:keys [field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page
@@ -111,22 +100,22 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          ;; Export modal (hidden until triggered)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for accession.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               (query-builder/search-field-with-builder
-                                 :q search-query
-                                 :fields field-options
-                                 :placeholder "Search... (e.g., taxon:Quercus provenance:wild)")
-                               ;; The count sits with the search that changes it.
-                               (table/row-count :loaded (min (* page page-size) total)
-                                                :total total)
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                               :q search-query
+                               :fields field-options
+                               :placeholder "Search... (e.g., taxon:Quercus provenance:wild)"
+                               :page page
+                               :page-size page-size
+                               :total total
+                               :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 "Taxa"]

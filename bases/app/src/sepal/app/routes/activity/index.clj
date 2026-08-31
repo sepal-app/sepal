@@ -17,6 +17,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.activity :as ui.activity]
             [sepal.app.ui.avatar :as ui.avatar]
+            [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
@@ -362,27 +363,25 @@
   the viewer's role allows. A reader can create nothing, so they get the
   explanation alone."
   [viewer]
-  [:div {:class (html/attr "spl-card" "bg-surface" "shadow-sm" "mt-6")}
-   [:div {:class (html/attr "spl-card-body" "items-center" "text-center" "py-12")}
-    [:div {:class "text-text-dim"}
-     (heroicons/outline-clock :size 48)]
-    [:h2 {:class (html/attr "spl-card-title" "mt-4")}
-     "No activity yet"]
-    [:p {:class (html/attr "text-text-dim" "max-w-md")}
-     "Records created, edited and uploaded by you and your collaborators show up here."]
-    (when (authz/can-edit? viewer)
-      [:div {:class (html/attr "spl-card-actions" "mt-6")}
-       [:a {:class "spl-btn spl-btn--primary"
-            :href (z/url-for location.routes/new)}
-        "Add a location"]
-       [:a {:class "spl-btn spl-btn--ghost"
-            :href (z/url-for accession.routes/new)}
-        "Add an accession"]])
-    (when (authz/user-has-permission? viewer authz/users-create)
-      [:div {:class (html/attr "mt-4" "text-sm")}
-       [:a {:class "spl-link"
-            :href (z/url-for settings.routes/users-invite)}
-        "Invite someone to your organization"]])]])
+  (ui.empty/empty-state
+    :icon (heroicons/outline-clock :size 48)
+    :title "No activity yet"
+    :body "Records created, edited and uploaded by you and your collaborators
+           show up here."
+    :actions
+    (list
+      (when (authz/can-edit? viewer)
+        (list
+          [:a {:class "spl-btn spl-btn--primary"
+               :href (z/url-for location.routes/new)}
+           "Add a location"]
+          [:a {:class "spl-btn spl-btn--ghost"
+               :href (z/url-for accession.routes/new)}
+           "Add an accession"]))
+      (when (authz/user-has-permission? viewer authz/users-create)
+        [:a {:class "spl-link self-center text-sm"
+             :href (z/url-for settings.routes/users-invite)}
+         "Invite someone to your organization"]))))
 
 ;;; Legacy timeline-section (kept for reference during migration)
 
@@ -421,8 +420,21 @@
        "?page=" (inc page)
        "&page-size=" page-size))
 
+(def ^:private loading-id "activity-loading")
+
+(def ^:private prefetch-offset
+  "How many cards above the last one the next page starts loading, matching the
+  tables."
+  3)
+
 (defn- infinite-scroll-sentinel
-  "Render an invisible sentinel element that triggers loading the next page."
+  "Render an invisible sentinel element that triggers loading the next page.
+
+  It is emitted `prefetch-offset` cards above the bottom rather than after the
+  last one, so the request is usually already in flight by the time the reader
+  arrives. htmx's `intersect` takes only `root:` and `threshold:` — there is no
+  rootMargin to fire it early — so position in the document is how that margin
+  is expressed."
   [next-url]
   [:div {:hx-get next-url
          ;; `intersect once` rather than `revealed`: htmx's `revealed` listens
@@ -431,7 +443,18 @@
          ;; panes began scrolling internally.
          :hx-trigger "intersect once"
          :hx-target "#activity-feed"
-         :hx-swap "beforeend"}])
+         :hx-swap "beforeend"
+         :hx-indicator (str "#" loading-id)}])
+
+(defn- loading-indicator
+  "Shown while the next page is in flight. It lives outside the feed, which is
+  appended into, so it stays put instead of ending up between pages."
+  []
+  [:div {:id loading-id
+         :class "spl-grid-sentinel"}
+   [:span {:class "spl-sentinel-spinner" :aria-hidden "true"}]
+   [:span {:class "spl-sentinel-status" :role "status"}
+    [:span {:class "spl-sentinel-loading sr-only"} "Loading more activity"]]])
 
 (defn timeline-content
   "Render just the activity content (day sections with cards) without page wrapper.
@@ -452,27 +475,42 @@
     ;; empty would append the empty state below a populated feed.
     (if (and (empty? renderable) (= page 1))
       (empty-state viewer)
-      [:div {:class "spl-changelog"}
-       (for [date dates]
-         (let [user-groups (group-consecutive-by-user (get activity-by-date date))]
-           [:div {:key (str date)}
-            (day-header (format-day-header date timezone))
-            (for [group user-groups]
-              (activity-card group timezone))]))
-       (when has-more?
-         (infinite-scroll-sentinel (next-page-url page page-size)))])))
+      (let [sections (for [date dates]
+                       [date (group-consecutive-by-user (get activity-by-date date))])
+            total (reduce + (map (comp count second) sections))
+            ;; Clamped, so a short final page still triggers from its first card
+            ;; rather than not at all.
+            trigger-at (max 0 (- total prefetch-offset))
+            sentinel (when has-more?
+                       (infinite-scroll-sentinel (next-page-url page page-size)))]
+        [:div {:class "spl-changelog"}
+         ;; The running index is what lets the sentinel be placed by its
+         ;; position in the whole page rather than within one day.
+         (first
+           (reduce (fn [[acc i] [date groups]]
+                     [(conj acc
+                            [:div {:key (str date)}
+                             (day-header (format-day-header date timezone))
+                             (for [[j group] (map-indexed vector groups)]
+                               (list (activity-card group timezone)
+                                     (when (= (+ i j) trigger-at) sentinel)))])
+                      (+ i (count groups))])
+                   [[] 0]
+                   sections))]))))
 
 (defn timeline
   "Render the activity timeline grouped by day and consecutive user."
   [& {:keys [activity page page-size timezone viewer]
       :or {page 1
            page-size 25}}]
-  [:div {:id "activity-feed"}
-   (timeline-content :activity activity
-                     :page page
-                     :page-size page-size
-                     :timezone timezone
-                     :viewer viewer)])
+  (list
+    [:div {:id "activity-feed"}
+     (timeline-content :activity activity
+                       :page page
+                       :page-size page-size
+                       :timezone timezone
+                       :viewer viewer)]
+    (loading-indicator)))
 
 (defn render [& {:keys [activity page page-size timezone viewer]}]
   (ui.page/page :content (timeline :activity activity

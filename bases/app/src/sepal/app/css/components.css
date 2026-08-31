@@ -272,6 +272,15 @@
    where a curator is choosing between similar names. */
 .ss-content .ss-list .ss-option .spl-sci { font-family: var(--font-serif); }
 .spl-form-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Three short controls on a line — a country/province/locality row, a pair of
+ * coordinates and their datum. Wider than a pair, so it drops to one column a
+ * step earlier. */
+.spl-form-trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+@media (max-width: 767px) {
+  .spl-form-trio { grid-template-columns: 1fr; }
+}
 @media (max-width: 639px) {
   .spl-form-pair { grid-template-columns: 1fr; }
 }
@@ -597,10 +606,43 @@
 .spl-toolbar {
   display: flex;
   align-items: center;
+  /* Wraps rather than overflowing. At 390px the search, the filters and the
+   * action button do not fit on one line, and a toolbar that runs off the
+   * right edge takes its button with it. */
+  flex-wrap: wrap;
   gap: 10px;
   padding: 8px 14px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-light);
+}
+
+/* Groups inside the toolbar wrap too, and shrink before they overflow. */
+.spl-toolbar > * { min-width: 0; }
+
+.spl-toolbar-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.spl-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* On a phone the bar is two lines: search above, count and actions below,
+ * pushed to opposite ends so the count reads as a label on the list. */
+@media (max-width: 639px) {
+  .spl-toolbar-end {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 /* Data goes to the edges. The rail touches the viewport edge on one side and
@@ -665,19 +707,11 @@
   .spl-detail-panel { width: auto; border-left: 0; border-top: 1px solid var(--color-border); }
 }
 
-/* Below 640px the toolbar stacks. Its children are a route's own markup —
- * usually one justify-between row — so the wrapping has to be forced from
- * here rather than assumed of each caller. */
+/* Below 640px the search takes its own line and the bar wraps around it. The
+ * blanket `.spl-toolbar > div` rule that used to live here forced a layout on
+ * whatever markup a route passed in, and outranked the toolbar's own parts;
+ * the toolbar is a component now, so its pieces style themselves. */
 @media (max-width: 639px) {
-  .spl-toolbar { flex-direction: column; align-items: stretch; row-gap: 8px; }
-  .spl-toolbar > * { min-width: 0; }
-  .spl-toolbar > div {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    justify-content: flex-start;
-  }
   .spl-search { flex: 1 0 100%; max-width: none; }
   .spl-toolbar label { white-space: normal; }
 }
@@ -757,9 +791,73 @@
   z-index: 2;
 }
 
-/* The sentinel is an empty row that fetches the next page when revealed. It
- * occupies a little height so it can be scrolled into view at all. */
-.spl-sentinel td { height: 8px; padding: 0; border: 0; }
+/* The sentinel is where the next page lands and where its spinner shows. The
+ * fetch is triggered three rows above it, so by the time the reader arrives the
+ * rows are usually already here and the spinner never appears. It collapses to
+ * a sliver when idle so a loaded list has no permanent gap at its foot. */
+.spl-sentinel td {
+  height: 8px;
+  padding: 0;
+  border: 0;
+  text-align: center;
+}
+
+.spl-sentinel.htmx-request td { height: 44px; padding: 12px 0; }
+
+/* The prefetch trigger. It takes no space: it is a scroll position three rows
+ * above the bottom, not a row of the data. */
+.spl-prefetch td { height: 0; padding: 0; border: 0; }
+
+.spl-sentinel-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-control);
+  border-radius: 50%;
+  animation: spl-spin .7s linear infinite;
+}
+
+.spl-sentinel.htmx-request .spl-sentinel-spinner { display: block; }
+.spl-sentinel.htmx-request .spl-sentinel-loading { display: revert; }
+
+/* Hidden until the request starts. The live region around it is already in the
+ * DOM, so making this text appear is a change the region announces; a region
+ * inserted with its text already in place announces nothing. */
+.spl-sentinel-loading { display: none; }
+
+/* The live region itself. It carries no appearance — its whole job is to be in
+ * the DOM before its text appears — but it is named so the markup and the
+ * stylesheet agree that it exists. */
+.spl-sentinel-status { display: contents; }
+
+@keyframes spl-spin { to { transform: rotate(360deg); } }
+
+/* A pulse rather than a rotation, so the indicator still reads as active
+ * without the vestibular trigger of spinning. */
+@keyframes spl-pulse { 50% { opacity: .25; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spl-sentinel-spinner {
+    border-top-color: var(--color-border);
+    background: var(--color-control);
+    animation: spl-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+/* The same indicator for the media grid, which appends into a <ul> and so has
+ * no row to hang it on. */
+.spl-grid-sentinel {
+  display: flex;
+  justify-content: center;
+  height: 0;
+  overflow: hidden;
+}
+
+.spl-grid-sentinel.htmx-request { height: 44px; padding: 12px 0; }
+.spl-grid-sentinel.htmx-request .spl-sentinel-spinner { display: block; }
+.spl-grid-sentinel.htmx-request .spl-sentinel-loading { display: revert; }
 
 /* The list's visible bottom. Without it a list that has finished loading looks
  * identical to one still waiting for the next page. */
@@ -776,7 +874,13 @@
 
 .spl-row { cursor: pointer; }
 .spl-row:hover { background: var(--color-surface-alt); }
+
+/* Selection is a tint plus a marker down the left edge. WCAG 1.4.1: the tint
+ * alone is a colour difference, and it sits one step from the hover state. */
 .spl-row--selected { background: var(--color-brand-tint); }
+.spl-row--selected > td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
 
 /* ── Detail panel ──────────────────────────────────────────────────────────
  * Appears on row click; dismissible by its close control or Escape. */
@@ -852,6 +956,11 @@
  * still a table to a screen reader; a grid of divs is not. */
 @media (max-width: 639px) {
   .spl-table thead { display: none; }
+  /* `fixed` keeps dividing the width by the column count even once the other
+     cells are display:none, so the one visible cell was left at a fifth of the
+     table. With one column per row there is nothing left for fixed layout to
+     buy. */
+  .spl-table { table-layout: auto; }
   /* Keep the FIRST cell, whatever its type. Keying this on
      .spl-col--identifier hid every cell in any table without an identifier
      column — the Taxa list is Name/Author/Rank/Parent, and rendered blank. */
@@ -860,6 +969,10 @@
     width: auto;
     padding: 10px 12px;
     white-space: normal;
+    /* An email or a code is one long token; `normal` alone will not break it,
+       and the cell clips what does not fit. */
+    overflow: visible;
+    overflow-wrap: anywhere;
   }
   .spl-table td:first-child::after {
     content: attr(data-stacked);
@@ -869,6 +982,7 @@
     font-size: 13px;
     color: var(--color-text);
     white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -963,6 +1077,107 @@
 .spl-alert--warning,
 .spl-alert--danger { background: var(--color-danger-bg); color: var(--color-danger); }
 
+/* ── Auth ──────────────────────────────────────────────────────────────────
+ * Login, register, the password flows. A card over a photograph, so it needs
+ * a surface of its own; everything inside it is the same type scale as the
+ * rest of the app. */
+.spl-auth-card {
+  padding: 32px;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border-radius: var(--radius-card);
+  box-shadow: 0 18px 50px -24px rgb(18 33 30 / .5);
+}
+
+.spl-auth-title {
+  font: 600 24px/1.25 var(--font-sans);
+  letter-spacing: -.015em;
+  color: var(--color-text);
+  margin-bottom: 22px;
+}
+
+@media (max-width: 639px) {
+  .spl-auth-card { padding: 24px; }
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────
+ * A list with nothing in it is still a page. Same surface and radius as a
+ * card, centred, with room for the one action that fills it. */
+.spl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 56px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+}
+
+.spl-empty-icon { color: var(--color-text-dim); }
+.spl-empty-title { font: 600 17px/1.3 var(--font-sans); color: var(--color-text); }
+.spl-empty-body { max-width: 34rem; font-size: 13.5px; line-height: 1.55; }
+.spl-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* ── Flash banner ──────────────────────────────────────────────────────────
+ * The transient message that slides up from the bottom. Same four categories
+ * as the alert, but reversed out: it sits over the page rather than in it, so
+ * it needs the weight of a solid fill. */
+.spl-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  min-width: 33%;
+  max-width: 32rem;
+  padding: 10px 14px 10px 16px;
+  border-radius: var(--radius-control);
+  box-shadow: 0 10px 30px -12px rgb(18 33 30 / .45);
+  pointer-events: auto;
+  background: var(--color-neutral);
+  color: #fff;
+}
+
+.spl-banner--info { background: var(--color-info); }
+.spl-banner--ok { background: var(--color-ok); }
+/* The palette has no amber. A warning reads as the danger colour here for the
+ * same reason `.spl-alert--warning` does — one attention colour, not two. */
+.spl-banner--warning,
+.spl-banner--danger { background: var(--color-danger); }
+
+.spl-banner-text { font: 600 13px/1.45 var(--font-sans); }
+
+.spl-banner-dismiss {
+  display: flex;
+  flex: none;
+  padding: 6px;
+  margin: -6px -6px -6px 0;
+  border-radius: var(--radius-control);
+  color: inherit;
+}
+.spl-banner-dismiss:hover { background: rgb(255 255 255 / .16); }
+
+.spl-banner-stack {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 20px;
+  pointer-events: none;
+}
+
 /* .spl-modal is on a native <dialog>. Do NOT set `display` on it: the UA
  * stylesheet uses `dialog:not([open]) { display: none }`, and overriding that
  * leaves every modal on screen from first paint. showModal() puts the dialog
@@ -997,6 +1212,16 @@
   background: none;
   border: 0;
   color: transparent;
+}
+
+/* The media detail image. `.preview` was in the markup with no rule behind it
+ * in any stylesheet, so the image rendered at its intrinsic size. */
+.preview {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-alt);
 }
 
 /* A scrim for overlays that are not a <dialog> — the media zoom view. */
@@ -1093,7 +1318,23 @@
   font-weight: 600;
 }
 
-.spl-checkbox { accent-color: var(--color-brand); width: 16px; height: 16px; border-radius: 4px; }
+/* @tailwindcss/forms sets `appearance: none` on checkboxes and paints the
+ * checked state from `color`, which defaults to its own blue — `accent-color`
+ * has no effect once appearance is none, so both are set. */
+.spl-checkbox {
+  accent-color: var(--color-brand);
+  color: var(--color-brand);
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border-color: var(--color-control);
+  flex: none;
+}
+.spl-checkbox:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  box-shadow: none;
+}
 .spl-toggle { accent-color: var(--color-brand); }
 .spl-loading { opacity: .6; }
 .spl-fieldset { border: 0; padding: 0; margin: 0; }

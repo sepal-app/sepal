@@ -9,7 +9,6 @@
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
@@ -19,14 +18,19 @@
             [zodiac.core :as z]))
 
 (defn create-button []
-  [:a {:class "spl-btn spl-btn--primary"
-       :href (z/url-for taxon.routes/new)}
-   "Create"])
+  (pages.list/create-button :href (z/url-for taxon.routes/new)))
+
+(defn- stacked-summary
+  "What the name cell shows below 640px, where the table collapses to a single
+  column. Rank and author are what tell two similar names apart."
+  [t]
+  (table/summary (:taxon/rank t) (:taxon/author t)))
 
 (defn table-columns []
   [{:name "Name"
     :type :name
     :priority 1
+    :stacked stacked-summary
     :cell (fn [t]
             [:a {:href (z/url-for taxon.routes/detail
                                   {:id (:taxon/id t)})
@@ -42,6 +46,8 @@
     :priority 3
     :cell :taxon/rank}
    {:name "Parent"
+    :type :name
+    :priority 3
     :cell (fn [t]
             (when (:taxon/parent-id t)
               [:a {:href (z/url-for taxon.routes/detail
@@ -50,19 +56,10 @@
                    :x-on:click.stop ""} ; Stop propagation
                (:taxon/parent-name t)]))}])
 
-(defn- row-attrs
-  "Generate attributes for a table row to enable panel preview."
-  [row]
-  (let [id (:taxon/id row)
-        panel-url (z/url-for taxon.routes/panel {:id id})]
-    {:class "hover:bg-surface-alt cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-surface-alt' : ''")
-     :x-on:click (str "selectRow(" id ", $el)")
-     :hx-get panel-url
-     :hx-trigger "panel-select"
-     :hx-target (str "#" pages.list/panel-container-id)
-     :hx-swap "innerHTML"
-     :hx-push-url "false"}))
+(defn- row-attrs [row]
+  (let [id (:taxon/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for taxon.routes/panel {:id id}))))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
@@ -71,20 +68,26 @@
   (table/rows-only :columns (table-columns)
                    :rows rows
                    :row-attrs row-attrs
-                   :next-page-url (table/next-page-url :href href
-                                                       :page page
-                                                       :page-size page-size
-                                                       :total total)))
+                   :href href
+                   :page page
+                   :page-size page-size
+                   :total total))
 
-(defn table [& {:keys [rows page href page-size total]}]
+(defn table [& {:keys [rows page href page-size total search-query]}]
   (table/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs
-                 :next-page-url (table/next-page-url :href href
-                                                     :page page
-                                                     :page-size page-size
-                                                     :total total))))
+                 :href href
+                 :page page
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "taxa"
+                                :body "The taxonomy behind your collection. Import the World Flora Online list
+                              from Settings, or add a name by hand."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for taxon.routes/new)))))
 (defn- accessions-only-checkbox
   "Checkbox that toggles `accessions:>0` filter in the search query.
    Uses Alpine.js component from js/query-builder.ts"
@@ -93,7 +96,7 @@
     [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
              :x-data (str "accessionsOnlyFilter('q', " has-filter? ")")}
      [:input {:type "checkbox"
-              :class "spl-checkbox "
+              :class "spl-checkbox"
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))
@@ -106,23 +109,22 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for taxon.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               [:div {:class "flex items-center gap-2"}
-                                (query-builder/search-field-with-builder
-                                  :q search-query
-                                  :fields field-options
-                                  :placeholder "Search... (e.g., rank:species Quercus)")
-                                (accessions-only-checkbox search-query)]
-                               ;; The count sits with the search that changes it.
-                               (table/row-count :loaded (min (* page page-size) total)
-                                                :total total)
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                               :q search-query
+                               :fields field-options
+                               :placeholder "Search... (e.g., rank:species Quercus)"
+                               :filters (accessions-only-checkbox search-query)
+                               :page page
+                               :page-size page-size
+                               :total total
+                               :actions (ui.export/export-button)))
 
     :breadcrumbs ["Taxa"]
     :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)

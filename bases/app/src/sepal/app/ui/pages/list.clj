@@ -1,6 +1,9 @@
 (ns sepal.app.ui.pages.list
   (:require [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.empty :as ui.empty]
+            [sepal.app.ui.query-builder :as query-builder]
+            [sepal.app.ui.table :as table]))
 
 (def list-container-id "list-container")
 
@@ -31,21 +34,81 @@
      (for [filter filters]
        (filter-badge filter))]))
 
-(defn search-field [q]
-  [:div {:class "flex flex-row"}
+(defn search-field
+  "A search box with a clear button.
+
+  Nothing calls this — every list uses
+  `query-builder/search-field-with-builder` instead. Left in place rather than
+  removed, but it is worth deleting."
+  [q]
+  [:div {:class "spl-search"}
    [:input {:name "q"
-            :class "spl-input  w-fill max-w-xs bg-surface w-96"
+            :class "spl-input spl-input--search"
             :type "search"
             :value q
             :placeholder "Search..."}]
    [:button
-    {:type "button",
-     :class ["inline-flex" "items-center" "mx-2" "px-2.5" "py-1.5" "border"
-             "border-gray-300" "text-xs" "font-medium" "rounded"
-             "text-gray-700" "bg-white" "hover:bg-gray-50" "focus:outline-none"
-             "focus:ring-2" "focus:ring-offset-2" "focus:ring-indigo-500"]
+    {:type "button"
+     :class "spl-btn spl-btn--ghost spl-btn--sm"
+     :aria-label "Clear search"
      :onclick "document.getElementById('q').value = null; this.form.submit()"}
     (heroicons/outline-x :size 20)]])
+
+(defn create-button
+  "The primary action in a list's top bar.
+
+  `label` defaults to \"Create\" — the word every list but Accessions used,
+  which said \"New accession\" for no reason anyone recorded.
+
+  The default is `or`, not `:or`: `:or` fills a key that is absent, and callers
+  pass `:label nil` when they have nothing to say. That rendered a green pill
+  with no text in it."
+  [& {:keys [href label]}]
+  [:a {:class "spl-btn spl-btn--primary"
+       :href href}
+   (or label "Create")])
+
+(defn empty-list
+  "What a list shows when it has no rows.
+
+  A search that matched nothing is a different situation from a resource you
+  have not created yet: one wants the query changed, the other wants the first
+  record. Offering \"Create\" to someone whose search just missed is the wrong
+  advice."
+  [& {:keys [noun body searching? create-href create-label]}]
+  (if searching?
+    (ui.empty/empty-state
+      :title "Nothing matched"
+      :body "No results for that search. Try fewer terms, or clear the filters.")
+    (ui.empty/empty-state
+      :title (str "No " noun " yet")
+      :body body
+      :actions (when create-href
+                 (create-button :href create-href :label create-label)))))
+
+(defn toolbar
+  "The bar above every list: search on the left, the row count and the actions
+  on the right.
+
+  Options:
+  - :q, :fields, :placeholder    the search field and its query builder
+  - :filters                     extra controls beside the search
+  - :page, :page-size, :total    the row count
+  - :actions                     buttons at the right end
+
+  One definition rather than five, so the lists cannot drift apart on spacing,
+  on how the loaded count is derived, or on where the bar breaks when it wraps
+  onto a second line."
+  [& {:keys [q fields placeholder filters page page-size total actions]}]
+  (list
+    [:div {:class "spl-toolbar-search"}
+     (query-builder/search-field-with-builder :q q
+                                              :fields fields
+                                              :placeholder placeholder)
+     filters]
+    [:div {:class "spl-toolbar-end"}
+     (table/row-count :loaded (min (* page page-size) total) :total total)
+     actions]))
 
 (defn page-content [& {:keys [table-actions content]}]
   [:form {:method "get"
@@ -62,6 +125,25 @@
     content]])
 
 (def panel-container-id "preview-panel-content")
+
+(defn row-attrs
+  "Attributes that make a list row open the resource panel when clicked.
+
+  One definition rather than five. Four of the lists had the selected class set
+  to the same surface-alt the hover state uses, so clicking a row changed
+  nothing you could see.
+
+  The click is an enhancement — the anchor in the first cell is the real
+  affordance and is what a keyboard user reaches."
+  [& {:keys [id panel-url]}]
+  {:class "spl-row"
+   :x-bind:class (str "selectedId === " id " ? 'spl-row--selected' : ''")
+   :x-on:click (str "selectRow(" id ", $el)")
+   :hx-get panel-url
+   :hx-trigger "panel-select"
+   :hx-target (str "#" panel-container-id)
+   :hx-swap "innerHTML"
+   :hx-push-url "false"})
 
 (defn page-content-with-panel
   "List page content with optional preview panel.

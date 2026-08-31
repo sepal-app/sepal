@@ -13,7 +13,6 @@
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
-            [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
@@ -26,44 +25,48 @@
 (def default-page-size 25)
 
 (defn create-button []
-  [:a {:class "spl-btn spl-btn--primary"
-       :href (z/url-for material.routes/new)}
-   "Create"])
+  (pages.list/create-button :href (z/url-for material.routes/new)))
 
-(defn- row-attrs
-  "Generate attributes for a table row to enable panel preview."
+(defn- row-attrs [row]
+  (let [id (:material/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for material.routes/panel {:id id}))))
+
+(defn- stacked-summary
+  "What the code cell shows below 640px, where the table collapses to a single
+  column. Taxon and location are what tell two materials apart on a bench."
   [row]
-  (let [id (:material/id row)
-        panel-url (z/url-for material.routes/panel {:id id})]
-    {:class "hover:bg-surface-alt cursor-pointer"
-     :x-bind:class (str "selectedId === " id " ? 'bg-surface-alt' : ''")
-     :x-on:click (str "selectRow(" id ", $el)")
-     :hx-get panel-url
-     :hx-trigger "panel-select"
-     :hx-target (str "#" pages.list/panel-container-id)
-     :hx-swap "innerHTML"
-     :hx-push-url "false"}))
+  (table/summary (:taxon/name row) (:location/code row)))
 
 (defn table-columns []
   [{:name "Code"
+    :type :identifier
+    :priority 1
+    :stacked stacked-summary
     :cell (fn [row] [:a {:href (z/url-for material.routes/detail
                                           {:id (:material/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:material/code row)])}
    {:name "Accession"
+    :type :identifier
+    :priority 2
     :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
                                           {:id (:accession/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:accession/code row)])}
    {:name "Taxon"
+    :type :name
+    :priority 2
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
                                           {:id (:taxon/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (taxon-name/render (:taxon/name row))])}
    {:name "Location"
+    :type :text
+    :priority 3
     :cell (fn [row] [:a {:href (z/url-for location.routes/detail
                                           {:id (:location/id row)})
                          :class "spl-link"
@@ -77,20 +80,26 @@
   (table/rows-only :columns (table-columns)
                    :rows rows
                    :row-attrs row-attrs
-                   :next-page-url (table/next-page-url :href href
-                                                       :page page
-                                                       :page-size page-size
-                                                       :total total)))
+                   :href href
+                   :page page
+                   :page-size page-size
+                   :total total))
 
-(defn table [& {:keys [rows page href page-size total]}]
+(defn table [& {:keys [rows page href page-size total search-query]}]
   (table/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs
-                 :next-page-url (table/next-page-url :href href
-                                                     :page page
-                                                     :page-size page-size
-                                                     :total total))))
+                 :href href
+                 :page page
+                 :page-size page-size
+                 :total total
+                 :empty-state (pages.list/empty-list
+                                :noun "material"
+                                :body "Material is what an accession became in the garden — a plant in a bed, a
+                              seed lot in store."
+                                :searching? (seq search-query)
+                                :create-href (z/url-for material.routes/new)))))
 
 (defn render [& {:keys [accession field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page
@@ -100,21 +109,21 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :total total)
+                                :total total
+                                :search-query search-query)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
                            :export-action (z/url-for material.routes/export)
                            :options export/export-options)]
-               :table-actions [:div {:class "flex items-center justify-between w-full"}
-                               (query-builder/search-field-with-builder
-                                 :q search-query
-                                 :fields field-options
-                                 :placeholder "Search... (e.g., type:seed status:alive)")
-                               ;; The count sits with the search that changes it.
-                               (table/row-count :loaded (min (* page page-size) total)
-                                                :total total)
-                               (ui.export/export-button)])
+               :table-actions (pages.list/toolbar
+                               :q search-query
+                               :fields field-options
+                               :placeholder "Search... (e.g., type:seed status:alive)"
+                               :page page
+                               :page-size page-size
+                               :total total
+                               :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
