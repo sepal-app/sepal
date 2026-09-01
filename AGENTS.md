@@ -93,7 +93,7 @@ Use `error.i/error?` for operations that can fail (create, update, validation):
 - **Aero** - Configuration with profiles
 - **Chassis** - HTML generation (Hiccup-like)
 - **HTMX** - Frontend interactivity
-- **DaisyUI** - UI component library (TailwindCSS-based)
+- **TailwindCSS** - Styling, with a hand-written `spl-` component layer. No DaisyUI
 
 ### Testing
 - **Kaocha** - Test runner
@@ -349,6 +349,29 @@ Use Chassis for HTML generation:
 - Both are classpath resources, so a jar carries them; `sepal.database.migrate`
   enumerates the migrations directory from the classpath rather than from an index file
 
+**`schema.sql` is generated, not hand-edited.** It is the baseline
+`instance/provision!` loads and `bin/reset-db.sh` applies migrations on top of,
+so it has to match what the migrations produce — and it carries the
+`schema_version` rows that tell the runner nothing is pending. Regenerate it
+with `bin/dump-schema.sh <db-path>` against a fully migrated database. The script
+is `.schema` rather than `.dump`, because a dump emits the FTS5 shadow tables and
+toggles `writable_schema`, neither of which belongs in a baseline.
+
+Two things to know before you trust the output:
+
+- **`.schema` emits no data.** A migration that seeds a table — `taxon_rank`, for
+  instance — needs its `INSERT` appended by hand, or a freshly provisioned
+  database gets the table and none of its rows.
+- **A rebuilt table comes back quoted.** `ALTER TABLE ... RENAME TO` rewrites the
+  stored DDL, so a table that went through the 12-step rebuild reads
+  `CREATE TABLE "taxon"`. That is expected; don't hand-edit it back.
+
+Adding a migration invalidates `schema.sql`, and two tests will tell you so:
+`migrate-test/test-schema-version-and-latest` and
+`instance-test/test-schema-lifecycle-through-the-instance-api` both compare a
+schema-loaded database against `latest-version`. Regenerate in the same commit
+as the migration.
+
 ### Schema compatibility (N-1)
 
 Sepal refuses a database only when it is **below** `minimum-supported-version` in
@@ -396,7 +419,26 @@ The project uses SQLite with the SpatiaLite extension for spatial data. Geo-coor
 - Sorted ns requires (`cljfmt :sort-ns-references? true`)
 - Test namespaces end in `-test`
 
+### Styling
+
+Three CSS files in `bases/app/src/sepal/app/css/`: `tokens.css` holds the
+palette, type scale and radii; `components.css` holds the `spl-` component
+layer; `main.css` wires them together. Colours, spacing and radii live in
+`tokens.css` and nowhere else.
+
+`bases/app/test/sepal/app/ui/no_daisyui_test.clj` enforces that with the unit
+suite, reading the sources rather than rendered output — a class on a branch no
+test exercises is exactly what drifts. It fails on a DaisyUI class, a hardcoded
+palette colour, an opacity-suffixed theme colour, a `spl-` class with no rule,
+a `daisyui` dependency, or a resurrected `tailwind.config.js`.
+
+Scientific names render through `sepal.taxon.interface.name/segments`, which
+splits the italic parts from the upright ones and returns data;
+`bases/app/src/sepal/app/ui/taxon_name.clj` turns those segments into markup.
+Never format a name by hand — the convention has to be identical in a table
+cell, a panel, a breadcrumb and the activity feed.
+
 ## External Documentation
 
 For AI assistants working with this codebase:
-- **DaisyUI**: https://daisyui.com/llms.txt
+- **TailwindCSS**: https://tailwindcss.com/docs

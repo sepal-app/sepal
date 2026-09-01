@@ -11,6 +11,46 @@ CREATE TABLE "user" (
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
+CREATE TABLE taxon (
+  id integer primary key autoincrement,
+  name text not null,
+  author text,
+  parent_id integer references taxon(id),
+  rank text not null check(rank in (
+    'class',
+    'family',
+    'form',
+    'genus',
+    'kingdom',
+    'lusus',
+    'order',
+    'phylum',
+    'prole',
+    'section',
+    'series',
+    'species',
+    'subclass',
+    'subfamily',
+    'subform',
+    'subgenus',
+    'subkingdom',
+    'suborder',
+    'subsection',
+    'subseries',
+    'subspecies',
+    'subtribe',
+    'subvariety',
+    'superorder',
+    'supertribe',
+    'tribe',
+    'unranked',
+    'variety'
+  )),
+  wfo_taxon_id text,
+  vernacular_names text not null default '[]' check(json_valid(vernacular_names)),
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
 CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id');
 CREATE TABLE contact (
   id integer primary key autoincrement,
@@ -141,6 +181,10 @@ CREATE TABLE collection (
 CREATE INDEX user_id_idx on "user" (id);
 CREATE INDEX user_status_idx on "user" (status);
 CREATE INDEX user_role_idx on "user" (role);
+CREATE INDEX taxon_id_idx on taxon (id);
+CREATE INDEX taxon_name_idx on taxon (name);
+CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
+CREATE INDEX taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
 CREATE INDEX location_id_idx on location (id);
 CREATE INDEX accession_id_idx on accession (id);
 CREATE INDEX material_id_idx on material (id);
@@ -152,6 +196,20 @@ CREATE INDEX activity_created_at_idx on activity (created_at desc);
 CREATE TRIGGER trigger_user_updated_at after update on "user"
 begin
   update "user" set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TRIGGER trigger_taxon_updated_at after update on taxon
+begin
+  update taxon set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
+end;
+CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+end;
+CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
+  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
+  insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
 CREATE TRIGGER trigger_contact_updated_at after update on contact
 begin
@@ -238,44 +296,5 @@ CREATE TRIGGER trigger_contact_fts_update AFTER UPDATE OF name, business, email 
   INSERT INTO contact_fts(rowid, name, business, email)
   VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
 END;
-CREATE TABLE taxon_rank (name text primary key) strict;
-CREATE TABLE "taxon" (
-  id integer primary key autoincrement,
-  name text not null,
-  author text,
-  parent_id integer references taxon(id),
-  rank text not null references taxon_rank(name),
-  wfo_taxon_id text,
-  vernacular_names text not null default '[]' check(json_valid(vernacular_names)),
-  created_at text not null default (datetime('now')),
-  updated_at text not null default (datetime('now'))
-) strict;
-CREATE INDEX taxon_id_idx on taxon (id);
-CREATE INDEX taxon_name_idx on taxon (name);
-CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
-CREATE INDEX taxon_wfo_taxon_id_idx on taxon (wfo_taxon_id);
-CREATE TRIGGER trigger_taxon_updated_at after update on taxon
-begin
-  update taxon set updated_at = datetime('now') where id = NEW.id;
-end;
-CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
-CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-end;
-CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
-INSERT INTO taxon_rank (name) VALUES
-  ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
-  ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
-  ('phylum'), ('prole'), ('section'), ('series'), ('species'), ('subclass'),
-  ('subfamily'), ('subform'), ('subgenus'), ('subkingdom'), ('suborder'),
-  ('subphylum'), ('subsection'), ('subseries'), ('subspecies'), ('subtribe'),
-  ('subvariety'), ('superclass'), ('superfamily'), ('superorder'),
-  ('supertribe'), ('tribe'), ('unranked'), ('variety');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
-INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');

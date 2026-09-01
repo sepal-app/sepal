@@ -12,10 +12,15 @@
 (def name [:string {:min 1}])
 (def author :string)
 (def rank [:enum
+           :aggregate
            :class
+           :convariety
+           :cultivar
            :family
            :form
            :genus
+           :grex
+           :group
            :kingdom
            :lusus
            :order
@@ -30,11 +35,14 @@
            :subgenus
            :subkingdom
            :suborder
+           :subphylum
            :subsection
            :subseries
            :subspecies
            :subtribe
            :subvariety
+           :superclass
+           :superfamily
            :superorder
            :supertribe
            :tribe
