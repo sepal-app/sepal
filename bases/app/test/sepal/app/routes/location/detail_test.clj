@@ -102,6 +102,9 @@
                                            :accession (ig/ref :key/accession)
                                            :location (ig/ref :key/loc1)}}
     (fn [{:keys [user material loc1 loc2]}]
+      ;; The factory generates the name, and Jsoup's .text collapses
+      ;; whitespace — pin one the assertion can match verbatim.
+      (location.i/update! *db* (:location/id loc2) {:name "Destination bed"})
       (material.i/update! *db* (:material/id material)
                           {:location-id (:location/id loc2)
                            :reason "transferred"})
@@ -114,4 +117,6 @@
             "the panel should have a Moved section")
         (is (.contains (.text body) (:material/code material))
             "the moved material's code should appear")
+        (is (.contains (.text body) "to Destination bed")
+            "the destination's name should appear, not the \"removed\" fallback")
         (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))
