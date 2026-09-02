@@ -29,21 +29,24 @@
 (defn add-synonym!
   "Insert a synonym row.
 
-  Not `store.i/create!`: see `columns`."
+  Not `store.i/create!`: see `columns`. The returned row is still coerced
+  through `spec/Synonym` by hand, same as `store.i/create!` would, so a typo in
+  `columns` fails loudly instead of silently mislabeling a column."
   [db data]
   (let [data (->> data
                   (store.i/coerce spec/CreateSynonym)
                   (store.i/encode spec/CreateSynonym))]
-    (db.i/execute-one! db {:insert-into [:taxon_synonym]
-                           :values [data]
-                           :returning columns})))
+    (->> (db.i/execute-one! db {:insert-into [:taxon_synonym]
+                                :values [data]
+                                :returning columns})
+         (store.i/coerce spec/Synonym))))
 
 (defn remove-synonym! [db id]
   (jdbc.sql/delete! db :taxon_synonym {:id id})
   nil)
 
 (defn list-for-taxon
-  "The garden's own synonyms for a taxon, newest name first.
+  "The garden's own synonyms for a taxon, alphabetical by name.
 
   Returns empty on a database below the migration that added the table rather
   than failing the request."
