@@ -163,8 +163,8 @@
  * action bar — and each section supplies only its body. The body's padding
  * lives here and nowhere else, which is what stops one tab from being spaced
  * differently from the next. */
-.spl-record-page { display: flex; flex-direction: column; min-height: 100%; }
-.spl-record-body { flex: 1; min-height: 0; padding: 22px 22px 16px; }
+.spl-record-page { display: flex; flex-direction: column; height: 100%; }
+.spl-record-body { flex: 1; min-height: 0; padding: 22px 22px 16px; overflow-y: auto; }
 .spl-record-body > .spl-form,
 .spl-record-body .spl-form { padding: 0; }
 @media (max-width: 639px) {
@@ -933,6 +933,27 @@
 }
 .spl-panel-close:hover { color: var(--color-text); }
 
+/* Scrollbars on the panel and record-body regions are styled rather than left
+ * to the platform: macOS overlay scrollbars vanish when idle, which made a
+ * scrollable panel look frozen. A styled ::-webkit-scrollbar disables the
+ * overlay behavior, so the bar is visible whenever the region can scroll. */
+.spl-panel,
+.spl-detail-panel,
+.spl-record-body {
+  scrollbar-gutter: stable;
+}
+.spl-panel::-webkit-scrollbar,
+.spl-detail-panel::-webkit-scrollbar,
+.spl-record-body::-webkit-scrollbar {
+  width: 8px;
+}
+.spl-panel::-webkit-scrollbar-thumb,
+.spl-detail-panel::-webkit-scrollbar-thumb,
+.spl-record-body::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
 /* On a phone the panel is a sheet from the bottom rather than a side column —
  * 288px beside a list does not fit, and a sheet is reachable one-handed. */
 @media (max-width: 639px) {
@@ -1255,7 +1276,10 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  /* `left`+`right` alone cannot stretch a replaced element (CSS 2.1 §10.3.8);
+   * an absolutely-positioned checkbox keeps its intrinsic 16px width, leaving
+   * only a sliver of the section header clickable. */
+  width: 100%;
   height: 42px;
   margin: 0;
   opacity: 0;

@@ -18,7 +18,7 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org material accession taxon values footer]}]
+(defn page-content [& {:keys [errors org material accession taxon values reasons footer]}]
   (material.shared/page
     :material material
     :accession accession
@@ -29,12 +29,13 @@
                                                  {:id (:material/id material)})
                               :errors errors
                               :org org
+                              :reasons reasons
                               :values values)))
 
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "material-form" :on-cancel :reload))
 
-(defn render [& {:keys [errors org material accession taxon values panel-data]}]
+(defn render [& {:keys [errors org material accession taxon values reasons timezone panel-data]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
                                                :errors errors
@@ -42,14 +43,17 @@
                                                :material material
                                                :accession accession
                                                :values values
+                                               :reasons reasons
                                                :taxon taxon)
                         :panel-content (material.panel/panel-content
                                          :material (:material panel-data)
                                          :accession (:accession panel-data)
                                          :taxon (:taxon panel-data)
                                          :location (:location panel-data)
+                                         :history (:history panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs (material.shared/breadcrumbs :accession accession
                                                        :material material
                                                        :taxon taxon)))
@@ -68,12 +72,13 @@
    [:code [:string {:min 1}]]
    [:accession-id [:int {:min 1}]]
    [:location-id [:maybe :int]]
-   [:quantity [:int {:min 1}]]
+   [:quantity [:int {:min 0}]]
    [:status [:string {:min 1}]]
-   [:type [:string {:min 1}]]])
+   [:type [:string {:min 1}]]
+   [:reason [:string {:min 0}]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db organization resource]} context
+  (let [{:keys [db organization resource timezone]} context
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
         location (location.i/get-by-id db (:material/location-id resource))
@@ -96,10 +101,13 @@
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
                 (flash/success "Material updated successfully")))))
 
-      (let [panel-data (material.panel/fetch-panel-data db resource)]
+      (let [panel-data (material.panel/fetch-panel-data db resource)
+            reasons (material.i/list-reasons db)]
         (render :org organization
                 :material resource
                 :accession accession
                 :taxon taxon
                 :values values
+                :reasons reasons
+                :timezone timezone
                 :panel-data panel-data)))))

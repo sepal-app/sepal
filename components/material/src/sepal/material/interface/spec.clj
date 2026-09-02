@@ -11,8 +11,8 @@
 (def memorial [:boolean
                {:decode/store #(and (int? %) (= % 1))
                 :encode/store #(if (true? %) 1 0)}])
-(def quantity pos-int?)
-(def status [:enum :alive :dead])
+(def quantity nat-int?)
+(def status [:enum :alive :dead :dormant :transferred :other :unknown])
 (def type [:enum :plant :seed :vegetative :tissue :other])
 
 (def Material
@@ -65,3 +65,41 @@
      [:memorial memorial]
      [:quantity {:decode/store validate.i/coerce-int}
       quantity]]))
+
+(def change-from-location-id [:maybe location-id])
+(def change-to-location-id [:maybe location-id])
+(def change-quantity int?)
+(def change-reason [:maybe :string])
+(def change-note [:maybe :string])
+
+(def MaterialChange
+  [:map {:closed true}
+   [:material-change/id id]
+   [:material-change/material-id accession-id]
+   [:material-change/from-location-id change-from-location-id]
+   [:material-change/to-location-id change-to-location-id]
+   [:material-change/quantity change-quantity]
+   [:material-change/reason change-reason]
+   [:material-change/changed-at :string]
+   [:material-change/note change-note]
+   [:material-change/created-by [:maybe pos-int?]]
+   [:material-change/created-at :string]])
+
+(def CreateMaterialChange
+  [:map {:closed true}
+   [:material-id {:decode/store validate.i/coerce-int}
+    accession-id]
+   [:from-location-id {:optional true
+                       :decode/store validate.i/coerce-int}
+    change-from-location-id]
+   [:to-location-id {:optional true
+                     :decode/store validate.i/coerce-int}
+    change-to-location-id]
+   [:quantity {:decode/store validate.i/coerce-int}
+    change-quantity]
+   [:reason {:optional true} change-reason]
+   [:changed-at {:optional true} :string]
+   [:note {:optional true} change-note]
+   [:created-by {:optional true
+                 :decode/store validate.i/coerce-int}
+    [:maybe pos-int?]]])

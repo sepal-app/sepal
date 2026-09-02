@@ -9,7 +9,7 @@
 
 (defn render-panel-page
   "Render the panel view as a full page for read-only users."
-  [& {:keys [material panel-data]}]
+  [& {:keys [material panel-data timezone]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Materials"]
                   (:material/code material)]
@@ -19,15 +19,18 @@
                 :accession (:accession panel-data)
                 :taxon (:taxon panel-data)
                 :location (:location panel-data)
+                :history (:history panel-data)
                 :activities (:activities panel-data)
-                :activity-count (:activity-count panel-data))]))
+                :activity-count (:activity-count panel-data)
+                :timezone timezone)]))
 
 (defn handler [{:keys [::z/context viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         id (:material/id resource)]
     (if (authz/user-has-permission? viewer material.perm/edit)
       ;; Can edit -> redirect to edit tabs
       (http/found material.routes/detail-general {:id id})
       ;; Read-only -> render panel as full page
       (let [panel-data (material.panel/fetch-panel-data db resource)]
-        (render-panel-page :material resource :panel-data panel-data)))))
+        (render-panel-page :material resource :panel-data panel-data
+                           :timezone timezone)))))

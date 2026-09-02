@@ -1,6 +1,6 @@
 (ns sepal.app.e2e.playwright
   "Thin Clojure wrapper around Playwright Java API for browser automation"
-  (:import [com.microsoft.playwright Playwright BrowserType$LaunchOptions Page$WaitForSelectorOptions]
+  (:import [com.microsoft.playwright Locator$ClickOptions Playwright BrowserType$LaunchOptions Page$WaitForSelectorOptions]
            [com.microsoft.playwright.options WaitForSelectorState]))
 
 (defonce ^:dynamic *page* nil)
@@ -164,3 +164,28 @@
            (do
              (Thread/sleep poll-interval)
              (recur))))))))
+
+(defn evaluate
+  "Evaluate JavaScript on the page and return the result."
+  [script]
+  (.evaluate *page* script))
+
+(defn bounding-box
+  "The locator's bounding box as {:x :y :width :height}, or nil."
+  [selector]
+  (when-let [box (.boundingBox (.locator *page* selector))]
+    {:x (.x box) :y (.y box) :width (.width box) :height (.height box)}))
+
+(defn set-viewport-size
+  "Resize the browser viewport."
+  [width height]
+  (.setViewportSize *page* width height))
+
+(defn click-force
+  "Click an element even when it is hidden — the invisible checkbox that
+  drives a DaisyUI-style collapse is opacity 0, which playwright's normal
+  click refuses as not visible."
+  [selector]
+  (.click (.locator *page* selector)
+          (doto (Locator$ClickOptions.)
+            (.setForce true))))
