@@ -138,4 +138,10 @@
     ;; alternative is a 500 on the taxon picker.
     (is (false? (db.i/at-least-version? {} "20260902160000")))
     (is (false? (db.i/at-least-version? {:schema-version nil}
+                                        "20260902160000"))))
+  (testing "a malformed version is treated as below, not thrown on"
+    ;; Every real producer is a 14-digit column, so this is cheap insurance,
+    ;; not a live bug — but parse-long returns nil on a non-numeric string,
+    ;; and comparing nil with >= throws rather than degrading.
+    (is (false? (db.i/at-least-version? {:schema-version "not-a-version"}
                                         "20260902160000")))))
