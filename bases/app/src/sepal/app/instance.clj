@@ -287,7 +287,7 @@
   (or app-base-url (str "https://" app-domain)))
 
 (defn- instance-config
-  [process {:keys [slug db-path app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
+  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request?
                    forgot-password-email-from forgot-password-email-subject
@@ -333,6 +333,7 @@
                         ;; from :app-base-url, which carries scheme and port too.
                         :app-domain app-domain
                         :app-base-url (base-url opts)
+                        :schema-version schema-version
                         :mail (:mail process)
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
@@ -480,42 +481,42 @@
                               db-path current minimum)
                       {:reason :schema-version-unsupported
                        :slug slug :db-path db-path
-                       :current current :minimum minimum}))))
-  (let [claim (claim! process opts)]
-    (try
-      (fs/create-dirs media-cache-dir)
-      (let [config (instance-config process opts)
-            _ (ig/load-namespaces config)
-            system (try
-                     (ig/init config)
-                     (catch clojure.lang.ExceptionInfo e
-                       ;; A later key (e.g. the backup job, which queries the
-                       ;; database) can throw after earlier keys already built
-                       ;; a connection pool. ig/init does not halt what it
-                       ;; built, so this must, or the pool leaks.
-                       (when-let [partial-system (:system (ex-data e))]
-                         (ig/halt! partial-system))
-                       (throw (init-failure slug db-path e))))]
-        (try
-          (probe! system)
-          {:slug slug
-           :db-path db-path
-           :claim claim
-           :process process
-           :system system
-           ;; Kept because zodiac closes its :request-context over middleware
-           ;; rather than putting it in the system map, so app-domain and the
-           ;; invitation mail settings are unreadable from a started instance.
-           ;; invite-owner! needs all three.
-           :opts opts}
-          (catch Throwable e
-            (ig/halt! system)
-            (throw (ex-info (format "Database %s could not be opened" db-path)
-                            {:reason :database-unusable :slug slug :db-path db-path}
-                            e)))))
-      (catch Throwable e
-        (release! process claim)
-        (throw e)))))
+                       :current current :minimum minimum})))
+    (let [claim (claim! process opts)]
+      (try
+        (fs/create-dirs media-cache-dir)
+        (let [config (instance-config process (assoc opts :schema-version current))
+              _ (ig/load-namespaces config)
+              system (try
+                       (ig/init config)
+                       (catch clojure.lang.ExceptionInfo e
+                         ;; A later key (e.g. the backup job, which queries the
+                         ;; database) can throw after earlier keys already built
+                         ;; a connection pool. ig/init does not halt what it
+                         ;; built, so this must, or the pool leaks.
+                         (when-let [partial-system (:system (ex-data e))]
+                           (ig/halt! partial-system))
+                         (throw (init-failure slug db-path e))))]
+          (try
+            (probe! system)
+            {:slug slug
+             :db-path db-path
+             :claim claim
+             :process process
+             :system system
+             ;; Kept because zodiac closes its :request-context over middleware
+             ;; rather than putting it in the system map, so app-domain and the
+             ;; invitation mail settings are unreadable from a started instance.
+             ;; invite-owner! needs all three.
+             :opts opts}
+            (catch Throwable e
+              (ig/halt! system)
+              (throw (ex-info (format "Database %s could not be opened" db-path)
+                              {:reason :database-unusable :slug slug :db-path db-path}
+                              e)))))
+        (catch Throwable e
+          (release! process claim)
+          (throw e))))))
 
 (defn handler
   "The ring handler for an instance."

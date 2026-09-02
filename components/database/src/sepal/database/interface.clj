@@ -48,6 +48,7 @@
   (core/load-schema! config))
 
 (def schema-resource #'core/schema-resource)
+(def at-least-version? #'core/at-least-version?)
 
 (def migration-files #'migrate/migration-files)
 (def latest-version #'migrate/latest-version)

@@ -8,6 +8,7 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
+            [sepal.database.interface :as db.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]
@@ -809,6 +810,25 @@
   (testing "a typo in a dev opt fails at start! rather than being ignored"
     (is (not (m/validate instance/InstanceOpts
                          (assoc valid-instance-opts :reload-per-reqest? true))))))
+
+(deftest test-the-request-context-carries-the-schema-version
+  ;; The gate for anything added above the supported floor reads this. Without
+  ;; it every gated feature silently turns itself off.
+  ;;
+  ;; A started zodiac value has no readable :request-context to assert against:
+  ;; zodiac.core/start closes the map into context-middleware, a plain closure
+  ;; installed on the compiled middleware chain, so nothing on :system surfaces
+  ;; it short of making a real request through a route that reads it back out —
+  ;; and no route does that yet (a later task wires the first one). This asserts
+  ;; one level earlier instead: the config instance-config builds — which is
+  ;; exactly what start! hands to zodiac — carries :schema-version through to
+  ;; :request-context.
+  (testing "instance-config threads :schema-version from opts into the request context"
+    (let [version (db.i/latest-version)
+          config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts :schema-version version))]
+      (is (= version
+             (get-in config [:sepal.app.server/zodiac :request-context :schema-version]))))))
 
 (deftest test-a-supplied-mail-client-is-used-as-is
   (testing "a caller may bring its own mail client, so tests reach the same

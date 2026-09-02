@@ -121,3 +121,21 @@
           (is (contains? tables "schema_version")))
         (finally
           (fs/delete-tree dir))))))
+
+;;; Schema version gate
+
+(deftest test-at-least-version?
+  (testing "a database at or above the version has the feature"
+    (is (true? (db.i/at-least-version? {:schema-version "20260902160000"}
+                                       "20260902160000")))
+    (is (true? (db.i/at-least-version? {:schema-version "20261001000000"}
+                                       "20260902160000"))))
+  (testing "a database below it does not"
+    (is (false? (db.i/at-least-version? {:schema-version "20260113120000"}
+                                        "20260902160000"))))
+  (testing "an unknown version is treated as below"
+    ;; A context built without a version must degrade, never throw: the
+    ;; alternative is a 500 on the taxon picker.
+    (is (false? (db.i/at-least-version? {} "20260902160000")))
+    (is (false? (db.i/at-least-version? {:schema-version nil}
+                                        "20260902160000")))))

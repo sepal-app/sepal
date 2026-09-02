@@ -117,3 +117,14 @@
       (pos? (:cnt result)))
     (catch Exception _
       false)))
+
+(defn at-least-version?
+  "Whether a context's database is at or above `version`.
+
+  Versions are 14-digit timestamp strings, compared numerically. A context with
+  no recorded version is treated as below every version: a request must degrade
+  rather than throw, because `select` against a table the database does not have
+  is a hard SQLite error."
+  [{:keys [schema-version]} version]
+  (boolean (and schema-version
+                (>= (parse-long schema-version) (parse-long version)))))
