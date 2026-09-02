@@ -1,7 +1,34 @@
 (ns sepal.contact.interface.spec
-  (:refer-clojure :exclude [name])
+  (:refer-clojure :exclude [name type])
   (:require [malli.util :as mu]
             [sepal.validation.interface :refer [email-re]]))
+
+(defn- name-encoder [v]
+  (when v (clojure.core/name v)))
+
+(defn- keyword-encoder [v]
+  (when v (keyword v)))
+
+(def type
+  "What kind of party a contact is, over Bauble's source_type vocabulary.
+   BG and Research/FieldStation are spelled out because Bauble's codes were
+   abbreviations for a fixed-width UI, and a slash in an enum value invites
+   escaping problems."
+  [:enum {:decode/store keyword
+          :encode/store name-encoder
+          :decode/params keyword-encoder}
+   :expedition
+   :staff
+   :commercial
+   :gene_bank
+   :university_department
+   :individual
+   :botanic_garden
+   :club
+   :other
+   :research_station
+   :municipal_department
+   :unknown])
 
 (def id pos-int?)
 (def name [:string {:min 2}])
@@ -25,6 +52,7 @@
    [:contact/country [:maybe country]]
    [:contact/phone [:maybe phone]]
    [:contact/business [:maybe business]]
+   [:contact/type [:maybe type]]
    [:contact/notes [:maybe notes]]])
 
 (def CreateContact
@@ -38,6 +66,7 @@
    [:country {:optional true} [:maybe country]]
    [:phone {:optional true} [:maybe phone]]
    [:business {:optional true} [:maybe business]]
+   [:type {:optional true} [:maybe type]]
    [:notes {:optional true} [:maybe notes]]])
 
 (def UpdateContact
@@ -51,4 +80,5 @@
      [:country {:optional true} [:maybe country]]
      [:phone {:optional true} [:maybe phone]]
      [:business {:optional true} [:maybe business]]
+     [:type {:optional true} [:maybe type]]
      [:notes {:optional true} [:maybe notes]]]))

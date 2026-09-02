@@ -18,6 +18,7 @@
   "Base form params with all fields as empty strings (simulating empty HTML form).
    Note: srid always has a value (defaults to WGS-84 = 4326)."
   {:collector ""
+   :collectors-code ""
    :collected-date ""
    :habitat ""
    :taxa ""
@@ -29,7 +30,8 @@
    :lng ""
    :srid "4326"
    :geo-uncertainty ""
-   :elevation ""})
+   :elevation ""
+   :elevation-accuracy ""})
 
 (deftest test-collection-page-renders
   (tf/testing "GET collection page renders form"
@@ -275,3 +277,57 @@
                                                       "/collection/")))]
         (is (= 200 (:status response))
             "the tab is available because the record already carries data")))))
+
+(deftest test-collection-fields-save-through-the-form
+  (tf/testing "POST sets collector's number and elevation accuracy"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             :data {:provenance-type :wild}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            collection-url (str "/accession/" (:accession/id accession) "/collection/")
+            {:keys [response] :as sess} (-> sess
+                                            (peri/request collection-url))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request collection-url
+                                                 :request-method :post
+                                                 :params (merge empty-form-params
+                                                                {:__anti-forgery-token token
+                                                                 :collectors-code "BH9078"
+                                                                 :elevation-accuracy "25"})))]
+        (is (= 200 (:status response)))
+        (is (= collection-url (get-in response [:headers "HX-Redirect"])))
+        (let [coll (coll.i/get-by-accession-id *db* (:accession/id accession))]
+          (is (= "BH9078" (:collection/collectors-code coll)))
+          (is (= 25 (:collection/elevation-accuracy coll))))))))
+
+(deftest test-collection-form-rejects-bad-elevation-accuracy
+  (tf/testing "POST with elevation accuracy 0 returns 422 with a field error"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             :data {:provenance-type :wild}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            collection-url (str "/accession/" (:accession/id accession) "/collection/")
+            {:keys [response] :as sess} (-> sess
+                                            (peri/request collection-url))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request collection-url
+                                                 :request-method :post
+                                                 :params (merge empty-form-params
+                                                                {:__anti-forgery-token token
+                                                                 :elevation-accuracy "0"})))]
+        (is (= 422 (:status response)))
+        (let [body (Jsoup/parse ^String (:body response))]
+          (is (some? (.selectFirst body "#elevation-accuracy-errors"))
+              "elevation accuracy should have a field error"))
+        (is (nil? (coll.i/get-by-accession-id *db* (:accession/id accession)))
+            "nothing should have been saved")))))

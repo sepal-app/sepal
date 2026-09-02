@@ -25,7 +25,7 @@ CREATE TABLE contact (
   notes text,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, type text) strict;
 CREATE TABLE location (
   id integer primary key autoincrement,
   code text not null,
@@ -137,7 +137,7 @@ CREATE TABLE collection (
   accession_id integer unique constraint collection_accession_id_fkey references accession (id) on delete cascade,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, collectors_code text, elevation_accuracy integer) strict;
 CREATE INDEX user_id_idx on "user" (id);
 CREATE INDEX user_status_idx on "user" (status);
 CREATE INDEX user_role_idx on "user" (role);
@@ -279,3 +279,4 @@ INSERT INTO taxon_rank (name) VALUES
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '2026-09-01 22:46:08');

@@ -12,6 +12,7 @@
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.permission :as contact.perm]
+            [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
@@ -59,6 +60,7 @@
    [:country {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:phone {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:business [:maybe :string]]
+   [:type {:decode/form validation.i/empty->nil} [:maybe contact.spec/type]]
    [:notes [:maybe :string]]])
 
 (defn render-panel-page
@@ -91,6 +93,7 @@
                     :country (:contact/country resource)
                     :phone (:contact/phone resource)
                     :business (:contact/business resource)
+                    :type (:contact/type resource)
                     :notes (:contact/notes resource)}]
         (case request-method
           :post

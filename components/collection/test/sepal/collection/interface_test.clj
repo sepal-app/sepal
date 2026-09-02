@@ -84,3 +84,39 @@
                                                     :lng -122.6765
                                                     :srid 4326}}
                       result)))))))
+
+(deftest test-collection-fields-roundtrip
+  (let [db *db*]
+    (tf/testing "collector's number and elevation accuracy round-trip"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}}
+      (fn [{:keys [acc]}]
+        (let [data {:accession-id (:accession/id acc)
+                    :collectors-code "BH9078"
+                    :elevation-accuracy 25}
+              result (coll.i/create! db data)]
+          (is (not (err.i/error? result)) (err.i/data result))
+          (is (m/validate coll.spec/Collection result))
+          (is (match? {:collection/collectors-code "BH9078"
+                       :collection/elevation-accuracy 25}
+                      result)))))))
+
+(deftest test-collection-fields-absent-by-default
+  (let [db *db*]
+    (tf/testing "a collection with neither field set is unaffected"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}}
+      (fn [{:keys [acc]}]
+        (let [result (coll.i/create! db {:accession-id (:accession/id acc)})]
+          (is (not (err.i/error? result)) (err.i/data result))
+          (is (nil? (:collection/collectors-code result)))
+          (is (nil? (:collection/elevation-accuracy result))))))))
+
+(deftest test-elevation-accuracy-spec
+  (testing "elevation_accuracy rejects zero and negatives, like geo_uncertainty"
+    (is (m/validate coll.spec/CreateCollection {:accession-id 1 :elevation-accuracy 25}))
+    (is (not (m/validate coll.spec/CreateCollection {:accession-id 1 :elevation-accuracy 0})))
+    (is (not (m/validate coll.spec/CreateCollection {:accession-id 1 :elevation-accuracy -1})))
+    (is (m/validate coll.spec/UpdateCollection {:elevation-accuracy 25}))
+    (is (not (m/validate coll.spec/UpdateCollection {:elevation-accuracy 0})))
+    (is (not (m/validate coll.spec/UpdateCollection {:elevation-accuracy -1})))))

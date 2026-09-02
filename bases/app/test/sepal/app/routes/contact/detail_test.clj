@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.detail-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
@@ -14,6 +15,19 @@
 (def test-contact-data
   {:name "Test Contact"
    :business ""
+   :notes ""})
+
+(def valid-update-params
+  "The full field set a browser submits, with empty strings for blank fields."
+  {:name "Test Contact"
+   :business ""
+   :type "expedition"
+   :email ""
+   :address ""
+   :province ""
+   :postal-code ""
+   :country ""
+   :phone ""
    :notes ""})
 
 (deftest test-update-contact-validation-errors
@@ -82,3 +96,47 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "#name-errors"))
             "Name field should have error container with id name-errors")))))
+
+(deftest test-update-contact-type
+  (tf/testing "POST with a type saves it as the enum keyword"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (try
+        (let [contact (contact.i/create! *db* test-contact-data)
+              sess (app.test/login (:user/email user) "testpassword123")
+              detail-url (str "/contact/" (:contact/id contact) "/")
+              {:keys [response] :as sess} (-> sess
+                                              (peri/request detail-url))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request detail-url
+                                                   :request-method :post
+                                                   :params (assoc valid-update-params
+                                                                  :__anti-forgery-token token)))]
+          (is (= 200 (:status response))
+              (str "Expected 200, got " (:status response) " with body: " (:body response)))
+          (is (= :expedition (:contact/type (contact.i/get-by-id *db* (:contact/id contact))))))
+        (finally
+          ;; Updating a contact writes an activity row referencing the factory
+          ;; user, and the user factory's teardown hard-deletes it (the only
+          ;; hard delete in the codebase) -- clean up so the FK lets it.
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-update-contact-form-shows-current-type
+  (tf/testing "GET renders the select with the stored type selected"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [contact (contact.i/create! *db* (assoc test-contact-data :type :research_station))
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/contact/" (:contact/id contact) "/")))
+            body (Jsoup/parse ^String (:body response))
+            select (.selectFirst body "select[name=\"type\"]")]
+        (is (some? select) "the type select should render")
+        (let [selected (->> (.select select "option[selected]") first)]
+          (is (some? selected) "an option should be selected")
+          (is (= "research_station" (.attr selected "value"))))))))

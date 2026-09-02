@@ -1,7 +1,8 @@
 (ns sepal.app.routes.contact.panel
   "Resource panel content for contacts.
    Displays contact summary, statistics, linked resources, and activity."
-  (:require [sepal.accession.interface :as acc.i]
+  (:require [clojure.string :as str]
+            [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -19,7 +20,7 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [contact stats activities activity-count timezone on-close]}]
-  (let [{:contact/keys [id name email phone business]} contact
+  (let [{:contact/keys [id name email phone business type]} contact
         {:keys [accession-count]} stats]
     (panel/panel-container
       :children
@@ -37,6 +38,8 @@
           (panel/summary-section
             :fields [{:label "Name" :value name}
                      {:label "Business" :value business}
+                     {:label "Type"
+                      :value (some-> type clojure.core/name (str/replace "_" " ") str/capitalize)}
                      {:label "Email" :value email}
                      {:label "Phone" :value phone}]))
 

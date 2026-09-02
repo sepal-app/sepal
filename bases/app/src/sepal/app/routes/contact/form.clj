@@ -1,5 +1,13 @@
 (ns sepal.app.routes.contact.form
-  (:require [sepal.app.ui.form :as ui.form]))
+  (:require [clojure.string :as str]
+            [sepal.app.ui.form :as ui.form]
+            [sepal.contact.interface.spec :as contact.spec]))
+
+(defn enum-label-fn [v]
+  (-> v
+      (name)
+      (str/replace "_" " ")
+      (str/capitalize)))
 
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "contact-form" :on-cancel :back))
@@ -36,7 +44,14 @@
           (ui.form/input-field :label "Phone"
                                :name "phone"
                                :value (:phone values)
-                               :errors (:phone errors))]])
+                               :errors (:phone errors))]
+         (ui.form/field :label "Type"
+                        :name "type"
+                        :errors (:type errors)
+                        :input (ui.form/enum-select "type"
+                                                    contact.spec/type
+                                                    (:type values)
+                                                    :label-fn enum-label-fn))])
 
       (ui.form/section
         :title "Address"

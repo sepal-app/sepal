@@ -27,11 +27,15 @@
        :title "Collection"
        :hint "Who gathered this material, when, and from what."
        :children
-       [[:div {:class "spl-form-pair"}
+       [[:div {:class "spl-form-trio"}
          (ui.form/input-field :label "Collector"
                               :name "collector"
                               :value (:collector values)
                               :errors (:collector errors))
+         (ui.form/input-field :label "Collector's Number"
+                              :name "collectors-code"
+                              :value (:collectors-code values)
+                              :errors (:collectors-code errors))
          (ui.form/input-field :label "Collection Date"
                               :name "collected-date"
                               :type "date"
@@ -103,7 +107,7 @@
                                    [:option {:value srid
                                              :selected (when (= srid current-srid) "selected")}
                                     label])]))
-        [:div {:class "spl-form-pair"}
+        [:div {:class "spl-form-trio"}
          (ui.form/input-field :label "Uncertainty (m)"
                               :name "geo-uncertainty"
                               :type "number"
@@ -114,7 +118,13 @@
                               :name "elevation"
                               :type "number"
                               :value (:elevation values)
-                              :errors (:elevation errors))]])]))
+                              :errors (:elevation errors))
+         (ui.form/input-field :label "Elevation Accuracy (m)"
+                              :name "elevation-accuracy"
+                              :type "number"
+                              :value (:elevation-accuracy values)
+                              :errors (:elevation-accuracy errors)
+                              :input-attrs {:min "1"})]])]))
 
 (defn page-content [& {:keys [errors accession taxon values footer]}]
   ;; Reachable only when the tab is available, so it is always enabled here.
@@ -154,6 +164,7 @@
       {:id (:collection/id collection)
        :collected-date (:collection/collected-date collection)
        :collector (:collection/collector collection)
+       :collectors-code (:collection/collectors-code collection)
        :habitat (:collection/habitat collection)
        :taxa (:collection/taxa collection)
        :remarks (:collection/remarks collection)
@@ -164,7 +175,8 @@
        :lng (:lng geo)
        :srid (:srid geo)
        :geo-uncertainty (:collection/geo-uncertainty collection)
-       :elevation (:collection/elevation collection)})))
+       :elevation (:collection/elevation collection)
+       :elevation-accuracy (:collection/elevation-accuracy collection)})))
 
 (defn save! [db accession-id data]
   (let [existing (coll.i/get-by-accession-id db accession-id)]
@@ -178,6 +190,7 @@
   [:map {:closed true}
    [:collected-date [:maybe validation.i/date]]
    [:collector {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:collectors-code {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:habitat {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:taxa {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:remarks {:decode/form validation.i/empty->nil} [:maybe :string]]
@@ -188,7 +201,8 @@
    [:lng {:decode/form validation.i/empty->nil} [:maybe [:double {:min -180 :max 180}]]]
    [:srid :int]
    [:geo-uncertainty {:decode/form validation.i/empty->nil} [:maybe [:int {:min 1}]]]
-   [:elevation {:decode/form validation.i/empty->nil} [:maybe :int]]])
+   [:elevation {:decode/form validation.i/empty->nil} [:maybe :int]]
+   [:elevation-accuracy {:decode/form validation.i/empty->nil} [:maybe [:int {:min 1}]]]])
 
 (defn form-params->collection-data
   "Convert validated form params to collection data structure.
