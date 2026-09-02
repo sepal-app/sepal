@@ -52,6 +52,7 @@
 (def migration-files #'migrate/migration-files)
 (def latest-version #'migrate/latest-version)
 (def minimum-supported-version #'migrate/minimum-supported-version)
+(def taxon-synonym-version #'migrate/taxon-synonym-version)
 (def schema-version #'migrate/schema-version)
 (def pending #'migrate/pending)
 (def migrate! #'migrate/migrate!)

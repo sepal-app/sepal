@@ -211,7 +211,7 @@
               ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
           (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
           (is (= ["20260831120000" "20260901153000" "20260902120000"]
-                 (:applied (db.i/migrate! {:db-path db-path})))
+                 (:applied (db.i/migrate! {:db-path db-path :up-to "20260902120000"})))
               "the migrations actually ran, not a no-op against an already-current schema")
           (is (= 36 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_rank"]) :c))
               "36 seeded ranks")
@@ -245,7 +245,7 @@
           (jdbc/execute! ds ["insert into material (code, accession_id, location_id, status, quantity)
                               values ('M2', 1, 1, 'dead', 2)"])
           (is (= ["20260831120000" "20260901153000" "20260902120000"]
-                 (:applied (db.i/migrate! {:db-path db-path})))
+                 (:applied (db.i/migrate! {:db-path db-path :up-to "20260902120000"})))
               "the migrations actually ran, not a no-op against an already-current schema")
           (is (= 15 (first (query db-path "select count(*) from material_change_reason")))
               "15 seeded reasons")

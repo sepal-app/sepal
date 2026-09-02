@@ -292,6 +292,16 @@ CREATE TABLE material_change (
 ) strict;
 CREATE INDEX material_change_material_id_idx on material_change (material_id);
 CREATE INDEX material_change_changed_at_idx on material_change (changed_at desc);
+CREATE TABLE taxon_synonym (
+  id integer primary key autoincrement,
+  taxon_id integer not null references taxon(id),
+  synonym_name text not null,
+  source text not null default 'local' check(source in ('local', 'imported')),
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now'))
+) strict;
+CREATE INDEX taxon_synonym_taxon_id_idx on taxon_synonym (taxon_id);
+CREATE INDEX taxon_synonym_name_idx on taxon_synonym (synonym_name collate nocase);
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -325,3 +335,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260901153000', '2026-09-01 15:30:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '2026-09-01 22:46:08');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902160000', '2026-09-02 20:51:12');

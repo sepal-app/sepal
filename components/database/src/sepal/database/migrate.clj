@@ -76,6 +76,15 @@
 
 (defn minimum-supported-version [] minimum-supported)
 
+(def ^:private taxon-synonym "20260902160000")
+
+(defn taxon-synonym-version
+  "The migration that added `taxon_synonym`. Code touching that table must gate
+  on it: the table is above the supported floor, so a database at the floor does
+  not have it, and `select` on a missing table is an error rather than a null."
+  []
+  taxon-synonym)
+
 (defn- applied-versions
   [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
