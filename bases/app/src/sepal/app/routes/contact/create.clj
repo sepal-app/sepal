@@ -7,6 +7,7 @@
             [sepal.app.ui.page :as page]
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
+            [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
@@ -46,11 +47,11 @@
    [:country {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:phone {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:business [:maybe :string]]
+   [:type {:decode/form validation.i/empty->nil} [:maybe contact.spec/type]]
    [:notes [:maybe :string]]])
 
 (comment
   (require '[sepal.store.interface :as store.i])
-  (require '[sepal.contact.interface.spec :as contact.spec])
   (let [data {:address ""
               :email nil
               :phone ""

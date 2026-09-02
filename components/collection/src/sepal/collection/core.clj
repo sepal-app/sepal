@@ -10,6 +10,7 @@
   [:id
    :collected_date
    :collector
+   :collectors_code
    :habitat
    :taxa
    :remarks
@@ -23,6 +24,7 @@
     :collection__geo_coordinates]
    :geo_uncertainty
    :elevation
+   :elevation_accuracy
    :accession_id])
 
 (defn- build-geo-coordinates

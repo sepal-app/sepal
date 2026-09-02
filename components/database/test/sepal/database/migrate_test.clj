@@ -210,8 +210,8 @@
         (let [db-path (floor-db dir)
               ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
           (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
-          (is (= ["20260831120000"] (:applied (db.i/migrate! {:db-path db-path})))
-              "the migration actually ran, not a no-op against an already-current schema")
+          (is (= ["20260831120000" "20260902120000"] (:applied (db.i/migrate! {:db-path db-path})))
+              "the migrations actually ran, not a no-op against an already-current schema")
           (is (= 36 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_rank"]) :c))
               "36 seeded ranks")
           (is (= 1 (-> (jdbc/execute-one! ds ["select count(*) c from taxon"]) :c))

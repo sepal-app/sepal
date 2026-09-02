@@ -8,6 +8,7 @@
 (def accession-id pos-int?)
 (def collected-date [:maybe :string])
 (def collector [:maybe :string])
+(def collectors-code [:maybe :string])
 (def habitat [:maybe :string])
 (def taxa [:maybe :string])
 (def remarks [:maybe :string])
@@ -16,6 +17,7 @@
 (def locality [:maybe :string])
 (def geo-uncertainty [:maybe pos-int?])
 (def elevation [:maybe :int])
+(def elevation-accuracy [:maybe pos-int?])
 
 (def default-srid 4326)
 
@@ -42,6 +44,7 @@
    [:collection/id id]
    [:collection/collected-date collected-date]
    [:collection/collector collector]
+   [:collection/collectors-code collectors-code]
    [:collection/habitat habitat]
    [:collection/taxa taxa]
    [:collection/remarks remarks]
@@ -53,6 +56,7 @@
     [:maybe GeoPoint]]
    [:collection/geo-uncertainty geo-uncertainty]
    [:collection/elevation elevation]
+   [:collection/elevation-accuracy elevation-accuracy]
    [:collection/accession-id accession-id]])
 
 (def CreateCollection
@@ -60,6 +64,7 @@
    [:accession-id {:decode/store validate.i/coerce-int} accession-id]
    [:collected-date {:optional true} collected-date]
    [:collector {:optional true} collector]
+   [:collectors-code {:optional true} collectors-code]
    [:habitat {:optional true} habitat]
    [:taxa {:optional true} taxa]
    [:remarks {:optional true} remarks]
@@ -68,13 +73,15 @@
    [:locality {:optional true} locality]
    [:geo-coordinates {:optional true} [:maybe GeoPoint]]
    [:geo-uncertainty {:optional true} geo-uncertainty]
-   [:elevation {:optional true} elevation]])
+   [:elevation {:optional true} elevation]
+   [:elevation-accuracy {:optional true} elevation-accuracy]])
 
 (def UpdateCollection
   (mu/optional-keys
     [:map {:closed true}
      [:collected-date collected-date]
      [:collector collector]
+     [:collectors-code collectors-code]
      [:habitat habitat]
      [:taxa taxa]
      [:remarks remarks]
@@ -83,4 +90,5 @@
      [:locality locality]
      [:geo-coordinates [:maybe GeoPoint]]
      [:geo-uncertainty geo-uncertainty]
-     [:elevation elevation]]))
+     [:elevation elevation]
+     [:elevation-accuracy elevation-accuracy]]))
