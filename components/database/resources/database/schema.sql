@@ -78,18 +78,6 @@ CREATE TABLE accession (
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
-CREATE TABLE material (
-  id integer primary key autoincrement,
-  code text not null,
-  accession_id integer not null references accession(id),
-  location_id integer not null references location(id),
-  type text not null default 'plant' check(type in ('plant', 'seed', 'vegetative', 'tissue', 'other')),
-  status text not null default 'alive' check(status in ('dead', 'alive')),
-  memorial integer not null default 0 check(memorial in (0, 1)),
-  quantity integer not null default 1,
-  created_at text not null default (datetime('now')),
-  updated_at text not null default (datetime('now'))
-) strict;
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -143,7 +131,6 @@ CREATE INDEX user_status_idx on "user" (status);
 CREATE INDEX user_role_idx on "user" (role);
 CREATE INDEX location_id_idx on location (id);
 CREATE INDEX accession_id_idx on accession (id);
-CREATE INDEX material_id_idx on material (id);
 CREATE INDEX media_id_idx on media (id);
 CREATE INDEX media_link_media_id_idx on media_link (media_id);
 CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
@@ -164,10 +151,6 @@ end;
 CREATE TRIGGER trigger_accession_updated_at after update on accession
 begin
   update accession set updated_at = datetime('now') where id = NEW.id;
-end;
-CREATE TRIGGER trigger_material_updated_at after update on material
-begin
-  update material set updated_at = datetime('now') where id = NEW.id;
 end;
 CREATE TRIGGER trigger_media_updated_at after update on media
 begin
@@ -268,6 +251,47 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
   insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
   insert into taxon_fts(rowid, name) values (new.id, new.name);
 end;
+CREATE TABLE material_status (
+  name text primary key
+) strict;
+CREATE TABLE material_change_reason (
+  code text primary key,
+  label text not null
+) strict;
+CREATE TABLE "material" (
+  id integer primary key autoincrement,
+  code text not null,
+  accession_id integer not null references accession(id),
+  location_id integer not null references location(id),
+  type text not null default 'plant' check(type in ('plant', 'seed', 'vegetative', 'tissue', 'other')),
+  status text not null default 'alive' references material_status(name),
+  memorial integer not null default 0 check(memorial in (0, 1)),
+  quantity integer not null default 1 check(quantity >= 0),
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now')),
+  -- A non-current lot cannot hold material: dead, transferred and other
+  -- require quantity 0, while alive, dormant and unknown accept any count.
+  check(status in ('alive', 'dormant', 'unknown') or quantity = 0)
+) strict;
+CREATE INDEX material_id_idx on material (id);
+CREATE TRIGGER trigger_material_updated_at after update on material
+begin
+  update material set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TABLE material_change (
+  id integer primary key autoincrement,
+  material_id integer not null references material(id) on delete cascade,
+  from_location_id integer references location(id),
+  to_location_id integer references location(id),
+  quantity integer not null,
+  reason text references material_change_reason(code),
+  changed_at text not null default (datetime('now')),
+  note text,
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now'))
+) strict;
+CREATE INDEX material_change_material_id_idx on material_change (material_id);
+CREATE INDEX material_change_changed_at_idx on material_change (changed_at desc);
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -276,7 +300,28 @@ INSERT INTO taxon_rank (name) VALUES
   ('subphylum'), ('subsection'), ('subseries'), ('subspecies'), ('subtribe'),
   ('subvariety'), ('superclass'), ('superfamily'), ('superorder'),
   ('supertribe'), ('tribe'), ('unranked'), ('variety');
+
+INSERT INTO material_status (name) VALUES
+  ('alive'), ('dead'), ('dormant'), ('transferred'), ('other'), ('unknown');
+
+INSERT INTO material_change_reason (code, label) VALUES
+  ('dead', 'Dead'),
+  ('discarded', 'Discarded'),
+  ('discarded_weedy', 'Discarded, weedy'),
+  ('lost', 'Lost, whereabouts unknown'),
+  ('stolen', 'Stolen'),
+  ('winter_kill', 'Winter kill'),
+  ('summer_kill', 'Summer kill'),
+  ('error_correction', 'Error correction'),
+  ('distributed', 'Distributed elsewhere'),
+  ('deleted', 'Deleted, year dead unknown'),
+  ('did_not_germinate', 'Did not germinate'),
+  ('discarded_seedling', 'Discarded seedling'),
+  ('given_away', 'Given away'),
+  ('transferred', 'Transferred elsewhere'),
+  ('other', 'Other');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260901153000', '2026-09-01 15:30:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '2026-09-01 22:46:08');

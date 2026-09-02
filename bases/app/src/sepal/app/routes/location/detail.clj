@@ -26,7 +26,7 @@
                               :errors errors
                               :values values)))
 
-(defn render [& {:keys [errors location values panel-data]}]
+(defn render [& {:keys [errors location values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (location.form/footer-buttons))
                                                :errors errors
@@ -35,8 +35,10 @@
                         :panel-content (location.panel/panel-content
                                          :location (:location panel-data)
                                          :stats (:stats panel-data)
+                                         :moved-out (:moved-out panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs [[:a {:href (z/url-for location.routes/index)}
                             "Locations"]
                            (:location/name location)]))
@@ -58,7 +60,7 @@
 
 (defn render-panel-page
   "Render the panel view as a full page for read-only users."
-  [& {:keys [location panel-data]}]
+  [& {:keys [location panel-data timezone]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for location.routes/index)} "Locations"]
                   (:location/name location)]
@@ -66,16 +68,19 @@
               (location.panel/panel-content
                 :location (:location panel-data)
                 :stats (:stats panel-data)
+                :moved-out (:moved-out panel-data)
                 :activities (:activities panel-data)
-                :activity-count (:activity-count panel-data))]))
+                :activity-count (:activity-count panel-data)
+                :timezone timezone)]))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         id (:location/id resource)]
     ;; Readers see panel view as full page
     (if (not (authz/user-has-permission? viewer location.perm/edit))
       (let [panel-data (location.panel/fetch-panel-data db resource)]
-        (render-panel-page :location resource :panel-data panel-data))
+        (render-panel-page :location resource :panel-data panel-data
+                           :timezone timezone))
       ;; Editors/Admins see the form
       (let [values {:id id
                     :name (:location/name resource)
@@ -93,4 +98,5 @@
           (let [panel-data (location.panel/fetch-panel-data db resource)]
             (render :location resource
                     :values values
-                    :panel-data panel-data)))))))
+                    :panel-data panel-data
+                    :timezone timezone)))))))

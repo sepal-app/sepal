@@ -2,7 +2,8 @@
   "Server-side datetime formatting utilities.
 
    All timestamps are formatted on the server using the organization's timezone."
-  (:require [sepal.settings.interface :as settings.i])
+  (:require [clojure.string :as str]
+            [sepal.settings.interface :as settings.i])
   (:import [java.time Duration Instant ZoneId]
            [java.time.format DateTimeFormatter FormatStyle]
            [java.util Locale]))
@@ -25,6 +26,22 @@
   "Convert a timezone string to a ZoneId."
   [timezone]
   (ZoneId/of (or timezone default-timezone)))
+
+(defn sqlite-datetime->instant
+  "Parse a SQLite datetime string as an Instant.
+
+  Sepal writes `datetime('now')` — UTC, '2026-09-01 15:30:00'. Bauble wrote
+  naive local times, some with fractional seconds — '2011-02-11 00:00:00.373275'.
+  Both parse as UTC: Sepal's are, and Bauble's carry no zone to respect.
+  Returns nil for anything unparseable rather than throwing."
+  [s]
+  (when s
+    (try
+      (Instant/parse (-> s
+                         (str/replace " " "T")
+                         (str/replace #"\..*" "")
+                         (str "Z")))
+      (catch java.time.format.DateTimeParseException _ nil))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Server-Side Formatting

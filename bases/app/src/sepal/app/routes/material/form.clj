@@ -17,7 +17,7 @@
 
 ;; (def types ["Plant"])
 
-(defn form [& {:keys [action errors values]}]
+(defn form [& {:keys [action errors values reasons]}]
   (let [statuses (->> material.spec/status rest (mapv name))
         types (->> material.spec/type rest (mapv name))]
     [:div
@@ -84,7 +84,7 @@
                                          :id "quantity"
                                          :name "quantity"
                                          :type "number"
-                                         :min 1
+                                         :min 0
                                          :required true
                                          :value (or (:quantity values) 1)}])
              (form/field :label "Status"
@@ -114,6 +114,17 @@
                                    [:option {:value type
                                              :selected (when (= type (some-> values :type name))
                                                          "selected")}
-                                    type])]])])]])
+                                    type])]])
+            (form/field :label "Reason for change"
+                        :name "reason"
+                        :errors (:reason errors)
+                        :hint "Recorded in this material's history when the location or quantity changes."
+                        :input [:select {:name "reason"
+                                         :id "reason"
+                                         :autocomplete "off"
+                                         :class "spl-input w-full"}
+                                [:option {:value ""} "None"]
+                                (for [{:material-change-reason/keys [code label]} reasons]
+                                  [:option {:value code} label])])])]])
      [:script {:type "module"
                :src (html/static-url "app/routes/material/form.ts")}]]))

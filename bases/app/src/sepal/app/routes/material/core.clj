@@ -42,5 +42,7 @@
                 :middleware [[(middleware/require-permission-or-redirect
                                 material.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
+    ["/history/" {:name routes/history
+                  :handler #'panel/history-handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

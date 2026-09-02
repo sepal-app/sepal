@@ -210,7 +210,8 @@
         (let [db-path (floor-db dir)
               ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
           (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
-          (is (= ["20260831120000" "20260902120000"] (:applied (db.i/migrate! {:db-path db-path})))
+          (is (= ["20260831120000" "20260901153000" "20260902120000"]
+                 (:applied (db.i/migrate! {:db-path db-path})))
               "the migrations actually ran, not a no-op against an already-current schema")
           (is (= 36 (-> (jdbc/execute-one! ds ["select count(*) c from taxon_rank"]) :c))
               "36 seeded ranks")
@@ -230,6 +231,66 @@
         (finally
           (fs/delete-tree dir))))))
 
+(deftest test-material-history-migration
+  (testing "the rebuild keeps material rows, normalises dead quantities, and the new tables enforce their rules"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-material-history-migration"})]
+      (try
+        (let [db-path (floor-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
+          (jdbc/execute! ds ["insert into accession (code, taxon_id) values ('X-1', 1)"])
+          (jdbc/execute! ds ["insert into location (code, name) values ('L1', 'Loc one')"])
+          (jdbc/execute! ds ["insert into material (code, accession_id, location_id, status, quantity)
+                              values ('M1', 1, 1, 'alive', 2)"])
+          (jdbc/execute! ds ["insert into material (code, accession_id, location_id, status, quantity)
+                              values ('M2', 1, 1, 'dead', 2)"])
+          (is (= ["20260831120000" "20260901153000" "20260902120000"]
+                 (:applied (db.i/migrate! {:db-path db-path})))
+              "the migrations actually ran, not a no-op against an already-current schema")
+          (is (= 15 (first (query db-path "select count(*) from material_change_reason")))
+              "15 seeded reasons")
+          (is (= 2 (first (query db-path "select count(*) from material")))
+              "the existing rows survived the rebuild")
+          (is (= 0 (first (query db-path "select quantity from material where code = 'M2'")))
+              "a dead plant with a positive quantity is normalised to 0, the only legal form")
+          (jdbc/execute! ds ["insert into material (code, accession_id, location_id, status, quantity)
+                              values ('M3', 1, 1, 'dead', 0)"])
+          (is (= 3 (first (query db-path "select count(*) from material")))
+              "a dead plant with quantity 0 inserts")
+          (let [fk-ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path "?foreign_keys=on")})]
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into material (code, accession_id, location_id, quantity)
+                                                values ('M4', 1, 1, -1)"]))
+                "quantity must be >= 0")
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into material (code, accession_id, location_id, status, quantity)
+                                                values ('M5', 1, 1, 'dead', 1)"]))
+                "a dead plant cannot have a positive quantity")
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into material (code, accession_id, location_id, status, quantity)
+                                                values ('M5b', 1, 1, 'transferred', 1)"]))
+                "a transferred plant cannot have a positive quantity")
+            (jdbc/execute! fk-ds ["insert into material (code, accession_id, location_id, status, quantity)
+                                   values ('M6', 1, 1, 'dormant', 5)"])
+            (is (= 5 (first (query db-path "select quantity from material where code = 'M6'")))
+                "a dormant lot can carry a positive quantity")
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into material (code, accession_id, location_id, status, quantity)
+                                                values ('M7', 1, 1, 'notastatus', 1)"]))
+                "the foreign key refuses a status absent from material_status")
+            (jdbc/execute! fk-ds ["insert into material_change (material_id, from_location_id, to_location_id, quantity, reason, changed_at)
+                                   values (1, 1, 1, -1, 'dead', '2026-09-01')"])
+            (is (= 1 (-> (jdbc/execute-one! fk-ds ["select count(*) c from material_change"]) :c))
+                "a change row with a known reason inserts")
+            (is (thrown? org.sqlite.SQLiteException
+                         (jdbc/execute! fk-ds ["insert into material_change (material_id, quantity, reason, changed_at)
+                                                values (1, 1, 'notareason', '2026-09-01')"]))
+                "the foreign key refuses a reason absent from material_change_reason"))
+          (is (empty? (jdbc/execute! ds ["pragma foreign_key_check"]))
+              "no dangling references"))
+        (finally
+          (fs/delete-tree dir))))))
+
 (deftest test-provisioned-and-migrated-schemas-match
   (testing "a database provisioned from schema.sql matches one built from the floor snapshot and migrated"
     (let [provisioned-dir (fs/create-temp-dir {:prefix "sepal-schema-parity-provisioned"})
@@ -242,7 +303,13 @@
               "a provisioned garden and a migrated one must have the same schema")
           (is (= (query provisioned-path "select name from taxon_rank order by name")
                  (query migrated-path "select name from taxon_rank order by name"))
-              "the taxon_rank seed in schema.sql must match the one in the migration"))
+              "the taxon_rank seed in schema.sql must match the one in the migration")
+          (is (= (query provisioned-path "select code || '|' || label from material_change_reason order by code")
+                 (query migrated-path "select code || '|' || label from material_change_reason order by code"))
+              "the material_change_reason seed in schema.sql must match the one in the migration")
+          (is (= (query provisioned-path "select name from material_status order by name")
+                 (query migrated-path "select name from material_status order by name"))
+              "the material_status seed in schema.sql must match the one in the migration"))
         (finally
           (fs/delete-tree provisioned-dir)
           (fs/delete-tree migrated-dir))))))

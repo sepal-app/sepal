@@ -1,10 +1,15 @@
 (ns sepal.app.routes.location.detail-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -82,3 +87,31 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "#name-errors"))
             "Name field should have error container with id name-errors")))))
+
+(deftest test-location-detail-shows-moved-material
+  (tf/testing "material that moved away appears in the location's Moved section"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/loc1] {:db *db*}
+     [::location.i/factory :key/loc2] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/loc1)}}
+    (fn [{:keys [user material loc1 loc2]}]
+      (material.i/update! *db* (:material/id material)
+                          {:location-id (:location/id loc2)
+                           :reason "transferred"})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/location/" (:location/id loc1) "/")))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (some? (.selectFirst body ":containsOwn(Moved)"))
+            "the panel should have a Moved section")
+        (is (.contains (.text body) (:material/code material))
+            "the moved material's code should appear")
+        (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))

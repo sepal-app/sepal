@@ -11,6 +11,29 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(defn create-change!
+  "Record a history row directly. The import path uses this; interactive
+  writes go through `update!`."
+  [db data]
+  (core/create-change! db data))
+
+(defn list-reasons
+  "Every material_change_reason, ordered by code."
+  [db]
+  (core/list-reasons db))
+
+(defn list-by-material-id
+  "A material's change history, newest first, each row carrying the reason
+  label."
+  [db material-id]
+  (core/list-by-material-id db material-id))
+
+(defn moved-out-by-location-id
+  "Change rows whose material left this location, most recent first, with the
+  material code and destination name."
+  [db location-id]
+  (core/moved-out-by-location-id db location-id))
+
 (defn count-by-accession-id
   "Count materials for a given accession."
   [db accession-id]
