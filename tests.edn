@@ -20,6 +20,7 @@
                         "components/search/test"
                         "components/settings/test"
                         "components/store/test"
+                        "components/synonym/test"
                         "components/taxon/test"
                         "components/test/test"
                         "components/token/test"
