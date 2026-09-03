@@ -134,6 +134,77 @@
                (mapv :synonym/id (synonym.i/list-for-taxon (ctx) *db* id))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
+(deftest test-a-database-below-the-gate-offers-no-add-form
+  ;; The read is gated, so on a floor database the tab was showing "No synonyms
+  ;; yet" next to a working-looking Add control that cannot store anything: the
+  ;; POST reached add-synonym!, SQLite refused the missing table, and the form
+  ;; came back as an empty 422 with the typed name gone.
+  (tf/testing "no form, and the POST refused rather than 422ing"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [password "testpassword123"
+            email (create-user! *db* :admin password)
+            sess (app.test/login email password)
+            id (:taxon/id taxon)
+            url (format "/taxon/%s/synonyms/" id)
+            {:keys [response] :as sess} (peri/request sess url)
+            token (test.i/response-anti-forgery-token response)]
+        (is (re-find #"name=\"synonym-name\"" (:body response))
+            "the form is offered when the table is there, so its absence below
+             is the gate and not a rename")
+        (with-redefs [db.i/at-least-version? (constantly false)]
+          (let [{:keys [response]} (peri/request sess url)]
+            (is (= 200 (:status response)))
+            (is (not (re-find #"name=\"synonym-name\"" (:body response)))))
+          (let [{:keys [response]} (peri/request sess url
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token token
+                                                          :synonym-name "Ficus elastica"})]
+            (is (= 404 (:status response))
+                "a direct POST must be refused, not left to fail in SQLite")))
+        (is (empty? (synonym.i/list-for-taxon (ctx) *db* id)))))))
+
+(deftest test-a-non-numeric-synonym-id-deletes-nothing
+  ;; WFO rows carry no :synonym/id, and parse-long of a non-numeric segment is
+  ;; nil, so an unguarded `(= synonym-id (:synonym/id %))` matches the first WFO
+  ;; row on `(= nil nil)`. The list is stubbed to carry one, because the test
+  ;; process has no WFO reference file and a list of local rows alone cannot
+  ;; tell the guarded path from the unguarded one.
+  (tf/testing "DELETE .../synonyms/abc/"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [password "testpassword123"
+            email (create-user! *db* :admin password)
+            sess (app.test/login email password)
+            id (:taxon/id taxon)
+            row (synonym.i/add-synonym! *db* {:taxon-id id
+                                              :synonym-name "Cattleya labiata"})
+            {:keys [response] :as sess} (peri/request sess (format "/taxon/%s/synonyms/" id))
+            token (test.i/response-anti-forgery-token response)
+            removed (atom [])
+            real-list synonym.i/list-for-taxon]
+        (with-redefs [synonym.i/list-for-taxon
+                      (fn [ctx db taxon-id]
+                        (conj (vec (real-list ctx db taxon-id))
+                              {:synonym/synonym-name "Encyclia cochleata"
+                               :synonym/source "wfo"}))
+                      synonym.i/remove-synonym!
+                      (fn [_db synonym-id] (swap! removed conj synonym-id) nil)]
+          (let [{:keys [response]} (peri/request
+                                     sess
+                                     (format "/taxon/%s/synonyms/abc/" id)
+                                     :request-method :delete
+                                     :headers {"x-csrf-token" token})]
+            (is (not= 500 (:status response)))
+            (is (empty? @removed)
+                "a non-numeric id selected a row and tried to delete it")))
+        (is (= [(:synonym/id row)]
+               (mapv :synonym/id (synonym.i/list-for-taxon (ctx) *db* id))))
+        (is (not-any? #(= synonym.activity/deleted (:activity/type %))
+                      (activity.i/get-by-resource *db* :resource-type :taxon :resource-id id))
+            "an activity event naming a row that never existed")
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
 (deftest test-a-database-below-the-gate-renders-an-empty-tab
   ;; The floor CI leg doesn't actually exercise this: the test system migrates
   ;; to latest before start! regardless of the schema-version option, so

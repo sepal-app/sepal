@@ -7,6 +7,7 @@
   file, and loads mod_spatialite into every connection, which this file has no
   use for."
   (:require [babashka.fs :as fs]
+            [clojure.string :as str]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as connection])
   (:import [com.zaxxer.hikari HikariDataSource]))
@@ -48,15 +49,33 @@
           (jdbc/execute! pool ["select name, accepted_core, name_id from syn
                                  where accepted_core = ?" core]))))
 
+(defn- fts-match
+  "`query` as an FTS5 MATCH expression, or nil when it carries no tokens.
+
+  Every whitespace-separated token becomes a quoted string and the last one is
+  prefix-extended, so `Encyclia cochleat` compiles to `\"Encyclia\" \"cochleat\"*`
+  -- the same implicit AND with a trailing prefix that
+  components/search/src/sepal/search/compiler.clj:67 gives taxon_fts.
+
+  The quoting is the load-bearing part. FTS5 gives `:`, `.`, `'`, `(`, `)` and
+  `-` meanings of their own inside a MATCH expression, so any raw string handed
+  to MATCH is parsed as syntax: `sp.` and `Rosa 'Peace'` are syntax errors, and
+  a bareword shaped like `accessions:>0` is `no such column: accessions`. Inside
+  double quotes the token is a string the tokenizer splits instead, so nothing a
+  user can type can be syntax. An embedded double quote is escaped FTS5's way,
+  by doubling it."
+  [query]
+  (let [tokens (remove str/blank? (str/split (str/trim (or query "")) #"\s+"))]
+    (when (seq tokens)
+      (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") tokens)]
+        (str/join " " (conj (vec (butlast quoted)) (str (last quoted) "*")))))))
+
 (defn search
   "WFO synonyms whose name matches the query, prefix-extended.
 
-  `(str query \"*\")` is the same treatment the search compiler gives taxon_fts
-  at components/search/src/sepal/search/compiler.clj:67, so a synonym search
-  behaves like a taxon search rather than like exact matching."
+  Safe against any string a user can type: see `fts-match`."
   [pool query]
-  (if (or (nil? pool) (empty? query))
-    []
+  (if-let [match (when (and pool (seq query)) (fts-match query))]
     (mapv (fn [row]
             {:name (:syn/name row)
              :accepted-core (:syn/accepted_core row)
@@ -65,4 +84,5 @@
                          ["select s.name, s.accepted_core, s.name_id from syn s
                             join syn_fts f on f.rowid = s.rowid
                             where syn_fts match ?
-                            limit 50" (str query "*")]))))
+                            limit 50" match]))
+    []))

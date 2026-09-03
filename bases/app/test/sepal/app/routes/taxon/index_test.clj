@@ -1,6 +1,9 @@
 (ns sepal.app.routes.taxon.index-test
-  (:require [clojure.data.json :as json]
-            [clojure.test :refer [deftest is use-fixtures]]
+  (:require [babashka.fs :as fs]
+            [clojure.data.json :as json]
+            [clojure.test :refer [deftest is testing use-fixtures]]
+            [integrant.core :as ig]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
@@ -115,6 +118,99 @@
                        :response :body)]
           (is (zero? (count (re-seq #"spl-row" body))))
           (is (not (re-find #"Encyclia cochleata" body))))))))
+
+(defn- build-reference-fixture!
+  "A one-row WFO reference file, the same schema bin/build-synonym-ref.sh
+  builds and components/synonym's tests use."
+  [path]
+  (with-open [conn (jdbc/get-connection
+                     (jdbc/get-datasource {:dbtype "sqlite" :dbname (str path)}))]
+    (doseq [stmt ["create table syn (name text not null, accepted_core text not null,
+                   accepted_wfo_id text not null, name_id text not null) strict"
+                  "insert into syn values
+                   ('Encyclia cochleata','wfo-0000283538','wfo-0000283538-2025-06','wfo-0001')"
+                  "create index syn_accepted_core_idx on syn(accepted_core)"
+                  "create virtual table syn_fts using fts5(name, content='syn',
+                   content_rowid='rowid', tokenize='unicode61')"
+                  "insert into syn_fts(syn_fts) values('rebuild')"
+                  "create table metadata (key text primary key, value text) strict"
+                  "insert into metadata values ('wfo_plant_list.version','2025-06')"]]
+      (jdbc/execute! conn [stmt])))
+  path)
+
+(defn- with-reference-pool
+  "Run `f` with `synonym.i/resolve` reading a real reference pool.
+
+  The test system's process carries no WFO reference file, and there is no way
+  to hand default-system-fixture one without changing shared test
+  infrastructure. So rather than stubbing resolve away -- which is what let the
+  FTS injection below survive fourteen reviews -- this wraps the real function
+  and puts a real pool in the context it is given. Everything past that point
+  is production code, including the MATCH."
+  [f]
+  (let [dir (fs/create-temp-dir)
+        path (str (fs/path dir "ref.db"))]
+    (build-reference-fixture! path)
+    (let [pool (ig/init-key ::synonym.i/reference-pool {:path path})
+          real synonym.i/resolve]
+      (try
+        (with-redefs [synonym.i/resolve
+                      (fn [ctx db q] (real (assoc ctx :synonym-reference pool) db q))]
+          (f))
+        (finally
+          (ig/halt-key! ::synonym.i/reference-pool pool)
+          (fs/delete-tree dir))))))
+
+(deftest test-a-filter-query-does-not-reach-the-synonym-fts-parser
+  ;; Ticking "Only taxa with accessions" sets q to "accessions:>0"
+  ;; (query-builder.ts). The taxon compiler parses that into a :count filter
+  ;; with no FTS terms at all, but the raw string used to go straight into the
+  ;; synonym reference's FTS5 MATCH, where `accessions:>0` reads as a column
+  ;; reference: SQLiteException, and a 500 on one click. It only ever fired
+  ;; where a reference pool exists, which is never in dev or in a stubbed test
+  ;; and always in production.
+  (tf/testing "a real reference pool"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      ;; A name that does not itself match "cochleat", so the positive case
+      ;; below reaches the synonym block rather than being deduped out of it as
+      ;; a taxon the name search already found.
+      (jdbc.sql/update! *db* :taxon
+                        {:name "Xanthosoma dealbatum"
+                         :wfo_taxon_id "wfo-0000283538-2025-12"}
+                        {:id (:taxon/id taxon)})
+      (with-reference-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                get-response (fn [q]
+                               (-> sess (peri/request "/taxon/" :params {"q" q}) :response))]
+            (doseq [q ["accessions:>0" "rank:genus" "-cochleat" "   "]]
+              (is (= 200 (:status (get-response q)))
+                  (str "the taxon list 500ed on " (pr-str q))))
+            (testing "the pool really is wired in, so the 200s above are not vacuous"
+              (let [body (:body (get-response "cochleat"))]
+                (is (re-find #"Also matching a synonym" body))
+                (is (re-find #"Encyclia cochleata" body))
+                (is (re-find #"Xanthosoma dealbatum" body))))))))))
+
+(deftest test-the-synonym-search-is-given-the-parsed-terms-not-the-raw-query
+  ;; The layer fix behind the test above. A synonym name search has no use for
+  ;; filter syntax: `accessions:>0` is a WHERE clause the taxon compiler
+  ;; handles, and there is nothing in it a synonym could match. Passing the raw
+  ;; query string is what put filter syntax in front of FTS5 in the first
+  ;; place, so what reaches resolve is asserted directly.
+  (tf/testing "what the route hands resolve"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [_taxon]}]
+      (let [seen (atom [])
+            email (create-user! *db*)
+            sess (app.test/login email password)]
+        (with-redefs [synonym.i/resolve (fn [_ctx _db q] (swap! seen conj q) [])]
+          (doseq [q ["accessions:>0" "rank:genus" "-cochleat" "Encyclia cochleata"
+                     "rank:genus Encyclia"]]
+            (peri/request sess "/taxon/" :params {"q" q}))
+          (is (= ["" "" "" "Encyclia cochleata" "Encyclia"] @seen)))))))
 
 (deftest test-no-synonym-matches-renders-no-block
   ;; A query nothing matches — real resolve, unmocked. The test process has no

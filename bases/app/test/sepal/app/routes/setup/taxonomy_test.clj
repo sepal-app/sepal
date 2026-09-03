@@ -114,6 +114,25 @@
               (is (= :idle (:phase @(tracker))))
               (is (empty? @seen)))))))))
 
+(deftest test-the-progress-route-returns-promptly-on-an-idle-install
+  ;; The each-fixture leaves the tracker idle, which is the state of every
+  ;; install where the wizard's import never ran -- every dispatcher-provisioned
+  ;; garden, and every self-hosted install once setup is done. The route is
+  ;; mounted unconditionally, /setup is exempt from the setup-required redirect,
+  ;; and setup carries no auth middleware, so this body is what an
+  ;; unauthenticated `curl -N` gets. If it does not return, 200 of them exhaust
+  ;; the Jetty pool.
+  (let [{:keys [response]} (-> (peri/session *app*)
+                               (peri/request "/setup/taxonomy/progress"))
+        out (java.io.ByteArrayOutputStream.)
+        worker (future
+                 (ring.protocols/write-body-to-stream (:body response) nil out)
+                 :returned)]
+    (is (= 200 (:status response)))
+    (is (= :returned (deref worker 2000 ::timed-out))
+        "the idle stream never ended, so an unauthenticated GET pins a thread")
+    (is (str/includes? (.toString out "UTF-8") "\"phase\":\"idle\""))))
+
 (deftest test-the-progress-route-streams-server-sent-events
   (reset! (tracker) {:phase :done :taxa-count 42 :wfo-version "2025-12_2"})
   (let [{:keys [response]} (-> (peri/session *app*)

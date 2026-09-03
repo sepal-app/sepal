@@ -77,6 +77,41 @@
                    (set (map :accepted-core hits))))))
         (finally (reference/close! pool) (fs/delete-tree dir))))))
 
+(deftest test-a-raw-user-query-cannot-reach-the-fts-parser
+  ;; Every one of these is a string the taxon list can hand this function. FTS5
+  ;; gives `:`, `.`, `'` and `-` meanings of their own inside MATCH, so before
+  ;; the query was quoted each of the four below threw an SQLiteException --
+  ;; `no such column: accessions`, `no such column: rank`,
+  ;; `fts5: syntax error near "."`, `fts5: syntax error near "'"` -- and the one
+  ;; a user reaches in a single click is `accessions:>0`, which the "Only taxa
+  ;; with accessions" checkbox sets.
+  (let [dir (fs/create-temp-dir)
+        path (str (fs/path dir "ref.db"))]
+    (build-fixture! path)
+    (let [pool (reference/open path)]
+      (try
+        (testing "a plain term still matches"
+          (is (= ["Encyclia cochleata"] (mapv :name (reference/search pool "cochleat")))))
+        (doseq [q ["accessions:>0"
+                   "rank:genus"
+                   "sp."
+                   "Rosa 'Peace'"
+                   "\"unbalanced"
+                   "(NEAR)"
+                   "a OR b"
+                   "-cochleat"
+                   "   "]]
+          (testing (str "no throw for " (pr-str q))
+            (is (vector? (reference/search pool q)))))
+        (testing "quoting does not cost a multi-word prefix match"
+          (is (= ["Encyclia cochleata"]
+                 (mapv :name (reference/search pool "Encyclia cochleat")))))
+        (testing "punctuation is tokenized rather than parsed, so a trailing
+                  colon is simply not part of the token"
+          (is (= ["Encyclia cochleata"] (mapv :name (reference/search pool "cochleat:"))))
+          (is (= ["Encyclia cochleata"] (mapv :name (reference/search pool "  cochleat  ")))))
+        (finally (reference/close! pool) (fs/delete-tree dir))))))
+
 (deftest test-list-for-accepted-core
   (let [dir (fs/create-temp-dir)
         path (str (fs/path dir "ref.db"))]

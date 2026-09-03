@@ -161,6 +161,10 @@
                 (recur done)))
           done)))))
 
+(def download-timeout-ms
+  "The request timeout every reference download uses. See download-file!."
+  1800000)
+
 (defn download-file!
   "Download `url` to `dest`, reporting progress as the bytes arrive.
 
@@ -173,21 +177,32 @@
   Verifies `sha256` when one is given, deleting the file and throwing on a
   mismatch. Returns `dest`."
   [url dest {:keys [size-mb sha256 on-bytes]}]
-  ;; :timeout bounds getting to the response headers, not the body transfer, so
-  ;; 120 s is not a cap on how long a 127 MB download may take. With :as :stream
-  ;; hato uses BodyHandlers/ofInputStream, java.net.http returns from send! once
-  ;; the headers arrive, and HttpRequest.Builder/timeout stops applying there.
-  ;; Proved rather than assumed, because the shape of the number invites the
-  ;; opposite reading: see
-  ;; shared-test/test-the-request-timeout-covers-the-headers-not-the-body,
-  ;; which reads a body for 2.4 s through a 100 ms timeout and completes.
+  ;; What :timeout bounds is JDK-dependent, so this value is chosen to be
+  ;; correct under both readings rather than under the one the installed JDK
+  ;; happens to have. Measured on 2026-09-03, serving 8 KB in 8 flushes 300 ms
+  ;; apart through http-client with :as :stream:
   ;;
-  ;; The cost of that is the other way round: nothing bounds the body at all, so
-  ;; a stalled connection parks this thread indefinitely rather than failing.
+  ;;   JDK 25 (CI pins JAVA_VERSION 25, prod runs eclipse-temurin:25-jre-noble):
+  ;;     any :timeout from 100 ms up reads all 8192 bytes. java.net.http returns
+  ;;     from send! once the response headers arrive and
+  ;;     HttpRequest.Builder/timeout stops applying there, so the value bounds
+  ;;     DNS, connect, TLS and the redirect chain, and nothing after.
+  ;;   JDK 26: a :timeout below the transfer time fails with
+  ;;     `IOException: closed` mid-body. The value is a wall-clock cap on the
+  ;;     whole exchange.
+  ;;
+  ;; At 120 s the second semantics would demand 1.06 MB/s sustained for the
+  ;; 127 MB reference and 0.3 MB/s for the 35 MB init database, and a slower
+  ;; link would fail setup outright. 30 minutes needs ~70 KB/s, matching the
+  ;; deadline the control-plane dispatcher already gives the same download
+  ;; (cloud synonym-ref/download-deadline-ms). On JDK 25 it changes nothing.
+  ;;
+  ;; The cost is the same either way on JDK 25: nothing bounds the body at all,
+  ;; so a stalled connection parks this thread indefinitely rather than failing.
   ;; See the report's concerns.
   (let [response (http/get url {:http-client http-client
                                 :as :stream
-                                :timeout 120000})]
+                                :timeout download-timeout-ms})]
     (when-not (= 200 (:status response))
       (throw (ex-info "Download failed"
                       {:status (:status response) :url url})))
@@ -509,21 +524,43 @@
 
 (def terminal-phases #{:done :failed})
 
+(def stream-stop-phases
+  "Phases that end the stream after a single frame.
+
+  :idle belongs here with the terminal two. The endpoint carries no auth and is
+  mounted on every install, so an idle tracker is the state an arbitrary caller
+  finds: every dispatcher-provisioned garden, and every self-hosted install once
+  setup is done. Without :idle the loop never exits, and one unauthenticated GET
+  parks a Jetty thread for the life of the process. There is also nothing to
+  report when no job is running -- the frame already says so."
+  (conj terminal-phases :idle))
+
+(def default-stream-max-ms
+  "30 minutes, matching the dispatcher's synonym-ref/download-deadline-ms.
+
+  A cap on the whole connection, not on the job: an import still runs to
+  completion in its own thread, and EventSource reconnects on its own, so the
+  browser picks the stream back up. It is here so that no connection can live
+  indefinitely even mid-job."
+  1800000)
+
 (defn sse-body
   "A response body that writes one SSE frame per tick until the job is over.
 
   The .flush is load-bearing: without it the writer buffers and the browser sees
   nothing until the stream closes, which is exactly the dead-button behaviour
-  this replaces. The terminal-phase check is equally load-bearing: without it
-  the connection lives for the life of the process."
-  [tracker & {:keys [poll-ms] :or {poll-ms 500}}]
-  (reify ring.protocols/StreamableResponseBody
-    (write-body-to-stream [_ _ output-stream]
-      (with-open [w (io/writer output-stream)]
-        (loop []
-          (let [state @tracker]
-            (.write w (str "data: " (json/write-str (job-frame state)) "\n\n"))
-            (.flush w)
-            (when-not (contains? terminal-phases (:phase state))
-              (Thread/sleep ^long poll-ms)
-              (recur))))))))
+  this replaces. The stop-phase check is equally load-bearing: without it the
+  connection lives for the life of the process. `max-ms` bounds the rest."
+  [tracker & {:keys [poll-ms max-ms] :or {poll-ms 500 max-ms default-stream-max-ms}}]
+  (let [max-frames (max 1 (quot (long max-ms) (long poll-ms)))]
+    (reify ring.protocols/StreamableResponseBody
+      (write-body-to-stream [_ _ output-stream]
+        (with-open [w (io/writer output-stream)]
+          (loop [frames 1]
+            (let [state @tracker]
+              (.write w (str "data: " (json/write-str (job-frame state)) "\n\n"))
+              (.flush w)
+              (when (and (not (contains? stream-stop-phases (or (:phase state) :idle)))
+                         (< frames max-frames))
+                (Thread/sleep ^long poll-ms)
+                (recur (inc frames))))))))))

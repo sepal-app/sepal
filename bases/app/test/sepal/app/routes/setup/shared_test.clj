@@ -442,6 +442,43 @@
     (is (= :returned (deref worker 2000 ::timed-out)))
     (is (= 1 (count (frames (.toString out "UTF-8")))))))
 
+(deftest test-the-stream-stops-on-an-idle-tracker
+  (testing "the endpoint carries no auth and is mounted on every install, so an
+            idle tracker is what an arbitrary caller finds -- on every
+            dispatcher-provisioned garden and every self-hosted install once
+            setup is done. Without the :idle exit the loop never ends and one
+            unauthenticated GET parks a Jetty thread for the life of the
+            process."
+    (let [tracker (atom setup.shared/initial-job-state)
+          out (java.io.ByteArrayOutputStream.)
+          worker (future
+                   (ring.protocols/write-body-to-stream
+                     (setup.shared/sse-body tracker :poll-ms 10) nil out)
+                   :returned)]
+      (is (= :returned (deref worker 2000 ::timed-out))
+          "the body never returned on an idle tracker, so an unauthenticated GET
+           holds a thread until the process dies")
+      (let [payloads (frames (.toString out "UTF-8"))]
+        (is (= 1 (count payloads)))
+        (is (str/includes? (first payloads) "\"phase\":\"idle\""))))))
+
+(deftest test-a-mid-job-stream-cannot-outlive-the-frame-cap
+  (testing "the phase never becomes terminal here, so only the absolute cap can
+            end this stream. EventSource reconnects on its own, so capping the
+            connection does not cost the browser its progress."
+    (let [tracker (atom {:phase :downloading-taxa :bytes-done 1 :bytes-total 100})
+          out (java.io.ByteArrayOutputStream.)
+          worker (future
+                   (ring.protocols/write-body-to-stream
+                     (setup.shared/sse-body tracker :poll-ms 5 :max-ms 50) nil out)
+                   :returned)]
+      (is (= :returned (deref worker 2000 ::timed-out))
+          "a stream on a job that never finishes ran past its cap")
+      (let [payloads (frames (.toString out "UTF-8"))]
+        (is (= 10 (count payloads))
+            "the cap is max-ms/poll-ms frames")
+        (is (every? #(str/includes? % "\"phase\":\"downloading-taxa\"") payloads))))))
+
 (deftest test-the-stream-keeps-emitting-while-the-job-runs
   (testing "one frame and out would be the dead-button behaviour again"
     (let [tracker (atom {:phase :downloading-taxa :bytes-done 1 :bytes-total 100})
@@ -713,17 +750,27 @@
 ;; -----------------------------------------------------------------------------
 ;; What the download timeout actually bounds
 ;;
-;; download-file! passes :timeout 120000, and the obvious reading of that is a
-;; two-minute cap on the whole transfer -- which for the ~127 MB synonym
-;; reference would demand better than 1.06 MB/s sustained and would fail into
-;; the degrade path, so setup would reach :done with a warning and the operator
-;; would silently get no synonymy on any slow link.
+;; download-file! passes setup.shared/download-timeout-ms, and what that value
+;; bounds is JDK-dependent. Measured on 2026-09-03 with the body below -- 8 KB
+;; in 8 flushes 300 ms apart, read through setup.shared/http-client with
+;; :as :stream:
 ;;
-;; That reading is wrong, and this pins why. With :as :stream hato uses
-;; BodyHandlers/ofInputStream; java.net.http returns from send! as soon as the
-;; response headers arrive, and HttpRequest.Builder/timeout stops applying at
-;; that point. The value bounds DNS, connect, TLS and the redirect chain up to
-;; the headers, and nothing after.
+;;   JDK 25 (Zulu 25.0.3; CI pins JAVA_VERSION 25 and prod runs
+;;     eclipse-temurin:25-jre-noble): every :timeout from 100 ms to 10 s read
+;;     all 8192 bytes. java.net.http returns from send! once the response
+;;     headers arrive and HttpRequest.Builder/timeout stops applying there, so
+;;     the value bounds DNS, connect, TLS and the redirect chain and nothing
+;;     after.
+;;   JDK 26: :timeout from 100 ms to 2 s failed with `IOException: closed`
+;;     mid-body; 3 s and up read all 8192 bytes. The value is a wall-clock cap
+;;     on the whole exchange.
+;;
+;; So "the timeout does not bound the body" is not a property to assert -- it is
+;; true on one JDK and false on the next, and a test asserting it errors 3/3 on
+;; JDK 26. What holds on both is the property the shipped constant needs: a
+;; transfer far slower than any reasonable link still completes through the
+;; timeout download-file! actually uses. That is what the two tests below pin,
+;; and it is why download-timeout-ms is 30 minutes rather than 120 s.
 
 (defn- slow-body
   "A response body of `size` bytes delivered in `chunks` flushes, `pause-ms`
@@ -738,9 +785,11 @@
           (.flush out)
           (Thread/sleep ^long pause-ms))))))
 
-(deftest test-the-request-timeout-covers-the-headers-not-the-body
-  (testing "a body that takes 2.4 s read through a 100 ms timeout completes, so
-            :timeout 120000 in download-file! is not a cap on the transfer"
+(deftest test-a-slow-body-arrives-in-full-through-the-download-timeout
+  (testing "a body that takes 2.4 s to arrive, read with exactly the options
+            download-file! passes, reaches the reader whole -- on a JDK where
+            the timeout caps the whole exchange as much as on one where it stops
+            at the headers"
     (let [size 8192
           chunks 8
           pause 300]
@@ -750,24 +799,22 @@
                             :body (slow-body size chunks pause)})
         (fn [base]
           (let [started (System/currentTimeMillis)
-                ;; Exactly the options download-file! passes, but with a timeout
-                ;; two dozen times shorter than the body needs.
                 response (http/get base {:http-client setup.shared/http-client
                                          :as :stream
-                                         :timeout 100})
+                                         :timeout setup.shared/download-timeout-ms})
                 out (java.io.ByteArrayOutputStream.)
                 read-bytes (setup.shared/copy-counting! (:body response) out (fn [_]))
                 elapsed (- (System/currentTimeMillis) started)]
             (is (= 200 (:status response)))
             (is (= size read-bytes)
-                "the body did not arrive in full, so the request timeout does
-                 bound the transfer after all and download-file! needs a bigger
-                 or proportional value for the 127 MB reference")
-            (is (> elapsed (* 2 100))
-                "the body finished inside the timeout, so this test proved
-                 nothing -- make the server slower")))))))
+                "the body did not arrive in full through download-timeout-ms, so
+                 the constant is too small for a 127 MB reference on any JDK
+                 where the timeout caps the transfer")
+            (is (> elapsed (* 2 pause))
+                "the body finished too fast for this to prove anything -- make
+                 the server slower")))))))
 
-(deftest test-a-download-far-slower-than-the-timeout-still-verifies
+(deftest test-a-slow-download-verifies-end-to-end
   (testing "the same thing through download-file! itself, checksum and all,
             rather than through a hand-rolled http/get that could drift from it"
     (let [size 8192

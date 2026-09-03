@@ -9,8 +9,10 @@
             [sepal.synonym.interface.spec :as spec]
             [sepal.synonym.reference :as reference]))
 
-(defn- available?
-  "Whether this database has `taxon_synonym` at all."
+(defn available?
+  "Whether this database has `taxon_synonym` at all: false on a database below
+  the migration that added it, where `select` on the table is a hard error
+  rather than an empty result."
   [ctx]
   (db.i/at-least-version? ctx (db.i/taxon-synonym-version)))
 
@@ -129,6 +131,15 @@
           cores (distinct (keep :accepted-core hits))
           by-core (when (seq cores)
                     (into {} (map (juxt :taxon/core identity))
+                          ;; substr() on the column defeats taxon's index on
+                          ;; wfo_taxon_id, so this is a full scan of the taxon
+                          ;; table: measured at 50-60 ms per call against the
+                          ;; 453,167-row WFO import on 2026-09-02, paid on every
+                          ;; keystroke of the picker whenever the FTS half above
+                          ;; returned a hit. Left as is deliberately. Fixing it
+                          ;; means storing the 14-character core as its own
+                          ;; indexed column, which is a migration; if you are
+                          ;; here profiling the picker, that is the answer.
                           (db.i/execute! db
                                          {:select [[[:substr :wfo_taxon_id 1 core-length] :taxon__core]
                                                    [:id :taxon__id]

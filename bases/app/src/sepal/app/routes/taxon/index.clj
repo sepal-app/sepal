@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
@@ -172,6 +173,16 @@
         ;; Parse search query
         ast (search.i/parse q)
 
+        ;; The free-text half of the query, and the only part a synonym search
+        ;; has any use for. `q` itself carries filter syntax -- ticking "Only
+        ;; taxa with accessions" makes it "accessions:>0" -- which the taxon
+        ;; compiler turns into a WHERE clause and never shows FTS5. Handing the
+        ;; raw string to synonym.i/resolve instead put it straight into an FTS5
+        ;; MATCH, where `accessions:>0` reads as a column reference and 500s the
+        ;; page. reference/search quotes what it is given as well, so this is
+        ;; the semantic fix rather than the safety one.
+        synonym-q (str/join " " (:terms ast))
+
         ;; Columns to select (including parent name for display)
         columns [[:t.id :id]
                  [:t.name :name]
@@ -207,7 +218,7 @@
             ;; sets; the infinite-scroll branch below never calls resolve at
             ;; all, so a scroll page doesn't pay for a synonym lookup whose
             ;; result it would throw away.
-            synonym-matches (synonym.i/resolve context db q)
+            synonym-matches (synonym.i/resolve context db synonym-q)
             seen (set (map :taxon/id rows))
             extra (:out (reduce (fn [{:keys [seen out]} hit]
                                   (let [id (:taxon/id hit)]
@@ -246,7 +257,7 @@
                                                  (cond-> {} (seq q) (assoc :q q)))})))
 
       :else
-      (let [synonym-matches (synonym.i/resolve context db q)
+      (let [synonym-matches (synonym.i/resolve context db synonym-q)
             row-ids (set (map :taxon/id rows))
             ;; Dedupe on taxon id, keeping the first synonym for each, and drop
             ;; a taxon already present in `rows` — it matched by its own name

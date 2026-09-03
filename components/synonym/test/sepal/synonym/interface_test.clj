@@ -131,6 +131,24 @@
     (is (= [] (synonym.i/resolve ctx *db* "")))
     (is (= [] (synonym.i/resolve ctx *db* nil)))))
 
+(deftest test-resolve-survives-any-string-a-user-can-type
+  ;; resolve is called with whatever is in the taxon list's search box. The
+  ;; local half is a parameterised LIKE and was always safe; the WFO half puts
+  ;; the query into an FTS5 MATCH, where each of these used to throw an
+  ;; SQLiteException and 500 the page. The pool here is real, not a stub --
+  ;; a nil pool skips the FTS half entirely and would pass either way.
+  (tf/testing "a real reference pool and a local row"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})
+            ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+        (doseq [q ["accessions:>0" "rank:genus" "sp." "Rosa 'Peace'"
+                   "-cochleat" "\"unbalanced" "a OR b" "   "]]
+          (is (vector? (synonym.i/resolve ctx *db* q))
+              (str "resolve threw on " (pr-str q))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
 (deftest test-resolve-with-no-reference-only-returns-local-matches
   ;; resolve's nil-pool contract, mirroring list-for-taxon's below: a garden
   ;; with no reference file still resolves its own synonyms.
@@ -236,12 +254,52 @@
                      (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon)))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
+(def floor-ctx
+  "A context at the supported floor, which is below the migration that added
+  `taxon_synonym`. The test system migrates *db* to latest in both CI legs, so
+  the table is always really there -- what these tests exercise is the gate,
+  not the missing table."
+  {:schema-version (db.i/minimum-supported-version)
+   :synonym-reference nil})
+
 (deftest test-a-floor-database-has-no-local-synonymy
   ;; The table is above the supported floor. A gated read must return empty, not
   ;; throw: the taxon picker calls this on every keystroke.
-  (testing "below the gate"
-    (is (= [] (synonym.i/list-for-taxon {:schema-version "20260113120000"}
-                                        *db* 1)))))
+  ;;
+  ;; The row has to exist first. Against a taxon with no rows the gated and
+  ;; ungated paths both return [], so the assertion passes with the gate
+  ;; deleted and proves nothing -- which is exactly what this test used to do.
+  (tf/testing "a row exists, and the gate must still report nothing"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})]
+        (is (= [] (synonym.i/list-for-taxon floor-ctx *db* (:taxon/id taxon))))
+        (is (= ["Encyclia cochleata"]
+               (mapv :synonym/synonym-name
+                     (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon))))
+            "the row is really there, so the empty result above is the gate")
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
+(deftest test-resolve-is-gated-below-the-schema-floor
+  ;; The hotter of the two gates: the taxon picker calls resolve on every
+  ;; keystroke, and the taxon index calls it on every page load. Ungated on a
+  ;; floor database it is `no such table: taxon_synonym` on both.
+  ;;
+  ;; Same shape as the list-for-taxon test above, and for the same reason: the
+  ;; row must exist, or the gated and ungated paths are indistinguishable.
+  (tf/testing "a matching row exists, and the gate must still report nothing"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})]
+        (is (= [] (synonym.i/resolve floor-ctx *db* "cochleat")))
+        (is (= ["local"]
+               (mapv :synonym/source
+                     (synonym.i/resolve (assoc base-ctx :synonym-reference nil)
+                                        *db* "cochleat")))
+            "the row really does match, so the empty result above is the gate")
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-factory
   ;; Exercises `::synonym.i/factory` and its `halt-key!` teardown through the

@@ -5,6 +5,15 @@
             [sepal.synonym.reference :as reference]
             [taoensso.telemere :as tel]))
 
+(defn available?
+  "Whether this database has `taxon_synonym` at all.
+
+  Reads gate on this themselves and degrade to the WFO half alone. A caller
+  that offers a *write* has to ask: an Add form on a database that cannot store
+  the row is a control that fails with an empty 422 and loses what was typed."
+  [ctx]
+  (core/available? ctx))
+
 (defn add-synonym!
   "Assert that `synonym-name` is a synonym of a taxon in this garden.
 
@@ -27,7 +36,11 @@
 (defn resolve
   "Local and WFO synonym matches for a query, each resolved to a garden taxon:
   {:synonym/synonym-name :synonym/source :taxon/id :taxon/name}. A WFO hit
-  whose accepted taxon is not in this garden is dropped."
+  whose accepted taxon is not in this garden is dropped.
+
+  `query` is free text, not a search-DSL string: a caller holding a parsed AST
+  should pass its terms, because `accessions:>0` means nothing to a synonym
+  name. Any string is safe to pass regardless -- see `search`."
   [ctx db query]
   (core/resolve ctx db query))
 
@@ -39,7 +52,9 @@
 
 (defn search
   "WFO synonyms whose name matches the query, prefix-extended, read from the
-  reference pool. A nil pool or an empty query yields []."
+  reference pool. A nil pool, an empty query, or one with no searchable tokens
+  yields []. Safe against any string a user can type: the query is quoted into
+  an FTS5 string rather than handed to the MATCH parser as syntax."
   [pool query]
   (reference/search pool query))
 
