@@ -62,6 +62,15 @@ WFO_VERSION=$(sqlite3 "$DB_FILE" "SELECT value FROM metadata WHERE key = 'wfo_pl
 SIZE_MB=$(du -m "$DB_FILE" | cut -f1)
 SHA256=$(sha256sum "$DB_FILE" | awk '{print $1}')
 
+# Build the synonym reference from the same WFO Plant List, named from the
+# version just read out of the init database so both files are pinned to one
+# WFO release by construction.
+SYN_FILE="dist/sepal-synonyms-${WFO_VERSION}.db"
+OUTPUT_PATH="$SYN_FILE" "$SCRIPT_DIR/build-synonym-ref.sh"
+SYN_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}/$(basename "$SYN_FILE")"
+SYN_SIZE_MB=$(du -m "$SYN_FILE" | cut -f1)
+SYN_SHA256=$(sha256sum "$SYN_FILE" | awk '{print $1}')
+
 echo ""
 echo "Building manifest..."
 
@@ -75,7 +84,12 @@ NEW_ENTRY=$(jq -n \
     --argjson sz "$SIZE_MB" \
     --arg url "$DB_URL" \
     --arg sha "$SHA256" \
-    '{"schema_version": $sv, "wfo_plant_list.version": $wv, "size_mb": $sz, "sha256": $sha, "url": $url}')
+    --arg synurl "$SYN_URL" \
+    --arg synsha "$SYN_SHA256" \
+    --argjson synsz "$SYN_SIZE_MB" \
+    '{"schema_version": $sv, "wfo_plant_list.version": $wv, "size_mb": $sz,
+      "sha256": $sha, "url": $url,
+      "synonyms": {"url": $synurl, "sha256": $synsha, "size_mb": $synsz}}')
 
 # Use temp file for manifest (never rely on local copy)
 MANIFEST_FILE=$(mktemp --suffix=-sepal-init-manifest.json)
@@ -108,6 +122,7 @@ cp "$MANIFEST_FILE" "$MANIFEST_UPLOAD"
 # Create the release
 gh release create "$RELEASE_TAG" \
     "$DB_FILE" \
+    "$SYN_FILE" \
     "$MANIFEST_UPLOAD" \
     --title "Sepal Init Database v${NEXT_VERSION}" \
     --notes "Sepal init database with WFO Plant List ${WFO_VERSION} data.
