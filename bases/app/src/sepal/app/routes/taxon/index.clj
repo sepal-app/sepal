@@ -13,6 +13,7 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
+            [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface.permission :as taxon.perm]
             [sepal.taxon.interface.search]
             [zodiac.core :as z]))
@@ -73,6 +74,31 @@
                    :page-size page-size
                    :total total))
 
+(def ^:private synonym-block-limit 5)
+
+(defn synonym-matches-block
+  "Names that matched a synonym rather than a taxon's own name.
+
+  Deliberately not merged into the table: a synonym match has no author, rank
+  or parent, and `total` counts only the taxon query, so a merged row would
+  render blank cells and break pagination."
+  [& {:keys [matches]}]
+  (when (seq matches)
+    (let [shown (take synonym-block-limit matches)
+          extra (- (count matches) (count shown))]
+      [:div {:class "spl-alert spl-alert--info"}
+       [:p "Also matching a synonym"]
+       [:ul
+        (for [m shown]
+          [:li
+           [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id m)})
+                :class "spl-link"}
+            (taxon-name/render (:taxon/name m))]
+           [:span " — matches synonym "]
+           (taxon-name/render (:synonym/synonym-name m))])]
+       (when (pos? extra)
+         [:p (format "and %d more" extra)])])))
+
 (defn table [& {:keys [rows page href page-size total search-query]}]
   (table/card-table
     (table/table :columns (table-columns)
@@ -101,10 +127,11 @@
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))
 
-(defn render [& {:keys [field-options viewer href page page-size rows search-query total]}]
+(defn render [& {:keys [field-options viewer href page page-size rows search-query total synonym-matches]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
+                         (synonym-matches-block :matches synonym-matches)
                          (table :href href
                                 :page page
                                 :page-size page-size
@@ -168,19 +195,42 @@
                                                  :limit page-size
                                                  :offset offset
                                                  :order-by [[:t.name :asc]]))
-                       #(db.i/count db stmt))]
+                       #(db.i/count db stmt))
+
+        ;; Synonym matches: a historical name that resolves to a taxon this
+        ;; query's own name search would not find. Resolved once and used
+        ;; differently by each branch below.
+        synonym-matches (synonym.i/resolve context db q)]
 
     (cond
-      ;; We return JSON for autocomplete fields
+      ;; We return JSON for autocomplete fields. Only this branch merges the
+      ;; two result sets — see index_test.clj and the task brief for why the
+      ;; other branches keep them separate.
       (= (get headers "accept") "application/json")
-      (json/json-response (for [taxon rows]
-                            {:text (:taxon/name taxon)
-                             :name (:taxon/name taxon)
-                             :id (:taxon/id taxon)
-                             :rank (:taxon/rank taxon)
-                             :author (:taxon/author taxon)
-                             :parentId (:taxon/parent-id taxon)
-                             :parentName (:taxon/parent-name taxon)}))
+      (let [seen (set (map :taxon/id rows))
+            extra (:out (reduce (fn [{:keys [seen out]} hit]
+                                  (let [id (:taxon/id hit)]
+                                    (if (contains? seen id)
+                                      {:seen seen :out out}
+                                      {:seen (conj seen id)
+                                       :out (conj out hit)})))
+                                {:seen seen :out []}
+                                synonym-matches))]
+        (json/json-response
+          (concat
+            (for [taxon rows]
+              {:text (:taxon/name taxon)
+               :name (:taxon/name taxon)
+               :id (:taxon/id taxon)
+               :rank (:taxon/rank taxon)
+               :author (:taxon/author taxon)
+               :parentId (:taxon/parent-id taxon)
+               :parentName (:taxon/parent-name taxon)})
+            (for [hit extra]
+              {:text (:taxon/name hit)
+               :name (:taxon/name hit)
+               :id (:taxon/id hit)
+               :matchedSynonym (:synonym/synonym-name hit)}))))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
@@ -195,14 +245,29 @@
                                                  (cond-> {} (seq q) (assoc :q q)))})))
 
       :else
-      (render :viewer viewer
-              :field-options (search.i/field-options :taxon)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page page
-              :page-size page-size
-              :search-query q
-              :total total))))
+      (let [row-ids (set (map :taxon/id rows))
+            ;; Dedupe on taxon id, keeping the first synonym for each, and drop
+            ;; a taxon already present in `rows` — it matched by its own name
+            ;; and needs no repeating. `rows` is only the current page, so a
+            ;; taxon on a later page can still appear in both the block and
+            ;; the table; that is acceptable rather than worth a second query
+            ;; to prevent.
+            block-matches (:out (reduce (fn [{:keys [seen out]} hit]
+                                          (let [id (:taxon/id hit)]
+                                            (if (or (contains? row-ids id) (contains? seen id))
+                                              {:seen seen :out out}
+                                              {:seen (conj seen id) :out (conj out hit)})))
+                                        {:seen #{} :out []}
+                                        synonym-matches))]
+        (render :viewer viewer
+                :field-options (search.i/field-options :taxon)
+                :href (uri/uri-str {:path uri
+                                    :query (uri/map->query-string
+                                             (cond-> {:page page}
+                                               (seq q) (assoc :q q)))})
+                :rows rows
+                :page page
+                :page-size page-size
+                :search-query q
+                :total total
+                :synonym-matches block-matches)))))

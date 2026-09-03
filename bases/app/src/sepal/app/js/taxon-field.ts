@@ -34,7 +34,9 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
                             return reject("No results found")
                         }
                         const options = data.map((d) => ({
-                            text: d.text,
+                            text: d.matchedSynonym
+                                ? `${d.text} — matches synonym ${d.matchedSynonym}`
+                                : d.text,
                             value: d.id,
                         }))
                         resolve(options)
