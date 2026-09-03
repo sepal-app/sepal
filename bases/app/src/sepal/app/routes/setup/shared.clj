@@ -179,17 +179,19 @@
   [url dest {:keys [size-mb sha256 on-bytes]}]
   ;; What :timeout bounds is JDK-dependent, so this value is chosen to be
   ;; correct under both readings rather than under the one the installed JDK
-  ;; happens to have. Measured on 2026-09-03, serving 8 KB in 8 flushes 300 ms
-  ;; apart through http-client with :as :stream:
+  ;; happens to have. JDK 25 measured here on 2026-09-03, serving 8 KB in 8
+  ;; flushes 300 ms apart through http-client with :as :stream; JDK 26 as
+  ;; reported by a reviewer running the same body -- no JDK 26 is installed
+  ;; on this machine:
   ;;
   ;;   JDK 25 (CI pins JAVA_VERSION 25, prod runs eclipse-temurin:25-jre-noble):
   ;;     any :timeout from 100 ms up reads all 8192 bytes. java.net.http returns
   ;;     from send! once the response headers arrive and
   ;;     HttpRequest.Builder/timeout stops applying there, so the value bounds
   ;;     DNS, connect, TLS and the redirect chain, and nothing after.
-  ;;   JDK 26: a :timeout below the transfer time fails with
-  ;;     `IOException: closed` mid-body. The value is a wall-clock cap on the
-  ;;     whole exchange.
+  ;;   JDK 26 (reported, not reproduced here): a :timeout below the transfer
+  ;;     time fails with `IOException: closed` mid-body. The value is a
+  ;;     wall-clock cap on the whole exchange.
   ;;
   ;; At 120 s the second semantics would demand 1.06 MB/s sustained for the
   ;; 127 MB reference and 0.3 MB/s for the 35 MB init database, and a slower

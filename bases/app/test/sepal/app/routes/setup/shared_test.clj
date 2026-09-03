@@ -751,9 +751,10 @@
 ;; What the download timeout actually bounds
 ;;
 ;; download-file! passes setup.shared/download-timeout-ms, and what that value
-;; bounds is JDK-dependent. Measured on 2026-09-03 with the body below -- 8 KB
-;; in 8 flushes 300 ms apart, read through setup.shared/http-client with
-;; :as :stream:
+;; bounds is JDK-dependent. JDK 25 measured here on 2026-09-03 with the body
+;; below -- 8 KB in 8 flushes 300 ms apart, read through
+;; setup.shared/http-client with :as :stream; JDK 26 as reported by a reviewer
+;; running the same body -- no JDK 26 is installed on this machine:
 ;;
 ;;   JDK 25 (Zulu 25.0.3; CI pins JAVA_VERSION 25 and prod runs
 ;;     eclipse-temurin:25-jre-noble): every :timeout from 100 ms to 10 s read
@@ -761,9 +762,9 @@
 ;;     headers arrive and HttpRequest.Builder/timeout stops applying there, so
 ;;     the value bounds DNS, connect, TLS and the redirect chain and nothing
 ;;     after.
-;;   JDK 26: :timeout from 100 ms to 2 s failed with `IOException: closed`
-;;     mid-body; 3 s and up read all 8192 bytes. The value is a wall-clock cap
-;;     on the whole exchange.
+;;   JDK 26 (reported, not reproduced here): :timeout from 100 ms to 2 s
+;;     failed with `IOException: closed` mid-body; 3 s and up read all 8192
+;;     bytes. The value is a wall-clock cap on the whole exchange.
 ;;
 ;; So "the timeout does not bound the body" is not a property to assert -- it is
 ;; true on one JDK and false on the next, and a test asserting it errors 3/3 on
