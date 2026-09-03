@@ -139,14 +139,27 @@
   ;; to latest before start! regardless of the schema-version option, so
   ;; taxon_synonym is always present there. This is the real coverage for "a
   ;; database below the migration gets an empty tab, not a 500".
+  ;;
+  ;; The taxon must have a real row before the gate is forced off. An empty
+  ;; taxon with no rows would render the same empty state whether the gate is
+  ;; checked or skipped entirely, which proves nothing about the branch
+  ;; existing at all -- an ungated query against an empty result set looks
+  ;; identical to a gated one. Writing a row first and asserting its name is
+  ;; *absent* once the gate reports "not available" is the only assertion
+  ;; that can tell the two paths apart.
   (tf/testing "the gate degrades instead of 500ing"
     {[::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [taxon]}]
       (let [password "testpassword123"
             email (create-user! *db* :admin password)
             sess (app.test/login email password)
-            id (:taxon/id taxon)]
+            id (:taxon/id taxon)
+            row (synonym.i/add-synonym! *db* {:taxon-id id
+                                              :synonym-name "Ficus elastica"})]
         (with-redefs [db.i/at-least-version? (constantly false)]
           (let [{:keys [response]} (peri/request sess (format "/taxon/%s/synonyms/" id))]
             (is (= 200 (:status response)))
-            (is (re-find #"No synonyms yet" (:body response)))))))))
+            (is (not (re-find #"Ficus elastica" (:body response)))
+                "the gate must filter out a row that really exists once it reports the table unavailable")
+            (is (re-find #"No synonyms yet" (:body response)))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
