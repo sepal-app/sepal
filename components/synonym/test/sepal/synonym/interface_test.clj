@@ -152,11 +152,15 @@
                         {:id (:taxon/id taxon)})
       (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
                                               :synonym-name "Epidendrum cochleatum"})
-            ctx (assoc base-ctx :synonym-reference *ref-pool*)]
-        (is (= #{"local" "wfo"}
-               (set (map :synonym/source (synonym.i/resolve ctx *db* "cochleat")))))
-        (is (every? #(= (:taxon/id taxon) (:taxon/id %))
-                    (synonym.i/resolve ctx *db* "cochleat")))
+            ctx (assoc base-ctx :synonym-reference *ref-pool*)
+            hits (synonym.i/resolve ctx *db* "cochleat")]
+        (is (= #{"local" "wfo"} (set (map :synonym/source hits))))
+        (is (every? #(= (:taxon/id taxon) (:taxon/id %)) hits))
+        (testing "the accepted taxon's name and the synonym name it matched are
+                  both present -- a route rendering a hit reads both"
+          (is (every? #(= (:taxon/name taxon) (:taxon/name %)) hits))
+          (is (some #(= "Encyclia cochleata" (:synonym/synonym-name %)) hits))
+          (is (some #(= "Epidendrum cochleatum" (:synonym/synonym-name %)) hits)))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-no-reference-leaves-the-wfo-half-empty

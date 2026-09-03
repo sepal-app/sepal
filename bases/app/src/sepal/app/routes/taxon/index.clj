@@ -195,19 +195,20 @@
                                                  :limit page-size
                                                  :offset offset
                                                  :order-by [[:t.name :asc]]))
-                       #(db.i/count db stmt))
-
-        ;; Synonym matches: a historical name that resolves to a taxon this
-        ;; query's own name search would not find. Resolved once and used
-        ;; differently by each branch below.
-        synonym-matches (synonym.i/resolve context db q)]
+                       #(db.i/count db stmt))]
 
     (cond
       ;; We return JSON for autocomplete fields. Only this branch merges the
       ;; two result sets — see index_test.clj and the task brief for why the
       ;; other branches keep them separate.
       (= (get headers "accept") "application/json")
-      (let [seen (set (map :taxon/id rows))
+      (let [;; A historical name that resolves to a taxon the name search
+            ;; above would not find. Only this branch merges the two result
+            ;; sets; the infinite-scroll branch below never calls resolve at
+            ;; all, so a scroll page doesn't pay for a synonym lookup whose
+            ;; result it would throw away.
+            synonym-matches (synonym.i/resolve context db q)
+            seen (set (map :taxon/id rows))
             extra (:out (reduce (fn [{:keys [seen out]} hit]
                                   (let [id (:taxon/id hit)]
                                     (if (contains? seen id)
@@ -245,7 +246,8 @@
                                                  (cond-> {} (seq q) (assoc :q q)))})))
 
       :else
-      (let [row-ids (set (map :taxon/id rows))
+      (let [synonym-matches (synonym.i/resolve context db q)
+            row-ids (set (map :taxon/id rows))
             ;; Dedupe on taxon id, keeping the first synonym for each, and drop
             ;; a taxon already present in `rows` — it matched by its own name
             ;; and needs no repeating. `rows` is only the current page, so a
