@@ -58,7 +58,7 @@
       :title "No synonyms yet"
       :body "Other names this garden uses for this taxon show up here.")))
 
-(defn- add-form [& {:keys [taxon errors]}]
+(defn- add-form [& {:keys [taxon]}]
   (ui.form/form
     {:hx-post (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
      :hx-swap "none"
@@ -66,23 +66,21 @@
     (ui.form/anti-forgery-field)
     (ui.form/input-field :label "Synonym name"
                          :name "synonym-name"
-                         :required true
-                         :errors (:synonym-name errors))
+                         :required true)
     [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Add"]))
 
-(defn page-content [& {:keys [errors synonyms taxon]}]
+(defn page-content [& {:keys [synonyms taxon]}]
   (taxon.shared/page
     :taxon taxon
     :active taxon.shared/synonyms-tab
     :body
     [:div {:class "grid gap-4"}
-     (add-form :taxon taxon :errors errors)
+     (add-form :taxon taxon)
      (synonyms-table :taxon taxon :synonyms synonyms)]))
 
-(defn render [& {:keys [errors synonyms taxon panel-data]}]
+(defn render [& {:keys [synonyms taxon panel-data]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
-                           :content (page-content :errors errors
-                                                  :synonyms synonyms
+                           :content (page-content :synonyms synonyms
                                                   :taxon taxon)
                            :panel-content (taxon.panel/panel-content
                                             :taxon (:taxon panel-data)
@@ -104,9 +102,12 @@
       (error.i/ex->error ex))))
 
 (defn remove! [db removed-by synonym]
-  (db.i/with-transaction [tx db]
-    (synonym.i/remove-synonym! tx (:synonym/id synonym))
-    (synonym.activity/create! tx synonym.activity/deleted removed-by synonym)))
+  (try
+    (db.i/with-transaction [tx db]
+      (synonym.i/remove-synonym! tx (:synonym/id synonym))
+      (synonym.activity/create! tx synonym.activity/deleted removed-by synonym))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context]

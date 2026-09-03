@@ -46,6 +46,6 @@
     ["/synonyms/:synonym-id/" {:name routes/detail-synonym
                                :middleware [[(middleware/require-permission-or-redirect
                                                taxon.perm/edit (constantly routes/detail))]]
-                               :handler #'detail-synonyms/row-handler}]
+                               :delete #'detail-synonyms/row-handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])
