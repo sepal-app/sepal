@@ -39,8 +39,10 @@
   "Garden synonym rows whose name contains the query, joined to their taxon.
 
   A LIKE rather than FTS: this table holds a garden's own handful of rows, not
-  WFO's million, and taxon_synonym_name_idx is `collate nocase` so the
-  case-insensitive comparison uses it."
+  WFO's million. `lower()` on the column plus a leading `%` in the pattern
+  mean taxon_synonym_name_idx cannot be used here regardless of its `collate
+  nocase` — this is a full scan, which is fine at the row counts a single
+  garden's synonym table holds."
   [db query]
   (mapv (fn [row]
           {:synonym/synonym-name (:synonym/synonym-name row)
@@ -113,27 +115,34 @@
 (defn resolve
   "Local and WFO synonym matches for a query, each resolved to a garden taxon.
 
-  A WFO hit whose accepted taxon is not in this garden is dropped."
+  A WFO hit whose accepted taxon is not in this garden is dropped. An empty
+  or nil query yields [] from both halves, agreeing with what
+  reference/search already does for its own half — a picker's first
+  keystroke is an empty query, and local-matches's LIKE '%%' would otherwise
+  return up to 50 arbitrary rows for \"\", and str/lower-case would throw on
+  nil."
   [ctx db query]
-  (let [local (if-not (available? ctx) [] (local-matches db query))
-        hits (reference/search (:synonym-reference ctx) query)
-        cores (distinct (keep :accepted-core hits))
-        by-core (when (seq cores)
-                  (into {} (map (juxt :taxon/core identity))
-                        (db.i/execute! db
-                                       {:select [[[:substr :wfo_taxon_id 1 core-length] :taxon__core]
-                                                 [:id :taxon__id]
-                                                 [:name :taxon__name]]
-                                        :from [:taxon]
-                                        :where [:in [:substr :wfo_taxon_id 1 core-length] cores]})))]
-    (into (vec local)
-          (keep (fn [hit]
-                  (when-let [taxon (get by-core (:accepted-core hit))]
-                    {:synonym/synonym-name (:name hit)
-                     :synonym/source "wfo"
-                     :taxon/id (:taxon/id taxon)
-                     :taxon/name (:taxon/name taxon)}))
-                hits))))
+  (if (empty? query)
+    []
+    (let [local (if-not (available? ctx) [] (local-matches db query))
+          hits (reference/search (:synonym-reference ctx) query)
+          cores (distinct (keep :accepted-core hits))
+          by-core (when (seq cores)
+                    (into {} (map (juxt :taxon/core identity))
+                          (db.i/execute! db
+                                         {:select [[[:substr :wfo_taxon_id 1 core-length] :taxon__core]
+                                                   [:id :taxon__id]
+                                                   [:name :taxon__name]]
+                                          :from [:taxon]
+                                          :where [:in [:substr :wfo_taxon_id 1 core-length] cores]})))]
+      (into (vec local)
+            (keep (fn [hit]
+                    (when-let [taxon (get by-core (:accepted-core hit))]
+                      {:synonym/synonym-name (:name hit)
+                       :synonym/source "wfo"
+                       :taxon/id (:taxon/id taxon)
+                       :taxon/name (:taxon/name taxon)}))
+                  hits)))))
 
 (create-ns 'sepal.synonym.interface)
 (alias 'synonym.i 'sepal.synonym.interface)

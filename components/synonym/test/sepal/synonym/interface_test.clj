@@ -99,14 +99,19 @@
 
 (deftest test-a-taxon-with-no-wfo-id-gets-only-local-rows
   ;; taxon.wfo_taxon_id is nullable — a hand-added taxon has none, and the WFO
-  ;; half must be skipped rather than joined on null.
+  ;; half must be skipped rather than queried with a null core. A real pool
+  ;; queried with a null core would also just match nothing, which would let
+  ;; this pass even if the nil-guard broke — so :synonym-reference here is a
+  ;; sentinel that is not a real pool at all. reference/list-for-accepted-core
+  ;; would throw trying to query it; the only way this test passes is if the
+  ;; guard keeps that call from ever happening.
   (tf/testing "no wfo id"
     {[::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [taxon]}]
       (jdbc.sql/update! *db* :taxon {:wfo_taxon_id nil} {:id (:taxon/id taxon)})
       (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
                                               :synonym-name "Some name"})
-            ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+            ctx (assoc base-ctx :synonym-reference ::not-a-real-pool)]
         (is (= ["local"] (mapv :synonym/source
                                (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon)))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
@@ -116,6 +121,27 @@
   (testing "the fixture's Dracaena rows point at cores this garden lacks"
     (let [ctx (assoc base-ctx :synonym-reference *ref-pool*)]
       (is (= [] (synonym.i/resolve ctx *db* "marginata"))))))
+
+(deftest test-resolve-of-an-empty-or-nil-query-is-empty
+  ;; A picker's first keystroke is an empty query. reference/search already
+  ;; treats "" and nil as no results; local-matches must agree rather than
+  ;; running LIKE '%%' (up to 50 arbitrary local rows) on "" or throwing an
+  ;; NPE out of str/lower-case on nil.
+  (let [ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+    (is (= [] (synonym.i/resolve ctx *db* "")))
+    (is (= [] (synonym.i/resolve ctx *db* nil)))))
+
+(deftest test-resolve-with-no-reference-only-returns-local-matches
+  ;; resolve's nil-pool contract, mirroring list-for-taxon's below: a garden
+  ;; with no reference file still resolves its own synonyms.
+  (tf/testing "a nil pool"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})
+            ctx (assoc base-ctx :synonym-reference nil)]
+        (is (= ["local"] (mapv :synonym/source (synonym.i/resolve ctx *db* "cochleat"))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-resolve-finds-a-local-row-and-a-wfo-row
   (tf/testing "both halves resolve to garden taxa"
@@ -134,9 +160,18 @@
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-no-reference-leaves-the-wfo-half-empty
+  ;; CreateTaxon's :taxon/wfo-taxon-id is optional, so mg/generate sets one on
+  ;; the factory taxon often enough that leaving it alone would make this
+  ;; test reach the nil-pool branch only by chance — and identical to the
+  ;; no-wfo-id test above it the rest of the time. Pin a real wfo_taxon_id so
+  ;; accepted-core is always non-nil and the nil-pool guard in
+  ;; reference/list-for-accepted-core is what's actually being exercised.
   (tf/testing "a nil pool"
     {[::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [taxon]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"}
+                        {:id (:taxon/id taxon)})
       (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
                                               :synonym-name "Encyclia cochleata"})
             ctx (assoc base-ctx :synonym-reference nil)]
