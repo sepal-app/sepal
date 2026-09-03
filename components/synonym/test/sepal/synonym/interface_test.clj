@@ -12,22 +12,20 @@
             [sepal.synonym.interface.spec :as synonym.spec]
             [sepal.taxon.interface :as taxon.i]))
 
-(use-fixtures :once default-system-fixture)
-
-(def ctx {:schema-version (db.i/latest-version)})
-
-(defn- build-reference-fixture!
-  "A 1-row WFO reference file, built the way bin/build-synonym-ref.sh builds
-  the real one. Kept minimal here: the schema and query behaviour are
-  exhaustively covered by sepal.synonym.reference-test, so this only proves
-  the interface actually reaches the implementation."
+(defn- build-fixture!
+  "A 3-row WFO reference file, built the way bin/build-synonym-ref.sh builds
+  the real one, and the same content sepal.synonym.reference-test uses. The
+  schema and query behaviour are exhaustively covered there; the tests here
+  only prove the interface and the union reach that implementation."
   [path]
   (with-open [conn (jdbc/get-connection
                      (jdbc/get-datasource {:dbtype "sqlite" :dbname (str path)}))]
     (doseq [stmt ["create table syn (name text not null, accepted_core text not null,
                    accepted_wfo_id text not null, name_id text not null) strict"
                   "insert into syn values
-                   ('Encyclia cochleata','wfo-0000283538','wfo-0000283538-2025-06','wfo-0001')"
+                   ('Encyclia cochleata','wfo-0000283538','wfo-0000283538-2025-06','wfo-0001'),
+                   ('Dracaena marginata','wfo-0000111111','wfo-0000111111-2025-06','wfo-0002'),
+                   ('Dracaena marginata','wfo-0000222222','wfo-0000222222-2025-06','wfo-0003')"
                   "create index syn_accepted_core_idx on syn(accepted_core)"
                   "create virtual table syn_fts using fts5(name, content='syn',
                    content_rowid='rowid', tokenize='unicode61')"
@@ -37,6 +35,28 @@
       (jdbc/execute! conn [stmt])))
   path)
 
+(def ^:dynamic *ref-pool* nil)
+
+(defn- ref-pool-fixture
+  "A process-shaped WFO reference pool, opened once for the whole namespace
+  through the same ::synonym.i/reference-pool integrant key process-config
+  uses, and bound to *ref-pool* for the union tests below."
+  [f]
+  (let [dir (fs/create-temp-dir)
+        path (str (fs/path dir "ref.db"))]
+    (build-fixture! path)
+    (let [pool (ig/init-key ::synonym.i/reference-pool {:path path})]
+      (try
+        (binding [*ref-pool* pool]
+          (f))
+        (finally
+          (ig/halt-key! ::synonym.i/reference-pool pool)
+          (fs/delete-tree dir))))))
+
+(use-fixtures :once default-system-fixture ref-pool-fixture)
+
+(def base-ctx {:schema-version (db.i/latest-version)})
+
 (deftest test-the-reference-pool-is-reachable-through-the-interface
   ;; Task 8 calls search, list-for-accepted-core and version through this
   ;; namespace, never through sepal.synonym.reference directly (AGENTS.md:
@@ -45,7 +65,7 @@
   ;; closed the way process-config wires it in instance.clj.
   (let [dir (fs/create-temp-dir)
         path (str (fs/path dir "ref.db"))]
-    (build-reference-fixture! path)
+    (build-fixture! path)
     (let [pool (ig/init-key ::synonym.i/reference-pool {:path path})]
       (try
         (is (= "2025-06" (synonym.i/version pool)))
@@ -60,6 +80,70 @@
 (deftest test-no-path-yields-no-pool
   (is (nil? (ig/init-key ::synonym.i/reference-pool {:path nil}))))
 
+(deftest test-list-for-taxon-unions-both-sources
+  (tf/testing "one local row and one WFO row on the same taxon"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      ;; The factory taxon has no wfo_taxon_id, so give it one that the fixture
+      ;; reference file knows about.
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"}
+                        {:id (:taxon/id taxon)})
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Epidendrum cochleatum"})
+            ctx (assoc base-ctx :synonym-reference *ref-pool*)
+            rows (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon))]
+        (is (= #{"local" "wfo"} (set (map :synonym/source rows))))
+        (is (contains? (set (map :synonym/synonym-name rows)) "Encyclia cochleata"))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
+(deftest test-a-taxon-with-no-wfo-id-gets-only-local-rows
+  ;; taxon.wfo_taxon_id is nullable — a hand-added taxon has none, and the WFO
+  ;; half must be skipped rather than joined on null.
+  (tf/testing "no wfo id"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (jdbc.sql/update! *db* :taxon {:wfo_taxon_id nil} {:id (:taxon/id taxon)})
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Some name"})
+            ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+        (is (= ["local"] (mapv :synonym/source
+                               (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon)))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
+(deftest test-resolve-drops-a-hit-whose-accepted-taxon-is-not-in-this-garden
+  ;; A picker's job is to pick a real taxon. An annotated dead end is noise.
+  (testing "the fixture's Dracaena rows point at cores this garden lacks"
+    (let [ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+      (is (= [] (synonym.i/resolve ctx *db* "marginata"))))))
+
+(deftest test-resolve-finds-a-local-row-and-a-wfo-row
+  (tf/testing "both halves resolve to garden taxa"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"}
+                        {:id (:taxon/id taxon)})
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Epidendrum cochleatum"})
+            ctx (assoc base-ctx :synonym-reference *ref-pool*)]
+        (is (= #{"local" "wfo"}
+               (set (map :synonym/source (synonym.i/resolve ctx *db* "cochleat")))))
+        (is (every? #(= (:taxon/id taxon) (:taxon/id %))
+                    (synonym.i/resolve ctx *db* "cochleat")))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
+(deftest test-no-reference-leaves-the-wfo-half-empty
+  (tf/testing "a nil pool"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})
+            ctx (assoc base-ctx :synonym-reference nil)]
+        (is (= ["local"] (mapv :synonym/source
+                               (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon)))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
 (deftest test-add-and-remove
   (tf/testing "a synonym round-trips"
     {[::taxon.i/factory :key/taxon] {:db *db*}}
@@ -69,9 +153,9 @@
         (is (m/validate synonym.spec/Synonym result))
         (is (= "local" (:synonym/source result)))
         (is (= [(:synonym/id result)]
-               (mapv :synonym/id (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon)))))
+               (mapv :synonym/id (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon)))))
         (synonym.i/remove-synonym! *db* (:synonym/id result))
-        (is (empty? (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon))))))))
+        (is (empty? (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon))))))))
 
 (deftest test-add-synonym-with-an-unknown-taxon-is-refused
   ;; The FK is the real failure contract here: `add-synonym!` does not catch
@@ -110,7 +194,7 @@
         (is (= "imported" (:synonym/source row)))
         (is (= ["imported"]
                (mapv :synonym/source
-                     (synonym.i/list-for-taxon ctx *db* (:taxon/id taxon)))))
+                     (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon)))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-a-floor-database-has-no-local-synonymy

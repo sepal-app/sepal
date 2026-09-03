@@ -1,4 +1,5 @@
 (ns sepal.synonym.interface
+  (:refer-clojure :exclude [resolve])
   (:require [integrant.core :as ig]
             [sepal.synonym.core :as core]
             [sepal.synonym.reference :as reference]
@@ -16,8 +17,19 @@
 (defn remove-synonym! [db id]
   (core/remove-synonym! db id))
 
-(defn list-for-taxon [ctx db taxon-id]
+(defn list-for-taxon
+  "The garden's own synonyms for a taxon, plus its WFO synonyms. A row's
+  :synonym/source is \"wfo\" for a reference-file match, \"local\" or
+  \"imported\" for a garden row."
+  [ctx db taxon-id]
   (core/list-for-taxon ctx db taxon-id))
+
+(defn resolve
+  "Local and WFO synonym matches for a query, each resolved to a garden taxon:
+  {:synonym/synonym-name :synonym/source :taxon/id :taxon/name}. A WFO hit
+  whose accepted taxon is not in this garden is dropped."
+  [ctx db query]
+  (core/resolve ctx db query))
 
 (defn list-for-accepted-core
   "Every WFO synonym of the taxon with this 14-character id core, read from the
