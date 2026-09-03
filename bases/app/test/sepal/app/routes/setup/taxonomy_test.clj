@@ -1,8 +1,7 @@
 (ns sepal.app.routes.setup.taxonomy-test
   "The taxonomy step at the route level: what starts a job, what refuses to,
   and what the progress endpoint returns."
-  (:require [babashka.fs :as fs]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [peridot.core :as peri]
             [ring.core.protocols :as ring.protocols]
@@ -132,10 +131,3 @@
                      :returned)]
         (is (= :returned (deref worker 2000 ::timed-out)))
         (is (str/includes? (.toString out "UTF-8") "\"taxaCount\":42"))))))
-
-(deftest test-the-reference-destination-falls-back-to-the-data-home
-  (testing "env-opts resolves :wfo-synonym-ref-path only when the file already
-            exists, so on a first run the instance has no path and the wizard
-            still needs somewhere to put the download"
-    (is (= (str (fs/path "/tmp/sepal-data" "sepal-synonyms.db"))
-           (setup.shared/default-synonym-ref-path {"SEPAL_DATA_HOME" "/tmp/sepal-data"})))))

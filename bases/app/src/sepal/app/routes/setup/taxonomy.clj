@@ -158,10 +158,11 @@
       (if-not can-import?
         (http/see-other setup.routes/review)
         (do
-          (setup.shared/start-import!
-            db
-            setup-job
-            {:ref-dest (or synonym-ref-path (setup.shared/default-synonym-ref-path))})
+          ;; :ref-dest comes from the process, which is where the one
+          ;; per-machine reference file is decided. env-opts always resolves it;
+          ;; a caller that passes none gets a recorded warning rather than a
+          ;; download, because the reference is an enhancement.
+          (setup.shared/start-import! db setup-job {:ref-dest synonym-ref-path})
           (setup.shared/set-current-step! db 5)
           (html/render-page
             (render-import-running :state @setup-job

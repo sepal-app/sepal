@@ -7,7 +7,6 @@
             [hato.client :as http]
             [next.jdbc :as jdbc]
             [ring.core.protocols :as ring.protocols]
-            [sepal.config.interface :as config.i]
             [sepal.database.interface :as db.i]
             [sepal.settings.interface :as settings.i])
   (:import [java.io File]
@@ -243,32 +242,8 @@
       {:available? false
        :error (.getMessage e)})))
 
-;; The import job
-;;
-;; The downloads are 35 MB and ~127 MB, so they cannot run on the request
-;; thread: nothing can report progress from inside a request that has not
-;; returned. run-import! runs on a background thread and writes everything it
-;; knows into an atom, which the SSE endpoint reads.
-
-(def initial-job-state
-  "The tracker before anything has been started."
-  {:phase :idle})
-
-(def default-synonym-ref-filename
-  "The name sepal.app.main/env-opts looks for under the data home."
-  "sepal-synonyms.db")
-
-(defn default-synonym-ref-path
-  "Where to put the reference file when the process was given no path.
-
-  env-opts resolves :wfo-synonym-ref-path only when the file already exists, so
-  on a first run the instance has no path and this is the destination the pool
-  will look at after a restart."
-  ([] (default-synonym-ref-path (System/getenv)))
-  ([env] (str (fs/path (config.i/data-home env) default-synonym-ref-filename))))
-
 (defn- failure-message
-  "A message a person reading the wizard can act on."
+  "A message a person reading the wizard, or the dispatcher's log, can act on."
   [^Exception e]
   (condp instance? e
     java.net.ConnectException
@@ -282,6 +257,71 @@
 
     (or (not-empty (.getMessage e))
         (.getName (class e)))))
+
+(defn import-wfo-taxonomy!
+  "Import the WFO Plant List, synchronously. Fetches the manifest, downloads the
+  init database, imports the taxa and records the version. Returns
+  {:ok true :taxa-count n :wfo-version s :message s} or {:error s}. Never throws.
+
+  The synchronous sibling of run-import!, and not a shim for it. The setup wizard
+  needs a moving bar in a browser, so it runs the job on a background thread and
+  streams a tracker over SSE. The control plane's dispatcher builds a garden
+  template once, headless, with nothing watching -- see import-plant-list! in
+  cloud/bases/dispatcher/src/sepal/cloud/dispatcher/main.clj -- so it wants a
+  call that blocks and hands back a result. A tracker nobody reads would be
+  strictly worse for it.
+
+  This lives here rather than in cloud/ so that which plant-list version is
+  compatible stays app/'s decision: select-compatible-version and
+  supported-init-schemas are the opinion, and that base carries none.
+
+  Returning {:error ...} rather than throwing is part of the contract. The
+  dispatcher converts it to a throw itself, because a template with no taxa must
+  not be moved into place and copied into every garden thereafter.
+
+  Takes a connection or a datasource. The dispatcher passes a single connection
+  deliberately: import-from-init-db! runs ATTACH and the INSERT as separate
+  statements and ATTACH is per-connection.
+
+  Downloads no synonym reference. This builds one garden's taxa; the reference
+  file is one per machine and not a per-garden artifact."
+  [db]
+  (if-not (can-import-wfo? db)
+    {:error "Cannot import WFO: taxa already exist in database"}
+    (try
+      (if-let [version (select-compatible-version (fetch-manifest))]
+        (let [temp-file (File/createTempFile "sepal-init-" ".db")
+              temp-path (.getAbsolutePath temp-file)]
+          (try
+            ;; No :on-bytes: there is no browser to report to. The checksum is
+            ;; still verified when the manifest carries one.
+            (download-file! (:url version) temp-path {:size-mb (:size_mb version)
+                                                      :sha256 (:sha256 version)})
+            (let [taxa-count (import-from-init-db! db temp-path)
+                  wfo-version (get version (keyword "wfo_plant_list.version"))]
+              (settings.i/set-value! db "setup.wfo_plant_list_version" wfo-version)
+              {:ok true
+               :taxa-count taxa-count
+               :wfo-version wfo-version
+               :message (format "Imported %,d taxa from WFO Plant List %s"
+                                taxa-count
+                                wfo-version)})
+            (finally
+              (delete-temp-file temp-path))))
+        {:error "No compatible WFO Plant List version found. Please update Sepal."})
+      (catch Exception e
+        {:error (failure-message e)}))))
+
+;; The import job
+;;
+;; The downloads are 35 MB and ~127 MB, so they cannot run on the request
+;; thread: nothing can report progress from inside a request that has not
+;; returned. run-import! runs on a background thread and writes everything it
+;; knows into an atom, which the SSE endpoint reads.
+
+(def initial-job-state
+  "The tracker before anything has been started."
+  {:phase :idle})
 
 (defn- progress-reporter
   "Writes a download-phase byte count into the tracker, leaving :phase alone."
@@ -327,6 +367,12 @@
   "Download and install the synonym reference. Throws on failure; the caller
   decides that a reference failure is a warning rather than a failed setup."
   [tracker download-fn synonyms dest]
+  (when (str/blank? (str dest))
+    ;; env-opts always resolves a destination, but start-process! does not
+    ;; require one -- the CLI and the test fixture pass no path at all. Refusing
+    ;; here rather than downloading to ".part" in the working directory.
+    (throw (ex-info "This install has no synonym reference path configured."
+                    {:reason :no-ref-dest})))
   (when (str/blank? (:sha256 synonyms))
     ;; A truncated 127 MB SQLite file is a working database with rows missing,
     ;; so an unverifiable reference degrades silently. Refuse it instead.

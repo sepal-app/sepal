@@ -1,13 +1,16 @@
 (ns sepal.app.routes.setup.shared-test
   (:require [babashka.fs :as fs]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [next.jdbc :as jdbc]
             [ring.adapter.jetty :as jetty]
             [ring.core.protocols :as ring.protocols]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
-            [sepal.mail.interface.protocols :as mail.p]))
+            [sepal.mail.interface.protocols :as mail.p]
+            [sepal.settings.interface :as settings.i]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -525,3 +528,183 @@
             indeterminate"
     (is (nil? (get (setup.shared/job-frame {:phase :importing-taxa}) "percent")))
     (is (nil? (get (setup.shared/job-frame {:phase :fetching-manifest}) "percent")))))
+
+;; -----------------------------------------------------------------------------
+;; The synchronous entry point
+;;
+;; import-wfo-taxonomy! is called from outside this repo:
+;; cloud/bases/dispatcher/src/sepal/cloud/dispatcher/main.clj's
+;; import-plant-list!, which depends on app/projects/app by :local/root. There is
+;; nothing in app/ that would fail if it disappeared, which is exactly why it
+;; needs a test here — the coupling is invisible from inside this repo.
+
+(defn- sha256-of [path]
+  (let [digest (java.security.MessageDigest/getInstance "SHA-256")
+        buffer (byte-array 8192)]
+    (with-open [in (io/input-stream path)]
+      (loop []
+        (let [n (.read in buffer)]
+          (when (pos? n)
+            (.update digest buffer 0 n)
+            (recur)))))
+    (format "%064x" (BigInteger. 1 (.digest digest)))))
+
+(defn- build-init-db!
+  "A stand-in for the published init database: the one table
+  import-from-init-db! reads, with two rows in it."
+  [path]
+  (let [ds (jdbc/get-datasource {:dbtype "sqlite" :dbname path})]
+    (jdbc/execute! ds ["create table taxon (id integer primary key,
+                                            wfo_taxon_id text,
+                                            name text not null,
+                                            author text,
+                                            rank text not null,
+                                            parent_id integer)"])
+    (jdbc/execute! ds ["insert into taxon (id, wfo_taxon_id, name, author, rank, parent_id)
+                        values (9000001, 'wfo-9000001', 'Testus', 'L.', 'genus', null),
+                               (9000002, 'wfo-9000002', 'Testus fictus', 'L.', 'species', 9000001)"])
+    path))
+
+(defn- clean-up-imported-taxa! []
+  (jdbc/execute! *db* ["delete from taxon where id in (9000001, 9000002)"])
+  (settings.i/delete! *db* "setup.wfo_plant_list_version"))
+
+(defn- assert-nothing-imported-yet!
+  "Establish the precondition both entry-point tests assert against, and check
+  it. The fixture database is shared by the whole namespace and the run-import!
+  tests above write setup.wfo_plant_list_version through the same code path, so
+  \"the setting was not written\" only means anything from a known-clean start.
+  Leaving that implicit is how an absent-result assertion stops being able to
+  fail."
+  []
+  (clean-up-imported-taxa!)
+  (is (nil? (settings.i/get-value *db* "setup.wfo_plant_list_version")))
+  (is (setup.shared/can-import-wfo? *db*)))
+
+(deftest test-the-synchronous-entry-point-imports-end-to-end
+  (testing "called the way cloud/'s dispatcher calls it: one connection, the
+            manifest fetched over HTTP and parsed by fetch-manifest, a real init
+            database downloaded and checksummed, a real ATTACH and INSERT.
+            manifest-url is the only thing redefined, and only because the
+            release host is not reachable from a test."
+    (let [dir (fs/create-temp-dir {:prefix "sepal-init-db"})
+          init-db (build-init-db! (str (fs/path dir "sepal-init.db")))
+          digest (sha256-of init-db)
+          ;; Set once the server is up, so the manifest it serves can point back
+          ;; at the ephemeral port the download will come from.
+          base-url (atom nil)
+          handler (fn [{:keys [uri]}]
+                    (if (= uri "/sepal-init-manifest.json")
+                      {:status 200
+                       :headers {"Content-Type" "application/json"}
+                       :body (json/write-str
+                               {:versions [{:schema_version 1
+                                            "wfo_plant_list.version" "2025-12_2"
+                                            :size_mb 1
+                                            :sha256 digest
+                                            :url (str @base-url "/sepal-init.db")}]})}
+                      {:status 200
+                       :headers {"Content-Type" "application/octet-stream"}
+                       :body (io/file init-db)}))]
+      (try
+        (assert-nothing-imported-yet!)
+        (with-server handler
+          (fn [base]
+            (reset! base-url base)
+            (with-redefs [setup.shared/manifest-url (str base "/sepal-init-manifest.json")]
+              ;; A single connection, not the pool: import-from-init-db! runs
+              ;; ATTACH and the INSERT as separate statements and ATTACH is
+              ;; per-connection. This is the shape the dispatcher passes.
+              (with-open [conn (jdbc/get-connection *db*)]
+                (let [result (setup.shared/import-wfo-taxonomy! conn)]
+                  (is (nil? (:error result)))
+                  (is (true? (:ok result)))
+                  (is (= "2025-12_2" (:wfo-version result)))
+                  (is (= 2 (:taxa-count result)))
+                  (is (str/includes? (str (:message result)) "2025-12_2"))
+                  (is (= "2025-12_2"
+                         (settings.i/get-value *db* "setup.wfo_plant_list_version"))
+                      "the version setting is what tells the dispatcher's template it is seeded")
+                  (is (= 2 (count (jdbc/execute!
+                                    *db* ["select id from taxon where id in (9000001, 9000002)"])))))))))
+        (finally
+          (clean-up-imported-taxa!)
+          (fs/delete-tree dir))))))
+
+(deftest test-the-synchronous-entry-point-verifies-the-manifest-checksum
+  (testing "a truncated init database is a working database with taxa missing,
+            and the dispatcher would bake it into every garden. This pins that
+            the manifest's sha256 actually reaches the downloader."
+    (let [dir (fs/create-temp-dir {:prefix "sepal-init-db"})
+          init-db (build-init-db! (str (fs/path dir "sepal-init.db")))
+          base-url (atom nil)
+          handler (fn [{:keys [uri]}]
+                    (if (= uri "/sepal-init-manifest.json")
+                      {:status 200
+                       :headers {"Content-Type" "application/json"}
+                       :body (json/write-str
+                               {:versions [{:schema_version 1
+                                            "wfo_plant_list.version" "2025-12_2"
+                                            :size_mb 1
+                                            :sha256 (str/join (repeat 64 "f"))
+                                            :url (str @base-url "/sepal-init.db")}]})}
+                      {:status 200
+                       :headers {"Content-Type" "application/octet-stream"}
+                       :body (io/file init-db)}))]
+      (try
+        (assert-nothing-imported-yet!)
+        (with-server handler
+          (fn [base]
+            (reset! base-url base)
+            (with-redefs [setup.shared/manifest-url (str base "/sepal-init-manifest.json")]
+              (with-open [conn (jdbc/get-connection *db*)]
+                (let [result (setup.shared/import-wfo-taxonomy! conn)]
+                  (is (nil? (:ok result)))
+                  (is (str/includes? (str (:error result)) "Checksum verification failed"))
+                  (is (empty? (jdbc/execute!
+                                *db* ["select id from taxon where id in (9000001, 9000002)"]))
+                      "taxa from an unverified download were imported anyway")
+                  (is (nil? (settings.i/get-value *db* "setup.wfo_plant_list_version"))))))))
+        (finally
+          (clean-up-imported-taxa!)
+          (fs/delete-tree dir))))))
+
+(deftest test-the-synchronous-entry-point-reports-failure-without-throwing
+  (testing "the dispatcher converts {:error ...} into a throw itself, so this
+            must not throw: a template with no taxa must not be moved into place"
+    (with-redefs [setup.shared/fetch-manifest
+                  (fn [] (throw (java.net.ConnectException. "refused")))]
+      (with-open [conn (jdbc/get-connection *db*)]
+        (let [result (setup.shared/import-wfo-taxonomy! conn)]
+          (is (nil? (:ok result)))
+          (is (str/includes? (str (:error result)) "Could not connect to GitHub")))))))
+
+(deftest test-the-synchronous-entry-point-refuses-a-database-that-has-taxa
+  (testing "the guard is the same one the wizard's POST uses"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-init-db"})]
+      (try
+        (jdbc/execute! *db* ["insert into taxon (id, name, rank) values (9000003, 'Occupied', 'genus')"])
+        (let [result (setup.shared/import-wfo-taxonomy! *db*)]
+          (is (nil? (:ok result)))
+          (is (str/includes? (str (:error result)) "taxa already exist")))
+        (finally
+          (jdbc/execute! *db* ["delete from taxon where id = 9000003"])
+          (fs/delete-tree dir))))))
+
+(deftest test-an-install-with-no-reference-path-degrades-rather-than-fails
+  (testing "env-opts always resolves a destination, but start-process! does not
+            require one — the CLI and the test fixture pass no path at all. That
+            has to be a warning, not a failed setup."
+    (let [[tracker _] (recording-tracker)
+          seen (atom [])]
+      (setup.shared/run-import!
+        *db* tracker
+        {:fetch-manifest-fn (constantly (manifest :synonyms synonyms-entry))
+         :download-fn (writing-download seen)
+         :import-fn (constantly 9)
+         :ref-dest nil})
+      (is (= :done (:phase @tracker)))
+      (is (= 9 (:taxa-count @tracker)))
+      (is (str/includes? (str (:warning @tracker)) "no synonym reference path"))
+      (is (= [taxa-url] @seen)
+          "a download was attempted with nowhere to put it"))))
