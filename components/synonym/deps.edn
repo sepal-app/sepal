@@ -1,4 +1,6 @@
 {:paths ["src"]
- :deps {}
+ :deps {babashka/fs {:mvn/version "0.5.30"}
+        com.taoensso/telemere {:mvn/version "1.2.1"}
+        integrant/integrant {:mvn/version "1.0.1"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}

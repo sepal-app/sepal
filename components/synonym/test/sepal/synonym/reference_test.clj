@@ -32,6 +32,24 @@
     (is (nil? (reference/open nil)))
     (is (nil? (reference/open "/nonexistent/sepal-synonyms.db")))))
 
+(deftest test-a-nil-pool-yields-empty-results
+  ;; The default install has no reference file, so every function here must
+  ;; degrade to an empty result rather than throw. Task 8 relies on this: it
+  ;; calls these functions with whatever pool the process has, nil included,
+  ;; with no nil-check of its own.
+  (testing "no pool at all"
+    (is (= [] (reference/list-for-accepted-core nil "wfo-0000283538")))
+    (is (= [] (reference/search nil "cochleat")))
+    (is (nil? (reference/version nil))))
+  (testing "a real pool but an empty query"
+    (let [dir (fs/create-temp-dir)
+          path (str (fs/path dir "ref.db"))]
+      (build-fixture! path)
+      (let [pool (reference/open path)]
+        (try
+          (is (= [] (reference/search pool "")))
+          (finally (reference/close! pool) (fs/delete-tree dir)))))))
+
 (deftest test-the-pool-cannot-write
   (let [dir (fs/create-temp-dir)
         path (str (fs/path dir "ref.db"))]

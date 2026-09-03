@@ -1,7 +1,9 @@
 (ns sepal.synonym.interface-test
-  (:require [clojure.test :refer [deftest is use-fixtures testing]]
+  (:require [babashka.fs :as fs]
+            [clojure.test :refer [deftest is use-fixtures testing]]
             [integrant.core :as ig]
             [malli.core :as m]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -13,6 +15,50 @@
 (use-fixtures :once default-system-fixture)
 
 (def ctx {:schema-version (db.i/latest-version)})
+
+(defn- build-reference-fixture!
+  "A 1-row WFO reference file, built the way bin/build-synonym-ref.sh builds
+  the real one. Kept minimal here: the schema and query behaviour are
+  exhaustively covered by sepal.synonym.reference-test, so this only proves
+  the interface actually reaches the implementation."
+  [path]
+  (with-open [conn (jdbc/get-connection
+                     (jdbc/get-datasource {:dbtype "sqlite" :dbname (str path)}))]
+    (doseq [stmt ["create table syn (name text not null, accepted_core text not null,
+                   accepted_wfo_id text not null, name_id text not null) strict"
+                  "insert into syn values
+                   ('Encyclia cochleata','wfo-0000283538','wfo-0000283538-2025-06','wfo-0001')"
+                  "create index syn_accepted_core_idx on syn(accepted_core)"
+                  "create virtual table syn_fts using fts5(name, content='syn',
+                   content_rowid='rowid', tokenize='unicode61')"
+                  "insert into syn_fts(syn_fts) values('rebuild')"
+                  "create table metadata (key text primary key, value text) strict"
+                  "insert into metadata values ('wfo_plant_list.version','2025-06')"]]
+      (jdbc/execute! conn [stmt])))
+  path)
+
+(deftest test-the-reference-pool-is-reachable-through-the-interface
+  ;; Task 8 calls search, list-for-accepted-core and version through this
+  ;; namespace, never through sepal.synonym.reference directly (AGENTS.md:
+  ;; always import from interface, not core). This is the front door those
+  ;; calls actually use: the ::reference-pool integrant key, opened and
+  ;; closed the way process-config wires it in instance.clj.
+  (let [dir (fs/create-temp-dir)
+        path (str (fs/path dir "ref.db"))]
+    (build-reference-fixture! path)
+    (let [pool (ig/init-key ::synonym.i/reference-pool {:path path})]
+      (try
+        (is (= "2025-06" (synonym.i/version pool)))
+        (is (= ["Encyclia cochleata"]
+               (mapv :name (synonym.i/search pool "cochleat"))))
+        (is (= ["Encyclia cochleata"]
+               (mapv :name (synonym.i/list-for-accepted-core pool "wfo-0000283538"))))
+        (finally
+          (ig/halt-key! ::synonym.i/reference-pool pool)
+          (fs/delete-tree dir))))))
+
+(deftest test-no-path-yields-no-pool
+  (is (nil? (ig/init-key ::synonym.i/reference-pool {:path nil}))))
 
 (deftest test-add-and-remove
   (tf/testing "a synonym round-trips"

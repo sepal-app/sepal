@@ -227,7 +227,7 @@
     (assoc :sepal.mail.interface/client smtp)
 
     wfo-synonym-ref-path
-    (assoc :sepal.synonym.reference/pool
+    (assoc :sepal.synonym.interface/reference-pool
            {:path wfo-synonym-ref-path})
 
     s3
@@ -262,7 +262,7 @@
      :mail (or (:mail opts) (:sepal.mail.interface/client system))
      :s3-client (:sepal.aws-s3.interface/s3-client system)
      :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
-     :synonym-reference (:sepal.synonym.reference/pool system)
+     :synonym-reference (:sepal.synonym.interface/reference-pool system)
      ;; Everything already running in this process that no two instances may
      ;; share. Two instances on one database silently merge two gardens; two on
      ;; one slug silently share a cookie key and token secret; two on one backup

@@ -215,8 +215,27 @@
            (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
                                "WFO_SYNONYM_REF_PATH" "/srv/syn.db"})
                :process :wfo-synonym-ref-path))))
-  (testing "a blank assignment is not a path"
-    ;; "" is truthy in Clojure, so this is the case a plain `or` gets wrong.
-    (is (nil? (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
-                                  "WFO_SYNONYM_REF_PATH" ""})
-                  :process :wfo-synonym-ref-path)))))
+
+  ;; Hermetic: SEPAL_DATA_HOME is pinned to a temp dir rather than left to
+  ;; resolve the real platform default. Task 11 downloads the reference file
+  ;; to that default location, so a test that let this fall through to the
+  ;; real SEPAL_DATA_HOME would pass only by accident of nothing being there
+  ;; yet, and would break the day a real file exists.
+  (let [dir (fs/create-temp-dir {:prefix "sepal-wfo-ref-path"})]
+    (try
+      (testing "a blank assignment is not a path, and no default file exists"
+        ;; "" is truthy in Clojure, so this is the case a plain `or` gets wrong.
+        (is (nil? (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                      "SEPAL_DATA_HOME" (str dir)
+                                      "WFO_SYNONYM_REF_PATH" ""})
+                      :process :wfo-synonym-ref-path))))
+
+      (testing "a blank assignment falls back to the default path when that file exists"
+        (let [default (str (fs/path dir "sepal-synonyms.db"))]
+          (spit default "")
+          (is (= default
+                 (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                     "SEPAL_DATA_HOME" (str dir)
+                                     "WFO_SYNONYM_REF_PATH" ""})
+                     :process :wfo-synonym-ref-path)))))
+      (finally (fs/delete-tree dir)))))

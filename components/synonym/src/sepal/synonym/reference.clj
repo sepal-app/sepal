@@ -7,10 +7,8 @@
   file, and loads mod_spatialite into every connection, which this file has no
   use for."
   (:require [babashka.fs :as fs]
-            [integrant.core :as ig]
             [next.jdbc :as jdbc]
-            [next.jdbc.connection :as connection]
-            [taoensso.telemere :as tel])
+            [next.jdbc.connection :as connection])
   (:import [com.zaxxer.hikari HikariDataSource]))
 
 (defn- spec [path]
@@ -68,15 +66,3 @@
                             join syn_fts f on f.rowid = s.rowid
                             where syn_fts match ?
                             limit 50" (str query "*")]))))
-
-(defmethod ig/init-key ::pool [_ {:keys [path]}]
-  (let [pool (open path)]
-    (if pool
-      (tel/log! {:level :info :data {:path path :wfo-version (version pool)}}
-                "Opened the WFO synonym reference")
-      (tel/log! {:level :info :data {:path path}}
-                "No WFO synonym reference; synonym search covers local rows only"))
-    pool))
-
-(defmethod ig/halt-key! ::pool [_ pool]
-  (close! pool))
