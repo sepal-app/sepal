@@ -4,6 +4,7 @@
             [sepal.app.routes.taxon.detail :as detail]
             [sepal.app.routes.taxon.detail.media :as detail-media]
             [sepal.app.routes.taxon.detail.name :as detail-name]
+            [sepal.app.routes.taxon.detail.synonyms :as detail-synonyms]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
@@ -38,5 +39,13 @@
                 :middleware [[(middleware/require-permission-or-redirect
                                 taxon.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
+    ["/synonyms/" {:name routes/detail-synonyms
+                   :middleware [[(middleware/require-permission-or-redirect
+                                   taxon.perm/edit (constantly routes/detail))]]
+                   :handler #'detail-synonyms/handler}]
+    ["/synonyms/:synonym-id/" {:name routes/detail-synonym
+                               :middleware [[(middleware/require-permission-or-redirect
+                                               taxon.perm/edit (constantly routes/detail))]]
+                               :handler #'detail-synonyms/row-handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])
