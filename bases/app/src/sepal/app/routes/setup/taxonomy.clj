@@ -1,5 +1,5 @@
 (ns sepal.app.routes.setup.taxonomy
-  (:require [sepal.app.flash :as flash]
+  (:require [clojure.data.json :as json]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.setup.layout :as layout]
@@ -66,40 +66,134 @@
                    :class "spl-btn spl-btn--primary"
                    :x-bind:disabled "submitting"
                    :x-bind:class "submitting && 'spl-loading'"}
-          [:span {:x-show "!submitting"} "Import WFO Plant List"]
-          [:span {:x-show "submitting" :x-cloak true} "Importing... this may take a minute"]]]
+          "Import WFO Plant List"]]
         [:a {:href (z/url-for setup.routes/review)
              :class "spl-btn spl-btn--ghost"
              :x-show "!submitting"}
          "Skip for now"]]]
       :next-button nil)))
 
+(def ^:private phase-labels
+  "What each phase is called on screen. Downloads name their file because the
+  two are minutes apart in size and a bar with no label looks stuck."
+  {"idle" "Waiting to start…"
+   "fetching-manifest" "Looking up the latest WFO Plant List…"
+   "downloading-taxa" "Downloading the plant list…"
+   "importing-taxa" "Importing taxa. This takes a minute and shows no percentage."
+   "downloading-synonyms" "Downloading the synonym reference…"
+   "done" "Done."
+   "failed" "The import failed."})
+
+(defn render-import-running
+  "Render the progress view. The initial frame is inlined into x-data so the
+  page is correct before the first SSE message arrives, and a reload during a
+  download rejoins the stream instead of restarting the job."
+  [& {:keys [state flash-messages]}]
+  ;; No script tag here: the x-setup-progress directive is registered by
+  ;; setup.ts, which the wizard layout loads on every step. This page is reached
+  ;; by an hx-boost swap, long after alpine:init has fired.
+  (layout/layout
+    :current-step 5
+    :flash-messages flash-messages
+    :content
+    (layout/step-card
+      :title "Taxonomy Data"
+      :back-url nil
+      :content
+      [:div {:class "space-y-4"
+             :x-data (json/write-str (assoc (setup.shared/job-frame state)
+                                            "labels" phase-labels))
+             :x-setup-progress (z/url-for setup.routes/taxonomy-progress)
+             :data-done-url (z/url-for setup.routes/review)}
+       [:p {:class "text-text-muted"
+            :x-text "labels[phase]"}
+        (get phase-labels (name (:phase state)))]
+
+       ;; No spl- progress class exists and 023 owns the visual language, so the
+       ;; bar is built from utilities rather than by adding a rule here.
+       [:div {:class "h-2 w-full rounded-full bg-border overflow-hidden"
+              :role "progressbar"
+              :x-bind:aria-valuenow "percent"}
+        [:div {:class "h-full bg-brand transition-all"
+               :x-bind:style "percent === null ? 'width: 100%' : `width: ${percent}%`"}]]
+
+       [:p {:class "text-sm text-text-muted"
+            :x-show "percent !== null"
+            :x-cloak true}
+        [:span {:x-text "percent"}] "%"
+        [:span {:x-show "approximate"} " (approximate)"]]
+
+       [:div {:class "spl-alert spl-alert--danger"
+              :x-show "phase === 'failed'"
+              :x-cloak true}
+        [:p {:x-text "error"}]]
+
+       [:div {:class "spl-alert spl-alert--warning"
+              :x-show "warning"
+              :x-cloak true}
+        [:p {:x-text "warning"}]]
+
+       [:div {:class "flex gap-3 mt-4"
+              :x-show "phase === 'failed'"
+              :x-cloak true}
+        [:form {:method "post"
+                :action (z/url-for setup.routes/taxonomy)}
+         (form/anti-forgery-field)
+         [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Try again"]]
+        [:a {:href (z/url-for setup.routes/review)
+             :class "spl-btn spl-btn--ghost"}
+         "Skip for now"]]]
+      :next-button nil)))
+
 (defn handler [{:keys [::z/context flash request-method]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db setup-job synonym-ref-path]} context
         can-import? (setup.shared/can-import-wfo? db)
         taxa-count (db.i/count db {:select [:id] :from [:taxon]})]
 
     (case request-method
       :post
+      ;; can-import-wfo? is the guard, not decoration: setup routes carry no
+      ;; auth middleware, so this is what stops an unauthenticated caller
+      ;; kicking off a 127 MB download against an already-configured install.
       (if-not can-import?
-        ;; Taxa exist, can't import - redirect to review
         (http/see-other setup.routes/review)
-        ;; Try to import
-        (let [result (setup.shared/import-wfo-taxonomy! db)]
-          (if (:error result)
-            (-> (http/see-other setup.routes/taxonomy)
-                (flash/error (:error result)))
-            (do
-              (setup.shared/set-current-step! db 6)
-              (-> (http/see-other setup.routes/review)
-                  (flash/success (or (:message result)
-                                     "WFO taxonomy imported successfully")))))))
+        (do
+          (setup.shared/start-import!
+            db
+            setup-job
+            {:ref-dest (or synonym-ref-path (setup.shared/default-synonym-ref-path))})
+          (setup.shared/set-current-step! db 5)
+          (html/render-page
+            (render-import-running :state @setup-job
+                                   :flash-messages (:messages flash)))))
 
       ;; GET
       (do
         (setup.shared/set-current-step! db 5)
         (html/render-page
-          (if can-import?
+          (cond
+            (not= :idle (:phase @setup-job))
+            (render-import-running :state @setup-job
+                                   :flash-messages (:messages flash))
+
+            can-import?
             (render-import-available :flash-messages (:messages flash))
+
+            :else
             (render-taxa-exist :taxa-count taxa-count
                                :flash-messages (:messages flash))))))))
+
+(defn progress-handler
+  "Stream the import job's progress as Server-Sent Events.
+
+  Progress travels server→client only, so SSE rather than WebSockets: no
+  protocol upgrade, it rides the existing middleware on a plain GET, and
+  EventSource reconnects on its own."
+  [{:keys [::z/context]}]
+  {:status 200
+   :headers {"Content-Type" "text/event-stream"
+             "Cache-Control" "no-cache"
+             ;; nginx buffers proxied responses by default, which would undo
+             ;; the per-frame flush below it.
+             "X-Accel-Buffering" "no"}
+   :body (setup.shared/sse-body (:setup-job context))})

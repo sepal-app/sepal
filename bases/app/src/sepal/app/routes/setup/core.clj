@@ -22,5 +22,7 @@
                  :handler #'regional/handler}]
    ["/taxonomy" {:name setup.routes/taxonomy
                  :handler #'taxonomy/handler}]
+   ["/taxonomy/progress" {:name setup.routes/taxonomy-progress
+                          :handler #'taxonomy/progress-handler}]
    ["/review" {:name setup.routes/review
                :handler #'review/handler}]])

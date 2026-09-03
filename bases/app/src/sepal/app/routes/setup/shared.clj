@@ -1,10 +1,13 @@
 (ns sepal.app.routes.setup.shared
   "Shared setup wizard functionality."
-  (:require [clojure.data.json :as json]
+  (:require [babashka.fs :as fs]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [hato.client :as http]
             [next.jdbc :as jdbc]
+            [ring.core.protocols :as ring.protocols]
+            [sepal.config.interface :as config.i]
             [sepal.database.interface :as db.i]
             [sepal.settings.interface :as settings.i])
   (:import [java.io File]
@@ -142,31 +145,60 @@
             (recur)))))
     (format "%064x" (BigInteger. 1 (.digest digest)))))
 
-(defn download-init-db
-  "Download the init database to a temp file and verify checksum.
-   Returns the temp file path."
-  [url expected-sha256]
-  (let [temp-file (File/createTempFile "sepal-init-" ".db")
-        response (http/get url {:http-client http-client
+(defn copy-counting!
+  "Copy in→out, calling (on-bytes done) after each chunk. Returns the byte count.
+
+  io/copy cannot report progress, which is the only reason this exists. The
+  buffer is 64 KiB rather than the 8 KiB sha256-hex uses because these are
+  35 MB and 127 MB files and the callback runs once per chunk."
+  [in out on-bytes]
+  (let [buf (byte-array 65536)]
+    (loop [done 0]
+      (let [n (.read ^java.io.InputStream in buf)]
+        (if (pos? n)
+          (do (.write ^java.io.OutputStream out buf 0 n)
+              (let [done (+ done n)]
+                (on-bytes done)
+                (recur done)))
+          done)))))
+
+(defn download-file!
+  "Download `url` to `dest`, reporting progress as the bytes arrive.
+
+  `on-bytes` is called with {:bytes-done :bytes-total :approximate?} after every
+  chunk. :bytes-total is the response's Content-Length when the server sent one
+  and `size-mb` converted to bytes when it did not — in which case
+  :approximate? is true, because the manifest's size_mb comes from `du -m`
+  rounded up.
+
+  Verifies `sha256` when one is given, deleting the file and throwing on a
+  mismatch. Returns `dest`."
+  [url dest {:keys [size-mb sha256 on-bytes]}]
+  (let [response (http/get url {:http-client http-client
                                 :as :stream
                                 :timeout 120000})]
-    (if (= 200 (:status response))
-      (do
-        (with-open [in (:body response)
-                    out (io/output-stream temp-file)]
-          (io/copy in out))
-        ;; Verify checksum if provided
-        (when expected-sha256
-          (let [actual-sha256 (sha256-hex temp-file)]
-            (when (not= expected-sha256 actual-sha256)
-              (.delete temp-file)
-              (throw (ex-info "Checksum verification failed"
-                              {:expected expected-sha256
-                               :actual actual-sha256})))))
-        (.getAbsolutePath temp-file))
-      (throw (ex-info "Failed to download init database"
-                      {:status (:status response)
-                       :url url})))))
+    (when-not (= 200 (:status response))
+      (throw (ex-info "Download failed"
+                      {:status (:status response) :url url})))
+    (let [declared (some-> (get-in response [:headers "content-length"]) parse-long)
+          bytes-total (or declared (some-> size-mb (* 1024 1024)))
+          approximate? (and (nil? declared) (some? bytes-total))
+          report (fn [done]
+                   (when on-bytes
+                     (on-bytes {:bytes-done done
+                                :bytes-total bytes-total
+                                :approximate? approximate?})))]
+      (report 0)
+      (with-open [in (:body response)
+                  out (io/output-stream (io/file dest))]
+        (copy-counting! in out report))
+      (when sha256
+        (let [actual (sha256-hex dest)]
+          (when-not (= sha256 actual)
+            (io/delete-file dest true)
+            (throw (ex-info "Checksum verification failed"
+                            {:expected sha256 :actual actual})))))
+      dest)))
 
 (defn import-from-init-db!
   "Import taxa from the init database into Sepal.
@@ -211,39 +243,226 @@
       {:available? false
        :error (.getMessage e)})))
 
-(defn import-wfo-taxonomy!
-  "Import WFO Plant List taxonomy data from GitHub Releases.
-   Downloads the init database, imports taxa, and sets the version setting."
-  [db]
-  (if-not (can-import-wfo? db)
-    {:error "Cannot import WFO: taxa already exist in database"}
+;; The import job
+;;
+;; The downloads are 35 MB and ~127 MB, so they cannot run on the request
+;; thread: nothing can report progress from inside a request that has not
+;; returned. run-import! runs on a background thread and writes everything it
+;; knows into an atom, which the SSE endpoint reads.
+
+(def initial-job-state
+  "The tracker before anything has been started."
+  {:phase :idle})
+
+(def default-synonym-ref-filename
+  "The name sepal.app.main/env-opts looks for under the data home."
+  "sepal-synonyms.db")
+
+(defn default-synonym-ref-path
+  "Where to put the reference file when the process was given no path.
+
+  env-opts resolves :wfo-synonym-ref-path only when the file already exists, so
+  on a first run the instance has no path and this is the destination the pool
+  will look at after a restart."
+  ([] (default-synonym-ref-path (System/getenv)))
+  ([env] (str (fs/path (config.i/data-home env) default-synonym-ref-filename))))
+
+(defn- failure-message
+  "A message a person reading the wizard can act on."
+  [^Exception e]
+  (condp instance? e
+    java.net.ConnectException
+    "Could not connect to GitHub. Please check your network connection and try again."
+
+    java.net.SocketTimeoutException
+    "Download timed out. Please try again."
+
+    java.net.UnknownHostException
+    "Could not resolve GitHub. Please check your network connection and try again."
+
+    (or (not-empty (.getMessage e))
+        (.getName (class e)))))
+
+(defn- progress-reporter
+  "Writes a download-phase byte count into the tracker, leaving :phase alone."
+  [tracker]
+  (fn [progress]
+    (swap! tracker merge (select-keys progress [:bytes-done :bytes-total :approximate?]))))
+
+(defn- download-taxa!
+  "Download the init database to a temp file. Returns its path."
+  [tracker download-fn version]
+  (let [temp (File/createTempFile "sepal-init-" ".db")]
+    (swap! tracker merge {:phase :downloading-taxa
+                          :bytes-done 0
+                          :bytes-total nil
+                          :approximate? false})
     (try
-      ;; Fetch manifest
-      (let [manifest (fetch-manifest)]
-        (if-let [version (select-compatible-version manifest)]
-          ;; Download and import
-          (let [temp-file (download-init-db (:url version) (:sha256 version))]
-            (try
-              (let [taxa-count (import-from-init-db! db temp-file)
-                    wfo-version (get version (keyword "wfo_plant_list.version"))]
-                ;; Set version setting after successful import
-                (settings.i/set-value! db "setup.wfo_plant_list_version" wfo-version)
-                {:ok true
-                 :taxa-count taxa-count
-                 :wfo-version wfo-version
-                 :message (format "Imported %,d taxa from WFO Plant List %s"
-                                  taxa-count
-                                  wfo-version)})
-              (finally
-                (delete-temp-file temp-file))))
-          ;; No compatible version
-          {:error "No compatible WFO Plant List version found. Please update Sepal."}))
-
-      (catch java.net.ConnectException _
-        {:error "Could not connect to GitHub. Please check your network connection and try again."})
-
-      (catch java.net.SocketTimeoutException _
-        {:error "Download timed out. Please try again."})
-
+      (download-fn (:url version)
+                   (.getAbsolutePath temp)
+                   {:size-mb (:size_mb version)
+                    :sha256 (:sha256 version)
+                    :on-bytes (progress-reporter tracker)})
+      (.getAbsolutePath temp)
       (catch Exception e
-        {:error (str "Import failed: " (.getMessage e))}))))
+        (delete-temp-file (.getAbsolutePath temp))
+        (throw e)))))
+
+(defn install-synonym-reference!
+  "Move a downloaded reference file into place by an atomic rename.
+
+  The reference pool opens the file with immutable=1, which tells SQLite the
+  bytes never change, so overwriting it in place while a pool is open is
+  undefined behaviour. The download therefore lands beside the destination — the
+  same filesystem, so ATOMIC_MOVE is available — and only then takes its name.
+  A replacement is picked up on the next process start, which is fine here
+  because setup runs before the pool has ever been opened."
+  [tmp dest]
+  (when-let [parent (fs/parent dest)]
+    (fs/create-dirs parent))
+  (fs/move tmp dest {:replace-existing true :atomic-move true})
+  (str dest))
+
+(defn- download-synonyms!
+  "Download and install the synonym reference. Throws on failure; the caller
+  decides that a reference failure is a warning rather than a failed setup."
+  [tracker download-fn synonyms dest]
+  (when (str/blank? (:sha256 synonyms))
+    ;; A truncated 127 MB SQLite file is a working database with rows missing,
+    ;; so an unverifiable reference degrades silently. Refuse it instead.
+    (throw (ex-info "The synonym reference has no checksum, so it cannot be verified."
+                    {:reason :missing-sha256})))
+  (let [tmp (str dest ".part")]
+    (swap! tracker merge {:phase :downloading-synonyms
+                          :bytes-done 0
+                          :bytes-total nil
+                          :approximate? false})
+    (when-let [parent (fs/parent dest)]
+      (fs/create-dirs parent))
+    (try
+      (download-fn (:url synonyms)
+                   tmp
+                   {:size-mb (:size_mb synonyms)
+                    :sha256 (:sha256 synonyms)
+                    :on-bytes (progress-reporter tracker)})
+      (install-synonym-reference! tmp dest)
+      (catch Exception e
+        (delete-temp-file tmp)
+        (throw e)))))
+
+(defn run-import!
+  "The whole taxonomy import, start to finish, writing progress into `tracker`.
+
+  Takes `fetch-manifest-fn`, `download-fn` and `import-fn` so a test can drive
+  the phase sequence with no network and no 127 MB file. Never throws: a failure
+  lands in the tracker as {:phase :failed :error …}, because this runs on a
+  thread nobody joins and an uncaught exception would leave the tracker sitting
+  in a running phase forever, showing a bar that never moves.
+
+  The taxonomy download is required; the synonym reference is not. Taxa are what
+  a managed garden cannot get later on its own, so a failure there is :failed
+  and the wizard offers a retry. Synonymy is an enhancement, so a failure there
+  reaches :done with a warning recorded."
+  [db tracker {:keys [fetch-manifest-fn download-fn import-fn ref-dest]}]
+  (try
+    (swap! tracker merge {:phase :fetching-manifest})
+    (let [version (select-compatible-version (fetch-manifest-fn))]
+      (when-not version
+        (throw (ex-info "No compatible WFO Plant List version found. Please update Sepal."
+                        {:reason :no-compatible-version})))
+      (let [wfo-version (get version (keyword "wfo_plant_list.version"))
+            synonyms (:synonyms version)]
+        ;; `synonyms` is absent — not null — on the published sepal-init-v1
+        ;; entry, which means "no reference available", not an error.
+        (swap! tracker merge {:wfo-version wfo-version
+                              :synonyms? (some? synonyms)})
+        (let [taxa-db (download-taxa! tracker download-fn version)]
+          (try
+            (swap! tracker merge {:phase :importing-taxa
+                                  :bytes-done nil
+                                  :bytes-total nil
+                                  :approximate? false})
+            (let [taxa-count (import-fn db taxa-db)]
+              (settings.i/set-value! db "setup.wfo_plant_list_version" wfo-version)
+              (swap! tracker merge {:taxa-count taxa-count}))
+            (finally
+              (delete-temp-file taxa-db))))
+        (let [warning (when synonyms
+                        (try
+                          (download-synonyms! tracker download-fn synonyms ref-dest)
+                          nil
+                          (catch Exception e
+                            (str "The taxonomy imported, but the synonym reference did not download: "
+                                 (failure-message e)))))]
+          (swap! tracker merge (cond-> {:phase :done
+                                        :bytes-done nil
+                                        :bytes-total nil
+                                        :approximate? false}
+                                 warning (assoc :warning warning))))))
+    (catch Exception e
+      (swap! tracker merge {:phase :failed :error (failure-message e)}))))
+
+(def default-import-opts
+  "The real collaborators. Tests pass their own."
+  {:fetch-manifest-fn fetch-manifest
+   :download-fn download-file!
+   :import-fn import-from-init-db!})
+
+(def ^:private startable-phases
+  "Phases a start request may leave. :failed is here so the wizard's retry
+  button works; a run in flight is not restartable."
+  #{:idle :failed})
+
+(defn start-import!
+  "Start the import on a background thread if it is not already running.
+  Returns :started or :already-running.
+
+  The compare-and-set! is the guard: a double form submit, or an impatient
+  reload, must not start two 127 MB downloads."
+  [db tracker opts]
+  (let [current @tracker]
+    (if (and (contains? startable-phases (:phase current))
+             (compare-and-set! tracker current {:phase :fetching-manifest}))
+      (do (future (run-import! db tracker (merge default-import-opts opts)))
+          :started)
+      :already-running)))
+
+;; The progress stream
+
+(defn job-frame
+  "The tracker state as the browser sees it: camelCase keys, a percentage
+  already worked out, and no Clojure keywords."
+  [{:keys [phase bytes-done bytes-total approximate? wfo-version taxa-count
+           synonyms? error warning]}]
+  {"phase" (name (or phase :idle))
+   "bytesDone" bytes-done
+   "bytesTotal" bytes-total
+   "percent" (when (and bytes-done bytes-total (pos? bytes-total))
+               (min 100 (long (/ (* 100 bytes-done) bytes-total))))
+   "approximate" (boolean approximate?)
+   "wfoVersion" wfo-version
+   "taxaCount" taxa-count
+   "synonyms" (boolean synonyms?)
+   "error" error
+   "warning" warning})
+
+(def terminal-phases #{:done :failed})
+
+(defn sse-body
+  "A response body that writes one SSE frame per tick until the job is over.
+
+  The .flush is load-bearing: without it the writer buffers and the browser sees
+  nothing until the stream closes, which is exactly the dead-button behaviour
+  this replaces. The terminal-phase check is equally load-bearing: without it
+  the connection lives for the life of the process."
+  [tracker & {:keys [poll-ms] :or {poll-ms 500}}]
+  (reify ring.protocols/StreamableResponseBody
+    (write-body-to-stream [_ _ output-stream]
+      (with-open [w (io/writer output-stream)]
+        (loop []
+          (let [state @tracker]
+            (.write w (str "data: " (json/write-str (job-frame state)) "\n\n"))
+            (.flush w)
+            (when-not (contains? terminal-phases (:phase state))
+              (Thread/sleep ^long poll-ms)
+              (recur))))))))

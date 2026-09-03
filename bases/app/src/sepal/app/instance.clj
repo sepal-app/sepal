@@ -263,6 +263,9 @@
      :s3-client (:sepal.aws-s3.interface/s3-client system)
      :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
      :synonym-reference (:sepal.synonym.interface/reference-pool system)
+     ;; The path as well as the pool. The pool is nil until the file exists, and
+     ;; the setup wizard needs somewhere to download it to.
+     :synonym-ref-path (:wfo-synonym-ref-path opts)
      ;; Everything already running in this process that no two instances may
      ;; share. Two instances on one database silently merge two gardens; two on
      ;; one slug silently share a cookie key and token secret; two on one backup
@@ -292,6 +295,9 @@
   [{:keys [app-base-url app-domain]}]
   (or app-base-url (str "https://" app-domain)))
 
+(defmethod ig/init-key ::setup-job [_ _]
+  (atom setup.shared/initial-job-state))
+
 (defn- instance-config
   [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
@@ -301,6 +307,12 @@
   (cond->
     {:sepal.token.interface/service
      {:secret (token-secret (:master-secret process) slug)}
+
+     ;; The setup wizard's taxonomy import runs on a background thread and
+     ;; writes its progress here; the SSE endpoint reads it. Per instance
+     ;; because the import is per garden. No halt-key!: an atom holds no
+     ;; resource.
+     ::setup-job {}
 
      :sepal.media-transform.interface/service
    ;; Per instance, not shared: cache-key is SHA-256 over a per-database row id,
@@ -340,6 +352,11 @@
                         :app-domain app-domain
                         :app-base-url (base-url opts)
                         :schema-version schema-version
+                        :setup-job (ig/ref ::setup-job)
+                        ;; Where the setup wizard puts the synonym reference it
+                        ;; downloads. One file per machine, so it comes from the
+                        ;; process rather than from these instance opts.
+                        :synonym-ref-path (:synonym-ref-path process)
                         :mail (:mail process)
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
