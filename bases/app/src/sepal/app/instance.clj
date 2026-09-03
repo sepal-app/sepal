@@ -50,6 +50,7 @@
    [:master-secret [:string {:min 16}]]
    [:log-level {:optional true} [:maybe :string]]
    [:extensions-library-path {:optional true} [:maybe :string]]
+   [:wfo-synonym-ref-path {:optional true} [:maybe :string]]
    [:smtp {:optional true}
     [:maybe [:map {:closed true}
              [:host :string]
@@ -218,12 +219,16 @@
   (db.i/preflight! {:db-path db-path}))
 
 (defn- process-config
-  [{:keys [log-level smtp s3 mail]}]
+  [{:keys [log-level smtp s3 mail wfo-synonym-ref-path]}]
   (cond-> {:sepal.logging.interface/logging {:level log-level}
            :sepal.malli.interface/init {}}
 
     (and smtp (not mail))
     (assoc :sepal.mail.interface/client smtp)
+
+    wfo-synonym-ref-path
+    (assoc :sepal.synonym.reference/pool
+           {:path wfo-synonym-ref-path})
 
     s3
     (assoc :sepal.aws-s3.interface/credentials-provider
@@ -257,6 +262,7 @@
      :mail (or (:mail opts) (:sepal.mail.interface/client system))
      :s3-client (:sepal.aws-s3.interface/s3-client system)
      :s3-presigner (:sepal.aws-s3.interface/s3-presigner system)
+     :synonym-reference (:sepal.synonym.reference/pool system)
      ;; Everything already running in this process that no two instances may
      ;; share. Two instances on one database silently merge two gardens; two on
      ;; one slug silently share a cookie key and token secret; two on one backup
@@ -338,6 +344,7 @@
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
                         :s3-presigner (:s3-presigner process)
+                        :synonym-reference (:synonym-reference process)
                         :media-transform-service (ig/ref :sepal.media-transform.interface/service)
                         :media-upload-bucket (:media-upload-bucket process)
                         :media-key-prefix media-key-prefix

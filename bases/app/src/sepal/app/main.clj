@@ -46,7 +46,11 @@
         app-domain (get env "APP_DOMAIN" "localhost")]
     {:process (cond-> {:master-secret (master-secret env)
                        :log-level (get env "LOG_LEVEL" "DEBUG")
-                       :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")}
+                       :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")
+                       :wfo-synonym-ref-path
+                       (or (not-empty (get env "WFO_SYNONYM_REF_PATH"))
+                           (let [default (str (fs/path home "sepal-synonyms.db"))]
+                             (when (fs/exists? default) default)))}
                 (get env "SMTP_HOST")
                 (assoc :smtp (cond-> {:host (get env "SMTP_HOST")
                                       :port (get env "SMTP_PORT" "587")

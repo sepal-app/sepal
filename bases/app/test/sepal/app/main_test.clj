@@ -208,3 +208,15 @@
                           "TOKEN_SECRET" "should-be-ignored"})]
       (is (not-any? #(= "should-be-ignored" %) (vals process)))
       (is (not-any? #(= "should-be-ignored" %) (vals instance))))))
+
+(deftest test-the-synonym-ref-path-comes-from-the-environment
+  (testing "an explicit path wins"
+    (is (= "/srv/syn.db"
+           (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                               "WFO_SYNONYM_REF_PATH" "/srv/syn.db"})
+               :process :wfo-synonym-ref-path))))
+  (testing "a blank assignment is not a path"
+    ;; "" is truthy in Clojure, so this is the case a plain `or` gets wrong.
+    (is (nil? (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                  "WFO_SYNONYM_REF_PATH" ""})
+                  :process :wfo-synonym-ref-path)))))
