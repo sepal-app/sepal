@@ -173,6 +173,18 @@
   Verifies `sha256` when one is given, deleting the file and throwing on a
   mismatch. Returns `dest`."
   [url dest {:keys [size-mb sha256 on-bytes]}]
+  ;; :timeout bounds getting to the response headers, not the body transfer, so
+  ;; 120 s is not a cap on how long a 127 MB download may take. With :as :stream
+  ;; hato uses BodyHandlers/ofInputStream, java.net.http returns from send! once
+  ;; the headers arrive, and HttpRequest.Builder/timeout stops applying there.
+  ;; Proved rather than assumed, because the shape of the number invites the
+  ;; opposite reading: see
+  ;; shared-test/test-the-request-timeout-covers-the-headers-not-the-body,
+  ;; which reads a body for 2.4 s through a 100 ms timeout and completes.
+  ;;
+  ;; The cost of that is the other way round: nothing bounds the body at all, so
+  ;; a stalled connection parks this thread indefinitely rather than failing.
+  ;; See the report's concerns.
   (let [response (http/get url {:http-client http-client
                                 :as :stream
                                 :timeout 120000})]
@@ -286,9 +298,12 @@
   Downloads no synonym reference. This builds one garden's taxa; the reference
   file is one per machine and not a per-garden artifact."
   [db]
-  (if-not (can-import-wfo? db)
-    {:error "Cannot import WFO: taxa already exist in database"}
-    (try
+  ;; can-import-wfo? counts a table and so can throw -- a locked database, a
+  ;; closed connection -- and it is inside the try because "never throws" is the
+  ;; contract the dispatcher relies on, not a description of the happy path.
+  (try
+    (if-not (can-import-wfo? db)
+      {:error "Cannot import WFO: taxa already exist in database"}
       (if-let [version (select-compatible-version (fetch-manifest))]
         (let [temp-file (File/createTempFile "sepal-init-" ".db")
               temp-path (.getAbsolutePath temp-file)]
@@ -308,9 +323,9 @@
                                 wfo-version)})
             (finally
               (delete-temp-file temp-path))))
-        {:error "No compatible WFO Plant List version found. Please update Sepal."})
-      (catch Exception e
-        {:error (failure-message e)}))))
+        {:error "No compatible WFO Plant List version found. Please update Sepal."}))
+    (catch Exception e
+      {:error (failure-message e)})))
 
 ;; The import job
 ;;

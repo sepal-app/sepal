@@ -4,6 +4,7 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [hato.client :as http]
             [next.jdbc :as jdbc]
             [ring.adapter.jetty :as jetty]
             [ring.core.protocols :as ring.protocols]
@@ -708,3 +709,97 @@
       (is (str/includes? (str (:warning @tracker)) "no synonym reference path"))
       (is (= [taxa-url] @seen)
           "a download was attempted with nowhere to put it"))))
+
+;; -----------------------------------------------------------------------------
+;; What the download timeout actually bounds
+;;
+;; download-file! passes :timeout 120000, and the obvious reading of that is a
+;; two-minute cap on the whole transfer -- which for the ~127 MB synonym
+;; reference would demand better than 1.06 MB/s sustained and would fail into
+;; the degrade path, so setup would reach :done with a warning and the operator
+;; would silently get no synonymy on any slow link.
+;;
+;; That reading is wrong, and this pins why. With :as :stream hato uses
+;; BodyHandlers/ofInputStream; java.net.http returns from send! as soon as the
+;; response headers arrive, and HttpRequest.Builder/timeout stops applying at
+;; that point. The value bounds DNS, connect, TLS and the redirect chain up to
+;; the headers, and nothing after.
+
+(defn- slow-body
+  "A response body of `size` bytes delivered in `chunks` flushes, `pause-ms`
+  apart, so the transfer takes about (* chunks pause-ms) milliseconds while the
+  headers go out immediately."
+  [size chunks pause-ms]
+  (reify ring.protocols/StreamableResponseBody
+    (write-body-to-stream [_ _ out]
+      (let [chunk (byte-array (quot size chunks) (byte 42))]
+        (dotimes [_ chunks]
+          (.write out chunk)
+          (.flush out)
+          (Thread/sleep ^long pause-ms))))))
+
+(deftest test-the-request-timeout-covers-the-headers-not-the-body
+  (testing "a body that takes 2.4 s read through a 100 ms timeout completes, so
+            :timeout 120000 in download-file! is not a cap on the transfer"
+    (let [size 8192
+          chunks 8
+          pause 300]
+      (with-server (fn [_] {:status 200
+                            :headers {"Content-Length" (str size)
+                                      "Content-Type" "application/octet-stream"}
+                            :body (slow-body size chunks pause)})
+        (fn [base]
+          (let [started (System/currentTimeMillis)
+                ;; Exactly the options download-file! passes, but with a timeout
+                ;; two dozen times shorter than the body needs.
+                response (http/get base {:http-client setup.shared/http-client
+                                         :as :stream
+                                         :timeout 100})
+                out (java.io.ByteArrayOutputStream.)
+                read-bytes (setup.shared/copy-counting! (:body response) out (fn [_]))
+                elapsed (- (System/currentTimeMillis) started)]
+            (is (= 200 (:status response)))
+            (is (= size read-bytes)
+                "the body did not arrive in full, so the request timeout does
+                 bound the transfer after all and download-file! needs a bigger
+                 or proportional value for the 127 MB reference")
+            (is (> elapsed (* 2 100))
+                "the body finished inside the timeout, so this test proved
+                 nothing -- make the server slower")))))))
+
+(deftest test-a-download-far-slower-than-the-timeout-still-verifies
+  (testing "the same thing through download-file! itself, checksum and all,
+            rather than through a hand-rolled http/get that could drift from it"
+    (let [size 8192
+          payload (byte-array size (byte 42))
+          dest (str (fs/create-temp-file {:prefix "sepal-slow-dl"}))]
+      (try
+        (with-server (fn [_] {:status 200
+                              :headers {"Content-Length" (str size)
+                                        "Content-Type" "application/octet-stream"}
+                              :body (slow-body size 8 300)})
+          (fn [base]
+            (let [started (System/currentTimeMillis)
+                  digest (let [d (java.security.MessageDigest/getInstance "SHA-256")]
+                           (format "%064x" (BigInteger. 1 (.digest d payload))))
+                  reports (atom [])]
+              ;; The digest above is over the same bytes the slow body writes,
+              ;; so a completed transfer verifies and a truncated one does not.
+              (setup.shared/download-file! base dest {:sha256 digest
+                                                      :on-bytes #(swap! reports conj %)})
+              (is (= size (fs/size dest)))
+              (is (= size (:bytes-done (last @reports))))
+              (is (> (- (System/currentTimeMillis) started) 1500)
+                  "the transfer was not actually slow, so this proved nothing"))))
+        (finally (fs/delete-if-exists dest))))))
+
+(deftest test-a-throw-from-the-taxa-check-is-captured-too
+  (testing "can-import-wfo? counts a table and so can throw. The dispatcher's
+            import-plant-list! only inspects :error, so a throw from the guard
+            would escape past a docstring promising it never throws."
+    (with-redefs [setup.shared/can-import-wfo?
+                  (fn [_] (throw (java.sql.SQLException. "database is locked")))]
+      (let [result (setup.shared/import-wfo-taxonomy! *db*)]
+        (is (map? result))
+        (is (nil? (:ok result)))
+        (is (= "database is locked" (:error result)))))))
