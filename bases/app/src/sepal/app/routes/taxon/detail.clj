@@ -19,6 +19,7 @@
                 :taxon (:taxon panel-data)
                 :parent (:parent panel-data)
                 :stats (:stats panel-data)
+                :synonyms (:synonyms panel-data)
                 :activities (:activities panel-data)
                 :activity-count (:activity-count panel-data))]))
 
@@ -29,5 +30,5 @@
       ;; Can edit -> redirect to edit tabs
       (http/found taxon.routes/detail-name {:id id})
       ;; Read-only -> render panel as full page
-      (let [panel-data (taxon.panel/fetch-panel-data db resource)]
+      (let [panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render-panel-page :taxon resource :panel-data panel-data)))))

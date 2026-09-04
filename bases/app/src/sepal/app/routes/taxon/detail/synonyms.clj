@@ -90,6 +90,7 @@
                                             :taxon (:taxon panel-data)
                                             :parent (:parent panel-data)
                                             :stats (:stats panel-data)
+                                            :synonyms (:synonyms panel-data)
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)))
@@ -133,7 +134,7 @@
 
       :get
       (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
-            panel-data (taxon.panel/fetch-panel-data db resource)]
+            panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :synonyms synonyms
                 :panel-data panel-data
