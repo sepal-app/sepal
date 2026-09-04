@@ -155,6 +155,62 @@
                        :taxon/name (:taxon/name taxon)}))
                   hits)))))
 
+(def min-query-length
+  "The shortest query a synonym search will act on.
+
+  A one-character query is not a search, it is a scan: measured against WFO
+  2025-06 on 2026-09-04, `a` resolves to 78,361 distinct accepted taxa and `e`
+  to 36,422. Two characters is also what the taxon picker already enforces
+  client-side (`bases/app/src/sepal/app/js/taxon-field.ts`), so the two surfaces
+  agree on what counts as a query."
+  2)
+
+(def max-taxon-ids
+  "The most taxa one synonym query will resolve to.
+
+  Two characters bounds the degenerate case but not a broad one: `ca` still
+  resolves to 32,003 taxa, `sp` to 10,486, `ro` to 9,072 — all perfectly
+  reasonable things to type. 1,000 is 40 pages at 25 rows, and callers are told
+  when they hit it. Silent truncation is the defect this replaces."
+  1000)
+
+(defn taxon-ids-for-synonym
+  "Garden taxon ids whose synonyms match `query`, for use as a search filter.
+
+  Returns {:ids #{…} :truncated? bool :too-short? bool}. `:too-short?` is the
+  caller's cue to say why nothing was searched rather than show an empty result.
+  `:truncated?` says the answer is a slice, so a caller can say so.
+
+  Unions both halves the way `resolve` does — the garden's own `taxon_synonym`
+  rows and the WFO reference — but returns ids rather than rows, because a
+  filter narrows a query and does not carry display data. Empty on a database
+  below the migration that added `taxon_synonym` and with no reference pool,
+  never an error."
+  [ctx db query]
+  (let [q (str/trim (or query ""))]
+    (if (< (count q) min-query-length)
+      {:ids #{} :truncated? false :too-short? (seq q)}
+      (let [local-ids (if-not (available? ctx)
+                        []
+                        (map :taxon/id (local-matches db q)))
+            ;; One more than the cap, so truncation is observed rather than
+            ;; inferred from a full page.
+            cores (->> (reference/search (:synonym-reference ctx) q)
+                       (keep :accepted-core)
+                       distinct
+                       (take (inc max-taxon-ids)))
+            wfo-ids (when (seq cores)
+                      (map :taxon/id
+                           (db.i/execute! db
+                                          {:select [[:id :taxon__id]]
+                                           :from [:taxon]
+                                           :where [:in [:substr :wfo_taxon_id 1 core-length]
+                                                   (vec cores)]})))
+            all (distinct (concat local-ids wfo-ids))]
+        {:ids (set (take max-taxon-ids all))
+         :truncated? (> (count all) max-taxon-ids)
+         :too-short? false}))))
+
 (create-ns 'sepal.synonym.interface)
 (alias 'synonym.i 'sepal.synonym.interface)
 

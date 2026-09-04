@@ -44,6 +44,28 @@
   [ctx db query]
   (core/resolve ctx db query))
 
+(def min-synonym-query-length
+  "The shortest query `taxon-ids-for-synonym` will act on."
+  core/min-query-length)
+
+(def max-synonym-taxon-ids
+  "The most taxa `taxon-ids-for-synonym` will return."
+  core/max-taxon-ids)
+
+(defn taxon-ids-for-synonym
+  "Garden taxon ids whose synonyms match `query`, for narrowing a taxon search.
+
+  Returns {:ids #{…} :truncated? bool :too-short? bool}. Both flags exist so a
+  caller can explain itself: `:too-short?` means nothing was searched because
+  the query was under `min-synonym-query-length`, and `:truncated?` means the
+  ids are a slice capped at `max-synonym-taxon-ids`. A caller that ignores them
+  shows a silently wrong result, which is the defect this replaces.
+
+  `query` is free text. Empty on a database below the schema floor and with no
+  reference pool, never an error."
+  [ctx db query]
+  (core/taxon-ids-for-synonym ctx db query))
+
 (defn list-for-accepted-core
   "Every WFO synonym of the taxon with this 14-character id core, read from the
   reference pool. A nil pool (no reference file) yields []."

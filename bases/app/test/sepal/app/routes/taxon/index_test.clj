@@ -9,6 +9,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.database.interface :as db.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
@@ -234,3 +235,172 @@
                      :response :body)]
         (is (not (re-find #"Also matching a synonym" body)))
         (is (not (re-find #"spl-alert--info" body)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; `synonym:` as a search field
+;;; ---------------------------------------------------------------------------
+
+(defn- with-synonym-ids-pool
+  "Run `f` with `synonym.i/taxon-ids-for-synonym` reading a real reference pool.
+
+  The same shape as `with-reference-pool` above and for the same reason: the
+  test system's process carries no WFO reference file, so the pool is injected
+  into the context the real function receives rather than the function being
+  replaced. Everything past that point is production code, including the
+  cores-to-ids scan and the FTS MATCH."
+  [f]
+  (let [dir (fs/create-temp-dir)
+        path (str (fs/path dir "ref.db"))]
+    (build-reference-fixture! path)
+    (let [pool (ig/init-key ::synonym.i/reference-pool {:path path})
+          real synonym.i/taxon-ids-for-synonym]
+      (try
+        (with-redefs [synonym.i/taxon-ids-for-synonym
+                      (fn [ctx db q] (real (assoc ctx :synonym-reference pool) db q))]
+          (f))
+        (finally
+          (ig/halt-key! ::synonym.i/reference-pool pool)
+          (fs/delete-tree dir))))))
+
+(deftest test-a-synonym-filter-finds-a-taxon-that-does-not-match-by-name
+  ;; The point of the feature: `Prosthechea` never appears in the query, and
+  ;; `Encyclia` never appears in the taxon's own name.
+  (tf/testing "synonym:Encyclia"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"
+                         :name "Prosthechea cochleata"}
+                        {:id (:taxon/id taxon)})
+      (with-synonym-ids-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                body (-> sess
+                         (peri/request "/taxon/" :params {"q" "synonym:Encyclia"})
+                         :response :body)]
+            (is (re-find #"Prosthechea cochleata" body)
+                "the accepted taxon is a row in the table, not a block entry")
+            (is (not (re-find #"Type at least" body)))
+            (is (not (re-find #"matches more than" body)))))))))
+
+(deftest test-a-synonym-filter-narrows-rather-than-widens
+  ;; A filter that lost its clause would return every taxon. Two taxa exist and
+  ;; only one has the synonym, so a widened query shows both.
+  (tf/testing "synonym:Encyclia with a second taxon present"
+    {[::taxon.i/factory :key/a] {:db *db*}
+     [::taxon.i/factory :key/b] {:db *db*}}
+    (fn [{:keys [a b]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"
+                         :name "Prosthechea cochleata"}
+                        {:id (:taxon/id a)})
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id nil :name "Zzz notasynonym"}
+                        {:id (:taxon/id b)})
+      (with-synonym-ids-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                body (-> sess
+                         (peri/request "/taxon/" :params {"q" "synonym:Encyclia"})
+                         :response :body)]
+            (is (re-find #"Prosthechea cochleata" body))
+            (is (not (re-find #"Zzz notasynonym" body))
+                "a taxon without the synonym must not appear")))))))
+
+(deftest test-a-synonym-filter-survives-a-free-text-term
+  ;; compile-query does `(assoc :where …)`, so a :where placed in base-stmt is
+  ;; overwritten once terms or filters produce a clause. If the id filter were
+  ;; applied before compiling, this query would return every taxon matching the
+  ;; term and quietly ignore the synonym.
+  (tf/testing "synonym:Encyclia plus a term that matches the other taxon"
+    {[::taxon.i/factory :key/a] {:db *db*}
+     [::taxon.i/factory :key/b] {:db *db*}}
+    (fn [{:keys [a b]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"
+                         :name "Prosthechea cochleata"}
+                        {:id (:taxon/id a)})
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id nil :name "Wombat cochleata"}
+                        {:id (:taxon/id b)})
+      (with-synonym-ids-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                body (-> sess
+                         (peri/request "/taxon/"
+                                       :params {"q" "synonym:Encyclia cochleata"})
+                         :response :body)]
+            (is (not (re-find #"Wombat cochleata" body))
+                "the term matched it but the synonym filter must still exclude it")))))))
+
+(deftest test-a-one-character-synonym-query-is-refused
+  (tf/testing "synonym:a"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (jdbc.sql/update! *db* :taxon
+                        {:wfo_taxon_id "wfo-0000283538-2025-12"
+                         :name "Prosthechea cochleata"}
+                        {:id (:taxon/id taxon)})
+      (with-synonym-ids-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                body (-> sess
+                         (peri/request "/taxon/" :params {"q" "synonym:a"})
+                         :response :body)]
+            (is (re-find #"Type at least" body) "it says why it searched nothing")
+            (is (not (re-find #"Prosthechea cochleata" body))
+                "and returns nothing rather than every taxon")))))))
+
+(deftest test-botanical-notation-in-a-synonym-filter-does-not-500
+  ;; `sp.`, `subsp.` and `var.` are how botanists write names, and FTS5 reads
+  ;; `.` `'` `(` `)` `-` as syntax. reference/search quotes its tokens, but the
+  ;; filter path is not the term path, so it gets its own test.
+  (tf/testing "punctuation a curator actually types"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [_taxon]}]
+      (with-synonym-ids-pool
+        (fn []
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)]
+            ;; Single-token values only, deliberately. A multi-word query like
+            ;; `synonym:Rosa 'Peace'` parses to filter "Rosa" plus the TERM
+            ;; "'Peace'", and that term goes to taxon_fts through
+            ;; components/search's terms->clause, which does not quote and 500s
+            ;; on it. That is the pre-existing bug 032's final review recorded,
+            ;; not this path -- verified with search.i/parse. Testing it here
+            ;; would assert someone else's defect and fail for the wrong reason.
+            (doseq [q ["synonym:sp." "synonym:subsp." "synonym:var."
+                       "synonym:x-hybrid" "synonym:Peace'" "synonym:(L.)"]]
+              (testing q
+                (is (= 200 (-> sess
+                               (peri/request "/taxon/" :params {"q" q})
+                               :response :status)))))))))))
+
+(deftest test-a-synonym-filter-below-the-schema-floor-returns-nothing
+  ;; taxon_synonym is above the supported floor. The garden half must be gated
+  ;; and the page must render rather than error.
+  (tf/testing "below the gate"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      (let [id (:taxon/id taxon)
+            row (synonym.i/add-synonym! *db* {:taxon-id id
+                                              :synonym-name "Bucida buceras"})]
+        (jdbc.sql/update! *db* :taxon {:name "Terminalia buceras"} {:id id})
+        (with-synonym-ids-pool
+          (fn []
+            (let [email (create-user! *db*)
+                  sess (app.test/login email password)
+                  find-body (fn [] (-> sess
+                                       (peri/request "/taxon/"
+                                                     :params {"q" "synonym:Bucida"})
+                                       :response :body))]
+              (testing "the row is really found at the latest schema"
+                (is (re-find #"Terminalia buceras" (find-body))))
+              (testing "and not below the floor, without erroring"
+                (with-redefs [db.i/at-least-version? (constantly false)]
+                  (is (not (re-find #"Terminalia buceras" (find-body)))))))))
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))

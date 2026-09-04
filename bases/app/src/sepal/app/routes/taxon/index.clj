@@ -128,10 +128,30 @@
               :x-on:click.prevent "toggle()"}]
      [:span "Only taxa with accessions"]]))
 
-(defn render [& {:keys [field-options viewer href page page-size rows search-query total synonym-matches]}]
+(defn render-synonym-notice
+  "Why a `synonym:` search returned what it did, when that needs saying.
+
+  A search that quietly returns a slice, or nothing at all, is worse than one
+  that explains itself — that is the defect in the block above, whose \"and N
+  more\" is computed from an already-truncated set."
+  [{:keys [truncated? too-short?]}]
+  (cond
+    too-short?
+    [:div {:class "spl-alert spl-alert--info"}
+     [:p (format "Type at least %d characters to search synonyms."
+                 synonym.i/min-synonym-query-length)]]
+
+    truncated?
+    [:div {:class "spl-alert spl-alert--info"}
+     [:p (format "That synonym matches more than %d taxa. Showing the first %d — narrow the search to see the rest."
+                 synonym.i/max-synonym-taxon-ids
+                 synonym.i/max-synonym-taxon-ids)]]))
+
+(defn render [& {:keys [field-options viewer href page page-size rows search-query total synonym-matches synonym-notice]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
+                         synonym-notice
                          (synonym-matches-block :matches synonym-matches)
                          (table :href href
                                 :page page
@@ -183,6 +203,22 @@
         ;; the semantic fix rather than the safety one.
         synonym-q (str/join " " (:terms ast))
 
+        ;; `synonym:Rosa` narrows to taxa that have a matching synonym, the way
+        ;; `rank:species` narrows by rank. It cannot be an ordinary search field:
+        ;; the compiler generates SQL against one database and the WFO reference
+        ;; is a separate SQLite on a separate pool, so there is no join to make.
+        ;;
+        ;; So the route resolves it to taxon ids and the compiler never sees it.
+        ;; The filter is stripped from the AST rather than left for the
+        ;; compiler's `:when field-def` to skip, because `synonym` IS registered
+        ;; in the taxon search-config -- the toolbar's field dropdown reads the
+        ;; same map -- so the compiler would find it and call field->clause on a
+        ;; field-def with no :column.
+        synonym-filter (first (filter #(= "synonym" (:field %)) (:filters ast)))
+        ast (update ast :filters #(vec (remove #{synonym-filter} %)))
+        synonym-hit (when synonym-filter
+                      (synonym.i/taxon-ids-for-synonym context db (:value synonym-filter)))
+
         ;; Columns to select (including parent name for display)
         columns [[:t.id :id]
                  [:t.name :name]
@@ -199,6 +235,21 @@
 
         ;; Compile search query (adds WHERE clause and any filter joins)
         stmt (search.i/compile-query :taxon ast base-stmt)
+
+        ;; The synonym ids are conjoined AFTER compiling, not put in base-stmt
+        ;; before it: compile-query does `(assoc :where …)` whenever terms or
+        ;; filters produce a clause, so a `:where` in base-stmt is overwritten,
+        ;; and `synonym:Encyclia Rosa` would silently lose the id filter and
+        ;; return every taxon matching "Rosa".
+        ;;
+        ;; One statement feeds both the row query and the count below, so
+        ;; pagination and the total stay consistent with each other. An empty id
+        ;; set still emits a clause -- dropping it would widen the search to
+        ;; every taxon, the opposite of what a filter means.
+        stmt (if synonym-filter
+               (let [clause [:in :t.id (or (seq (:ids synonym-hit)) [-1])]]
+                 (update stmt :where #(if % [:and % clause] clause)))
+               stmt)
 
         ;; Execute queries in parallel
         [rows total] (pcalls
@@ -283,4 +334,5 @@
                 :page-size page-size
                 :search-query q
                 :total total
-                :synonym-matches block-matches)))))
+                :synonym-matches block-matches
+                :synonym-notice (render-synonym-notice synonym-hit))))))
