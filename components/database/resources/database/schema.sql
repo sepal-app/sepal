@@ -324,6 +324,26 @@ INSERT INTO taxon_rank (name) VALUES
   ('subphylum'), ('subsection'), ('subseries'), ('subspecies'), ('subtribe'),
   ('subvariety'), ('superclass'), ('superfamily'), ('superorder'),
   ('supertribe'), ('tribe'), ('unranked'), ('variety');
+
+INSERT INTO material_status (name) VALUES
+  ('alive'), ('dead'), ('dormant'), ('transferred'), ('other'), ('unknown');
+
+INSERT INTO material_change_reason (code, label) VALUES
+  ('dead', 'Dead'),
+  ('discarded', 'Discarded'),
+  ('discarded_weedy', 'Discarded, weedy'),
+  ('lost', 'Lost, whereabouts unknown'),
+  ('stolen', 'Stolen'),
+  ('winter_kill', 'Winter kill'),
+  ('summer_kill', 'Summer kill'),
+  ('error_correction', 'Error correction'),
+  ('distributed', 'Distributed elsewhere'),
+  ('deleted', 'Deleted, year dead unknown'),
+  ('did_not_germinate', 'Did not germinate'),
+  ('discarded_seedling', 'Discarded seedling'),
+  ('given_away', 'Given away'),
+  ('transferred', 'Transferred elsewhere'),
+  ('other', 'Other');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
