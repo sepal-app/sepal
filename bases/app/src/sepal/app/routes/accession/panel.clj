@@ -7,11 +7,13 @@
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.notes :as ui.notes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.contact.interface :as contact.i]
             [sepal.material.interface :as mat.i]
+            [sepal.note.interface :as note.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -31,11 +33,13 @@
    - :taxon          - The associated taxon map
    - :supplier       - Optional supplier contact map
    - :stats          - Map with :material-count
+   - :notes          - Recent notes for this accession
+   - :note-count     - Total note count
    - :activities     - Recent activities for this accession
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [accession taxon supplier stats activities activity-count timezone on-close]}]
+  [& {:keys [accession taxon supplier stats notes note-count activities activity-count timezone on-close]}]
   (let [{:accession/keys [id code provenance-type]} accession
         {:keys [material-count]} stats
         sci-name (:taxon/name taxon)]
@@ -78,6 +82,19 @@
                      :value material-count
                      :href (z/url-for material.routes/index nil {:accession-id id})}]))
 
+        ;; Notes section
+        (panel/collapsible-section
+          :title "Notes"
+          :count note-count
+          :disabled? (zero? (or note-count 0))
+          :empty-label "none"
+          :default-open? false
+          :children
+          (ui.notes/panel-section
+            :notes notes
+            :note-count note-count
+            :more-url nil))
+
         ;; External links section
         (panel/collapsible-section
           :title "External Links"
@@ -99,14 +116,18 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the accession panel.
-   Returns a map with :accession, :taxon, :supplier, :stats, :activities, :activity-count."
-  [db accession]
+   `ctx` carries :schema-version — a route's ::z/context will do.
+   Returns a map with :accession, :taxon, :supplier, :stats, :notes,
+   :note-count, :activities, :activity-count."
+  [ctx db accession]
   (let [accession-id (:accession/id accession)
         taxon (when-let [taxon-id (:accession/taxon-id accession)]
                 (taxon.i/get-by-id db taxon-id))
         supplier (when-let [supplier-id (:accession/supplier-contact-id accession)]
                    (contact.i/get-by-id db supplier-id))
         material-count (mat.i/count-by-accession-id db accession-id)
+        notes (take 3 (note.i/get-for-resource ctx db :accession accession-id))
+        note-count (note.i/count-for-resource ctx db :accession accession-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :accession
                                                :resource-id accession-id
@@ -118,6 +139,8 @@
      :taxon taxon
      :supplier supplier
      :stats {:material-count material-count}
+     :notes notes
+     :note-count note-count
      :activities activities
      :activity-count activity-count}))
 
@@ -125,13 +148,15 @@
   "Handler for accession panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
   (let [{:keys [db resource timezone]} context
-        panel-data (fetch-panel-data db resource)]
+        panel-data (fetch-panel-data context db resource)]
     (html/render-partial
       (panel-content
         :accession (:accession panel-data)
         :taxon (:taxon panel-data)
         :supplier (:supplier panel-data)
         :stats (:stats panel-data)
+        :notes (:notes panel-data)
+        :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
         :timezone timezone))))

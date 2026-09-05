@@ -153,6 +153,8 @@
                                          :taxon (:taxon panel-data)
                                          :supplier (:supplier panel-data)
                                          :stats (:stats panel-data)
+                                         :notes (:notes panel-data)
+                                         :note-count (:note-count panel-data)
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
@@ -239,7 +241,7 @@
                                              {:id (:accession/id accession)}))
                 (http/validation-errors (validation.i/humanize saved))))))
 
-        (let [panel-data (accession.panel/fetch-panel-data db accession)]
+        (let [panel-data (accession.panel/fetch-panel-data context db accession)]
           (render :accession accession
                   :taxon taxon
                   :values values

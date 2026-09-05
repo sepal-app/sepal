@@ -19,6 +19,8 @@
                 :taxon (:taxon panel-data)
                 :supplier (:supplier panel-data)
                 :stats (:stats panel-data)
+                :notes (:notes panel-data)
+                :note-count (:note-count panel-data)
                 :activities (:activities panel-data)
                 :activity-count (:activity-count panel-data)
                 :timezone timezone)]))
@@ -30,5 +32,5 @@
       ;; Can edit -> redirect to edit tabs
       (http/found accession.routes/detail-general {:id id})
       ;; Read-only -> render panel as full page
-      (let [panel-data (accession.panel/fetch-panel-data db resource)]
+      (let [panel-data (accession.panel/fetch-panel-data context db resource)]
         (render-panel-page :accession resource :panel-data panel-data :timezone timezone)))))

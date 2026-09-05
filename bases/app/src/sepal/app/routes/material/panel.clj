@@ -10,11 +10,13 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.notes :as ui.notes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
+            [sepal.note.interface :as note.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -88,11 +90,13 @@
    - :taxon          - The associated taxon map
    - :location       - The associated location map
    - :history        - Change rows with :from-location and :to-location maps
+   - :notes          - Recent notes for this material
+   - :note-count     - Total note count
    - :activities     - Recent activities for this material
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [material accession taxon location history
+  [& {:keys [material accession taxon location history notes note-count
              activities activity-count timezone on-close]}]
   (let [{:material/keys [code material-type quantity status]} material
         sci-name (:taxon/name taxon)]
@@ -133,6 +137,19 @@
         ;; History section
         (history-section material history timezone)
 
+        ;; Notes section
+        (panel/collapsible-section
+          :title "Notes"
+          :count note-count
+          :disabled? (zero? (or note-count 0))
+          :empty-label "none"
+          :default-open? false
+          :children
+          (ui.notes/panel-section
+            :notes notes
+            :note-count note-count
+            :more-url nil))
+
         ;; External links section
         (panel/collapsible-section
           :title "External Links"
@@ -167,9 +184,10 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the material panel.
+   `ctx` carries :schema-version — a route's ::z/context will do.
    Returns a map with :material, :accession, :taxon, :location, :history,
-   :activities, :activity-count."
-  [db material]
+   :notes, :note-count, :activities, :activity-count."
+  [ctx db material]
   (let [material-id (:material/id material)
         accession (when-let [accession-id (:material/accession-id material)]
                     (acc.i/get-by-id db accession-id))
@@ -177,6 +195,8 @@
                 (taxon.i/get-by-id db taxon-id))
         location (when-let [location-id (:material/location-id material)]
                    (loc.i/get-by-id db location-id))
+        notes (take 3 (note.i/get-for-resource ctx db :material material-id))
+        note-count (note.i/count-for-resource ctx db :material material-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :material
                                                :resource-id material-id
@@ -189,6 +209,8 @@
      :taxon taxon
      :location location
      :history (history-for db material-id)
+     :notes notes
+     :note-count note-count
      :activities activities
      :activity-count activity-count}))
 
@@ -196,7 +218,7 @@
   "Handler for material panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
   (let [{:keys [db resource timezone]} context
-        panel-data (fetch-panel-data db resource)]
+        panel-data (fetch-panel-data context db resource)]
     (html/render-partial
       (panel-content
         :material (:material panel-data)
@@ -204,6 +226,8 @@
         :taxon (:taxon panel-data)
         :location (:location panel-data)
         :history (:history panel-data)
+        :notes (:notes panel-data)
+        :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
         :timezone timezone))))
