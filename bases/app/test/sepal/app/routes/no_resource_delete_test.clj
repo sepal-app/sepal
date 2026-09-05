@@ -1,0 +1,24 @@
+(ns sepal.app.routes.no-resource-delete-test
+  (:require [clojure.test :refer [deftest is testing]])
+  (:import [java.io File]))
+
+(deftest test-nothing-can-orphan-a-note
+  (testing "no route deletes an accession, material or taxon"
+    ;; A note's resource_id is polymorphic and carries no foreign key, so a
+    ;; deleted parent would strand its notes. Sepal has no delete path for
+    ;; these three resources, so it cannot happen. 049 owns the day that
+    ;; changes; this test fails when it does, which is the point.
+    (let [deleting (->> (file-seq (File. "bases/app/src/sepal/app/routes"))
+                        (filter #(.isFile ^File %))
+                        (filter #(re-find #"\.clj$" (.getName ^File %)))
+                        (filter #(re-find #":delete" (slurp %)))
+                        (mapv #(.getPath ^File %))
+                        sort)]
+      (is (= ["bases/app/src/sepal/app/routes/media/core.clj"
+              "bases/app/src/sepal/app/routes/media/detail.clj"
+              "bases/app/src/sepal/app/routes/media/detail/link.clj"
+              "bases/app/src/sepal/app/routes/taxon/core.clj"]
+             deleting)
+          (str "A new delete route appeared. If it deletes an accession, "
+               "material or taxon, its notes need deleting with it - see "
+               "plans/049-resource-deletion.md.")))))
