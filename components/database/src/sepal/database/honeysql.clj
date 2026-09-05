@@ -21,13 +21,20 @@
     [(str (name left) " ->> '"  right "'")]))
 
 (defn- match-op
-  "Formats SQLite JSON extract operation.
+  "Formats SQLite's FTS5 MATCH: `[:match :taxon_fts pattern]` -> `taxon_fts match ?`.
 
-  SQLite uses json_extract(column, '$.path') instead of PostgreSQL's -> and ->> operators.
-  "
-  [_ column & _path]
-  (let [[left right] column]
-    [(str (name left) " match '"  right "'")]))
+  The pattern is returned as a parameter, never interpolated. Building the SQL
+  by concatenation instead -- `\" match '\" right \"'\"` -- put an unescaped,
+  user-controlled string inside a SQL literal: a search for `Rosa 'Peace'`
+  closed the string early and reached SQLite as a syntax error, which is the
+  benign end of what an injected quote can do. Every FTS pattern in the app
+  comes from a search box.
+
+  The formatter contract is a vector of the SQL fragment followed by its
+  params, so adding `right` here is what turns it into a real bind variable."
+  [_ args & _]
+  (let [[table pattern] args]
+    [(str (name table) " match ?") pattern]))
 
 (defn init
   "Initialize HoneySQL formatters for SQLite.
