@@ -302,6 +302,20 @@ CREATE TABLE taxon_synonym (
 ) strict;
 CREATE INDEX taxon_synonym_taxon_id_idx on taxon_synonym (taxon_id);
 CREATE INDEX taxon_synonym_name_idx on taxon_synonym (synonym_name collate nocase);
+CREATE TABLE note (
+  id integer primary key autoincrement,
+  body text not null,
+  resource_id integer not null,
+  resource_type text not null,
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
+CREATE INDEX note_resource_id_resource_type_idx on note (resource_id, resource_type);
+CREATE TRIGGER trigger_note_updated_at after update on note
+begin
+  update note set updated_at = datetime('now') where id = NEW.id;
+end;
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -310,30 +324,11 @@ INSERT INTO taxon_rank (name) VALUES
   ('subphylum'), ('subsection'), ('subseries'), ('subspecies'), ('subtribe'),
   ('subvariety'), ('superclass'), ('superfamily'), ('superorder'),
   ('supertribe'), ('tribe'), ('unranked'), ('variety');
-
-INSERT INTO material_status (name) VALUES
-  ('alive'), ('dead'), ('dormant'), ('transferred'), ('other'), ('unknown');
-
-INSERT INTO material_change_reason (code, label) VALUES
-  ('dead', 'Dead'),
-  ('discarded', 'Discarded'),
-  ('discarded_weedy', 'Discarded, weedy'),
-  ('lost', 'Lost, whereabouts unknown'),
-  ('stolen', 'Stolen'),
-  ('winter_kill', 'Winter kill'),
-  ('summer_kill', 'Summer kill'),
-  ('error_correction', 'Error correction'),
-  ('distributed', 'Distributed elsewhere'),
-  ('deleted', 'Deleted, year dead unknown'),
-  ('did_not_germinate', 'Did not germinate'),
-  ('discarded_seedling', 'Discarded seedling'),
-  ('given_away', 'Given away'),
-  ('transferred', 'Transferred elsewhere'),
-  ('other', 'Other');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260901153000', '2026-09-01 15:30:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '2026-09-01 22:46:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902160000', '2026-09-02 20:51:12');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260903120000', '2026-09-05 17:51:02');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '2026-09-06 16:55:14');

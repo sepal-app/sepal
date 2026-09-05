@@ -91,6 +91,15 @@
   []
   taxon-synonym)
 
+(def ^:private resource-notes "20260903120000")
+
+(defn note-version
+  "The migration that added `note`. Code touching that table must gate on it:
+  the table is above the supported floor, so a database at the floor does not
+  have it, and `select` on a missing table is an error rather than a null."
+  []
+  resource-notes)
+
 (defn- applied-versions
   [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
