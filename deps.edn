@@ -21,6 +21,7 @@
                               poly/media {:local/root "components/media"}
                               poly/settings {:local/root "components/settings"}
                               poly/store {:local/root "components/store"}
+                              poly/synonym {:local/root "components/synonym"}
                               poly/taxon {:local/root "components/taxon"}
                               poly/test {:local/root "components/test"}
                               poly/token {:local/root "components/token"}
@@ -62,6 +63,7 @@
                                 "components/search/test"
                                 "components/settings/test"
                                 "components/store/test"
+                                "components/synonym/test"
                                 "components/taxon/test"
                                 "components/test/test"
                                 "components/token/test"

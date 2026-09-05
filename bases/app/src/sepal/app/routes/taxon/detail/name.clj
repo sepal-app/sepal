@@ -46,6 +46,7 @@
                                          :taxon (:taxon panel-data)
                                          :parent (:parent panel-data)
                                          :stats (:stats panel-data)
+                                         :synonyms (:synonyms panel-data)
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)))
              :breadcrumbs (taxon.shared/breadcrumbs taxon)
@@ -82,7 +83,7 @@
                     :parent-id (:taxon/id parent)
                     :parent-name (:taxon/name parent)
                     :vernacular-names (:taxon/vernacular-names resource)}
-            panel-data (taxon.panel/fetch-panel-data db resource)]
+            panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :values values
                 :panel-data panel-data)))))

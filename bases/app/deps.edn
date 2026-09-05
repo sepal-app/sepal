@@ -3,7 +3,7 @@
         babashka/fs {:mvn/version "0.5.30"}
         hato/hato {:mvn/version "1.0.0"}
         com.github.brettatoms/zodiac {:mvn/version "1.0.119"}
-        com.github.brettatoms/zodiac-assets {:mvn/version "0.6.55"}
+        com.github.brettatoms/zodiac-assets {:mvn/version "0.6.59"}
         com.github.brettatoms/zodiac-hot-reload {:mvn/version "0.1.5"}
         com.github.brettatoms/zodiac-headers {:mvn/version "0.1.2"}
         com.github.brettatoms/zodiac-sql {:mvn/version "0.3.27"}

@@ -57,6 +57,7 @@
                                             :taxon (:taxon panel-data)
                                             :parent (:parent panel-data)
                                             :stats (:stats panel-data)
+                                            :synonyms (:synonyms panel-data)
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)
@@ -91,7 +92,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (let [panel-data (taxon.panel/fetch-panel-data db resource)]
+      (let [panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :media media
                 :page 1
                 :page-size page-size

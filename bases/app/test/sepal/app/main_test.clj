@@ -208,3 +208,52 @@
                           "TOKEN_SECRET" "should-be-ignored"})]
       (is (not-any? #(= "should-be-ignored" %) (vals process)))
       (is (not-any? #(= "should-be-ignored" %) (vals instance))))))
+
+(deftest test-the-synonym-ref-path-comes-from-the-environment
+  (testing "an explicit path wins"
+    (is (= "/srv/syn.db"
+           (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                               "WFO_SYNONYM_REF_PATH" "/srv/syn.db"})
+               :process :wfo-synonym-ref-path))))
+
+  ;; Hermetic: SEPAL_DATA_HOME is pinned to a temp dir rather than left to
+  ;; resolve the real platform default, so nothing here depends on what happens
+  ;; to be on the machine.
+  ;;
+  ;; This used to resolve the default only when the file already existed. It
+  ;; does not any more: the setup wizard downloads the reference to this path,
+  ;; so on a first run -- when by definition no file is there -- the wizard has
+  ;; to be told where to put it. The degrade is unchanged, because
+  ;; sepal.synonym.reference/open still returns nil for a path with no file, so
+  ;; a resolved-but-absent path means no pool and an empty WFO half exactly as
+  ;; a nil path did.
+  (let [dir (fs/create-temp-dir {:prefix "sepal-wfo-ref-path"})
+        default (str (fs/path dir "sepal-synonyms.db"))]
+    (try
+      (testing "a blank assignment is not a path: it falls back to the default"
+        ;; "" is truthy in Clojure, so this is the case a plain `or` gets wrong.
+        ;; The point of the assertion is that the result is the default and not
+        ;; the empty string.
+        (is (= default
+               (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                   "SEPAL_DATA_HOME" (str dir)
+                                   "WFO_SYNONYM_REF_PATH" ""})
+                   :process :wfo-synonym-ref-path))))
+
+      (testing "the default is resolved before the file exists, because that is
+                where the setup wizard downloads it to"
+        (is (not (fs/exists? default)))
+        (is (= default
+               (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                   "SEPAL_DATA_HOME" (str dir)})
+                   :process :wfo-synonym-ref-path))))
+
+      (testing "and an explicit path still wins over the default, whether or not
+                a file is at either one"
+        (spit default "")
+        (is (= "/srv/syn.db"
+               (-> (main/env-opts {"SEPAL_SECRET" "0123456789abcdef"
+                                   "SEPAL_DATA_HOME" (str dir)
+                                   "WFO_SYNONYM_REF_PATH" "/srv/syn.db"})
+                   :process :wfo-synonym-ref-path))))
+      (finally (fs/delete-tree dir)))))

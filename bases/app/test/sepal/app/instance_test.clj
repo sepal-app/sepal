@@ -8,6 +8,7 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
+            [sepal.database.interface :as db.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]
@@ -809,6 +810,48 @@
   (testing "a typo in a dev opt fails at start! rather than being ignored"
     (is (not (m/validate instance/InstanceOpts
                          (assoc valid-instance-opts :reload-per-reqest? true))))))
+
+(deftest test-the-request-context-carries-the-schema-version
+  ;; The gate for anything added above the supported floor reads this. Without
+  ;; it every gated feature silently turns itself off.
+  ;;
+  ;; A started zodiac value has no readable :request-context to assert against:
+  ;; zodiac.core/start closes the map into context-middleware, a plain closure
+  ;; installed on the compiled middleware chain, so nothing on :system surfaces
+  ;; it short of making a real request through a route that reads it back out —
+  ;; and no route does that yet (a later task wires the first one). This asserts
+  ;; one level earlier instead: the config instance-config builds — which is
+  ;; exactly what start! hands to zodiac — carries :schema-version through to
+  ;; :request-context.
+  (testing "instance-config threads :schema-version from opts into the request context"
+    (let [version (db.i/latest-version)
+          config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts :schema-version version))]
+      (is (= version
+             (get-in config [:sepal.app.server/zodiac :request-context :schema-version]))))))
+
+(deftest test-start-passes-the-current-schema-version-into-instance-config
+  ;; The test above proves instance-config copies whatever :schema-version it's
+  ;; given; it says nothing about provenance, and would pass unchanged against a
+  ;; start! that never assoc'd anything, or assoc'd the wrong value. This
+  ;; intercepts the real call start! makes, to prove it is current — the
+  ;; version start! just read off this database — and not some other value.
+  (let [dir (fs/create-temp-dir {:prefix "sepal-schema-ctx"})
+        process (test-process)
+        opts (garden-opts dir "ctx")
+        captured (atom nil)
+        original @#'instance/instance-config]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      (with-redefs [instance/instance-config
+                    (fn [process opts]
+                      (reset! captured opts)
+                      (original process opts))]
+        (instance/stop! (instance/start! process opts)))
+      (is (= (db.i/latest-version) (:schema-version @captured)))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
 
 (deftest test-a-supplied-mail-client-is-used-as-is
   (testing "a caller may bring its own mail client, so tests reach the same

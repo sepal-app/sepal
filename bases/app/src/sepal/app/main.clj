@@ -46,7 +46,18 @@
         app-domain (get env "APP_DOMAIN" "localhost")]
     {:process (cond-> {:master-secret (master-secret env)
                        :log-level (get env "LOG_LEVEL" "DEBUG")
-                       :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")}
+                       :extensions-library-path (get env "EXTENSIONS_LIBRARY_PATH")
+                       ;; Resolved whether or not the file is there yet, because
+                       ;; this is also where the setup wizard downloads it to.
+                       ;; No existence check: sepal.synonym.reference/open
+                       ;; already returns nil for a path with no file, so a
+                       ;; missing reference still means no pool and an empty WFO
+                       ;; half of every synonym read. not-empty rather than a
+                       ;; plain or, because "" is truthy in Clojure and a blank
+                       ;; assignment in .env.local is not a path.
+                       :wfo-synonym-ref-path
+                       (or (not-empty (get env "WFO_SYNONYM_REF_PATH"))
+                           (str (fs/path home "sepal-synonyms.db")))}
                 (get env "SMTP_HOST")
                 (assoc :smtp (cond-> {:host (get env "SMTP_HOST")
                                       :port (get env "SMTP_PORT" "587")

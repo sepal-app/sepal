@@ -7,6 +7,7 @@
 
 (def name-tab ::name)
 (def media-tab ::media)
+(def synonyms-tab ::synonyms)
 
 (defn items [& {:keys [active taxon]}]
   [(ui.tabs/item "Name"
@@ -14,15 +15,18 @@
                   :active (= active name-tab)})
    (ui.tabs/item "Media"
                  {:href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
-                  :active (= active media-tab)})])
+                  :active (= active media-tab)})
+   (ui.tabs/item "Synonyms"
+                 {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
+                  :active (= active synonyms-tab)})])
 
 (defn tabs [taxon active]
   (ui.tabs/tabs {:label "Taxon sections"
                  :items (items :taxon taxon :active active)}))
 
 (defn page
-  "A taxon's record page. Both sections render through the shared shell, so
-  neither can drift from the other. The rank fills the identifier slot: a taxon
+  "A taxon's record page. All sections render through the shared shell, so
+  none can drift from the others. The rank fills the identifier slot: a taxon
   has no code, and its rank is what qualifies the name above it."
   [& {:keys [taxon active body footer]}]
   (pages.record/page

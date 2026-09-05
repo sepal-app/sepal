@@ -93,6 +93,7 @@ Everything it reads is listed here; anything not listed is not read.
 | `SEPAL_DATA_HOME` | platform default | Directory for the database, cache and backups |
 | `BACKUP_PATH` | `$SEPAL_DATA_HOME/backups` | Where nightly backups are written |
 | `EXTENSIONS_LIBRARY_PATH` | — | Directory containing `mod_spatialite` |
+| `WFO_SYNONYM_REF_PATH` | `$SEPAL_DATA_HOME/sepal-synonyms.db` | Path to the WFO synonym reference file built by `bin/build-synonym-ref.sh`. Resolved whether or not a file is there yet, because it is also where the setup wizard downloads it to; with no file at the path, synonym search covers local rows only |
 
 ### Email
 

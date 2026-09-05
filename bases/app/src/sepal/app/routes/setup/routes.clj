@@ -6,4 +6,5 @@
 (def organization :setup/organization)
 (def regional :setup/regional)
 (def taxonomy :setup/taxonomy)
+(def taxonomy-progress :setup/taxonomy-progress)
 (def review :setup/review)
