@@ -28,6 +28,39 @@
     "<=" :<=
     :=))
 
+(defn- terms->match
+  "Free-text terms as an FTS5 MATCH expression, or nil when none are left.
+
+   Every term becomes a quoted string and the last is prefix-extended, so
+   `quercus alb` compiles to `\"quercus\" \"alb\"*`.
+
+   The quoting is the load-bearing part, not decoration. FTS5 gives `.`, `:`,
+   `-`, `'`, `(`, `)` and the barewords AND/OR/NOT meanings of their own inside
+   a MATCH expression, so any raw term is parsed as syntax and a 500 is one
+   keystroke away. Measured against taxon_fts on 2026-09-05: `sp.` is
+   `syntax error near \".\"`, `sub-alpine` is `no such column: alpine`, `AND` is
+   `syntax error near \"AND\"`, and a lone `\"` is `unterminated string` -- all
+   ordinary things to type, and `sp.` especially so. Inside double quotes the
+   tokenizer splits the token instead, so nothing a user can type is syntax.
+   An embedded double quote is escaped FTS5's way, by doubling it.
+
+   Quoting leaves normal queries alone: `Enc`, `Rosa`, `Quercus alba` and `x`
+   all return identical row counts either way. It does change one thing --
+   `a OR b` used to reach FTS5's OR operator and now searches for the literal
+   word `OR`. That was never a feature: the parser documents bare words as
+   search terms, and `a AND b` errored while `a OR b` worked, so there was no
+   coherent behaviour to preserve.
+
+   `components/synonym/src/sepal/synonym/reference.clj` carries the same logic
+   for the same reason, against a different database on a different pool."
+  [terms]
+  (let [tokens (->> terms
+                    (mapcat #(str/split (str/trim (or % "")) #"\s+"))
+                    (remove str/blank?))]
+    (when (seq tokens)
+      (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") tokens)]
+        (str/join " " (conj (vec (butlast quoted)) (str (last quoted) "*")))))))
+
 (defn- field->clause
   "Convert a single filter to a HoneySQL WHERE clause.
 
@@ -60,11 +93,15 @@
                  ;; FTS search - use subquery to correlate with joined table
                  ;; Generates: id_column IN (SELECT rowid FROM fts_table WHERE fts_table MATCH 'value*')
                  ;; The ID column is derived from the text column (e.g., :t.name -> :t.id)
+                 ;; Quoted, for the same reason terms->match quotes: a filter
+                 ;; value reaches MATCH just as directly as a bare term does,
+                 ;; so `taxon:sp.` is a 500 without this.
                  (= type :fts)
-                 (let [id-column (column->id-column column)]
-                   [:in id-column {:select [:rowid]
-                                   :from [fts-table]
-                                   :where [:match fts-table (str value "*")]}])
+                 (when-let [match (terms->match [value])]
+                   (let [id-column (column->id-column column)]
+                     [:in id-column {:select [:rowid]
+                                     :from [fts-table]
+                                     :where [:match fts-table match]}]))
 
                  ;; ID exact match
                  (= type :id)
@@ -158,10 +195,9 @@
 
    Finds the primary FTS-type field (one without joins) and uses its table
    for the match. Falls back to any FTS field if none are joinless.
-   Terms are joined with spaces and suffixed with * for prefix matching.
    Uses a subquery to properly correlate with joined tables."
   [terms fields]
-  (when (seq terms)
+  (when-let [match (terms->match terms)]
     (let [fts-fields (filter (fn [[_ v]] (= :fts (:type v))) fields)
           ;; Prefer FTS fields without joins (primary fields for this resource)
           primary-fts (or (first (filter (fn [[_ v]] (nil? (:joins v))) fts-fields))
@@ -170,7 +206,7 @@
         (let [id-column (column->id-column column)]
           [:in id-column {:select [:rowid]
                           :from [fts-table]
-                          :where [:match fts-table (str (str/join " " terms) "*")]}])))))
+                          :where [:match fts-table match]}])))))
 
 (defn compile-query
   "Compile a parsed AST into HoneySQL for a specific resource context.

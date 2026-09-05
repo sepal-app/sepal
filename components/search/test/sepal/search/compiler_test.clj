@@ -99,7 +99,7 @@
   (testing "fts field uses subquery with MATCH on ID column"
     (is (match? {:where [:in :t.id {:select [:rowid]
                                     :from [:taxon_fts]
-                                    :where [:match :taxon_fts "Quercus*"]}]}
+                                    :where [:match :taxon_fts "\"Quercus\"*"]}]}
                 (compiler/compile-query
                   test-fields
                   {:terms [] :filters [{:field "taxon" :value "Quercus" :negated false}]}
@@ -124,7 +124,7 @@
   (testing "fts with negation wraps subquery in NOT"
     (is (match? {:where [:not [:in :t.id {:select [:rowid]
                                           :from [:taxon_fts]
-                                          :where [:match :taxon_fts "Quercus*"]}]]}
+                                          :where [:match :taxon_fts "\"Quercus\"*"]}]]}
                 (compiler/compile-query
                   test-fields
                   {:terms [] :filters [{:field "taxon" :value "Quercus" :negated true}]}
@@ -324,7 +324,7 @@
                    base-stmt)]
       (is (match? {:where [:in :t.id {:select [:rowid]
                                       :from [:taxon_fts]
-                                      :where [:match :taxon_fts "quercus alba*"]}]}
+                                      :where [:match :taxon_fts "\"quercus\" \"alba\"*"]}]}
                   result)))))
 
 (deftest compile-terms-and-filters-test
@@ -338,7 +338,7 @@
                            [:= :m.type "seed"]
                            [:in :t.id {:select [:rowid]
                                        :from [:taxon_fts]
-                                       :where [:match :taxon_fts "alba*"]}]]}
+                                       :where [:match :taxon_fts "\"alba\"*"]}]]}
                   result)))))
 
 (deftest compile-unknown-field-test
@@ -396,3 +396,72 @@
              (:join result)))
       ;; Should use select-distinct since new join was added
       (is (contains? result :select-distinct)))))
+
+;; =============================================================================
+;; FTS5 metacharacters
+;;
+;; Every term and fts filter value reaches an FTS5 MATCH expression, where `.`,
+;; `:`, `-`, `'` and the barewords AND/OR/NOT are syntax. Unquoted, each of
+;; these is a 500 on a search a botanist would plausibly type -- `sp.` most of
+;; all. Verified against taxon_fts on 2026-09-05.
+;; =============================================================================
+
+(defn- match-expr
+  "The MATCH string compile-query produced for these free-text terms."
+  [terms]
+  (get-in (compiler/compile-query test-fields {:terms terms :filters []} base-stmt)
+          [:where 2 :where 2]))
+
+(deftest terms-are-quoted-against-fts5-syntax-test
+  (testing "a trailing period is a literal, not the syntax error it used to be"
+    (is (= "\"sp.\"*" (match-expr ["sp."]))))
+
+  (testing "a hyphen does not read as a column reference"
+    ;; Raw, `sub-alpine` is `no such column: alpine`.
+    (is (= "\"sub-alpine\"*" (match-expr ["sub-alpine"]))))
+
+  (testing "an apostrophe is a literal"
+    (is (= "\"Rosa\" \"'Peace'\"*" (match-expr ["Rosa" "'Peace'"]))))
+
+  (testing "a colon does not read as a column reference"
+    ;; The accessions-only checkbox puts `accessions:>0` in the box; when the
+    ;; parser hands it through as a term it must not become `no such column`.
+    (is (= "\"accessions:>0\"*" (match-expr ["accessions:>0"]))))
+
+  (testing "FTS5 operator barewords are searched for, not obeyed"
+    (is (= "\"a\" \"AND\" \"b\"*" (match-expr ["a" "AND" "b"])))
+    (is (= "\"a\" \"OR\" \"b\"*" (match-expr ["a" "OR" "b"]))))
+
+  (testing "an embedded double quote is doubled, FTS5's own escape"
+    ;; Left unescaped this closes the string early and is `unterminated string`.
+    ;; Both forms below are accepted by FTS5, checked directly on 2026-09-05.
+    (is (= "\"say\"\"hi\"*" (match-expr ["say\"hi"])))
+    (testing "and a term containing a space is split, so each half is quoted"
+      (is (= "\"say\" \"\"\"hi\"\"\"*" (match-expr ["say \"hi\""])))))
+
+  (testing "only the last term is prefix-extended"
+    (is (= "\"quercus\" \"alba\"*" (match-expr ["quercus" "alba"]))))
+
+  (testing "blank terms are dropped, and all-blank yields no clause at all"
+    (is (= "\"quercus\"*" (match-expr ["" "quercus" "   "])))
+    (is (= base-stmt (compiler/compile-query test-fields
+                                             {:terms ["" "  "] :filters []}
+                                             base-stmt))
+        "no terms survive, so no WHERE is added at all")))
+
+(deftest fts-filter-values-are-quoted-test
+  (testing "an fts filter value reaches MATCH too, so it is quoted the same way"
+    (is (match? {:where [:in :t.id {:where [:match :taxon_fts "\"sp.\"*"]}]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "taxon" :value "sp." :negated false}]}
+                  base-stmt))))
+
+  (testing "a multi-word value keeps its AND-with-trailing-prefix meaning"
+    ;; Splitting rather than quoting the whole value preserves what the raw
+    ;; form did: two barewords, prefix on the last.
+    (is (match? {:where [:in :t.id {:where [:match :taxon_fts "\"Quercus\" \"alba\"*"]}]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "taxon" :value "Quercus alba" :negated false}]}
+                  base-stmt)))))
