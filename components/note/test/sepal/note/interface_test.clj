@@ -1,13 +1,15 @@
 (ns sepal.note.interface-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [matcher-combinators.test :refer [match?]]
+            [next.jdbc.sql :as next.jdbc.sql]
             [sepal.accession.interface :as accession.i]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.note.interface :as note.i]
+            [sepal.note.interface.activity :as note.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -140,3 +142,31 @@
           (is (= "before the typo was fixed" (:note/body updated)))
           (is (= (:note/resource-type created) (:note/resource-type updated)))
           (note.i/delete! db (:note/id created)))))))
+
+(deftest test-activity
+  (let [db *db*]
+    (tf/testing "note activity"
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [user taxon]}]
+        (try
+          (let [note (note.i/create! db {:body "a note worth logging"
+                                         :resource-type :taxon
+                                         :resource-id (:taxon/id taxon)
+                                         :created-by (:user/id user)})
+                activity (note.activity/create! db
+                                                note.activity/created
+                                                (:user/id user)
+                                                note)]
+            (is (match? {:activity/type :note/created
+                         :activity/created-by (:user/id user)
+                         :activity/data {:note-id (:note/id note)
+                                         :resource-type :taxon
+                                         :resource-id (:taxon/id taxon)}}
+                        activity))
+            (testing "the body is not copied into the activity payload"
+              (is (nil? (get-in activity [:activity/data :body]))))
+            (note.i/delete! db (:note/id note)))
+          (finally
+            ;; Clean up activity records before user fixture cleanup
+            (next.jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
