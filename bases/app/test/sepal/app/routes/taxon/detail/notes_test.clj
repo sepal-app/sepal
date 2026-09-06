@@ -7,6 +7,7 @@
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
             [sepal.note.interface :as note.i]
+            [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
@@ -88,6 +89,19 @@
         (testing "an authorless imported note renders without an author element"
           (is (nil? (.selectFirst body (str "[data-note-id=" (:note/id note) "] [data-note-author]")))))
         (note.i/delete! *db* (:note/id note))))))
+
+(deftest test-the-panel-still-shows-synonyms-on-the-notes-tab
+  (tf/testing "GET /taxon/:id/notes/ carries the panel's Synonyms section"
+    (fixtures)
+    (fn [{:keys [user taxon]}]
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Encyclia cochleata"})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (notes-url taxon))]
+        (is (= 200 (:status response)))
+        (is (re-find #"Encyclia cochleata" (:body response))
+            "the Notes tab's panel must not blank out the taxon's synonyms")
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-post-to-a-note-updates-it
   (tf/testing "POST /taxon/:id/notes/:note-id/"

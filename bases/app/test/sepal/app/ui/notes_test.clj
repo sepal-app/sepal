@@ -59,7 +59,9 @@
     (is (= "/accession/12/notes/2/" (.attr button "hx-delete")))
     (is (= "#notes-list" (.attr button "hx-target")))
     (is (not (empty? (.attr button "hx-confirm")))
-        "Deleting a note asks first")))
+        "Deleting a note asks first")
+    (is (re-find #"test-token" (.attr button "hx-headers"))
+        "A bodyless hx-delete carries no CSRF token unless hx-headers supplies one")))
 
 (deftest test-empty-list-says-so
   (let [body (parse (ui.notes/note-list :notes [] :note-url-fn note-url-fn))]

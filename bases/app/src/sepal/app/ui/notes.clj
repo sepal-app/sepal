@@ -2,7 +2,8 @@
   "Markup for resource notes: the tab's form and list, and the read-only panel
   section. One namespace because accession, material and taxon all render the
   same note; only the URLs differ."
-  (:require [sepal.app.json :as json]
+  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.app.json :as json]
             [sepal.app.ui.form :as ui.form]))
 
 (defn- note-item
@@ -31,6 +32,7 @@
        [:button {:type "button"
                  :class "spl-btn spl-btn--ghost spl-btn--sm"
                  :hx-delete url
+                 :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
                  :hx-confirm "Delete this note?"
                  :hx-target "#notes-list"
                  :hx-swap "outerHTML"}

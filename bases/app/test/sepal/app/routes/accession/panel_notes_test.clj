@@ -1,6 +1,5 @@
 (ns sepal.app.routes.accession.panel-notes-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
-            [dev.onionpancakes.chassis.core :as chassis]
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]

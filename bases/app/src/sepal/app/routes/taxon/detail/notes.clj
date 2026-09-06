@@ -59,6 +59,7 @@
                                 :taxon (:taxon panel-data)
                                 :parent (:parent panel-data)
                                 :stats (:stats panel-data)
+                                :synonyms (:synonyms panel-data)
                                 :notes (:notes panel-data)
                                 :note-count (:note-count panel-data)
                                 :activities (:activities panel-data)
