@@ -232,7 +232,7 @@ CREATE TABLE "taxon" (
   vernacular_names text not null default '[]' check(json_valid(vernacular_names)),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, distribution text) strict;
 CREATE INDEX taxon_id_idx on taxon (id);
 CREATE INDEX taxon_name_idx on taxon (name);
 CREATE INDEX taxon_parent_id_idx on taxon (parent_id);
@@ -336,3 +336,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260901153000', '2026-09-01 15:30:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '2026-09-01 22:46:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902160000', '2026-09-02 20:51:12');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '2026-09-06 16:55:14');
