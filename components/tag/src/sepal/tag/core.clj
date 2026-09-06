@@ -55,24 +55,36 @@
   "Link `tag-id` to a resource. Idempotent: tagging the same resource twice
   with the same tag hits tag_link_unique_idx, and that unique-constraint
   failure is swallowed rather than surfaced -- the end state the caller wanted
-  (this resource carries this tag) is already true."
+  (this resource carries this tag) is already true.
+
+  Returns `true` when a link row was actually inserted, `false` when the link
+  already existed (the swallowed-conflict case above, a true no-op), or an
+  error map for any other failure. Callers use this to decide whether to
+  record a `linked` activity event -- one is only warranted for a real
+  state change."
   [db tag-id resource-id resource-type]
   (let [data (->> {:tag-id tag-id :resource-id resource-id :resource-type resource-type}
                   (store.i/coerce spec/CreateTagLink)
                   (store.i/encode spec/CreateTagLink))]
     (try
       (db.i/execute-one! db {:insert-into [:tag_link] :values [data]})
-      nil
+      true
       (catch org.sqlite.SQLiteException ex
         (if (re-find #"UNIQUE constraint failed" (ex-message ex))
-          nil
+          false
           (error.i/ex->error ex))))))
 
-(defn untag! [db tag-id resource-id resource-type]
-  (jdbc.sql/delete! db :tag_link {:tag_id tag-id
-                                  :resource_id resource-id
-                                  :resource_type (name resource-type)})
-  nil)
+(defn untag!
+  "Unlink `tag-id` from a resource. Returns `true` when a link row was
+  actually deleted, `false` when no such link existed (a true no-op -- a
+  stale id, a double-DELETE, or a tag id belonging to a different resource).
+  Callers use this to decide whether to record an `unlinked` activity event."
+  [db tag-id resource-id resource-type]
+  (-> (jdbc.sql/delete! db :tag_link {:tag_id tag-id
+                                      :resource_id resource-id
+                                      :resource_type (name resource-type)})
+      :next.jdbc/update-count
+      pos?))
 
 (defn get-for-resource
   "Tags on one resource, alphabetical."

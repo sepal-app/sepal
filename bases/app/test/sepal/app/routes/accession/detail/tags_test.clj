@@ -88,6 +88,62 @@
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
           (tag.i/delete! *db* (:tag/id tag)))))))
 
+(deftest test-deleting-an-unlinked-tag-is-a-no-op
+  (tf/testing "DELETE for a tag that exists but isn't linked here writes no activity event"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession]}]
+      (let [tag (tag.i/create! *db* {:name "Unlinked"})
+            sess (app.test/login (:user/email user) "testpassword123")
+            id (:accession/id accession)
+            url (format "/accession/%s/tags/" id)
+            {:keys [response] :as sess} (peri/request sess url)
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request
+                                 sess
+                                 (format "/accession/%s/tags/%s/" id (:tag/id tag))
+                                 :request-method :delete
+                                 :headers {"x-csrf-token" token})]
+        (is (contains? #{200 303} (:status response)))
+        (is (empty? (activity.i/get-by-resource *db* :resource-type :accession :resource-id id))
+            "the tag was never linked here, so untag! is a true no-op: no unlinked event")
+        (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
+            "and the tag itself is untouched")
+        (tag.i/delete! *db* (:tag/id tag))))))
+
+(deftest test-linking-an-already-linked-tag-writes-no-second-event
+  (tf/testing "POST re-adding an already-linked tag is a no-op: one link, one event"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession]}]
+      (let [tag (tag.i/create! *db* {:name "Bromeliad"})
+            sess (app.test/login (:user/email user) "testpassword123")
+            id (:accession/id accession)
+            url (format "/accession/%s/tags/" id)
+            {:keys [response] :as sess} (peri/request sess url)
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response] :as sess} (peri/request sess url
+                                                      :request-method :post
+                                                      :params {:__anti-forgery-token token
+                                                               :tag-name "Bromeliad"})
+            first-status (:status response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :tag-name "Bromeliad"})]
+        (is (contains? #{200 303} first-status))
+        (is (contains? #{200 303} (:status response)))
+        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :accession id)))
+            "still exactly one link row")
+        (is (= 1 (count (filter #(= tag.activity/linked (:activity/type %))
+                                (activity.i/get-by-resource *db* :resource-type :accession :resource-id id))))
+            "only the first POST wrote a linked event")
+        (tag.i/untag! *db* (:tag/id tag) id :accession)
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+        (tag.i/delete! *db* (:tag/id tag))))))
+
 (deftest test-a-reader-does-not-see-the-tab
   (tf/testing "readers are redirected to the general detail page"
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :reader}

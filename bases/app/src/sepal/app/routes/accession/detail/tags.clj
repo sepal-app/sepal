@@ -67,19 +67,26 @@
       (let [tag (resolve-or-create-tag! tx (:tag-name data) created-by)]
         (if (error.i/error? tag)
           tag
-          (let [result (tag.i/tag! tx (:tag/id tag) accession-id :accession)]
-            (if (error.i/error? result)
-              result
-              (do (tag.activity/create-link! tx tag.activity/linked created-by tag :accession accession-id)
-                  tag))))))
+          (let [linked? (tag.i/tag! tx (:tag/id tag) accession-id :accession)]
+            (if (error.i/error? linked?)
+              linked?
+              (do
+                ;; tag! returns false when the link already existed (a true
+                ;; no-op) -- only a real state change gets an activity event.
+                (when linked?
+                  (tag.activity/create-link! tx tag.activity/linked created-by tag :accession accession-id))
+                tag))))))
     (catch Exception ex
       (error.i/ex->error ex))))
 
 (defn remove! [db accession-id removed-by tag]
   (try
     (db.i/with-transaction [tx db]
-      (tag.i/untag! tx (:tag/id tag) accession-id :accession)
-      (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :accession accession-id))
+      ;; untag! returns false when there was no such link to remove (a stale
+      ;; id, a double-DELETE) -- only a real state change gets an activity
+      ;; event.
+      (when (tag.i/untag! tx (:tag/id tag) accession-id :accession)
+        (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :accession accession-id)))
     (catch Exception ex
       (error.i/ex->error ex))))
 
@@ -107,6 +114,13 @@
   (let [{:keys [db resource]} context
         id (:accession/id resource)
         tag-id (parse-long (:tag-id path-params))
+        ;; Unlike synonyms.clj's row-handler, this lookup is a bare get-by-id
+        ;; rather than a lookup re-scoped through get-for-resource: a tag-id
+        ;; that exists globally but isn't linked to this accession still
+        ;; resolves here, but remove!'s untag! call is itself scoped by
+        ;; resource-id/resource-type and reports back whether it actually
+        ;; deleted a row, so a stale or foreign id is a true no-op -- no
+        ;; exception, and no `unlinked` activity event gets written for it.
         tag (when tag-id (tag.i/get-by-id db tag-id))]
     (when tag
       (remove! db id (:user/id viewer) tag))
