@@ -15,6 +15,7 @@
                         (mapv #(.getPath ^File %))
                         sort)]
       (is (= ["bases/app/src/sepal/app/routes/accession/detail/notes.clj"
+              "bases/app/src/sepal/app/routes/material/detail/notes.clj"
               "bases/app/src/sepal/app/routes/media/core.clj"
               "bases/app/src/sepal/app/routes/media/detail.clj"
               "bases/app/src/sepal/app/routes/media/detail/link.clj"
