@@ -41,6 +41,16 @@
           (is (not (re-find #"spl-badge--neutral" body))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
+(deftest test-a-taxons-distribution-appears-in-the-panel
+  (tf/testing "distribution reaches the rendered panel"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db* :distribution "Central America"}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (panel-body sess (:taxon/id taxon))]
+        (is (re-find #"Distribution" body))
+        (is (re-find #"Central America" body))))))
+
 (deftest test-another-taxons-synonym-does-not-leak-in
   ;; The section is present but empty for a taxon with none, matching External
   ;; Links and Activity. Asserting a *name* is absent rather than the section is
