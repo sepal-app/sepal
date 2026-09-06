@@ -19,6 +19,7 @@
                               poly/malli {:local/root "components/malli"}
                               poly/material {:local/root "components/material"}
                               poly/media {:local/root "components/media"}
+                              poly/note {:local/root "components/note"}
                               poly/settings {:local/root "components/settings"}
                               poly/store {:local/root "components/store"}
                               poly/synonym {:local/root "components/synonym"}

@@ -62,6 +62,8 @@
                                             :taxon (:taxon panel-data)
                                             :supplier (:supplier panel-data)
                                             :stats (:stats panel-data)
+                                            :notes (:notes panel-data)
+                                            :note-count (:note-count panel-data)
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)
                                             :timezone timezone))
@@ -95,7 +97,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (let [panel-data (accession.panel/fetch-panel-data db resource)]
+      (let [panel-data (accession.panel/fetch-panel-data context db resource)]
         (render :media media
                 :page 1
                 :page-size page-size

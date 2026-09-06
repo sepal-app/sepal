@@ -3,9 +3,13 @@
 set -Eeuxo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/lib/env.sh"
 
-SEPAL_DATA_HOME=$(get_sepal_data_home)
+# This script deletes and rebuilds a database. get_sepal_data_home's
+# OS-default fallback exists for the real app to find its own data on a
+# user's machine; a destructive dev script must never fall back to it and
+# guess. devenv sets SEPAL_DATA_HOME per-project, so this only fires outside
+# devenv.
+: "${SEPAL_DATA_HOME:?SEPAL_DATA_HOME must be set -- this script deletes \$SEPAL_DATA_HOME/sepal.db. Run inside 'devenv shell' (which sets it per-project) or export it explicitly. There is no default.}"
 DB_PATH="$SEPAL_DATA_HOME/sepal.db"
 
 # Ensure directory exists

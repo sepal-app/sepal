@@ -8,10 +8,12 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.notes :as ui.notes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.material.interface :as mat.i]
+            [sepal.note.interface :as note.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -49,11 +51,13 @@
    - :parent         - Optional parent taxon map
    - :stats          - Map with :accession-count, :material-count
    - :synonyms       - The taxon's synonyms, garden rows and WFO rows merged
+   - :notes          - Recent notes for this taxon
+   - :note-count     - Total note count
    - :activities     - Recent activities for this taxon
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [taxon parent stats synonyms activities activity-count timezone on-close]}]
+  [& {:keys [taxon parent stats synonyms notes note-count activities activity-count timezone on-close]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id distribution]} taxon
         {:keys [accession-count material-count]} stats]
     (panel/panel-container
@@ -107,6 +111,19 @@
           :children
           (synonyms-section :synonyms synonyms))
 
+        ;; Notes section
+        (panel/collapsible-section
+          :title "Notes"
+          :count note-count
+          :disabled? (zero? (or note-count 0))
+          :empty-label "none"
+          :default-open? false
+          :children
+          (ui.notes/panel-section
+            :notes notes
+            :note-count note-count
+            :more-url (z/url-for taxon.routes/detail-notes {:id id})))
+
         ;; External links section
         (panel/collapsible-section
           :title "External Links"
@@ -132,20 +149,23 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the taxon panel.
-   Returns a map with :taxon, :parent, :stats, :synonyms, :activities,
-   :activity-count.
+   Returns a map with :taxon, :parent, :stats, :synonyms, :notes, :note-count,
+   :activities, :activity-count.
 
    Takes the request context as well as the database because synonyms come from
    two places: the garden's own `taxon_synonym` table, which is above the
    supported schema floor and so must be gated, and the shared read-only WFO
    reference file, which is opened once per process. `ctx` carries the
-   `:schema-version` for the gate and the `:synonym-reference` pool."
+   `:schema-version` for the gate and the `:synonym-reference` pool. Notes are
+   gated on the same `:schema-version`."
   [ctx db taxon]
   (let [taxon-id (:taxon/id taxon)
         parent (when-let [parent-id (:taxon/parent-id taxon)]
                  (taxon.i/get-by-id db parent-id))
         accession-count (acc.i/count-by-taxon-id db taxon-id)
         material-count (mat.i/count-by-taxon-id db taxon-id)
+        notes (take 3 (note.i/get-for-resource ctx db :taxon taxon-id))
+        note-count (note.i/count-for-resource ctx db :taxon taxon-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :taxon
                                                :resource-id taxon-id
@@ -159,6 +179,8 @@
      :stats {:accession-count accession-count
              :material-count material-count}
      :synonyms synonyms
+     :notes notes
+     :note-count note-count
      :activities activities
      :activity-count activity-count}))
 
@@ -173,6 +195,8 @@
         :parent (:parent panel-data)
         :stats (:stats panel-data)
         :synonyms (:synonyms panel-data)
+        :notes (:notes panel-data)
+        :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
         :timezone timezone))))

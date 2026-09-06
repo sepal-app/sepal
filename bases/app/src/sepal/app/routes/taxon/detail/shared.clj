@@ -8,6 +8,7 @@
 (def name-tab ::name)
 (def media-tab ::media)
 (def synonyms-tab ::synonyms)
+(def notes-tab ::notes)
 
 (defn items [& {:keys [active taxon]}]
   [(ui.tabs/item "Name"
@@ -18,7 +19,10 @@
                   :active (= active media-tab)})
    (ui.tabs/item "Synonyms"
                  {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
-                  :active (= active synonyms-tab)})])
+                  :active (= active synonyms-tab)})
+   (ui.tabs/item "Notes"
+                 {:href (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
+                  :active (= active notes-tab)})])
 
 (defn tabs [taxon active]
   (ui.tabs/tabs {:label "Taxon sections"

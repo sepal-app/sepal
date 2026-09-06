@@ -1063,6 +1063,21 @@
 .spl-chip-icon { width: 14px; height: 14px; flex: none; color: var(--color-text-dim); }
 .spl-chip-icon svg { width: 100%; height: 100%; }
 
+/* ── Resource notes ─────────────────────────────────────────────────────────
+ * One note per resource carries its own edit form, hidden until toggled, so
+ * the list is a feed rather than a table — each entry separated by a
+ * hairline, like the changelog above it. */
+.spl-notes { display: flex; flex-direction: column; gap: 20px; }
+.spl-note-list { display: flex; flex-direction: column; }
+.spl-note {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.spl-note:last-child { border-bottom: none; }
+.spl-note-meta { margin-bottom: 4px; }
+.spl-note-body { margin: 0; color: var(--color-text-table); }
+.spl-note-actions { margin-top: 8px; }
+
 /* ── Components carried over from DaisyUI ──────────────────────────────────
  * Every screen uses the design system, so the pieces the other screens relied
  * on get real definitions here rather than a framework's. */
