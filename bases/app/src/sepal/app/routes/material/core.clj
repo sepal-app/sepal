@@ -5,6 +5,7 @@
             [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.routes.material.detail.media :as detail-media]
             [sepal.app.routes.material.detail.notes :as detail-notes]
+            [sepal.app.routes.material.detail.tags :as detail-tags]
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.index :as index]
             [sepal.app.routes.material.panel :as panel]
@@ -51,6 +52,14 @@
                          :middleware [[(middleware/require-permission-or-redirect
                                          material.perm/edit (constantly routes/detail))]]
                          :handler #'detail-notes/note-handler}]
+    ["/tags/" {:name routes/detail-tags
+               :middleware [[(middleware/require-permission-or-redirect
+                               material.perm/edit (constantly routes/detail))]]
+               :handler #'detail-tags/handler}]
+    ["/tags/:tag-id/" {:name routes/detail-tag
+                       :middleware [[(middleware/require-permission-or-redirect
+                                       material.perm/edit (constantly routes/detail))]]
+                       :delete #'detail-tags/row-handler}]
     ["/history/" {:name routes/history
                   :handler #'panel/history-handler}]
     ["/panel/" {:name routes/panel
