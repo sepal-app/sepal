@@ -10,6 +10,7 @@
 (def collection-tab ::collection)
 (def media-tab ::media)
 (def notes-tab ::notes)
+(def tags-tab ::tags)
 
 (def collection-disabled-reason
   "Available when provenance is wild collected")
@@ -39,7 +40,10 @@
                   :active (= active media-tab)})
    (ui.tabs/item "Notes"
                  {:href (z/url-for accession.routes/detail-notes {:id (:accession/id accession)})
-                  :active (= active notes-tab)})])
+                  :active (= active notes-tab)})
+   (ui.tabs/item "Tags"
+                 {:href (z/url-for accession.routes/detail-tags {:id (:accession/id accession)})
+                  :active (= active tags-tab)})])
 
 (defn tabs
   ([accession active]
