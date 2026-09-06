@@ -69,6 +69,7 @@
    ;; references a wfo-plantlist-id. Force the user to create a new org taxon.
    [:taxon/parent-id [:maybe id]]
    [:taxon/wfo-taxon-id [:maybe wfo-plantlist-taxon-id]]
+   [:taxon/distribution [:maybe :string]]
    [:taxon/vernacular-names {:decode/store #(let [vn (when % (json/read-str %))]
                                               (mapv (partial cske/transform-keys csk/->kebab-case-keyword) vn))}
     [:* VernacularName]]])
@@ -87,6 +88,7 @@
    [:parent-id {:optional true
                 :decode/store validate.i/coerce-int}
     [:maybe id]]
+   [:distribution {:optional true} [:maybe :string]]
    [:vernacular-names {:optional true
                        :default []
                        :encode/store json/write-str}
@@ -107,6 +109,7 @@
      [:parent-id {:optional true
                   :decode/store validate.i/coerce-int}
       [:maybe id]]
+     [:distribution {:optional true} [:maybe :string]]
      ;; TODO: I think writing already saves maps and vectors as json
      [:vernacular-names {:encode/store
                          (fn [v]

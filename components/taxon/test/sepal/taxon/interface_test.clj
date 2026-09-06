@@ -60,3 +60,27 @@
                        :taxon/rank :genus
                        :taxon/author (:taxon/author taxon)}
                       result)))))))
+
+(deftest test-distribution-roundtrips
+  (tf/testing "distribution round-trips through create! and update!"
+    (let [db *db*
+          taxon-name (mg/generate [:string {:min 1}])
+          created (taxon.i/create! db {:name taxon-name
+                                       :rank :genus
+                                       :distribution "Central America"})]
+      (is (not (err.i/error? created)) (err.i/data created))
+      (is (match? {:taxon/distribution "Central America"} created))
+      (let [updated (taxon.i/update! db (:taxon/id created)
+                                     {:distribution "Belize"})]
+        (is (not (err.i/error? updated)) (err.i/data updated))
+        (is (match? {:taxon/distribution "Belize"} updated)))
+      (jdbc.sql/delete! db :taxon {:id (:taxon/id created)}))))
+
+(deftest test-distribution-absent-by-default
+  (tf/testing "a taxon with no distribution is unaffected"
+    (let [db *db*
+          taxon-name (mg/generate [:string {:min 1}])
+          created (taxon.i/create! db {:name taxon-name :rank :genus})]
+      (is (not (err.i/error? created)) (err.i/data created))
+      (is (nil? (:taxon/distribution created)))
+      (jdbc.sql/delete! db :taxon {:id (:taxon/id created)}))))
