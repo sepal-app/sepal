@@ -6,6 +6,7 @@
             [sepal.app.routes.taxon.detail.name :as detail-name]
             [sepal.app.routes.taxon.detail.notes :as detail-notes]
             [sepal.app.routes.taxon.detail.synonyms :as detail-synonyms]
+            [sepal.app.routes.taxon.detail.tags :as detail-tags]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
@@ -56,5 +57,13 @@
                          :middleware [[(middleware/require-permission-or-redirect
                                          taxon.perm/edit (constantly routes/detail))]]
                          :handler #'detail-notes/note-handler}]
+    ["/tags/" {:name routes/detail-tags
+               :middleware [[(middleware/require-permission-or-redirect
+                               taxon.perm/edit (constantly routes/detail))]]
+               :handler #'detail-tags/handler}]
+    ["/tags/:tag-id/" {:name routes/detail-tag
+                       :middleware [[(middleware/require-permission-or-redirect
+                                       taxon.perm/edit (constantly routes/detail))]]
+                       :delete #'detail-tags/row-handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])
