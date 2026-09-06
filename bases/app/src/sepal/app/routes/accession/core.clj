@@ -7,6 +7,7 @@
             [sepal.app.routes.accession.detail.collection :as detail-collection]
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
+            [sepal.app.routes.accession.detail.notes :as detail-notes]
             [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.index :as index]
             [sepal.app.routes.accession.panel :as panel]
@@ -48,5 +49,13 @@
                 :middleware [[(middleware/require-permission-or-redirect
                                 accession.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
+    ["/notes/" {:name routes/detail-notes
+                :middleware [[(middleware/require-permission-or-redirect
+                                accession.perm/edit (constantly routes/detail))]]
+                :handler #'detail-notes/handler}]
+    ["/notes/:note-id/" {:name routes/detail-note
+                         :middleware [[(middleware/require-permission-or-redirect
+                                         accession.perm/edit (constantly routes/detail))]]
+                         :handler #'detail-notes/note-handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

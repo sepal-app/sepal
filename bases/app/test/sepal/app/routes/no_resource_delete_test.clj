@@ -14,7 +14,8 @@
                         (filter #(re-find #":delete" (slurp %)))
                         (mapv #(.getPath ^File %))
                         sort)]
-      (is (= ["bases/app/src/sepal/app/routes/media/core.clj"
+      (is (= ["bases/app/src/sepal/app/routes/accession/detail/notes.clj"
+              "bases/app/src/sepal/app/routes/media/core.clj"
               "bases/app/src/sepal/app/routes/media/detail.clj"
               "bases/app/src/sepal/app/routes/media/detail/link.clj"
               "bases/app/src/sepal/app/routes/taxon/core.clj"]
