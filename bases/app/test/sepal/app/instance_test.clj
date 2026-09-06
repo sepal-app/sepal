@@ -8,6 +8,7 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.instance :as instance]
+            [sepal.app.test.system :as system]
             [sepal.database.interface :as db.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
@@ -513,6 +514,44 @@
             (is (nil? (:current (ex-data thrown))))
             (is (= floor (:minimum (ex-data thrown))))
             (finally (instance/stop-process! process))))
+        (finally (fs/delete-tree dir))))))
+
+(deftest test-start-migrates-a-database-behind-the-code
+  (testing "a database above the floor but behind the build is migrated before it opens"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-behind"})
+          db-path (str (fs/path dir "behind.db"))]
+      (try
+        ;; Build a database genuinely at the floor, tables and recorded version
+        ;; together, from the same snapshot the floor CI leg uses. The sibling
+        ;; tests fake their version by editing schema_version, which they can
+        ;; afford because start! refuses them before it migrates. This one is
+        ;; actually migrated, so a faked version would hand migrate! a database
+        ;; whose tables are already ahead of it and fail on a duplicate column.
+        (system/load-floor-schema! {:db-path db-path})
+        (let [latest (instance/latest-schema-version)
+              current (instance/schema-version {:db-path db-path})
+              floor (instance/minimum-schema-version)]
+          (is (some? current) "precondition: an older version is still recorded")
+          (is (< (parse-long current) (parse-long latest))
+              "precondition: the database now reads as behind the build")
+          (is (<= (parse-long floor) (parse-long current))
+              "precondition: and is still at or above the floor")
+          (let [process (instance/start-process!
+                          {:master-secret "1234567890123456"
+                           :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+            (try
+              (let [garden (instance/start! process
+                                            {:slug "behind"
+                                             :db-path db-path
+                                             :app-domain "behind.sepal.app"
+                                             :media-key-prefix "behind/"
+                                             :media-cache-dir (str (fs/path dir "cache"))
+                                             :backup-dir (str (fs/path dir "backups"))})]
+                (is (some? garden) "a garden behind the code must start")
+                (is (= latest (instance/schema-version {:db-path db-path}))
+                    "and its database must be at the build's version afterwards")
+                (instance/stop! garden))
+              (finally (instance/stop-process! process)))))
         (finally (fs/delete-tree dir))))))
 
 (deftest test-start-accepts-a-database-ahead-of-the-code

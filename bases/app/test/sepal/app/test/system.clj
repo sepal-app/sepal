@@ -84,17 +84,14 @@
     ;; use. Tests are handed *backup-dir* to write into directly, so make it
     ;; usable here.
     (fs/create-dirs backup-dir)
-    ;; The floor leg builds a database as it stood at the floor and lets
-    ;; migrate! below carry it up to latest, which is the N-1 path. The latest
-    ;; leg provisions from the current schema. 022 left an assertion here
-    ;; instead, because while the floor was the latest there was no snapshot to
-    ;; load; load-floor-schema! is what replaced it.
+    ;; The floor leg builds a database as it stood at the floor and hands it to
+    ;; start! still at the floor; the latest leg provisions from the current
+    ;; schema. Neither migrates here, because start! migrates a behind database
+    ;; itself — that is the property this leg exists to exercise, and doing it
+    ;; here first would test the fixture instead.
     (if (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION"))
       (load-floor-schema! {:db-path db-path})
       (instance/provision! {:db-path db-path}))
-    (when (not= (instance/schema-version {:db-path db-path})
-                (instance/latest-schema-version))
-      (instance/migrate! {:db-path db-path}))
     (let [garden (instance/start! process
                                   {:slug "test"
                                    :db-path db-path

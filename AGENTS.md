@@ -379,17 +379,39 @@ Sepal refuses a database only when it is **below** `minimum-supported-version` i
 floor must work against this code, including one that is *ahead* of it after a
 rollback.
 
-This is a constraint on the code. When you add a migration:
+**`start!` migrates a database that is behind before it opens it**
+(`bases/app/src/sepal/app/instance.clj`), so no instance ever serves on a schema
+older than the code expects. That is what makes the missing-column case
+impossible rather than a discipline someone has to remember — and it had to
+become impossible, because between 2026-08-30 and 2026-09-06 the discipline was
+forgotten three times running (`contact.type`, `collection.collectors_code` and
+`.elevation_accuracy`, `taxon.distribution`), and nothing caught it.
 
-- **Do not assume the column is there.** Code that touches something added after
-  the floor must check `schema-version` against the version that added it and fall
-  back. `select new_col from t` fails outright on a database without it; SQL does
-  not return null for a column that does not exist.
-- **Prefer additive migrations.** Adding a table, column or index keeps old code
-  working. Dropping or renaming breaks it, and breaks rollback with it.
+So the only direction the code still has to tolerate is a database *ahead* of
+it, after a rollback. That direction is nearly free: reads already strip columns
+the specs do not name.
+
+When you add a migration:
+
+- **Prefer additive migrations.** Adding a nullable column, a table or an index
+  keeps a rolled-back build working against a database that already moved
+  forward. Dropping or renaming breaks it, and a `not null` column with no
+  default breaks writes from the older build.
+- **A migration runs on a request thread**, inside the dispatcher's global start
+  lock (`ensure-started!` in `cloud/`), so a slow one delays every garden's first
+  request for its duration. The dispatcher's background pass pre-migrates gardens
+  after boot, which keeps that window to gardens visited before the pass reaches
+  them. If you ever write a genuinely slow migration, apply it off-peak.
+- **A failed migration means the garden does not start.** It gets the maintenance
+  page rather than serving stale, and it costs one garden, not the fleet.
 - **CI runs the unit suite twice**, at the latest schema and at the floor, via the
   `schema` matrix in `.github/workflows/test.yml`. Reproduce the second locally
   with `SEPAL_TEST_SCHEMA_VERSION=floor clojure -M:dev:test:test-runner --focus :unit`.
+  The floor leg hands `start!` a database built from the snapshot in
+  `components/test/resources/test/schema-<floor>.sql` and lets `start!` migrate
+  it, so it proves the migrations apply cleanly against a real floor-shaped
+  database. `instance-test/test-start-migrates-a-database-behind-the-code` is what
+  pins the migrate-on-start behaviour that leg depends on.
 - **Bumping the floor drops support.** Only do it deliberately, and only once no
   database you still need to open is below the new value. One that is will not
   start at all.

@@ -495,10 +495,9 @@
                                     {:reason :database-unusable :slug slug :db-path db-path}
                                     e))))
         minimum (db.i/minimum-supported-version)]
-    ;; A database one migration behind still opens, and so does one migrated by a
-    ;; newer build than this one — so rolling back a release does not strand a
-    ;; database that already moved forward. What pays for that is the rule in
-    ;; AGENTS.md: code must work at the floor.
+    ;; A database migrated by a newer build than this one still opens, so rolling
+    ;; back a release does not strand a database that already moved forward. Only
+    ;; one below the floor is refused.
     (when (or (nil? current)
               (< (parse-long current) (parse-long minimum)))
       (throw (ex-info (format "Database %s is at schema version %s, below the supported minimum %s"
@@ -506,7 +505,26 @@
                       {:reason :schema-version-unsupported
                        :slug slug :db-path db-path
                        :current current :minimum minimum})))
-    (let [claim (claim! process opts)]
+    ;; A database *behind* this build is migrated before it opens, so no instance
+    ;; ever serves on a schema its code does not expect. That is what makes the
+    ;; missing-column case impossible rather than a discipline someone has to
+    ;; remember: code only has to tolerate a database ahead of it, which costs
+    ;; nothing, because reads already strip columns the specs do not name.
+    ;;
+    ;; This runs before claim!, so nothing is held while it works, and it is
+    ;; skipped entirely for a database already at or ahead of latest — there is
+    ;; no migration this build carries that such a database lacks.
+    ;;
+    ;; A migration that fails throws, and the garden does not start. That is the
+    ;; honest outcome: this build cannot serve that database. It costs one
+    ;; garden, not the fleet.
+    (let [current (let [latest (db.i/latest-version)]
+                    (if (< (parse-long current) (parse-long latest))
+                      (do
+                        (db.i/migrate! {:db-path db-path})
+                        (db.i/schema-version {:db-path db-path}))
+                      current))
+          claim (claim! process opts)]
       (try
         (fs/create-dirs media-cache-dir)
         (let [config (instance-config process (assoc opts :schema-version current))
