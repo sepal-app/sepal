@@ -54,7 +54,7 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [taxon parent stats synonyms activities activity-count timezone on-close]}]
-  (let [{:taxon/keys [id name author rank wfo-taxon-id]} taxon
+  (let [{:taxon/keys [id name author rank wfo-taxon-id distribution]} taxon
         {:keys [accession-count material-count]} stats]
     (panel/panel-container
       :children
@@ -77,6 +77,8 @@
                              :value [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id parent)})
                                          :class "spl-link"}
                                      (:taxon/name parent)]})
+                      distribution
+                      (conj {:label "Distribution" :value distribution})
                       true
                       (conj {:label "WFO ID" :value wfo-taxon-id}))))
 
