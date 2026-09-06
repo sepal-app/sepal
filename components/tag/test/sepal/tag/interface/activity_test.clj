@@ -1,5 +1,5 @@
 (ns sepal.tag.interface.activity-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
             [matcher-combinators.test :refer [match?]]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.app.test.fixtures :as tf]
