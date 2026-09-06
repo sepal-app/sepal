@@ -5,6 +5,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.taxon.interface.spec :as taxon.spec]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (defn footer-buttons
@@ -38,6 +39,7 @@
     [:author :string]
     [:rank [:string {:min 1}]]
     [:parent-id {:optional true} [:maybe :string]]
+    [:distribution {:optional true :decode/form validation.i/empty->nil} [:maybe :string]]
     [:vernacular-names [:* [:map
                             [:name [:string {:min 1}]]
                             [:language [:maybe :string]]]]]]])
@@ -104,7 +106,12 @@
                                    [:option {:value rank
                                              :selected (when (= rank (some-> values :rank name))
                                                          "selected")}
-                                    rank])]))])
+                                    rank])]))
+           (form/input-field :label "Distribution"
+                             :name "distribution"
+                             :read-only read-only
+                             :value (:distribution values)
+                             :errors (:distribution errors))])
 
         [:fieldset {:class "spl-form-section spl-fieldset"
                     :x-data (json/js {:vernacularNames (or (:vernacular-names values)

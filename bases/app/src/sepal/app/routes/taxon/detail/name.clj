@@ -82,6 +82,7 @@
                     :author (:taxon/author resource)
                     :parent-id (:taxon/id parent)
                     :parent-name (:taxon/name parent)
+                    :distribution (:taxon/distribution resource)
                     :vernacular-names (:taxon/vernacular-names resource)}
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
