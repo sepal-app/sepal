@@ -69,13 +69,23 @@
       "No notes yet."])])
 
 (defn note-form
-  "The new-note form. Posts to the tab's own URL and replaces the list."
+  "The new-note form. Posts to the tab's own URL and replaces the list.
+
+  It clears itself after a successful post. The swap replaces the list, not
+  this form, so without the reset the textarea keeps the text it just sent and
+  a second click writes the same note twice. `dirty` has to go back to false
+  alongside the DOM reset: x-form-state only ever sets it true, and
+  submit-button is bound to `!dirty || !valid`, so a reset without it leaves an
+  enabled button over an empty box. A failed post resets nothing — the text
+  stays where the curator can fix it."
   [& {:keys [action errors values]}]
   (ui.form/form
     {:id "note-form"
      :hx-post action
      :hx-target "#notes-list"
-     :hx-swap "outerHTML"}
+     :hx-swap "outerHTML"
+     (keyword "hx-on::after-request")
+     "if (event.detail.successful) { this.reset(); Alpine.$data(this).dirty = false }"}
     [:div {:class "spl-form"}
      (ui.form/anti-forgery-field)
      (ui.form/textarea-field :label "Note"

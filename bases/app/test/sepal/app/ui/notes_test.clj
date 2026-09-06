@@ -63,6 +63,20 @@
     (is (re-find #"test-token" (.attr button "hx-headers"))
         "A bodyless hx-delete carries no CSRF token unless hx-headers supplies one")))
 
+(deftest test-the-new-note-form-clears-itself-after-a-successful-post
+  (let [body (parse (ui.notes/notes-body :notes notes
+                                         :create-url "/accession/12/notes/"
+                                         :note-url-fn note-url-fn))
+        form (.selectFirst body "form#note-form")
+        handler (.attr form "hx-on::after-request")]
+    (is (re-find #"this\.reset\(\)" handler)
+        "The swap replaces the list, not the form, so the form must clear itself")
+    (is (re-find #"dirty = false" handler)
+        "x-form-state only sets dirty true; without this the submit button
+         stays enabled over an empty textarea")
+    (is (re-find #"event\.detail\.successful" handler)
+        "A rejected post keeps the text where the curator can fix it")))
+
 (deftest test-empty-list-says-so
   (let [body (parse (ui.notes/note-list :notes [] :note-url-fn note-url-fn))]
     (is (zero? (.size (.select body "[data-note-id]"))))
