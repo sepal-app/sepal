@@ -14,27 +14,36 @@
   [ctx]
   (db.i/at-least-version? ctx (db.i/tag-version)))
 
-(defn get-by-id [db id]
-  (store.i/get-by-id db :tag id spec/Tag))
+;; Every read below takes `ctx` first and gates on `available?`, the shape
+;; components/synonym uses. A `select` against `tag` on a database below the
+;; migration is a hard SQLite error, not an empty result, so the gate has to
+;; happen before the query -- and putting it here rather than at each handler
+;; means a call site added later cannot forget it.
+
+(defn get-by-id [ctx db id]
+  (when (available? ctx)
+    (store.i/get-by-id db :tag id spec/Tag)))
 
 (defn get-by-name
   "Case-insensitive by the column's own collation -- `tag.name` is
   `collate nocase`, so `=` here already matches regardless of case."
-  [db name]
-  (some->> {:select :*
-            :from :tag
-            :where [:= :name name]}
-           (db.i/execute-one! db)
-           (store.i/coerce spec/Tag)))
+  [ctx db name]
+  (when (available? ctx)
+    (some->> {:select :*
+              :from :tag
+              :where [:= :name name]}
+             (db.i/execute-one! db)
+             (store.i/coerce spec/Tag))))
 
 (defn list-all
   "Every tag with its link count, including a tag with none."
-  [db]
-  (db.i/execute! db {:select [:t.* [[:count :tl.id] :tag__link_count]]
-                     :from [[:tag :t]]
-                     :left-join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
-                     :group-by [:t.id]
-                     :order-by [[:t.name :asc]]}))
+  [ctx db]
+  (when (available? ctx)
+    (db.i/execute! db {:select [:t.* [[:count :tl.id] :tag__link_count]]
+                       :from [[:tag :t]]
+                       :left-join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
+                       :group-by [:t.id]
+                       :order-by [[:t.name :asc]]})))
 
 (defn create! [db data]
   (store.i/create! db :tag data spec/CreateTag spec/Tag))
@@ -88,22 +97,24 @@
 
 (defn get-for-resource
   "Tags on one resource, alphabetical."
-  [db resource-type resource-id]
-  (db.i/execute! db {:select [:t.*]
-                     :from [[:tag :t]]
-                     :join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
-                     :where [:and
-                             [:= :tl.resource_type (name resource-type)]
-                             [:= :tl.resource_id resource-id]]
-                     :order-by [[:t.name :asc]]}))
+  [ctx db resource-type resource-id]
+  (when (available? ctx)
+    (db.i/execute! db {:select [:t.*]
+                       :from [[:tag :t]]
+                       :join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
+                       :where [:and
+                               [:= :tl.resource_type (name resource-type)]
+                               [:= :tl.resource_id resource-id]]
+                       :order-by [[:t.name :asc]]})))
 
 (defn get-tagged
   "Every link row for one tag, for the tag index's link-target browsing (not
   built in this plan -- see 031's out-of-scope list)."
-  [db tag-id]
-  (db.i/execute! db {:select [:*]
-                     :from [:tag_link]
-                     :where [:= :tag_id tag-id]}))
+  [ctx db tag-id]
+  (when (available? ctx)
+    (db.i/execute! db {:select [:*]
+                       :from [:tag_link]
+                       :where [:= :tag_id tag-id]})))
 
 (create-ns 'sepal.tag.interface)
 (alias 'tag.i 'sepal.tag.interface)

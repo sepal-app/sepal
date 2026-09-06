@@ -8,6 +8,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.tag.interface :as tag.i]
@@ -17,6 +18,10 @@
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
+
+;; The reads take a context so they can gate on the schema version; the test
+;; database is at latest, so these assertions want the ungated answer.
+(def ctx {:schema-version (db.i/latest-version)})
 
 (deftest test-adding-an-existing-tag-by-name
   (tf/testing "typing an existing tag's name links it"
@@ -39,7 +44,7 @@
                                              :params {:__anti-forgery-token token
                                                       :tag-name "fruit"})]
         (is (contains? #{200 303} (:status response)))
-        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id))))
+        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource ctx *db* :material id))))
         (is (some #(= tag.activity/linked (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :material :resource-id id)))
         (tag.i/untag! *db* (:tag/id tag) id :material)
@@ -66,9 +71,9 @@
                                              :params {:__anti-forgery-token token
                                                       :tag-name "sand tolerent"})]
         (is (contains? #{200 303} (:status response)))
-        (let [tag (tag.i/get-by-name *db* "sand tolerent")]
+        (let [tag (tag.i/get-by-name ctx *db* "sand tolerent")]
           (is (some? tag))
-          (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id))))
+          (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource ctx *db* :material id))))
           (tag.i/untag! *db* (:tag/id tag) id :material)
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
           (tag.i/delete! *db* (:tag/id tag)))))))
@@ -96,8 +101,8 @@
                                    :request-method :delete
                                    :headers {"x-csrf-token" token})]
           (is (contains? #{200 303} (:status response)))
-          (is (empty? (tag.i/get-for-resource *db* :material id)))
-          (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
+          (is (empty? (tag.i/get-for-resource ctx *db* :material id)))
+          (is (some? (tag.i/get-by-id ctx *db* (:tag/id tag)))
               "the tag itself survives; only the link is gone")
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
           (tag.i/delete! *db* (:tag/id tag)))))))
@@ -126,7 +131,7 @@
         (is (contains? #{200 303} (:status response)))
         (is (empty? (activity.i/get-by-resource *db* :resource-type :material :resource-id id))
             "the tag was never linked here, so untag! is a true no-op: no unlinked event")
-        (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
+        (is (some? (tag.i/get-by-id ctx *db* (:tag/id tag)))
             "and the tag itself is untouched")
         (tag.i/delete! *db* (:tag/id tag))))))
 
@@ -157,7 +162,7 @@
                                                       :tag-name "Bromeliad"})]
         (is (contains? #{200 303} first-status))
         (is (contains? #{200 303} (:status response)))
-        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id)))
+        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource ctx *db* :material id)))
             "still exactly one link row")
         (is (= 1 (count (filter #(= tag.activity/linked (:activity/type %))
                                 (activity.i/get-by-resource *db* :resource-type :material :resource-id id))))
@@ -182,3 +187,47 @@
             "require-permission-or-redirect issues a 3xx, not merely a non-200")
         (is (re-find #"^/material/\d+/$" (get-in response [:headers "Location"]))
             "and it redirects to this material's own detail route")))))
+
+(deftest test-a-database-below-the-gate-hides-the-tag-ui
+  ;; See the long note on the taxon version of this test: the floor CI leg does
+  ;; not exercise the gate, so it is forced here, and the material has to carry
+  ;; a real link first or the empty result proves nothing.
+  (tf/testing "no tab, no chips, no add form, and the POST refused"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [user material]}]
+      (let [tag (tag.i/create! *db* {:name "Fernaldia"})
+            sess (app.test/login (:user/email user) "testpassword123")
+            id (:material/id material)
+            url (format "/material/%s/tags/" id)
+            tab-href (re-pattern (format "href=\"/material/%s/tags/\"" id))]
+        (tag.i/tag! *db* (:tag/id tag) id :material)
+        (let [{:keys [response] :as sess} (peri/request sess url)
+              token (test.i/response-anti-forgery-token response)
+              general-body (-> sess (peri/request (format "/material/%s/general/" id)) :response :body)]
+          (is (re-find #"Fernaldia" (:body response)))
+          (is (re-find tab-href general-body))
+          (with-redefs [db.i/at-least-version? (constantly false)]
+            (let [{:keys [response]} (peri/request sess url)]
+              (is (= 200 (:status response)))
+              (is (not (re-find #"Fernaldia" (:body response)))
+                  "the gate must filter out a link that really exists")
+              (is (not (re-find #"name=\"tag-name\"" (:body response)))))
+            (let [{:keys [response]} (peri/request sess url
+                                                   :request-method :post
+                                                   :params {:__anti-forgery-token token
+                                                            :tag-name "Ficus elastica"})]
+              (is (= 404 (:status response))))
+            (let [body (-> sess (peri/request (format "/material/%s/general/" id)) :response :body)]
+              (is (not (re-find tab-href body))
+                  "no Tags tab in the record's section nav"))))
+        (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource ctx *db* :material id)))
+            "nothing above actually removed the link")
+        (tag.i/untag! *db* (:tag/id tag) id :material)
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+        (tag.i/delete! *db* (:tag/id tag))))))

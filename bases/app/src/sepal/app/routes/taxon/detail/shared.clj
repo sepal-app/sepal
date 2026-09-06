@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.shared
-  (:require [sepal.app.routes.taxon.routes :as taxon.routes]
+  (:require [sepal.app.globals :as g]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
@@ -12,21 +13,24 @@
 (def tags-tab ::tags)
 
 (defn items [& {:keys [active taxon]}]
-  [(ui.tabs/item "Name"
-                 {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
-                  :active (= active name-tab)})
-   (ui.tabs/item "Media"
-                 {:href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
-                  :active (= active media-tab)})
-   (ui.tabs/item "Synonyms"
-                 {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
-                  :active (= active synonyms-tab)})
-   (ui.tabs/item "Notes"
-                 {:href (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
-                  :active (= active notes-tab)})
-   (ui.tabs/item "Tags"
-                 {:href (z/url-for taxon.routes/detail-tags {:id (:taxon/id taxon)})
-                  :active (= active tags-tab)})])
+  (cond-> [(ui.tabs/item "Name"
+                         {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
+                          :active (= active name-tab)})
+           (ui.tabs/item "Media"
+                         {:href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
+                          :active (= active media-tab)})
+           (ui.tabs/item "Synonyms"
+                         {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
+                          :active (= active synonyms-tab)})
+           (ui.tabs/item "Notes"
+                         {:href (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
+                          :active (= active notes-tab)})]
+    ;; No Tags tab below the migration that added the tag tables — the section
+    ;; has nothing to read there and no way to store anything.
+    g/*tags-available?*
+    (conj (ui.tabs/item "Tags"
+                        {:href (z/url-for taxon.routes/detail-tags {:id (:taxon/id taxon)})
+                         :active (= active tags-tab)}))))
 
 (defn tabs [taxon active]
   (ui.tabs/tabs {:label "Taxon sections"

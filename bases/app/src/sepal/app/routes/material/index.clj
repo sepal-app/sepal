@@ -10,6 +10,7 @@
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.search :as app.search]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -181,7 +182,7 @@
                           [:location :l] [:= :l.id :m.location_id]]}
 
         ;; Compile search query (adds WHERE clause)
-        stmt (search.i/compile-query :material ast base-stmt)
+        stmt (app.search/compile-query context :material ast base-stmt)
 
         ;; Execute queries
         total (db.i/count db stmt)
@@ -220,7 +221,7 @@
       :else
       (render :viewer viewer
               :accession accession
-              :field-options (search.i/field-options :material)
+              :field-options (app.search/field-options context :material)
               :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string
                                            (cond-> {:page page}

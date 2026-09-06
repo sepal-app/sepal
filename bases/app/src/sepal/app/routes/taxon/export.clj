@@ -2,6 +2,7 @@
   "CSV export handler for taxa."
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
+            [sepal.app.search :as app.search]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface.search]
@@ -68,7 +69,7 @@
                     include-parent?
                     (assoc :left-join [[:taxon :p] [:= :p.id :t.parent_id]]))
 
-        stmt (-> (search.i/compile-query :taxon ast base-stmt)
+        stmt (-> (app.search/compile-query context :taxon ast base-stmt)
                  (assoc :order-by [:t.name]))
         rows (db.i/execute! db stmt)
 

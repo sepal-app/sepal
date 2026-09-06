@@ -4,11 +4,16 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.database.interface :as db.i]
             [sepal.tag.interface :as tag.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
+
+;; The reads take a context so they can gate on the schema version; the test
+;; database is at latest, so these assertions want the ungated answer.
+(def ctx {:schema-version (db.i/latest-version)})
 
 (deftest test-the-index-lists-tags-with-counts
   (tf/testing "an admin views the tag list"
@@ -36,7 +41,7 @@
                                                       :name "October block"
                                                       :description ""})]
         (is (contains? #{200 303} (:status response)))
-        (is (= "October block" (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))
+        (is (= "October block" (:tag/name (tag.i/get-by-id ctx *db* (:tag/id tag)))))
         (tag.i/delete! *db* (:tag/id tag))))))
 
 (deftest test-deleting-a-tag
@@ -52,4 +57,4 @@
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
         (is (contains? #{200 303} (:status response)))
-        (is (nil? (tag.i/get-by-id *db* (:tag/id tag))))))))
+        (is (nil? (tag.i/get-by-id ctx *db* (:tag/id tag))))))))
