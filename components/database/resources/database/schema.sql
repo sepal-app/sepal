@@ -316,6 +316,26 @@ CREATE TRIGGER trigger_note_updated_at after update on note
 begin
   update note set updated_at = datetime('now') where id = NEW.id;
 end;
+CREATE TABLE tag (
+  id integer primary key autoincrement,
+  name text not null unique collate nocase,
+  description text,
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
+CREATE TRIGGER trigger_tag_updated_at after update on tag
+begin
+  update tag set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TABLE tag_link (
+  id integer primary key autoincrement,
+  tag_id integer not null references tag(id),
+  resource_id integer not null,
+  resource_type text not null,
+  created_at text not null default (datetime('now'))
+) strict;
+CREATE UNIQUE INDEX tag_link_unique_idx on tag_link (tag_id, resource_id, resource_type);
+CREATE INDEX tag_link_resource_id_resource_type_idx on tag_link (resource_id, resource_type);
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -352,3 +372,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902160000', '2026-09-02 20:51:12');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260903120000', '2026-09-05 17:51:02');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '2026-09-06 16:55:14');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906130000', '2026-09-06 17:47:59');

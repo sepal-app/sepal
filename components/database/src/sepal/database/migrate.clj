@@ -100,6 +100,16 @@
   []
   resource-notes)
 
+(def ^:private tag "20260906130000")
+
+(defn tag-version
+  "The migration that added `tag` and `tag_link`. Code touching either table
+  must gate on it: both are above the supported floor, so a database at the
+  floor does not have them, and `select` on a missing table is an error rather
+  than an empty result."
+  []
+  tag)
+
 (defn- applied-versions
   [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
