@@ -10,6 +10,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
+            [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
@@ -100,6 +101,8 @@
     :icon (bootstrap/flower1)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (heroicons/outline-map-pin)}
+   {:label "Tags" :href (z/url-for tag.routes/index)
+    :icon (heroicons/outline-tag)}
    {:label "Media" :href (z/url-for media.routes/index)
     :icon (heroicons/outline-photo)}
    {:label "Contacts" :href (z/url-for contact.routes/index)
