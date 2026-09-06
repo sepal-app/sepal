@@ -22,6 +22,7 @@
                         "components/settings/test"
                         "components/store/test"
                         "components/synonym/test"
+                        "components/tag/test"
                         "components/taxon/test"
                         "components/test/test"
                         "components/token/test"
