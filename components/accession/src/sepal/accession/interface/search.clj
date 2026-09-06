@@ -79,6 +79,14 @@
                       :label "Material Status"
                       :joins [[:material :m] [:= :m.accession_id :a.id]]}
 
+    ;; Related: tag (through tag_link)
+    :tag {:column :tg.name
+          :type :text
+          :label "Tag"
+          :joins [[:tag_link :tl] [:and [:= :tl.resource_id :a.id]
+                                   [:= :tl.resource_type "accession"]]
+                  [:tag :tg] [:= :tg.id :tl.tag_id]]}
+
     ;; Date fields
     :created {:column :a.created_at
               :type :date
