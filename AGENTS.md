@@ -132,6 +132,18 @@ After starting the system with `(go)`, four dynamic vars become available in the
 
 ### Common Commands
 
+Every command below assumes you are inside the dev shell. `cd` into the project
+with direnv active and you are. If you are not — a script, an editor task, an
+agent shelling out non-interactively — prefix each one with `devenv shell -- `.
+
+The failure when you forget is misleading. `clojure` is on `PATH` anyway, so the
+command starts and then dies on what devenv supplies: without
+`EXTENSIONS_LIBRARY_PATH`, every test that opens a database fails with
+`dlopen(mod_spatialite.dylib) ... no such file`, which reads like a missing
+system library rather than a missing shell. `bin/reset-db.sh` additionally needs
+`LD_LIBRARY_PATH` set — the external `migrate.sh` reads it under `set -u` and
+aborts with `LD_LIBRARY_PATH: unbound variable` when it is not.
+
 ```bash
 # Run unit tests (default - excludes e2e tests)
 clojure -M:dev:test:test-runner
