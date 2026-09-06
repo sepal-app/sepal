@@ -86,6 +86,7 @@
 ;; - 'unsafe-inline' for script-src allows inline <script> tags (e.g., module imports)
 ;; - 'unsafe-inline' for style-src allows inline styles and x-cloak CSS
 ;; - 'data:' for img-src allows inline SVG data URIs
+;; - 'data:' for font-src allows the woff2 subset Vite inlines into the CSS
 ;; TODO: Consider switching to @alpinejs/csp build and nonces to tighten CSP
 (def csp-headers
   (assoc z.headers/web
@@ -94,6 +95,7 @@
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; "
               "style-src 'self' 'unsafe-inline' http://localhost:5173; "
               "img-src 'self' data: blob: http://localhost:5173; "
+              "font-src 'self' data: http://localhost:5173; "
               "connect-src 'self' https: ws://localhost:5173")))
 
 (defmethod ig/init-key ::zodiac [_ {:keys [extensions] :as options}]
