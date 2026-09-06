@@ -148,7 +148,7 @@
           (ui.notes/panel-section
             :notes notes
             :note-count note-count
-            :more-url nil))
+            :more-url (z/url-for material.routes/detail-notes {:id (:material/id material)})))
 
         ;; External links section
         (panel/collapsible-section

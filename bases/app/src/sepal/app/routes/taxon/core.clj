@@ -4,6 +4,7 @@
             [sepal.app.routes.taxon.detail :as detail]
             [sepal.app.routes.taxon.detail.media :as detail-media]
             [sepal.app.routes.taxon.detail.name :as detail-name]
+            [sepal.app.routes.taxon.detail.notes :as detail-notes]
             [sepal.app.routes.taxon.detail.synonyms :as detail-synonyms]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.index :as index]
@@ -47,5 +48,13 @@
                                :middleware [[(middleware/require-permission-or-redirect
                                                taxon.perm/edit (constantly routes/detail))]]
                                :delete #'detail-synonyms/row-handler}]
+    ["/notes/" {:name routes/detail-notes
+                :middleware [[(middleware/require-permission-or-redirect
+                                taxon.perm/edit (constantly routes/detail))]]
+                :handler #'detail-notes/handler}]
+    ["/notes/:note-id/" {:name routes/detail-note
+                         :middleware [[(middleware/require-permission-or-redirect
+                                         taxon.perm/edit (constantly routes/detail))]]
+                         :handler #'detail-notes/note-handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])

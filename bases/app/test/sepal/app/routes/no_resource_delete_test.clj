@@ -19,7 +19,8 @@
               "bases/app/src/sepal/app/routes/media/core.clj"
               "bases/app/src/sepal/app/routes/media/detail.clj"
               "bases/app/src/sepal/app/routes/media/detail/link.clj"
-              "bases/app/src/sepal/app/routes/taxon/core.clj"]
+              "bases/app/src/sepal/app/routes/taxon/core.clj"
+              "bases/app/src/sepal/app/routes/taxon/detail/notes.clj"]
              deleting)
           (str "A new delete route appeared. If it deletes an accession, "
                "material or taxon, its notes need deleting with it - see "

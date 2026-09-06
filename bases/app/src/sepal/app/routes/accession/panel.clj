@@ -4,6 +4,7 @@
   (:require [clojure.string :as str]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -93,7 +94,7 @@
           (ui.notes/panel-section
             :notes notes
             :note-count note-count
-            :more-url nil))
+            :more-url (z/url-for accession.routes/detail-notes {:id id})))
 
         ;; External links section
         (panel/collapsible-section
