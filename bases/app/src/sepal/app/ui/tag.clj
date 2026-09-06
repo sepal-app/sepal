@@ -8,13 +8,18 @@
 (defn- chip [& {:keys [tag remove-url]}]
   [:span {:class "spl-chip"}
    (:tag/name tag)
+   ;; spl-chip-icon, not spl-btn: spl-btn--icon is a fixed 32x32 box, which is
+   ;; two and a half times the height of the 12px chip it sits in. The chip
+   ;; layer already defines a 14px icon slot that sizes its own svg, which is
+   ;; why outline-x is called with no arguments — it takes :color and :size,
+   ;; not the :class it used to be handed and silently dropped.
    [:button {:type "button"
-             :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--ghost"
+             :class "spl-chip-icon cursor-pointer"
              :aria-label (str "Remove tag " (:tag/name tag))
              :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
              :hx-delete remove-url
              :hx-confirm (str "Remove tag \"" (:tag/name tag) "\"?")}
-    (heroicons/outline-x :class "size-3")]])
+    (heroicons/outline-x)]])
 
 (defn chips [& {:keys [tags remove-url-fn]}]
   (if (seq tags)
