@@ -5,6 +5,7 @@
             [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
             [sepal.media.interface.permission :as media.perm]
+            [sepal.tag.interface.permission :as tag.perm]
             [sepal.taxon.interface.permission :as taxon.perm]))
 
 ;; App-level permissions (non-resource)
@@ -34,6 +35,7 @@
             material.perm/view material.perm/create material.perm/edit material.perm/delete
             contact.perm/view contact.perm/create contact.perm/edit contact.perm/delete
             media.perm/view media.perm/create media.perm/edit media.perm/delete
+            tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
             profile-view profile-edit
             security-view security-edit
             activity-view}
@@ -44,6 +46,7 @@
              material.perm/view material.perm/create material.perm/edit material.perm/delete
              contact.perm/view contact.perm/create contact.perm/edit contact.perm/delete
              media.perm/view media.perm/create media.perm/edit media.perm/delete
+             tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
              profile-view profile-edit
              security-view security-edit
              activity-view}
@@ -54,6 +57,7 @@
              material.perm/view
              contact.perm/view
              media.perm/view
+             tag.perm/view
              profile-view profile-edit
              security-view security-edit
              activity-view}})
