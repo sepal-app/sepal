@@ -5,8 +5,11 @@
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [next.jdbc :as jdbc]
-            [sepal.database.interface :as db.i])
-  (:import [java.io File]))
+            [sepal.database.interface :as db.i]
+            [sepal.database.migrate :as migrate])
+  (:import [java.io File]
+           [java.net URL]
+           [java.util.jar JarEntry JarOutputStream]))
 
 (defn- fresh-db
   "A database with the current schema loaded."
@@ -313,3 +316,45 @@
         (finally
           (fs/delete-tree provisioned-dir)
           (fs/delete-tree migrated-dir))))))
+
+(defn- write-jar!
+  "A jar at path holding entries, name -> content. A name ending in / with nil
+  content is a directory entry, which is how tools.build writes them and what
+  lets the migrations directory resolve as a jar: resource."
+  [path entries]
+  (with-open [out (JarOutputStream. (io/output-stream path))]
+    (doseq [[name content] entries]
+      (.putNextEntry out (JarEntry. name))
+      (when content
+        (.write out (.getBytes ^String content "UTF-8")))
+      (.closeEntry out))))
+
+(deftest test-enumerating-a-jar-leaves-other-readers-of-that-jar-open
+  ;; The regression test for the dispatcher outage. JarURLConnection.getJarFile
+  ;; with the JDK's default useCaches=true hands back the one JarFile instance
+  ;; the whole process shares for every jar: resource read. enumerate-migrations
+  ;; closed it, which closed every stream open on it -- on Fly, Jetty's
+  ;; MimeTypes.<clinit> mid-read of encoding.properties on another thread. Same
+  ;; thread here, so it fails every time rather than one boot in N. The private
+  ;; fn is called directly because in this suite io/resource resolves to a file:
+  ;; URL and the jar branch is otherwise unreachable.
+  (testing "a stream open on the same jar is still readable after enumerate-migrations"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-migrate-jar"})
+          jar (str (fs/path dir "app.jar"))]
+      (try
+        (write-jar! jar {"database/migrations/" nil
+                         "database/migrations/29990101000000_probe.sql" "select 1;\n"
+                         "other/encoding.properties" "a=b\n"})
+        (let [base (str "jar:" (.toURI (io/file jar)) "!/")
+              migrations-url (URL. (str base "database/migrations/"))
+              other-url (URL. (str base "other/encoding.properties"))]
+          (with-open [in (.openStream other-url)]
+            (is (= ["29990101000000_probe.sql"]
+                   (filterv #(str/ends-with? % ".sql")
+                            (#'migrate/enumerate-migrations migrations-url))))
+            (is (= "a=b\n"
+                   (try (slurp in)
+                        (catch java.io.IOException e
+                          (str "IOException: " (ex-message e)))))
+                "enumerating must not close the shared JarFile under another open stream")))
+        (finally (fs/delete-tree dir))))))

@@ -32,6 +32,12 @@
     "jar"
     (let [^JarURLConnection conn (.openConnection url)
           prefix (str migrations-root "/")]
+      ;; With the JDK default useCaches=true, getJarFile returns the one JarFile
+      ;; the whole process shares for every jar: resource read, and with-open
+      ;; would close it under any other reader -- Jetty's MimeTypes mid-read of
+      ;; encoding.properties on another thread took the dispatcher down this
+      ;; way. false makes it a private instance, which is ours to close.
+      (.setUseCaches conn false)
       (with-open [jar (.getJarFile conn)]
         (->> (enumeration-seq (.entries jar))
              (map #(.getName %))
