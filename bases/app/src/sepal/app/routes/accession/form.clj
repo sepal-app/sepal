@@ -111,7 +111,12 @@
                                            :autocomplete "off"}
                                   [:option {:value "" :data-placeholder "true"} ""]
                                   (when (:location/id location)
-                                    [:option {:value (:location/id location)}
+                                    ;; `selected` is load-bearing: the empty
+                                    ;; placeholder above is the first option,
+                                    ;; and a browser selects the first one
+                                    ;; unless told otherwise.
+                                    [:option {:value (:location/id location)
+                                              :selected "selected"}
                                      (format "%s (%s)"
                                              (:location/code location)
                                              (:location/name location))])]

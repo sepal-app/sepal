@@ -122,6 +122,33 @@
                                {:intended-location-id nil})
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
 
+(deftest test-general-tab-preselects-the-saved-intended-location
+  (tf/testing "the saved location is the selected option, not just present"
+    ;; The select carries an empty placeholder option first, so a value option
+    ;; without `selected` loses to it: the browser selects the first option and
+    ;; the field renders blank after a save.
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)
+                                             :intended-location (ig/ref :key/location)}}
+    (fn [{:keys [user accession location]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/accession/"
+                                                      (:accession/id accession)
+                                                      "/general/")))
+            body (Jsoup/parse ^String (:body response))
+            option (.selectFirst body (str "select#intended-location-id "
+                                           "option[value=\""
+                                           (:location/id location) "\"]"))]
+        (is (some? option) "the saved location should be an option")
+        (is (.hasAttr option "selected")
+            "the saved location's option should be selected")))))
+
 (deftest test-accession-panel-shows-the-intended-location
   (tf/testing "the panel names the location and links to it"
     {[::user.i/factory :key/user] {:db *db*
