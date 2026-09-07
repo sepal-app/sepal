@@ -26,5 +26,10 @@
   [db]
   (core/count-all db))
 
+(defn awaiting-planting-by-location-id
+  "Accessions intended for this location with no material in it yet."
+  [db location-id]
+  (core/awaiting-planting-by-location-id db location-id))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

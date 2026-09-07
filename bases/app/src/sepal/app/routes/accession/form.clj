@@ -4,6 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
             [zodiac.core :as z]))
@@ -14,7 +15,7 @@
       (str/replace "_" " ")
       (str/capitalize)))
 
-(defn form [& {:keys [action errors supplier taxon values]}]
+(defn form [& {:keys [action errors location supplier taxon values]}]
   [:div
    (ui.form/form
      {:id "accession-form"
@@ -95,6 +96,31 @@
                                 (when (:contact/id supplier)
                                   [:option {:value (:contact/id supplier)}
                                    (:contact/name supplier)])])])
+
+      (ui.form/section
+        :title "Placement"
+        :hint "Where this material is meant to go before it is planted."
+        :children
+        [(let [locations-url (z/url-for location.routes/index)]
+           (ui.form/field :label "Intended location"
+                          :name "intended-location-id"
+                          :errors (:intended-location-id errors)
+                          :input [:select {:x-location-field (json/js {:url locations-url})
+                                           :id "intended-location-id"
+                                           :name "intended-location-id"
+                                           :autocomplete "off"}
+                                  [:option {:value "" :data-placeholder "true"} ""]
+                                  (when (:location/id location)
+                                    ;; `selected` is load-bearing: the empty
+                                    ;; placeholder above is the first option,
+                                    ;; and a browser selects the first one
+                                    ;; unless told otherwise.
+                                    [:option {:value (:location/id location)
+                                              :selected "selected"}
+                                     (format "%s (%s)"
+                                             (:location/code location)
+                                             (:location/name location))])]
+                          :help "Leave it empty until the bed is decided."))])
 
       (ui.form/section
         :title "Dates"

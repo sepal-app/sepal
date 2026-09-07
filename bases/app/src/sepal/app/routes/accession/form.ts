@@ -3,10 +3,12 @@ import "htmx.org"
 
 import TaxonField from "~/js/taxon-field"
 import ContactField from "~/js/contact-field"
+import LocationField from "~/js/location-field"
 
 document.addEventListener("alpine:init", () => {
     Alpine.directive("taxon-field", TaxonField)
     Alpine.directive("contact-field", ContactField)
+    Alpine.directive("location-field", LocationField)
 
     // TODO: Create a generic directive like prevent-unsaved
     Alpine.data("accessionTabs", () => ({

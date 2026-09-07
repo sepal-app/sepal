@@ -1,11 +1,16 @@
 (ns sepal.app.routes.accession.create-test
   (:require [clojure.set :as set]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.routes.accession.create :as create]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.location.interface :as location.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -123,3 +128,64 @@
         (is (empty? (set/difference posted accepted))
             (str "the form posts fields the schema drops: "
                  (set/difference posted accepted)))))))
+
+;; Every key in the closed FormParams map is required, so a POST that omits
+;; one is a 422 -- which is why this posts the whole form and not three fields.
+;; The comment above `create/FormParams` records what a *missing* key silently
+;; did before.
+(defn- create-params [taxon location]
+  {:code "ACC-IL-1"
+   :taxon-id (str (:taxon/id taxon))
+   :id-qualifier ""
+   :id-qualifier-rank ""
+   :provenance-type ""
+   :wild-provenance-status ""
+   :supplier-contact-id ""
+   :date-received ""
+   :date-accessioned ""
+   :intended-location-id (str (:location/id location))})
+
+(deftest test-create-accession-with-intended-location
+  (tf/testing "POST with an intended location saves it"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user taxon location]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (-> sess
+                                              (peri/request "/accession/new/"))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request "/accession/new/"
+                                                   :request-method :post
+                                                   :params (assoc (create-params taxon location)
+                                                                  :__anti-forgery-token token)))]
+          (is (= 200 (:status response))
+              (str "Expected 200, got " (:status response) " with body: " (:body response)))
+          (let [redirect (get-in response [:headers "HX-Redirect"])
+                id (parse-long (last (remove empty? (str/split redirect #"/"))))
+                accession (accession.i/get-by-id *db* id)]
+            (is (= (:location/id location)
+                   (:accession/intended-location-id accession)))))
+        (finally
+          ;; The accession is created by HTTP, so no factory tears it down --
+          ;; and while it exists the location factory cannot delete its
+          ;; location. Creating also writes an activity row referencing the
+          ;; factory user, whose teardown hard-deletes it.
+          (jdbc.sql/delete! *db* :accession {:code "ACC-IL-1"})
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-create-accession-form-has-an-intended-location-picker
+  (tf/testing "the form renders the picker"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/accession/new/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (some? (.selectFirst body "select#intended-location-id"))
+            "the accession form should have an intended location select")))))

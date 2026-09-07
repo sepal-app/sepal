@@ -9,6 +9,7 @@
               {:decode/store #(and (int? %) (= % 1))
                :encode/store #(if (true? %) 1 0)}])
 (def supplier-contact-id pos-int?)
+(def intended-location-id pos-int?)
 
 (defn- name-encoder [v]
   (when v (name v)))
@@ -68,6 +69,7 @@
    [:accession/provenance-type [:maybe provenance-type]]
    [:accession/wild-provenance-status [:maybe wild-provenance-status]]
    [:accession/supplier-contact-id [:maybe supplier-contact-id]]
+   [:accession/intended-location-id [:maybe intended-location-id]]
    [:accession/date-received [:maybe :string]]
    [:accession/date-accessioned [:maybe :string]]])
 
@@ -82,6 +84,7 @@
    [:provenance-type {:optional true} [:maybe provenance-type]]
    [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
    [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]
+   [:intended-location-id {:optional true} [:maybe intended-location-id]]
    [:date-received {:optional true} [:maybe :string]]
    [:date-accessioned {:optional true} [:maybe :string]]])
 
@@ -96,5 +99,6 @@
      [:provenance-type {:optional true} [:maybe provenance-type]]
      [:wild-provenance-status {:optional true} [:maybe wild-provenance-status]]
      [:supplier-contact-id {:optional true} [:maybe supplier-contact-id]]
+     [:intended-location-id {:optional true} [:maybe intended-location-id]]
      [:date-received {:optional true} [:maybe :string]]
      [:date-accessioned {:optional true} [:maybe :string]]]))

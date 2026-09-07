@@ -35,6 +35,7 @@
                         :panel-content (location.panel/panel-content
                                          :location (:location panel-data)
                                          :stats (:stats panel-data)
+                                         :awaiting (:awaiting panel-data)
                                          :moved-out (:moved-out panel-data)
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
@@ -68,6 +69,7 @@
               (location.panel/panel-content
                 :location (:location panel-data)
                 :stats (:stats panel-data)
+                :awaiting (:awaiting panel-data)
                 :moved-out (:moved-out panel-data)
                 :activities (:activities panel-data)
                 :activity-count (:activity-count panel-data)

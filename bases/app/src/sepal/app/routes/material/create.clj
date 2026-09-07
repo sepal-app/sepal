@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.create
-  (:require [sepal.app.flash :as flash]
+  (:require [sepal.accession.interface :as accession.i]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.routes :as material.routes]
@@ -7,6 +8,7 @@
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
             [sepal.validation.interface :as validation.i]
@@ -49,7 +51,7 @@
    [:status [:string {:min 1}]]
    [:type [:string {:min 1}]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
@@ -59,4 +61,21 @@
           (let [saved (create! db (:user/id viewer) result)]
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
                 (flash/success "Material created successfully")))))
-      (render))))
+
+      ;; The location panel's "Plant here" link names the accession, which is
+      ;; the only way this form knows one: the select is searched client-side.
+      (let [accession (some->> (get query-params "accession-id")
+                               (parse-long)
+                               (accession.i/get-by-id db))
+            intended (some->> (:accession/intended-location-id accession)
+                              (location.i/get-by-id db))]
+        (render :values (cond-> {}
+                          accession
+                          (assoc :accession-id (:accession/id accession)
+                                 :accession-code (:accession/code accession))
+
+                          intended
+                          (assoc :intended-location-label
+                                 (format "%s (%s)"
+                                         (:location/code intended)
+                                         (:location/name intended)))))))))

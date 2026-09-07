@@ -60,6 +60,8 @@
               (form/field :label "Location"
                           :name "location-id"
                           :errors (:location-id errors)
+                          :help (when-let [label (:intended-location-label values)]
+                                  (str "This accession is intended for " label "."))
                           :input [:select {:x-location-field (json/js {:url url})
                                            :placeholder "Required"
                                            :required true
