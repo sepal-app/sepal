@@ -52,8 +52,9 @@
   (store.i/update! db :tag id data spec/UpdateTag spec/Tag))
 
 (defn delete!
-  "Remove the tag and its links in one transaction -- unlike 030's note, this
-  is solvable cleanly because tag_link.tag_id is a real foreign key."
+  "Remove the tag and its links in one transaction. A note's polymorphic
+  resource_id has no foreign key to hang this off, but tag_link.tag_id does,
+  so here the links can be cleaned up with the row they belong to."
   [db id]
   (db.i/with-transaction [tx db]
     (jdbc.sql/delete! tx :tag_link {:tag_id id})
@@ -108,8 +109,8 @@
                        :order-by [[:t.name :asc]]})))
 
 (defn get-tagged
-  "Every link row for one tag, for the tag index's link-target browsing (not
-  built in this plan -- see 031's out-of-scope list)."
+  "Every link row for one tag. For browsing a tag's linked records from the
+  tag index, which nothing does yet -- the index shows counts only."
   [ctx db tag-id]
   (when (available? ctx)
     (db.i/execute! db {:select [:*]

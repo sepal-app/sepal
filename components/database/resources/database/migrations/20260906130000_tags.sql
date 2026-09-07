@@ -1,11 +1,11 @@
--- 031 Tags: a curator's ad-hoc groupings, closing 028's tag gap -- 23 tags and
--- 447 links in the Belize Botanic Gardens backup.
+-- Tags: a curator's ad-hoc groupings, and the home for the tags a Bauble
+-- collection brings with it.
 --
--- Bauble's own data reads as ephemeral label-printing batches, not a
--- taxonomy -- most of the 23 names are print-run labels ("TO PRINT BLOCK 1",
--- "ZA labels"), thrown away once printed (plans/031-tags.md). That argues
--- against hierarchy, colour or validation here: a tag is cheap to make and
--- cheap to delete.
+-- The Bauble data these were modelled on reads as ephemeral label-printing
+-- batches rather than a taxonomy -- most of its tag names are print-run
+-- labels ("TO PRINT BLOCK 1", "ZA labels"), thrown away once printed. That
+-- argues against hierarchy, colour or validation here: a tag is cheap to
+-- make and cheap to delete.
 --
 -- `tag_link` follows `media_link` (schema.sql:145-152): one polymorphic link
 -- table per cross-cutting resource, `resource_id` + `resource_type` rather
