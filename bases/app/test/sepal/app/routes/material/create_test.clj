@@ -1,9 +1,13 @@
 (ns sepal.app.routes.material.create-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [peridot.core :as peri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.location.interface :as location.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -70,3 +74,39 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "#code-errors"))
             "Code field should have error container with id code-errors")))))
+
+(deftest test-material-create-hints-the-intended-location
+  (tf/testing "?accession-id= prefills the accession and names its intended location"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)
+                                             :intended-location (ig/ref :key/location)}}
+    (fn [{:keys [user accession location]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/material/new/?accession-id="
+                                                      (:accession/id accession))))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (some? (.selectFirst body (str "select#accession-id option[value=\""
+                                           (:accession/id accession) "\"]")))
+            "the accession should already be selected")
+        (is (.contains (.text body) (:location/name location))
+            "the form should name the accession's intended location")))))
+
+(deftest test-material-create-without-an-accession-id-is-unchanged
+  (tf/testing "no query parameter, no hint"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/material/new/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (nil? (.selectFirst body "select#accession-id option[value]"))
+            "the accession select should have no preselected option")))))
