@@ -2,7 +2,6 @@
   (:require [clojure.set :as set]
             [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
-            [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
