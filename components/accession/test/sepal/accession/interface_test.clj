@@ -4,6 +4,7 @@
             [malli.core :as m]
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
+            [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.interface :as acc.i]
             [sepal.accession.interface.spec :as acc.spec]
             [sepal.app.test.fixtures :as tf]
@@ -11,6 +12,7 @@
                                            default-system-fixture]]
             [sepal.contact.interface :as contact.i]
             [sepal.error.interface :as err.i]
+            [sepal.location.interface :as loc.i]
             [sepal.taxon.interface :as taxon.i]))
 
 (use-fixtures :once default-system-fixture)
@@ -61,3 +63,56 @@
        [::acc.i/factory :key/acc2] {:db db :taxon (ig/ref :key/taxon)}}
       (fn [{:keys [taxon]}]
         (is (= 2 (acc.i/count-by-taxon-id db (:taxon/id taxon))))))))
+
+(deftest test-create-with-intended-location
+  (let [db *db*]
+    (tf/testing "an accession can name the location its material is meant for"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/loc] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/loc)}}
+      (fn [{:keys [acc loc]}]
+        (is (not (err.i/error? acc)) (err.i/data acc))
+        (is (m/validate acc.spec/Accession acc))
+        (is (= (:location/id loc) (:accession/intended-location-id acc)))))))
+
+(deftest test-a-generated-accession-has-no-intended-location
+  (let [db *db*]
+    (tf/testing "the factory does not invent a location id"
+      ;; `mg/generate` fills every key of the closed CreateAccession spec,
+      ;; including optional ones, so an unset intended-location-id would arrive
+      ;; as a random integer and fail the foreign key.
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}}
+      (fn [{:keys [acc]}]
+        (is (nil? (:accession/intended-location-id acc)))))))
+
+(deftest test-an-unknown-intended-location-is-refused
+  (let [db *db*]
+    (tf/testing "the foreign key holds"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (is (thrown? org.sqlite.SQLiteException
+                     (acc.i/create! db {:code "ACC-INT-1"
+                                        :taxon-id (:taxon/id taxon)
+                                        :intended-location-id 999999999}))
+            "a location id no location has must be refused")))))
+
+(deftest test-a-location-an-accession-intends-cannot-be-deleted
+  (let [db *db*]
+    (tf/testing "the reference restricts, and clearing it releases the location"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/loc] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/loc)}}
+      (fn [{:keys [acc loc]}]
+        (is (thrown? org.sqlite.SQLiteException
+                     (jdbc.sql/delete! db :location {:id (:location/id loc)}))
+            "a location an accession intends must not be deletable")
+        (acc.i/update! db (:accession/id acc) {:intended-location-id nil})
+        (is (nil? (:accession/intended-location-id
+                    (acc.i/get-by-id db (:accession/id acc)))))
+        (is (some? (jdbc.sql/delete! db :location {:id (:location/id loc)}))
+            "once nothing intends it the location can go")))))

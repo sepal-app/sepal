@@ -42,10 +42,14 @@
   "Build an accession for tests. Fields are generated from the spec unless
   `:data` overrides them — which a test needs when behaviour depends on a
   particular value, since a generated one differs run to run."
-  [{:keys [db taxon contact data] :as args}]
+  [{:keys [db taxon contact intended-location data] :as args}]
   (let [generated (-> (mg/generate spec/CreateAccession)
                       (assoc :taxon-id (:taxon/id taxon))
-                      (assoc :supplier-contact-id (when contact (:contact/id contact))))
+                      (assoc :supplier-contact-id (when contact (:contact/id contact)))
+                      ;; Explicit, because a generated value would be a random
+                      ;; integer and the foreign key would refuse it.
+                      (assoc :intended-location-id (when intended-location
+                                                     (:location/id intended-location))))
         result (create! db (merge generated data))]
     (vary-meta result assoc :db db)))
 
