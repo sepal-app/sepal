@@ -45,6 +45,8 @@
                                             :taxon (:taxon panel-data)
                                             :location (:location panel-data)
                                             :history (:history panel-data)
+                                            :notes (:notes panel-data)
+                                            :note-count (:note-count panel-data)
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)
                                             :timezone timezone))
@@ -120,7 +122,7 @@
             taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
             tags (tag.i/get-for-resource context db :material id)
             all-tags (tag.i/list-all context db)
-            panel-data (material.panel/fetch-panel-data db resource)]
+            panel-data (material.panel/fetch-panel-data context db resource)]
         (render :material resource :accession accession :taxon taxon :tags tags :all-tags all-tags
                 :panel-data panel-data :timezone timezone :can-add? can-add?)))))
 

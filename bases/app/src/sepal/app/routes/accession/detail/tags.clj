@@ -42,6 +42,8 @@
                                             :taxon (:taxon panel-data)
                                             :supplier (:supplier panel-data)
                                             :stats (:stats panel-data)
+                                            :notes (:notes panel-data)
+                                            :note-count (:note-count panel-data)
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)
                                             :timezone timezone))
@@ -114,7 +116,7 @@
       (let [taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
             tags (tag.i/get-for-resource context db :accession id)
             all-tags (tag.i/list-all context db)
-            panel-data (accession.panel/fetch-panel-data db resource)]
+            panel-data (accession.panel/fetch-panel-data context db resource)]
         (render :accession resource :taxon taxon :tags tags :all-tags all-tags
                 :panel-data panel-data :timezone timezone :can-add? can-add?)))))
 
