@@ -121,3 +121,26 @@
           (accession.i/update! *db* (:accession/id accession)
                                {:intended-location-id nil})
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-accession-panel-shows-the-intended-location
+  (tf/testing "the panel names the location and links to it"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)
+                                             :intended-location (ig/ref :key/location)}}
+    (fn [{:keys [user accession location]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/accession/"
+                                                      (:accession/id accession)
+                                                      "/panel/")))
+            body (Jsoup/parse ^String (:body response))
+            link (.selectFirst body (str "a[href=\"/location/"
+                                         (:location/id location)
+                                         "/\"]"))]
+        (is (some? link) "the panel should link to the intended location")
+        (is (= (:location/name location) (.text link)))))))

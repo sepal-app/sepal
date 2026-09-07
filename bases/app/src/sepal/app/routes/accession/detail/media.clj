@@ -61,6 +61,7 @@
                                             :accession (:accession panel-data)
                                             :taxon (:taxon panel-data)
                                             :supplier (:supplier panel-data)
+                                            :intended-location (:intended-location panel-data)
                                             :stats (:stats panel-data)
                                             :notes (:notes panel-data)
                                             :note-count (:note-count panel-data)

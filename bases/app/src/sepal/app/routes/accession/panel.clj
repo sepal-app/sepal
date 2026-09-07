@@ -6,6 +6,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.contact.routes :as contact.routes]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.notes :as ui.notes]
@@ -13,6 +14,7 @@
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.contact.interface :as contact.i]
+            [sepal.location.interface :as location.i]
             [sepal.material.interface :as mat.i]
             [sepal.note.interface :as note.i]
             [sepal.taxon.interface :as taxon.i]
@@ -33,6 +35,7 @@
    - :accession      - The accession map
    - :taxon          - The associated taxon map
    - :supplier       - Optional supplier contact map
+   - :intended-location - Optional location its material is meant for
    - :stats          - Map with :material-count
    - :notes          - Recent notes for this accession
    - :note-count     - Total note count
@@ -40,7 +43,8 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [accession taxon supplier stats notes note-count activities activity-count timezone on-close]}]
+  [& {:keys [accession taxon supplier intended-location stats notes note-count
+             activities activity-count timezone on-close]}]
   (let [{:accession/keys [id code provenance-type]} accession
         {:keys [material-count]} stats
         sci-name (:taxon/name taxon)]
@@ -69,7 +73,13 @@
                       :value (when supplier
                                [:a {:href (z/url-for contact.routes/detail {:id (:contact/id supplier)})
                                     :class "spl-link"}
-                                (:contact/name supplier)])}]))
+                                (:contact/name supplier)])}
+                     {:label "Intended location"
+                      :value (when intended-location
+                               [:a {:href (z/url-for location.routes/detail
+                                                     {:id (:location/id intended-location)})
+                                    :class "spl-link"}
+                                (:location/name intended-location)])}]))
 
         ;; Statistics section
         (panel/collapsible-section
@@ -118,7 +128,8 @@
 (defn fetch-panel-data
   "Fetch all data needed for the accession panel.
    `ctx` carries :schema-version — a route's ::z/context will do.
-   Returns a map with :accession, :taxon, :supplier, :stats, :notes,
+   Returns a map with :accession, :taxon, :supplier, :intended-location,
+   :stats, :notes,
    :note-count, :activities, :activity-count."
   [ctx db accession]
   (let [accession-id (:accession/id accession)
@@ -126,6 +137,8 @@
                 (taxon.i/get-by-id db taxon-id))
         supplier (when-let [supplier-id (:accession/supplier-contact-id accession)]
                    (contact.i/get-by-id db supplier-id))
+        intended-location (when-let [location-id (:accession/intended-location-id accession)]
+                            (location.i/get-by-id db location-id))
         material-count (mat.i/count-by-accession-id db accession-id)
         notes (take 3 (note.i/get-for-resource ctx db :accession accession-id))
         note-count (note.i/count-for-resource ctx db :accession accession-id)
@@ -139,6 +152,7 @@
     {:accession accession
      :taxon taxon
      :supplier supplier
+     :intended-location intended-location
      :stats {:material-count material-count}
      :notes notes
      :note-count note-count
@@ -155,6 +169,7 @@
         :accession (:accession panel-data)
         :taxon (:taxon panel-data)
         :supplier (:supplier panel-data)
+        :intended-location (:intended-location panel-data)
         :stats (:stats panel-data)
         :notes (:notes panel-data)
         :note-count (:note-count panel-data)
