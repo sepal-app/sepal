@@ -13,6 +13,7 @@
             [sepal.contact.interface :as contact.i]
             [sepal.error.interface :as err.i]
             [sepal.location.interface :as loc.i]
+            [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]))
 
 (use-fixtures :once default-system-fixture)
@@ -116,3 +117,78 @@
                     (acc.i/get-by-id db (:accession/id acc)))))
         (is (some? (jdbc.sql/delete! db :location {:id (:location/id loc)}))
             "once nothing intends it the location can go")))))
+
+(deftest test-awaiting-planting-by-location-id
+  (let [db *db*]
+    (tf/testing "an accession intended for a location with nothing planted"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/loc] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/loc)}}
+      (fn [{:keys [acc loc taxon]}]
+        (is (match? [{:accession/id (:accession/id acc)
+                      :accession/code (:accession/code acc)
+                      :taxon/name (:taxon/name taxon)}]
+                    (acc.i/awaiting-planting-by-location-id
+                      db (:location/id loc))))))
+
+    (tf/testing "material in the intended location takes it off the list"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/loc] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/loc)}
+       [::mat.i/factory :key/mat] {:db db
+                                   :accession (ig/ref :key/acc)
+                                   :location (ig/ref :key/loc)}}
+      (fn [{:keys [loc mat]}]
+        (is (some? mat))
+        (is (= [] (acc.i/awaiting-planting-by-location-id
+                    db (:location/id loc))))))
+
+    (tf/testing "material somewhere else leaves it on the list"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/intended] {:db db}
+       [::loc.i/factory :key/elsewhere] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/intended)}
+       [::mat.i/factory :key/mat] {:db db
+                                   :accession (ig/ref :key/acc)
+                                   :location (ig/ref :key/elsewhere)}}
+      (fn [{:keys [acc intended mat]}]
+        (is (some? mat))
+        (is (match? [{:accession/id (:accession/id acc)}]
+                    (acc.i/awaiting-planting-by-location-id
+                      db (:location/id intended))))))
+
+    (tf/testing "partly planted counts as planted"
+      ;; Material in two locations, one of them the intended one. The bed has
+      ;; what it was promised, so the accession is not waiting on it.
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/intended] {:db db}
+       [::loc.i/factory :key/elsewhere] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :intended-location (ig/ref :key/intended)}
+       [::mat.i/factory :key/mat1] {:db db
+                                    :accession (ig/ref :key/acc)
+                                    :location (ig/ref :key/intended)}
+       [::mat.i/factory :key/mat2] {:db db
+                                    :accession (ig/ref :key/acc)
+                                    :location (ig/ref :key/elsewhere)}}
+      (fn [{:keys [intended mat1 mat2]}]
+        (is (some? mat1))
+        (is (some? mat2))
+        (is (= [] (acc.i/awaiting-planting-by-location-id
+                    db (:location/id intended))))))
+
+    (tf/testing "an accession with no intended location is never listed"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::loc.i/factory :key/loc] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}}
+      (fn [{:keys [acc loc]}]
+        (is (some? acc))
+        (is (= [] (acc.i/awaiting-planting-by-location-id
+                    db (:location/id loc))))))))

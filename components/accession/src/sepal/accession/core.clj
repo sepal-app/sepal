@@ -29,6 +29,26 @@
                   :from [:accession]
                   :where [:= :supplier_contact_id contact-id]}))
 
+(defn awaiting-planting-by-location-id
+  "Accessions intended for this location with no material in it yet.
+
+  The `not exists` clause is what makes this a work queue rather than a
+  history: without it an accession stays listed against the bed forever, and
+  75 of the 91 rows Belize Botanic Gardens carries are already planted where
+  they were meant to go."
+  [db location-id]
+  (db.i/execute! db {:select [:a.id :a.code :a.date_received :t.name]
+                     :from [[:accession :a]]
+                     :join [[:taxon :t] [:= :a.taxon_id :t.id]]
+                     :where [:and
+                             [:= :a.intended_location_id location-id]
+                             [:not [:exists {:select [[[:inline 1]]]
+                                             :from [[:material :m]]
+                                             :where [:and
+                                                     [:= :m.accession_id :a.id]
+                                                     [:= :m.location_id :a.intended_location_id]]}]]]
+                     :order-by [[:a.date_received :asc] [:a.code :asc]]}))
+
 (defn count-all
   "Count every accession in the garden."
   [db]
