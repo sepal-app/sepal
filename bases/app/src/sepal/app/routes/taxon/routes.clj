@@ -9,6 +9,8 @@
 (def detail-synonym ::detail-synonym)
 (def detail-notes ::detail-notes)
 (def detail-note ::detail-note)
+(def detail-tags ::detail-tags)
+(def detail-tag ::detail-tag)
 (def export ::export)
 
 (def panel ::panel)

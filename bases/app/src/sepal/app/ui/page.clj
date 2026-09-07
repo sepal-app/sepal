@@ -10,6 +10,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
+            [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.bootstrap :as bootstrap]
@@ -89,31 +90,43 @@
   [uri prefix]
   (boolean (some-> uri (str/starts-with? prefix))))
 
-(defn- sections []
-  [{:label "Activity" :href (z/url-for activity.routes/index)
-    :icon (heroicons/outline-clock)}
-   {:label "Accessions" :href (z/url-for accession.routes/index)
-    :icon (heroicons/outline-rectangle-group)}
-   {:label "Material" :href (z/url-for material.routes/index)
-    :icon (heroicons/outline-tag)}
-   {:label "Taxa" :href (z/url-for taxon.routes/index)
-    :icon (bootstrap/flower1)}
-   {:label "Locations" :href (z/url-for location.routes/index)
-    :icon (heroicons/outline-map-pin)}
-   {:label "Media" :href (z/url-for media.routes/index)
-    :icon (heroicons/outline-photo)}
-   {:label "Contacts" :href (z/url-for contact.routes/index)
-    :icon (lucide/contact-round)}])
+(defn- sections
+  "The section rail's entries.
+   Tags is omitted below the migration that added the tag tables: the index
+   there has nothing to read and no way to store anything, so an entry that
+   500s is worse than no entry at all."
+  [tags-available?]
+  (cond-> [{:label "Activity" :href (z/url-for activity.routes/index)
+            :icon (heroicons/outline-clock)}
+           {:label "Accessions" :href (z/url-for accession.routes/index)
+            :icon (heroicons/outline-rectangle-group)}
+           {:label "Material" :href (z/url-for material.routes/index)
+            :icon (heroicons/outline-tag)}
+           {:label "Taxa" :href (z/url-for taxon.routes/index)
+            :icon (bootstrap/flower1)}
+           {:label "Locations" :href (z/url-for location.routes/index)
+            :icon (heroicons/outline-map-pin)}]
+    tags-available?
+    (conj {:label "Tags" :href (z/url-for tag.routes/index)
+           :icon (heroicons/outline-tag)})
+
+    :always
+    (into [{:label "Media" :href (z/url-for media.routes/index)
+            :icon (heroicons/outline-photo)}
+           {:label "Contacts" :href (z/url-for contact.routes/index)
+            :icon (lucide/contact-round)}])))
 
 (defn sidebar []
   ;; Capture the URI here, eagerly. `for` below is lazy and Chassis realises it
   ;; while writing the response — by which point require-viewer's binding has
   ;; unwound and g/*uri* reads nil. Closing over the value is what makes this
-  ;; independent of when rendering happens.
-  (let [uri g/*uri*]
+  ;; independent of when rendering happens. g/*tags-available?* is captured for
+  ;; the same reason: `(sections …)` is evaluated inside the lazy `for` below.
+  (let [uri g/*uri*
+        tags-available? g/*tags-available?*]
     [:nav {:class "spl-rail" :aria-label "Sections"}
      [:ul {:class "spl-nav-list"}
-      (for [{:keys [label href icon]} (sections)]
+      (for [{:keys [label href icon]} (sections tags-available?)]
         (sidebar-item :label label
                       :href href
                       :icon icon

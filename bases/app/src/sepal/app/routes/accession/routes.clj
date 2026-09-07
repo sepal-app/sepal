@@ -8,6 +8,8 @@
 (def detail-media ::detail-media)
 (def detail-notes ::detail-notes)
 (def detail-note ::detail-note)
+(def detail-tags ::detail-tags)
+(def detail-tag ::detail-tag)
 (def export ::export)
 
 (def panel ::panel)

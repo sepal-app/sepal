@@ -19,6 +19,7 @@
             [sepal.app.routes.media.core :as media]
             [sepal.app.routes.settings.core :as settings]
             [sepal.app.routes.setup.core :as setup]
+            [sepal.app.routes.tag.core :as tag]
             [sepal.app.routes.taxon.core :as taxon]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]
@@ -55,6 +56,7 @@
    ["/contact" (contact/routes)]
    ["/location" (location/routes)]
    ["/material" (material/routes)]
+   ["/tag" (tag/routes)]
    ["/taxon" (taxon/routes)]
    ["/media" (media/routes)]
    ["/settings" (settings/routes)]])

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail.shared
-  (:require [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.globals :as g]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
@@ -10,6 +11,7 @@
 (def collection-tab ::collection)
 (def media-tab ::media)
 (def notes-tab ::notes)
+(def tags-tab ::tags)
 
 (def collection-disabled-reason
   "Available when provenance is wild collected")
@@ -26,20 +28,28 @@
                (= :wild (:accession/provenance-type accession)))))
 
 (defn items [& {:keys [accession active collection-available?]}]
-  [(ui.tabs/item "General"
-                 {:href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
-                  :active (= active general-tab)})
-   (ui.tabs/item "Collection"
-                 (if collection-available?
-                   {:href (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
-                    :active (= active collection-tab)}
-                   {:disabled collection-disabled-reason}))
-   (ui.tabs/item "Media"
-                 {:href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
-                  :active (= active media-tab)})
-   (ui.tabs/item "Notes"
-                 {:href (z/url-for accession.routes/detail-notes {:id (:accession/id accession)})
-                  :active (= active notes-tab)})])
+  (cond-> [(ui.tabs/item "General"
+                         {:href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
+                          :active (= active general-tab)})
+           (ui.tabs/item "Collection"
+                         (if collection-available?
+                           {:href (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
+                            :active (= active collection-tab)}
+                           {:disabled collection-disabled-reason}))
+           (ui.tabs/item "Media"
+                         {:href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
+                          :active (= active media-tab)})
+           (ui.tabs/item "Notes"
+                         {:href (z/url-for accession.routes/detail-notes {:id (:accession/id accession)})
+                          :active (= active notes-tab)})]
+    ;; No Tags tab below the migration that added the tag tables — the section
+    ;; has nothing to read there and no way to store anything. Unlike
+    ;; Collection this is not a disabled tab: Collection is unavailable for
+    ;; this record, Tags is unavailable for this database.
+    g/*tags-available?*
+    (conj (ui.tabs/item "Tags"
+                        {:href (z/url-for accession.routes/detail-tags {:id (:accession/id accession)})
+                         :active (= active tags-tab)}))))
 
 (defn tabs
   ([accession active]

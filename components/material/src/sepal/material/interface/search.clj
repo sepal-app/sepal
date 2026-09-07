@@ -65,6 +65,14 @@
                   :label "Location"
                   :joins [[:location :l] [:= :l.id :m.location_id]]}
 
+    ;; Related: tag (through tag_link)
+    :tag {:column :tg.name
+          :type :text
+          :label "Tag"
+          :joins [[:tag_link :tl] [:and [:= :tl.resource_id :m.id]
+                                   [:= :tl.resource_type "material"]]
+                  [:tag :tg] [:= :tg.id :tl.tag_id]]}
+
     ;; Date fields
     :created {:column :m.created_at
               :type :date

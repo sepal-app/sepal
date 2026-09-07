@@ -2,6 +2,7 @@
   "CSV export handler for materials."
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
+            [sepal.app.search :as app.search]
             [sepal.database.interface :as db.i]
             [sepal.material.interface.search]
             [sepal.search.interface :as search.i]
@@ -98,7 +99,7 @@
                     include-taxon?
                     (update :join into [[:taxon :t] [:= :t.id :a.taxon_id]]))
 
-        stmt (-> (search.i/compile-query :material ast base-stmt)
+        stmt (-> (app.search/compile-query context :material ast base-stmt)
                  (assoc :order-by [:m.code]))
         rows (db.i/execute! db stmt)
 

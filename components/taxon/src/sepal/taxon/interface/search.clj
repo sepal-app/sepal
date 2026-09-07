@@ -80,6 +80,14 @@
                  :fts-table :accession  ; table to count (reusing fts-table key)
                  :label "Accessions"}
 
+    ;; Related: tag (through tag_link)
+    :tag {:column :tg.name
+          :type :text
+          :label "Tag"
+          :joins [[:tag_link :tl] [:and [:= :tl.resource_id :t.id]
+                                   [:= :tl.resource_type "taxon"]]
+                  [:tag :tg] [:= :tg.id :tl.tag_id]]}
+
     ;; Resolved by the route, not by the compiler, and so deliberately has no
     ;; :column. A taxon's synonyms live in two places -- the garden's own
     ;; taxon_synonym table and the shared read-only WFO reference file, which is

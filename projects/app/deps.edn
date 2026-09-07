@@ -22,6 +22,7 @@
         poly/settings {:local/root "../../components/settings"}
         poly/store {:local/root "../../components/store"}
         poly/synonym {:local/root "../../components/synonym"}
+        poly/tag {:local/root "../../components/tag"}
         poly/taxon {:local/root "../../components/taxon"}
         poly/test {:local/root "../../components/test"}
         poly/token {:local/root "../../components/token"}

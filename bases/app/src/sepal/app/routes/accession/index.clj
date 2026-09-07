@@ -10,6 +10,7 @@
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.search :as app.search]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -166,7 +167,7 @@
                    :join [[:taxon :t] [:= :t.id :a.taxon_id]]}
 
         ;; Compile search query (adds WHERE clause)
-        stmt (search.i/compile-query :accession ast base-stmt)
+        stmt (app.search/compile-query context :accession ast base-stmt)
 
         ;; Execute queries
         total (db.i/count db stmt)
@@ -204,7 +205,7 @@
 
       :else
       (render :viewer viewer
-              :field-options (search.i/field-options :accession)
+              :field-options (app.search/field-options context :accession)
               :href (uri/uri-str {:path uri
                                   :query (uri/map->query-string
                                            (cond-> {:page page}

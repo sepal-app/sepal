@@ -14,11 +14,16 @@
                         (filter #(re-find #":delete" (slurp %)))
                         (mapv #(.getPath ^File %))
                         sort)]
-      (is (= ["bases/app/src/sepal/app/routes/accession/detail/notes.clj"
+      ;; The three tag entries delete a tag or one tag_link row, never the
+      ;; tagged record itself, so none of them can orphan a note.
+      (is (= ["bases/app/src/sepal/app/routes/accession/core.clj"
+              "bases/app/src/sepal/app/routes/accession/detail/notes.clj"
+              "bases/app/src/sepal/app/routes/material/core.clj"
               "bases/app/src/sepal/app/routes/material/detail/notes.clj"
               "bases/app/src/sepal/app/routes/media/core.clj"
               "bases/app/src/sepal/app/routes/media/detail.clj"
               "bases/app/src/sepal/app/routes/media/detail/link.clj"
+              "bases/app/src/sepal/app/routes/tag/detail.clj"
               "bases/app/src/sepal/app/routes/taxon/core.clj"
               "bases/app/src/sepal/app/routes/taxon/detail/notes.clj"]
              deleting)
