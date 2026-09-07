@@ -120,3 +120,41 @@
         (is (.contains (.text body) "to Destination bed")
             "the destination's name should appear, not the \"removed\" fallback")
         (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))
+
+(deftest test-location-panel-lists-accessions-awaiting-planting
+  (tf/testing "an accession intended for this location, before and after planting"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)
+                                             :intended-location (ig/ref :key/location)}}
+    (fn [{:keys [user accession location]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            panel-url (str "/location/" (:location/id location) "/panel/")
+            plant-here-selector (str "a[href=\"/material/new/?accession-id="
+                                     (:accession/id accession) "\"]")
+            body (-> sess (peri/request panel-url) :response :body
+                     (as-> ^String s (Jsoup/parse s)))]
+        (is (some? (.selectFirst body plant-here-selector))
+            "the panel should offer to plant the waiting accession here")
+        (is (.contains (.text body) (:accession/code accession)))
+
+        ;; Plant it, and the row goes away. The material is deleted again
+        ;; before the test ends, or the location factory's teardown trips over
+        ;; material.location_id.
+        (let [mat (material.i/create! *db* {:code "MAT-AWAIT-1"
+                                            :accession-id (:accession/id accession)
+                                            :location-id (:location/id location)
+                                            :type :plant
+                                            :status :alive
+                                            :quantity 1})]
+          (try
+            (let [body (-> sess (peri/request panel-url) :response :body
+                           (as-> ^String s (Jsoup/parse s)))]
+              (is (nil? (.selectFirst body plant-here-selector))
+                  "once material is in the location nothing is waiting for it"))
+            (finally
+              (jdbc.sql/delete! *db* :material {:id (:material/id mat)}))))))))

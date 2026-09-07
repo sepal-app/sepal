@@ -1,9 +1,11 @@
 (ns sepal.app.routes.location.panel
   "Resource panel content for locations.
    Displays location summary, statistics, linked resources, and activity."
-  (:require [sepal.activity.interface :as activity.i]
+  (:require [sepal.accession.interface :as acc.i]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.material.interface :as mat.i]
@@ -15,12 +17,13 @@
    Options:
    - :location       - The location map
    - :stats          - Map with :material-count
+   - :awaiting       - Accessions intended for this location, nothing planted yet
    - :moved-out      - Change rows whose material left this location
    - :activities     - Recent activities for this location
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [location stats moved-out activities activity-count timezone on-close]}]
+  [& {:keys [location stats awaiting moved-out activities activity-count timezone on-close]}]
   (let [{:location/keys [id name code description]} location
         {:keys [material-count]} stats]
     (panel/panel-container
@@ -52,6 +55,30 @@
             :stats [{:label "Materials"
                      :value material-count
                      :href (z/url-for material.routes/index nil {:location-id id})}]))
+
+        ;; Awaiting planting section
+        (panel/collapsible-section
+          :title "Awaiting planting"
+          :count (count awaiting)
+          :disabled? (empty? awaiting)
+          :empty-label "nothing waiting"
+          :children
+          [:div {:class "space-y-2"}
+           (for [row awaiting]
+             ^{:key (:accession/id row)}
+             [:div {:class "spl-card bg-surface shadow-sm"}
+              [:div {:class "spl-card-body p-3"}
+               [:div {:class "flex items-center justify-between"}
+                [:a {:href (z/url-for accession.routes/detail {:id (:accession/id row)})
+                     :class "spl-link text-sm font-medium"}
+                 (:accession/code row)]
+                [:a {:href (z/url-for material.routes/new nil
+                                      {:accession-id (:accession/id row)})
+                     :class "spl-link text-sm"}
+                 "Plant here"]]
+               [:div {:class "text-sm"} (:taxon/name row)]
+               (when-let [received (:accession/date-received row)]
+                 [:div {:class "text-sm text-text-soft"} (str "received " received)])]])])
 
         ;; Moved section
         (panel/collapsible-section
@@ -93,11 +120,12 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the location panel.
-   Returns a map with :location, :stats, :moved-out, :activities,
+   Returns a map with :location, :stats, :awaiting, :moved-out, :activities,
    :activity-count."
   [db location]
   (let [location-id (:location/id location)
         material-count (mat.i/count-by-location-id db location-id)
+        awaiting (acc.i/awaiting-planting-by-location-id db location-id)
         moved-out (mat.i/moved-out-by-location-id db location-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :location
@@ -108,6 +136,7 @@
                                                      :resource-id location-id)]
     {:location location
      :stats {:material-count material-count}
+     :awaiting awaiting
      :moved-out moved-out
      :activities activities
      :activity-count activity-count}))
@@ -121,6 +150,7 @@
       (panel-content
         :location (:location panel-data)
         :stats (:stats panel-data)
+        :awaiting (:awaiting panel-data)
         :moved-out (:moved-out panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
