@@ -53,6 +53,7 @@
    [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]
    [:wild-provenance-status {:decode/form validation.i/empty->nil} [:maybe accession.spec/wild-provenance-status]]
    [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
+   [:intended-location-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
    [:date-accessioned [:maybe validation.i/date]]])
 

@@ -14,11 +14,12 @@
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.location.interface :as location.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org accession supplier taxon values
+(defn page-content [& {:keys [errors org accession location supplier taxon values
                               collection-available? footer]}]
   (accession.shared/page
     :accession accession
@@ -29,6 +30,7 @@
     :body (accession.form/form :action (z/url-for accession.routes/detail-general
                                                   {:id (:accession/id accession)})
                                :errors errors
+                               :location location
                                :supplier supplier
                                :taxon taxon
                                :org org
@@ -37,14 +39,15 @@
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "accession-form" :on-cancel :reload))
 
-(defn render [& {:keys [errors org accession supplier taxon values panel-data timezone
-                        collection-available?]}]
+(defn render [& {:keys [errors org accession location supplier taxon values panel-data
+                        timezone collection-available?]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :collection-available? collection-available?
                                                :footer (ui.form/footer :buttons (footer-buttons))
                                                :errors errors
                                                :org org
                                                :accession accession
+                                               :location location
                                                :supplier supplier
                                                :taxon taxon
                                                :values values)
@@ -79,6 +82,7 @@
    [:provenance-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/provenance-type]]
    [:wild-provenance-status {:decode/form validation.i/empty->nil} [:maybe accession.spec/wild-provenance-status]]
    [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
+   [:intended-location-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
    [:date-accessioned [:maybe validation.i/date]]])
 
@@ -86,11 +90,13 @@
   (let [{:keys [db organization resource timezone]} context
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         supplier (contact.i/get-by-id db (:accession/supplier-contact-id resource))
+        intended-location (location.i/get-by-id db (:accession/intended-location-id resource))
         values {:id (:accession/id resource)
                 :code (:accession/code resource)
                 :taxon-id (:accession/taxon-id resource)
                 :taxon-name (:taxon/name taxon)
                 :supplier-contact-id (:accession/supplier-contact-id resource)
+                :intended-location-id (:accession/intended-location-id resource)
                 :id-qualifier (:accession/id-qualifier resource)
                 :id-qualifier-rank (:accession/id-qualifier-rank resource)
                 :provenance-type (:accession/provenance-type resource)
@@ -114,6 +120,7 @@
                                          resource (some? collection))
                 :org organization
                 :accession resource
+                :location intended-location
                 :supplier supplier
                 :taxon taxon
                 :values values
