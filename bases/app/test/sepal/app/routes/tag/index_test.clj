@@ -9,6 +9,7 @@
             [sepal.database.interface :as db.i]
             [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
 
@@ -99,4 +100,38 @@
                   (activity.i/get-by-resource *db* :resource-type :tag :resource-id (:tag/id tag)))
             "the deletion is recorded; the row is gone, so the feed is the only
              place it is still named")
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-a-failed-activity-write-rolls-the-delete-back
+  ;; The handler deletes the tag and writes its activity event in one
+  ;; transaction, and tag.i/delete! joins that transaction instead of opening
+  ;; its own. Without that guard next.jdbc's *nested-tx* default of :allow
+  ;; would run the inner one for real and commit the deletes before the
+  ;; activity write was attempted, leaving the outer rollback nothing to undo
+  ;; -- a tag gone with no record that it ever went.
+  ;;
+  ;; The tag needs a link on it too: the deletes are two statements, and only
+  ;; asserting on the tag row would pass even if the tag_link delete had
+  ;; committed separately.
+  (tf/testing "the activity write throws"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            tag (tag.i/create! *db* {:name "cycad circle labels"})
+            tag-id (:tag/id tag)
+            url (format "/tag/%s/" tag-id)]
+        (tag.i/tag! *db* tag-id (:taxon/id taxon) :taxon)
+        (let [{:keys [response] :as sess} (peri/request sess url)
+              token (test.i/response-anti-forgery-token response)]
+          (with-redefs [tag.activity/create!
+                        (fn [& _] (throw (ex-info "activity write failed" {})))]
+            (peri/request sess url
+                          :request-method :delete
+                          :headers {"x-csrf-token" token}))
+          (is (some? (tag.i/get-by-id ctx *db* tag-id))
+              "the tag row must survive a rolled-back delete")
+          (is (= [tag-id] (mapv :tag/id (tag.i/get-for-resource ctx *db* :taxon (:taxon/id taxon))))
+              "and so must its link"))
+        (tag.i/delete! *db* tag-id)
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
