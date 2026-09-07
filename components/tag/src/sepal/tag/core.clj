@@ -1,6 +1,7 @@
 (ns sepal.tag.core
   (:require [integrant.core :as ig]
             [malli.generator :as mg]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
@@ -51,14 +52,27 @@
 (defn update! [db id data]
   (store.i/update! db :tag id data spec/UpdateTag spec/Tag))
 
+(defn- delete-rows! [db id]
+  (jdbc.sql/delete! db :tag_link {:tag_id id})
+  (jdbc.sql/delete! db :tag {:id id}))
+
 (defn delete!
   "Remove the tag and its links in one transaction. A note's polymorphic
   resource_id has no foreign key to hang this off, but tag_link.tag_id does,
-  so here the links can be cleaned up with the row they belong to."
+  so here the links can be cleaned up with the row they belong to.
+
+  When the caller is already inside a transaction, join it rather than start
+  a nested one — the same guard `material.core/update!` carries, for the same
+  reason. `next.jdbc`'s `*nested-tx*` defaults to `:allow`, not `:ignore`, so
+  an inner `with-transaction` runs a real transaction on the same connection
+  and commits at its end. A caller that wraps this call and its own follow-up
+  write in one transaction would find these deletes already committed, and
+  its rollback unable to undo them."
   [db id]
-  (db.i/with-transaction [tx db]
-    (jdbc.sql/delete! tx :tag_link {:tag_id id})
-    (jdbc.sql/delete! tx :tag {:id id}))
+  (if (jdbc/active-tx?)
+    (delete-rows! db id)
+    (db.i/with-transaction [tx db]
+      (delete-rows! tx id)))
   nil)
 
 (defn tag!

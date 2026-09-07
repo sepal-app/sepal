@@ -67,8 +67,8 @@
 
 (defn delete!
   "Delete the tag and its links, and record the activity in the same
-  transaction. tag.i/delete! opens a transaction of its own; next.jdbc's
-  default :nested-tx behaviour makes the inner one a no-op inside this."
+  transaction. tag.i/delete! joins this transaction rather than opening one
+  of its own, so a failed activity write rolls the deletes back with it."
   [db id deleted-by tag]
   (try
     (db.i/with-transaction [tx db]
