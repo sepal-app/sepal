@@ -58,10 +58,19 @@
   ;; The dropdown no longer offers the field, but a bookmark or a typed query
   ;; still reaches the handler. The accession must really be tagged, so the
   ;; empty result below is the gate rather than an empty table.
+  ;;
+  ;; The code is pinned rather than generated because the assertions below
+  ;; search the rendered page for it. A generated code differs run to run,
+  ;; and a short one -- `mg/generate` produced "h" on one CI run -- is a
+  ;; substring of ordinary markup like `<html>` and `href`, so the negative
+  ;; assertion matched incidental text and failed. A generated code can also
+  ;; carry regex metacharacters, which `re-pattern` would read as syntax.
   (tf/testing "GET /accession/?q=tag:… on a floor database"
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
      [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+     [::accession.i/factory :key/accession] {:db *db*
+                                             :taxon (ig/ref :key/taxon)
+                                             :data {:code "ZZTAGGATE1"}}}
     (fn [{:keys [user accession]}]
       (let [tag (tag.i/create! *db* {:name "Fernaldia"})
             sess (app.test/login (:user/email user) "testpassword123")
