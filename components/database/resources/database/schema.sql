@@ -77,7 +77,7 @@ CREATE TABLE accession (
   date_accessioned text,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, intended_location_id integer references location(id)) strict;
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -336,6 +336,7 @@ CREATE TABLE tag_link (
 ) strict;
 CREATE UNIQUE INDEX tag_link_unique_idx on tag_link (tag_id, resource_id, resource_type);
 CREATE INDEX tag_link_resource_id_resource_type_idx on tag_link (resource_id, resource_type);
+CREATE INDEX accession_intended_location_id_idx on accession (intended_location_id);
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -373,3 +374,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260902160000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260903120000', '2026-09-05 17:51:02');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '2026-09-06 16:55:14');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906130000', '2026-09-06 17:47:59');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907120000', '2026-09-07 14:31:51');
