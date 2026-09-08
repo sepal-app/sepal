@@ -294,17 +294,25 @@
           (is (some? (.selectFirst body "#quantity-received-errors"))
               "quantity-received should have a field error"))))))
 
-(deftest test-the-receipt-section-is-titled-receipt
+(deftest test-the-receipt-section-is-titled-receipt-and-renders-its-controls
   (tf/testing "the section holding the four receipt fields is named for the
-               event, not for two of its four fields"
+               event, not for two of its four fields, and the two new
+               controls are actually rendered by id"
     {[::user.i/factory :key/user] {:db *db*
                                    :password "testpassword123"
                                    :role :editor}}
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            body (-> sess (peri/request "/accession/new/") :response :body)
-            titles (->> (.select (Jsoup/parse ^String body) ".spl-form-section-title")
+            html (-> sess (peri/request "/accession/new/") :response :body)
+            body (Jsoup/parse ^String html)
+            titles (->> (.select body ".spl-form-section-title")
                         (map #(.text %))
                         set)]
         (is (contains? titles "Receipt"))
-        (is (not (contains? titles "Dates")))))))
+        (is (not (contains? titles "Dates")))
+
+        (is (some? (.selectFirst body "select#received-type"))
+            "the propagule picker renders; renaming it 422s a real browser submit
+             while every params-map test still passes")
+        (is (some? (.selectFirst body "input#quantity-received"))
+            "same for the quantity input")))))

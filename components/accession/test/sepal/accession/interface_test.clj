@@ -267,7 +267,8 @@
         ;; it. Only the form-submission path (`validate.i/validate-form-values`)
         ;; converts that throw into an error map; a direct interface call does
         ;; not. So the conversion happens here, the same way
-        ;; `taxon.rank-test/test-...` converts a thrown validation failure.
+        ;; `taxon.rank-test/test-an-unknown-rank-is-a-field-error-not-a-500`
+        ;; converts a thrown validation failure.
         (let [result (try
                        (acc.i/create! db {:code "NEG-1"
                                           :taxon-id (:taxon/id taxon)
