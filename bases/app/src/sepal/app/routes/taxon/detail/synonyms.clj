@@ -11,6 +11,7 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.synonym.interface :as synonym.i]
@@ -27,15 +28,18 @@
   ;; from the read-only reference file), but the guard stays here anyway so
   ;; that task doesn't have to revisit this file.
   (when (not= "wfo" (:synonym/source synonym))
-    [:button {:type "button"
-              :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
-              :aria-label "Remove synonym"
-              :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-              :hx-delete (z/url-for taxon.routes/detail-synonym
-                                    {:id (:taxon/id taxon)
-                                     :synonym-id (:synonym/id synonym)})
-              :hx-confirm "Remove this synonym?"}
-     (heroicons/outline-trash :class "size-4")]))
+    (tooltip/wrap
+      [:button {:type "button"
+                :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
+                :aria-label "Remove synonym"
+                :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+                :hx-delete (z/url-for taxon.routes/detail-synonym
+                                      {:id (:taxon/id taxon)
+                                       :synonym-id (:synonym/id synonym)})
+                :hx-confirm "Remove this synonym?"}
+       (heroicons/outline-trash :class "size-4")]
+      "Remove synonym"
+      :side "left")))
 
 (defn- synonym-row [& {:keys [taxon synonym]}]
   [:tr

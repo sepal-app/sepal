@@ -11,7 +11,8 @@
   (:require [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.ui.activity :as ui.activity]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.tooltip :as tooltip]))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Collapsible Section
@@ -227,9 +228,12 @@
     (when subtitle
       [:p {:class "spl-panel-name"} subtitle])]
    (when on-close
-     [:button {:class "spl-panel-close"
-               :type "button"
-               :data-panel-close ""
-               :aria-label "Close panel"
-               :x-on:click on-close}
-      (lucide/x :class "w-4 h-4")])])
+     (tooltip/wrap
+       [:button {:class "spl-panel-close"
+                 :type "button"
+                 :data-panel-close ""
+                 :aria-label "Close panel"
+                 :x-on:click on-close}
+        (lucide/x :class "w-4 h-4")]
+       "Close panel"
+       :side "left"))])

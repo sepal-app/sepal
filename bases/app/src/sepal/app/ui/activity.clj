@@ -1,19 +1,21 @@
 (ns sepal.app.ui.activity
   (:require [sepal.app.html :as html]
-            [sepal.app.ui.icons.bootstrap :as bootstrap]
-            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]))
 
 (defn resource-icon
   "Return the appropriate icon for a resource type.
-   Resource types match the activity type namespace (e.g., :accession, :taxon)."
+   Resource types match the activity type namespace (e.g., :accession, :taxon).
+
+   Same icon for a resource here as in the section rail — see
+   `sepal.app.ui.page/sections`. A feed row and a rail entry naming the same
+   thing with different glyphs teaches the reader nothing."
   [resource-type & {:keys [size] :or {size 20}}]
   (case resource-type
-    :accession (heroicons/outline-rectangle-group :size size)
-    :material (heroicons/outline-tag :size size)
-    :taxon (bootstrap/flower1 :size size)
-    :location (heroicons/outline-map-pin :size size)
-    :media (heroicons/outline-photo :size size)
+    :accession (lucide/clipboard-list :size size)
+    :material (lucide/sprout :size size)
+    :taxon (lucide/flower-2 :size size)
+    :location (lucide/map-pin :size size)
+    :media (lucide/image :size size)
     :contact (lucide/contact-round)
     :setup (lucide/circle-check :size size)
     ;; Default fallback

@@ -4,6 +4,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.tooltip :as tooltip]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -118,12 +119,15 @@
                                                            [])})}
          [:legend {:class "spl-form-section-title flex items-center gap-2"}
           "Vernacular names"
-          [:button {:type "button"
-                    :class "spl-btn spl-btn--sm spl-btn--icon"
-                    :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
-                    :aria-label "Add vernacular name"}
-           [:span {:aria-hidden true}
-            (heroicons/plus-mini)]]]
+          (tooltip/wrap
+            [:button {:type "button"
+                      :class "spl-btn spl-btn--sm spl-btn--icon"
+                      :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
+                      :aria-label "Add vernacular name"}
+             [:span {:aria-hidden true}
+              (heroicons/plus-mini)]]
+            "Add vernacular name"
+            :side "right")]
          [:div {:class "spl-form-fields"}
           [:template {:x-for "(vn, index) in vernacularNames"}
            [:div {:class "flex flex-row gap-2 items-center"}
@@ -135,12 +139,15 @@
                      :class "spl-input flex-grow"
                      :aria-label "Language"
                      :x-model "vn.language"}]
-            [:button {:type "button"
-                      :class "spl-btn spl-btn--danger spl-btn--icon"
-                      :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
-                      :aria-label "Delete"}
-             [:span {:aria-hidden true}
-              (heroicons/outline-trash)]]]]
+            (tooltip/wrap
+              [:button {:type "button"
+                        :class "spl-btn spl-btn--danger spl-btn--icon"
+                        :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
+                        :aria-label "Delete"}
+               [:span {:aria-hidden true}
+                (heroicons/outline-trash)]]
+              "Delete"
+              :side "left")]]
           ;; Inside the section, so it takes the same 576px column as the
           ;; fields. As a bare div it ran the full width of the page.
           [:p {:x-show "!vernacularNames?.length"

@@ -1,7 +1,8 @@
 (ns sepal.app.flash
   (:require [sepal.app.flash.category :as category]
             [sepal.app.html :as html]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.tooltip :as tooltip]))
 
 (defn add-message
   ([response text]
@@ -75,13 +76,16 @@
            :x-transition:leave-start "opacity-100"
            :x-transition:leave-end "opacity-0"}
      [:p {:class "spl-banner-text banner-text"} text]
-     [:button {:type "button"
-               :class "spl-banner-dismiss"
-               :aria-label "Dismiss"
-               :x-on:click "show = false"}
-      ;; `icons/outline-x` renders an empty 5px svg — it has no path and its
-      ;; size is unitless. The banner needs a mark you can actually see.
-      (lucide/x :class "w-4 h-4")]]))
+     (tooltip/wrap
+       [:button {:type "button"
+                 :class "spl-banner-dismiss"
+                 :aria-label "Dismiss"
+                 :x-on:click "show = false"}
+        ;; `icons/outline-x` renders an empty 5px svg — it has no path and its
+        ;; size is unitless. The banner needs a mark you can actually see.
+        (lucide/x :class "w-4 h-4")]
+       "Dismiss"
+       :side "left")]))
 
 (defn banner [messages]
   [:div {:class "spl-banner-stack"}

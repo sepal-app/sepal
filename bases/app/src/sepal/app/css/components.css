@@ -480,13 +480,23 @@
   flex-direction: column;
   position: sticky;
   top: 0;
+  /* A sticky box always forms a stacking context, and one at `auto` paints
+     below anything with a positive z-index in the same context — including the
+     list's sticky `.spl-table thead th` at 2, which is opaque and swallowed the
+     tooltips whole. A tip's own z-index cannot rescue it: 60 orders it inside
+     the rail, not against the page. 10 clears the header and the collapse
+     control and still sits under the scrim (30), the off-canvas rail (40) and
+     the flash banner (50). */
+  z-index: 10;
   align-self: flex-start;
   height: 100vh;
-  overflow-y: auto;
-  /* The rail scrolls only if the sections outgrow the viewport, and a scroll
-     that reaches its end must not rubber-band or chain to the page behind it —
-     the rail is fixed furniture, and bounce makes it feel loose. */
-  overscroll-behavior: none;
+  /* Visible, not auto. The collapsed rail is 64px wide and its items say
+     nothing but their glyph, so each one carries a .spl-tip that paints to the
+     right of the rail. `overflow-y: auto` forces overflow-x to compute to auto
+     as well, and that clipped every tip at the rail's edge. Nine items come to
+     about 354px, so the scroll it gives up only mattered on a window shorter
+     than that. */
+  overflow: visible;
 }
 .spl-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .spl-nav-list--end { margin-top: auto; }
@@ -517,6 +527,8 @@
 .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { flex-basis: 216px; }
 .spl-drawer-toggle:checked ~ .spl-shell .spl-nav-label { display: inline; }
 .spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+/* Expanded, the label is right there. A tip repeating it is noise. */
+.spl-drawer-toggle:checked ~ .spl-shell .spl-nav-item .spl-tip { display: none; }
 
 .spl-scrim { display: none; }
 
@@ -1379,6 +1391,70 @@
 .spl-fieldset { border: 0; padding: 0; margin: 0; }
 
 .spl-tooltip { position: relative; }
+
+/* ── Tooltip ───────────────────────────────────────────────────────────────
+ * The label an icon-only control needs when nothing beside it says what it
+ * does — the collapsed rail, the toolbar actions, a chip's remove button.
+ *
+ * Same chip as .spl-tab-reason above: dark --color-text ground, control
+ * radius, soft shadow. Two tooltip looks in one app is one too many.
+ *
+ * The tip is aria-hidden and carries no id. Its text repeats the control's
+ * aria-label, and pointing aria-describedby at a copy of the accessible name
+ * only makes a screen reader say the word twice. What it fixes is a sighted
+ * user staring at a glyph.
+ *
+ * The host is the control itself, so the tip adds no wrapper and changes no
+ * layout. It is absolutely positioned, so an ancestor that clips clips it too:
+ * .spl-rail gave up its overflow for this, and a control deep inside a
+ * scrolling region can still lose its tip at that region's edge.
+ */
+.spl-tip-host { position: relative; }
+.spl-tip {
+  position: absolute;
+  z-index: 60;
+  /* max-content, so a short label stays on one line; capped, so "Remove tag "
+     plus a long tag name wraps instead of running across the screen. */
+  width: max-content;
+  max-width: 220px;
+  padding: 5px 9px;
+  border-radius: var(--radius-control);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font: 400 11.5px/1.4 var(--font-sans);
+  box-shadow: 0 6px 18px -8px rgb(18 33 30 / .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+.spl-tip::after {
+  content: "";
+  position: absolute;
+  border: 5px solid transparent;
+}
+
+.spl-tip--right { left: calc(100% + 9px); top: 50%; transform: translateY(-50%); }
+.spl-tip--left { right: calc(100% + 9px); top: 50%; transform: translateY(-50%); }
+.spl-tip--bottom { top: calc(100% + 7px); left: 50%; transform: translateX(-50%); }
+.spl-tip--top { bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); }
+
+.spl-tip--right::after { right: 100%; top: 50%; margin-top: -5px; border-right-color: var(--color-text); }
+.spl-tip--left::after { left: 100%; top: 50%; margin-top: -5px; border-left-color: var(--color-text); }
+.spl-tip--bottom::after { bottom: 100%; left: 50%; margin-left: -5px; border-bottom-color: var(--color-text); }
+.spl-tip--top::after { top: 100%; left: 50%; margin-left: -5px; border-top-color: var(--color-text); }
+
+/* Hover waits, focus does not. A pointer crossing a toolbar on its way
+ * somewhere else should not trail a row of chips behind it; a keyboard user who
+ * has just landed on the control wants the answer now. Leaving takes the base
+ * rule, so the tip fades out with no delay either way. */
+.spl-tip-host:hover > .spl-tip { opacity: 1; transition-delay: .35s; }
+.spl-tip-host:focus-visible > .spl-tip { opacity: 1; }
+
+/* A touch device has no hover to reveal it and no focus ring to replace it, so
+ * the tip would only ever flash under a fingertip. */
+@media (hover: none) and (pointer: coarse) {
+  .spl-tip { display: none; }
+}
 
 /* ── Paginator ─────────────────────────────────────────────────────────── */
 .spl-paginator {

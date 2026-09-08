@@ -8,6 +8,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.tag.interface :as tag.i]
@@ -21,13 +22,16 @@
    [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
 (defn- delete-button [tag]
-  [:button {:type "button"
-            :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
-            :aria-label "Delete tag"
-            :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-            :hx-delete (z/url-for tag.routes/detail {:id (:tag/id tag)})
-            :hx-confirm (str "Delete tag \"" (:tag/name tag) "\"? This removes it from every resource it's linked to.")}
-   (heroicons/outline-trash :class "size-4")])
+  (tooltip/wrap
+    [:button {:type "button"
+              :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
+              :aria-label "Delete tag"
+              :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+              :hx-delete (z/url-for tag.routes/detail {:id (:tag/id tag)})
+              :hx-confirm (str "Delete tag \"" (:tag/name tag) "\"? This removes it from every resource it's linked to.")}
+     (heroicons/outline-trash :class "size-4")]
+    "Delete tag"
+    :side "left"))
 
 (defn render [& {:keys [errors tag values]}]
   (page/page

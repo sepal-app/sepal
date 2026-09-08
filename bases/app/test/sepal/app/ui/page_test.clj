@@ -36,9 +36,29 @@
 (deftest test-decorative-icon-is-hidden-from-assistive-tech
   (is (some? (.selectFirst (item) "[aria-hidden=true]"))))
 
+(deftest test-collapsed-item-carries-a-tooltip
+  (testing "collapsed, the rail is 64px of glyphs and nothing else says what
+            they are. CSS drops the tip again once the rail is expanded."
+    (let [tip (.selectFirst (item) "a.spl-tip-host > .spl-tip")]
+      (is (some? tip))
+      (is (= "Accessions" (.text tip)))
+      (is (some? (.selectFirst (item) ".spl-tip--right"))
+          "the rail's tip sits to the right of the rail, not under the item"))))
+
+(deftest test-tooltip-is-hidden-from-assistive-tech
+  (testing "the tip repeats the item's aria-label; a screen reader must not
+            read the name twice"
+    (is (= "true" (.attr (.selectFirst (item) ".spl-tip") "aria-hidden")))))
+
+(deftest test-tooltip-does-not-displace-the-accessible-name
+  (let [a (.selectFirst (item) "a")]
+    (is (= "Accessions" (.attr a "aria-label")))))
+
 (deftest test-item-emits-no-daisyui-classes
   (let [html (chassis/html (page/sidebar-item :href "/x/" :label "X"
                                               :icon [:svg] :current? false))]
+    ;; "tooltip" is DaisyUI's class. Ours is spl-tip, which is why this still
+    ;; passes with a tooltip on every item.
     (doseq [cls ["tooltip" "is-drawer-close" "menu"]]
       (is (not (str/includes? html cls))
           (str "sidebar-item still emits " cls)))))
@@ -77,6 +97,25 @@
             (is (some? current) (str "no current item on " uri))
             (when current
               (is (= label (.attr current "aria-label"))))))))))
+
+(deftest test-served-rail-carries-a-tooltip-per-section
+  (tf/testing "through the front door, not just the component: every rail item
+               in the response has a tip, and its text is the item's label"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/accession/"))
+            body (Jsoup/parse ^String (:body response))
+            items (.select body "nav[aria-label=Sections] a")]
+        (is (pos? (.size items)))
+        (doseq [a items]
+          (let [tip (.selectFirst a ".spl-tip")]
+            (is (some? tip) (str "no tip on " (.attr a "href")))
+            (when tip
+              (is (= (.attr a "aria-label") (.text tip))
+                  "the tip must repeat the label, which is why it is aria-hidden"))))))))
 
 (deftest test-navigation-is-a-landmark
   (tf/testing "the rail is a nav with an accessible name"

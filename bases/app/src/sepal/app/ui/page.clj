@@ -13,9 +13,8 @@
             [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.base :as base]
-            [sepal.app.ui.icons.bootstrap :as bootstrap]
-            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.tooltip :as tooltip]
             [zodiac.core :as z]))
 
 (defn sidebar-item
@@ -26,18 +25,24 @@
   silently dropped, so no item had an active state at all.
 
   :aria-label is set explicitly because the visible label is display:none while
-  the rail is collapsed, and a hidden label supplies no accessible name."
+  the rail is collapsed, and a hidden label supplies no accessible name. The
+  tooltip is the sighted half of the same problem: it repeats the label rather
+  than describing it, so it stays aria-hidden and CSS drops it once the rail is
+  expanded and the label is visible again."
   [& {:keys [href icon label current?]}]
   [:li
-   [:a (cond-> {:href href
-                :class (cond-> ["spl-nav-item"]
-                         current? (conj "spl-nav-item--current"))
-                :aria-label label}
-         current? (assoc :aria-current "page"))
-    [:span {:class "spl-nav-icon" :aria-hidden "true"}
-     icon]
-    [:span {:class "spl-nav-label"}
-     label]]])
+   (tooltip/wrap
+     [:a (cond-> {:href href
+                  :class (cond-> ["spl-nav-item"]
+                           current? (conj "spl-nav-item--current"))
+                  :aria-label label}
+           current? (assoc :aria-current "page"))
+      [:span {:class "spl-nav-icon" :aria-hidden "true"}
+       icon]
+      [:span {:class "spl-nav-label"}
+       label]]
+     label
+     :side "right")])
 
 (defn sidebar-toggle-icon []
   [:svg {:xmlns "http://www.w3.org/2000/svg",
@@ -63,10 +68,12 @@
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
   [:header {:class "spl-topbar"}
-   [:label {:for "sidebar-drawer-toggle"
-            :class "spl-toggle"
-            :aria-label "Toggle sections"}
-    (sidebar-toggle-icon)]
+   (tooltip/wrap
+     [:label {:for "sidebar-drawer-toggle"
+              :class "spl-toggle"
+              :aria-label "Toggle sections"}
+      (sidebar-toggle-icon)]
+     "Toggle sections")
    (when breadcrumbs
      [:nav {:class "spl-crumbs" :aria-label "Breadcrumb"}
       [:ol
@@ -92,27 +99,34 @@
 
 (defn- sections
   "The section rail's entries.
+
+   Every icon is Lucide, one 24 grid at stroke 2. The rail used to mix three
+   sets — Heroicons at stroke 1.5, Lucide at 2, and a filled 16-grid Bootstrap
+   flower that read heavier than everything beside it — and Material and Tags
+   both drew the same tag, so two sections were indistinguishable. Tags keeps
+   the tag, being literally one; Material is a sprout, the plant in the ground.
+
    Tags is omitted below the migration that added the tag tables: the index
    there has nothing to read and no way to store anything, so an entry that
    500s is worse than no entry at all."
   [tags-available?]
   (cond-> [{:label "Activity" :href (z/url-for activity.routes/index)
-            :icon (heroicons/outline-clock)}
+            :icon (lucide/history)}
            {:label "Accessions" :href (z/url-for accession.routes/index)
-            :icon (heroicons/outline-rectangle-group)}
+            :icon (lucide/clipboard-list)}
            {:label "Material" :href (z/url-for material.routes/index)
-            :icon (heroicons/outline-tag)}
+            :icon (lucide/sprout)}
            {:label "Taxa" :href (z/url-for taxon.routes/index)
-            :icon (bootstrap/flower1)}
+            :icon (lucide/flower-2)}
            {:label "Locations" :href (z/url-for location.routes/index)
-            :icon (heroicons/outline-map-pin)}]
+            :icon (lucide/map-pin)}]
     tags-available?
     (conj {:label "Tags" :href (z/url-for tag.routes/index)
-           :icon (heroicons/outline-tag)})
+           :icon (lucide/tag)})
 
     :always
     (into [{:label "Media" :href (z/url-for media.routes/index)
-            :icon (heroicons/outline-photo)}
+            :icon (lucide/image)}
            {:label "Contacts" :href (z/url-for contact.routes/index)
             :icon (lucide/contact-round)}])))
 

@@ -3,7 +3,8 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.query-builder :as query-builder]
-            [sepal.app.ui.table :as table]))
+            [sepal.app.ui.table :as table]
+            [sepal.app.ui.tooltip :as tooltip]))
 
 (def list-container-id "list-container")
 
@@ -18,10 +19,15 @@
   [:div {:class "spl-badge spl-badge--neutral gap-1"}
    [:span (str label ": ")]
    [:span {:class "font-semibold"} value]
-   [:a {:href clear-href
-        :class "hover:text-danger"
-        :aria-label (str "Clear " label " filter")}
-    (lucide/x :class "w-3 h-3")]])
+   (tooltip/wrap
+     [:a {:href clear-href
+          :class "hover:text-danger"
+          :aria-label (str "Clear " label " filter")}
+      (lucide/x :class "w-3 h-3")]
+     (str "Clear " label " filter")
+     ;; Above: the badges sit directly on the table, which clips its own
+     ;; overflow. The toolbar above them does not.
+     :side "top")])
 
 (defn filter-badges
   "Renders a list of active filter badges.
@@ -193,11 +199,14 @@
             :x-cloak ""
             :x-on:keydown.escape.window "closePanel()"}
       [:div {:class "spl-panel-head"}
-       [:button {:type "button"
-                 :class "spl-panel-close"
-                 :data-panel-close ""
-                 :aria-label "Close panel"
-                 :x-on:click "closePanel()"}
-        "✕"]]
+       (tooltip/wrap
+         [:button {:type "button"
+                   :class "spl-panel-close"
+                   :data-panel-close ""
+                   :aria-label "Close panel"
+                   :x-on:click "closePanel()"}
+          "✕"]
+         "Close panel"
+         :side "left")]
       ;; Panel content - loaded via HTMX
       [:div {:id panel-container-id}]]]]])

@@ -3,7 +3,8 @@
             [sepal.app.json :as json]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.icons.heroicons :as heroicons]))
+            [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.tooltip :as tooltip]))
 
 (defn- chip [& {:keys [tag remove-url]}]
   [:span {:class "spl-chip"}
@@ -13,13 +14,17 @@
    ;; layer already defines a 14px icon slot that sizes its own svg, which is
    ;; why outline-x is called with no arguments — it takes :color and :size,
    ;; not the :class it used to be handed and silently dropped.
-   [:button {:type "button"
-             :class "spl-chip-icon cursor-pointer"
-             :aria-label (str "Remove tag " (:tag/name tag))
-             :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-             :hx-delete remove-url
-             :hx-confirm (str "Remove tag \"" (:tag/name tag) "\"?")}
-    (heroicons/outline-x)]])
+   (tooltip/wrap
+     [:button {:type "button"
+               :class "spl-chip-icon cursor-pointer"
+               :aria-label (str "Remove tag " (:tag/name tag))
+               :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+               :hx-delete remove-url
+               :hx-confirm (str "Remove tag \"" (:tag/name tag) "\"?")}
+      (heroicons/outline-x)]
+     (str "Remove tag " (:tag/name tag))
+     ;; Above: chips wrap into rows, and a tip below one would cover the next.
+     :side "top")])
 
 (defn chips [& {:keys [tags remove-url-fn]}]
   (if (seq tags)

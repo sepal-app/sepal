@@ -11,6 +11,7 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
+            [sepal.app.ui.tooltip :as tooltip]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
@@ -43,20 +44,26 @@
       [:img {:src zoom-url}]]]]])
 
 (defn page-title-buttons [& {:keys [delete-url dl-url]}]
-  [[:button {:class "spl-btn"
-             :aria-label "Zoom"
-             :x-on:click "zoom=true;"}
-    (heroicons/magnifying-glass)]
-   [:a {:class "spl-btn"
-        :href dl-url
-        :aria-label "Download"}
-    (heroicons/outline-folder-arrow-down)]
-   [:a {:class "spl-btn"
-        :hx-delete delete-url
-        :hx-confirm "Are you sure you want to delete this media?"
-        :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-        :aria-label "Delete"}
-    (heroicons/outline-trash :class "text-danger")]])
+  [(tooltip/wrap
+     [:button {:class "spl-btn"
+               :aria-label "Zoom"
+               :x-on:click "zoom=true;"}
+      (heroicons/magnifying-glass)]
+     "Zoom")
+   (tooltip/wrap
+     [:a {:class "spl-btn"
+          :href dl-url
+          :aria-label "Download"}
+      (heroicons/outline-folder-arrow-down)]
+     "Download")
+   (tooltip/wrap
+     [:a {:class "spl-btn"
+          :hx-delete delete-url
+          :hx-confirm "Are you sure you want to delete this media?"
+          :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+          :aria-label "Delete"}
+      (heroicons/outline-trash :class "text-danger")]
+     "Delete")])
 
 (defn page-content [& {:keys [media srcset-urls zoom-url]}]
   [[:div
