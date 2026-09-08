@@ -9,13 +9,6 @@
             [sepal.synonym.interface.spec :as spec]
             [sepal.synonym.reference :as reference]))
 
-(defn available?
-  "Whether this database has `taxon_synonym` at all: false on a database below
-  the migration that added it, where `select` on the table is a hard error
-  rather than an empty result."
-  [ctx]
-  (db.i/at-least-version? ctx (db.i/taxon-synonym-version)))
-
 (def ^:private columns
   "`taxon_synonym` columns, aliased onto the `:synonym/...` namespace the spec
   uses. `taxon_synonym` does not share a name with the `synonym` interface
@@ -93,11 +86,10 @@
 
 (defn list-for-taxon
   "The garden's own synonyms for a taxon, plus its WFO synonyms, alphabetical
-  local rows first. Returns only local rows on a database below the migration
-  that added taxon_synonym, or when the taxon has no wfo_taxon_id, or when the
-  process has no WFO reference pool."
+  local rows first. Returns only local rows when the taxon has no
+  wfo_taxon_id, or when the process has no WFO reference pool."
   [ctx db taxon-id]
-  (let [local (if-not (available? ctx) [] (local-rows db taxon-id))
+  (let [local (local-rows db taxon-id)
         ;; Plain column, no alias: `taxon` the table and `taxon` the interface
         ;; namespace agree, so label-fn's table-derived namespace already gives
         ;; :taxon/wfo-taxon-id. An explicit :taxon/wfo-taxon-id alias would
@@ -126,7 +118,7 @@
   [ctx db query]
   (if (empty? query)
     []
-    (let [local (if-not (available? ctx) [] (local-matches db query))
+    (let [local (local-matches db query)
           hits (reference/search (:synonym-reference ctx) query)
           cores (distinct (keep :accepted-core hits))
           by-core (when (seq cores)
@@ -183,16 +175,13 @@
 
   Unions both halves the way `resolve` does — the garden's own `taxon_synonym`
   rows and the WFO reference — but returns ids rather than rows, because a
-  filter narrows a query and does not carry display data. Empty on a database
-  below the migration that added `taxon_synonym` and with no reference pool,
-  never an error."
+  filter narrows a query and does not carry display data. Empty with no
+  reference pool and no local matches, never an error."
   [ctx db query]
   (let [q (str/trim (or query ""))]
     (if (< (count q) min-query-length)
       {:ids #{} :truncated? false :too-short? (seq q)}
-      (let [local-ids (if-not (available? ctx)
-                        []
-                        (map :taxon/id (local-matches db q)))
+      (let [local-ids (map :taxon/id (local-matches db q))
             ;; One more than the cap, so truncation is observed rather than
             ;; inferred from a full page.
             cores (->> (reference/search (:synonym-reference ctx) q)

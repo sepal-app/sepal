@@ -254,53 +254,6 @@
                      (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon)))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
-(def floor-ctx
-  "A context at the supported floor, which is below the migration that added
-  `taxon_synonym`. The test system migrates *db* to latest in both CI legs, so
-  the table is always really there -- what these tests exercise is the gate,
-  not the missing table."
-  {:schema-version (db.i/minimum-supported-version)
-   :synonym-reference nil})
-
-(deftest test-a-floor-database-has-no-local-synonymy
-  ;; The table is above the supported floor. A gated read must return empty, not
-  ;; throw: the taxon picker calls this on every keystroke.
-  ;;
-  ;; The row has to exist first. Against a taxon with no rows the gated and
-  ;; ungated paths both return [], so the assertion passes with the gate
-  ;; deleted and proves nothing -- which is exactly what this test used to do.
-  (tf/testing "a row exists, and the gate must still report nothing"
-    {[::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [taxon]}]
-      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
-                                              :synonym-name "Encyclia cochleata"})]
-        (is (= [] (synonym.i/list-for-taxon floor-ctx *db* (:taxon/id taxon))))
-        (is (= ["Encyclia cochleata"]
-               (mapv :synonym/synonym-name
-                     (synonym.i/list-for-taxon base-ctx *db* (:taxon/id taxon))))
-            "the row is really there, so the empty result above is the gate")
-        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
-
-(deftest test-resolve-is-gated-below-the-schema-floor
-  ;; The hotter of the two gates: the taxon picker calls resolve on every
-  ;; keystroke, and the taxon index calls it on every page load. Ungated on a
-  ;; floor database it is `no such table: taxon_synonym` on both.
-  ;;
-  ;; Same shape as the list-for-taxon test above, and for the same reason: the
-  ;; row must exist, or the gated and ungated paths are indistinguishable.
-  (tf/testing "a matching row exists, and the gate must still report nothing"
-    {[::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [taxon]}]
-      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
-                                              :synonym-name "Encyclia cochleata"})]
-        (is (= [] (synonym.i/resolve floor-ctx *db* "cochleat")))
-        (is (= ["local"]
-               (mapv :synonym/source
-                     (synonym.i/resolve (assoc base-ctx :synonym-reference nil)
-                                        *db* "cochleat")))
-            "the row really does match, so the empty result above is the gate")
-        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
-
 (deftest test-factory
   ;; Exercises `::synonym.i/factory` and its `halt-key!` teardown through the
   ;; fixture map, the way a real caller uses it — a factory that only ever runs

@@ -5,15 +5,6 @@
             [sepal.synonym.reference :as reference]
             [taoensso.telemere :as tel]))
 
-(defn available?
-  "Whether this database has `taxon_synonym` at all.
-
-  Reads gate on this themselves and degrade to the WFO half alone. A caller
-  that offers a *write* has to ask: an Add form on a database that cannot store
-  the row is a control that fails with an empty 422 and loses what was typed."
-  [ctx]
-  (core/available? ctx))
-
 (defn add-synonym!
   "Assert that `synonym-name` is a synonym of a taxon in this garden.
 
@@ -61,8 +52,8 @@
   ids are a slice capped at `max-synonym-taxon-ids`. A caller that ignores them
   shows a silently wrong result, which is the defect this replaces.
 
-  `query` is free text. Empty on a database below the schema floor and with no
-  reference pool, never an error."
+  `query` is free text. Empty with no reference pool and no local matches,
+  never an error."
   [ctx db query]
   (core/taxon-ids-for-synonym ctx db query))
 

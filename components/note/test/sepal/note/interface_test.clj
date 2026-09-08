@@ -7,17 +7,12 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
-            [sepal.database.interface :as db.i]
             [sepal.note.interface :as note.i]
             [sepal.note.interface.activity :as note.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
-
-;; The readers gate on the schema version, so they need a context. This is the
-;; shape components/synonym/test/sepal/synonym/interface_test.clj:15 uses.
-(def ^:private ctx {:schema-version (db.i/latest-version)})
 
 (deftest test-create-and-get
   (let [db *db*]
@@ -65,9 +60,9 @@
                                                  :resource-type :taxon
                                                  :resource-id (:taxon/id taxon)
                                                  :created-by (:user/id user)})
-              found (note.i/get-for-resource ctx db :accession (:accession/id accession))]
+              found (note.i/get-for-resource db :accession (:accession/id accession))]
           (is (= [(:note/id mine)] (mapv :note/id found)))
-          (is (= 1 (note.i/count-for-resource ctx db :accession (:accession/id accession))))
+          (is (= 1 (note.i/count-for-resource db :accession (:accession/id accession))))
           (is (= (:user/email user) (:note/author-email (first found))))
           (doseq [n [mine same-id-other-type other-resource]]
             (note.i/delete! db (:note/id n))))))))
@@ -89,7 +84,7 @@
           ;; created_at has one-second resolution, so id breaks the tie. Two
           ;; notes written in the same second must still come back newest first.
           (is (= ["second" "first"]
-                 (mapv :note/body (note.i/get-for-resource ctx db :taxon (:taxon/id taxon)))))
+                 (mapv :note/body (note.i/get-for-resource db :taxon (:taxon/id taxon)))))
           (note.i/delete! db (:note/id first-note))
           (note.i/delete! db (:note/id second-note)))))))
 
@@ -102,31 +97,11 @@
                                           :resource-type :taxon
                                           :resource-id (:taxon/id taxon)
                                           :created-by nil})
-              found (first (note.i/get-for-resource ctx db :taxon (:taxon/id taxon)))]
+              found (first (note.i/get-for-resource db :taxon (:taxon/id taxon)))]
           (is (nil? (:note/created-by created)))
           (is (nil? (:note/author-email found)))
           (is (= "imported from Bauble" (:note/body found)))
           (note.i/delete! db (:note/id created)))))))
-
-(deftest test-a-database-below-the-migration-reads-empty
-  (let [db *db*
-        floor-ctx {:schema-version (db.i/minimum-supported-version)}]
-    (tf/testing "the schema gate"
-      {[::user.i/factory :key/user] {:db db}
-       [::taxon.i/factory :key/taxon] {:db db}}
-      (fn [{:keys [user taxon]}]
-        ;; The table exists here — this test is about the gate, not the table.
-        ;; A real floor database would throw on the select, which is the whole
-        ;; reason the gate is in front of it.
-        (let [note (note.i/create! db {:body "invisible below the migration"
-                                       :resource-type :taxon
-                                       :resource-id (:taxon/id taxon)
-                                       :created-by (:user/id user)})]
-          (is (= [] (note.i/get-for-resource floor-ctx db :taxon (:taxon/id taxon))))
-          (is (zero? (note.i/count-for-resource floor-ctx db :taxon (:taxon/id taxon))))
-          (is (seq (note.i/get-for-resource ctx db :taxon (:taxon/id taxon)))
-              "and at the current version it reads normally")
-          (note.i/delete! db (:note/id note)))))))
 
 (deftest test-update
   (let [db *db*]

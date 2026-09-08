@@ -20,41 +20,30 @@
                                         :note/created-at]))
       (assoc :note/author-email (:user/email row))))
 
-(defn- available?
-  "Whether this database has `note` at all. The table is above the supported
-  floor, and a select against a missing table is an error, not a null."
-  [ctx]
-  (db.i/at-least-version? ctx (db.i/note-version)))
-
 (defn get-for-resource
   "A resource's notes, newest first, each carrying its author's email or nil.
-  Empty on a database below the migration that added the table.
 
   Ordered by id rather than created_at: SQLite's datetime('now') has
   one-second resolution, so two notes written in the same second would come
   back in an arbitrary order."
-  [ctx db resource-type resource-id]
-  (if-not (available? ctx)
-    []
-    (->> (db.i/execute! db {:select [:n.* :u.email]
-                            :from [[:note :n]]
-                            :left-join [[:user :u] [:= :u.id :n.created_by]]
-                            :where [:and
-                                    [:= :n.resource_type (csk/->kebab-case-string resource-type)]
-                                    [:= :n.resource_id resource-id]]
-                            :order-by [[:n.id :desc]]})
-         (mapv row->note))))
+  [db resource-type resource-id]
+  (->> (db.i/execute! db {:select [:n.* :u.email]
+                          :from [[:note :n]]
+                          :left-join [[:user :u] [:= :u.id :n.created_by]]
+                          :where [:and
+                                  [:= :n.resource_type (csk/->kebab-case-string resource-type)]
+                                  [:= :n.resource_id resource-id]]
+                          :order-by [[:n.id :desc]]})
+       (mapv row->note)))
 
 (defn count-for-resource
-  "How many notes this resource has. Zero on a database below the migration."
-  [ctx db resource-type resource-id]
-  (if-not (available? ctx)
-    0
-    (db.i/count db {:select [:id]
-                    :from [:note]
-                    :where [:and
-                            [:= :resource_type (csk/->kebab-case-string resource-type)]
-                            [:= :resource_id resource-id]]})))
+  "How many notes this resource has."
+  [db resource-type resource-id]
+  (db.i/count db {:select [:id]
+                  :from [:note]
+                  :where [:and
+                          [:= :resource_type (csk/->kebab-case-string resource-type)]
+                          [:= :resource_id resource-id]]}))
 
 (defn create! [db data]
   (store.i/create! db :note data spec/CreateNote spec/Note))
