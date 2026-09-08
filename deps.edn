@@ -100,17 +100,17 @@
 
            ;; Run clj-kondo.  Also see ./clj-kondo/config.edn for other configuration settings.
            ;; clojure -M:clj-kondo
-           :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2026.01.12"}}
+           :clj-kondo {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2026.08.04"}}
                        :main-opts ["-m" "clj-kondo.main"]}
 
            ;; clojure -M:cljfmt check|fix components bases projects
-           :cljfmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.15.6"}}
+           :cljfmt {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.16.5"}}
                     :main-opts ["-m" "cljfmt.main"
                                 "--parallel"
                                 "--no-remove-consecutive-blank-lines"]}
 
            :poly {:main-opts ["-m" "polylith.clj.core.poly-cli.core"]
-                  :extra-deps {polylith/clj-poly {:mvn/version "0.3.31"}}}
+                  :extra-deps {polylith/clj-poly {:mvn/version "0.3.32"}}}
 
            ;; CLI for administrative tasks (user management)
            ;; clojure -M:dev:cli create-user --email admin@example.com --password secret --role admin
