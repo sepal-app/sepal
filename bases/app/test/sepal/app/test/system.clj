@@ -32,6 +32,12 @@
 (def ^:dynamic *token-service* nil)
 (def ^:dynamic *backup-dir* nil)
 
+(defn floor-leg?
+  "Whether this run is the CI matrix's floor leg. See load-floor-schema! for
+  what that changes."
+  []
+  (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION")))
+
 (defn load-floor-schema!
   "Build a database at minimum-schema-version from the snapshot in test
   resources.
@@ -70,6 +76,37 @@
           (.delete file)))))
   {:db-path db-path})
 
+(def ^:private schema-template
+  "One database at the schema this leg tests, built once for the whole JVM.
+
+  Building one costs 110 ms, because both builders shell out to sqlite3, and 75
+  namespaces each built their own. Copying this file costs 2 ms. It is opened by
+  nothing and written by nobody — every caller gets a copy — so there is no
+  shared state to leak between namespaces.
+
+  It outlives every fixture, so it is cleaned up on JVM exit rather than in a
+  finally: the suite has no suite-wide teardown to hang it on."
+  (delay
+    (let [dir (fs/create-temp-dir {:prefix "sepal-test-template"})
+          db-path (str (fs/path dir "sepal.db"))]
+      (if (floor-leg?)
+        (load-floor-schema! {:db-path db-path})
+        (instance/provision! {:db-path db-path}))
+      (.addShutdownHook (Runtime/getRuntime)
+                        (Thread. #(fs/delete-tree dir)))
+      db-path)))
+
+(defn fresh-database!
+  "Create a database at :db-path holding the schema this leg tests.
+
+  Indistinguishable from calling provision! — or load-floor-schema! on the floor
+  leg — which is what sepal.app.test.template-db-test asserts."
+  [{:keys [db-path]}]
+  (when-let [parent (fs/parent db-path)]
+    (fs/create-dirs parent))
+  (fs/copy @schema-template db-path)
+  {:db-path db-path})
+
 (defn- start-test-instance []
   (let [dir (fs/create-temp-dir {:prefix "sepal-test"})
         db-path (str (fs/path dir "sepal.db"))
@@ -89,9 +126,7 @@
     ;; schema. Neither migrates here, because start! migrates a behind database
     ;; itself — that is the property this leg exists to exercise, and doing it
     ;; here first would test the fixture instead.
-    (if (= "floor" (System/getenv "SEPAL_TEST_SCHEMA_VERSION"))
-      (load-floor-schema! {:db-path db-path})
-      (instance/provision! {:db-path db-path}))
+    (fresh-database! {:db-path db-path})
     (let [garden (instance/start! process
                                   {:slug "test"
                                    :db-path db-path
