@@ -19,7 +19,18 @@
     ;; The basis includes paths from all :local/root dependencies
     (b/copy-dir {:src-dirs (:paths basis)
                  :target-dir class-dir})
-    ;; AOT compile only the main entry point (minimal AOT)
+    ;; :ns-compile names the entry point, but `compile` follows every require
+    ;; from it, so this AOTs the whole transitive graph — 10,368 class files,
+    ;; Sepal's namespaces and every library's. That is deliberate: it takes the
+    ;; jar's startup from 19 seconds to 7. `:filter-nses` would narrow what is
+    ;; retained, and is what you want if you ever need libraries to ship as
+    ;; source.
+    ;;
+    ;; It only works because this basis has no development/src on it. user.clj
+    ;; would load the application before `compile` ran, and `compile` skips
+    ;; already-loaded namespaces — so the libraries would be left out while the
+    ;; classes compiled after them referenced their types directly, and the jar
+    ;; would die on ClassNotFoundException: malli.core.Transformer.
     (b/compile-clj {:basis basis
                     :ns-compile '[sepal.app.main]
                     :class-dir class-dir})
