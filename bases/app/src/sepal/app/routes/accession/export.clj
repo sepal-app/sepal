@@ -33,7 +33,9 @@
    {:key :accession/provenance-type :header "accession_provenance_type" :column :a.provenance_type}
    {:key :accession/wild-provenance-status :header "accession_wild_provenance_status" :column :a.wild_provenance_status}
    {:key :accession/date-received :header "accession_date_received" :column :a.date_received}
-   {:key :accession/date-accessioned :header "accession_date_accessioned" :column :a.date_accessioned}])
+   {:key :accession/date-accessioned :header "accession_date_accessioned" :column :a.date_accessioned}
+   {:key :accession/received-type :header "accession_received_type" :column :a.received_type}
+   {:key :accession/quantity-received :header "accession_quantity_received" :column :a.quantity_received}])
 
 (def ^:private taxon-columns
   "Optional taxon columns."
