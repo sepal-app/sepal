@@ -84,7 +84,7 @@
                   :extra-deps {poly/test {:local/root "components/test"}
                                com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                com.gfredericks/test.chuck {:mvn/version "0.2.14"}
-                               lambdaisland/kaocha {:mvn/version "1.89.1380"}
+                               lambdaisland/kaocha {:mvn/version "1.91.1392"}
                                kerodon/kerodon {:mvn/version "0.9.1"}
                                nubank/matcher-combinators {:mvn/version "3.9.1"}
                                org.clojure/test.check {:mvn/version "1.1.1"}
