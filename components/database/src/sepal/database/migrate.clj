@@ -82,34 +82,6 @@
 
 (defn minimum-supported-version [] minimum-supported)
 
-(def ^:private taxon-synonym "20260902160000")
-
-(defn taxon-synonym-version
-  "The migration that added `taxon_synonym`. Code touching that table must gate
-  on it: the table is above the supported floor, so a database at the floor does
-  not have it, and `select` on a missing table is an error rather than a null."
-  []
-  taxon-synonym)
-
-(def ^:private resource-notes "20260903120000")
-
-(defn note-version
-  "The migration that added `note`. Code touching that table must gate on it:
-  the table is above the supported floor, so a database at the floor does not
-  have it, and `select` on a missing table is an error rather than a null."
-  []
-  resource-notes)
-
-(def ^:private tag "20260906130000")
-
-(defn tag-version
-  "The migration that added `tag` and `tag_link`. Code touching either table
-  must gate on it: both are above the supported floor, so a database at the
-  floor does not have them, and `select` on a missing table is an error rather
-  than an empty result."
-  []
-  tag)
-
 (defn- applied-versions
   [db-path]
   (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]

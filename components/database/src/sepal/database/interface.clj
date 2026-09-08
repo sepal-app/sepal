@@ -48,14 +48,10 @@
   (core/load-schema! config))
 
 (def schema-resource #'core/schema-resource)
-(def at-least-version? #'core/at-least-version?)
 
 (def migration-files #'migrate/migration-files)
 (def latest-version #'migrate/latest-version)
 (def minimum-supported-version #'migrate/minimum-supported-version)
-(def taxon-synonym-version #'migrate/taxon-synonym-version)
-(def note-version #'migrate/note-version)
-(def tag-version #'migrate/tag-version)
 (def schema-version #'migrate/schema-version)
 (def pending #'migrate/pending)
 (def migrate! #'migrate/migrate!)
