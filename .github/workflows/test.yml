@@ -10,8 +10,60 @@ env:
   CLOJURE_VERSION: '1.12.0.1479'
   JAVA_VERSION: '25'
   NODE_VERSION: '22'
+  # Native builds of the two linters that have one. Keep these in step with the
+  # :clj-kondo and :cljfmt aliases in deps.edn, which are the fallback for
+  # anyone running bin/lint without the binaries on PATH — the two would
+  # otherwise drift and CI would fail on a rule nobody has locally.
+  CLJ_KONDO_VERSION: '2026.08.04'
+  CLJFMT_VERSION: '0.16.5'
 
 jobs:
+  # Its own job because linting has nothing to do with the schema matrix. It ran
+  # inside it, so both legs spent 38 seconds linting the same files, on each
+  # leg's critical path. Here it runs once, beside them.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No SpatiaLite: none of the three linters opens a database.
+
+      # For poly check, which is the only one still on the JVM.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@master
+        with:
+          cli: ${{ env.CLOJURE_VERSION }}
+          # bin/lint prefers a binary on PATH and falls back to `clojure -M:...`.
+          # It was falling back here, and starting a JVM costs more than the
+          # linting: clj-kondo is 18.6s that way against 3.1s native, cljfmt
+          # 10.9s against 5.0s.
+          clj-kondo: ${{ env.CLJ_KONDO_VERSION }}
+          cljfmt: ${{ env.CLJFMT_VERSION }}
+
+      # A key of its own. Sharing one with build would let whichever job
+      # finished first save a cache holding only its own dependencies, and the
+      # other would take the hit on every later run.
+      - name: Cache Clojure Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.clojure
+            ~/.cpcache
+          key: ${{ runner.os }}-clojure-lint-${{ hashFiles('**/deps.edn') }}
+
+      - name: Prepare Dependencies
+        run: clojure -P -M:poly
+
+      - name: Lint
+        run: bin/lint
+
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -45,14 +97,7 @@ jobs:
           key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
 
       - name: Prepare Dependencies
-        run: |
-          clojure -P -M:dev:test:test-runner
-          clojure -P -M:clj-kondo
-          clojure -P -M:cljfmt
-          clojure -P -M:poly
-
-      - name: Lint
-        run: bin/lint
+        run: clojure -P -M:dev:test:test-runner
 
       - name: Run Unit Tests (schema ${{ matrix.schema }})
         env:
@@ -128,7 +173,10 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: [build, e2e-tests]
+    # lint is named here because it used to be a step inside build, so a lint
+    # failure blocked the image. Splitting it out without this would have let a
+    # push to master publish an image that does not lint.
+    needs: [lint, build, e2e-tests]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     permissions:
       contents: read
