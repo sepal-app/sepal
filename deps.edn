@@ -72,6 +72,15 @@
                                 "components/token/test"
                                 "components/user/test"
                                 "components/validation/test"]
+                  ;; Hash passwords at a work factor the suite can afford.
+                  ;; Production reads bases/app/resources/psw4j.properties off
+                  ;; the classpath, where one scrypt hash costs 323 ms; the suite
+                  ;; hashes 529 times, which was 217 seconds of a 364-second run.
+                  ;; Only the test suite sets psw4j.configuration, so only the
+                  ;; test suite gets the weak parameters — and
+                  ;; sepal.app.password-hashing-test asserts the production ones
+                  ;; are still strong, since nothing here would notice otherwise.
+                  :jvm-opts ["-Dpsw4j.configuration=test/psw4j-fast.properties"]
                   :extra-deps {poly/test {:local/root "components/test"}
                                com.gearswithingears/shrubbery {:mvn/version "0.4.1"}
                                com.gfredericks/test.chuck {:mvn/version "0.2.14"}
