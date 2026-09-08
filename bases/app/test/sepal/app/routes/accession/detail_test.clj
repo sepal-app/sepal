@@ -7,7 +7,9 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.error.interface :as err.i]
             [sepal.location.interface :as location.i]
+            [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
@@ -109,6 +111,8 @@
                                                             :supplier-contact-id ""
                                                             :date-received ""
                                                             :date-accessioned ""
+                                                            :received-type ""
+                                                            :quantity-received ""
                                                             :intended-location-id (str (:location/id location))}))]
           (is (= 200 (:status response))
               (str "Expected 200, got " (:status response) " with body: " (:body response)))
@@ -171,3 +175,64 @@
                                          "/\"]"))]
         (is (some? link) "the panel should link to the intended location")
         (is (= (:location/name location) (.text link)))))))
+
+(deftest test-update-accession-general-saves-receipt-fields
+  (tf/testing "the general tab sets both receipt fields"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession taxon]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              detail-url (str "/accession/" (:accession/id accession) "/general/")
+              {:keys [response] :as sess} (-> sess (peri/request detail-url))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request detail-url
+                                                   :request-method :post
+                                                   :params {:__anti-forgery-token token
+                                                            :code (:accession/code accession)
+                                                            :taxon-id (str (:taxon/id taxon))
+                                                            :id-qualifier ""
+                                                            :id-qualifier-rank ""
+                                                            :provenance-type ""
+                                                            :wild-provenance-status ""
+                                                            :supplier-contact-id ""
+                                                            :intended-location-id ""
+                                                            :date-received ""
+                                                            :date-accessioned ""
+                                                            :received-type "scion"
+                                                            :quantity-received "0"}))]
+          (is (= 200 (:status response))
+              (str "Expected 200, got " (:status response) " with body: " (:body response)))
+          (let [saved (accession.i/get-by-id *db* (:accession/id accession))]
+            (is (= :scion (:accession/received-type saved)))
+            (is (= 0 (:accession/quantity-received saved))
+                "zero is saved, not treated as blank")))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-received-type-and-material-type-are-independent
+  (tf/testing "an accession received as seed can hold material that is a plant.
+               One records what arrived, the other what the garden holds now,
+               and neither is wrong -- the property that justifies two
+               overlapping vocabularies."
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/accession]
+     {:db *db* :taxon (ig/ref :key/taxon) :data {:received-type :seed}}}
+    (fn [{:keys [accession location]}]
+      (let [material (mat.i/create! *db* {:code "IND-1"
+                                          :accession-id (:accession/id accession)
+                                          :location-id (:location/id location)
+                                          :type :plant
+                                          :status :alive
+                                          :quantity 1})]
+        (try
+          (is (not (err.i/error? material)) (err.i/data material))
+          (is (= :seed (:accession/received-type accession)))
+          (is (= :plant (:material/type material)))
+          (finally
+            (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))))

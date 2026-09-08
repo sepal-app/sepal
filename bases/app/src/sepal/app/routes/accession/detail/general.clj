@@ -85,7 +85,9 @@
    [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
    [:intended-location-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
-   [:date-accessioned [:maybe validation.i/date]]])
+   [:date-accessioned [:maybe validation.i/date]]
+   [:received-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/received-type]]
+   [:quantity-received {:decode/form parse-long} [:maybe accession.spec/quantity-received]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource timezone]} context
@@ -103,7 +105,9 @@
                 :provenance-type (:accession/provenance-type resource)
                 :wild-provenance-status (:accession/wild-provenance-status resource)
                 :date-received (:accession/date-received resource)
-                :date-accessioned (:accession/date-accessioned resource)}]
+                :date-accessioned (:accession/date-accessioned resource)
+                :received-type (:accession/received-type resource)
+                :quantity-received (:accession/quantity-received resource)}]
 
     (case request-method
       :post
