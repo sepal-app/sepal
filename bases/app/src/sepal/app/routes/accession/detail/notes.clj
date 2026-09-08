@@ -40,10 +40,10 @@
 
 (defn render-list
   "The HTMX response every write returns: the list, swapped in place."
-  [context db accession]
+  [db accession]
   (let [id (:accession/id accession)]
     (html/render-partial
-      (ui.notes/note-list :notes (note.i/get-for-resource context db resource-type id)
+      (ui.notes/note-list :notes (note.i/get-for-resource db resource-type id)
                           :note-url-fn (note-url-fn id)))))
 
 (defn page-content [& {:keys [accession taxon notes errors values]}]
@@ -97,13 +97,13 @@
                                   note)))]
             (if (error.i/error? saved)
               (http/validation-errors (validation.i/humanize saved))
-              (render-list context db resource)))))
+              (render-list db resource)))))
 
       (let [taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
-            panel-data (accession.panel/fetch-panel-data context db resource)]
+            panel-data (accession.panel/fetch-panel-data db resource)]
         (render :accession resource
                 :taxon taxon
-                :notes (note.i/get-for-resource context db resource-type id)
+                :notes (note.i/get-for-resource db resource-type id)
                 :panel-data panel-data
                 :timezone timezone)))))
 
@@ -133,7 +133,7 @@
                                     updated)))]
               (if (error.i/error? saved)
                 (http/validation-errors (validation.i/humanize saved))
-                (render-list context db resource)))))
+                (render-list db resource)))))
 
         :delete
         (let [deleted (write! db (:user/id viewer)
@@ -142,6 +142,6 @@
                                 (note.i/delete! tx note-id)))]
           (if (error.i/error? deleted)
             (http/validation-errors (validation.i/humanize deleted))
-            (render-list context db resource)))
+            (render-list db resource)))
 
         (http/not-found)))))

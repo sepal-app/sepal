@@ -8,17 +8,12 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
-            [sepal.database.interface :as db.i]
             [sepal.note.interface :as note.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
-
-;; note.i's readers gate on the schema version, so a direct call needs a
-;; context. Requests get theirs from ::z/context.
-(def ^:private ctx {:schema-version (db.i/latest-version)})
 
 (deftest test-fetch-panel-data-carries-notes
   (tf/testing "fetch-panel-data"
@@ -35,7 +30,7 @@
                                                :resource-id (:accession/id accession)
                                                :created-by (:user/id user)}))
                        (range 5))
-            data (accession.panel/fetch-panel-data ctx *db* accession)]
+            data (accession.panel/fetch-panel-data *db* accession)]
         (is (= 5 (:note-count data)))
         (testing "the panel holds a preview, not the whole history"
           (is (= 3 (count (:notes data))))

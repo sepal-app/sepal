@@ -115,7 +115,7 @@
               (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
               (http/validation-errors (validation.i/humanize saved))))))
 
-      (let [panel-data (accession.panel/fetch-panel-data context db resource)
+      (let [panel-data (accession.panel/fetch-panel-data db resource)
             collection (coll.i/get-by-accession-id db (:accession/id resource))]
         (render :collection-available? (accession.shared/collection-available?
                                          resource (some? collection))

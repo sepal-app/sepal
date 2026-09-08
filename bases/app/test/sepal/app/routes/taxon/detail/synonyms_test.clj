@@ -134,36 +134,6 @@
                (mapv :synonym/id (synonym.i/list-for-taxon (ctx) *db* id))))
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
-(deftest test-a-database-below-the-gate-offers-no-add-form
-  ;; The read is gated, so on a floor database the tab was showing "No synonyms
-  ;; yet" next to a working-looking Add control that cannot store anything: the
-  ;; POST reached add-synonym!, SQLite refused the missing table, and the form
-  ;; came back as an empty 422 with the typed name gone.
-  (tf/testing "no form, and the POST refused rather than 422ing"
-    {[::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [taxon]}]
-      (let [password "testpassword123"
-            email (create-user! *db* :admin password)
-            sess (app.test/login email password)
-            id (:taxon/id taxon)
-            url (format "/taxon/%s/synonyms/" id)
-            {:keys [response] :as sess} (peri/request sess url)
-            token (test.i/response-anti-forgery-token response)]
-        (is (re-find #"name=\"synonym-name\"" (:body response))
-            "the form is offered when the table is there, so its absence below
-             is the gate and not a rename")
-        (with-redefs [db.i/at-least-version? (constantly false)]
-          (let [{:keys [response]} (peri/request sess url)]
-            (is (= 200 (:status response)))
-            (is (not (re-find #"name=\"synonym-name\"" (:body response)))))
-          (let [{:keys [response]} (peri/request sess url
-                                                 :request-method :post
-                                                 :params {:__anti-forgery-token token
-                                                          :synonym-name "Ficus elastica"})]
-            (is (= 404 (:status response))
-                "a direct POST must be refused, not left to fail in SQLite")))
-        (is (empty? (synonym.i/list-for-taxon (ctx) *db* id)))))))
-
 (deftest test-a-non-numeric-synonym-id-deletes-nothing
   ;; WFO rows carry no :synonym/id, and parse-long of a non-numeric segment is
   ;; nil, so an unguarded `(= synonym-id (:synonym/id %))` matches the first WFO
@@ -205,32 +175,3 @@
             "an activity event naming a row that never existed")
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
-(deftest test-a-database-below-the-gate-renders-an-empty-tab
-  ;; The floor CI leg doesn't actually exercise this: the test system migrates
-  ;; to latest before start! regardless of the schema-version option, so
-  ;; taxon_synonym is always present there. This is the real coverage for "a
-  ;; database below the migration gets an empty tab, not a 500".
-  ;;
-  ;; The taxon must have a real row before the gate is forced off. An empty
-  ;; taxon with no rows would render the same empty state whether the gate is
-  ;; checked or skipped entirely, which proves nothing about the branch
-  ;; existing at all -- an ungated query against an empty result set looks
-  ;; identical to a gated one. Writing a row first and asserting its name is
-  ;; *absent* once the gate reports "not available" is the only assertion
-  ;; that can tell the two paths apart.
-  (tf/testing "the gate degrades instead of 500ing"
-    {[::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [taxon]}]
-      (let [password "testpassword123"
-            email (create-user! *db* :admin password)
-            sess (app.test/login email password)
-            id (:taxon/id taxon)
-            row (synonym.i/add-synonym! *db* {:taxon-id id
-                                              :synonym-name "Ficus elastica"})]
-        (with-redefs [db.i/at-least-version? (constantly false)]
-          (let [{:keys [response]} (peri/request sess (format "/taxon/%s/synonyms/" id))]
-            (is (= 200 (:status response)))
-            (is (not (re-find #"Ficus elastica" (:body response)))
-                "the gate must filter out a row that really exists once it reports the table unavailable")
-            (is (re-find #"No synonyms yet" (:body response)))))
-        (synonym.i/remove-synonym! *db* (:synonym/id row))))))

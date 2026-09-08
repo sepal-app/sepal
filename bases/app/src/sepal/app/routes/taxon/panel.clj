@@ -153,19 +153,17 @@
    :activities, :activity-count.
 
    Takes the request context as well as the database because synonyms come from
-   two places: the garden's own `taxon_synonym` table, which is above the
-   supported schema floor and so must be gated, and the shared read-only WFO
-   reference file, which is opened once per process. `ctx` carries the
-   `:schema-version` for the gate and the `:synonym-reference` pool. Notes are
-   gated on the same `:schema-version`."
+   two places: the garden's own `taxon_synonym` table and the shared read-only
+   WFO reference file, which is opened once per process. `ctx` carries the
+   `:synonym-reference` pool."
   [ctx db taxon]
   (let [taxon-id (:taxon/id taxon)
         parent (when-let [parent-id (:taxon/parent-id taxon)]
                  (taxon.i/get-by-id db parent-id))
         accession-count (acc.i/count-by-taxon-id db taxon-id)
         material-count (mat.i/count-by-taxon-id db taxon-id)
-        notes (take 3 (note.i/get-for-resource ctx db :taxon taxon-id))
-        note-count (note.i/count-for-resource ctx db :taxon taxon-id)
+        notes (take 3 (note.i/get-for-resource db :taxon taxon-id))
+        note-count (note.i/count-for-resource db :taxon taxon-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :taxon
                                                :resource-id taxon-id

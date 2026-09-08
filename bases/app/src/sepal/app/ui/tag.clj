@@ -50,10 +50,7 @@
                           :help "Start typing an existing tag, or type a new name.")
      [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Add"])])
 
-(defn section [& {:keys [tags all-tags action remove-url-fn can-add?]}]
+(defn section [& {:keys [tags all-tags action remove-url-fn]}]
   [:div {:class "grid gap-4"}
-   ;; No form on a database that cannot store the link. The reads are gated the
-   ;; same way, so without this the tab offers a working-looking Add control
-   ;; that fails with an empty 422 and silently drops the name.
-   (when can-add? (add-form :action action :all-tags all-tags))
+   (add-form :action action :all-tags all-tags)
    (chips :tags tags :remove-url-fn remove-url-fn)])

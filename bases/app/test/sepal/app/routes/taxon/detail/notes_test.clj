@@ -5,7 +5,6 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
-            [sepal.database.interface :as db.i]
             [sepal.note.interface :as note.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
@@ -14,10 +13,6 @@
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
-
-;; note.i's readers gate on the schema version, so a direct call needs a
-;; context. Requests get theirs from ::z/context.
-(def ^:private ctx {:schema-version (db.i/latest-version)})
 
 ;; A function, not a top-level def: *db* is a dynamic var bound only while
 ;; default-system-fixture runs, and a def's value expression is evaluated once
@@ -46,7 +41,7 @@
                                              :params {:__anti-forgery-token token
                                                       :body "BBG grows the white form only"})]
         (is (= 200 (:status response)))
-        (let [notes (note.i/get-for-resource ctx *db* :taxon (:taxon/id taxon))]
+        (let [notes (note.i/get-for-resource *db* :taxon (:taxon/id taxon))]
           (is (= ["BBG grows the white form only"] (mapv :note/body notes)))
           (is (= (:user/id user) (:note/created-by (first notes))))
           (let [body (Jsoup/parse ^String (:body response))]
@@ -71,7 +66,7 @@
                                              :params {:__anti-forgery-token token
                                                       :body ""})]
         (is (= 422 (:status response)))
-        (is (empty? (note.i/get-for-resource ctx *db* :taxon (:taxon/id taxon))))))))
+        (is (empty? (note.i/get-for-resource *db* :taxon (:taxon/id taxon))))))))
 
 (deftest test-get-lists-existing-notes
   (tf/testing "GET /taxon/:id/notes/"

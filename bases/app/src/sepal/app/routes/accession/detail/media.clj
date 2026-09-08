@@ -98,7 +98,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (let [panel-data (accession.panel/fetch-panel-data context db resource)]
+      (let [panel-data (accession.panel/fetch-panel-data db resource)]
         (render :media media
                 :page 1
                 :page-size page-size

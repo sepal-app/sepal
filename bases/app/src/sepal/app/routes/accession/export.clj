@@ -7,7 +7,6 @@
   (:require [sepal.accession.interface.search]
             [sepal.app.csv :as csv]
             [sepal.app.params :as params]
-            [sepal.app.search :as app.search]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z])
@@ -111,7 +110,7 @@
                     (assoc :left-join [[:collection :c] [:= :c.accession_id :a.id]]))
 
         ;; Compile search query and execute
-        stmt (-> (app.search/compile-query context :accession ast base-stmt)
+        stmt (-> (search.i/compile-query :accession ast base-stmt)
                  (assoc :order-by [:a.code]))
         rows (db.i/execute! db stmt)
 

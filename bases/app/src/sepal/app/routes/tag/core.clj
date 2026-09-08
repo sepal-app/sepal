@@ -8,13 +8,9 @@
             [zodiac.core :as z]))
 
 (defn tag-loader
-  "Written out rather than built with `middleware/default-loader` because
-  `tag.i/get-by-id` takes the request context: it is what gates the read, and
-  below the migration that added the tag tables it returns nil, which
-  `resource-loader` already turns into a 404."
   [{:keys [::z/context path-params]}]
   (let [{:keys [db]} context]
-    (tag.i/get-by-id context db (parse-long (:id path-params)))))
+    (tag.i/get-by-id db (parse-long (:id path-params)))))
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}

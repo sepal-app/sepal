@@ -103,7 +103,7 @@
                                                                      :current-page page))
                                      :page page)
           (html/render-partial))
-      (let [panel-data (material.panel/fetch-panel-data context db resource)]
+      (let [panel-data (material.panel/fetch-panel-data db resource)]
         (render :accession accession
                 :media media
                 :page 1

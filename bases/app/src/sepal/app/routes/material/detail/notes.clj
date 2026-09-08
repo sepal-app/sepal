@@ -34,10 +34,10 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn render-list [context db material]
+(defn render-list [db material]
   (let [id (:material/id material)]
     (html/render-partial
-      (ui.notes/note-list :notes (note.i/get-for-resource context db resource-type id)
+      (ui.notes/note-list :notes (note.i/get-for-resource db resource-type id)
                           :note-url-fn (note-url-fn id)))))
 
 (defn page-content [& {:keys [material accession taxon notes errors values]}]
@@ -94,13 +94,13 @@
                                   note)))]
             (if (error.i/error? saved)
               (http/validation-errors (validation.i/humanize saved))
-              (render-list context db resource)))))
+              (render-list db resource)))))
 
-      (let [panel-data (material.panel/fetch-panel-data context db resource)]
+      (let [panel-data (material.panel/fetch-panel-data db resource)]
         (render :material resource
                 :accession (:accession panel-data)
                 :taxon (:taxon panel-data)
-                :notes (note.i/get-for-resource context db resource-type id)
+                :notes (note.i/get-for-resource db resource-type id)
                 :panel-data panel-data
                 :timezone timezone)))))
 
@@ -125,7 +125,7 @@
                                     updated)))]
               (if (error.i/error? saved)
                 (http/validation-errors (validation.i/humanize saved))
-                (render-list context db resource)))))
+                (render-list db resource)))))
 
         :delete
         (let [deleted (write! db (:user/id viewer)
@@ -134,6 +134,6 @@
                                 (note.i/delete! tx note-id)))]
           (if (error.i/error? deleted)
             (http/validation-errors (validation.i/humanize deleted))
-            (render-list context db resource)))
+            (render-list db resource)))
 
         (http/not-found)))))

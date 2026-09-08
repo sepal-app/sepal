@@ -103,7 +103,7 @@
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
                 (flash/success "Material updated successfully")))))
 
-      (let [panel-data (material.panel/fetch-panel-data context db resource)
+      (let [panel-data (material.panel/fetch-panel-data db resource)
             reasons (material.i/list-reasons db)]
         (render :org organization
                 :material resource

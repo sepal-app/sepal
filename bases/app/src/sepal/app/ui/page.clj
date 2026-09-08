@@ -104,43 +104,34 @@
    sets — Heroicons at stroke 1.5, Lucide at 2, and a filled 16-grid Bootstrap
    flower that read heavier than everything beside it — and Material and Tags
    both drew the same tag, so two sections were indistinguishable. Tags keeps
-   the tag, being literally one; Material is a sprout, the plant in the ground.
-
-   Tags is omitted below the migration that added the tag tables: the index
-   there has nothing to read and no way to store anything, so an entry that
-   500s is worse than no entry at all."
-  [tags-available?]
-  (cond-> [{:label "Activity" :href (z/url-for activity.routes/index)
-            :icon (lucide/history)}
-           {:label "Accessions" :href (z/url-for accession.routes/index)
-            :icon (lucide/clipboard-list)}
-           {:label "Material" :href (z/url-for material.routes/index)
-            :icon (lucide/sprout)}
-           {:label "Taxa" :href (z/url-for taxon.routes/index)
-            :icon (lucide/flower-2)}
-           {:label "Locations" :href (z/url-for location.routes/index)
-            :icon (lucide/map-pin)}]
-    tags-available?
-    (conj {:label "Tags" :href (z/url-for tag.routes/index)
-           :icon (lucide/tag)})
-
-    :always
-    (into [{:label "Media" :href (z/url-for media.routes/index)
-            :icon (lucide/image)}
-           {:label "Contacts" :href (z/url-for contact.routes/index)
-            :icon (lucide/contact-round)}])))
+   the tag, being literally one; Material is a sprout, the plant in the ground."
+  []
+  [{:label "Activity" :href (z/url-for activity.routes/index)
+    :icon (lucide/history)}
+   {:label "Accessions" :href (z/url-for accession.routes/index)
+    :icon (lucide/clipboard-list)}
+   {:label "Material" :href (z/url-for material.routes/index)
+    :icon (lucide/sprout)}
+   {:label "Taxa" :href (z/url-for taxon.routes/index)
+    :icon (lucide/flower-2)}
+   {:label "Locations" :href (z/url-for location.routes/index)
+    :icon (lucide/map-pin)}
+   {:label "Tags" :href (z/url-for tag.routes/index)
+    :icon (lucide/tag)}
+   {:label "Media" :href (z/url-for media.routes/index)
+    :icon (lucide/image)}
+   {:label "Contacts" :href (z/url-for contact.routes/index)
+    :icon (lucide/contact-round)}])
 
 (defn sidebar []
   ;; Capture the URI here, eagerly. `for` below is lazy and Chassis realises it
   ;; while writing the response — by which point require-viewer's binding has
   ;; unwound and g/*uri* reads nil. Closing over the value is what makes this
-  ;; independent of when rendering happens. g/*tags-available?* is captured for
-  ;; the same reason: `(sections …)` is evaluated inside the lazy `for` below.
-  (let [uri g/*uri*
-        tags-available? g/*tags-available?*]
+  ;; independent of when rendering happens.
+  (let [uri g/*uri*]
     [:nav {:class "spl-rail" :aria-label "Sections"}
      [:ul {:class "spl-nav-list"}
-      (for [{:keys [label href icon]} (sections tags-available?)]
+      (for [{:keys [label href icon]} (sections)]
         (sidebar-item :label label
                       :href href
                       :icon icon

@@ -1,6 +1,5 @@
 (ns sepal.app.routes.tag.index
-  (:require [sepal.app.http-response :as http]
-            [sepal.app.routes.tag.routes :as tag.routes]
+  (:require [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.page :as ui.page]
             [sepal.tag.interface :as tag.i]
@@ -28,10 +27,4 @@
 
 (defn handler [{:keys [::z/context]}]
   (let [{:keys [db]} context]
-    ;; Below the migration that added the tag tables this section does not
-    ;; exist: nothing to list, and nowhere to put a tag if you made one. The
-    ;; rail omits the entry, so this is the answer for a bookmark or a typed
-    ;; URL — a 404, not an empty page implying tags are merely unused.
-    (if-not (tag.i/available? context)
-      (http/not-found)
-      (render :tags (tag.i/list-all context db)))))
+    (render :tags (tag.i/list-all db))))

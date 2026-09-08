@@ -11,7 +11,6 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
             [sepal.settings.interface :as settings.i]
-            [sepal.tag.interface :as tag.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
 
@@ -35,7 +34,6 @@
       (if (and viewer (= :active (:user/status viewer)))
         (binding [g/*viewer* viewer
                   g/*uri* uri
-                  g/*tags-available?* (tag.i/available? context)
                   g/*rail-open?* (= "1" (get-in cookies ["spl-rail" :value]))]
           (-> request
               (assoc :viewer viewer)
