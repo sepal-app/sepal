@@ -1,26 +1,36 @@
 (ns sepal.app.cli-test
-  (:require [clojure.java.shell :as shell]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [sepal.app.cli :as cli]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
 
 ;; =============================================================================
-;; CLI load test - verifies CLI namespace loads without malli initialization errors
+;; CLI load test - verifies the CLI namespace loads and its commands are wired
 ;; =============================================================================
 
 (deftest cli-loads-without-error-test
-  (testing "CLI namespace loads successfully (catches malli registry issues)"
-    ;; This runs the CLI help in a subprocess to verify it loads cleanly
-    ;; without depending on test system's malli initialization
-    (let [{:keys [exit out err]} (shell/sh "clojure" "-M:dev:cli" "list-users" "--help"
-                                           :dir (System/getProperty "user.dir"))]
-      (is (= 0 exit)
-          (str "CLI failed to load. stderr: " err))
-      (is (str/includes? out "list-users")
-          "Expected help output"))))
+  ;; This used to shell out to `clojure -M:dev:cli list-users --help`, which cost
+  ;; 24 seconds: the child JVM loaded the whole application again. It bought
+  ;; nothing. The child ran -M:dev:cli, so development/src was on its classpath
+  ;; and Clojure auto-loaded user.clj — the same malli.i/init this JVM already
+  ;; ran. Both processes met the CLI under identical preconditions, and
+  ;; -M:dev:cli is the only way anyone invokes it: the CLI ships in no project
+  ;; and no image.
+  (testing "every subcommand resolves to a function"
+    (is (= #{"create-user" "list-users" "routes"} (set (keys cli/subcommands))))
+    (doseq [[name {:keys [fn description]}] cli/subcommands]
+      (is (ifn? fn) (format "%s has no function" name))
+      (is (seq description) (format "%s has no description" name))))
+
+  (testing "list-users --help prints its usage and succeeds, without a database"
+    (let [out (java.io.StringWriter.)
+          exit (binding [*out* out]
+                 ((:fn (get cli/subcommands "list-users")) ["--help"]))]
+      (is (= 0 exit))
+      (is (str/includes? (str out) "list-users")))))
 
 ;; =============================================================================
 ;; User interface tests (using test system)
