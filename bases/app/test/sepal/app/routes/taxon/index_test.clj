@@ -12,7 +12,8 @@
             [sepal.database.interface :as db.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -212,6 +213,39 @@
                      "rank:genus Encyclia"]]
             (peri/request sess "/taxon/" :params {"q" q}))
           (is (= ["" "" "" "Encyclia cochleata" "Encyclia"] @seen)))))))
+
+(deftest test-the-overflow-line-is-a-list-item
+  ;; The block shows five matches and then "and N more". That line lives inside
+  ;; the same <ul>, where a <p> is not permitted content — and a browser leaves
+  ;; a stray <p> exactly where it is, so the list announces five items followed
+  ;; by loose text belonging to none of them. Assert the <ul> has no non-<li>
+  ;; child rather than just grepping for the sentence, which would pass either
+  ;; way.
+  (tf/testing "more matches than the block shows"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [_taxon]}]
+      ;; Distinct ids on purpose: the route dedupes block matches on taxon id
+      ;; and drops any taxon already in `rows`, so seven hits sharing one id
+      ;; would collapse to a single list item and prove nothing about overflow.
+      (let [many (for [i (range 7)]
+                   {:synonym/synonym-name (str "Encyclia synonym" i)
+                    :synonym/source "wfo"
+                    :taxon/id (+ 100000 i)
+                    :taxon/name (str "Prosthechea accepted" i)})]
+        (with-redefs [synonym.i/resolve (fn [_ctx _db _q] many)]
+          (let [email (create-user! *db*)
+                sess (app.test/login email password)
+                body (-> sess (peri/request "/taxon/" :params {"q" "Encyclia"})
+                         :response :body)
+                doc (Jsoup/parse ^String body)
+                ul (.selectFirst doc ".spl-alert--info ul")]
+            (is (some? ul) "the synonym block did not render")
+            (is (= 6 (.size (.select ul "> li")))
+                "five matches and the overflow line, all list items")
+            (is (zero? (.size (.select ul "> :not(li)")))
+                "a <ul> may only contain list items")
+            (is (some? (.selectFirst ul "> li:contains(and 2 more)"))
+                "the overflow line is the sixth list item")))))))
 
 (deftest test-no-synonym-matches-renders-no-block
   ;; A query nothing matches — real resolve, unmocked. The test process has no

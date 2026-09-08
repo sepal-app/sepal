@@ -97,9 +97,12 @@
                 :class "spl-link"}
             (taxon-name/render (:taxon/name m))]
            [:span " — matches synonym "]
-           (taxon-name/render (:synonym/synonym-name m))])]
-       (when (pos? extra)
-         [:p (format "and %d more" extra)])])))
+           (taxon-name/render (:synonym/synonym-name m))])
+        ;; An <li>, not a <p>: a <ul> may only contain list items, and a browser
+        ;; keeps a stray <p> right where it is — a list announcing two items
+        ;; and then some loose text belonging to none of them.
+        (when (pos? extra)
+          [:li (format "and %d more" extra)])]])))
 
 (defn table [& {:keys [rows page href page-size total search-query]}]
   (table/card-table
