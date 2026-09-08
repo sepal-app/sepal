@@ -130,6 +130,20 @@ After starting the system with `(go)`, four dynamic vars become available in the
 - `*db*`: A `next.jdbc` database connection pool for direct database queries.
 - `*process*` and `*garden*`: the process and instance values, for `sepal.app.instance` calls.
 
+**`user.clj`'s `ns` form must not require an application namespace.** Clojure
+auto-loads `user.clj` into every JVM with `development/src` on its classpath,
+which is every test run through the `:dev` alias. Requiring
+`sepal.app.instance` there loaded the whole application before Kaocha started —
+19 seconds a run, whether the tests being run needed it or not. Only
+`sepal.malli.interface` belongs in that `ns` form, because `malli.i/init` has to
+run before any namespace evaluating a schema at load.
+
+So `go` and `stop` reach their functions with `requiring-resolve` when called.
+That trades a compile-time error for a runtime one: a renamed function now
+breaks the REPL rather than the build. `sepal.app.dev-user-ns-test` covers both
+halves — it fails on a forbidden require, and on a deferred symbol that no
+longer resolves.
+
 ### Common Commands
 
 Every command below assumes you are inside the dev shell. `cd` into the project
@@ -159,7 +173,21 @@ clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test/tes
 
 # Run e2e tests (requires Playwright - see tests.edn for config)
 clojure -M:dev:test:test-e2e:test-runner :e2e
+```
 
+`--focus <namespace>` loads only that namespace. Kaocha normally loads every
+test namespace before applying the filter, and the `kaocha-focus` plugin in
+`tests.edn` rewrites each suite's `:ns-patterns` in `pre-load` instead. Focusing
+a component test that touches no application takes 8 seconds rather than 30; one
+that needs `sepal.app.instance` still takes 30, because loading the application
+is 24 of them.
+
+It declines to narrow whenever that could change which tests run — a suite id
+(`--focus :unit`, which is what CI runs), any `--focus-meta`, or a suite alias —
+and falls back to loading everything. See
+`bases/app/test/sepal/app/test/kaocha_focus.clj`.
+
+```bash
 # Lint
 bin/lint
 # or individually:
