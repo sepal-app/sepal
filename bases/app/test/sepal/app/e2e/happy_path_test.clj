@@ -1,11 +1,10 @@
 (ns sepal.app.e2e.happy-path-test
   "End-to-end e2e test for happy path user flow"
   (:require [clojure.test :refer [deftest is testing]]
-            [malli.generator :as mg]
             [sepal.app.e2e.playwright :as pw]
             [sepal.app.e2e.server :as server]
-            [sepal.user.interface :as user.i]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.app.test.email :as test.email]
+            [sepal.user.interface :as user.i]))
 
 (deftest ^:e2e happy-path-flow
   ;; "Complete user flow: login -> create contact -> create taxa -> create accession -> create location -> create material"
@@ -15,7 +14,7 @@
         (let [base-url (server/server-url started)
               db (server/db started)
               ;; Create test user programmatically (registration is disabled)
-              email (mg/generate user.spec/email)
+              email (test.email/unique)
               password "TestPassword123!"]
           ;; Create user in database
           (user.i/create! db {:email email

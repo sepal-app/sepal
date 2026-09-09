@@ -1,16 +1,15 @@
 (ns sepal.app.e2e.record-page-test
-  "E2E coverage for plan 046: the collapsible sections, the pinned record-page
-  footer, and the visible panel scrollbars."
+  "E2E coverage for the collapsible sections, the pinned record-page footer, and
+  the visible panel scrollbars."
   (:require [clojure.test :refer [deftest is testing]]
-            [malli.generator :as mg]
             [sepal.accession.interface :as acc.i]
             [sepal.app.e2e.playwright :as pw]
             [sepal.app.e2e.server :as server]
+            [sepal.app.test.email :as test.email]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
             [sepal.taxon.interface :as taxon.i]
-            [sepal.user.interface :as user.i]
-            [sepal.user.interface.spec :as user.spec]))
+            [sepal.user.interface :as user.i]))
 
 (defn- create-record-fixtures
   "A location, a taxon, an accession and a material, through the interfaces."
@@ -32,7 +31,7 @@
       (fn [started]
         (let [base-url (server/server-url started)
               db (server/db started)
-              email (mg/generate user.spec/email)
+              email (test.email/unique)
               password "TestPassword123!"]
           (user.i/create! db {:email email
                               :password password
