@@ -58,12 +58,9 @@
                              :purchase
                              :insufficient_data])
 
-;; Bauble 1.0.0's `recvd_type_values`, 28 values, stored snake_case. Bauble's
-;; four-letter codes were abbreviations for a fixed-width UI; Sepal's are not.
-;; The spellings are chosen so the underscore-capitalise label helper renders
-;; each one correctly, which is why no label table is needed. The one loss is
-;; BBPL: "Balled and burlapped" rather than "Balled & burlapped", because an
-;; ampersand inside an enum value invites escaping problems.
+;; The form material arrived in. Stored snake_case, so the label helper renders
+;; each value without needing a table of display strings. Mirrors the
+;; accession_received_type rows; a test holds the two equal.
 (def received-type [:enum {:decode/store keyword
                            :encode/store name-encoder
                            :decode/params keyword-encoder}

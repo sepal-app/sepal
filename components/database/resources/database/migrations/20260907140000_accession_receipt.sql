@@ -1,11 +1,11 @@
 -- Accession receipt: what form material arrived in, and how much of it.
 --
--- received_type carries Bauble's 28-value propagule vocabulary, stored
--- snake_case, enforced by a foreign key into a lookup table rather than by a
--- CHECK. Both put the invariant in the database; only the table lets a 29th
--- value arrive as an INSERT instead of a full accession rebuild with its FTS
--- triggers. The Malli enum in the accession spec is kept for coercion and for
--- the form's labels, and a test asserts the two agree in both directions.
+-- received_type carries a 28-value propagule vocabulary, stored snake_case and
+-- enforced by a foreign key into a lookup table rather than by a CHECK. Both
+-- put the invariant in the database; only the table lets a 29th value arrive
+-- as an INSERT instead of a full accession rebuild with its FTS triggers. The
+-- Malli enum in the accession spec is kept for coercion and for the form's
+-- labels, and a test asserts the two agree in both directions.
 --
 -- quantity_received is not material.quantity: one is how many propagules
 -- arrived, the other how many plants exist now. 0 is a legitimate value --
