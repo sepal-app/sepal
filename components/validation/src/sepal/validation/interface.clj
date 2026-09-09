@@ -38,7 +38,13 @@
   [err]
   (-> err error.i/data :explain me/humanize))
 
-(def email-re #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,63}$")
+(def email-re
+  "Must stay inside the HTML format for `<input type=email>`. The login field is
+  `type=\"email\"`, so anything wider is an address Sepal stores and the browser
+  then refuses to submit — an account that can never log in. The old
+  `[a-zA-Z0-9.-]+` domain allowed `x@-bar.com` and `x@a..b.com`; spelling out the
+  labels does not. `sepal.validation.interface-test` pins it both ways."
+  #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,63}$")
 
 (defn coerce-int [v]
   (try

@@ -261,7 +261,7 @@
 ;;; Collapsing a run into a sentence
 ;;
 ;; An activity event records who, what type and when — and nothing about what
-;; changed, because that was never stored (see plan 025). So four edits to one
+;; changed, because that was never stored. So four edits to one
 ;; accession are four identical lines. Collapsing a run of one person's
 ;; activity into "updated 3 accessions" is what makes the feed readable, and is
 ;; the whole reason the changelog view was chosen over a raw stream.
