@@ -55,7 +55,9 @@
    [:supplier-contact-id {:decode/form parse-long} [:maybe :int]]
    [:intended-location-id {:decode/form parse-long} [:maybe :int]]
    [:date-received [:maybe validation.i/date]]
-   [:date-accessioned [:maybe validation.i/date]]])
+   [:date-accessioned [:maybe validation.i/date]]
+   [:received-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/received-type]]
+   [:quantity-received {:decode/form parse-long} [:maybe accession.spec/quantity-received]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db]} context]

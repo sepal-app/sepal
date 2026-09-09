@@ -4,6 +4,7 @@
   (:require [clojure.string :as str]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
+            [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
@@ -45,7 +46,7 @@
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [accession taxon supplier intended-location stats notes note-count
              activities activity-count timezone on-close]}]
-  (let [{:accession/keys [id code provenance-type]} accession
+  (let [{:accession/keys [id code provenance-type received-type quantity-received]} accession
         {:keys [material-count]} stats
         sci-name (:taxon/name taxon)]
     (panel/panel-container
@@ -79,7 +80,10 @@
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id intended-location)})
                                     :class "spl-link"}
-                                (:location/name intended-location)])}]))
+                                (:location/name intended-location)])}
+                     {:label "Received as"
+                      :value (some-> received-type accession.form/enum-label-fn)}
+                     {:label "Quantity received" :value quantity-received}]))
 
         ;; Statistics section
         (panel/collapsible-section

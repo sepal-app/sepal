@@ -143,6 +143,8 @@
    :supplier-contact-id ""
    :date-received ""
    :date-accessioned ""
+   :received-type ""
+   :quantity-received ""
    :intended-location-id (str (:location/id location))})
 
 (deftest test-create-accession-with-intended-location
@@ -189,3 +191,128 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "select#intended-location-id"))
             "the accession form should have an intended location select")))))
+
+(defn- receipt-params
+  "The full field set a browser submits, with empty strings for blank fields.
+  `create/FormParams` is closed and every key is required, so a POST that omits
+  one is a 422 rather than a save."
+  [taxon & {:as overrides}]
+  (merge {:code "RCPT-1"
+          :taxon-id (str (:taxon/id taxon))
+          :id-qualifier ""
+          :id-qualifier-rank ""
+          :provenance-type ""
+          :wild-provenance-status ""
+          :supplier-contact-id ""
+          :intended-location-id ""
+          :date-received ""
+          :date-accessioned ""
+          :received-type ""
+          :quantity-received ""}
+         overrides))
+
+(deftest test-create-accession-with-receipt-fields
+  (tf/testing "POST with a received type and quantity saves both"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (-> sess (peri/request "/accession/new/"))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request "/accession/new/"
+                                                   :request-method :post
+                                                   :params (receipt-params
+                                                             taxon
+                                                             :__anti-forgery-token token
+                                                             :received-type "bare_root_plant"
+                                                             :quantity-received "3")))]
+          (is (= 200 (:status response))
+              (str "Expected 200, got " (:status response) " with body: " (:body response)))
+          (let [redirect (get-in response [:headers "HX-Redirect"])
+                id (parse-long (re-find #"\d+" redirect))
+                accession (accession.i/get-by-id *db* id)]
+            (is (= :bare_root_plant (:accession/received-type accession)))
+            (is (= 3 (:accession/quantity-received accession)))))
+        (finally
+          ;; The accession is created by HTTP, so no factory tears it down --
+          ;; and while it exists the taxon factory cannot delete its taxon.
+          ;; Creating also writes an activity row referencing the factory
+          ;; user, whose teardown hard-deletes that user -- clean up so the
+          ;; FK lets both proceed.
+          (jdbc.sql/delete! *db* :accession {:code "RCPT-1"})
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-create-accession-rejects-invalid-received-type
+  (tf/testing "POST with a received type outside the vocabulary returns 422"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (-> sess (peri/request "/accession/new/"))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request "/accession/new/"
+                                                 :request-method :post
+                                                 :params (receipt-params
+                                                           taxon
+                                                           :__anti-forgery-token token
+                                                           :code "RCPT-2"
+                                                           :received-type "not_a_propagule")))]
+        (is (= 422 (:status response))
+            (str "Expected 422, got " (:status response)))
+        (let [body (Jsoup/parse ^String (:body response))]
+          (is (some? (.selectFirst body "#received-type-errors"))
+              "received-type should have a field error"))))))
+
+(deftest test-create-accession-rejects-negative-quantity-received
+  (tf/testing "POST with a negative quantity received returns 422"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (-> sess (peri/request "/accession/new/"))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request "/accession/new/"
+                                                 :request-method :post
+                                                 :params (receipt-params
+                                                           taxon
+                                                           :__anti-forgery-token token
+                                                           :code "RCPT-3"
+                                                           :quantity-received "-1")))]
+        (is (= 422 (:status response))
+            (str "Expected 422, got " (:status response)))
+        (let [body (Jsoup/parse ^String (:body response))]
+          (is (some? (.selectFirst body "#quantity-received-errors"))
+              "quantity-received should have a field error"))))))
+
+(deftest test-the-receipt-section-is-titled-receipt-and-renders-its-controls
+  (tf/testing "the section holding the four receipt fields is named for the
+               event, not for two of its four fields, and the two new
+               controls are actually rendered by id"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            html (-> sess (peri/request "/accession/new/") :response :body)
+            body (Jsoup/parse ^String html)
+            titles (->> (.select body ".spl-form-section-title")
+                        (map #(.text %))
+                        set)]
+        (is (contains? titles "Receipt"))
+        (is (not (contains? titles "Dates")))
+
+        (is (some? (.selectFirst body "select#received-type"))
+            "the propagule picker renders; renaming it 422s a real browser submit
+             while every params-map test still passes")
+        (is (some? (.selectFirst body "input#quantity-received"))
+            "same for the quantity input")))))

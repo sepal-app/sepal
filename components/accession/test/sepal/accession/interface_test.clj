@@ -1,9 +1,11 @@
 (ns sepal.accession.interface-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.set :as set]
+            [clojure.test :refer :all]
             [integrant.core :as ig]
             [malli.core :as m]
             [malli.generator :as mg]
             [matcher-combinators.test :refer [match?]]
+            [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.interface :as acc.i]
             [sepal.accession.interface.spec :as acc.spec]
@@ -192,3 +194,135 @@
         (is (some? acc))
         (is (= [] (acc.i/awaiting-planting-by-location-id
                     db (:location/id loc))))))))
+
+(deftest test-receipt-fields-round-trip
+  (let [db *db*]
+    (tf/testing "received-type and quantity-received survive create and update"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :data {:received-type :unrooted_cutting
+                                          :quantity-received 3}}}
+      (fn [{:keys [acc]}]
+        (is (not (err.i/error? acc)) (err.i/data acc))
+        (is (= :unrooted_cutting (:accession/received-type acc)))
+        (is (= 3 (:accession/quantity-received acc)))
+        (is (m/validate acc.spec/Accession acc))
+        (let [updated (acc.i/update! db (:accession/id acc)
+                                     {:received-type :scion
+                                      :quantity-received 1})]
+          (is (not (err.i/error? updated)) (err.i/data updated))
+          (is (= :scion (:accession/received-type updated)))
+          (is (= 1 (:accession/quantity-received updated))))))))
+
+(deftest test-every-received-type-value-validates
+  ;; `rest` on a Malli :enum also yields the schema's properties map, which is
+  ;; not a member -- the same trap `create_test/test-create-accepts-every-field`
+  ;; documents and `ui.form/enum-select` filters with its `keyword?` default.
+  (let [values (filter keyword? (rest acc.spec/received-type))]
+    (doseq [v values]
+      (is (m/validate acc.spec/received-type v)
+          (str v " should be a member of the vocabulary")))
+    (is (= 28 (count values))
+        "Bauble's recvd_type_values has 28 members and all 28 are carried")
+    (is (not (m/validate acc.spec/received-type :not_a_propagule))
+        "a value outside the vocabulary is refused")))
+
+(deftest test-received-type-table-matches-the-spec
+  ;; The same guard used elsewhere for the same reason: the lookup table and
+  ;; the enum are two copies of one vocabulary, and a table row the enum lacks
+  ;; makes every record using it unreadable -- `m/coerce` throws and the
+  ;; accession cannot be loaded at all. The INSERT and the enum edit ship in
+  ;; the same commit, and this fails if they ever drift in either direction.
+  (let [db *db*
+        in-table (set (map :accession-received-type/name
+                           (jdbc/execute! db ["select name from accession_received_type"])))
+        in-spec (set (map name (filter keyword? (rest acc.spec/received-type))))]
+    (is (= 28 (count in-table)) "28 rows seeded")
+    (is (= in-table in-spec)
+        (str "table and spec disagree. Only in the table: "
+             (set/difference in-table in-spec)
+             ". Only in the spec: "
+             (set/difference in-spec in-table)))))
+
+(deftest test-quantity-received-zero-round-trips
+  (let [db *db*]
+    (tf/testing "zero propagules received is a legitimate state, not a missing value"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :data {:quantity-received 0}}}
+      (fn [{:keys [acc]}]
+        (is (not (err.i/error? acc)) (err.i/data acc))
+        (is (= 0 (:accession/quantity-received acc)))))))
+
+(deftest test-quantity-received-rejects-negative
+  (let [db *db*]
+    (tf/testing "the spec refuses a negative quantity before the CHECK sees it"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        ;; `acc.i/create!` throws rather than returning an error map when the
+        ;; Malli schema itself refuses the data -- `store.core/create!` calls
+        ;; `m/coerce`, which throws on a coercion failure instead of catching
+        ;; it. Only the form-submission path (`validate.i/validate-form-values`)
+        ;; converts that throw into an error map; a direct interface call does
+        ;; not. So the conversion happens here, the same way
+        ;; `taxon.rank-test/test-an-unknown-rank-is-a-field-error-not-a-500`
+        ;; converts a thrown validation failure.
+        (let [result (try
+                       (acc.i/create! db {:code "NEG-1"
+                                          :taxon-id (:taxon/id taxon)
+                                          :quantity-received -1})
+                       (catch Exception ex
+                         (err.i/ex->error ex)))]
+          (is (err.i/error? result)
+              "a negative quantity received is an error, not a row"))))))
+
+(deftest test-receipt-fields-absent-when-not-set
+  (let [db *db*]
+    (tf/testing "an accession with neither field set is unaffected -- every
+                 existing row in every existing garden"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (let [created (acc.i/create! db {:code "PLAIN-1"
+                                         :taxon-id (:taxon/id taxon)})]
+          (is (not (err.i/error? created)) (err.i/data created))
+          (is (nil? (:accession/received-type created)))
+          (is (nil? (:accession/quantity-received created)))
+          (is (m/validate acc.spec/Accession created))
+          ;; Created directly rather than through `::acc.i/factory`, because
+          ;; the factory's `mg/generate` would fill received-type and
+          ;; quantity-received with random valid values instead of leaving
+          ;; them genuinely absent. Not tracked by integrant, so it must be
+          ;; deleted here -- otherwise it outlives the taxon factory's :key/taxon
+          ;; and the halt-key delete on that taxon hits its foreign key.
+          (jdbc.sql/delete! db :accession {:id (:accession/id created)}))))))
+
+(deftest test-accession-fts-still-syncs
+  ;; The migration adds two columns to accession, which has an external-content
+  ;; FTS table and three triggers hanging off it. The triggers name their
+  ;; columns explicitly and the update trigger fires only AFTER UPDATE OF code,
+  ;; so they should be indifferent to the new columns -- asserted rather than
+  ;; assumed.
+  (let [db *db*]
+    (tf/testing "accession_fts"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (let [created (acc.i/create! db {:code "FTS-ONE"
+                                         :taxon-id (:taxon/id taxon)
+                                         :received-type :seed
+                                         :quantity-received 4})
+              id (:accession/id created)]
+          (is (not (err.i/error? created)) (err.i/data created))
+          (is (= "FTS-ONE"
+                 (:accession-fts/code
+                   (jdbc/execute-one! db ["select code from accession_fts where rowid = ?" id])))
+              "the insert trigger still populates accession_fts")
+          (acc.i/update! db id {:code "FTS-TWO"})
+          (is (= "FTS-TWO"
+                 (:accession-fts/code
+                   (jdbc/execute-one! db ["select code from accession_fts where rowid = ?" id])))
+              "the update trigger still syncs accession_fts")
+          (jdbc.sql/delete! db :accession {:id id})
+          (is (nil? (jdbc/execute-one! db ["select rowid from accession_fts where rowid = ?" id]))
+              "the delete trigger still removes from accession_fts"))))))

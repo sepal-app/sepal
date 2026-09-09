@@ -123,7 +123,8 @@
                           :help "Leave it empty until the bed is decided."))])
 
       (ui.form/section
-        :title "Dates"
+        :title "Receipt"
+        :hint "What arrived, how much of it, and when."
         :children
         [[:div {:class "spl-form-pair"}
           (ui.form/input-field :label "Date Received"
@@ -135,6 +136,20 @@
                                :name "date-accessioned"
                                :type "date"
                                :value (:date-accessioned values)
-                               :errors (:date-accessioned errors))]])])
+                               :errors (:date-accessioned errors))]
+         [:div {:class "spl-form-pair"}
+          (ui.form/field :label "Received as"
+                         :name "received-type"
+                         :errors (:received-type errors)
+                         :input (ui.form/enum-select "received-type"
+                                                     accession.spec/received-type
+                                                     (:received-type values)
+                                                     :label-fn enum-label-fn))
+          (ui.form/input-field :label "Quantity received"
+                               :name "quantity-received"
+                               :type "number"
+                               :input-attrs {:min 0}
+                               :value (:quantity-received values)
+                               :errors (:quantity-received errors))]])])
    [:script {:type "module"
              :src (html/static-url "app/routes/accession/form.ts")}]])

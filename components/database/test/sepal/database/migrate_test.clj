@@ -312,10 +312,57 @@
               "the material_change_reason seed in schema.sql must match the one in the migration")
           (is (= (query provisioned-path "select name from material_status order by name")
                  (query migrated-path "select name from material_status order by name"))
-              "the material_status seed in schema.sql must match the one in the migration"))
+              "the material_status seed in schema.sql must match the one in the migration")
+          (is (= (query provisioned-path "select name from accession_received_type order by name")
+                 (query migrated-path "select name from accession_received_type order by name"))
+              "the accession_received_type seed in schema.sql must match the one in the migration"))
         (finally
           (fs/delete-tree provisioned-dir)
           (fs/delete-tree migrated-dir))))))
+
+(deftest test-quantity-received-check-is-in-the-database
+  (testing "the CHECK added by ALTER TABLE ADD COLUMN actually enforces"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-quantity-received"})]
+      (try
+        (let [db-path (fresh-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
+          (jdbc/execute! ds ["insert into accession (code, taxon_id, quantity_received)
+                              values ('X-1', 1, 0)"])
+          (is (= 1 (-> (jdbc/execute-one! ds ["select count(*) c from accession where quantity_received = 0"]) :c))
+              "zero is a legal quantity received")
+          (is (thrown? org.sqlite.SQLiteException
+                       (jdbc/execute! ds ["insert into accession (code, taxon_id, quantity_received)
+                                           values ('X-2', 1, -1)"]))
+              "the CHECK refuses a negative quantity received"))
+        (finally
+          (fs/delete-tree dir))))))
+
+(deftest test-received-type-foreign-key-is-in-the-database
+  (testing "the lookup table refuses a propagule value it does not hold"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-received-type"})]
+      (try
+        (let [db-path (fresh-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
+              ;; foreign_keys is per-connection and off by default in the raw
+              ;; datasource, unlike the app's pool -- database/connection.clj
+              ;; sets it on every connection. Turn it on so the FK is live.
+              fk-ds (jdbc/get-datasource
+                      {:jdbcUrl (str "jdbc:sqlite:" db-path "?foreign_keys=on")})]
+          (is (= 28 (first (query db-path "select count(*) from accession_received_type")))
+              "28 seeded propagule values, all of Bauble's recvd_type_values")
+          (jdbc/execute! ds ["insert into taxon (name, rank) values ('Acer palmatum', 'species')"])
+          (jdbc/execute! fk-ds ["insert into accession (code, taxon_id, received_type)
+                                 values ('R-1', 1, 'bare_root_plant')"])
+          (is (= 1 (-> (jdbc/execute-one! fk-ds ["select count(*) c from accession
+                                                  where received_type = 'bare_root_plant'"]) :c))
+              "a known propagule value inserts")
+          (is (thrown? org.sqlite.SQLiteException
+                       (jdbc/execute! fk-ds ["insert into accession (code, taxon_id, received_type)
+                                              values ('R-2', 1, 'not_a_propagule')"]))
+              "the foreign key refuses a value absent from accession_received_type"))
+        (finally
+          (fs/delete-tree dir))))))
 
 (defn- write-jar!
   "A jar at path holding entries, name -> content. A name ending in / with nil

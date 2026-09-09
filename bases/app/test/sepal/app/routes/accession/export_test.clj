@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.export-test
   "Unit tests for accession CSV export handler."
-  (:require [clojure.string :as str]
+  (:require [clojure.data.csv :as data.csv]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [sepal.accession.interface :as accession.i]
@@ -75,3 +76,28 @@
         (is (= 200 (:status response)))
         ;; Should include matching accession
         (is (str/includes? body (:accession/code acc1)))))))
+
+(deftest export-includes-receipt-columns-test
+  (tf/testing "the CSV carries what the record carries; leaving these two out
+               would make the export lie about the accession"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc]
+     {:db *db*
+      :taxon (ig/ref :key/taxon)
+      :data {:code "RCPT-EXPORT"
+             :received-type :rooted_cutting
+             :quantity-received 2}}}
+    (fn [{:keys [acc]}]
+      (let [response (call-handler *db* {:q (str "code:" (:accession/code acc))
+                                         :include_taxon "false"
+                                         :include_collection "false"})
+            [header & rows] (data.csv/read-csv (:body response))
+            row (first (filter #(some #{(:accession/code acc)} %) rows))
+            cells (zipmap header row)]
+        (is (= 200 (:status response)))
+        (is (some #{"accession_received_type"} header))
+        (is (some #{"accession_quantity_received"} header))
+        (is (some? row)
+            (str "no exported row carries code " (:accession/code acc)))
+        (is (= "rooted_cutting" (get cells "accession_received_type")))
+        (is (= "2" (get cells "accession_quantity_received")))))))

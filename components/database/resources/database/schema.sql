@@ -77,7 +77,9 @@ CREATE TABLE accession (
   date_accessioned text,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-, intended_location_id integer references location(id)) strict;
+, intended_location_id integer references location(id), received_type text
+  REFERENCES accession_received_type(name), quantity_received integer
+  CHECK(quantity_received >= 0)) strict;
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -337,6 +339,9 @@ CREATE TABLE tag_link (
 CREATE UNIQUE INDEX tag_link_unique_idx on tag_link (tag_id, resource_id, resource_type);
 CREATE INDEX tag_link_resource_id_resource_type_idx on tag_link (resource_id, resource_type);
 CREATE INDEX accession_intended_location_id_idx on accession (intended_location_id);
+CREATE TABLE accession_received_type (
+  name text primary key
+) strict;
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -365,6 +370,14 @@ INSERT INTO material_change_reason (code, label) VALUES
   ('given_away', 'Given away'),
   ('transferred', 'Transferred elsewhere'),
   ('other', 'Other');
+
+INSERT INTO accession_received_type (name) VALUES
+  ('air_layer'), ('balled_and_burlapped'), ('bare_root_plant'),
+  ('bud_cutting'), ('budded'), ('bulb'), ('bulbil'), ('clump'), ('corm'),
+  ('division'), ('graft'), ('layer'), ('plant'), ('pseudobulb'), ('rhizome'),
+  ('root'), ('root_cutting'), ('root_sucker'), ('rooted_cutting'), ('scion'),
+  ('seed'), ('seedling'), ('spore'), ('sporeling'), ('tuber'), ('unknown'),
+  ('unrooted_cutting'), ('vegetative_spreading');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
@@ -375,3 +388,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260903120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '2026-09-06 16:55:14');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906130000', '2026-09-06 17:47:59');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907120000', '2026-09-07 14:31:51');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907140000', '2026-09-08 00:14:02');
