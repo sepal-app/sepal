@@ -86,9 +86,11 @@
   (testing "fixtures generate from this regex. While it was wider than the HTML
             format, 6.2% of draws were addresses Chromium refused, hanging the
             e2e login test until it timed out — one CI run in six"
-    (let [addresses (repeatedly 2000 #(mg/generate validation.i/email-re))
+    ;; 200 draws, not 2000: generating from a regex costs ~3ms each, and 200 is
+    ;; already >99% likely to catch a defect as rare as 3% of addresses.
+    (let [addresses (repeatedly 200 #(mg/generate validation.i/email-re))
           rejected (remove #(re-matches html-email-re %) addresses)]
-      (is (empty? (take 10 rejected))
-          (format "%d of 2000 generated addresses would not submit, e.g. %s"
+      (is (empty? rejected)
+          (format "%d of 200 generated addresses would not submit, e.g. %s"
                   (count rejected)
                   (pr-str (vec (take 5 rejected))))))))

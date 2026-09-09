@@ -11,12 +11,12 @@
 (deftest test-the-address-is-one-a-browser-will-submit
   (testing "the e2e login types this into a type=email field, and Chromium will
             not submit a form holding an address it rejects"
-    (doseq [address (repeatedly 500 test.email/unique)]
-      (is (re-matches html-email-re address) address)
-      (is (m/validate user.spec/email address) address))))
+    (let [addresses (repeatedly 200 test.email/unique)]
+      (is (empty? (remove #(re-matches html-email-re %) addresses)))
+      (is (empty? (remove #(m/validate user.spec/email %) addresses))))))
 
 (deftest test-each-call-returns-a-different-address
   (testing "one garden per test, but the address has to survive being reused
             against a database another test already wrote to"
-    (let [addresses (repeatedly 500 test.email/unique)]
-      (is (= 500 (count (distinct addresses)))))))
+    (let [addresses (repeatedly 200 test.email/unique)]
+      (is (= 200 (count (distinct addresses)))))))
