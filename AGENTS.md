@@ -130,6 +130,20 @@ After starting the system with `(go)`, four dynamic vars become available in the
 - `*db*`: A `next.jdbc` database connection pool for direct database queries.
 - `*process*` and `*garden*`: the process and instance values, for `sepal.app.instance` calls.
 
+**`user.clj`'s `ns` form must not require an application namespace.** Clojure
+auto-loads `user.clj` into every JVM with `development/src` on its classpath,
+which is every test run through the `:dev` alias. Requiring
+`sepal.app.instance` there loaded the whole application before Kaocha started —
+19 seconds a run, whether the tests being run needed it or not. Only
+`sepal.malli.interface` belongs in that `ns` form, because `malli.i/init` has to
+run before any namespace evaluating a schema at load.
+
+So `go` and `stop` reach their functions with `requiring-resolve` when called.
+That trades a compile-time error for a runtime one: a renamed function now
+breaks the REPL rather than the build. `sepal.app.dev-user-ns-test` covers both
+halves — it fails on a forbidden require, and on a deferred symbol that no
+longer resolves.
+
 ### Common Commands
 
 Every command below assumes you are inside the dev shell. `cd` into the project
@@ -159,7 +173,21 @@ clojure -M:dev:test:test-runner :unit --focus sepal.accession.interface-test/tes
 
 # Run e2e tests (requires Playwright - see tests.edn for config)
 clojure -M:dev:test:test-e2e:test-runner :e2e
+```
 
+`--focus <namespace>` loads only that namespace. Kaocha normally loads every
+test namespace before applying the filter, and the `kaocha-focus` plugin in
+`tests.edn` rewrites each suite's `:ns-patterns` in `pre-load` instead. Focusing
+a component test that touches no application takes 8 seconds rather than 30; one
+that needs `sepal.app.instance` still takes 30, because loading the application
+is 24 of them.
+
+It declines to narrow whenever that could change which tests run — a suite id
+(`--focus :unit`, which is what CI runs), any `--focus-meta`, or a suite alias —
+and falls back to loading everything. See
+`bases/app/test/sepal/app/test/kaocha_focus.clj`.
+
+```bash
 # Lint
 bin/lint
 # or individually:
@@ -272,6 +300,23 @@ Use `tf/testing` macro with Integrant-based fixtures:
 ```
 
 Components provide `::interface/factory` Integrant keys for test data generation.
+
+Two things the fixture does for speed, both of which change what a test sees:
+
+- **Passwords hash weakly.** The `:test` alias sets
+  `-Dpsw4j.configuration=test/psw4j-fast.properties`, so a scrypt hash costs 2 ms
+  instead of 323 ms. The suite hashes 529 times, which was 217 seconds of a
+  364-second run. Nothing outside the suite sets that property, so a real install
+  still reads `bases/app/resources/psw4j.properties` —
+  `sepal.app.password-hashing-test` asserts those parameters are still strong,
+  because no test would notice if they were weakened. Never assert on hashing
+  cost or on a stored hash's parameters in a test.
+- **Databases are copied, not built.** `sepal.app.test.system/fresh-database!`
+  builds one template per JVM and copies it for each namespace, 2 ms instead of
+  110 ms. It picks the floor snapshot or `provision!` the same way the old code
+  did. `sepal.app.test.template-db-test` asserts a copy is indistinguishable from
+  a freshly built database; if you change what a new database contains, that is
+  the test that will tell you.
 
 ### App Test Helpers
 
@@ -460,11 +505,16 @@ palette, type scale and radii; `components.css` holds the `spl-` component
 layer; `main.css` wires them together. Colours, spacing and radii live in
 `tokens.css` and nowhere else.
 
-`bases/app/test/sepal/app/ui/no_daisyui_test.clj` enforces that with the unit
+`bases/app/test/sepal/app/ui/css_contract_test.clj` enforces that with the unit
 suite, reading the sources rather than rendered output — a class on a branch no
-test exercises is exactly what drifts. It fails on a DaisyUI class, a hardcoded
-palette colour, an opacity-suffixed theme colour, a `spl-` class with no rule,
-a `daisyui` dependency, or a resurrected `tailwind.config.js`.
+test exercises is exactly what drifts. It fails on a hardcoded palette colour,
+or on a `spl-` class the stylesheets define no rule for.
+
+It used to also gate against DaisyUI returning — a class scanner, an
+opacity-suffix scanner, a `package.json` check and a `tailwind.config.js` check.
+Those are gone. DaisyUI has been out long enough that guarding its return stopped
+earning its cost: the class scanner ran one assertion per source line per DaisyUI
+class name, which was ten seconds and most of the suite's assertion count.
 
 Scientific names render through `sepal.taxon.interface.name/segments`, which
 splits the italic parts from the upright ones and returns data;

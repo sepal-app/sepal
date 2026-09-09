@@ -1,5 +1,9 @@
 #kaocha/v1
- {:tests [{:id :unit
+ ;; kaocha-focus makes `--focus <namespace>` load only that namespace instead of
+ ;; all 125. See bases/app/test/sepal/app/test/kaocha_focus.clj for when it
+ ;; declines to narrow.
+ {:plugins [:sepal.app.test/kaocha-focus]
+  :tests [{:id :unit
            :test-paths ["bases/app"
                         "components/accession/test"
                         "components/activity/test"
