@@ -9,7 +9,6 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
-            [sepal.database.interface :as db.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
@@ -413,28 +412,3 @@
                 (is (= 200 (-> sess
                                (peri/request "/taxon/" :params {"q" q})
                                :response :status)))))))))))
-
-(deftest test-a-synonym-filter-below-the-schema-floor-returns-nothing
-  ;; taxon_synonym is above the supported floor. The garden half must be gated
-  ;; and the page must render rather than error.
-  (tf/testing "below the gate"
-    {[::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [taxon]}]
-      (let [id (:taxon/id taxon)
-            row (synonym.i/add-synonym! *db* {:taxon-id id
-                                              :synonym-name "Bucida buceras"})]
-        (jdbc.sql/update! *db* :taxon {:name "Terminalia buceras"} {:id id})
-        (with-synonym-ids-pool
-          (fn []
-            (let [email (create-user! *db*)
-                  sess (app.test/login email password)
-                  find-body (fn [] (-> sess
-                                       (peri/request "/taxon/"
-                                                     :params {"q" "synonym:Bucida"})
-                                       :response :body))]
-              (testing "the row is really found at the latest schema"
-                (is (re-find #"Terminalia buceras" (find-body))))
-              (testing "and not below the floor, without erroring"
-                (with-redefs [db.i/at-least-version? (constantly false)]
-                  (is (not (re-find #"Terminalia buceras" (find-body)))))))))
-        (synonym.i/remove-synonym! *db* (:synonym/id row))))))

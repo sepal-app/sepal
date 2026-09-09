@@ -242,7 +242,7 @@
                                              {:id (:accession/id accession)}))
                 (http/validation-errors (validation.i/humanize saved))))))
 
-        (let [panel-data (accession.panel/fetch-panel-data context db accession)]
+        (let [panel-data (accession.panel/fetch-panel-data db accession)]
           (render :accession accession
                   :taxon taxon
                   :values values

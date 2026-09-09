@@ -4,15 +4,11 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
-            [sepal.database.interface :as db.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
-
-(defn- ctx []
-  {:schema-version (db.i/latest-version)})
 
 (defn- panel-body
   "The panel fragment as the browser gets it.
@@ -68,30 +64,4 @@
         (is (re-find #"Synonyms" body) "the section is present, not absent")
         (is (not (re-find #"Encyclia cochleata" body))
             "another taxon's synonym must not appear in this panel")
-        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
-
-(deftest test-the-panel-renders-below-the-schema-floor
-  ;; `taxon_synonym` is above the supported schema floor, so the panel must
-  ;; render rather than error on a database without it. A row is written first
-  ;; so the gated and ungated paths give different answers -- without it, both
-  ;; return nothing and this test could not fail.
-  (tf/testing "below the gate"
-    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
-     [::taxon.i/factory :key/taxon] {:db *db*}}
-    (fn [{:keys [user taxon]}]
-      (let [sess (app.test/login (:user/email user) "testpassword123")
-            id (:taxon/id taxon)
-            row (synonym.i/add-synonym! *db* {:taxon-id id
-                                              :synonym-name "Bucida buceras"})]
-        (testing "the row is really there at the latest schema"
-          (is (re-find #"Bucida buceras" (panel-body sess id))))
-        (testing "and is filtered out below the floor, without erroring"
-          (with-redefs [db.i/at-least-version? (constantly false)]
-            (let [body (panel-body sess id)]
-              (is (re-find #"Synonyms" body))
-              (is (not (re-find #"Bucida buceras" body))))))
-        (is (= ["Bucida buceras"]
-               (mapv :synonym/synonym-name
-                     (synonym.i/list-for-taxon (ctx) *db* id)))
-            "the gate filtered the read, it did not delete the row")
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))

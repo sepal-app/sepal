@@ -33,6 +33,6 @@
       ;; Can edit -> redirect to edit tabs
       (http/found material.routes/detail-general {:id id})
       ;; Read-only -> render panel as full page
-      (let [panel-data (material.panel/fetch-panel-data context db resource)]
+      (let [panel-data (material.panel/fetch-panel-data db resource)]
         (render-panel-page :material resource :panel-data panel-data
                            :timezone timezone)))))

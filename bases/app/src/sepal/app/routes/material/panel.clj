@@ -184,10 +184,9 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the material panel.
-   `ctx` carries :schema-version — a route's ::z/context will do.
    Returns a map with :material, :accession, :taxon, :location, :history,
    :notes, :note-count, :activities, :activity-count."
-  [ctx db material]
+  [db material]
   (let [material-id (:material/id material)
         accession (when-let [accession-id (:material/accession-id material)]
                     (acc.i/get-by-id db accession-id))
@@ -195,8 +194,8 @@
                 (taxon.i/get-by-id db taxon-id))
         location (when-let [location-id (:material/location-id material)]
                    (loc.i/get-by-id db location-id))
-        notes (take 3 (note.i/get-for-resource ctx db :material material-id))
-        note-count (note.i/count-for-resource ctx db :material material-id)
+        notes (take 3 (note.i/get-for-resource db :material material-id))
+        note-count (note.i/count-for-resource db :material material-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :material
                                                :resource-id material-id
@@ -218,7 +217,7 @@
   "Handler for material panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
   (let [{:keys [db resource timezone]} context
-        panel-data (fetch-panel-data context db resource)]
+        panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
         :material (:material panel-data)

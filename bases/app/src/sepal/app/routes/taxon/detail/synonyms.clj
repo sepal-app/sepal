@@ -73,23 +73,19 @@
                          :required true)
     [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Add"]))
 
-(defn page-content [& {:keys [synonyms taxon can-add?]}]
+(defn page-content [& {:keys [synonyms taxon]}]
   (taxon.shared/page
     :taxon taxon
     :active taxon.shared/synonyms-tab
     :body
     [:div {:class "grid gap-4"}
-     ;; No form on a database that cannot store the row. The read below is
-     ;; gated the same way, so without this the tab offers a working-looking
-     ;; Add control that fails with an empty 422 and silently drops the name.
-     (when can-add? (add-form :taxon taxon))
+     (add-form :taxon taxon)
      (synonyms-table :taxon taxon :synonyms synonyms)]))
 
-(defn render [& {:keys [synonyms taxon panel-data can-add?]}]
+(defn render [& {:keys [synonyms taxon panel-data]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
                            :content (page-content :synonyms synonyms
-                                                  :taxon taxon
-                                                  :can-add? can-add?)
+                                                  :taxon taxon)
                            :panel-content (taxon.panel/panel-content
                                             :taxon (:taxon panel-data)
                                             :parent (:parent panel-data)
@@ -121,30 +117,23 @@
       (error.i/ex->error ex))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context
-        ;; Below the migration that added taxon_synonym there is nowhere to put
-        ;; the row. The form is not rendered, and the POST is refused rather
-        ;; than left reachable by a direct request.
-        can-add? (synonym.i/available? context)]
+  (let [{:keys [db resource]} context]
     (case request-method
       :post
-      (if-not can-add?
-        (http/not-found)
-        (let [result (validation.i/validate-form-values FormParams form-params)]
-          (if (error.i/error? result)
-            (http/validation-errors (validation.i/humanize result))
-            (let [saved (add! db (:taxon/id resource) (:user/id viewer) result)]
-              (if-not (error.i/error? saved)
-                (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
-                (http/validation-errors (validation.i/humanize saved)))))))
+      (let [result (validation.i/validate-form-values FormParams form-params)]
+        (if (error.i/error? result)
+          (http/validation-errors (validation.i/humanize result))
+          (let [saved (add! db (:taxon/id resource) (:user/id viewer) result)]
+            (if-not (error.i/error? saved)
+              (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
+              (http/validation-errors (validation.i/humanize saved))))))
 
       :get
       (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :synonyms synonyms
-                :panel-data panel-data
-                :can-add? can-add?)))))
+                :panel-data panel-data)))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context

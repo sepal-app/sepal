@@ -1,6 +1,5 @@
 (ns sepal.app.routes.material.detail.shared
-  (:require [sepal.app.globals :as g]
-            [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.pages.record :as pages.record]
@@ -14,21 +13,18 @@
 (def tags-tab ::tags)
 
 (defn- tab-items [& {:keys [active material]}]
-  (cond-> [(ui.tabs/item "General"
-                         {:href (z/url-for material.routes/detail-general {:id (:material/id material)})
-                          :active (= active general-tab)})
-           (ui.tabs/item "Media"
-                         {:href (z/url-for material.routes/detail-media {:id (:material/id material)})
-                          :active (= active media-tab)})
-           (ui.tabs/item "Notes"
-                         {:href (z/url-for material.routes/detail-notes {:id (:material/id material)})
-                          :active (= active notes-tab)})]
-    ;; No Tags tab below the migration that added the tag tables — the section
-    ;; has nothing to read there and no way to store anything.
-    g/*tags-available?*
-    (conj (ui.tabs/item "Tags"
-                        {:href (z/url-for material.routes/detail-tags {:id (:material/id material)})
-                         :active (= active tags-tab)}))))
+  [(ui.tabs/item "General"
+                 {:href (z/url-for material.routes/detail-general {:id (:material/id material)})
+                  :active (= active general-tab)})
+   (ui.tabs/item "Media"
+                 {:href (z/url-for material.routes/detail-media {:id (:material/id material)})
+                  :active (= active media-tab)})
+   (ui.tabs/item "Notes"
+                 {:href (z/url-for material.routes/detail-notes {:id (:material/id material)})
+                  :active (= active notes-tab)})
+   (ui.tabs/item "Tags"
+                 {:href (z/url-for material.routes/detail-tags {:id (:material/id material)})
+                  :active (= active tags-tab)})])
 
 (defn tabs [material active]
   (ui.tabs/tabs {:label "Material sections"

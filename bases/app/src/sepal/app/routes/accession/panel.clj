@@ -127,11 +127,10 @@
 
 (defn fetch-panel-data
   "Fetch all data needed for the accession panel.
-   `ctx` carries :schema-version — a route's ::z/context will do.
    Returns a map with :accession, :taxon, :supplier, :intended-location,
    :stats, :notes,
    :note-count, :activities, :activity-count."
-  [ctx db accession]
+  [db accession]
   (let [accession-id (:accession/id accession)
         taxon (when-let [taxon-id (:accession/taxon-id accession)]
                 (taxon.i/get-by-id db taxon-id))
@@ -140,8 +139,8 @@
         intended-location (when-let [location-id (:accession/intended-location-id accession)]
                             (location.i/get-by-id db location-id))
         material-count (mat.i/count-by-accession-id db accession-id)
-        notes (take 3 (note.i/get-for-resource ctx db :accession accession-id))
-        note-count (note.i/count-for-resource ctx db :accession accession-id)
+        notes (take 3 (note.i/get-for-resource db :accession accession-id))
+        note-count (note.i/count-for-resource db :accession accession-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :accession
                                                :resource-id accession-id
@@ -163,7 +162,7 @@
   "Handler for accession panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
   (let [{:keys [db resource timezone]} context
-        panel-data (fetch-panel-data context db resource)]
+        panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
         :accession (:accession panel-data)

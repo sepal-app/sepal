@@ -6,7 +6,6 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
-            [sepal.database.interface :as db.i]
             [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
@@ -14,10 +13,6 @@
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
-
-;; The reads take a context so they can gate on the schema version; the test
-;; database is at latest, so these assertions want the ungated answer.
-(def ctx {:schema-version (db.i/latest-version)})
 
 (deftest test-the-index-lists-tags-with-counts
   (tf/testing "an admin views the tag list"
@@ -45,7 +40,7 @@
                                                       :name "October block"
                                                       :description ""})]
         (is (contains? #{200 303} (:status response)))
-        (is (= "October block" (:tag/name (tag.i/get-by-id ctx *db* (:tag/id tag)))))
+        (is (= "October block" (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))
         (is (some #(= tag.activity/updated (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :tag :resource-id (:tag/id tag)))
             "the rename is recorded, like every other resource's update")
@@ -74,7 +69,7 @@
             "a validation error on the form, not a 500")
         (is (re-find #"already exists" (:body response))
             "and it says which field and why, rather than an empty 422")
-        (is (= "oct 16" (:tag/name (tag.i/get-by-id ctx *db* (:tag/id block))))
+        (is (= "oct 16" (:tag/name (tag.i/get-by-id *db* (:tag/id block))))
             "the rename did not happen")
         (is (empty? (activity.i/get-by-resource *db* :resource-type :tag
                                                 :resource-id (:tag/id block)))
@@ -95,7 +90,7 @@
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
         (is (contains? #{200 303} (:status response)))
-        (is (nil? (tag.i/get-by-id ctx *db* (:tag/id tag))))
+        (is (nil? (tag.i/get-by-id *db* (:tag/id tag))))
         (is (some #(= tag.activity/deleted (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :tag :resource-id (:tag/id tag)))
             "the deletion is recorded; the row is gone, so the feed is the only
@@ -129,9 +124,9 @@
             (peri/request sess url
                           :request-method :delete
                           :headers {"x-csrf-token" token}))
-          (is (some? (tag.i/get-by-id ctx *db* tag-id))
+          (is (some? (tag.i/get-by-id *db* tag-id))
               "the tag row must survive a rolled-back delete")
-          (is (= [tag-id] (mapv :tag/id (tag.i/get-for-resource ctx *db* :taxon (:taxon/id taxon))))
+          (is (= [tag-id] (mapv :tag/id (tag.i/get-for-resource *db* :taxon (:taxon/id taxon))))
               "and so must its link"))
         (tag.i/delete! *db* tag-id)
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))

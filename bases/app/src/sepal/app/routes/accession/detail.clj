@@ -33,5 +33,5 @@
       ;; Can edit -> redirect to edit tabs
       (http/found accession.routes/detail-general {:id id})
       ;; Read-only -> render panel as full page
-      (let [panel-data (accession.panel/fetch-panel-data context db resource)]
+      (let [panel-data (accession.panel/fetch-panel-data db resource)]
         (render-panel-page :accession resource :panel-data panel-data :timezone timezone)))))

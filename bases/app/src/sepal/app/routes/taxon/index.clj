@@ -7,7 +7,6 @@
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.routes :as taxon.routes]
-            [sepal.app.search :as app.search]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -238,7 +237,7 @@
                    :left-join [[:taxon :p] [:= :p.id :t.parent_id]]}
 
         ;; Compile search query (adds WHERE clause and any filter joins)
-        stmt (app.search/compile-query context :taxon ast base-stmt)
+        stmt (search.i/compile-query :taxon ast base-stmt)
 
         ;; The synonym ids are conjoined AFTER compiling, not put in base-stmt
         ;; before it: compile-query does `(assoc :where …)` whenever terms or
@@ -328,7 +327,7 @@
                                         {:seen #{} :out []}
                                         synonym-matches))]
         (render :viewer viewer
-                :field-options (app.search/field-options context :taxon)
+                :field-options (search.i/field-options :taxon)
                 :href (uri/uri-str {:path uri
                                     :query (uri/map->query-string
                                              (cond-> {:page page}
