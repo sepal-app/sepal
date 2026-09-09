@@ -414,7 +414,21 @@ with `bin/dump-schema.sh <db-path>` against a fully migrated database. The scrip
 is `.schema` rather than `.dump`, because a dump emits the FTS5 shadow tables and
 toggles `writable_schema`, neither of which belongs in a baseline.
 
-Two things to know before you trust the output:
+**`bin/reset-db.sh` needs `migrate.sh`, which nothing here installs.** It is
+[`brettatoms/sqlite-migrate`](https://github.com/brettatoms/sqlite-migrate),
+`devenv.nix` does not provide it, and it is on no PATH in a fresh checkout or a
+new worktree. `bin/reset-db.sh:19` reads `MIGRATE_SH` and falls back to a bare
+`migrate.sh`, so fetch the script and point the variable at it:
+
+```bash
+MIGRATE_SH=/path/to/migrate.sh SEPAL_DATA_HOME=/tmp/whatever bin/reset-db.sh
+```
+
+`WFO_DATABASE_PATH` defaults to `wfo_plantlist_2025-06.db` relative to the
+working directory, which is also absent from a worktree — it is gitignored, so
+it lives only in the checkout you downloaded it into. Pass it explicitly.
+
+Three things to know before you trust the output:
 
 - **`.schema` emits no data.** A migration that seeds a table — `taxon_rank`, for
   instance — needs its `INSERT` appended by hand, or a freshly provisioned
@@ -422,6 +436,20 @@ Two things to know before you trust the output:
 - **A rebuilt table comes back quoted.** `ALTER TABLE ... RENAME TO` rewrites the
   stored DDL, so a table that went through the 12-step rebuild reads
   `CREATE TABLE "taxon"`. That is expected; don't hand-edit it back.
+- **Amending a migration you already regenerated for is a silent trap.** The
+  committed `schema.sql` carries a `schema_version` row for that migration, so
+  `migrate.sh` treats the rewritten file as already applied, skips it without a
+  word, and the regenerated schema comes back missing whatever the rewrite
+  added. Nothing errors. Seed `bin/reset-db.sh` from the pre-change baseline
+  instead of from the working copy:
+
+  ```bash
+  git show <base>:components/database/resources/database/schema.sql > /tmp/base-schema.sql
+  ```
+
+  Then load that into the scratch database and let the migrations run on top.
+  Whichever route you take, read the resulting `git diff` and confirm the thing
+  you just added is actually in it.
 
 Adding a migration invalidates `schema.sql`, and two tests will tell you so:
 `migrate-test/test-schema-version-and-latest` and
