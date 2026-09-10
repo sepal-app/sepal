@@ -1,6 +1,7 @@
 (ns sepal.app.cli-test
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.cli :as cli]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.user.interface :as user.i]))
@@ -50,7 +51,21 @@
   (testing "role is required and must be valid"
     (is (thrown? Exception
                  (user.i/create! *db* {:email "no-role@example.com"
-                                       :password "password123"})))))
+                                       :password "password123"}))))
+
+  ;; A user/created event is written by the three route handlers that create
+  ;; accounts, never by the component. This path and instance.clj's two
+  ;; provisioning paths run with no session, so there is no actor to put in
+  ;; activity.created_by, which is not null. The gap is deliberate; this pins
+  ;; it so nobody closes it by quietly inventing a system user.
+  (testing "creating a user outside a route writes no activity"
+    (let [email "cli-no-activity@example.com"
+          user (user.i/create! *db* {:email email
+                                     :password "password123"
+                                     :role :reader})]
+      (is (empty? (activity.i/get-by-resource *db*
+                                              :resource-type :user
+                                              :resource-id (:user/id user)))))))
 
 (deftest get-all-users-test
   (testing "returns all users"

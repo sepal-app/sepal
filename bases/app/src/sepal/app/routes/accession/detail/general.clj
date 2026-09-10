@@ -2,6 +2,7 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -67,8 +68,12 @@
 (defn save! [db accession-id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [accession (accession.i/update! tx accession-id data)]
-        (accession.activity/create! tx accession.activity/updated updated-by accession)
+      ;; Read before the write so the event can name what the edit changed.
+      ;; Inside the transaction, so a concurrent write cannot slip between.
+      (let [before (accession.i/get-by-id tx accession-id)
+            accession (accession.i/update! tx accession-id data)]
+        (accession.activity/create! tx accession.activity/updated updated-by accession
+                                    (activity.i/changed-fields before accession))
         accession))
     (catch Exception ex
       (error.i/ex->error ex))))

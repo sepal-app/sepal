@@ -10,6 +10,7 @@
             [sepal.mail.interface :as mail.i]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
+            [sepal.user.interface.activity :as user.activity]
             [sepal.user.interface.spec :as user.spec]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -129,7 +130,8 @@
                   (render :viewer viewer
                           :errors {:email ["Failed to create user"]}
                           :values form-params)
-                  (let [token (token.i/encode token-service
+                  (let [_ (user.activity/create-user! db (:user/id viewer) user-result)
+                        token (token.i/encode token-service
                                               {:email email
                                                :expires-at (token.i/expires-in-hours 24)})
                         accept-url (build-accept-url app-base-url token)

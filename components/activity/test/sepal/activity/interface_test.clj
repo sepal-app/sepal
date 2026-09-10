@@ -147,6 +147,18 @@
 (defmethod activity.i/data-schema test-taxon-activity-type [_]
   TestTaxonActivityData)
 
+;; The subject now lives in the columns, so a payload carrying no id key at all
+;; must still be findable. This is the shape every component moves to, and the
+;; case the old JSON-path query returned nothing for.
+(def test-subjectless-activity-type :test-subjectless/activity)
+
+(def TestSubjectlessActivityData
+  [:map
+   [:note :string]])
+
+(defmethod activity.i/data-schema test-subjectless-activity-type [_]
+  TestSubjectlessActivityData)
+
 (deftest test-get-by-resource
   (tf/testing "get-by-resource returns activities for a specific resource"
     {[::user.i/factory :key/user] {:db *db*}}
@@ -161,12 +173,16 @@
                                 {:type test-taxon-activity-type
                                  :created-at (Instant/now)
                                  :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
                                  :data {:taxon-id taxon-id}}))
           ;; Create activity for a different taxon
           (activity.i/create! db
                               {:type test-taxon-activity-type
                                :created-at (Instant/now)
                                :created-by user-id
+                               :resource-type :taxon
+                               :resource-id 99999
                                :data {:taxon-id 99999}})
 
           (testing "returns only activities for the specified resource"
@@ -174,7 +190,23 @@
                                                          :resource-type :taxon
                                                          :resource-id taxon-id)]
               (is (= 3 (count activities)))
-              (is (every? #(= taxon-id (get-in % [:activity/data :taxon-id])) activities))))
+              (is (every? #(= taxon-id (:activity/resource-id %)) activities))
+              (is (every? #(= :taxon (:activity/resource-type %)) activities))))
+
+          (testing "finds an event whose data carries no id key at all"
+            (activity.i/create! db
+                                {:type test-subjectless-activity-type
+                                 :created-at (Instant/now)
+                                 :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
+                                 :data {:note "no id key in here"}})
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id taxon-id)]
+              (is (= 4 (count activities)))
+              (is (some #(= test-subjectless-activity-type (:activity/type %))
+                        activities))))
 
           (testing "includes user info in results"
             (let [activities (activity.i/get-by-resource db
@@ -212,6 +244,8 @@
                                 {:type test-taxon-activity-type
                                  :created-at (Instant/now)
                                  :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
                                  :data {:taxon-id taxon-id}}))
 
           (testing "returns correct count"
@@ -225,3 +259,40 @@
                                                    :resource-id 0))))
           (finally
             (jdbc.sql/delete! db :activity {:created_by user-id})))))))
+
+(deftest test-changed-fields
+  (testing "names the fields whose value differs, unqualified and sorted"
+    (is (= ["code" "provenance"]
+           (activity.i/changed-fields
+             {:accession/id 1 :accession/code "A" :accession/provenance "wild"
+              :accession/private false}
+             {:accession/id 1 :accession/code "B" :accession/provenance "cultivated"
+              :accession/private false}))))
+
+  (testing "an edit that changes nothing is an empty list, not nil"
+    ;; A missing key and an empty list have to stay distinguishable: one means
+    ;; "nothing changed", the other "we did not record what changed".
+    (let [record {:accession/id 1 :accession/code "A"}]
+      (is (= [] (activity.i/changed-fields record record)))
+      (is (some? (activity.i/changed-fields record record)))))
+
+  (testing "bookkeeping columns are never named"
+    ;; updated_at moves on every write, so without this every event would
+    ;; claim it changed.
+    (is (= []
+           (activity.i/changed-fields
+             {:accession/id 1
+              :accession/created-at "2026-01-01"
+              :accession/updated-at "2026-01-01"}
+             {:accession/id 1
+              :accession/created-at "2026-01-01"
+              :accession/updated-at "2026-09-09"}))))
+
+  (testing "a field cleared to nil counts as changed"
+    (is (= ["code"]
+           (activity.i/changed-fields {:accession/code "A"}
+                                      {:accession/code nil}))))
+
+  (testing "a field the prior record lacks counts as changed"
+    (is (= ["distribution"]
+           (activity.i/changed-fields {} {:taxon/distribution "Belize"})))))

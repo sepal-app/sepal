@@ -19,15 +19,20 @@
               created (tag.activity/create! *db* tag.activity/created (:user/id user) tag)
               linked (tag.activity/create-link! *db* tag.activity/linked (:user/id user)
                                                 tag :accession 42)]
+          ;; A tag/created event is about the tag itself.
           (is (match? {:activity/type tag.activity/created
-                       :activity/data {:tag-id (:tag/id tag) :name "Fruit"}
+                       :activity/resource-type :tag
+                       :activity/resource-id (:tag/id tag)
+                       :activity/data {:name "Fruit"}
                        :activity/created-by (:user/id user)}
                       created))
+          ;; A tag/linked event is about the record that was tagged, so the
+          ;; tag itself has to stay in the payload.
           (is (match? {:activity/type tag.activity/linked
+                       :activity/resource-type :accession
+                       :activity/resource-id 42
                        :activity/data {:tag-id (:tag/id tag)
-                                       :name "Fruit"
-                                       :resource-type "accession"
-                                       :resource-id 42}}
+                                       :name "Fruit"}}
                       linked))
           (tag.i/delete! *db* (:tag/id tag)))
         (finally

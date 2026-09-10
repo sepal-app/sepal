@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.notes
-  (:require [sepal.app.html :as html]
+  (:require [sepal.activity.interface :as activity.i]
+            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.panel :as material.panel]
@@ -121,7 +122,8 @@
             (let [saved (write! db (:user/id viewer)
                                 (fn [tx created-by]
                                   (let [updated (note.i/update! tx note-id {:body (:body result)})]
-                                    (note.activity/create! tx note.activity/updated created-by updated)
+                                    (note.activity/create! tx note.activity/updated created-by updated
+                                                           (activity.i/changed-fields note updated))
                                     updated)))]
               (if (error.i/error? saved)
                 (http/validation-errors (validation.i/humanize saved))

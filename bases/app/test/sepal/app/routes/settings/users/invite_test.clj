@@ -1,7 +1,9 @@
 (ns sepal.app.routes.settings.users.invite-test
   "Tests for user invitation functionality."
   (:require [clojure.test :refer :all]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* *mail-client* default-system-fixture]]
@@ -45,12 +47,24 @@
           (is (some? new-user))
           (is (= :invited (:user/status new-user)))
           (is (= :editor (:user/role new-user)))
-          (is (= "New User" (:user/full-name new-user))))
+          (is (= "New User" (:user/full-name new-user)))
+          ;; Who added this account, and when, was unanswerable before: no
+          ;; user/created type existed at all.
+          (testing "the invitation is recorded, attributed to the inviter"
+            (let [events (activity.i/get-by-resource *db*
+                                                     :resource-type :user
+                                                     :resource-id (:user/id new-user))]
+              (is (some #(= :user/created (:activity/type %)) events))
+              (is (= #{(:user/id admin)}
+                     (set (map :activity/created-by events)))))))
         ;; Email should have been sent
         (is (= 1 (count @(:sent-messages *mail-client*))))
         (let [sent-email (first @(:sent-messages *mail-client*))]
           (is (= new-email (:to sent-email)))
-          (is (.contains (:body sent-email) "accept-invitation")))))))
+          (is (.contains (:body sent-email) "accept-invitation")))
+        ;; activity.created_by references user(id), so the invitation event
+        ;; has to go before the factory halts and deletes the admin.
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id admin)})))))
 
 (deftest invite-duplicate-email-test
   (tf/testing "Cannot invite user with existing email"

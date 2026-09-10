@@ -9,7 +9,6 @@
 
 (def MediaActivityData
   [:map
-   [:media-id spec/id]
    [:s3-key spec/s3-key]
    [:media-type spec/media-type]])
 
@@ -18,8 +17,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
-                           :data {:media-id (:media/id media)
-                                  :s3-key (:media/s3-key media)
+                           :resource-type :media
+                           :resource-id (:media/id media)
+                           :data {:s3-key (:media/s3-key media)
                                   :media-type (:media/media-type media)}})
       (update :activity/data #(store.i/coerce MediaActivityData %))))
 

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.detail
-  (:require [sepal.app.authorization :as authz]
+  (:require [sepal.activity.interface :as activity.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
@@ -47,8 +48,10 @@
 (defn update! [db location-id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [location (location.i/update! tx location-id data)]
-        (location.activity/create! tx location.activity/updated updated-by location)
+      (let [before (location.i/get-by-id tx location-id)
+            location (location.i/update! tx location-id data)]
+        (location.activity/create! tx location.activity/updated updated-by location
+                                   (activity.i/changed-fields before location))
         location))
     (catch Exception ex
       (error.i/ex->error ex))))

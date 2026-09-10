@@ -27,8 +27,9 @@
                                                       location)]
               (is (match? {:activity/id int?
                            :activity/type location.activity/created
-                           :activity/data {:location-id (:location/id location)
-                                           :location-name (:location/name location)
+                           :activity/resource-type :location
+                           :activity/resource-id (:location/id location)
+                           :activity/data {:location-name (:location/name location)
                                            :location-code (:location/code location)}
                            :activity/created-by user-id
                            :activity/created-at inst?}
@@ -42,8 +43,9 @@
                                                       location)]
               (is (match? {:activity/id int?
                            :activity/type location.activity/updated
-                           :activity/data {:location-id (:location/id location)
-                                           :location-name (:location/name location)
+                           :activity/resource-type :location
+                           :activity/resource-id (:location/id location)
+                           :activity/data {:location-name (:location/name location)
                                            :location-code (:location/code location)}
                            :activity/created-by user-id
                            :activity/created-at inst?}
@@ -57,8 +59,9 @@
                                                       location)]
               (is (match? {:activity/id int?
                            :activity/type location.activity/deleted
-                           :activity/data {:location-id (:location/id location)
-                                           :location-name (:location/name location)
+                           :activity/resource-type :location
+                           :activity/resource-id (:location/id location)
+                           :activity/data {:location-name (:location/name location)
                                            :location-code (:location/code location)}
                            :activity/created-by user-id
                            :activity/created-at inst?}

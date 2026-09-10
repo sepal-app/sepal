@@ -4,6 +4,7 @@
             [matcher-combinators.test :refer [match?]]
             [next.jdbc.sql :as next.jdbc.sql]
             [sepal.accession.interface :as accession.i]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
@@ -133,14 +134,24 @@
                                                 note.activity/created
                                                 (:user/id user)
                                                 note)]
+            ;; The note's subject is the record it hangs on, not the note.
             (is (match? {:activity/type :note/created
                          :activity/created-by (:user/id user)
-                         :activity/data {:note-id (:note/id note)
-                                         :resource-type :taxon
-                                         :resource-id (:taxon/id taxon)}}
+                         :activity/resource-type :taxon
+                         :activity/resource-id (:taxon/id taxon)
+                         :activity/data {:note-id (:note/id note)}}
                         activity))
             (testing "the body is not copied into the activity payload"
               (is (nil? (get-in activity [:activity/data :body]))))
+            ;; Until the subject moved into the columns this returned nothing:
+            ;; the payload named its parent as the generic :resource-id, and
+            ;; the query looked for a literal :taxon-id key. A note's events
+            ;; appeared on no record's history at all.
+            (testing "the note's event is on its parent's history"
+              (is (some #(= :note/created (:activity/type %))
+                        (activity.i/get-by-resource db
+                                                    :resource-type :taxon
+                                                    :resource-id (:taxon/id taxon)))))
             (note.i/delete! db (:note/id note)))
           (finally
             ;; Clean up activity records before user fixture cleanup

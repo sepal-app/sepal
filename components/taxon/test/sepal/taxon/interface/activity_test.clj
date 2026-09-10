@@ -27,8 +27,9 @@
                                                    taxon)]
               (is (match? {:activity/id int?
                            :activity/type taxon.activity/created
-                           :activity/data {:taxon-id (:taxon/id taxon)
-                                           :taxon-name (:taxon/name taxon)
+                           :activity/resource-type :taxon
+                           :activity/resource-id (:taxon/id taxon)
+                           :activity/data {:taxon-name (:taxon/name taxon)
                                            :taxon-author (:taxon/author taxon)
                                            :taxon-rank (:taxon/rank taxon)}
                            :activity/created-by user-id
@@ -43,8 +44,9 @@
                                                    taxon)]
               (is (match? {:activity/id int?
                            :activity/type taxon.activity/updated
-                           :activity/data {:taxon-id (:taxon/id taxon)
-                                           :taxon-name (:taxon/name taxon)
+                           :activity/resource-type :taxon
+                           :activity/resource-id (:taxon/id taxon)
+                           :activity/data {:taxon-name (:taxon/name taxon)
                                            :taxon-author (:taxon/author taxon)
                                            :taxon-rank (:taxon/rank taxon)}
                            :activity/created-by user-id
@@ -59,8 +61,9 @@
                                                    taxon)]
               (is (match? {:activity/id int?
                            :activity/type taxon.activity/deleted
-                           :activity/data {:taxon-id (:taxon/id taxon)
-                                           :taxon-name (:taxon/name taxon)
+                           :activity/resource-type :taxon
+                           :activity/resource-id (:taxon/id taxon)
+                           :activity/data {:taxon-name (:taxon/name taxon)
                                            :taxon-author (:taxon/author taxon)
                                            :taxon-rank (:taxon/rank taxon)}
                            :activity/created-by user-id
