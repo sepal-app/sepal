@@ -11,23 +11,18 @@
 (def ContactActivityData
   [:map
    [:contact-name spec/name]
-   [:contact-business spec/business]
-   [:changes {:optional true} [:sequential :string]]])
+   [:contact-business spec/business]])
 
-(defn create!
-  ([db type created-by data]
-   (create! db type created-by data nil))
-  ([db type created-by data changes]
-   (-> (activity.i/create! db
-                           {:type type
-                            :created-at (Instant/now)
-                            :created-by created-by
-                            :resource-type :contact
-                            :resource-id (:contact/id data)
-                            :data (cond-> {:contact-name (:contact/name data)
-                                           :contact-business (:contact/business data)}
-                                    changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce ContactActivityData %)))))
+(defn create! [db type created-by data]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                           :resource-type :contact
+                           :resource-id (:contact/id data)
+                           :data {:contact-name (:contact/name data)
+                                  :contact-business (:contact/business data)}})
+      (update :activity/data #(store.i/coerce ContactActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   ContactActivityData)

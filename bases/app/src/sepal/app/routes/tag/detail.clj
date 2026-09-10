@@ -1,6 +1,5 @@
 (ns sepal.app.routes.tag.detail
   (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.activity.interface :as activity.i]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
@@ -60,10 +59,8 @@
   [db id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [before (tag.i/get-by-id tx id)
-            tag (tag.i/update! tx id data)]
-        (tag.activity/create! tx tag.activity/updated updated-by tag
-                              (activity.i/changed-fields before tag))
+      (let [tag (tag.i/update! tx id data)]
+        (tag.activity/create! tx tag.activity/updated updated-by tag)
         tag))
     (catch org.sqlite.SQLiteException ex
       (if (re-find #"UNIQUE constraint failed" (ex-message ex))

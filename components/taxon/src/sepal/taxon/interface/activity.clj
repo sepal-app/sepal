@@ -13,25 +13,20 @@
    [:taxon-name spec/name]
    [:taxon-author [:maybe spec/author]]
    [:taxon-rank {:decode/store keyword}
-    spec/rank]
-   [:changes {:optional true} [:sequential :string]]])
+    spec/rank]])
 
-(defn create!
-  ([db type created-by data]
-   (create! db type created-by data nil))
-  ([db type created-by data changes]
-   (-> (activity.i/create! db
-                           {:type type
-                            :created-at (Instant/now)
-                            :created-by created-by
-                            :resource-type :taxon
-                            :resource-id (:taxon/id data)
-                          ;; TODO: The parent name would be helpful
-                            :data (cond-> {:taxon-name (:taxon/name data)
-                                           :taxon-author (:taxon/author data)
-                                           :taxon-rank (:taxon/rank data)}
-                                    changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce TaxonActivityData %)))))
+(defn create! [db type created-by data]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                           :resource-type :taxon
+                           :resource-id (:taxon/id data)
+                         ;; TODO: The parent name would be helpful
+                           :data {:taxon-name (:taxon/name data)
+                                  :taxon-author (:taxon/author data)
+                                  :taxon-rank (:taxon/rank data)}})
+      (update :activity/data #(store.i/coerce TaxonActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   TaxonActivityData)

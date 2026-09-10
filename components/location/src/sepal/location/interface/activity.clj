@@ -11,23 +11,18 @@
 (def LocationActivityData
   [:map
    [:location-name spec/name]
-   [:location-code spec/code]
-   [:changes {:optional true} [:sequential :string]]])
+   [:location-code spec/code]])
 
-(defn create!
-  ([db type created-by data]
-   (create! db type created-by data nil))
-  ([db type created-by data changes]
-   (-> (activity.i/create! db
-                           {:type type
-                            :created-at (Instant/now)
-                            :created-by created-by
-                            :resource-type :location
-                            :resource-id (:location/id data)
-                            :data (cond-> {:location-name (:location/name data)
-                                           :location-code (:location/code data)}
-                                    changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce LocationActivityData %)))))
+(defn create! [db type created-by data]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                           :resource-type :location
+                           :resource-id (:location/id data)
+                           :data {:location-name (:location/name data)
+                                  :location-code (:location/code data)}})
+      (update :activity/data #(store.i/coerce LocationActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   LocationActivityData)

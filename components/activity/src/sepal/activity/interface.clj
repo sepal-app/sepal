@@ -92,25 +92,6 @@
                                  {:registry registry})]
     (store.i/create! db :activity activity CreateActivity Activity)))
 
-;; Bookkeeping columns move on every write and say nothing about the edit, and
-;; the id cannot change. Naming them in every `updated` event would be noise.
-(def ^:private ignored-change-fields #{"id" "created-at" "updated-at"})
-
-(defn changed-fields
-  "The names of the fields whose value differs between two versions of a record.
-
-   Names only, never values: recording what an edit changed is useful, and
-   recording what it changed them to is a retention and privacy question this
-   does not open. Keys are namespaced -- :accession/code -- and come back
-   unqualified, sorted, so the payload reads as a field list."
-  [before after]
-  (->> (keys after)
-       (remove #(contains? ignored-change-fields (name %)))
-       (filter #(not= (get before %) (get after %)))
-       (map name)
-       sort
-       vec))
-
 (defn- resource-match
   "Predicate selecting the events whose subject is this record."
   [resource-type resource-id]

@@ -15,24 +15,19 @@
   [:map
    [:material-code spec/code]
    [:accession-id spec/accession-id]
-   [:location-id spec/location-id]
-   [:changes {:optional true} [:sequential :string]]])
+   [:location-id spec/location-id]])
 
-(defn create!
-  ([db type created-by material]
-   (create! db type created-by material nil))
-  ([db type created-by material changes]
-   (-> (activity.i/create! db
-                           {:type type
-                            :created-at (Instant/now)
-                            :created-by created-by
-                            :resource-type :material
-                            :resource-id (:material/id material)
-                            :data (cond-> {:material-code (:material/code material)
-                                           :accession-id (:material/accession-id material)
-                                           :location-id (:material/location-id material)}
-                                    changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce MaterialActivityData %)))))
+(defn create! [db type created-by material]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                           :resource-type :material
+                           :resource-id (:material/id material)
+                           :data {:material-code (:material/code material)
+                                  :accession-id (:material/accession-id material)
+                                  :location-id (:material/location-id material)}})
+      (update :activity/data #(store.i/coerce MaterialActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   MaterialActivityData)

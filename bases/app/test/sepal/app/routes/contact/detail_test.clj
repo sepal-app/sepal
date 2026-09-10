@@ -119,19 +119,15 @@
           (is (= 200 (:status response))
               (str "Expected 200, got " (:status response) " with body: " (:body response)))
           (is (= :expedition (:contact/type (contact.i/get-by-id *db* (:contact/id contact)))))
-          ;; The update event lands on the contact's own history, and names
-          ;; the field the edit actually changed rather than just saying
-          ;; "updated". Driven through the route, so it covers the handler's
-          ;; read-before-write as well as the payload.
+          ;; The update event lands on the contact's own history, driven
+          ;; through the route rather than by calling the component directly.
           (let [events (activity.i/get-by-resource *db*
                                                    :resource-type :contact
                                                    :resource-id (:contact/id contact))
                 updated (first (filter #(= :contact/updated (:activity/type %)) events))]
             (is (some? updated))
             (is (= :contact (:activity/resource-type updated)))
-            (is (= (:contact/id contact) (:activity/resource-id updated)))
-            (is (= ["type"] (get-in updated [:activity/data :changes]))
-                "only the field the edit changed, and updated-at is not one")))
+            (is (= (:contact/id contact) (:activity/resource-id updated)))))
         (finally
           ;; Updating a contact writes an activity row referencing the factory
           ;; user, and the user factory's teardown hard-deletes it (the only

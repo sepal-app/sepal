@@ -14,8 +14,7 @@
 ;; tag is the subject and only its name needs recording.
 (def TagActivityData
   [:map
-   [:name spec/tag-name]
-   [:changes {:optional true} [:sequential :string]]])
+   [:name spec/tag-name]])
 
 ;; A tag/linked or /unlinked event is about the record that was tagged, so the
 ;; tagged record is the subject and the tag has to stay in the payload -- it is
@@ -25,18 +24,14 @@
    [:tag-id spec/id]
    [:name spec/tag-name]])
 
-(defn create!
-  ([db type created-by tag]
-   (create! db type created-by tag nil))
-  ([db type created-by tag changes]
-   (-> (activity.i/create! db {:type type
-                               :created-at (Instant/now)
-                               :created-by created-by
-                               :resource-type :tag
-                               :resource-id (:tag/id tag)
-                               :data (cond-> {:name (:tag/name tag)}
-                                       changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce TagActivityData %)))))
+(defn create! [db type created-by tag]
+  (-> (activity.i/create! db {:type type
+                              :created-at (Instant/now)
+                              :created-by created-by
+                              :resource-type :tag
+                              :resource-id (:tag/id tag)
+                              :data {:name (:tag/name tag)}})
+      (update :activity/data #(store.i/coerce TagActivityData %))))
 
 (defn create-link! [db type created-by tag resource-type resource-id]
   (-> (activity.i/create! db {:type type

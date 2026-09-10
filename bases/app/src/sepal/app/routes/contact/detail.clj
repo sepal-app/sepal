@@ -1,6 +1,5 @@
 (ns sepal.app.routes.contact.detail
-  (:require [sepal.activity.interface :as activity.i]
-            [sepal.app.authorization :as authz]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
@@ -45,10 +44,8 @@
 (defn update! [db contact-id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [before (contact.i/get-by-id tx contact-id)
-            contact (contact.i/update! tx contact-id data)]
-        (contact.activity/create! tx contact.activity/updated updated-by contact
-                                  (activity.i/changed-fields before contact))
+      (let [contact (contact.i/update! tx contact-id data)]
+        (contact.activity/create! tx contact.activity/updated updated-by contact)
         contact))
     (catch Exception ex
       (error.i/ex->error ex))))

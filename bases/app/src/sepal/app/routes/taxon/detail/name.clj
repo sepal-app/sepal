@@ -1,6 +1,5 @@
 (ns sepal.app.routes.taxon.detail.name
-  (:require [sepal.activity.interface :as activity.i]
-            [sepal.app.http-response :as http]
+  (:require [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.panel :as taxon.panel]
@@ -58,10 +57,8 @@
 (defn save! [db taxon-id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [before (taxon.i/get-by-id tx taxon-id)
-            taxon (taxon.i/update! tx taxon-id data)]
-        (taxon.activity/create! tx taxon.activity/updated updated-by taxon
-                                (activity.i/changed-fields before taxon))
+      (let [taxon (taxon.i/update! tx taxon-id data)]
+        (taxon.activity/create! tx taxon.activity/updated updated-by taxon)
         taxon))
     (catch Exception ex
       (error.i/ex->error ex))))

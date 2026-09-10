@@ -17,22 +17,17 @@
 ;; named the parent generically, and the old query looked for `accession-id`.
 (def NoteActivityData
   [:map
-   [:note-id spec/id]
-   [:changes {:optional true} [:sequential :string]]])
+   [:note-id spec/id]])
 
-(defn create!
-  ([db type created-by data]
-   (create! db type created-by data nil))
-  ([db type created-by data changes]
-   (-> (activity.i/create! db
-                           {:type type
-                            :created-at (Instant/now)
-                            :created-by created-by
-                            :resource-type (:note/resource-type data)
-                            :resource-id (:note/resource-id data)
-                            :data (cond-> {:note-id (:note/id data)}
-                                    changes (assoc :changes changes))})
-       (update :activity/data #(store.i/coerce NoteActivityData %)))))
+(defn create! [db type created-by data]
+  (-> (activity.i/create! db
+                          {:type type
+                           :created-at (Instant/now)
+                           :created-by created-by
+                           :resource-type (:note/resource-type data)
+                           :resource-id (:note/resource-id data)
+                           :data {:note-id (:note/id data)}})
+      (update :activity/data #(store.i/coerce NoteActivityData %))))
 
 (defmethod activity.i/data-schema created [_]
   NoteActivityData)

@@ -1,6 +1,5 @@
 (ns sepal.app.routes.material.detail.general
   (:require [sepal.accession.interface :as accession.i]
-            [sepal.activity.interface :as activity.i]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
@@ -64,10 +63,8 @@
 (defn save! [db material-id updated-by data]
   (try
     (db.i/with-transaction [tx db]
-      (let [before (material.i/get-by-id tx material-id)
-            material (material.i/update! tx material-id data)]
-        (material.activity/create! tx material.activity/updated updated-by material
-                                   (activity.i/changed-fields before material))
+      (let [material (material.i/update! tx material-id data)]
+        (material.activity/create! tx material.activity/updated updated-by material)
         material))
     (catch Exception ex
       (error.i/ex->error ex))))
