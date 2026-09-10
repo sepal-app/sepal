@@ -154,9 +154,9 @@ The failure when you forget is misleading. `clojure` is on `PATH` anyway, so the
 command starts and then dies on what devenv supplies: without
 `EXTENSIONS_LIBRARY_PATH`, every test that opens a database fails with
 `dlopen(mod_spatialite.dylib) ... no such file`, which reads like a missing
-system library rather than a missing shell. `bin/reset-db.sh` additionally needs
-`LD_LIBRARY_PATH` set — the external `migrate.sh` reads it under `set -u` and
-aborts with `LD_LIBRARY_PATH: unbound variable` when it is not.
+system library rather than a missing shell. `bin/reset-db.sh` fails a second
+way, on `migrate.sh: command not found` — the migration runner is a pinned
+package in `devenv.nix`, not something the system has.
 
 ```bash
 # Run unit tests (default - excludes e2e tests)

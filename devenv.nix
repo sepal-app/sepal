@@ -1,4 +1,22 @@
 { pkgs, lib, config, ... }:
+let
+  # The migration runner bin/reset-db.sh shells out to. It lives in its own
+  # repo rather than nixpkgs, so it is pinned here by revision: without it
+  # reset-db.sh dies on `migrate.sh: command not found`, and nothing else in
+  # the shell supplies it.
+  sqlite-migrate = pkgs.stdenv.mkDerivation {
+    pname = "sqlite-migrate";
+    version = "0-unstable-2026-09-10";
+    src = pkgs.fetchFromGitHub {
+      owner = "brettatoms";
+      repo = "sqlite-migrate";
+      rev = "5ea609c5976e424c032692457986675d49b170c5";
+      hash = "sha256-lUUyjPgoqmNqGjPxqc/Y75ZrqXEkWyDFf2G3L5u9ao4=";
+    };
+    dontBuild = true;
+    installPhase = "install -Dm755 migrate.sh $out/bin/migrate.sh";
+  };
+in
 {
   dotenv = {
     enable = true;
@@ -15,7 +33,8 @@
     libspatialite
     sqlfluff
     sqlite
-  ] ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.glibcLocales ];
+  ] ++ [ sqlite-migrate ]
+  ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.glibcLocales ];
 
   languages.clojure.enable = true;
   # sepal.app.instance derives per-instance secrets with javax.crypto.KDF,
