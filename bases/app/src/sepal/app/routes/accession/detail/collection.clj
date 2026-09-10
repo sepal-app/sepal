@@ -7,7 +7,9 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.collection.interface :as coll.i]
+            [sepal.collection.interface.activity :as coll.activity]
             [sepal.collection.interface.datum :as datum]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
@@ -181,13 +183,22 @@
        :elevation (:collection/elevation collection)
        :elevation-accuracy (:collection/elevation-accuracy collection)})))
 
-(defn save! [db accession-id data]
-  (let [existing (coll.i/get-by-accession-id db accession-id)]
-    (if existing
-      ;; Update existing collection
-      (coll.i/update! db (:collection/id existing) data)
-      ;; No existing collection, create one
-      (coll.i/create! db (assoc data :accession-id accession-id)))))
+(defn save! [db accession-id created-by data]
+  (try
+    (db.i/with-transaction [tx db]
+      (let [existing (coll.i/get-by-accession-id tx accession-id)
+            saved (if existing
+                    (coll.i/update! tx (:collection/id existing) data)
+                    (coll.i/create! tx (assoc data :accession-id accession-id)))]
+        (coll.activity/create! tx
+                               (if existing
+                                 coll.activity/updated
+                                 coll.activity/created)
+                               created-by
+                               saved)
+        saved))
+    (catch Exception ex
+      (error.i/ex->error ex))))
 
 (def FormParams
   [:map {:closed true}
@@ -216,7 +227,7 @@
       (assoc base-data :geo-coordinates {:lat lat :lng lng :srid srid})
       base-data)))
 
-(defn handler [{:keys [::z/context form-params request-method]}]
+(defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource timezone]} context
         accession resource
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -236,7 +247,8 @@
           (if (error.i/error? result)
             (http/validation-errors (validation.i/humanize result))
             (let [coll-data (form-params->collection-data result)
-                  saved (save! db (:accession/id accession) coll-data)]
+                  saved (save! db (:accession/id accession) (:user/id viewer)
+                               coll-data)]
               (if-not (error.i/error? saved)
                 (http/hx-redirect (z/url-for accession.routes/detail-collection
                                              {:id (:accession/id accession)}))

@@ -1,8 +1,10 @@
 (ns sepal.app.routes.accession.detail.collection-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -141,7 +143,15 @@
           (is (= "Canada" (:collection/country coll)))
           (is (= "British Columbia" (:collection/province coll)))
           (is (= "Vancouver" (:collection/locality coll)))
-          (is (= "Temperate rainforest" (:collection/habitat coll))))))))
+          (is (= "Temperate rainforest" (:collection/habitat coll))))
+        (testing "the save is recorded on the accession's history"
+          (let [events (activity.i/get-by-resource *db*
+                                                   :resource-type :accession
+                                                   :resource-id (:accession/id accession))]
+            (is (some #(= :collection/created (:activity/type %)) events)))
+          ;; activity.created_by references user(id) and the factory's
+          ;; teardown hard-deletes its user.
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
 
 (deftest test-update-collection
   (tf/testing "POST updates existing collection"
@@ -178,7 +188,14 @@
           (is (= (:collection/id coll) (:collection/id updated-coll))
               "Should update existing collection, not create new one")
           (is (= "Updated Collector" (:collection/collector updated-coll)))
-          (is (= "Brazil" (:collection/country updated-coll))))))))
+          (is (= "Brazil" (:collection/country updated-coll))))
+        (testing "an edit is recorded as updated, not created"
+          (let [events (activity.i/get-by-resource *db*
+                                                   :resource-type :accession
+                                                   :resource-id (:accession/id accession))]
+            (is (some #(= :collection/updated (:activity/type %)) events))
+            (is (not-any? #(= :collection/created (:activity/type %)) events)))
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
 
 (deftest test-create-collection-with-geo-coordinates
   (tf/testing "POST creates collection with geo coordinates"
@@ -215,7 +232,8 @@
           (is (= -122.6765 (:lng geo)))
           (is (= 4326 (:srid geo)) "Should default to WGS-84 srid")
           (is (= 100 (:collection/geo-uncertainty coll)))
-          (is (= 50 (:collection/elevation coll))))))))
+          (is (= 50 (:collection/elevation coll))))
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
 
 (deftest test-collection-tabs-active
   (tf/testing "Collection tab is active on collection page"
@@ -303,7 +321,8 @@
         (is (= collection-url (get-in response [:headers "HX-Redirect"])))
         (let [coll (coll.i/get-by-accession-id *db* (:accession/id accession))]
           (is (= "BH9078" (:collection/collectors-code coll)))
-          (is (= 25 (:collection/elevation-accuracy coll))))))))
+          (is (= 25 (:collection/elevation-accuracy coll))))
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
 
 (deftest test-collection-form-rejects-bad-elevation-accuracy
   (tf/testing "POST with elevation accuracy 0 returns 422 with a field error"
