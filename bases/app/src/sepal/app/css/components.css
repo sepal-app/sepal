@@ -1126,7 +1126,7 @@
 .spl-alert--danger { background: var(--color-danger-bg); color: var(--color-danger); }
 
 /* ── Auth ──────────────────────────────────────────────────────────────────
- * Login, register, the password flows. A card over a photograph, so it needs
+ * Login, invitations, the password flows. A card over a photograph, so it needs
  * a surface of its own; everything inside it is the same type scale as the
  * rest of the app. */
 .spl-auth-card {
