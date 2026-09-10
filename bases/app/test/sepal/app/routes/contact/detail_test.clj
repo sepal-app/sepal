@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -117,7 +118,16 @@
                                                                   :__anti-forgery-token token)))]
           (is (= 200 (:status response))
               (str "Expected 200, got " (:status response) " with body: " (:body response)))
-          (is (= :expedition (:contact/type (contact.i/get-by-id *db* (:contact/id contact))))))
+          (is (= :expedition (:contact/type (contact.i/get-by-id *db* (:contact/id contact)))))
+          ;; The update event lands on the contact's own history, driven
+          ;; through the route rather than by calling the component directly.
+          (let [events (activity.i/get-by-resource *db*
+                                                   :resource-type :contact
+                                                   :resource-id (:contact/id contact))
+                updated (first (filter #(= :contact/updated (:activity/type %)) events))]
+            (is (some? updated))
+            (is (= :contact (:activity/resource-type updated)))
+            (is (= (:contact/id contact) (:activity/resource-id updated)))))
         (finally
           ;; Updating a contact writes an activity row referencing the factory
           ;; user, and the user factory's teardown hard-deletes it (the only

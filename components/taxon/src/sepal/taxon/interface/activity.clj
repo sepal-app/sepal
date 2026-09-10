@@ -10,7 +10,6 @@
 
 (def TaxonActivityData
   [:map
-   [:taxon-id spec/id]
    [:taxon-name spec/name]
    [:taxon-author [:maybe spec/author]]
    [:taxon-rank {:decode/store keyword}
@@ -21,9 +20,10 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
+                           :resource-type :taxon
+                           :resource-id (:taxon/id data)
                          ;; TODO: The parent name would be helpful
-                           :data {:taxon-id (:taxon/id data)
-                                  :taxon-name (:taxon/name data)
+                           :data {:taxon-name (:taxon/name data)
                                   :taxon-author (:taxon/author data)
                                   :taxon-rank (:taxon/rank data)}})
       (update :activity/data #(store.i/coerce TaxonActivityData %))))

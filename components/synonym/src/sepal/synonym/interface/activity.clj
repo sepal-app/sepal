@@ -7,10 +7,12 @@
 (def created :synonym/created)
 (def deleted :synonym/deleted)
 
+;; A synonym hangs on a taxon, so a synonym event is a taxon event. The
+;; synonym's own id stays in the payload: the row may be gone by the time
+;; anyone reads the event, and nothing else records which one it was.
 (def SynonymActivityData
   [:map
    [:synonym-id spec/id]
-   [:taxon-id spec/taxon-id]
    [:synonym-name spec/synonym-name]])
 
 (defn create! [db type created-by data]
@@ -18,8 +20,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
+                           :resource-type :taxon
+                           :resource-id (:synonym/taxon-id data)
                            :data {:synonym-id (:synonym/id data)
-                                  :taxon-id (:synonym/taxon-id data)
                                   :synonym-name (:synonym/synonym-name data)}})
       (update :activity/data #(store.i/coerce SynonymActivityData %))))
 

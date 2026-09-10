@@ -405,3 +405,72 @@
                           (str "IOException: " (ex-message e)))))
                 "enumerating must not close the shared JarFile under another open stream")))
         (finally (fs/delete-tree dir))))))
+
+(deftest test-activity-resource-columns-migration
+  (testing "the backfill fills the columns from each payload and never rewrites data"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-activity-resource-migration"})]
+      (try
+        (let [db-path (floor-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
+              ;; created_by is a real foreign key, so the events need an actor.
+              _ (jdbc/execute! ds [(str "insert into \"user\" (email, password, role, status) "
+                                        "values ('a@b.invalid', 'x', 'admin', 'active')")])
+              user-id (-> (jdbc/execute-one! ds ["select id from \"user\" limit 1"]) :user/id)
+              ;; One row per shape the backfill has a branch for: a plain
+              ;; subject key, a generic one, a child that hangs on a parent,
+              ;; and the two types that legitimately have no subject at all.
+              rows [["accession/created" "{\"accession-id\":11,\"accession-code\":\"2024.0118\"}"]
+                    ["material/updated" "{\"material-id\":22,\"accession-id\":11,\"location-id\":33}"]
+                    ["note/created" "{\"note-id\":55,\"resource-type\":\"accession\",\"resource-id\":11}"]
+                    ["synonym/created" "{\"synonym-id\":77,\"taxon-id\":91}"]
+                    ["tag/created" "{\"tag-id\":88,\"name\":\"TO PRINT\"}"]
+                    ["tag/linked" "{\"tag-id\":88,\"resource-type\":\"material\",\"resource-id\":22}"]
+                    ["settings/updated" "{\"changes\":{\"name\":\"Garden\"}}"]
+                    ["setup/completed" "{\"completed-by\":\"admin\"}"]]]
+          (doseq [[type data] rows]
+            (jdbc/execute! ds ["insert into activity (type, data, created_by) values (?, ?, ?)"
+                               type data user-id]))
+          (is (some #{"20260909120000"}
+                    (:applied (db.i/migrate! {:db-path db-path})))
+              "the migration actually ran")
+
+          (let [by-type (into {}
+                              (map (juxt :activity/type identity))
+                              (jdbc/execute! ds [(str "select type, resource_type, resource_id, data "
+                                                      "from activity")]))
+                subject (fn [t] [(get-in by-type [t :activity/resource_type])
+                                 (get-in by-type [t :activity/resource_id])])]
+            (testing "a plain subject key"
+              (is (= ["accession" 11] (subject "accession/created")))
+              (is (= ["material" 22] (subject "material/updated"))))
+
+            (testing "a child hangs on its parent, not on itself"
+              (is (= ["accession" 11] (subject "note/created"))
+                  "the note's parent, not note-id 55")
+              (is (= ["taxon" 91] (subject "synonym/created"))
+                  "the taxon, not synonym-id 77")
+              (is (= ["material" 22] (subject "tag/linked"))
+                  "the tagged record, not tag-id 88"))
+
+            (testing "a tag's own lifecycle is about the tag"
+              (is (= ["tag" 88] (subject "tag/created"))))
+
+            (testing "the two subjectless types stay null"
+              (is (= [nil nil] (subject "settings/updated")))
+              (is (= [nil nil] (subject "setup/completed"))))
+
+            (testing "no row with a subject was left with a hole"
+              (is (empty? (jdbc/execute! ds [(str "select type from activity "
+                                                  "where (resource_type is null or resource_id is null) "
+                                                  "and type not like 'settings/%' "
+                                                  "and type not like 'setup/%'")]))))
+
+            (testing "data is byte-for-byte what went in"
+              ;; This is the N-1 property. Stripping the now-redundant key
+              ;; would blank per-record history for every historical row if
+              ;; this build were ever rolled back.
+              (doseq [[type data] rows]
+                (is (= data (get-in by-type [type :activity/data]))
+                    (str type " payload was rewritten"))))))
+        (finally
+          (fs/delete-tree dir))))))

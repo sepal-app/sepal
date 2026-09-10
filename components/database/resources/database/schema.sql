@@ -106,7 +106,7 @@ CREATE TABLE activity (
   type text not null,
   created_by integer not null references "user"(id),
   created_at text not null default (datetime('now'))
-) strict;
+, resource_type text, resource_id integer) strict;
 CREATE TABLE settings (
   key text not null unique,
   value text
@@ -342,6 +342,8 @@ CREATE INDEX accession_intended_location_id_idx on accession (intended_location_
 CREATE TABLE accession_received_type (
   name text primary key
 ) strict;
+CREATE INDEX activity_resource_type_resource_id_idx
+  on activity (resource_type, resource_id);
 INSERT INTO taxon_rank (name) VALUES
   ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
   ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
@@ -389,3 +391,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906130000', '2026-09-06 17:47:59');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907120000', '2026-09-07 14:31:51');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907140000', '2026-09-08 00:14:02');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260909120000', '2026-09-09 23:52:51');

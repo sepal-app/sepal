@@ -9,6 +9,7 @@
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
             [sepal.user.interface :as user.i]
+            [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -167,6 +168,9 @@
                     (-> (http/see-other setup.routes/admin)
                         (flash/error "Failed to create admin account"))
                     (do
+                      ;; The setup wizard runs before anyone can be signed in,
+                      ;; so the admin being created is its own actor.
+                      (user.activity/create-user! db (:user/id user-result) user-result)
                       (setup.shared/set-current-step! db 2)
                       (-> (http/see-other setup.routes/server)
                           (flash/success "Admin account created successfully")

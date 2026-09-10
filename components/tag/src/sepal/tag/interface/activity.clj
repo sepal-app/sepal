@@ -10,45 +10,37 @@
 (def linked :tag/linked)
 (def unlinked :tag/unlinked)
 
+;; A tag/created, /updated or /deleted event is about the tag itself, so the
+;; tag is the subject and only its name needs recording.
 (def TagActivityData
   [:map
-   [:tag-id spec/id]
    [:name spec/tag-name]])
 
+;; A tag/linked or /unlinked event is about the record that was tagged, so the
+;; tagged record is the subject and the tag has to stay in the payload -- it is
+;; not recorded anywhere else on the event.
 (def TagLinkActivityData
   [:map
    [:tag-id spec/id]
-   [:name spec/tag-name]
-   [:resource-type :string]
-   [:resource-id pos-int?]
-   ;; `activity.i/get-by-resource` finds a resource's activity by looking for
-   ;; a `<resource-type>-id` key in the JSON data (see e.g.
-   ;; synonym.activity's :taxon-id), not the generic :resource-id above. Tag
-   ;; links can point at any of tag.interface.spec/resource-type's members, so
-   ;; all three are declared here, optional, and only the one matching the
-   ;; actual resource-type is ever populated.
-   [:accession-id {:optional true} pos-int?]
-   [:material-id {:optional true} pos-int?]
-   [:taxon-id {:optional true} pos-int?]])
+   [:name spec/tag-name]])
 
 (defn create! [db type created-by tag]
   (-> (activity.i/create! db {:type type
                               :created-at (Instant/now)
                               :created-by created-by
-                              :data {:tag-id (:tag/id tag)
-                                     :name (:tag/name tag)}})
+                              :resource-type :tag
+                              :resource-id (:tag/id tag)
+                              :data {:name (:tag/name tag)}})
       (update :activity/data #(store.i/coerce TagActivityData %))))
 
 (defn create-link! [db type created-by tag resource-type resource-id]
   (-> (activity.i/create! db {:type type
                               :created-at (Instant/now)
                               :created-by created-by
-                              :data (assoc {:tag-id (:tag/id tag)
-                                            :name (:tag/name tag)
-                                            :resource-type (name resource-type)
-                                            :resource-id resource-id}
-                                           (keyword (str (name resource-type) "-id"))
-                                           resource-id)})
+                              :resource-type resource-type
+                              :resource-id resource-id
+                              :data {:tag-id (:tag/id tag)
+                                     :name (:tag/name tag)}})
       (update :activity/data #(store.i/coerce TagLinkActivityData %))))
 
 (defmethod activity.i/data-schema created [_] TagActivityData)

@@ -8,9 +8,11 @@
 (def deleted :material/deleted)
 (def updated :material/updated)
 
+;; :accession-id and :location-id stay: they are where the material sat at the
+;; time, not the subject. They no longer surface the event under the accession
+;; or the location -- the subject is the material.
 (def MaterialActivityData
   [:map
-   [:material-id spec/id]
    [:material-code spec/code]
    [:accession-id spec/accession-id]
    [:location-id spec/location-id]])
@@ -20,8 +22,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
-                           :data {:material-id (:material/id material)
-                                  :material-code (:material/code material)
+                           :resource-type :material
+                           :resource-id (:material/id material)
+                           :data {:material-code (:material/code material)
                                   :accession-id (:material/accession-id material)
                                   :location-id (:material/location-id material)}})
       (update :activity/data #(store.i/coerce MaterialActivityData %))))

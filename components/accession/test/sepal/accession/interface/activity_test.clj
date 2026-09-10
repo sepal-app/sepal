@@ -27,8 +27,9 @@
                                                        accession)]
               (is (match? {:activity/id int?
                            :activity/type accession.activity/created
-                           :activity/data {:accession-id (:accession/id accession)
-                                           :accession-code (:accession/code accession)
+                           :activity/resource-type :accession
+                           :activity/resource-id (:accession/id accession)
+                           :activity/data {:accession-code (:accession/code accession)
                                            :taxon-id (:accession/taxon-id accession)}
                            :activity/created-by user-id
                            :activity/created-at inst?}
@@ -42,8 +43,9 @@
                                                        accession)]
               (is (match? {:activity/id int?
                            :activity/type accession.activity/updated
-                           :activity/data {:accession-id (:accession/id accession)
-                                           :accession-code (:accession/code accession)
+                           :activity/resource-type :accession
+                           :activity/resource-id (:accession/id accession)
+                           :activity/data {:accession-code (:accession/code accession)
                                            :taxon-id (:accession/taxon-id accession)}
                            :activity/created-by user-id
                            :activity/created-at inst?}
@@ -57,8 +59,9 @@
                                                        accession)]
               (is (match? {:activity/id int?
                            :activity/type accession.activity/deleted
-                           :activity/data {:accession-id (:accession/id accession)
-                                           :accession-code (:accession/code accession)
+                           :activity/resource-type :accession
+                           :activity/resource-id (:accession/id accession)
+                           :activity/data {:accession-code (:accession/code accession)
                                            :taxon-id (:accession/taxon-id accession)}
                            :activity/created-by user-id
                            :activity/created-at inst?}

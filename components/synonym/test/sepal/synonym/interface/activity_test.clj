@@ -21,10 +21,12 @@
                   :synonym/synonym-name "Encyclia cochleata"}]
         (try
           (doseq [type [synonym.activity/created synonym.activity/deleted]]
+            ;; A synonym hangs on a taxon, so the taxon is the subject.
             (is (match? {:activity/type type
                          :activity/created-by user-id
+                         :activity/resource-type :taxon
+                         :activity/resource-id (:taxon/id taxon)
                          :activity/data {:synonym-id 1
-                                         :taxon-id (:taxon/id taxon)
                                          :synonym-name "Encyclia cochleata"}
                          :activity/created-at inst?}
                         (synonym.activity/create! *db* type user-id data))))

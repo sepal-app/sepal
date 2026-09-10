@@ -18,6 +18,13 @@
 (def created-by pos-int?)
 (def type :keyword)
 
+;; Which record the event is about. Null for the two types that have no
+;; subject, settings/updated and setup/completed. Unlike :activity/type this is
+;; a bare keyword rather than a namespaced one, so name and keyword are enough
+;; to move it in and out of the text column.
+(def resource-type [:maybe :keyword])
+(def resource-id [:maybe pos-int?])
+
 (def Activity
   [:map {:closed true}
    [:activity/id id]
@@ -35,7 +42,11 @@
    [:activity/created-at {:decode/store
                           #(cond-> %
                              (string? %) java.time.Instant/parse)} created-at]
-   [:activity/created-by created-by]])
+   [:activity/created-by created-by]
+   [:activity/resource-type {:decode/store #(some-> % keyword)
+                             :encode/store #(some-> % name)}
+    resource-type]
+   [:activity/resource-id resource-id]])
 
 (defn build-create-activity-schema [type data-schema registry]
   (mu/closed-schema
@@ -54,7 +65,14 @@
                                     (string? %)
                                     java.time.Instant/parse)}
       created-at]
-     [:created-by created-by]]
+     [:created-by created-by]
+     ;; Optional because the create schema is closed and two types --
+     ;; settings/updated and setup/completed -- have no subject to name.
+     [:resource-type {:optional true
+                      :decode/store #(some-> % keyword)
+                      :encode/store #(some-> % name)}
+      resource-type]
+     [:resource-id {:optional true} resource-id]]
     {:registry registry}))
 
 (def registry
@@ -74,11 +92,12 @@
                                  {:registry registry})]
     (store.i/create! db :activity activity CreateActivity Activity)))
 
-(defn- resource-id-json-path
-  "Returns the JSON path for extracting a resource ID from activity data.
-   E.g., :taxon -> '$.taxon-id'"
-  [resource-type]
-  (str "$." (name resource-type) "-id"))
+(defn- resource-match
+  "Predicate selecting the events whose subject is this record."
+  [resource-type resource-id]
+  [:and
+   [:= :a.resource_type (name resource-type)]
+   [:= :a.resource_id resource-id]])
 
 (defn get-by-resource
   "Get activities for a specific resource.
@@ -91,25 +110,25 @@
    - :offset        - Offset for pagination (default 0)"
   [db & {:keys [resource-type resource-id limit offset]
          :or {limit 10 offset 0}}]
-  (let [json-path (resource-id-json-path resource-type)]
-    (->> (db.i/execute! db {:select [:a.* :u.id :u.email]
-                            :from [[:activity :a]]
-                            :join [[:user :u] [:= :u.id :a.created_by]]
-                            :where [:= [[:cast [:->> :a.data json-path] :integer]]
-                                    resource-id]
-                            :order-by [[:a.created_at :desc]]
-                            :limit limit
-                            :offset offset})
-         (mapv (fn [row]
-                 (let [;; Extract user fields before decoding activity
-                       user {:user/id (:user/id row)
-                             :user/email (:user/email row)}
-                       ;; Keep only activity fields for decoding
-                       activity-row (select-keys row [:activity/id :activity/type
-                                                      :activity/data :activity/created-at
-                                                      :activity/created-by])]
-                   (-> (m/decode Activity activity-row store.i/transformer)
-                       (assoc :activity/user user))))))))
+  (->> (db.i/execute! db {:select [:a.* :u.id :u.email]
+                          :from [[:activity :a]]
+                          :join [[:user :u] [:= :u.id :a.created_by]]
+                          :where (resource-match resource-type resource-id)
+                          :order-by [[:a.created_at :desc]]
+                          :limit limit
+                          :offset offset})
+       (mapv (fn [row]
+               (let [;; Extract user fields before decoding activity
+                     user {:user/id (:user/id row)
+                           :user/email (:user/email row)}
+                     ;; Keep only activity fields for decoding
+                     activity-row (select-keys row [:activity/id :activity/type
+                                                    :activity/data :activity/created-at
+                                                    :activity/created-by
+                                                    :activity/resource-type
+                                                    :activity/resource-id])]
+                 (-> (m/decode Activity activity-row store.i/transformer)
+                     (assoc :activity/user user)))))))
 
 (defn count-by-resource
   "Count activities for a specific resource.
@@ -118,8 +137,6 @@
    - :resource-type - Keyword like :taxon, :accession, :material, :location
    - :resource-id   - The resource's ID"
   [db & {:keys [resource-type resource-id]}]
-  (let [json-path (resource-id-json-path resource-type)]
-    (db.i/count db {:select [:id]
-                    :from [:activity]
-                    :where [:= [[:cast [:->> :data json-path] :integer]]
-                            resource-id]})))
+  (db.i/count db {:select [:a.id]
+                  :from [[:activity :a]]
+                  :where (resource-match resource-type resource-id)}))

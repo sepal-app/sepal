@@ -555,22 +555,31 @@
                                      [:parent.id :parent__id]
                                      [:parent.name :parent__name]]
                             :from [[:activity :a]]
-                            ;; Cast JSON values to integer for index usage on primary keys
+                            ;; Each join resolves the event's subject from the
+                            ;; indexed resource columns. The extra arms walk the
+                            ;; domain rather than the payload: a material event
+                            ;; reaches its accession through material.accession_id
+                            ;; and its taxon through accession.taxon_id. That is
+                            ;; why material is joined before accession, and
+                            ;; accession before taxon -- each one references the
+                            ;; table above it.
                             :join-by [:inner [[:user :u]
                                               [:= :u.id :a.created_by]]
-                                      :left [[:accession :acc]
-                                             [:= :acc.id
-                                              [[:cast [:->> :a.data "accession-id"] :integer]]]]
-                                      :left [[:location :loc]
-                                             [:= :loc.id
-                                              [[:cast [:->> :a.data "location-id"] :integer]]]]
                                       :left [[:material :mat]
-                                             [:= :mat.id
-                                              [[:cast [:->> :a.data "material-id"] :integer]]]]
+                                             [:and [:= :a.resource_type "material"]
+                                              [:= :mat.id :a.resource_id]]]
+                                      :left [[:accession :acc]
+                                             [:or
+                                              [:and [:= :a.resource_type "accession"]
+                                               [:= :acc.id :a.resource_id]]
+                                              [:= :acc.id :mat.accession_id]]]
+                                      :left [[:location :loc]
+                                             [:and [:= :a.resource_type "location"]
+                                              [:= :loc.id :a.resource_id]]]
                                       :left [[:taxon :tax]
                                              [:or
-                                              [:= :tax.id
-                                               [[:cast [:->> :a.data "taxon-id"] :integer]]]
+                                              [:and [:= :a.resource_type "taxon"]
+                                               [:= :tax.id :a.resource_id]]
                                               [:= :tax.id :acc.taxon_id]]]
                                       :left [[:taxon :parent]
                                              [:= :parent.id :tax.parent_id]]]

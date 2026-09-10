@@ -8,9 +8,14 @@
 (def deleted :accession/deleted)
 (def updated :accession/updated)
 
+;; The accession's own id is the subject and lives in activity.resource_id.
+;; :taxon-id stays: it is context, not the subject, and it is the only record
+;; of which taxon the accession carried at the time.
+;; The accession's own id is the subject and lives in activity.resource_id.
+;; :taxon-id stays: it is context, not the subject, and it is the only record
+;; of which taxon the accession carried at the time.
 (def AccessionActivityData
   [:map
-   [:accession-id spec/id]
    [:accession-code spec/code]
    [:taxon-id spec/taxon-id]])
 
@@ -19,8 +24,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
-                           :data {:accession-id (:accession/id accession)
-                                  :accession-code (:accession/code accession)
+                           :resource-type :accession
+                           :resource-id (:accession/id accession)
+                           :data {:accession-code (:accession/code accession)
                                   :taxon-id (:accession/taxon-id accession)}})
       (update :activity/data #(store.i/coerce AccessionActivityData %))))
 

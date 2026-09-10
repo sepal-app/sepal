@@ -10,7 +10,6 @@
 
 (def LocationActivityData
   [:map
-   [:location-id spec/id]
    [:location-name spec/name]
    [:location-code spec/code]])
 
@@ -19,8 +18,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
-                           :data {:location-id (:location/id data)
-                                  :location-name (:location/name data)
+                           :resource-type :location
+                           :resource-id (:location/id data)
+                           :data {:location-name (:location/name data)
                                   :location-code (:location/code data)}})
       (update :activity/data #(store.i/coerce LocationActivityData %))))
 

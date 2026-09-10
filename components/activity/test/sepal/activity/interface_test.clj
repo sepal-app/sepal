@@ -147,6 +147,18 @@
 (defmethod activity.i/data-schema test-taxon-activity-type [_]
   TestTaxonActivityData)
 
+;; The subject now lives in the columns, so a payload carrying no id key at all
+;; must still be findable. This is the shape every component moves to, and the
+;; case the old JSON-path query returned nothing for.
+(def test-subjectless-activity-type :test-subjectless/activity)
+
+(def TestSubjectlessActivityData
+  [:map
+   [:note :string]])
+
+(defmethod activity.i/data-schema test-subjectless-activity-type [_]
+  TestSubjectlessActivityData)
+
 (deftest test-get-by-resource
   (tf/testing "get-by-resource returns activities for a specific resource"
     {[::user.i/factory :key/user] {:db *db*}}
@@ -161,12 +173,16 @@
                                 {:type test-taxon-activity-type
                                  :created-at (Instant/now)
                                  :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
                                  :data {:taxon-id taxon-id}}))
           ;; Create activity for a different taxon
           (activity.i/create! db
                               {:type test-taxon-activity-type
                                :created-at (Instant/now)
                                :created-by user-id
+                               :resource-type :taxon
+                               :resource-id 99999
                                :data {:taxon-id 99999}})
 
           (testing "returns only activities for the specified resource"
@@ -174,7 +190,23 @@
                                                          :resource-type :taxon
                                                          :resource-id taxon-id)]
               (is (= 3 (count activities)))
-              (is (every? #(= taxon-id (get-in % [:activity/data :taxon-id])) activities))))
+              (is (every? #(= taxon-id (:activity/resource-id %)) activities))
+              (is (every? #(= :taxon (:activity/resource-type %)) activities))))
+
+          (testing "finds an event whose data carries no id key at all"
+            (activity.i/create! db
+                                {:type test-subjectless-activity-type
+                                 :created-at (Instant/now)
+                                 :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
+                                 :data {:note "no id key in here"}})
+            (let [activities (activity.i/get-by-resource db
+                                                         :resource-type :taxon
+                                                         :resource-id taxon-id)]
+              (is (= 4 (count activities)))
+              (is (some #(= test-subjectless-activity-type (:activity/type %))
+                        activities))))
 
           (testing "includes user info in results"
             (let [activities (activity.i/get-by-resource db
@@ -212,6 +244,8 @@
                                 {:type test-taxon-activity-type
                                  :created-at (Instant/now)
                                  :created-by user-id
+                                 :resource-type :taxon
+                                 :resource-id taxon-id
                                  :data {:taxon-id taxon-id}}))
 
           (testing "returns correct count"

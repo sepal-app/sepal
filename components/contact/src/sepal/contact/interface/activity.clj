@@ -10,7 +10,6 @@
 
 (def ContactActivityData
   [:map
-   [:contact-id spec/id]
    [:contact-name spec/name]
    [:contact-business spec/business]])
 
@@ -19,8 +18,9 @@
                           {:type type
                            :created-at (Instant/now)
                            :created-by created-by
-                           :data {:contact-id (:contact/id data)
-                                  :contact-name (:contact/name data)
+                           :resource-type :contact
+                           :resource-id (:contact/id data)
+                           :data {:contact-name (:contact/name data)
                                   :contact-business (:contact/business data)}})
       (update :activity/data #(store.i/coerce ContactActivityData %))))
 
