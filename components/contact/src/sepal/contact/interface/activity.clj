@@ -8,10 +8,12 @@
 (def deleted :contact/deleted)
 (def updated :contact/updated)
 
+;; The business is nullable: a private donor or a collector is a person. The
+;; column and the contact specs all allow it; this one did not, and threw.
 (def ContactActivityData
   [:map
    [:contact-name spec/name]
-   [:contact-business spec/business]])
+   [:contact-business [:maybe spec/business]]])
 
 (defn create! [db type created-by data]
   (-> (activity.i/create! db

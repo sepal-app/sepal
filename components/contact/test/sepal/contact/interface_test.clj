@@ -3,10 +3,13 @@
             [malli.core :as m]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
+            [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.spec :as contact.spec]
-            [sepal.error.interface :as err.i]))
+            [sepal.error.interface :as err.i]
+            [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -70,3 +73,27 @@
     (jdbc.sql/delete! db :contact {:id id})
     (is (nil? (jdbc/execute-one! db ["select rowid from contact_fts where rowid = ?" id]))
         "the delete trigger still removes from contact_fts")))
+
+(deftest test-activity-for-a-contact-with-no-business
+  ;; This threw out of m/coerce, failing the transaction that creates the
+  ;; contact. The form masked it: `business` is the one optional text field
+  ;; without an empty->nil decoder, so a blank arrives as "" rather than nil.
+  (tf/testing "an activity about a contact with no business"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            contact (contact.i/create! db {:name "Jane Doe"})]
+        (try
+          (is (nil? (:contact/business contact))
+              "the contact was created without one")
+          (let [activity (contact.activity/create! db
+                                                   contact.activity/created
+                                                   (:user/id user)
+                                                   contact)]
+            (is (= :contact/created (:activity/type activity)))
+            (is (= :contact (:activity/resource-type activity)))
+            (is (= (:contact/id contact) (:activity/resource-id activity)))
+            (is (nil? (get-in activity [:activity/data :contact-business]))))
+          (finally
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})
+            (jdbc.sql/delete! db :contact {:id (:contact/id contact)})))))))
