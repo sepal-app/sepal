@@ -96,6 +96,16 @@
                  ;; Quoted, for the same reason terms->match quotes: a filter
                  ;; value reaches MATCH just as directly as a bare term does,
                  ;; so `taxon:sp.` is a 500 without this.
+                 ;; `=` on a full-text field asks for the column, not the
+                 ;; index. FTS5 splits on `.`, so an accession code like
+                 ;; `2022.0001` indexes as the tokens `2022` and `0001` and no
+                 ;; MATCH can name that one row. Handled here rather than by
+                 ;; moving the `=` branch above this one, which would also take
+                 ;; `:number`, `:id` and `:count` away from their own branches
+                 ;; and drop their parse-long and EXISTS handling.
+                 (and (= type :fts) (= op "="))
+                 [:= column value]
+
                  (= type :fts)
                  (when-let [match (terms->match [value])]
                    (let [id-column (column->id-column column)]

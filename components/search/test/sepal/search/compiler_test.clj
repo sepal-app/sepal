@@ -465,3 +465,60 @@
                   test-fields
                   {:terms [] :filters [{:field "taxon" :value "Quercus alba" :negated false}]}
                   base-stmt)))))
+
+;; =============================================================================
+;; Operators on full-text fields
+;;
+;; `code` is an `:fts` field on the accession config and FTS5 splits on `.`,
+;; so `2022.0001` indexes as the tokens `2022` and `0001`. `code:2022` is a
+;; useful search for that year's accessions, but without `=` there is no way
+;; to ask for the one accession whose code is `2022.0001`. The Filter dropdown
+;; offers Equals on `Code` either way.
+;; =============================================================================
+
+(def accession-fields
+  {:code {:column :a.code :type :fts :fts-table :accession_fts :label "Code"}})
+
+(def accession-stmt {:select [:*] :from [[:accession :a]]})
+
+(deftest fts-field-with-equals-is-an-exact-column-match-test
+  (testing "= on a full-text field matches the column, not the FTS index"
+    (is (match? {:where [:= :a.code "2022.0001"]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [{:field "code" :op "=" :value "2022.0001" :negated false}]}
+                  accession-stmt))))
+
+  (testing "and negation still wraps it"
+    (is (match? {:where [:not [:= :a.code "2022.0001"]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [{:field "code" :op "=" :value "2022.0001" :negated true}]}
+                  accession-stmt)))))
+
+(deftest fts-field-without-an-operator-still-matches-test
+  (testing "no operator is unchanged: the prefix search over FTS5 tokens"
+    (is (match? {:where [:in :a.id {:select [:rowid]
+                                    :from [:accession_fts]
+                                    :where [:match :accession_fts "\"2022\"*"]}]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [{:field "code" :value "2022" :negated false}]}
+                  accession-stmt)))))
+
+(deftest fts-field-comma-list-wins-over-the-operator-test
+  ;; `values` is the first branch of field->clause's cond, ahead of every type
+  ;; and every operator, and `[:in column values]` is already an exact match
+  ;; per value -- the same thing `=` asks for. So a comma list keeps winning
+  ;; and `=` changes nothing about it.
+  (testing "a comma list is an IN over the column, with or without ="
+    (is (match? {:where [:in :a.code ["2022.0001" "2022.0002"]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [{:field "code" :op "=" :values ["2022.0001" "2022.0002"] :negated false}]}
+                  accession-stmt)))
+    (is (match? {:where [:in :a.code ["2022.0001" "2022.0002"]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [{:field "code" :values ["2022.0001" "2022.0002"] :negated false}]}
+                  accession-stmt)))))
