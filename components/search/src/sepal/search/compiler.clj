@@ -172,7 +172,21 @@
                        :where join-condition}
                       (parse-long value)]))
 
-                 ;; Boolean flag (no value means true)
+                 ;; Boolean by value: private:true / private:false. The value
+                 ;; is the string the user typed, and anything that is neither
+                 ;; is compared to the column as it arrived: the column holds 1
+                 ;; or 0, so private:yes matches no row. That keeps a filter
+                 ;; narrowing. Dropping it instead would answer a question the
+                 ;; compiler could not read by returning every row, which is
+                 ;; the one failure mode a filter must not have.
+                 (= type :boolean)
+                 [:= column (if (nil? value)
+                              true
+                              (if-some [b (parse-boolean (str/lower-case value))]
+                                b
+                                value))]
+
+                 ;; Flag with no value means true
                  (nil? value)
                  [:= column true]
 
@@ -239,7 +253,7 @@
 
    Arguments:
      fields    - Map of field definitions from search-config
-     ast       - Parsed search AST with :terms and :filters
+     ast       - Parsed search AST with :terms, :filters and :excluded-terms
      base-stmt - Base HoneySQL statement (typically {:select [...] :from [...]})
 
    Returns: HoneySQL map with :where and :join clauses added
@@ -259,7 +273,7 @@
      ;;     :join [[:accession :a] [:= :a.id :m.accession_id]
      ;;            [:taxon :t] [:= :t.id :a.taxon_id]]
      ;;     :where [:match :taxon_fts \"Quercus*\"]}"
-  [fields {:keys [terms filters]} base-stmt]
+  [fields {:keys [terms filters excluded-terms]} base-stmt]
   (let [;; Build WHERE clauses from filters
         filter-clauses (for [f filters
                              :let [field-def (get fields (keyword (:field f)))]
@@ -269,9 +283,30 @@
         ;; Build FTS clause from terms
         term-clause (terms->clause terms fields)
 
+        ;; Each excluded term is the negation of the clause the same term
+        ;; would have compiled to on its own, so `quercus` and `-quercus`
+        ;; partition the rows between them. One MATCH of several excluded
+        ;; terms would not: FTS5 reads `"quercus" "rosa"*` as AND, and negating
+        ;; that keeps every row matching just one of them -- measured against
+        ;; SQLite on 2026-09-11, where it returned all four rows of a four-row
+        ;; table instead of the one row matching neither.
+        ;;
+        ;; [:not [:in ...]] and a bare NOT IN are the same expression in
+        ;; SQLite, NULLs included, and this one matches how field->clause
+        ;; already negates. A row the subquery does not return is kept, which
+        ;; is what makes a row with no FTS entry at all survive an exclusion:
+        ;; it matches no term, so no exclusion should remove it. The id column
+        ;; is never NULL itself -- an FTS5 rowid cannot be, and every FTS field
+        ;; is reached by an inner join.
+        excluded-clauses (for [term excluded-terms
+                               :let [clause (terms->clause [term] fields)]
+                               :when clause]
+                           [:not clause])
+
         ;; Combine all clauses
-        all-clauses (cond-> (vec filter-clauses)
-                      term-clause (conj term-clause))
+        all-clauses (-> (vec filter-clauses)
+                        (cond-> term-clause (conj term-clause))
+                        (into excluded-clauses))
 
         ;; Collect joins from all filters (excluding those already in base-stmt)
         joins (collect-joins filters fields base-stmt)

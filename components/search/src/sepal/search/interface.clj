@@ -26,7 +26,7 @@
    - :fts      - Full-text search (requires :fts-table)
    - :enum     - Exact match with keyword coercion
    - :id       - Exact match with integer coercion
-   - :boolean  - Boolean flag (presence means true)
+   - :boolean  - Boolean, asked for by value: private:true / private:false
 
    ## Usage
 
@@ -101,8 +101,10 @@
   "Parse a search query string into an AST.
 
    Returns a map with:
-     :terms   - vector of free-text search terms
-     :filters - vector of filter maps with :field, :value/:values, :negated
+     :terms          - vector of free-text search terms
+     :filters        - vector of filter maps with :field, :value/:values,
+                       :negated
+     :excluded-terms - vector of free-text terms to exclude
 
    On parse failure, includes :error key with failure info.
 
@@ -111,17 +113,18 @@
      - field:value: field filter
      - field:val1,val2: multi-value OR filter
      - \"quoted phrase\": exact phrase
-     - -term or -field:value: negation
+     - -term: exclude a free-text term
+     - -field:value: negated filter
 
    Examples:
      (parse \"quercus\")
-     ;; => {:terms [\"quercus\"] :filters []}
+     ;; => {:terms [\"quercus\"] :filters [] :excluded-terms []}
 
      (parse \"taxon:Quercus location:GH,SH -private\")
      ;; => {:terms []
      ;;     :filters [{:field \"taxon\" :value \"Quercus\" :negated false}
-     ;;               {:field \"location\" :values [\"GH\" \"SH\"] :negated false}
-     ;;               {:field \"private\" :negated true}]}"
+     ;;               {:field \"location\" :values [\"GH\" \"SH\"] :negated false}]
+     ;;     :excluded-terms [\"private\"]}"
   [query-string]
   (parser/parse query-string))
 
@@ -208,6 +211,9 @@
      :negated  - Whether filter is negated
      :clear-q  - Query string with this filter removed
 
+   Only filters get badges. An excluded term is free text like any other term,
+   and terms have never had one -- they are already visible in the search box.
+
    Example:
      (ast->filter-badges :material
                          {:filters [{:field \"taxon\" :value \"Quercus\"}
@@ -217,12 +223,13 @@
      ;;      :clear-q \"location:GH alba\"}
      ;;     {:label \"Location\" :value \"GH\" :negated false
      ;;      :clear-q \"taxon:Quercus alba\"}]"
-  [resource-type {:keys [terms filters] :as ast}]
+  [resource-type {:keys [terms filters excluded-terms]}]
   (let [fields (get-fields resource-type)]
     (for [{:keys [field value values negated] :as f} filters]
       (let [field-def (get fields (keyword field))
             other-filters (remove #(= % f) filters)
-            clear-q (unparse {:filters other-filters :terms terms})]
+            clear-q (unparse {:filters other-filters :terms terms
+                              :excluded-terms excluded-terms})]
         {:label (or (:label field-def) (str/capitalize field))
          :value (or (some->> values (str/join ", ")) value "")
          :negated (boolean negated)

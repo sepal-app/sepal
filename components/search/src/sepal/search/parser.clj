@@ -7,14 +7,22 @@
      - field:val1,val2: multi-value OR filter
      - field:>value, field:<value, field:>=value, field:<=value: comparison
      - \"quoted phrase\": exact phrase (term or value)
-     - -term or -field:value: negation
+     - -term: exclude a free-text term
+     - -field:value: negated filter
+
+   A leading `-` on a bare word excludes that term from the full-text search,
+   the way it does in Lucene, GitHub and Gmail. A bare word never names a
+   field: naming one is what the colon is for, so a boolean field is asked for
+   by value, `private:true` or `private:false`.
 
    Examples:
      quercus                    → free text term
      taxon:Quercus              → field filter
      taxon:\"Quercus alba\"     → quoted filter value
      location:GH,SH             → multi-value (OR)
-     -private                   → negated boolean filter
+     -quercus                   → excluded free text term
+     -type:dead                 → negated filter
+     private:true               → boolean filter
      \"red oak\"                → quoted phrase term
      created:>2024-01-01        → date after
      created:>=2024-01-01       → date on or after
@@ -39,6 +47,9 @@
 (def parser
   (insta/parser grammar :auto-whitespace :standard))
 
+(def ^:private empty-ast
+  {:terms [] :filters [] :excluded-terms []})
+
 (defn- transform-ast
   "Transform instaparse tree to our AST format."
   [tree]
@@ -48,21 +59,21 @@
                   (fn [ast {:keys [type] :as item}]
                     (case type
                       :term (update ast :terms conj (:value item))
+                      :excluded-term (update ast :excluded-terms conj (:value item))
                       :filter (update ast :filters conj (dissoc item :type))
                       ;; Handle nil items (shouldn't happen but be safe)
                       ast))
-                  {:terms [] :filters []}
+                  empty-ast
                   terms))
 
      :term    (fn [& parts]
                 (let [negated? (= (first parts) :negated)
                       content (if negated? (second parts) (first parts))]
                   (cond
-                    ;; Negated bare word - treat as boolean filter
-                    ;; e.g., "-private" becomes {:field "private" :negated true}
+                    ;; Negated bare word or phrase - a term to exclude.
                     ;; Must check this before map? since :word returns a map
                     (and negated? (= :term (:type content)))
-                    {:type :filter :field (:value content) :negated true}
+                    {:type :excluded-term :value (:value content)}
 
                     ;; Filter or phrase - just attach negation
                     (map? content)
@@ -109,33 +120,38 @@
   "Parse a search query string into an AST.
 
    Returns a map with:
-     :terms   - vector of free-text search terms
-     :filters - vector of filter maps with :field, :value/:values, :op, :negated
+     :terms          - vector of free-text search terms
+     :filters        - vector of filter maps with :field, :value/:values, :op,
+                       :negated
+     :excluded-terms - vector of free-text terms to exclude
 
    On parse failure, includes :error key with failure info.
 
    Examples:
      (parse \"quercus\")
-     ;; => {:terms [\"quercus\"] :filters []}
+     ;; => {:terms [\"quercus\"] :filters [] :excluded-terms []}
 
      (parse \"taxon:Quercus location:GH,SH\")
      ;; => {:terms []
      ;;     :filters [{:field \"taxon\" :value \"Quercus\" :negated false}
-     ;;               {:field \"location\" :values [\"GH\" \"SH\"] :negated false}]}
+     ;;               {:field \"location\" :values [\"GH\" \"SH\"] :negated false}]
+     ;;     :excluded-terms []}
 
-     (parse \"-private \\\"red oak\\\"\")
+     (parse \"-quercus \\\"red oak\\\"\")
      ;; => {:terms [\"red oak\"]
-     ;;     :filters [{:field \"private\" :negated true}]}
+     ;;     :filters []
+     ;;     :excluded-terms [\"quercus\"]}
 
      (parse \"created:>2024-01-01\")
      ;; => {:terms []
-     ;;     :filters [{:field \"created\" :op \">\" :value \"2024-01-01\" :negated false}]}"
+     ;;     :filters [{:field \"created\" :op \">\" :value \"2024-01-01\" :negated false}]
+     ;;     :excluded-terms []}"
   [query-string]
   (if (str/blank? query-string)
-    {:terms [] :filters []}
+    empty-ast
     (let [result (parser query-string)]
       (if (insta/failure? result)
-        {:terms [] :filters [] :error (insta/get-failure result)}
+        (assoc empty-ast :error (insta/get-failure result))
         (-> result transform-ast clean-ast)))))
 
 (defn parse-error?
@@ -154,7 +170,7 @@
   "Convert an AST back to a query string.
 
    Useful for generating clear-href URLs when removing filters."
-  [{:keys [terms filters]}]
+  [{:keys [terms filters excluded-terms]}]
   (let [quote-if-needed (fn [s]
                           (if (or (str/includes? s " ")
                                   (str/includes? s ",")
@@ -170,5 +186,6 @@
                            (cond
                              values (str/join "," (map quote-if-needed values))
                              value (quote-if-needed value))))
+        excluded-strs (map #(str "-" (quote-if-needed %)) excluded-terms)
         term-strs (map quote-if-needed terms)]
-    (str/join " " (concat filter-strs term-strs))))
+    (str/join " " (concat filter-strs excluded-strs term-strs))))

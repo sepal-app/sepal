@@ -185,12 +185,34 @@
                     :filters [{:field "unknown" :value "x" :negated false}]})]
       (is (= "Unknown" (:label (first badges)))))))
 
+(deftest ast->filter-badges-excluded-term-test
+  (testing "an excluded term gets no badge, the same as a positive term"
+    (is (empty? (search.i/ast->filter-badges
+                  :test-resource
+                  {:terms ["alba"] :filters [] :excluded-terms ["quercus"]}))))
+
+  (testing "clearing a filter keeps the exclusions in the query"
+    (let [badges (search.i/ast->filter-badges
+                   :test-resource
+                   {:terms ["alba"]
+                    :filters [{:field "name" :value "test" :negated false}
+                              {:field "type" :value "a" :negated false}]
+                    :excluded-terms ["quercus"]})]
+      (is (= "type:a -quercus alba" (:clear-q (first badges))))
+      (is (= "name:test -quercus alba" (:clear-q (second badges)))))))
+
 (deftest validate-query-test
   (testing "valid query"
     (is (= {:valid true}
            (search.i/validate-query
              :test-resource
              {:terms [] :filters [{:field "name" :value "test"}]}))))
+
+  (testing "an excluded term is not an unknown field"
+    (is (= {:valid true}
+           (search.i/validate-query
+             :test-resource
+             {:terms [] :filters [] :excluded-terms ["quercus"]}))))
 
   (testing "invalid field"
     (let [result (search.i/validate-query

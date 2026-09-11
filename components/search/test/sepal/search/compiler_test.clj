@@ -556,3 +556,110 @@
                   accession-fields
                   {:terms [] :filters [{:field "code" :values ["2022.0001" "2022.0002"] :negated false}]}
                   accession-stmt)))))
+
+;; =============================================================================
+;; Excluded terms
+;;
+;; A negated bare word excludes a free-text term, and that is all it ever does.
+;; `-private` excludes the word private even here, where `private` is a
+;; registered :boolean field; the way to ask about that column is private:true
+;; or private:false.
+;; =============================================================================
+
+(deftest compile-excluded-term-test
+  (testing "an excluded term is the negation of the clause it would have compiled to"
+    (is (match? {:where [:not [:in :a.id {:select [:rowid]
+                                          :from [:accession_fts]
+                                          :where [:match :accession_fts "\"quercus\"*"]}]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [] :excluded-terms ["quercus"]}
+                  accession-stmt))))
+
+  (testing "it stands alone when it is the only thing asked for"
+    (let [result (compiler/compile-query
+                   accession-fields
+                   {:terms [] :filters [] :excluded-terms ["quercus"]}
+                   accession-stmt)]
+      (is (= :not (first (:where result))))))
+
+  (testing "an excluded phrase is excluded as a phrase"
+    (is (match? {:where [:not [:in :a.id {:select [:rowid]
+                                          :from [:accession_fts]
+                                          :where [:match :accession_fts "\"red oak\"*"]}]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [] :excluded-terms ["red oak"]}
+                  accession-stmt))))
+
+  (testing "a positive term and an excluded one are separate ANDed clauses"
+    (is (match? {:where [:and
+                         [:in :a.id {:select [:rowid]
+                                     :from [:accession_fts]
+                                     :where [:match :accession_fts "\"alba\"*"]}]
+                         [:not [:in :a.id {:select [:rowid]
+                                           :from [:accession_fts]
+                                           :where [:match :accession_fts "\"quercus\"*"]}]]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms ["alba"] :filters [] :excluded-terms ["quercus"]}
+                  accession-stmt))))
+
+  (testing "two exclusions are two NOTs, not one negated AND"
+    ;; One MATCH of both would read as NOT (quercus AND alba), which keeps a
+    ;; row matching only quercus -- the opposite of what -quercus asked for.
+    (is (match? {:where [:and
+                         [:not [:in :a.id {:where [:match :accession_fts "\"quercus\"*"]}]]
+                         [:not [:in :a.id {:where [:match :accession_fts "\"alba\"*"]}]]]}
+                (compiler/compile-query
+                  accession-fields
+                  {:terms [] :filters [] :excluded-terms ["quercus" "alba"]}
+                  accession-stmt))))
+
+  (testing "-private excludes the text, even where private is a boolean field"
+    (is (match? {:where [:not [:in :t.id {:select [:rowid]
+                                          :from [:taxon_fts]
+                                          :where [:match :taxon_fts "\"private\"*"]}]]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [] :excluded-terms ["private"]}
+                  base-stmt)))))
+
+(deftest compile-boolean-by-value-test
+  (testing "private:true is the column, true"
+    (is (match? {:where [:= :m.private true]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "private" :value "true" :negated false}]}
+                  base-stmt))))
+
+  (testing "private:false is the column, false"
+    (is (match? {:where [:= :m.private false]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "private" :value "false" :negated false}]}
+                  base-stmt))))
+
+  (testing "case is not the user's problem"
+    (is (match? {:where [:= :m.private true]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "private" :value "TRUE" :negated false}]}
+                  base-stmt))))
+
+  (testing "negation wraps it"
+    (is (match? {:where [:not [:= :m.private true]]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "private" :value "true" :negated true}]}
+                  base-stmt))))
+
+  (testing "a value that is neither matches no row rather than being dropped"
+    ;; The column holds 1 or 0, so comparing it to the string keeps the filter
+    ;; narrowing. Dropping it would widen the result, which is the failure
+    ;; mode a filter must not have.
+    (is (match? {:where [:= :m.private "yes"]}
+                (compiler/compile-query
+                  test-fields
+                  {:terms [] :filters [{:field "private" :value "yes" :negated false}]}
+                  base-stmt)))))
