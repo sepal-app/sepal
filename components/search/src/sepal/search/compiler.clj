@@ -31,8 +31,22 @@
 (defn- terms->match
   "Free-text terms as an FTS5 MATCH expression, or nil when none are left.
 
-   Every term becomes a quoted string and the last is prefix-extended, so
-   `quercus alb` compiles to `\"quercus\" \"alb\"*`.
+   Every term becomes one quoted FTS5 phrase and the last is prefix-extended,
+   so `quercus alb` compiles to `\"quercus\" \"alb\"*` and the quoted phrase
+   `\"red oak\"` compiles to `\"red oak\"*`.
+
+   A term is a phrase when it holds a space, which only a quoted one can:
+   `word` in the grammar is `#'[^\"\\s:]+'`. The term arrives whole and has to
+   stay whole. Split into `\"red\" \"oak\"*` it was byte-identical to the
+   unquoted `red oak`, and FTS5 reads that as AND -- `oak red` and `red maple
+   and oak tree` came back from a query asking for a phrase.
+
+   The prefix rule is unchanged: the final token of the whole expression gets
+   the `*`, and FTS5 applies a `*` written after a phrase to that phrase's last
+   token. So a trailing `\"red oa\"` still finds `red oak`, which is what the
+   query builder needs -- it quotes any filter value the user types a space
+   into, so the quotes there are not the user asking for exactness. A phrase
+   with a term after it is exact, since the `*` belongs to the term.
 
    The quoting is the load-bearing part, not decoration. FTS5 gives `.`, `:`,
    `-`, `'`, `(`, `)` and the barewords AND/OR/NOT meanings of their own inside
@@ -54,11 +68,13 @@
    `components/synonym/src/sepal/synonym/reference.clj` carries the same logic
    for the same reason, against a different database on a different pool."
   [terms]
-  (let [tokens (->> terms
-                    (mapcat #(str/split (str/trim (or % "")) #"\s+"))
-                    (remove str/blank?))]
-    (when (seq tokens)
-      (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") tokens)]
+  (let [phrases (->> terms
+                     (map #(->> (str/split (str/trim (or % "")) #"\s+")
+                                (remove str/blank?)
+                                (str/join " ")))
+                     (remove str/blank?))]
+    (when (seq phrases)
+      (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") phrases)]
         (str/join " " (conj (vec (butlast quoted)) (str (last quoted) "*")))))))
 
 (defn- field->clause

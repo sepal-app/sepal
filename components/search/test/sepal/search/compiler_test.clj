@@ -435,9 +435,7 @@
   (testing "an embedded double quote is doubled, FTS5's own escape"
     ;; Left unescaped this closes the string early and is `unterminated string`.
     ;; Both forms below are accepted by FTS5, checked directly on 2026-09-05.
-    (is (= "\"say\"\"hi\"*" (match-expr ["say\"hi"])))
-    (testing "and a term containing a space is split, so each half is quoted"
-      (is (= "\"say\" \"\"\"hi\"\"\"*" (match-expr ["say \"hi\""])))))
+    (is (= "\"say\"\"hi\"*" (match-expr ["say\"hi"]))))
 
   (testing "only the last term is prefix-extended"
     (is (= "\"quercus\" \"alba\"*" (match-expr ["quercus" "alba"]))))
@@ -457,14 +455,50 @@
                   {:terms [] :filters [{:field "taxon" :value "sp." :negated false}]}
                   base-stmt))))
 
-  (testing "a multi-word value keeps its AND-with-trailing-prefix meaning"
-    ;; Splitting rather than quoting the whole value preserves what the raw
-    ;; form did: two barewords, prefix on the last.
-    (is (match? {:where [:in :t.id {:where [:match :taxon_fts "\"Quercus\" \"alba\"*"]}]}
+  (testing "a multi-word value is a phrase, the same as a quoted term"
+    ;; A value can only hold a space if it was quoted -- `unquoted` in the
+    ;; grammar is `#'[^,"\s]+'` -- and the query builder quotes any value the
+    ;; user types a space into. Split, `taxon:"Quercus alba"` also matched a
+    ;; taxon named `alba Quercus`.
+    (is (match? {:where [:in :t.id {:where [:match :taxon_fts "\"Quercus alba\"*"]}]}
                 (compiler/compile-query
                   test-fields
                   {:terms [] :filters [{:field "taxon" :value "Quercus alba" :negated false}]}
                   base-stmt)))))
+
+;; =============================================================================
+;; Quoted phrases
+;;
+;; `word` in the grammar is `#'[^"\s:]+'`, so a bare word can never hold a
+;; space. A term that does hold one came from the `phrase` production, and the
+;; compiler groups it into a single FTS5 phrase instead of splitting it back
+;; into independent tokens. Split, `"red oak"` was byte-identical to `red oak`
+;; -- `"red" "oak"*`, which FTS5 reads as AND, so it returned `oak red` too.
+;;
+;; The prefix rule is unchanged: the last token of the whole expression is
+;; prefix-extended, and FTS5 applies a `*` after a phrase to that phrase's
+;; final token. So the phrase is loose at its tail only when it is last.
+;; =============================================================================
+
+(deftest a-phrase-term-matches-as-a-phrase-test
+  (testing "a multi-word term is one phrase, not two ANDed tokens"
+    (is (= "\"red oak\"*" (match-expr ["red oak"]))))
+
+  (testing "a phrase followed by a term hands the prefix to the term"
+    (is (= "\"red oak\" \"quer\"*" (match-expr ["red oak" "quer"]))))
+
+  (testing "a trailing phrase takes the prefix on its own final token"
+    (is (= "\"quer\" \"red oak\"*" (match-expr ["quer" "red oak"]))))
+
+  (testing "FTS5 metacharacters are still literals inside a phrase"
+    ;; Raw, each of these is a 500; the phrase quoting has to cover them the
+    ;; same way the per-token quoting did.
+    (is (= "\"sub-alpine sp.\"*" (match-expr ["sub-alpine sp."])))
+    (is (= "\"a AND b\"*" (match-expr ["a AND b"])))
+    (is (= "\"say \"\"hi\"\"\"*" (match-expr ["say \"hi\""]))))
+
+  (testing "runs of whitespace inside a phrase collapse to one space"
+    (is (= "\"red oak\"*" (match-expr ["red   oak"])))))
 
 ;; =============================================================================
 ;; Operators on full-text fields
