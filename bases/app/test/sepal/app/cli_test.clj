@@ -21,7 +21,7 @@
   ;; -M:dev:cli is the only way anyone invokes it: the CLI ships in no project
   ;; and no image.
   (testing "every subcommand resolves to a function"
-    (is (= #{"create-user" "list-users" "routes"} (set (keys cli/subcommands))))
+    (is (= #{"create-user" "list-users" "load-import" "routes"} (set (keys cli/subcommands))))
     (doseq [[name {:keys [fn description]}] cli/subcommands]
       (is (ifn? fn) (format "%s has no function" name))
       (is (seq description) (format "%s has no description" name))))

@@ -53,7 +53,10 @@
   [:map {:closed true
          :encode/store #(when % (cske/transform-keys csk/->kebab-case-string %))}
    [:name :string]
-   [:language :string]
+   ;; Optional: a name whose language nobody recorded is still the name, and
+   ;; the taxon form already declares it [:maybe :string]. Only the browser
+   ;; always sending "" for a blank field hid the disagreement.
+   [:language {:optional true} [:maybe :string]]
    [:default {:optional true} :boolean]])
 
 (def Taxon

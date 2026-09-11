@@ -2,6 +2,7 @@
   "CLI for administrative tasks like creating users."
   (:require [clojure.string :as str]
             [clojure.tools.cli :refer [parse-opts]]
+            [sepal.app.cli.load-import :as load-import]
             [sepal.app.cli.routes :as cli.routes]
             [sepal.app.cli.system :as cli.sys]
             [sepal.user.interface :as user.i])
@@ -116,12 +117,48 @@
           0))))
 
 ;; =============================================================================
+;; load-import command
+;; =============================================================================
+
+(def load-import-options
+  [["-d" "--dir DIR" "Directory of converted JSON to load (required)"]
+   ["-a" "--actor EMAIL" "Existing user the completion event is attributed to (required)"]
+   [nil "--dry-run" "Perform the load and roll it back"]
+   [nil "--allow-nonempty" "Load even though the garden already holds accessions"]
+   ["-h" "--help" "Show help for this command"]])
+
+(defn- load-import-cmd [args]
+  (let [{:keys [options errors summary]} (parse-opts args load-import-options)]
+    (cond
+      (:help options)
+      (do (println "Usage: clojure -M:dev:cli load-import [options]")
+          (println)
+          (println "Options:")
+          (println summary)
+          0)
+
+      errors
+      (do (println (str "Errors:\n" (str/join "\n" errors))) 1)
+
+      (not (:dir options))
+      (do (println "Error: --dir is required") 1)
+
+      (not (:actor options))
+      (do (println "Error: --actor is required") 1)
+
+      :else
+      (cli.sys/with-system [sys]
+        (load-import/load-import! (cli.sys/get-db sys) options)))))
+
+;; =============================================================================
 ;; Main entry point
 ;; =============================================================================
 
 (def subcommands
   {"create-user" {:description "Create a new user"
                   :fn create-user-cmd}
+   "load-import" {:description "Load a converted Bauble backup"
+                  :fn load-import-cmd}
    "list-users"  {:description "List all users"
                   :fn list-users-cmd}
    "routes"      {:description "Print the route tree"

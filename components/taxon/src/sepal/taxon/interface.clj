@@ -5,6 +5,9 @@
 (defn get-by-id [db id]
   (core/get-by-id db id))
 
+(defn list-by-wfo-taxon-id [db wfo-taxon-id]
+  (core/list-by-wfo-taxon-id db wfo-taxon-id))
+
 (defn create! [db data]
   (core/create! db data))
 

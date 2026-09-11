@@ -3,6 +3,7 @@
    connection pool, opened the same way every other Sepal pool is."
   (:require [babashka.fs :as fs]
             [integrant.core :as ig]
+            [next.jdbc :as jdbc]
             [next.jdbc.connection :as connection]
             [sepal.config.interface :as config.i]
             [sepal.database.interface :as db.i]
@@ -61,9 +62,15 @@
   (ig/halt! system))
 
 (defn get-db
-  "Get the database connection from a running system."
+  "Get the database connection from a running system.
+
+  Wrapped in `db.i/jdbc-options` the way the app wraps its own: those options
+  carry the builder that names `postal_code` as `:contact/postal-code`. Without
+  them a result comes back snake_case, and any result spec with a required
+  multi-word key fails to coerce -- `contact.i/create!` throws while
+  `user.i/create!`, whose multi-word keys are all optional, quietly works."
   [system]
-  (::datasource system))
+  (jdbc/with-options (::datasource system) db.i/jdbc-options))
 
 (defn with-system*
   "Execute f with a started CLI system.
