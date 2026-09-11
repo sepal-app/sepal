@@ -4,11 +4,25 @@
             [malli.generator :as mg]
             [malli.transform :as mt]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.spec :as spec]))
 
 (defn get-by-id [db id]
   (store.i/get-by-id db :taxon id spec/Taxon))
+
+(defn list-by-wfo-taxon-id
+  "Every taxon carrying this WFO id, as a vector.
+
+  A vector rather than one row because `taxon.wfo_taxon_id` is nullable and
+  carries a plain index, not a unique one, so two taxa can hold the same id.
+  The importer has to be able to tell that apart from a clean hit -- resolving
+  a WFO reference to the wrong taxon is the error nobody would notice."
+  [db wfo-taxon-id]
+  (->> (db.i/execute! db {:select [:*]
+                          :from [:taxon]
+                          :where [:= :wfo_taxon_id wfo-taxon-id]})
+       (mapv #(store.i/coerce spec/Taxon %))))
 
 (defn create! [db data]
   (let [data (cond-> data

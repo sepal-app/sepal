@@ -84,3 +84,38 @@
       (is (not (err.i/error? created)) (err.i/data created))
       (is (nil? (:taxon/distribution created)))
       (jdbc.sql/delete! db :taxon {:id (:taxon/id created)}))))
+
+(deftest test-list-by-wfo-taxon-id
+  (let [db *db*
+        ;; The spec constrains the shape: wfo- then 10, 4 and 2 digits.
+        wfo-id (format "wfo-%010d-2024-01" (rand-int 1000000))
+        made (atom [])
+        make! (fn [name]
+                ;; Set the WFO id through update!: CreateTaxon spells the key
+                ;; :taxon/wfo-taxon-id, namespaced among otherwise-bare keys,
+                ;; which UpdateTaxon does not.
+                (let [t (taxon.i/create! db {:name name :rank :genus})]
+                  (swap! made conj (:taxon/id t))
+                  (taxon.i/update! db (:taxon/id t) {:wfo-taxon-id wfo-id})))]
+    (try
+      (testing "an unknown WFO id finds nothing"
+        (is (= [] (taxon.i/list-by-wfo-taxon-id db "wfo-0000000000-1900-99"))))
+
+      (testing "a taxon carrying one is found by it"
+        (let [t (make! "Cattleya")
+              got (taxon.i/list-by-wfo-taxon-id db wfo-id)]
+          (is (= 1 (count got)))
+          (is (= (:taxon/id t) (:taxon/id (first got))))
+          (is (= "Cattleya" (:taxon/name (first got))))))
+
+      ;; taxon.wfo_taxon_id is nullable with a plain index, not a unique one,
+      ;; so this is reachable rather than hypothetical. The importer has to be
+      ;; able to see it: resolving a reference to the wrong taxon is the error
+      ;; nobody would notice.
+      (testing "two taxa can share one, and both come back"
+        (make! "Cattleya duplicate")
+        (is (= 2 (count (taxon.i/list-by-wfo-taxon-id db wfo-id)))))
+
+      (finally
+        (doseq [id @made]
+          (jdbc.sql/delete! db :taxon {:id id}))))))
