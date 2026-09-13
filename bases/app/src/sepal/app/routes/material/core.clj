@@ -1,6 +1,7 @@
 (ns sepal.app.routes.material.core
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.material.create :as create]
+            [sepal.app.routes.material.delete :as delete]
             [sepal.app.routes.material.detail :as detail]
             [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.routes.material.detail.media :as detail-media]
@@ -62,5 +63,10 @@
                        :delete #'detail-tags/row-handler}]
     ["/history/" {:name routes/history
                   :handler #'panel/history-handler}]
+    ["/delete/" {:name routes/delete
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 material.perm/delete (constantly routes/detail))]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

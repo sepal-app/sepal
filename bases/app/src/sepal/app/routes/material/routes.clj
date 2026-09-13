@@ -14,3 +14,4 @@
 (def panel ::panel)
 (def history ::history)
 
+(def delete ::delete)
