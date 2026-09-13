@@ -344,42 +344,103 @@ CREATE TABLE accession_received_type (
 ) strict;
 CREATE INDEX activity_resource_type_resource_id_idx
   on activity (resource_type, resource_id);
-INSERT INTO taxon_rank (name) VALUES
-  ('aggregate'), ('class'), ('convariety'), ('cultivar'), ('family'), ('form'),
-  ('genus'), ('grex'), ('group'), ('kingdom'), ('lusus'), ('order'),
-  ('phylum'), ('prole'), ('section'), ('series'), ('species'), ('subclass'),
-  ('subfamily'), ('subform'), ('subgenus'), ('subkingdom'), ('suborder'),
-  ('subphylum'), ('subsection'), ('subseries'), ('subspecies'), ('subtribe'),
-  ('subvariety'), ('superclass'), ('superfamily'), ('superorder'),
-  ('supertribe'), ('tribe'), ('unranked'), ('variety');
-
-INSERT INTO material_status (name) VALUES
-  ('alive'), ('dead'), ('dormant'), ('transferred'), ('other'), ('unknown');
-
-INSERT INTO material_change_reason (code, label) VALUES
-  ('dead', 'Dead'),
-  ('discarded', 'Discarded'),
-  ('discarded_weedy', 'Discarded, weedy'),
-  ('lost', 'Lost, whereabouts unknown'),
-  ('stolen', 'Stolen'),
-  ('winter_kill', 'Winter kill'),
-  ('summer_kill', 'Summer kill'),
-  ('error_correction', 'Error correction'),
-  ('distributed', 'Distributed elsewhere'),
-  ('deleted', 'Deleted, year dead unknown'),
-  ('did_not_germinate', 'Did not germinate'),
-  ('discarded_seedling', 'Discarded seedling'),
-  ('given_away', 'Given away'),
-  ('transferred', 'Transferred elsewhere'),
-  ('other', 'Other');
-
-INSERT INTO accession_received_type (name) VALUES
-  ('air_layer'), ('balled_and_burlapped'), ('bare_root_plant'),
-  ('bud_cutting'), ('budded'), ('bulb'), ('bulbil'), ('clump'), ('corm'),
-  ('division'), ('graft'), ('layer'), ('plant'), ('pseudobulb'), ('rhizome'),
-  ('root'), ('root_cutting'), ('root_sucker'), ('rooted_cutting'), ('scion'),
-  ('seed'), ('seedling'), ('spore'), ('sporeling'), ('tuber'), ('unknown'),
-  ('unrooted_cutting'), ('vegetative_spreading');
+CREATE TABLE import_record (
+  id integer primary key autoincrement,
+  source_table text not null,
+  source_id text not null,
+  resource_type text not null,
+  resource_id integer not null,
+  created_at text not null default (datetime('now'))
+);
+CREATE UNIQUE INDEX import_record_source_table_source_id_idx
+  on import_record (source_table, source_id);
+CREATE INDEX import_record_resource_type_resource_id_idx
+  on import_record (resource_type, resource_id);
+INSERT INTO accession_received_type VALUES('air_layer');
+INSERT INTO accession_received_type VALUES('balled_and_burlapped');
+INSERT INTO accession_received_type VALUES('bare_root_plant');
+INSERT INTO accession_received_type VALUES('bud_cutting');
+INSERT INTO accession_received_type VALUES('budded');
+INSERT INTO accession_received_type VALUES('bulb');
+INSERT INTO accession_received_type VALUES('bulbil');
+INSERT INTO accession_received_type VALUES('clump');
+INSERT INTO accession_received_type VALUES('corm');
+INSERT INTO accession_received_type VALUES('division');
+INSERT INTO accession_received_type VALUES('graft');
+INSERT INTO accession_received_type VALUES('layer');
+INSERT INTO accession_received_type VALUES('plant');
+INSERT INTO accession_received_type VALUES('pseudobulb');
+INSERT INTO accession_received_type VALUES('rhizome');
+INSERT INTO accession_received_type VALUES('root');
+INSERT INTO accession_received_type VALUES('root_cutting');
+INSERT INTO accession_received_type VALUES('root_sucker');
+INSERT INTO accession_received_type VALUES('rooted_cutting');
+INSERT INTO accession_received_type VALUES('scion');
+INSERT INTO accession_received_type VALUES('seed');
+INSERT INTO accession_received_type VALUES('seedling');
+INSERT INTO accession_received_type VALUES('spore');
+INSERT INTO accession_received_type VALUES('sporeling');
+INSERT INTO accession_received_type VALUES('tuber');
+INSERT INTO accession_received_type VALUES('unknown');
+INSERT INTO accession_received_type VALUES('unrooted_cutting');
+INSERT INTO accession_received_type VALUES('vegetative_spreading');
+INSERT INTO material_change_reason VALUES('dead','Dead');
+INSERT INTO material_change_reason VALUES('discarded','Discarded');
+INSERT INTO material_change_reason VALUES('discarded_weedy','Discarded, weedy');
+INSERT INTO material_change_reason VALUES('lost','Lost, whereabouts unknown');
+INSERT INTO material_change_reason VALUES('stolen','Stolen');
+INSERT INTO material_change_reason VALUES('winter_kill','Winter kill');
+INSERT INTO material_change_reason VALUES('summer_kill','Summer kill');
+INSERT INTO material_change_reason VALUES('error_correction','Error correction');
+INSERT INTO material_change_reason VALUES('distributed','Distributed elsewhere');
+INSERT INTO material_change_reason VALUES('deleted','Deleted, year dead unknown');
+INSERT INTO material_change_reason VALUES('did_not_germinate','Did not germinate');
+INSERT INTO material_change_reason VALUES('discarded_seedling','Discarded seedling');
+INSERT INTO material_change_reason VALUES('given_away','Given away');
+INSERT INTO material_change_reason VALUES('transferred','Transferred elsewhere');
+INSERT INTO material_change_reason VALUES('other','Other');
+INSERT INTO material_status VALUES('alive');
+INSERT INTO material_status VALUES('dead');
+INSERT INTO material_status VALUES('dormant');
+INSERT INTO material_status VALUES('transferred');
+INSERT INTO material_status VALUES('other');
+INSERT INTO material_status VALUES('unknown');
+INSERT INTO taxon_rank VALUES('aggregate');
+INSERT INTO taxon_rank VALUES('class');
+INSERT INTO taxon_rank VALUES('convariety');
+INSERT INTO taxon_rank VALUES('cultivar');
+INSERT INTO taxon_rank VALUES('family');
+INSERT INTO taxon_rank VALUES('form');
+INSERT INTO taxon_rank VALUES('genus');
+INSERT INTO taxon_rank VALUES('grex');
+INSERT INTO taxon_rank VALUES('group');
+INSERT INTO taxon_rank VALUES('kingdom');
+INSERT INTO taxon_rank VALUES('lusus');
+INSERT INTO taxon_rank VALUES('order');
+INSERT INTO taxon_rank VALUES('phylum');
+INSERT INTO taxon_rank VALUES('prole');
+INSERT INTO taxon_rank VALUES('section');
+INSERT INTO taxon_rank VALUES('series');
+INSERT INTO taxon_rank VALUES('species');
+INSERT INTO taxon_rank VALUES('subclass');
+INSERT INTO taxon_rank VALUES('subfamily');
+INSERT INTO taxon_rank VALUES('subform');
+INSERT INTO taxon_rank VALUES('subgenus');
+INSERT INTO taxon_rank VALUES('subkingdom');
+INSERT INTO taxon_rank VALUES('suborder');
+INSERT INTO taxon_rank VALUES('subphylum');
+INSERT INTO taxon_rank VALUES('subsection');
+INSERT INTO taxon_rank VALUES('subseries');
+INSERT INTO taxon_rank VALUES('subspecies');
+INSERT INTO taxon_rank VALUES('subtribe');
+INSERT INTO taxon_rank VALUES('subvariety');
+INSERT INTO taxon_rank VALUES('superclass');
+INSERT INTO taxon_rank VALUES('superfamily');
+INSERT INTO taxon_rank VALUES('superorder');
+INSERT INTO taxon_rank VALUES('supertribe');
+INSERT INTO taxon_rank VALUES('tribe');
+INSERT INTO taxon_rank VALUES('unranked');
+INSERT INTO taxon_rank VALUES('variety');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
@@ -392,3 +453,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260906130000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907120000', '2026-09-07 14:31:51');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907140000', '2026-09-08 00:14:02');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260909120000', '2026-09-09 23:52:51');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913120000', '2026-09-13 17:54:36');

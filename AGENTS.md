@@ -397,6 +397,16 @@ Use Chassis for HTML generation:
    [:span "Content"]])
 ```
 
+## Importing
+
+`clojure -M:dev:cli load-import` loads a directory of converted records into a
+garden, through the component interfaces rather than straight SQL, so an
+imported row passes the same validation an interactive write does.
+
+**The input shape is a contract with whatever produced it**, and it is spelled
+out in [`doc/import-format.md`](doc/import-format.md). Change the loader's
+expectations and that file has to change with them.
+
 ## Database
 
 - **SQLite** with JSON columns and FTS5 for full-text search
