@@ -1,0 +1,271 @@
+(ns sepal.app.delete-test
+  (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
+            [next.jdbc.sql :as jdbc.sql]
+            [sepal.accession.interface :as accession.i]
+            [sepal.activity.interface :as activity.i]
+            [sepal.app.delete :as app.delete]
+            [sepal.app.test.fixtures :as tf]
+            [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.collection.interface :as coll.i]
+            [sepal.contact.interface :as contact.i]
+            [sepal.error.interface :as error.i]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
+            [sepal.media.interface :as media.i]
+            [sepal.note.interface :as note.i]
+            [sepal.synonym.interface :as synonym.i]
+            [sepal.tag.interface :as tag.i]
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.user.interface :as user.i]))
+
+(use-fixtures :once default-system-fixture)
+
+(defn- clear-activity!
+  "activity.created_by is a real foreign key, so every event this suite writes
+  has to go before the user fixture can delete its user."
+  [user]
+  (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))
+
+(defn- accession-fixtures
+  "A function, not a def: *db* is bound by the fixture at run time, and a
+  top-level map would capture the nil it holds at load time."
+  []
+  {[::user.i/factory :key/user] {:db *db*}
+   [::location.i/factory :key/location] {:db *db*}
+   [::contact.i/factory :key/contact] {:db *db*}
+   [::taxon.i/factory :key/taxon] {:db *db*}
+   [::accession.i/factory :key/accession] {:db *db*
+                                           :taxon (ig/ref :key/taxon)
+                                           :contact (ig/ref :key/contact)}})
+
+;;; ---------------------------------------------------------------------------
+;;; accession
+
+(deftest test-accession-with-material-is-blocked
+  (tf/testing "blockers :accession"
+    (assoc (accession-fixtures)
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [user accession]}]
+      (try
+        (is (= [{:reason :material :count 1}]
+               (app.delete/blockers :accession *db* accession)))
+        (let [result (app.delete/delete! :accession *db* accession (:user/id user))]
+          (is (error.i/error? result))
+          (is (some? (accession.i/get-by-id *db* (:accession/id accession)))
+              "A blocked delete changes nothing"))
+        (finally
+          (clear-activity! user))))))
+
+(deftest test-accession-deletes-what-it-owns
+  (tf/testing "delete! :accession"
+    (accession-fixtures)
+    (fn [{:keys [user accession]}]
+      (let [id (:accession/id accession)
+            collection (coll.i/create! *db* {:accession-id id
+                                             :collector "A. Collector"})
+            note (note.i/create! *db* {:body "a note"
+                                       :resource-type :accession
+                                       :resource-id id
+                                       :created-by (:user/id user)})
+            tag (tag.i/create! *db* {:name "delete-test accession tag"})
+            media (media.i/create! *db* {:s3-bucket "b" :s3-key "k.jpg"
+                                         :size-in-bytes 1 :media-type "image/jpeg"
+                                         :created-by (:user/id user)})]
+        (try
+          (tag.i/tag! *db* (:tag/id tag) id :accession)
+          (media.i/link! *db* (:media/id media) id :accession)
+          (is (empty? (app.delete/blockers :accession *db* accession)))
+          (is (nil? (app.delete/delete! :accession *db* accession (:user/id user))))
+          (is (nil? (accession.i/get-by-id *db* id)))
+          (is (nil? (coll.i/get-by-id *db* (:collection/id collection)))
+              "the collection goes with it, by foreign key")
+          (is (nil? (note.i/get-by-id *db* (:note/id note)))
+              "and its notes, in code")
+          (is (empty? (tag.i/get-for-resource *db* :accession id))
+              "and its tag links")
+          (is (nil? (media.i/get-link *db* (:media/id media)))
+              "and its media links")
+          (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
+              "but not the tag itself")
+          (is (some? (media.i/get-by-id *db* (:media/id media)))
+              "nor the media itself")
+          (finally
+            (tag.i/delete! *db* (:tag/id tag))
+            (media.i/delete! *db* (:media/id media))
+            (clear-activity! user)))))))
+
+(deftest test-a-deleted-accession-leaves-its-activity
+  (tf/testing "activity survives"
+    (accession-fixtures)
+    (fn [{:keys [user accession]}]
+      (let [id (:accession/id accession)]
+        (try
+          (app.delete/delete! :accession *db* accession (:user/id user))
+          (let [events (activity.i/get-by-resource
+                         *db* :resource-type :accession :resource-id id)]
+            (is (seq events) "the history outlives the record")
+            (is (some #(= :accession/deleted (:activity/type %)) events)
+                "including the deletion itself"))
+          (finally
+            (clear-activity! user)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; material
+
+(deftest test-material-is-never-blocked-and-owns-its-history
+  (tf/testing "delete! :material"
+    (assoc (accession-fixtures)
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [user material]}]
+      (let [id (:material/id material)
+            note (note.i/create! *db* {:body "a material note"
+                                       :resource-type :material
+                                       :resource-id id
+                                       :created-by (:user/id user)})]
+        (try
+          (is (empty? (app.delete/blockers :material *db* material))
+              "nothing references material except material_change, which cascades")
+          (is (nil? (app.delete/delete! :material *db* material (:user/id user))))
+          (is (nil? (material.i/get-by-id *db* id)))
+          (is (nil? (note.i/get-by-id *db* (:note/id note))))
+          (finally
+            (clear-activity! user)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; taxon
+
+(deftest test-a-wfo-taxon-cannot-be-deleted
+  (tf/testing "blockers :taxon"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [wfo (taxon.i/create! *db* {:name "Wfo test name"
+                                       :rank :species
+                                       :taxon/wfo-taxon-id "wfo-0000000001-2025-06"})
+            local (taxon.i/create! *db* {:name "Local test name" :rank :species})]
+        (try
+          (is (= [{:reason :wfo :count 1}]
+                 (app.delete/blockers :taxon *db* wfo)))
+          (is (empty? (app.delete/blockers :taxon *db* local)))
+          (is (nil? (app.delete/delete! :taxon *db* local (:user/id user))))
+          (is (nil? (taxon.i/get-by-id *db* (:taxon/id local))))
+          (finally
+            (taxon.i/delete! *db* (:taxon/id wfo))
+            (clear-activity! user)))))))
+
+(deftest test-a-taxon-with-accessions-or-children-is-blocked
+  (tf/testing "blockers :taxon, by reference"
+    (accession-fixtures)
+    (fn [{:keys [taxon]}]
+      (is (= [{:reason :accession :count 1}]
+             (app.delete/blockers :taxon *db* taxon))
+          "an accession names it"))))
+
+(deftest test-deleting-a-taxon-takes-its-synonyms
+  (tf/testing "delete! :taxon"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [id (:taxon/id taxon)]
+        (try
+          (synonym.i/add-synonym! *db* {:taxon-id id
+                                        :synonym-name "Encyclia cochleata"})
+          ;; A generated taxon may carry a wfo-taxon-id, which would block the
+          ;; delete for a reason this test is not about.
+          (taxon.i/update! *db* id {:wfo-taxon-id nil})
+          (let [taxon (taxon.i/get-by-id *db* id)]
+            (is (empty? (app.delete/blockers :taxon *db* taxon)))
+            (is (nil? (app.delete/delete! :taxon *db* taxon (:user/id user))))
+            (is (nil? (taxon.i/get-by-id *db* id)))
+            (is (empty? (synonym.i/list-for-taxon {:synonym-reference nil} *db* id))
+                "a synonym is the taxon's other name and has no meaning without it"))
+          (finally
+            (clear-activity! user)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; location
+
+(deftest test-a-location-with-move-history-is-blocked
+  (tf/testing "blockers :location"
+    (assoc (accession-fixtures)
+           [::location.i/factory :key/destination] {:db *db*}
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [location destination material]}]
+      (material.i/update! *db* (:material/id material)
+                          {:location-id (:location/id destination)})
+      (is (= [{:reason :material-change :count 1}]
+             (app.delete/blockers :location *db* location))
+          "empty of plants, and still held by the history of what left it")
+      ;; The material's change rows cascade with it, which frees both locations
+      ;; for the fixture teardown.
+      (material.i/delete! *db* (:material/id material)))))
+
+(deftest test-a-clean-location-deletes
+  (tf/testing "delete! :location"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (try
+        (is (empty? (app.delete/blockers :location *db* location)))
+        (is (nil? (app.delete/delete! :location *db* location (:user/id user))))
+        (is (nil? (location.i/get-by-id *db* (:location/id location))))
+        (finally
+          (clear-activity! user))))))
+
+;;; ---------------------------------------------------------------------------
+;;; contact
+
+(deftest test-a-contact-with-accessions-is-blocked
+  (tf/testing "blockers :contact"
+    (accession-fixtures)
+    (fn [{:keys [contact]}]
+      (is (= [{:reason :accession :count 1}]
+             (app.delete/blockers :contact *db* contact))
+          "an accession names it as supplier"))))
+
+(deftest test-a-clean-contact-deletes
+  (tf/testing "delete! :contact"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::contact.i/factory :key/contact] {:db *db*}}
+    (fn [{:keys [user contact]}]
+      (try
+        (is (empty? (app.delete/blockers :contact *db* contact)))
+        (is (nil? (app.delete/delete! :contact *db* contact (:user/id user))))
+        (is (nil? (contact.i/get-by-id *db* (:contact/id contact))))
+        (finally
+          (clear-activity! user))))))
+
+;;; ---------------------------------------------------------------------------
+;;; collection
+
+(deftest test-a-collection-deletes-on-its-own
+  (tf/testing "delete! :collection"
+    (accession-fixtures)
+    (fn [{:keys [user accession]}]
+      (let [collection (coll.i/create! *db* {:accession-id (:accession/id accession)
+                                             :collector "A. Collector"})]
+        (try
+          (is (empty? (app.delete/blockers :collection *db* collection)))
+          (is (nil? (app.delete/delete! :collection *db* collection (:user/id user))))
+          (is (nil? (coll.i/get-by-id *db* (:collection/id collection)))
+              "\"this accession is not wild-collected after all\" has an answer")
+          (is (some? (accession.i/get-by-id *db* (:accession/id accession)))
+              "and the accession it belonged to is untouched")
+          (finally
+            (clear-activity! user)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; labels
+
+(deftest test-blocker-labels-read-as-sentences
+  (is (= "12 material record(s) reference this"
+         (app.delete/blocker-label {:reason :material :count 12})))
+  (is (= "This name comes from the World Flora Online list"
+         (app.delete/blocker-label {:reason :wfo :count 1}))
+      "a reason with nothing to count renders without a number"))
