@@ -92,14 +92,6 @@ CREATE TABLE media (
   created_by integer not null references "user"(id),
   updated_at text not null default (datetime('now'))
 ) strict;
-CREATE TABLE media_link (
-  id integer primary key autoincrement,
-  media_id integer not null unique,
-  resource_id integer not null,
-  resource_type text not null,
-  created_at text not null default (datetime('now')),
-  updated_at text not null default (datetime('now'))
-) strict;
 CREATE TABLE activity (
   id integer primary key autoincrement,
   data text not null check(json_valid(data)),
@@ -134,8 +126,6 @@ CREATE INDEX user_role_idx on "user" (role);
 CREATE INDEX location_id_idx on location (id);
 CREATE INDEX accession_id_idx on accession (id);
 CREATE INDEX media_id_idx on media (id);
-CREATE INDEX media_link_media_id_idx on media_link (media_id);
-CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
 CREATE INDEX activity_id_idx on activity (id);
 CREATE INDEX activity_created_at_idx on activity (created_at desc);
 CREATE TRIGGER trigger_user_updated_at after update on "user"
@@ -157,10 +147,6 @@ end;
 CREATE TRIGGER trigger_media_updated_at after update on media
 begin
   update media set updated_at = datetime('now') where id = NEW.id;
-end;
-CREATE TRIGGER trigger_media_link_updated_at after update on media_link
-begin
-  update media_link set updated_at = datetime('now') where id = NEW.id;
 end;
 CREATE TRIGGER trigger_collection_updated_at after update on collection
 begin
@@ -356,6 +342,20 @@ CREATE UNIQUE INDEX import_record_source_table_source_id_idx
   on import_record (source_table, source_id);
 CREATE INDEX import_record_resource_type_resource_id_idx
   on import_record (resource_type, resource_id);
+CREATE TABLE "media_link" (
+  id integer primary key autoincrement,
+  media_id integer not null unique references media(id) on delete cascade,
+  resource_id integer not null,
+  resource_type text not null,
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
+CREATE INDEX media_link_media_id_idx on media_link (media_id);
+CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
+CREATE TRIGGER trigger_media_link_updated_at after update on media_link
+begin
+  update media_link set updated_at = datetime('now') where id = NEW.id;
+end;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -454,3 +454,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907140000', '2026-09-08 00:14:02');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260909120000', '2026-09-09 23:52:51');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913120000', '2026-09-13 17:54:36');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913130000', '2026-09-13 18:38:31');
