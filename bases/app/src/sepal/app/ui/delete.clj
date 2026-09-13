@@ -10,8 +10,9 @@
 (defn button
   "The topbar button, and the container its dialog swaps into.
 
-  Returns a list rather than a fragment element: Chassis has no [:<> ...] and
-  would render a literal <<>> tag."
+  Returns a list rather than a fragment element. Chassis has no fragment, and
+  reaching for one renders a literal tag into the page; a seq splices into its
+  parent, which is what the fragment was wanted for."
   [& {:keys [delete-url]}]
   (list
     [:button {:type "button"

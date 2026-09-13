@@ -161,8 +161,12 @@
   (tf/testing "blockers :taxon, by reference"
     (accession-fixtures)
     (fn [{:keys [taxon]}]
+      ;; The factory generates wfo-taxon-id or not at random, and a WFO hit is
+      ;; a second blocker. Clear it so this test sees only the reference it is
+      ;; about.
+      (taxon.i/update! *db* (:taxon/id taxon) {:wfo-taxon-id nil})
       (is (= [{:reason :accession :count 1}]
-             (app.delete/blockers :taxon *db* taxon))
+             (app.delete/blockers :taxon *db* (taxon.i/get-by-id *db* (:taxon/id taxon))))
           "an accession names it"))))
 
 (deftest test-deleting-a-taxon-takes-its-synonyms
@@ -262,6 +266,28 @@
 
 ;;; ---------------------------------------------------------------------------
 ;;; labels
+
+(deftest test-every-note-bearing-resource-cascades-its-links
+  ;; Replaces the guard in no-resource-delete-test, which asserted that no
+  ;; route deleted an accession, material or taxon at all -- true until this
+  ;; plan, and named 049 as the day it would stop being true.
+  ;;
+  ;; The invariant it protected still holds and still needs guarding: a note,
+  ;; a tag link and a media link all hang off a polymorphic resource_id with no
+  ;; foreign key behind it, so a delete path that forgets one strands rows that
+  ;; leak into the next record to reuse the id. The behavioural tests above
+  ;; prove it for the paths they exercise; this proves no method was added
+  ;; without it.
+  (let [source (slurp "bases/app/src/sepal/app/delete.clj")]
+    (doseq [resource ["accession" "material" "taxon"]
+            [cascade f] [["note" "note.i/delete-for-resource!"]
+                         ["tag" "tag.i/delete-for-resource!"]
+                         ["media" "media.i/unlink-resource!"]]]
+      (is (re-find (re-pattern (str (java.util.regex.Pattern/quote f)
+                                    " tx :" resource))
+                   source)
+          (format "delete!* :%s must call %s, or its %s links outlive it"
+                  resource f cascade)))))
 
 (deftest test-blocker-labels-read-as-sentences
   (is (= "12 material record(s) reference this"

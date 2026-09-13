@@ -3,6 +3,7 @@
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -144,7 +145,10 @@
   (ui.form/footer-buttons :form-event "collection-form" :on-cancel :reload))
 
 (defn render [& {:keys [errors accession taxon values panel-data timezone]}]
-  (page/page :content (pages.detail/page-content-with-panel
+  (page/page :page-title-buttons (ui.delete/button
+                                   :delete-url (z/url-for accession.routes/delete
+                                                          {:id (:accession/id accession)}))
+             :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
                                                :errors errors
                                                :accession accession

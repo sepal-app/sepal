@@ -11,6 +11,7 @@
 (def detail-tags ::detail-tags)
 (def detail-tag ::detail-tag)
 (def export ::export)
+(def delete ::delete)
 
 (def panel ::panel)
 
