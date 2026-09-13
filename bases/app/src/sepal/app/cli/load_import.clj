@@ -1,9 +1,19 @@
 (ns sepal.app.cli.load-import
-  "Load a converted Bauble backup into this garden.
+  "Load a directory of converted records into this garden.
 
-  The converter writes one JSON file per Sepal table and stops there. This
-  reads them and writes every record through its component interface, so an
-  imported row passes the same validation an interactive write does.
+  The input is one JSON file per table, each a list of records in the import
+  envelope:
+
+      {\"id\": \"271\",
+       \"created_at\": \"2006-10-11 09:33:25\",
+       \"refs\": {\"accession\": {\"table\": \"accession\", \"id\": \"272\"}},
+       \"data\": {\"code\": \"1\", \"quantity\": 1}}
+
+  `data` goes to the component's `create!` untouched, so every imported row
+  passes the same validation an interactive write does, and nothing here knows
+  a field name of whatever system produced the file. A reference resolves to
+  the field named after it -- `accession` to `accession-id` -- which is the
+  only rule any of the passes below needs.
 
   The whole load is one transaction. Failures are collected rather than thrown
   -- the operator needs the list, not the first one -- and the transaction
@@ -13,19 +23,29 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [malli.core :as m]
             [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.collection.interface :as collection.i]
+            [sepal.collection.interface.spec :as collection.spec]
             [sepal.contact.interface :as contact.i]
+            [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
+            [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface :as material.i]
+            [sepal.material.interface.spec :as material.spec]
             [sepal.note.interface :as note.i]
+            [sepal.note.interface.spec :as note.spec]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.synonym.interface :as synonym.i]
+            [sepal.synonym.interface.spec :as synonym.spec]
             [sepal.tag.interface :as tag.i]
+            [sepal.tag.interface.spec :as tag.spec]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface :as user.i]))
 
 ;;; ---------------------------------------------------------------------------
@@ -33,22 +53,25 @@
 ;;; ---------------------------------------------------------------------------
 
 (def tables
-  "Every file the converter can write. The load order is `passes`."
-  ["taxon_create" "location" "contact" "tag" "settings" "accession" "material"
+  "Every file that can be loaded, in the order they are loaded.
+
+  The order is the reference graph: a file may only point at one before it. It
+  is the one thing here that the input does not say."
+  ["taxon" "location" "contact" "tag" "settings" "accession" "material"
    "collection" "material_change" "note" "tag_link" "taxon_vernacular"
    "taxon_synonym" "taxon_distribution"])
 
 (defn- kebab-key
-  "`accession_bauble_id` -> `:accession-bauble-id`. The converter writes
-  snake_case; Sepal's specs are kebab-case keywords."
+  "`quantity_received` -> `:quantity-received`. The files are snake_case;
+  Sepal's specs are kebab-case keywords."
   [k]
   (keyword (str/replace k "_" "-")))
 
 (defn read-table
-  "Rows of one converter file, or `[]` when it is absent.
+  "Records from one file, or `[]` when it is absent.
 
-  A file with no rows is omitted by the converter, and that is an empty table
-  rather than an error. Malformed JSON is not: it throws."
+  A file with no records is omitted by the converter, and that is an empty
+  table rather than an error. Malformed JSON is not: it throws."
   [dir table]
   (let [path (fs/path dir (str table ".json"))]
     (if-not (fs/exists? path)
@@ -63,27 +86,23 @@
 ;;; State
 ;;; ---------------------------------------------------------------------------
 ;;;
-;;; :ids      {table {bauble-id sepal-id}} -- every key an opaque string. Three
-;;;           files use non-numeric ids (note, taxon_synonym, settings) and two
-;;;           carry none at all, so nothing here parses a key.
+;;; :ids      {table {source-id sepal-id}} -- every key an opaque string. Some
+;;;           files use non-numeric ids and two carry none at all, so nothing
+;;;           here parses a key.
 ;;; :failures records refused by a spec or by an unresolvable reference.
-;;; :skipped  records the converter already knew it could not place.
 ;;; :counts   what landed, per table.
 ;;; :warnings emitted once each, not per row.
 
 (defn initial-state []
-  {:ids {} :failures [] :skipped {} :duplicates {} :counts {} :warnings #{}})
+  {:ids {} :failures [] :duplicates {} :counts {} :warnings #{}})
 
-(defn- record-id [state table bauble-id sepal-id]
-  (assoc-in state [:ids table (str bauble-id)] sepal-id))
+(defn- record-id [state table source-id sepal-id]
+  (assoc-in state [:ids table (str source-id)] sepal-id))
 
-(defn- fail [state table bauble-id message]
+(defn- fail [state table source-id message]
   (update state :failures conj {:table table
-                                :bauble-id bauble-id
+                                :source-id source-id
                                 :message message}))
-
-(defn- skip [state table]
-  (update-in state [:skipped table] (fnil inc 0)))
 
 (defn- counted [state table]
   (update-in state [:counts table] (fnil inc 0)))
@@ -92,315 +111,190 @@
   (update state :warnings conj message))
 
 ;;; ---------------------------------------------------------------------------
-;;; Reference resolution
+;;; References
 ;;; ---------------------------------------------------------------------------
 
-(defn resolve-taxon-ref
-  "A `{:kind :value}` reference to a Sepal taxon id.
+(defn resolve-ref
+  "One reference to a Sepal id.
 
-  Returns `{:id n}`, `{:error msg}`, or `{:warn msg :id n}`. The converter
-  writes a reference rather than a number because `taxon.id` is autoincrement
-  and means nothing in a rebuilt database."
-  [db ids {:keys [kind value]}]
-  (case kind
-    ;; The loud case. A garden built from a different WFO release than the
-    ;; review file was made against resolves to nothing, or to two taxa --
+  Returns `{:id n}`, `{:error msg}`, or `{:warn msg :id n}`. Three shapes, none
+  of which names a source system:
+
+      {:table \"accession\" :id \"975\"}  a record this import created
+      {:wfo \"wfo-0000283538-2025-12\"}   a taxon this garden already holds
+      {:sepal-id 1234}                    a row in this garden, by id"
+  [db ids {:keys [table id wfo sepal-id] :as ref}]
+  (cond
+    ;; The loud case. A garden built from a different WFO release than the one
+    ;; the input was made against resolves to nothing, or to two taxa --
     ;; wfo_taxon_id is indexed but not unique. A wrong taxon is the one error
     ;; nobody would notice.
-    "wfo"
-    (let [matches (taxon.i/list-by-wfo-taxon-id db value)]
+    wfo
+    (let [matches (taxon.i/list-by-wfo-taxon-id db wfo)]
       (case (count matches)
         1 {:id (:taxon/id (first matches))}
-        0 {:error (str "no taxon carries wfo_taxon_id " value
-                       " -- this garden's taxonomy is not the one the review"
-                       " file was made against")}
-        {:error (str (count matches) " taxa carry wfo_taxon_id " value
+        0 {:error (str "no taxon carries wfo_taxon_id " wfo
+                       " -- this garden's taxonomy is not the one this input"
+                       " was made against")}
+        {:error (str (count matches) " taxa carry wfo_taxon_id " wfo
                      " -- cannot tell which one is meant")}))
 
-    "created"
-    (if-let [id (get-in ids ["taxon_create" (str value)])]
-      {:id id}
-      {:error (str "no taxon was created for Bauble species " value)})
+    ;; A garden's own record legitimately has no portable id, so this is
+    ;; accepted -- but it is only valid against the database the input was made
+    ;; against.
+    sepal-id
+    {:id sepal-id
+     :warn (str "a sepal_id reference was used; it is only valid against the"
+                " database this input was made against")}
 
-    ;; A garden's own taxon legitimately has no WFO id, so this is accepted --
-    ;; but it is only valid against the database `analyze` ran on.
-    "local"
-    {:id value
-     :warn (str "a local taxon reference was used; it is only valid against"
-                " the database the review file was made against")}
+    table
+    (if-let [loaded (get-in ids [table (str id)])]
+      {:id loaded}
+      {:error (str table " " id " was not loaded")})
 
-    {:error (str "unknown taxon reference kind " (pr-str kind))}))
+    :else
+    {:error (str "unrecognised reference " (pr-str ref))}))
 
-(def ^:private parent-key
-  {"accession" [:accession-bauble-id "accession"]
-   "material" [:material-bauble-id "material"]})
+(defn resolve-refs
+  "Every reference on a record, as the fields they resolve to.
 
-(defn resolve-parent
-  "The Sepal id a polymorphic row hangs on.
-
-  `note` and `tag_link` carry `resource_type` plus one of three keys, so the
-  key to read is chosen by the row rather than fixed per file."
-  [db ids {:keys [resource-type] :as record}]
-  (if (= "taxon" resource-type)
-    (if-let [ref (:taxon-ref record)]
-      (resolve-taxon-ref db ids ref)
-      {:error "resource_type is taxon but the row carries no taxon_ref"})
-    (if-let [[k table] (parent-key resource-type)]
-      (if-let [bauble-id (get record k)]
-        (if-let [id (get-in ids [table (str bauble-id)])]
-          {:id id}
-          {:error (str table " " bauble-id " was not loaded")})
-        {:error (str "resource_type is " resource-type
-                     " but the row carries no " (name k))})
-      {:error (str "unknown resource_type " (pr-str resource-type))})))
-
-(defn- resolve-bauble-ref
-  "A `*_bauble_id` on a record to the Sepal id it became."
-  [ids table bauble-id]
-  (when (some? bauble-id)
-    (get-in ids [table (str bauble-id)])))
+  Returns `{:fields {...} :warns [...]}`, or `{:error msg}` for the first
+  reference that does not resolve. A ref named `K` becomes the field `K-id`:
+  `taxon` becomes `:taxon-id`, `from-location` becomes `:from-location-id`."
+  [db ids refs]
+  (reduce (fn [acc [ref-name ref]]
+            (let [{:keys [id error warn]} (resolve-ref db ids ref)]
+              (if error
+                (reduced {:error error})
+                (cond-> (assoc-in acc
+                                  [:fields (keyword (str (name ref-name)
+                                                         "-id"))]
+                                  id)
+                  warn (update :warns conj warn)))))
+          {:fields {} :warns []}
+          refs))
 
 ;;; ---------------------------------------------------------------------------
-;;; Passes
+;;; Writing
 ;;; ---------------------------------------------------------------------------
-;;;
-;;; Order is fixed by the references. Everything inside a pass is independent
-;;; of everything else in it.
 
-(def ^:private converter-keys
-  "Keys the converter adds that no Sepal spec accepts. The create specs are
-  {:closed true}, so a stray one is a validation failure rather than a
-  silently ignored field."
-  #{:bauble-id :_losses :resource-type :taxon-ref})
+(defn- landed-id
+  "The id a component's create returned, whatever it chose to call it.
 
-(defn- payload
-  "A record with the converter's own keys and any resolved references removed."
-  [record & extra]
-  (apply dissoc record (concat converter-keys extra)))
+  A create whose id is not in this list records no provenance, so a new one
+  has to be added here. `material-change` was missing and its 173 rows went
+  unrecorded, which is the half of the import a history load resolves against."
+  [result]
+  (when (map? result)
+    (some result [:id :taxon/id :accession/id :material/id :location/id
+                  :contact/id :collection/id :note/id :tag/id :synonym/id
+                  :material-change/id :tag-link/id])))
 
 (defn- write!
-  "Call `f` on the payload, record the outcome, and keep going.
+  "Call `f`, record the outcome, and keep going.
 
-  `create!` returns the entity or an error map, and throws on a spec it cannot
-  coerce. Both become a collected failure -- the operator needs the whole list,
-  and the transaction rolls back regardless."
+  `create!` returns the entity or an error map, and throws on a payload it
+  cannot coerce. Both become a collected failure -- the operator needs the
+  whole list, and the transaction rolls back regardless."
   [state table record f]
   (try
     (let [result (f)]
-      (if (error.i/error? result)
-        (fail state table (:bauble-id record) (str (error.i/message result)))
-        ;; Most interfaces return the entity. `tag.i/tag!` returns a boolean:
-        ;; false means the link already existed, which happens when two Bauble
-        ;; species resolve to one Sepal taxon and their tags collapse. That is
-        ;; a duplicate, not a load, and counting it as one made the report
-        ;; claim a row the unique index had refused.
-        (if (false? result)
-          (update-in state [:duplicates table] (fnil inc 0))
-          (let [id (when (map? result)
-                     (some result [:id :taxon/id :accession/id :material/id
-                                   :location/id :contact/id :collection/id
-                                   :note/id :tag/id :synonym/id]))]
-            (cond-> (counted state table)
-              id (record-id table (:bauble-id record) id))))))
+      (cond
+        (error.i/error? result)
+        (fail state table (:id record) (str (error.i/message result)))
+
+        ;; `tag.i/tag!` returns a boolean: false means the link already
+        ;; existed, which happens when two source records resolve to one Sepal
+        ;; record and their tags collapse. That is a duplicate, not a load, and
+        ;; counting it as one made the report claim a row the unique index had
+        ;; refused.
+        (false? result)
+        (update-in state [:duplicates table] (fnil inc 0))
+
+        :else
+        (let [id (landed-id result)]
+          (cond-> (counted state table)
+            id (record-id table (:id record) id)))))
     (catch Exception ex
-      (fail state table (:bauble-id record) (ex-message ex)))))
+      (fail state table (:id record) (ex-message ex)))))
 
-(defn- resolved
-  "Thread a reference resolution into the state, or record why it failed.
+(defn- unknown-keys
+  "Payload keys the spec has no entry for.
 
-  `f` receives the resolved id and returns the new state."
-  [state table record resolution f]
-  (cond
-    (:error resolution) (fail state table (:bauble-id record)
-                              (:error resolution))
-    (:warn resolution) (f (warn-once state (:warn resolution))
-                          (:id resolution))
-    :else (f state (:id resolution))))
+  `store.i/create!` coerces with `strip-extra-keys-transformer`, so an unknown
+  key is removed before `{:closed true}` can refuse it. That is right for a
+  form, where a browser submits fields no spec models, and wrong for a file: a
+  field this garden has no column for would be dropped without a word. The
+  import is the one caller whose input is not a form, so it is the one that
+  should be strict."
+  [spec payload]
+  (when spec
+    (seq (sort (remove (set (map first (m/children spec)))
+                       (keys payload))))))
 
-(defn- pass-taxon-create
-  "34 new taxa. A cultivar's parent may be created in the same file, so this
-  resolves within itself: parents first, then the rest."
-  [db state records]
-  (let [by-id (into {} (map (juxt (comp str :bauble-id) identity)) records)
-        parents (set (keep (comp str :parent-id) records))
-        ordered (concat (filter #(parents (str (:bauble-id %))) records)
-                        (remove #(parents (str (:bauble-id %))) records))]
-    (reduce
-      (fn [st record]
-        (let [parent-bauble (:parent-id record)
-              parent-id (when parent-bauble
-                          (get-in st [:ids "taxon_create" (str parent-bauble)]))]
-          (if (and parent-bauble (nil? parent-id) (by-id (str parent-bauble)))
-            (fail st "taxon_create" (:bauble-id record)
-                  (str "parent " parent-bauble " was not created first"))
-            (write! st "taxon_create" record
-                    #(taxon.i/create! db (cond-> (payload record :parent-id :note)
-                                           parent-id (assoc :parent-id parent-id)))))))
-      state ordered)))
+(defn- pass
+  "Resolve each record's references, merge them into `data`, and write.
 
-(defn- pass-simple
-  "A table with no references: location, contact, tag."
-  [db state table records f]
-  (reduce (fn [st record] (write! st table record #(f db (payload record))))
-          state records))
+  Every table that creates a row of its own goes through here. `f` takes the
+  database and one payload, which is `data` plus a field per reference and
+  nothing else. `spec` is what that payload must not exceed."
+  [db state table records f spec]
+  (reduce
+    (fn [st {:keys [refs data] :as record}]
+      (let [{:keys [fields warns error]} (resolve-refs db (:ids st) refs)
+            payload (merge data fields)]
+        (cond
+          error (fail st table (:id record) error)
+
+          (unknown-keys spec payload)
+          (fail st table (:id record)
+                (str "no column for " (str/join ", " (map name (unknown-keys
+                                                                 spec payload)))
+                     " -- this garden cannot hold every field in the input"))
+
+          :else
+          (write! (reduce warn-once st warns) table record
+                  #(f db payload)))))
+    state records))
+
+;;; ---------------------------------------------------------------------------
+;;; The three tables that are not a plain create
+;;; ---------------------------------------------------------------------------
 
 (defn- pass-settings
-  "Four keys, written as one map rather than a row at a time."
+  "Written as one map rather than a row at a time."
   [db state records]
   (if (empty? records)
     state
-    (do (settings.i/set-values! db (into {} (map (juxt :key :value)) records))
+    (do (settings.i/set-values!
+          db (into {} (map (juxt (comp :key :data) (comp :value :data)))
+                   records))
         (update-in state [:counts "settings"] (fnil + 0) (count records)))))
 
-(defn- pass-accession [db state records]
-  (reduce
-    (fn [st record]
-      (resolved st "accession" record
-                (resolve-taxon-ref db (:ids st) (:taxon-ref record))
-                (fn [st taxon-id]
-                  (write! st "accession" record
-                          #(accession.i/create!
-                             db (-> (payload record :supplier-contact-bauble-id
-                                             :intended-location-bauble-id
-                                             :created-at :updated-at)
-                                    (assoc :taxon-id taxon-id)
-                                    (cond->
-                                      (:supplier-contact-bauble-id record)
-                                      (assoc :supplier-contact-id
-                                             (resolve-bauble-ref (:ids st) "contact"
-                                                                 (:supplier-contact-bauble-id record)))
-                                      (:intended-location-bauble-id record)
-                                      (assoc :intended-location-id
-                                             (resolve-bauble-ref (:ids st) "location"
-                                                                 (:intended-location-bauble-id record))))))))))
-    state records))
-
-(defn- pass-material [db state records]
-  (reduce
-    (fn [st record]
-      (let [accession-id (resolve-bauble-ref (:ids st) "accession"
-                                             (:accession-bauble-id record))
-            location-id (resolve-bauble-ref (:ids st) "location"
-                                            (:location-bauble-id record))]
-        (if (nil? accession-id)
-          (fail st "material" (:bauble-id record)
-                (str "accession " (:accession-bauble-id record)
-                     " was not loaded"))
-          (write! st "material" record
-                  #(material.i/create!
-                     db (-> (payload record :accession-bauble-id
-                                     :location-bauble-id :created-at :updated-at)
-                            (assoc :accession-id accession-id)
-                            (cond-> location-id (assoc :location-id location-id))))))))
-    state records))
-
-(defn- pass-collection [db state records]
-  (reduce
-    (fn [st record]
-      (let [accession-id (resolve-bauble-ref (:ids st) "accession"
-                                             (:accession-bauble-id record))]
-        (if (nil? accession-id)
-          (fail st "collection" (:bauble-id record)
-                (str "accession " (:accession-bauble-id record)
-                     " was not loaded"))
-          (write! st "collection" record
-                  #(collection.i/create!
-                     db (-> (payload record :accession-bauble-id
-                                     :created-at :updated-at)
-                            (assoc :accession-id accession-id)))))))
-    state records))
-
-(defn- pass-material-change
-  "created_by loads null: it is nullable, and the history import backfills it
-  from Bauble's log, which is the only record of who logged each change."
-  [db state records]
-  (reduce
-    (fn [st record]
-      (let [material-id (resolve-bauble-ref (:ids st) "material"
-                                            (:material-bauble-id record))]
-        (if (nil? material-id)
-          (fail st "material_change" (:bauble-id record)
-                (str "material " (:material-bauble-id record)
-                     " was not loaded"))
-          (write! st "material_change" record
-                  #(material.i/create-change!
-                     db (-> (payload record :material-bauble-id
-                                     :from-location-bauble-id
-                                     :to-location-bauble-id)
-                            (assoc :material-id material-id)
-                            (cond->
-                              (:from-location-bauble-id record)
-                              (assoc :from-location-id
-                                     (resolve-bauble-ref (:ids st) "location"
-                                                         (:from-location-bauble-id record)))
-                              (:to-location-bauble-id record)
-                              (assoc :to-location-id
-                                     (resolve-bauble-ref (:ids st) "location"
-                                                         (:to-location-bauble-id record))))))))))
-    state records))
-
-(defn- pass-note [db state records]
-  (reduce
-    (fn [st record]
-      (resolved st "note" record (resolve-parent db (:ids st) record)
-                (fn [st parent-id]
-                  (write! st "note" record
-                          #(note.i/create!
-                             db (-> (payload record :accession-bauble-id
-                                             :material-bauble-id
-                                             :created-at :updated-at)
-                                    (assoc :resource-type (keyword (:resource-type record))
-                                           :resource-id parent-id)))))))
-    state records))
-
 (defn- pass-tag-link
-  "tag.i/tag! takes positional arguments and returns the link, so this does not
-  go through `payload`."
+  "`tag.i/tag!` takes positional arguments rather than a payload."
   [db state records]
-  (reduce
-    (fn [st record]
-      (let [tag-id (resolve-bauble-ref (:ids st) "tag" (:tag-bauble-id record))]
-        (if (nil? tag-id)
-          (fail st "tag_link" (:bauble-id record)
-                (str "tag " (:tag-bauble-id record) " was not loaded"))
-          (resolved st "tag_link" record (resolve-parent db (:ids st) record)
-                    (fn [st parent-id]
-                      (write! st "tag_link" record
-                              #(tag.i/tag! db tag-id parent-id
-                                           (keyword (:resource-type record)))))))))
-    state records))
+  (pass db state "tag_link" records
+        (fn [db {:keys [tag-id resource-id resource-type]}]
+          (tag.i/tag! db tag-id resource-id (keyword resource-type)))
+        tag.spec/CreateTagLink))
 
 (defn- pass-taxon-update
   "taxon_vernacular and taxon_distribution are updates onto taxa that already
-  exist, including WFO taxa this import did not create."
+  exist, including taxa this import did not create. They carry no id of their
+  own, so nothing is recorded for them."
   [db state table records field]
   (reduce
-    (fn [st record]
-      (resolved st table record
-                (resolve-taxon-ref db (:ids st) (:taxon-ref record))
-                (fn [st taxon-id]
-                  (try
-                    (taxon.i/update! db taxon-id {field (get record field)})
-                    (counted st table)
-                    (catch Exception ex
-                      (fail st table taxon-id (ex-message ex)))))))
-    state records))
-
-(defn- pass-taxon-synonym [db state records]
-  (reduce
-    (fn [st record]
-      ;; Three of BBG's 143 rows carry _losses and no taxon_ref: the converter
-      ;; already knew it could not resolve them. A missing reference is a skip;
-      ;; one that is present and unresolvable is a failure.
-      (if-not (:taxon-ref record)
-        (skip st "taxon_synonym")
-        (resolved st "taxon_synonym" record
-                  (resolve-taxon-ref db (:ids st) (:taxon-ref record))
-                  (fn [st taxon-id]
-                    (write! st "taxon_synonym" record
-                            #(synonym.i/add-synonym!
-                               db (-> (payload record)
-                                      (assoc :taxon-id taxon-id))))))))
+    (fn [st {:keys [refs data] :as record}]
+      (let [{:keys [fields warns error]} (resolve-refs db (:ids st) refs)]
+        (if error
+          (fail st table (:id record) error)
+          (let [st (reduce warn-once st warns)]
+            (try
+              (taxon.i/update! db (:taxon-id fields) {field (get data field)})
+              (counted st table)
+              (catch Exception ex
+                (fail st table (:taxon-id fields) (ex-message ex))))))))
     state records))
 
 ;;; ---------------------------------------------------------------------------
@@ -408,10 +302,8 @@
 ;;; ---------------------------------------------------------------------------
 
 (def ^:private timestamped
-  "Tables whose rows carry Bauble's `_created`, and the column to restore it
-  to. The rest either have no timestamp in the source or are not rows of their
-  own."
-  {"taxon_create" :taxon
+  "Tables whose records carry `created_at`, and the table to restore it to."
+  {"taxon" :taxon
    "location" :location
    "contact" :contact
    "tag" :tag
@@ -421,7 +313,7 @@
    "note" :note})
 
 (defn- restore-created-at!
-  "Put Bauble's `_created` back on the rows this run wrote.
+  "Put the source's `created_at` back on the rows this run wrote.
 
   The one place this writes SQL rather than going through an interface: the
   create specs are {:closed true} and none accepts a timestamp, and widening
@@ -433,12 +325,66 @@
   (doseq [[table sql-table] timestamped
           record (get records-by-table table)
           :let [created-at (:created-at record)
-                sepal-id (get-in state [:ids table (str (:bauble-id record))])]
+                sepal-id (get-in state [:ids table (str (:id record))])]
           :when (and created-at sepal-id)]
     (db.i/execute-one! db {:update sql-table
                            :set {:created_at created-at}
                            :where [:= :id sepal-id]}))
   state)
+
+;;; ---------------------------------------------------------------------------
+;;; Where each record came from
+;;; ---------------------------------------------------------------------------
+
+(def ^:private imported-resource
+  "The Sepal resource a file's records become, for `import_record`.
+
+  Only the files that create a row of their own appear. `settings` has no id of
+  its own and the two taxon_* update files carry none.
+
+  `tag_link` is absent for a different reason: `tag.i/tag!` returns a boolean
+  rather than the link, so there is no id to record. A tag link is reachable
+  from the records it joins, so nothing needs to resolve one by source id."
+  {"taxon" "taxon"
+   "location" "location"
+   "contact" "contact"
+   "tag" "tag"
+   "accession" "accession"
+   "material" "material"
+   "collection" "collection"
+   "material_change" "material_change"
+   "note" "note"
+   "taxon_synonym" "synonym"})
+
+(defn- record-provenance!
+  "One `import_record` row per loaded record.
+
+  This is what a later import resolves against -- which Sepal row a source row
+  became. `loaded.json` carries the same mapping, but a file beside the input
+  is not somewhere a second import can rely on finding it.
+
+  The unique index on (source_table, source_id) is what makes loading the same
+  input twice a refusal rather than a silent duplicate. That is a failure like
+  any other: collected and reported, not thrown out of the run."
+  [db state]
+  (let [rows (for [[table resource-type] (sort imported-resource)
+                   [source-id sepal-id] (sort (get-in state [:ids table]))]
+               [table source-id resource-type sepal-id])]
+    (if-not (seq rows)
+      state
+      (try
+        (db.i/execute-one! db {:insert-into :import_record
+                               :columns [:source_table :source_id
+                                         :resource_type :resource_id]
+                               :values (vec rows)})
+        state
+        (catch Exception ex
+          (fail state "import_record" nil
+                (if (re-find #"(?i)unique" (or (ex-message ex) ""))
+                  (str "some of these records have already been imported into"
+                       " this garden. Rebuild it and load once, rather than"
+                       " loading the same input twice.")
+                  (ex-message ex))))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; The load
@@ -449,42 +395,51 @@
   [db records]
   (let [t (fn [name] (get records name []))]
     (-> (initial-state)
-        (as-> st (pass-taxon-create db st (t "taxon_create")))
-        (as-> st (pass-simple db st "location" (t "location") location.i/create!))
-        (as-> st (pass-simple db st "contact" (t "contact") contact.i/create!))
-        (as-> st (pass-simple db st "tag" (t "tag") tag.i/create!))
+        (as-> st (pass db st "taxon" (t "taxon") taxon.i/create!
+                       taxon.spec/CreateTaxon))
+        (as-> st (pass db st "location" (t "location") location.i/create!
+                       location.spec/CreateLocation))
+        (as-> st (pass db st "contact" (t "contact") contact.i/create!
+                       contact.spec/CreateContact))
+        (as-> st (pass db st "tag" (t "tag") tag.i/create!
+                       tag.spec/CreateTag))
         (as-> st (pass-settings db st (t "settings")))
-        (as-> st (pass-accession db st (t "accession")))
-        (as-> st (pass-material db st (t "material")))
-        (as-> st (pass-collection db st (t "collection")))
-        (as-> st (pass-material-change db st (t "material_change")))
-        (as-> st (pass-note db st (t "note")))
+        (as-> st (pass db st "accession" (t "accession") accession.i/create!
+                       accession.spec/CreateAccession))
+        (as-> st (pass db st "material" (t "material") material.i/create!
+                       material.spec/CreateMaterial))
+        (as-> st (pass db st "collection" (t "collection")
+                       collection.i/create! collection.spec/CreateCollection))
+        (as-> st (pass db st "material_change" (t "material_change")
+                       material.i/create-change!
+                       material.spec/CreateMaterialChange))
+        (as-> st (pass db st "note" (t "note") note.i/create!
+                       note.spec/CreateNote))
         (as-> st (pass-tag-link db st (t "tag_link")))
         (as-> st (pass-taxon-update db st "taxon_vernacular"
                                     (t "taxon_vernacular") :vernacular-names))
-        (as-> st (pass-taxon-synonym db st (t "taxon_synonym")))
+        (as-> st (pass db st "taxon_synonym" (t "taxon_synonym")
+                       synonym.i/add-synonym! synonym.spec/CreateSynonym))
         (as-> st (pass-taxon-update db st "taxon_distribution"
                                     (t "taxon_distribution") :distribution))
-        (as-> st (restore-created-at! db st records)))))
+        (as-> st (restore-created-at! db st records))
+        (as-> st (record-provenance! db st)))))
 
 (defn- report [state {:keys [dry-run]}]
-  (let [{:keys [counts skipped failures warnings]} state]
+  (let [{:keys [counts failures warnings]} state]
     (doseq [w (sort warnings)]
       (println "warning:" w))
     (doseq [[table n] (sort counts)]
       (println (format "  %-22s %6d" table n)))
-    (doseq [[table n] (sort skipped)]
-      (println (format "  %-22s %6d skipped -- no reference to resolve"
-                       table n)))
     (doseq [[table n] (sort (:duplicates state))]
-      (println (format "  %-22s %6d already linked -- two Bauble rows resolved"
+      (println (format "  %-22s %6d already linked -- two source rows resolved"
                        table n)
                "to one Sepal record"))
     (when (seq failures)
       (println)
       (println (format "%d records failed:" (count failures)))
-      (doseq [{:keys [table bauble-id message]} (take 50 failures)]
-        (println (format "  %s %s: %s" table bauble-id message)))
+      (doseq [{:keys [table source-id message]} (take 50 failures)]
+        (println (format "  %s %s: %s" table source-id message)))
       (when (> (count failures) 50)
         (println (format "  ... and %d more" (- (count failures) 50)))))
     (println)
@@ -522,8 +477,8 @@ needs an actor and this command will not create one." actor))
 
     (and (garden-has-accessions? db) (not allow-nonempty))
     (do (println "Error: this garden already holds accessions. Rebuild it, or
-pass --allow-nonempty. Loading twice would duplicate every row: Bauble's ids
-are only unique within Bauble, so nothing here can be idempotent.")
+pass --allow-nonempty. Loading twice would duplicate every row: a source id is
+only unique within its own system, so nothing here can be idempotent.")
         1)
 
     :else

@@ -157,7 +157,7 @@
 (def subcommands
   {"create-user" {:description "Create a new user"
                   :fn create-user-cmd}
-   "load-import" {:description "Load a converted Bauble backup"
+   "load-import" {:description "Load a directory of converted records"
                   :fn load-import-cmd}
    "list-users"  {:description "List all users"
                   :fn list-users-cmd}
