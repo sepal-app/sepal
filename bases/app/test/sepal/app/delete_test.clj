@@ -289,6 +289,47 @@
           (format "delete!* :%s must call %s, or its %s links outlive it"
                   resource f cascade)))))
 
+(defn- fts-rows [table id]
+  (jdbc.sql/query *db* [(str "select rowid from " table " where rowid = ?") id]))
+
+(deftest test-a-deleted-record-leaves-no-search-hit
+  ;; The FTS triggers are not this plan's code and nothing here touches them,
+  ;; which is exactly why they are worth pinning once: a stale row shows up as
+  ;; a search hit for a record that no longer exists, and nothing else fails.
+  ;; taxon's trigger is trigger_taxon_after_delete, not *_fts_delete like the
+  ;; other three, so a grep for the naming convention misses it.
+  (tf/testing "accession, location and contact FTS rows"
+    (accession-fixtures)
+    (fn [{:keys [user accession location contact]}]
+      (try
+        (doseq [[record resource-type table id-key]
+                [[accession :accession "accession_fts" :accession/id]
+                 [location :location "location_fts" :location/id]
+                 [contact :contact "contact_fts" :contact/id]]]
+          (let [id (id-key record)]
+            (is (seq (fts-rows table id))
+                (format "%s starts in %s" resource-type table))
+            (app.delete/delete! resource-type *db* record (:user/id user))
+            (is (empty? (fts-rows table id))
+                (format "a deleted %s must not stay searchable" resource-type))))
+        (finally
+          (clear-activity! user))))))
+
+(deftest test-a-deleted-taxon-leaves-no-search-hit
+  (tf/testing "taxon_fts"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [id (:taxon/id taxon)]
+        (try
+          (taxon.i/update! *db* id {:wfo-taxon-id nil})
+          (is (seq (fts-rows "taxon_fts" id)))
+          (app.delete/delete! :taxon *db* (taxon.i/get-by-id *db* id) (:user/id user))
+          (is (empty? (fts-rows "taxon_fts" id))
+              "a deleted taxon must not stay searchable")
+          (finally
+            (clear-activity! user)))))))
+
 (deftest test-blocker-labels-read-as-sentences
   (is (= "12 material record(s) reference this"
          (app.delete/blocker-label {:reason :material :count 12})))
