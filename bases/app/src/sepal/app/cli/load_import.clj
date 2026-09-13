@@ -1,8 +1,10 @@
 (ns sepal.app.cli.load-import
   "Load a directory of converted records into this garden.
 
-  The input is one JSON file per table, each a list of records in the import
-  envelope:
+  The input shape is a contract with whatever produced it, written down in
+  `doc/import-format.md`. Change what this expects and that file changes too.
+
+  One JSON file per table, each a list of records in the import envelope:
 
       {\"id\": \"271\",
        \"created_at\": \"2006-10-11 09:33:25\",
