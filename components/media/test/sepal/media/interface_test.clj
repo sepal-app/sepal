@@ -141,3 +141,16 @@
           ;; Clean up
           (media.i/unlink! db (:media/id media1))
           (media.i/unlink! db (:media/id media2)))))))
+
+(deftest test-unlink-resource
+  (let [db *db*]
+    (tf/testing "unlink-resource!"
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/taxon] {:db db}
+       [::media.i/factory :key/media] {:db db :user (ig/ref :key/user)}}
+      (fn [{:keys [taxon media]}]
+        (media.i/link! db (:media/id media) (:taxon/id taxon) :taxon)
+        (media.i/unlink-resource! db :taxon (:taxon/id taxon))
+        (is (nil? (media.i/get-link db (:media/id media))))
+        (is (some? (media.i/get-by-id db (:media/id media)))
+            "The media itself survives; only the link goes")))))

@@ -10,6 +10,14 @@
 (defn delete! [db id] (core/delete! db id))
 (defn tag! [db tag-id resource-id resource-type] (core/tag! db tag-id resource-id resource-type))
 (defn untag! [db tag-id resource-id resource-type] (core/untag! db tag-id resource-id resource-type))
+
+(defn delete-for-resource!
+  "Every tag link on one resource. The tags themselves are not touched -- a tag
+  is a garden-wide label, and unlinking is the whole of what a deleted record
+  owes it."
+  [db resource-type resource-id]
+  (core/delete-for-resource! db resource-type resource-id))
+
 (defn get-for-resource [db resource-type resource-id] (core/get-for-resource db resource-type resource-id))
 (defn get-tagged [db tag-id] (core/get-tagged db tag-id))
 

@@ -84,6 +84,10 @@
                                           {:returning-keys 1})]
       (get-by-id db id))))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :collection {:id id})
+  nil)
+
 (create-ns 'sepal.collection.interface)
 (alias 'coll.i 'sepal.collection.interface)
 

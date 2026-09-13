@@ -14,6 +14,10 @@
 (defn update! [db id data]
   (store.i/update! db :location id data spec/UpdateLocation spec/Location))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :location {:id id})
+  nil)
+
 (create-ns 'sepal.location.interface)
 (alias 'loc.i 'sepal.location.interface)
 

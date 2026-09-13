@@ -14,6 +14,10 @@
 (defn update! [db id data]
   (store.i/update! db :contact id data spec/UpdateContact spec/Contact))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :contact {:id id})
+  nil)
+
 (create-ns 'sepal.contact.interface)
 (alias 'contact.i 'sepal.contact.interface)
 

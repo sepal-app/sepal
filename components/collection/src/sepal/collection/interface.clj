@@ -14,6 +14,13 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(defn delete!
+  "Delete this collection's row. Deletes nothing else: what a collection owns
+  and what blocks it are policy, and policy lives in the base -- see
+  bases/app/src/sepal/app/delete.clj."
+  [db id]
+  (core/delete! db id))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))
 

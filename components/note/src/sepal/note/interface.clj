@@ -25,5 +25,11 @@
 (defn delete! [db id]
   (core/delete! db id))
 
+(defn delete-for-resource!
+  "Every note on one resource. The polymorphic resource_id carries no foreign
+  key, so this is the cascade."
+  [db resource-type resource-id]
+  (core/delete-for-resource! db resource-type resource-id))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

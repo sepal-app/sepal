@@ -11,6 +11,13 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(defn delete!
+  "Delete this accession's row. Deletes nothing else: what an accession owns
+  and what blocks it are policy, and policy lives in the base -- see
+  bases/app/src/sepal/app/delete.clj."
+  [db id]
+  (core/delete! db id))
+
 (defn count-by-taxon-id
   "Count accessions for a given taxon."
   [db taxon-id]

@@ -17,6 +17,15 @@
 (defn remove-synonym! [db id]
   (core/remove-synonym! db id))
 
+(defn delete-for-taxon!
+  "Every synonym recorded against one taxon. A synonym is the taxon's other
+  name and has no meaning without it.
+
+  Local rows only. A WFO synonym is not stored here -- it is read from the
+  reference pool at query time -- so there is nothing of WFO's to delete."
+  [db taxon-id]
+  (core/delete-for-taxon! db taxon-id))
+
 (defn list-for-taxon
   "The garden's own synonyms for a taxon, plus its WFO synonyms. A row's
   :synonym/source is \"wfo\" for a reference-file match, \"local\" or

@@ -1,5 +1,6 @@
 (ns sepal.media.core
-  (:require [integrant.core :as ig]
+  (:require [camel-snake-kebab.core :as csk]
+            [integrant.core :as ig]
             [malli.core :as m]
             [malli.experimental.time.generator]
             [malli.generator :as mg]
@@ -63,6 +64,16 @@
 (defn unlink! [db media-id]
   (db.i/execute-one! db {:delete-from :media_link
                          :where [:= :media-id media-id]}))
+
+(defn unlink-resource!
+  "Every media link on one resource. The media objects themselves are not
+  touched -- a media object is a record in its own right."
+  [db resource-type resource-id]
+  (db.i/execute-one! db {:delete-from :media_link
+                         :where [:and
+                                 [:= :resource_type (csk/->kebab-case-string resource-type)]
+                                 [:= :resource_id resource-id]]})
+  nil)
 
 (defn total-size-in-bytes
   "Sum of every media row's size. A sum over no rows is nil in SQLite, so an empty

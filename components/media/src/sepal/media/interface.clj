@@ -25,6 +25,12 @@
   [db id]
   (core/delete! db id))
 
+(defn unlink-resource!
+  "Every media link on one resource. The media objects themselves are not
+  touched -- a media object is a record in its own right."
+  [db resource-type resource-id]
+  (core/unlink-resource! db resource-type resource-id))
+
 (defn unlink! [db id]
   (core/unlink! db id))
 

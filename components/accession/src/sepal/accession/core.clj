@@ -15,6 +15,10 @@
 (defn update! [db id data]
   (store.i/update! db :accession id data spec/UpdateAccession spec/Accession))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :accession {:id id})
+  nil)
+
 (defn count-by-taxon-id
   "Count accessions for a given taxon."
   [db taxon-id]

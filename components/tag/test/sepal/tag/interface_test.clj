@@ -87,3 +87,19 @@
     {[::tag.i/factory :key/tag] {:db *db*}}
     (fn [{:keys [tag]}]
       (is (m/validate tag.spec/Tag tag)))))
+
+(deftest test-delete-for-resource
+  (tf/testing "delete-for-resource!"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::taxon.i/factory :key/other] {:db *db*}
+     [::tag.i/factory :key/tag] {:db *db*}}
+    (fn [{:keys [taxon other tag]}]
+      (let [tag-id (:tag/id tag)]
+        (tag.i/tag! *db* tag-id (:taxon/id taxon) :taxon)
+        (tag.i/tag! *db* tag-id (:taxon/id other) :taxon)
+        (tag.i/delete-for-resource! *db* :taxon (:taxon/id taxon))
+        (is (empty? (tag.i/get-for-resource *db* :taxon (:taxon/id taxon))))
+        (is (seq (tag.i/get-for-resource *db* :taxon (:taxon/id other)))
+            "Only this resource's links")
+        (is (some? (tag.i/get-by-id *db* tag-id))
+            "The tag itself survives; only the link goes")))))

@@ -37,3 +37,13 @@
           (is (m/validate loc.spec/Location result))
           (is (match? {:location/code code}
                       result)))))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "loc.i/delete!"
+      {[::loc.i/factory :key/loc] {:db db}}
+      (fn [{:keys [loc]}]
+        (let [id (:location/id loc)]
+          (is (some? (loc.i/get-by-id db id)))
+          (loc.i/delete! db id)
+          (is (nil? (loc.i/get-by-id db id))))))))

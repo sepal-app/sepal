@@ -59,6 +59,19 @@
       (delete-rows! tx id)))
   nil)
 
+(defn delete-for-resource!
+  "Every tag link on one resource. The tags themselves are not touched -- a tag
+  is a garden-wide label, and unlinking is the whole of what a deleted record
+  owes it.
+
+  The counterpart of `delete!`, which cleans links from the tag's side. That
+  one can lean on tag_link.tag_id's foreign key; this side has none, so it is
+  code in the delete path."
+  [db resource-type resource-id]
+  (jdbc.sql/delete! db :tag_link {:resource_type (name resource-type)
+                                  :resource_id resource-id})
+  nil)
+
 (defn tag!
   "Link `tag-id` to a resource. Idempotent: tagging the same resource twice
   with the same tag hits tag_link_unique_idx, and that unique-constraint

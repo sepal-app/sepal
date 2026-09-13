@@ -326,3 +326,17 @@
           (jdbc.sql/delete! db :accession {:id id})
           (is (nil? (jdbc/execute-one! db ["select rowid from accession_fts where rowid = ?" id]))
               "the delete trigger still removes from accession_fts"))))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "delete!"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::contact.i/factory :key/contact] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)
+                                   :contact (ig/ref :key/contact)}}
+      (fn [{:keys [acc]}]
+        (let [id (:accession/id acc)]
+          (is (some? (acc.i/get-by-id db id)))
+          (acc.i/delete! db id)
+          (is (nil? (acc.i/get-by-id db id))))))))
