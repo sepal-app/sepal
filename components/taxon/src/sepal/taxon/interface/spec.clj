@@ -114,8 +114,5 @@
       [:maybe id]]
      [:distribution {:optional true} [:maybe :string]]
      ;; TODO: I think writing already saves maps and vectors as json
-     [:vernacular-names {:encode/store
-                         (fn [v]
-                           (tap> (str "v: " v))
-                           (json/write-str v))}
+     [:vernacular-names {:encode/store json/write-str}
       [:* VernacularName]]]))
