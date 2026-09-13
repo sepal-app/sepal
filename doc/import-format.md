@@ -14,8 +14,8 @@ One JSON file per table, each a list of records with four possible keys:
 ```json
 {"id": "271",
  "created_at": "2006-10-11 09:33:25",
- "refs": {"accession": {"table": "accession", "id": "272"},
-          "location":  {"table": "location",  "id": "4"}},
+ "refs": {"accession_id": {"table": "accession", "id": "272"},
+          "location_id":  {"table": "location",  "id": "4"}},
  "data": {"code": "1", "type": "plant", "quantity": 1}}
 ```
 
@@ -25,8 +25,9 @@ One JSON file per table, each a list of records with four possible keys:
 - **`created_at`** — optional. Restored after the load, because no create spec
   accepts a timestamp. `updated_at` is not supported: the `trigger_*_updated_at`
   triggers have no `WHEN` clause, so any write sets it to now.
-- **`refs`** — references to resolve. Omitted when there are none; an absent
-  reference is left out rather than written as null.
+- **`refs`** — references to resolve, **keyed by the field each one lands
+  on**. Omitted when there are none; an absent reference is left out rather
+  than written as null.
 - **`data`** — passed to the component's `create!` **verbatim**. Keys are
   snake_case and become kebab-case keywords.
 
@@ -35,8 +36,11 @@ spec exactly. A key with no column is a reported failure, not a dropped field.
 
 ## References
 
-Three shapes. The key names the field it becomes: **`K` resolves to `K_id`**,
-so `taxon` becomes `taxon_id` and `from-location` becomes `from_location_id`.
+**The key is the field.** `refs.taxon_id` sets `taxon_id`, `refs.created_by`
+sets `created_by`. There is no suffixing, so a foreign key whose column does
+not end in `_id` needs no special case.
+
+Three shapes for the value:
 
 | Shape | Resolves against |
 |---|---|
@@ -55,20 +59,20 @@ one before it.
 
 | File | `id` | `created_at` | `refs` |
 |---|---|---|---|
-| `taxon` | yes | — | `parent` |
+| `taxon` | yes | — | `parent_id` |
 | `location` | yes | yes | — |
 | `contact` | yes | yes | — |
 | `tag` | yes | yes | — |
 | `settings` | yes | — | — |
-| `accession` | yes | yes | `taxon`, `supplier-contact`, `intended-location` |
-| `material` | yes | yes | `accession`, `location` |
-| `collection` | yes | yes | `accession` |
-| `material_change` | yes | — | `material`, `from-location`, `to-location` |
-| `note` | yes | yes | `resource` |
-| `tag_link` | yes | yes | `tag`, `resource` |
-| `taxon_vernacular` | — | — | `taxon` |
-| `taxon_synonym` | yes | — | `taxon` |
-| `taxon_distribution` | — | — | `taxon` |
+| `accession` | yes | yes | `taxon_id`, `supplier_contact_id`, `intended_location_id` |
+| `material` | yes | yes | `accession_id`, `location_id` |
+| `collection` | yes | yes | `accession_id` |
+| `material_change` | yes | — | `material_id`, `from_location_id`, `to_location_id` |
+| `note` | yes | yes | `resource_id` |
+| `tag_link` | yes | yes | `tag_id`, `resource_id` |
+| `taxon_vernacular` | — | — | `taxon_id` |
+| `taxon_synonym` | yes | — | `taxon_id` |
+| `taxon_distribution` | — | — | `taxon_id` |
 
 A file with no records may be omitted. Malformed JSON stops the run.
 
@@ -76,8 +80,8 @@ Four are not a plain insert. `settings` is written as one key/value map.
 `tag_link` goes through `tag!`, which takes positional arguments. The two
 `taxon_*` files with no `id` are updates onto taxa that already exist.
 
-`note` and `tag_link` are polymorphic: `refs.resource` is the record they hang
-on, and `data.resource_type` says which kind it is.
+`note` and `tag_link` are polymorphic: `refs.resource_id` is the record they
+hang on, and `data.resource_type` says which kind it is.
 
 ## Running
 
