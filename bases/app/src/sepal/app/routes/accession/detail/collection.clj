@@ -141,15 +141,26 @@
                 :errors errors
                 :values values)))
 
-(defn footer-buttons []
-  (ui.form/footer-buttons :form-event "collection-form" :on-cancel :reload))
+(defn footer-buttons
+  "Clear sits in the footer beside Save, not in the topbar: it acts on this
+  tab's field group, not on the accession. It appears only when there is
+  collection data to clear."
+  [& {:keys [accession collection?]}]
+  (cond->> (ui.form/footer-buttons :form-event "collection-form" :on-cancel :reload)
+    collection?
+    (into [(ui.delete/button
+             :delete-url (z/url-for accession.routes/detail-collection-delete
+                                    {:id (:accession/id accession)}))])))
 
-(defn render [& {:keys [errors accession taxon values panel-data timezone]}]
+(defn render [& {:keys [errors accession taxon values collection? panel-data timezone]}]
   (page/page :page-title-buttons (ui.delete/button
                                    :delete-url (z/url-for accession.routes/delete
                                                           {:id (:accession/id accession)}))
              :content (pages.detail/page-content-with-panel
-                        :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
+                        :content (page-content :footer (ui.form/footer
+                                                         :buttons (footer-buttons
+                                                                    :accession accession
+                                                                    :collection? collection?))
                                                :errors errors
                                                :accession accession
                                                :taxon taxon
@@ -262,5 +273,6 @@
           (render :accession accession
                   :taxon taxon
                   :values values
+                  :collection? (some? collection)
                   :panel-data panel-data
                   :timezone timezone))))))
