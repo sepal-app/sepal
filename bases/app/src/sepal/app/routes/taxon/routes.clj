@@ -14,3 +14,4 @@
 (def export ::export)
 
 (def panel ::panel)
+(def delete ::delete)
