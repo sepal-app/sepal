@@ -27,7 +27,8 @@ One JSON file per table, each a list of records with four possible keys:
   triggers have no `WHEN` clause, so any write sets it to now.
 - **`refs`** — references to resolve, **keyed by the field each one lands
   on**. Omitted when there are none; an absent reference is left out rather
-  than written as null.
+  than written as null. A dot descends into `data`: `data.taxon_id` sets
+  `taxon_id` inside the payload.
 - **`data`** — passed to the component's `create!` **verbatim**. Keys are
   snake_case and become kebab-case keywords.
 
@@ -40,15 +41,21 @@ spec exactly. A key with no column is a reported failure, not a dropped field.
 sets `created_by`. There is no suffixing, so a foreign key whose column does
 not end in `_id` needs no special case.
 
-Three shapes for the value:
+Four shapes for the value:
 
 | Shape | Resolves against |
 |---|---|
 | `{"table": "accession", "id": "975"}` | a record earlier in this import |
 | `{"wfo": "wfo-0000283538-2025-12"}` | `taxon.wfo_taxon_id` in the target garden |
+| `{"user_email": "a@example.org"}` | `user.email` in the target garden |
 | `{"sepal_id": 1234}` | a row already in the target garden, by id |
 
-A `wfo` reference matching zero or two taxa is a failure, not a guess —
+`wfo` and `user_email` are the same idea twice: a natural key the target garden
+already carries, for a record this import did not create. Neither will create
+one — a `wfo` id nothing carries, or an address no account has, is a reported
+failure.
+
+A `wfo` reference matching zero *or two* taxa is a failure, not a guess —
 `wfo_taxon_id` is indexed but not unique. A `sepal_id` is accepted with a
 warning: it is only valid against the database the input was built against.
 
@@ -59,6 +66,7 @@ one before it.
 
 | File | `id` | `created_at` | `refs` |
 |---|---|---|---|
+| `user` | yes | — | — |
 | `taxon` | yes | — | `parent_id` |
 | `location` | yes | yes | — |
 | `contact` | yes | yes | — |
@@ -73,12 +81,24 @@ one before it.
 | `taxon_vernacular` | — | — | `taxon_id` |
 | `taxon_synonym` | yes | — | `taxon_id` |
 | `taxon_distribution` | — | — | `taxon_id` |
+| `activity` | yes | in `data` | `resource_id`, `created_by`, `data.*` |
 
 A file with no records may be omitted. Malformed JSON stops the run.
 
-Four are not a plain insert. `settings` is written as one key/value map.
+Five are not a plain insert. `settings` is written as one key/value map.
 `tag_link` goes through `tag!`, which takes positional arguments. The two
-`taxon_*` files with no `id` are updates onto taxa that already exist.
+`taxon_*` files with no `id` are updates onto taxa that already exist. And
+`activity` has its `type` turned into a keyword first: it is the dispatch key
+of a multi-schema, and the schema picks a branch before it decodes anything, so
+a string matches nothing.
+
+`user` loads first because `material_change` and `activity` both reference an
+account. `activity` loads last because an event names a record, so every record
+has to exist before any event can point at one.
+
+**`activity` is the one file whose `created_at` goes inside `data`.** It is the
+only create that accepts a timestamp; everywhere else the create spec is closed
+against one, which is why the envelope carries it instead.
 
 `note` and `tag_link` are polymorphic: `refs.resource_id` is the record they
 hang on, and `data.resource_type` says which kind it is.
