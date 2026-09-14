@@ -449,13 +449,13 @@
   (tf/testing "a wfo reference resolves only when exactly one taxon carries it"
     {[::taxon.i/factory :key/one]
      {:db *db* :name "Cattleya labiata" :rank "species"
-      :taxon/wfo-taxon-id "wfo-0000000001-2025-06"}
+      :wfo-taxon-id "wfo-0000000001-2025-06"}
      [::taxon.i/factory :key/twin-a]
      {:db *db* :name "Cattleya warneri" :rank "species"
-      :taxon/wfo-taxon-id "wfo-0000000002-2025-06"}
+      :wfo-taxon-id "wfo-0000000002-2025-06"}
      [::taxon.i/factory :key/twin-b]
      {:db *db* :name "Cattleya warscewiczii" :rank "species"
-      :taxon/wfo-taxon-id "wfo-0000000002-2025-06"}}
+      :wfo-taxon-id "wfo-0000000002-2025-06"}}
     (fn [{:keys [one]}]
       (let [resolve #(li/resolve-ref *db* {} {:wfo %})]
         (testing "one match is the taxon"

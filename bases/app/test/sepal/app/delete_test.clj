@@ -145,7 +145,7 @@
     (fn [{:keys [user]}]
       (let [wfo (taxon.i/create! *db* {:name "Wfo test name"
                                        :rank :species
-                                       :taxon/wfo-taxon-id "wfo-0000000001-2025-06"})
+                                       :wfo-taxon-id "wfo-0000000001-2025-06"})
             local (taxon.i/create! *db* {:name "Local test name" :rank :species})]
         (try
           (is (= [{:reason :wfo :count 1}]

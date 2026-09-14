@@ -182,7 +182,7 @@
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-no-reference-leaves-the-wfo-half-empty
-  ;; CreateTaxon's :taxon/wfo-taxon-id is optional, so mg/generate sets one on
+  ;; CreateTaxon's :wfo-taxon-id is optional, so mg/generate sets one on
   ;; the factory taxon often enough that leaving it alone would make this
   ;; test reach the nil-pool branch only by chance — and identical to the
   ;; no-wfo-id test above it the rest of the time. Pin a real wfo_taxon_id so

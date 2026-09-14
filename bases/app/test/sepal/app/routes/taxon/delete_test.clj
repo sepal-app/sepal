@@ -40,7 +40,7 @@
     (fn [{:keys [user]}]
       (let [taxon (taxon.i/create! *db* {:name "Wfo route test"
                                          :rank :species
-                                         :taxon/wfo-taxon-id "wfo-0000000002-2025-06"})
+                                         :wfo-taxon-id "wfo-0000000002-2025-06"})
             sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (peri/request sess (delete-url taxon))
             body (Jsoup/parse ^String (:body response))]

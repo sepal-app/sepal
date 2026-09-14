@@ -61,6 +61,31 @@
                        :taxon/author (:taxon/author taxon)}
                       result)))))))
 
+(deftest test-wfo-taxon-id-is-spelled-the-same-either-way
+  ;; It was not: CreateTaxon asked for :taxon/wfo-taxon-id, namespaced among
+  ;; otherwise-bare keys, and UpdateTaxon for :wfo-taxon-id. Creating a taxon
+  ;; with a WFO id therefore needed a differently shaped key than updating one,
+  ;; and `store.i/coerce` strips an unrecognised key rather than refusing it, so
+  ;; the wrong spelling silently wrote no id at all.
+  (let [db *db*
+        created (format "wfo-%010d-2024-01" (rand-int 1000000))
+        updated (format "wfo-%010d-2024-02" (rand-int 1000000))]
+    (tf/testing "create! and update! take the same key"
+      {}
+      (fn [_]
+        (let [taxon (taxon.i/create! db {:name (mg/generate [:string {:min 1}])
+                                         :rank :genus
+                                         :wfo-taxon-id created})]
+          (try
+            (is (= created (:taxon/wfo-taxon-id taxon))
+                "create! stored what it was given")
+            (is (= updated (:taxon/wfo-taxon-id
+                             (taxon.i/update! db (:taxon/id taxon)
+                                              {:wfo-taxon-id updated})))
+                "and update! takes the same spelling")
+            (finally
+              (jdbc.sql/delete! db :taxon {:id (:taxon/id taxon)}))))))))
+
 (deftest test-distribution-roundtrips
   (tf/testing "distribution round-trips through create! and update!"
     (let [db *db*
@@ -91,12 +116,11 @@
         wfo-id (format "wfo-%010d-2024-01" (rand-int 1000000))
         made (atom [])
         make! (fn [name]
-                ;; Set the WFO id through update!: CreateTaxon spells the key
-                ;; :taxon/wfo-taxon-id, namespaced among otherwise-bare keys,
-                ;; which UpdateTaxon does not.
-                (let [t (taxon.i/create! db {:name name :rank :genus})]
+                (let [t (taxon.i/create! db {:name name
+                                             :rank :genus
+                                             :wfo-taxon-id wfo-id})]
                   (swap! made conj (:taxon/id t))
-                  (taxon.i/update! db (:taxon/id t) {:wfo-taxon-id wfo-id})))]
+                  t))]
     (try
       (testing "an unknown WFO id finds nothing"
         (is (= [] (taxon.i/list-by-wfo-taxon-id db "wfo-0000000000-1900-99"))))

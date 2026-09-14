@@ -86,7 +86,7 @@
    [:rank {:decode/store csk/->kebab-case-keyword
            :encode/store csk/->kebab-case-string}
     rank]
-   [:taxon/wfo-taxon-id {:optional true}
+   [:wfo-taxon-id {:optional true}
     [:maybe wfo-plantlist-taxon-id]]
    [:parent-id {:optional true
                 :decode/store validate.i/coerce-int}
