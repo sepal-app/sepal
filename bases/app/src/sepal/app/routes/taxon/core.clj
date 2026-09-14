@@ -1,6 +1,7 @@
 (ns sepal.app.routes.taxon.core
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.taxon.create :as create]
+            [sepal.app.routes.taxon.delete :as delete]
             [sepal.app.routes.taxon.detail :as detail]
             [sepal.app.routes.taxon.detail.media :as detail-media]
             [sepal.app.routes.taxon.detail.name :as detail-name]
@@ -65,5 +66,10 @@
                        :middleware [[(middleware/require-permission-or-redirect
                                        taxon.perm/edit (constantly routes/detail))]]
                        :delete #'detail-tags/row-handler}]
+    ["/delete/" {:name routes/delete
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 taxon.perm/delete (constantly routes/detail))]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :get #'panel/handler}]]])

@@ -120,3 +120,15 @@
     (is (m/validate coll.spec/UpdateCollection {:elevation-accuracy 25}))
     (is (not (m/validate coll.spec/UpdateCollection {:elevation-accuracy 0})))
     (is (not (m/validate coll.spec/UpdateCollection {:elevation-accuracy -1})))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "coll.i/delete!"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}
+       [::coll.i/factory :key/coll] {:db db :accession (ig/ref :key/acc)}}
+      (fn [{:keys [coll]}]
+        (let [id (:collection/id coll)]
+          (is (some? (coll.i/get-by-id db id)))
+          (coll.i/delete! db id)
+          (is (nil? (coll.i/get-by-id db id))))))))

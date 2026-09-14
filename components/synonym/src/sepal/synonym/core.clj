@@ -74,6 +74,16 @@
   (jdbc.sql/delete! db :taxon_synonym {:id id})
   nil)
 
+(defn delete-for-taxon!
+  "Every synonym recorded against one taxon. A synonym is the taxon's other
+  name and has no meaning without it.
+
+  Local rows only. A WFO synonym is not stored here -- it is read from the
+  reference pool at query time -- so there is nothing of WFO's to delete."
+  [db taxon-id]
+  (jdbc.sql/delete! db :taxon_synonym {:taxon_id taxon-id})
+  nil)
+
 (def ^:private core-length
   "A WFO id is 'wfo-0000283538-2025-06', 22 characters; the stable part is the
   first 14. Matching the full string across a release gap resolved 0 of

@@ -1,0 +1,169 @@
+(ns sepal.app.delete
+  "What deleting a record means, for every resource, in one place.
+
+  Two multimethods on the resource type. `blockers` answers what still depends
+  on the record; `delete!` removes the record and everything it owns, in one
+  transaction.
+
+  A hard delete. Soft delete would need a `where deleted_at is null` filter at
+  some 30 query sites and in four FTS tables, and every site that forgot would
+  show a deleted record while nothing failed loudly.
+
+  The policy lives here rather than in the components because components do not
+  know about each other -- an accession component that counted materials would
+  be the first cross-component dependency in the codebase."
+  (:require [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.activity :as accession.activity]
+            [sepal.collection.interface :as coll.i]
+            [sepal.contact.interface :as contact.i]
+            [sepal.contact.interface.activity :as contact.activity]
+            [sepal.database.interface :as db.i]
+            [sepal.error.interface :as error.i]
+            [sepal.location.interface :as location.i]
+            [sepal.location.interface.activity :as location.activity]
+            [sepal.material.interface :as material.i]
+            [sepal.material.interface.activity :as material.activity]
+            [sepal.media.interface :as media.i]
+            [sepal.note.interface :as note.i]
+            [sepal.synonym.interface :as synonym.i]
+            [sepal.tag.interface :as tag.i]
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.activity :as taxon.activity]))
+
+(defmulti blockers
+  "Reasons this record cannot be deleted, as [{:reason kw :count int}].
+   Empty means nothing stops it."
+  (fn [resource-type _db _record] resource-type))
+
+(defmulti delete!*
+  "Delete the record and everything it owns. Called inside a transaction by
+   `delete!`, never directly."
+  (fn [resource-type _tx _record _deleted-by] resource-type))
+
+(defn- counted [reason n]
+  (when (pos? n) {:reason reason :count n}))
+
+;;; ---------------------------------------------------------------------------
+;;; accession
+
+(defmethod blockers :accession [_ db accession]
+  (->> [(counted :material (material.i/count-by-accession-id db (:accession/id accession)))]
+       (filterv some?)))
+
+(defmethod delete!* :accession [_ tx accession deleted-by]
+  (let [id (:accession/id accession)]
+    ;; The activity is written first, while the record is still readable: its
+    ;; payload names the code and the taxon, which are gone a line later.
+    (accession.activity/create! tx accession.activity/deleted deleted-by accession)
+    (note.i/delete-for-resource! tx :accession id)
+    (tag.i/delete-for-resource! tx :accession id)
+    (media.i/unlink-resource! tx :accession id)
+    ;; collection cascades by foreign key
+    (accession.i/delete! tx id)))
+
+;;; ---------------------------------------------------------------------------
+;;; material
+
+(defmethod blockers :material [_ _db _material]
+  ;; Nothing references material except material_change, which cascades.
+  [])
+
+(defmethod delete!* :material [_ tx material deleted-by]
+  (let [id (:material/id material)]
+    (material.activity/create! tx material.activity/deleted deleted-by material)
+    (note.i/delete-for-resource! tx :material id)
+    (tag.i/delete-for-resource! tx :material id)
+    (media.i/unlink-resource! tx :material id)
+    ;; material_change cascades by foreign key
+    (material.i/delete! tx id)))
+
+;;; ---------------------------------------------------------------------------
+;;; taxon
+
+(defmethod blockers :taxon [_ db taxon]
+  (let [id (:taxon/id taxon)]
+    (->> [(counted :accession (accession.i/count-by-taxon-id db id))
+          (counted :child-taxon (taxon.i/count-children db id))
+          ;; Reference data this garden received, not a record it authored.
+          ;; Pressing delete on one is a mis-click.
+          (when (:taxon/wfo-taxon-id taxon) {:reason :wfo :count 1})]
+         (filterv some?))))
+
+(defmethod delete!* :taxon [_ tx taxon deleted-by]
+  (let [id (:taxon/id taxon)]
+    (taxon.activity/create! tx taxon.activity/deleted deleted-by taxon)
+    (synonym.i/delete-for-taxon! tx id)
+    (note.i/delete-for-resource! tx :taxon id)
+    (tag.i/delete-for-resource! tx :taxon id)
+    (media.i/unlink-resource! tx :taxon id)
+    (taxon.i/delete! tx id)))
+
+;;; ---------------------------------------------------------------------------
+;;; location
+
+(defmethod blockers :location [_ db location]
+  (let [id (:location/id location)]
+    (->> [(counted :material (material.i/count-by-location-id db id))
+          (counted :material-change (material.i/count-changes-by-location-id db id))]
+         (filterv some?))))
+
+(defmethod delete!* :location [_ tx location deleted-by]
+  (location.activity/create! tx location.activity/deleted deleted-by location)
+  (location.i/delete! tx (:location/id location)))
+
+;;; ---------------------------------------------------------------------------
+;;; contact
+
+(defmethod blockers :contact [_ db contact]
+  (->> [(counted :accession
+                 (accession.i/count-by-supplier-contact-id db (:contact/id contact)))]
+       (filterv some?)))
+
+(defmethod delete!* :contact [_ tx contact deleted-by]
+  (contact.activity/create! tx contact.activity/deleted deleted-by contact)
+  (contact.i/delete! tx (:contact/id contact)))
+
+;;; ---------------------------------------------------------------------------
+;;; collection
+
+(defmethod blockers :collection [_ _db _collection]
+  [])
+
+(defmethod delete!* :collection [_ tx collection _deleted-by]
+  ;; A collection has no activity type of its own; it is part of its accession,
+  ;; and the accession's own updated event is what the changelog shows.
+  (coll.i/delete! tx (:collection/id collection)))
+
+;;; ---------------------------------------------------------------------------
+
+(def ^:private blocker-labels
+  {:material "%d material record(s) reference this"
+   :material-change "%d move(s) in the history reference this location"
+   :accession "%d accession(s) reference this"
+   :child-taxon "%d taxa name this one as their parent"
+   :wfo "This name comes from the World Flora Online list"})
+
+(defn blocker-label [{:keys [reason count]}]
+  (let [fmt (get blocker-labels reason "%d record(s) reference this")]
+    (if (re-find #"%d" fmt)
+      (format fmt count)
+      fmt)))
+
+(defn delete!
+  "Delete the record and everything it owns, in one transaction.
+
+   Returns nil, or an error map when a blocker or a constraint stops it."
+  [resource-type db record deleted-by]
+  (let [found (blockers resource-type db record)]
+    (if (seq found)
+      (error.i/error ::blocked "Cannot delete this record" {:blockers found})
+      (try
+        (db.i/with-transaction [tx db]
+          (delete!* resource-type tx record deleted-by))
+        nil
+        (catch Exception ex
+          ;; The backstop. Between the check and the write another session can
+          ;; insert a child, and the foreign key is what catches that. A check
+          ;; that replaces the constraint is a race; one that explains it is a
+          ;; message.
+          (error.i/ex->error ex))))))

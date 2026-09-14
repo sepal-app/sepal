@@ -80,6 +80,21 @@
     (db.i/with-transaction [tx db]
       (write-update! tx id data))))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :material {:id id})
+  nil)
+
+(defn count-changes-by-location-id
+  "How many material_change rows name this location as a source or a
+  destination. These are what keep an empty location undeletable: deleting it
+  would leave the move log saying a plant came from nowhere."
+  [db location-id]
+  (db.i/count db {:select [:id]
+                  :from [:material-change]
+                  :where [:or
+                          [:= :from_location_id location-id]
+                          [:= :to_location_id location-id]]}))
+
 (defn count-by-accession-id
   "Count materials for a given accession."
   [db accession-id]

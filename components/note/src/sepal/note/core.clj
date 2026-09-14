@@ -54,6 +54,16 @@
 (defn delete! [db id]
   (jdbc.sql/delete! db :note {:id id}))
 
+(defn delete-for-resource!
+  "Every note on one resource. The polymorphic resource_id carries no foreign
+  key, so this is the cascade."
+  [db resource-type resource-id]
+  (db.i/execute-one! db {:delete-from :note
+                         :where [:and
+                                 [:= :resource_type (csk/->kebab-case-string resource-type)]
+                                 [:= :resource_id resource-id]]})
+  nil)
+
 (create-ns 'sepal.note.interface)
 (alias 'note.i 'sepal.note.interface)
 

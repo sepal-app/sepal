@@ -51,6 +51,17 @@
 (defn update! [db id data]
   (store.i/update! db :taxon id data spec/UpdateTaxon spec/Taxon))
 
+(defn delete! [db id]
+  (jdbc.sql/delete! db :taxon {:id id})
+  nil)
+
+(defn count-children
+  "How many taxa name this one as their parent."
+  [db taxon-id]
+  (db.i/count db {:select [:id]
+                  :from [:taxon]
+                  :where [:= :parent_id taxon-id]}))
+
 (create-ns 'sepal.taxon.interface)
 (alias 'taxon.i 'sepal.taxon.interface)
 

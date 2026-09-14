@@ -1,12 +1,14 @@
 (ns sepal.app.routes.location.core
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.location.create :as create]
+            [sepal.app.routes.location.delete :as delete]
             [sepal.app.routes.location.detail :as detail]
             [sepal.app.routes.location.export :as export]
             [sepal.app.routes.location.index :as index]
             [sepal.app.routes.location.panel :as panel]
             [sepal.app.routes.location.routes :as routes]
-            [sepal.location.interface :as location.i]))
+            [sepal.location.interface :as location.i]
+            [sepal.location.interface.permission :as location.perm]))
 
 (def location-loader
   (middleware/default-loader location.i/get-by-id
@@ -31,5 +33,10 @@
             :conflicting true}
     ["/" {:name routes/detail
           :handler #'detail/handler}]
+    ["/delete/" {:name routes/delete
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 location.perm/delete (constantly routes/detail))]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

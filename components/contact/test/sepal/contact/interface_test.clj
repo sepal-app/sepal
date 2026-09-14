@@ -97,3 +97,13 @@
           (finally
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})
             (jdbc.sql/delete! db :contact {:id (:contact/id contact)})))))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "contact.i/delete!"
+      {[::contact.i/factory :key/contact] {:db db}}
+      (fn [{:keys [contact]}]
+        (let [id (:contact/id contact)]
+          (is (some? (contact.i/get-by-id db id)))
+          (contact.i/delete! db id)
+          (is (nil? (contact.i/get-by-id db id))))))))

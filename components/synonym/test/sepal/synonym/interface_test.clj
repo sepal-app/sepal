@@ -264,3 +264,28 @@
     (fn [{:keys [taxon syn]}]
       (is (m/validate synonym.spec/Synonym syn))
       (is (= (:taxon/id taxon) (:synonym/taxon-id syn))))))
+
+(deftest test-delete-for-taxon
+  (tf/testing "delete-for-taxon!"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::taxon.i/factory :key/other] {:db *db*}}
+    (fn [{:keys [taxon other]}]
+      ;; A nil pool, so the assertions see only the garden's own rows. The
+      ;; factory generates wfo-taxon-id or not at random, and a WFO hit would
+      ;; make the empty? below fail for a reason this test is not about.
+      (let [ctx (assoc base-ctx :synonym-reference nil)
+            id (:taxon/id taxon)
+            other-id (:taxon/id other)]
+        (synonym.i/add-synonym! *db* {:taxon-id id
+                                      :synonym-name "Encyclia cochleata"})
+        (synonym.i/add-synonym! *db* {:taxon-id other-id
+                                      :synonym-name "Prosthechea cochleata"})
+        (is (seq (synonym.i/list-for-taxon ctx *db* id)))
+        (synonym.i/delete-for-taxon! *db* id)
+        (is (empty? (synonym.i/list-for-taxon ctx *db* id))
+            "a synonym is the taxon's other name and has no meaning without it")
+        (is (seq (synonym.i/list-for-taxon ctx *db* other-id))
+            "Only this taxon's synonyms")
+        ;; taxon_synonym.taxon_id is a real foreign key, so the surviving row
+        ;; has to go before the fixture can delete the taxon it names.
+        (synonym.i/delete-for-taxon! *db* other-id)))))

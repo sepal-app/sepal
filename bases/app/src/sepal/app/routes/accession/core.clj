@@ -3,8 +3,10 @@
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.create :as create]
+            [sepal.app.routes.accession.delete :as delete]
             [sepal.app.routes.accession.detail :as detail]
             [sepal.app.routes.accession.detail.collection :as detail-collection]
+            [sepal.app.routes.accession.detail.collection-delete :as detail-collection-delete]
             [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.routes.accession.detail.media :as detail-media]
             [sepal.app.routes.accession.detail.notes :as detail-notes]
@@ -46,6 +48,11 @@
                      :middleware [[(middleware/require-permission-or-redirect
                                      accession.perm/edit (constantly routes/detail))]]
                      :handler #'detail-collection/handler}]
+    ["/collection/delete/" {:name routes/detail-collection-delete
+                            :middleware [[(middleware/require-permission-or-redirect
+                                            accession.perm/edit (constantly routes/detail))]]
+                            :get #'detail-collection-delete/handler
+                            :post #'detail-collection-delete/handler}]
     ["/media/" {:name routes/detail-media
                 :middleware [[(middleware/require-permission-or-redirect
                                 accession.perm/edit (constantly routes/detail))]]
@@ -66,5 +73,10 @@
                        :middleware [[(middleware/require-permission-or-redirect
                                        accession.perm/edit (constantly routes/detail))]]
                        :delete #'detail-tags/row-handler}]
+    ["/delete/" {:name routes/delete
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 accession.perm/delete (constantly routes/detail))]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

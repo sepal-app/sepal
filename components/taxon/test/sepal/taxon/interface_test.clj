@@ -119,3 +119,27 @@
       (finally
         (doseq [id @made]
           (jdbc.sql/delete! db :taxon {:id id}))))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "delete!"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (let [id (:taxon/id taxon)]
+          (is (some? (taxon.i/get-by-id db id)))
+          (taxon.i/delete! db id)
+          (is (nil? (taxon.i/get-by-id db id))))))))
+
+(deftest test-count-children
+  (let [db *db*]
+    (tf/testing "count-children"
+      {[::taxon.i/factory :key/taxon] {:db db}}
+      (fn [{:keys [taxon]}]
+        (let [parent-id (:taxon/id taxon)]
+          (is (zero? (taxon.i/count-children db parent-id)))
+          (let [child (taxon.i/create! db {:name "Test child"
+                                           :rank :species
+                                           :parent-id parent-id})]
+            (is (= 1 (taxon.i/count-children db parent-id)))
+            (taxon.i/delete! db (:taxon/id child))
+            (is (zero? (taxon.i/count-children db parent-id)))))))))

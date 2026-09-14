@@ -303,3 +303,45 @@
              "discarded_seedling" "given_away" "transferred" "other"}))
     (is (contains? (set (map :material-change-reason/label reasons))
                    "Winter kill"))))
+
+(deftest test-delete
+  (let [db *db*]
+    (tf/testing "delete!"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)}
+       [::loc.i/factory :key/loc] {:db db}
+       [::mat.i/factory :key/mat] {:db db
+                                   :accession (ig/ref :key/acc)
+                                   :location (ig/ref :key/loc)}}
+      (fn [{:keys [mat]}]
+        (let [id (:material/id mat)]
+          (is (some? (mat.i/get-by-id db id)))
+          (mat.i/delete! db id)
+          (is (nil? (mat.i/get-by-id db id))))))))
+
+(deftest test-count-changes-by-location-id
+  ;; A location keeps a hold on the history of what left it, through
+  ;; material_change.from_location_id. This count is what tells a curator why
+  ;; an empty location still will not delete.
+  (let [db *db*]
+    (tf/testing "count-changes-by-location-id"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db
+                                   :taxon (ig/ref :key/taxon)}
+       [::loc.i/factory :key/from] {:db db}
+       [::loc.i/factory :key/to] {:db db}
+       [::mat.i/factory :key/mat] {:db db
+                                   :accession (ig/ref :key/acc)
+                                   :location (ig/ref :key/from)}}
+      (fn [{:keys [from to mat]}]
+        (is (zero? (mat.i/count-changes-by-location-id db (:location/id from))))
+        (mat.i/update! db (:material/id mat) {:location-id (:location/id to)})
+        (is (= 1 (mat.i/count-changes-by-location-id db (:location/id from)))
+            "the move is recorded against the source")
+        (is (= 1 (mat.i/count-changes-by-location-id db (:location/id to)))
+            "and against the destination")
+        ;; Delete the material before the fixtures tear down. Its change rows
+        ;; cascade with it, and until they are gone neither location can be
+        ;; deleted -- which is this test's own point, seen from the other side.
+        (mat.i/delete! db (:material/id mat))))))

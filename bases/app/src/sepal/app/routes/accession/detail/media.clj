@@ -7,6 +7,7 @@
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -14,8 +15,12 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn title-buttons []
-  (media.ui/upload-button))
+(defn title-buttons [accession]
+  ;; A list, not [:<> ...]: Chassis has no fragment element.
+  (list (media.ui/upload-button)
+        (ui.delete/button
+          :delete-url (z/url-for accession.routes/delete
+                                 {:id (:accession/id accession)}))))
 
 (defn next-page-url [& {:keys [accession current-page]}]
   (z/url-for accession.routes/detail-media
@@ -50,7 +55,7 @@
                :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
-  (ui.page/page :page-title-buttons (title-buttons)
+  (ui.page/page :page-title-buttons (title-buttons accession)
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :page page
                                                   :page-size page-size

@@ -11,6 +11,19 @@
 (defn update! [db id data]
   (core/update! db id data))
 
+(defn delete!
+  "Delete this material's row. Deletes nothing else: what material owns and
+  what blocks it are policy, and policy lives in the base -- see
+  bases/app/src/sepal/app/delete.clj."
+  [db id]
+  (core/delete! db id))
+
+(defn count-changes-by-location-id
+  "How many material_change rows name this location as a source or a
+  destination."
+  [db location-id]
+  (core/count-changes-by-location-id db location-id))
+
 (defn create-change!
   "Record a history row directly. The import path uses this; interactive
   writes go through `update!`."

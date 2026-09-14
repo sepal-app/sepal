@@ -156,3 +156,24 @@
           (finally
             ;; Clean up activity records before user fixture cleanup
             (next.jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-delete-for-resource
+  (let [db *db*]
+    (tf/testing "delete-for-resource!"
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/taxon] {:db db}
+       [::taxon.i/factory :key/other] {:db db}}
+      (fn [{:keys [user taxon other]}]
+        (let [mine (note.i/create! db {:body "on this taxon"
+                                       :resource-type :taxon
+                                       :resource-id (:taxon/id taxon)
+                                       :created-by (:user/id user)})
+              theirs (note.i/create! db {:body "on another taxon"
+                                         :resource-type :taxon
+                                         :resource-id (:taxon/id other)
+                                         :created-by (:user/id user)})]
+          (note.i/delete-for-resource! db :taxon (:taxon/id taxon))
+          (is (nil? (note.i/get-by-id db (:note/id mine))))
+          (is (some? (note.i/get-by-id db (:note/id theirs)))
+              "Only this resource's notes")
+          (note.i/delete! db (:note/id theirs)))))))

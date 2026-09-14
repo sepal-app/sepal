@@ -5,6 +5,7 @@
             [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
+            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
@@ -37,7 +38,10 @@
                         :values values)])))
 
 (defn render [& {:keys [errors taxon values panel-data]}]
-  (page/page :content (pages.detail/page-content-with-panel
+  (page/page :page-title-buttons (ui.delete/button
+                                   :delete-url (z/url-for taxon.routes/delete
+                                                          {:id (:taxon/id taxon)}))
+             :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
                                                :errors errors
                                                :taxon taxon
