@@ -64,6 +64,46 @@
     (testing "a reference shape this loader does not know fails"
       (is (:error (li/resolve-ref nil ids {:orcid "0000-0002"}))))))
 
+(deftest test-resolve-ref-by-user-email
+  ;; The other half of `wfo`: a natural key the target garden already carries,
+  ;; for a record this import did not create. An import that attributes rows to
+  ;; a real person has nothing else stable to name the account by.
+  (tf/testing "a user reference resolves by address, and refuses to invent one"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (testing "an address the garden holds"
+        (is (= {:id (:user/id user)}
+               (li/resolve-ref *db* {} {:user-email (:user/email user)}))))
+
+      (testing "one it does not, named in the error"
+        (let [got (li/resolve-ref *db* {} {:user-email "nobody@example.invalid"})]
+          (is (re-find #"nobody@example.invalid" (:error got)))
+          (is (re-find #"will not create it" (:error got))))))))
+
+(deftest test-field-path
+  (testing "a plain field is its own path"
+    (is (= [:taxon-id] (li/field-path :taxon-id)))
+    (is (= [:created-by] (li/field-path :created-by))))
+
+  (testing "a dot descends into a nested map"
+    ;; An activity's `data` carries the subject's own ids as context, and
+    ;; AccessionActivityData will not validate without a real :taxon-id.
+    (is (= [:data :taxon-id] (li/field-path :data.taxon-id)))))
+
+(deftest test-apply-refs
+  (testing "a resolved reference is written onto the path that named it"
+    (is (= {:code "1" :accession-id 7}
+           (li/apply-refs {:code "1"} {:accession-id 7}))))
+
+  (testing "a nested reference adds to the map rather than replacing it"
+    ;; Merging the two maps would drop :accession-code, which is the whole
+    ;; payload the activity carries.
+    (is (= {:type "accession/updated"
+            :data {:accession-code "N0046" :taxon-id 12}}
+           (li/apply-refs {:type "accession/updated"
+                           :data {:accession-code "N0046"}}
+                          {:data.taxon-id 12})))))
+
 (deftest test-resolve-refs
   ;; The whole rule: a reference is keyed by the field it lands on.
   ;; material_change carries three, so this exercises the rule rather than a

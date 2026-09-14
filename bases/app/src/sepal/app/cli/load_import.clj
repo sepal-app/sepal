@@ -19,35 +19,54 @@
   The whole load is one transaction. Failures are collected rather than thrown
   -- the operator needs the list, not the first one -- and the transaction
   rolls back if any record failed or if --dry-run was passed, so a dry run is a
-  real load that is thrown away."
+  real load that is thrown away.
+
+  The `interface.activity` namespaces below are required with no alias, for
+  their side effect. Each registers a `data-schema` method, and
+  `activity.i/create!` validates an event against a multi-schema assembled from
+  whichever methods are registered -- so without them the multi has no branches
+  and every event fails on dispatch rather than on anything informative."
   (:require [babashka.fs :as fs]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [malli.core :as m]
             [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.activity]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.activity.interface :as activity.i]
             [sepal.collection.interface :as collection.i]
+            [sepal.collection.interface.activity]
             [sepal.collection.interface.spec :as collection.spec]
             [sepal.contact.interface :as contact.i]
+            [sepal.contact.interface.activity]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
+            [sepal.location.interface.activity]
             [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface :as material.i]
+            [sepal.material.interface.activity]
             [sepal.material.interface.spec :as material.spec]
+            [sepal.media.interface.activity]
             [sepal.note.interface :as note.i]
+            [sepal.note.interface.activity]
             [sepal.note.interface.spec :as note.spec]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.synonym.interface :as synonym.i]
+            [sepal.synonym.interface.activity]
             [sepal.synonym.interface.spec :as synonym.spec]
             [sepal.tag.interface :as tag.i]
+            [sepal.tag.interface.activity]
             [sepal.tag.interface.spec :as tag.spec]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i]
+            [sepal.user.interface.activity]
+            [sepal.user.interface.spec :as user.spec]))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Reading
@@ -58,9 +77,9 @@
 
   The order is the reference graph: a file may only point at one before it. It
   is the one thing here that the input does not say."
-  ["taxon" "location" "contact" "tag" "settings" "accession" "material"
+  ["user" "taxon" "location" "contact" "tag" "settings" "accession" "material"
    "collection" "material_change" "note" "tag_link" "taxon_vernacular"
-   "taxon_synonym" "taxon_distribution"])
+   "taxon_synonym" "taxon_distribution" "activity"])
 
 (defn- kebab-key
   "`quantity_received` -> `:quantity-received`. The files are snake_case;
@@ -118,13 +137,17 @@
 (defn resolve-ref
   "One reference to a Sepal id.
 
-  Returns `{:id n}`, `{:error msg}`, or `{:warn msg :id n}`. Three shapes, none
+  Returns `{:id n}`, `{:error msg}`, or `{:warn msg :id n}`. Four shapes, none
   of which names a source system:
 
       {:table \"accession\" :id \"975\"}  a record this import created
       {:wfo \"wfo-0000283538-2025-12\"}   a taxon this garden already holds
-      {:sepal-id 1234}                    a row in this garden, by id"
-  [db ids {:keys [table id wfo sepal-id] :as ref}]
+      {:user-email \"a@example.org\"}     a user this garden already holds
+      {:sepal-id 1234}                    a row in this garden, by id
+
+  `wfo` and `user-email` are the same idea twice: a natural key the target
+  garden already carries, for a record this import did not create."
+  [db ids {:keys [table id wfo user-email sepal-id] :as ref}]
   (cond
     ;; The loud case. A garden built from a different WFO release than the one
     ;; the input was made against resolves to nothing, or to two taxa --
@@ -139,6 +162,17 @@
                        " was made against")}
         {:error (str (count matches) " taxa carry wfo_taxon_id " wfo
                      " -- cannot tell which one is meant")}))
+
+    ;; An import that attributes rows to a real person names the account by
+    ;; address, because that is the only thing about a user that is stable
+    ;; across gardens. It must already exist: this will not create one, for the
+    ;; same reason --actor will not.
+    user-email
+    (if-let [user (user.i/get-by-email db user-email)]
+      {:id (:user/id user)}
+      {:error (str "no user with email " user-email
+                   " -- this import attributes records to that account and"
+                   " will not create it")})
 
     ;; A garden's own record legitimately has no portable id, so this is
     ;; accepted -- but it is only valid against the database the input was made
@@ -155,6 +189,16 @@
 
     :else
     {:error (str "unrecognised reference " (pr-str ref))}))
+
+(defn field-path
+  "The path a reference lands on. `:taxon-id` -> `[:taxon-id]`.
+
+  A dot descends: `:data.taxon-id` -> `[:data :taxon-id]`. One payload needs
+  it -- an activity's `data` carries the subject's own ids as context, and
+  `AccessionActivityData` will not validate without a real `:taxon-id`. No
+  Sepal field name contains a dot, so nothing else is ambiguous."
+  [field]
+  (mapv keyword (str/split (name field) #"\.")))
 
 (defn resolve-refs
   "Every reference on a record, as the fields they resolve to.
@@ -176,6 +220,15 @@
           {:fields {} :warns []}
           refs))
 
+(defn apply-refs
+  "`data` with every resolved reference written onto the path that named it.
+
+  Applied one at a time rather than merged, so a reference reaching into a
+  nested map adds to it instead of replacing it."
+  [data fields]
+  (reduce (fn [payload [field id]] (assoc-in payload (field-path field) id))
+          data fields))
+
 ;;; ---------------------------------------------------------------------------
 ;;; Writing
 ;;; ---------------------------------------------------------------------------
@@ -190,7 +243,7 @@
   (when (map? result)
     (some result [:id :taxon/id :accession/id :material/id :location/id
                   :contact/id :collection/id :note/id :tag/id :synonym/id
-                  :material-change/id :tag-link/id])))
+                  :material-change/id :tag-link/id :user/id :activity/id])))
 
 (defn- write!
   "Call `f`, record the outcome, and keep going.
@@ -244,7 +297,7 @@
   (reduce
     (fn [st {:keys [refs data] :as record}]
       (let [{:keys [fields warns error]} (resolve-refs db (:ids st) refs)
-            payload (merge data fields)]
+            payload (apply-refs data fields)]
         (cond
           error (fail st table (:id record) error)
 
@@ -280,6 +333,26 @@
         (fn [db {:keys [tag-id resource-id resource-type]}]
           (tag.i/tag! db tag-id resource-id (keyword resource-type)))
         tag.spec/CreateTagLink))
+
+(defn- pass-activity
+  "An event's `:type` has to be a keyword before it is validated.
+
+  Every other keyword-valued field in this import arrives as a string and the
+  spec's `:decode/store` turns it into one -- `note.resource-type`,
+  `material.type`, `taxon.rank`. `activity.type` cannot work that way: it is
+  the dispatch key of a multi-schema, and malli picks the branch *before* it
+  decodes anything, so a string matches no branch and fails with
+  `:malli.core/invalid-dispatch-value`.
+
+  JSON has no keyword, so somebody has to make one. Here is the smallest place."
+  [db state records]
+  (pass db state "activity" records
+        (fn [db payload]
+          (activity.i/create! db (update payload :type keyword)))
+        ;; No spec: `activity.i/create!` assembles its own from the registered
+        ;; `data-schema` methods, so there is no constant to check keys
+        ;; against. It validates `data` per type either way.
+        nil))
 
 (defn- pass-taxon-update
   "taxon_vernacular and taxon_distribution are updates onto taxa that already
@@ -344,6 +417,11 @@
   Only the files that create a row of their own appear. `settings` has no id of
   its own and the two taxon_* update files carry none.
 
+  `user` and `activity` are absent deliberately. Neither is a record a later
+  import resolves against: an event is about a record rather than being one,
+  and an account is found by address, which is what `user_email` references
+  are for.
+
   `tag_link` is absent for a different reason: `tag.i/tag!` returns a boolean
   rather than the link, so there is no id to record. A tag link is reachable
   from the records it joins, so nothing needs to resolve one by source id."
@@ -397,6 +475,10 @@
   [db records]
   (let [t (fn [name] (get records name []))]
     (-> (initial-state)
+        ;; First: material_change and activity both reference a user, and this
+        ;; will not create one on demand any more than --actor will.
+        (as-> st (pass db st "user" (t "user") user.i/create!
+                       user.spec/CreateUser))
         (as-> st (pass db st "taxon" (t "taxon") taxon.i/create!
                        taxon.spec/CreateTaxon))
         (as-> st (pass db st "location" (t "location") location.i/create!
@@ -424,6 +506,9 @@
                        synonym.i/add-synonym! synonym.spec/CreateSynonym))
         (as-> st (pass-taxon-update db st "taxon_distribution"
                                     (t "taxon_distribution") :distribution))
+        ;; Last: an event names the record it concerns, so every record has to
+        ;; exist before any event can point at one.
+        (as-> st (pass-activity db st (t "activity")))
         (as-> st (restore-created-at! db st records))
         (as-> st (record-provenance! db st)))))
 
