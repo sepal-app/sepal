@@ -8,14 +8,13 @@
 
       {\"id\": \"271\",
        \"created_at\": \"2006-10-11 09:33:25\",
-       \"refs\": {\"accession\": {\"table\": \"accession\", \"id\": \"272\"}},
+       \"refs\": {\"accession_id\": {\"table\": \"accession\", \"id\": \"272\"}},
        \"data\": {\"code\": \"1\", \"quantity\": 1}}
 
   `data` goes to the component's `create!` untouched, so every imported row
   passes the same validation an interactive write does, and nothing here knows
-  a field name of whatever system produced the file. A reference resolves to
-  the field named after it -- `accession` to `accession-id` -- which is the
-  only rule any of the passes below needs.
+  a field name of whatever system produced the file. A reference is keyed by
+  the field it lands on, which is the only rule any of the passes below needs.
 
   The whole load is one transaction. Failures are collected rather than thrown
   -- the operator needs the list, not the first one -- and the transaction
@@ -161,17 +160,18 @@
   "Every reference on a record, as the fields they resolve to.
 
   Returns `{:fields {...} :warns [...]}`, or `{:error msg}` for the first
-  reference that does not resolve. A ref named `K` becomes the field `K-id`:
-  `taxon` becomes `:taxon-id`, `from-location` becomes `:from-location-id`."
+  reference that does not resolve.
+
+  **A reference is keyed by the field it lands on.** `taxon_id` resolves to
+  `:taxon-id` and `created_by` to `:created-by`, so a foreign key whose column
+  does not end in `_id` needs no special case -- which `activity.created_by`
+  would otherwise have."
   [db ids refs]
-  (reduce (fn [acc [ref-name ref]]
+  (reduce (fn [acc [field ref]]
             (let [{:keys [id error warn]} (resolve-ref db ids ref)]
               (if error
                 (reduced {:error error})
-                (cond-> (assoc-in acc
-                                  [:fields (keyword (str (name ref-name)
-                                                         "-id"))]
-                                  id)
+                (cond-> (assoc-in acc [:fields field] id)
                   warn (update :warns conj warn)))))
           {:fields {} :warns []}
           refs))

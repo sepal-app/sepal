@@ -28,12 +28,12 @@
       (testing "snake_case keys arrive kebab-cased, at every depth"
         (spit (fs/file (fs/path dir "note.json"))
               (json/write-str [{"id" "accession_note:1"
-                                "refs" {"resource" {"table" "accession"
-                                                    "id" "975"}}
+                                "refs" {"resource_id"
+                                        {"table" "accession" "id" "975"}}
                                 "data" {"resource_type" "accession"
                                         "body" "a note"}}]))
         (is (= {:id "accession_note:1"
-                :refs {:resource {:table "accession" :id "975"}}
+                :refs {:resource-id {:table "accession" :id "975"}}
                 :data {:resource-type "accession" :body "a note"}}
                (first (li/read-table dir "note")))))
 
@@ -65,28 +65,37 @@
       (is (:error (li/resolve-ref nil ids {:orcid "0000-0002"}))))))
 
 (deftest test-resolve-refs
-  ;; The whole rule: a ref named K becomes the field K-id. material_change
-  ;; carries three, so this exercises the rule rather than a single case.
+  ;; The whole rule: a reference is keyed by the field it lands on.
+  ;; material_change carries three, so this exercises the rule rather than a
+  ;; single case.
   (let [ids {"material" {"271" 12} "location" {"1" 3 "4" 8}}]
-    (testing "every reference becomes the field named after it"
+    (testing "every reference lands on the field that named it"
       (is (= {:material-id 12 :from-location-id 3 :to-location-id 8}
              (:fields (li/resolve-refs
                         nil ids
-                        {:material {:table "material" :id "271"}
-                         :from-location {:table "location" :id "1"}
-                         :to-location {:table "location" :id "4"}})))))
+                        {:material-id {:table "material" :id "271"}
+                         :from-location-id {:table "location" :id "1"}
+                         :to-location-id {:table "location" :id "4"}})))))
+
+    (testing "a foreign key whose column does not end in _id needs no rule"
+      ;; activity.created_by is the case that made this the rule: there is no
+      ;; suffix to add or strip, because the key is already the field.
+      (is (= {:created-by 12}
+             (:fields (li/resolve-refs
+                        nil {"user" {"3" 12}}
+                        {:created-by {:table "user" :id "3"}})))))
 
     (testing "a record with no references resolves to no fields"
       (is (= {} (:fields (li/resolve-refs nil ids nil)))))
 
     (testing "one bad reference fails the record, naming it"
-      (let [got (li/resolve-refs nil ids {:material {:table "material"
-                                                     :id "999"}})]
+      (let [got (li/resolve-refs nil ids {:material-id {:table "material"
+                                                        :id "999"}})]
         (is (re-find #"material 999" (:error got)))))
 
     (testing "a warning is carried up rather than swallowed"
       (is (seq (:warns (li/resolve-refs nil ids
-                                        {:parent {:sepal-id 4}})))))))
+                                        {:parent-id {:sepal-id 4}})))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; End to end, against a real database
@@ -125,30 +134,30 @@
              ;; tag.name is `unique collate nocase`, so each test needs its own.
              "tag" [(rec tag {"name" (str "Fixture tag " suffix)})]
              "accession" [(-> (rec accession {"code" (str "2024.000" suffix)}
-                                   {"taxon" (ref-to "taxon" taxon)})
+                                   {"taxon_id" (ref-to "taxon" taxon)})
                               (assoc "created_at" "2006-10-11 09:33:25"))]
              "material" [(rec material {"code" "1" "quantity" 1
                                         "type" "plant" "status" "alive"}
-                              {"accession" (ref-to "accession" accession)
-                               "location" (ref-to "location" location)})]
+                              {"accession_id" (ref-to "accession" accession)
+                               "location_id" (ref-to "location" location)})]
              "note" [(rec (str "accession_note:50-" suffix)
                           {"body" "an imported note"
                            "resource_type" "accession"}
-                          {"resource" (ref-to "accession" accession)})
+                          {"resource_id" (ref-to "accession" accession)})
                      (rec (str "plant_note:50-" suffix)
                           {"body" "same id, other table"
                            "resource_type" "material"}
-                          {"resource" (ref-to "material" material)})
+                          {"resource_id" (ref-to "material" material)})
                      ;; A note on the taxon this run created. The converter
                      ;; used to hang this on the taxon record as a field, and
                      ;; the loader dropped it.
                      (rec (str "taxon_create:900-" suffix)
                           {"body" "why this taxon was created"
                            "resource_type" "taxon"}
-                          {"resource" (ref-to "taxon" taxon)})]
+                          {"resource_id" (ref-to "taxon" taxon)})]
              "tag_link" [(rec (sid "60") {"resource_type" "accession"}
-                              {"tag" (ref-to "tag" tag)
-                               "resource" (ref-to "accession" accession)})]}]
+                              {"tag_id" (ref-to "tag" tag)
+                               "resource_id" (ref-to "accession" accession)})]}]
       (spit (fs/file (fs/path dir (str table ".json")))
             (json/write-str records)))))
 
@@ -259,8 +268,8 @@
                 (json/write-str
                   [(rec "41-b" {"code" "1" "quantity" 1
                                 "type" "plant" "status" "alive"}
-                        {"accession" (ref-to "accession" "does-not-exist")
-                         "location" (ref-to "location" "10-b")})]))
+                        {"accession_id" (ref-to "accession" "does-not-exist")
+                         "location_id" (ref-to "location" "10-b")})]))
           (is (= 1 (li/load-import! db {:dir (str dir)
                                         :actor (:user/email user)
                                         :allow-nonempty true}))
@@ -305,8 +314,8 @@
                 (json/write-str
                   [(rec "40-e" {"code" "1" "quantity" 1 "type" "plant"
                                 "status" "alive" "not_a_material_field" "x"}
-                        {"accession" (ref-to "accession" "30-e")
-                         "location" (ref-to "location" "10-e")})]))
+                        {"accession_id" (ref-to "accession" "30-e")
+                         "location_id" (ref-to "location" "10-e")})]))
           (is (= 1 (li/load-import! db {:dir (str dir)
                                         :actor (:user/email user)
                                         :allow-nonempty true})))
@@ -329,13 +338,13 @@
                 (json/write-str
                   [(rec "41-f" {"code" "1" "quantity" 1
                                 "type" "plant" "status" "alive"}
-                        {"accession" (ref-to "accession" "nope")
-                         "location" (ref-to "location" "10-f")})]))
+                        {"accession_id" (ref-to "accession" "nope")
+                         "location_id" (ref-to "location" "10-f")})]))
           (spit (fs/file (fs/path dir "note.json"))
                 (json/write-str
                   [(rec "accession_note:51"
                         {"body" "orphan" "resource_type" "accession"}
-                        {"resource" (ref-to "accession" "also-nope")})]))
+                        {"resource_id" (ref-to "accession" "also-nope")})]))
           (let [out (with-out-str
                       (li/load-import! db {:dir (str dir)
                                            :actor (:user/email user)
