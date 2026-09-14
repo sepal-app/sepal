@@ -48,9 +48,27 @@
         button (.selectFirst body "button")]
     (is (= "/accession/12/delete/" (.attr button "hx-get")))
     (is (= "#delete-modal-container" (.attr button "hx-target")))
-    (is (seq (.attr button "hx-on::after-swap"))
-        "the dialog is opened after it arrives")
     (is (some? (.selectFirst body "#delete-modal-container")))))
+
+(deftest test-the-button-opens-the-dialog-on-an-event-it-actually-receives
+  ;; htmx fires htmx:afterSwap on the swapped-in elements — htmx.js, inside
+  ;; `forEach(settleInfo.elts, ...)` — which are inside #delete-modal-container.
+  ;; That container is a sibling of this button, and events bubble up rather
+  ;; than sideways, so an `hx-on::after-swap` here never fires: the dialog
+  ;; lands in the DOM and showModal() is never called, which looks like a GET
+  ;; in the network tab and nothing on screen.
+  ;;
+  ;; htmx:afterRequest is fired on the requesting element, and it fires after
+  ;; the swap. table.clj and notes.clj both use it for the same reason.
+  (let [body (parse (ui.delete/button :delete-url "/accession/12/delete/"))
+        button (.selectFirst body "button")]
+    (is (not (.hasAttr button "hx-on::after-swap"))
+        "afterSwap is dispatched on the target, which is not this button")
+    (is (seq (.attr button "hx-on::after-request"))
+        "the dialog is opened on the event the button itself receives")
+    (is (re-find #"showModal" (.attr button "hx-on::after-request")))
+    (is (re-find #"successful" (.attr button "hx-on::after-request"))
+        "a failed fetch leaves no dialog to open")))
 
 (deftest test-the-markup-carries-no-fragment-element
   ;; Chassis has no fragment element: [:<> ...] renders a literal <<>> tag.

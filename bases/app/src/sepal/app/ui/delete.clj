@@ -20,10 +20,17 @@
               :hx-get delete-url
               :hx-target "#delete-modal-container"
               :hx-swap "innerHTML"
-              ;; `hx-on::after-swap` has two colons and is not a valid keyword
-              ;; literal, so it is built with `keyword`.
-              (keyword "hx-on::after-swap")
-              "document.getElementById('delete_modal').showModal()"}
+              ;; after-request, not after-swap. htmx fires htmx:afterSwap on
+              ;; the swapped-in elements, which are inside the container --
+              ;; a sibling of this button, and events bubble up rather than
+              ;; sideways, so the handler would never run. htmx:afterRequest
+              ;; is fired on the requesting element and fires after the swap,
+              ;; which is why table.clj and notes.clj both use it.
+              ;;
+              ;; The two colons are not a valid keyword literal, hence
+              ;; `keyword`.
+              (keyword "hx-on::after-request")
+              "if (event.detail.successful) document.getElementById('delete_modal').showModal()"}
      "Delete"]
     [:div {:id "delete-modal-container"}]))
 
