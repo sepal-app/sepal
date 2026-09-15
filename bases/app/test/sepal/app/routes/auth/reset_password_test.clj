@@ -19,6 +19,21 @@
 ;; Happy Path Tests
 ;; =============================================================================
 
+(deftest reset-password-fields-are-masked-test
+  (tf/testing "The reset form does not show what you type"
+    {[::user.i/factory :key/user] {:db *db* :password "oldpassword1"}}
+    (fn [{:keys [user]}]
+      ;; ui.form/input-field defaults to type="text", so a password field that
+      ;; does not ask for type="password" renders in the clear.
+      (let [token (create-token (:user/email user))
+            {:keys [response]} (-> (peri/session *app*)
+                                   (peri/request (str "/reset-password?token=" token)))
+            body (Jsoup/parse (:body response))]
+        (is (= 200 (:status response)))
+        (doseq [field ["password" "confirm_password"]]
+          (is (= "password" (.attr (.selectFirst body (str "input[name=" field "]")) "type"))
+              (str field " must be masked")))))))
+
 (deftest reset-password-full-flow-test
   (tf/testing "Full reset password flow: request -> receive email -> reset -> login"
     {[::user.i/factory :key/user] {:db *db*

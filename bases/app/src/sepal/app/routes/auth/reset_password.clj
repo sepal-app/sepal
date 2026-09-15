@@ -18,11 +18,13 @@
                (form/hidden-field :name "token" :value token)
                (form/input-field :label "Password"
                                  :name "password"
+                                 :type "password"
                                  :minlength 8
                                  :required true
                                  :data-error-msg "The password must be a minimum of 8 characters long.")
                (form/input-field :label "Confirm password"
                                  :name "confirm_password"
+                                 :type "password"
                                  :minlength 8
                                  :required true
                                  :data-error-msg "The passwords do not match")
