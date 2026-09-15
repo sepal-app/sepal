@@ -45,6 +45,42 @@
           (is (some? (.selectFirst body "#code-errors"))
               "Should have error list for code field"))))))
 
+(deftest test-create-material-store-failure-answers-with-the-fallback
+  (tf/testing "A POST that validates but fails in the store answers with the
+               fallback, not an empty 422"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      ;; The accession id passes FormParams — it is an int above zero — and
+      ;; then violates the foreign key, so the failure carries no malli
+      ;; explain. Before failjure this humanized to nil and went out as a 422
+      ;; with an empty body, which showed the user nothing.
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (-> sess
+                                            (peri/request "/material/new/"))
+            create-token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request "/material/new/"
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token create-token
+                                                          :code "M1"
+                                                          :accession-id "999999"
+                                                          :location-id (str (:location/id location))
+                                                          :quantity "1"
+                                                          :status "alive"
+                                                          :type "plant"}))]
+        (is (not= 422 (:status response))
+            (str "A failure with no field errors must not answer 422. Body: "
+                 (:body response)))
+
+        ;; Not merely "a redirect": the success path redirects too, to the new
+        ;; record. Only the fallback sends you back to the create form.
+        (is (= "/material/new/" (get-in response [:headers "HX-Redirect"]))
+            (str "Expected the fallback redirect to the create form, got "
+                 (pr-str (get-in response [:headers "HX-Redirect"]))))))))
+
 (deftest test-create-material-form-has-htmx-attributes
   (tf/testing "Form has HTMX attributes for OOB error swapping"
     {[::user.i/factory :key/user] {:db *db*

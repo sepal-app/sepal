@@ -1,7 +1,9 @@
 (ns sepal.app.routes.accession.detail.general
-  (:require [sepal.accession.interface :as accession.i]
+  (:require [failjure.core :as f]
+            [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -14,7 +16,6 @@
             [sepal.collection.interface :as coll.i]
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
@@ -69,13 +70,10 @@
              :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
 (defn save! [db accession-id updated-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [accession (accession.i/update! tx accession-id data)]
-        (accession.activity/create! tx accession.activity/updated updated-by accession)
-        accession))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [accession (accession.i/update! tx accession-id data)]
+      (accession.activity/create! tx accession.activity/updated updated-by accession)
+      accession)))
 
 (def FormParams
   [:map {:closed true}
@@ -115,13 +113,12 @@
 
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (save! db (:accession/id resource) (:user/id viewer) result)]
-            (if-not (error.i/error? saved)
-              (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-              (http/validation-errors (validation.i/humanize saved))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
+        (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+        (f/when-failed [e]
+          (http/failure-response e (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                                       (flash/error "Could not save the accession")))))
 
       (let [panel-data (accession.panel/fetch-panel-data db resource)
             collection (coll.i/get-by-accession-id db (:accession/id resource))]

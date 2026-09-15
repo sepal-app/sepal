@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.create
-  (:require [sepal.accession.interface :as accession.i]
+  (:require [failjure.core :as f]
+            [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.flash :as flash]
@@ -9,7 +10,6 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -32,13 +32,10 @@
                               "New accession"]))
 
 (defn create! [db created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [acc (accession.i/create! tx data)]
-        (accession.activity/create! tx accession.activity/created created-by acc)
-        acc))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [acc (accession.i/create! tx data)]
+      (accession.activity/create! tx accession.activity/created created-by acc)
+      acc)))
 
 (def FormParams
   ;; Every field the form posts. The map is closed, so a key missing from here
@@ -63,13 +60,12 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          ;; Validation error - return 422 with OOB error elements
-          (http/validation-errors (validation.i/humanize result))
-          ;; Valid - save and redirect
-          (let [saved (create! db (:user/id viewer) result)]
-            (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
-                (flash/success "Accession created successfully")))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      saved (f/try* (create! db (:user/id viewer) data))]
+        (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
+            (flash/success "Accession created successfully"))
+        (f/when-failed [e]
+          (http/failure-response e (-> (http/hx-redirect accession.routes/new)
+                                       (flash/error "Could not create the accession")))))
 
       (render :values form-params))))

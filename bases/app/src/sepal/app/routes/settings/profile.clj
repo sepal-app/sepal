@@ -1,11 +1,11 @@
 (ns sepal.app.routes.settings.profile
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as ui.form]
-            [sepal.error.interface :as error.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -58,19 +58,17 @@
                 :email (:user/email viewer)}]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [updated (user.i/update! db (:user/id viewer) result)]
-            (if (error.i/error? updated)
-              (-> (http/see-other settings.routes/profile)
-                  (flash/error "Failed to update profile"))
-              (do
-                (user.activity/create! db
-                                       (:user/id viewer)  ;; created-by
-                                       viewer             ;; user entity
-                                       {})                ;; additional data (schema doesn't support full_name)
-                (-> (http/see-other settings.routes/profile)
-                    (flash/success "Profile updated successfully")))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _updated (f/try* (user.i/update! db (:user/id viewer) data))]
+        (do
+          (user.activity/create! db
+                                 (:user/id viewer)  ;; created-by
+                                 viewer             ;; user entity
+                                 {})                ;; additional data (schema doesn't support full_name)
+          (-> (http/see-other settings.routes/profile)
+              (flash/success "Profile updated successfully")))
+        (f/when-failed [e]
+          (http/failure-response e (-> (http/see-other settings.routes/profile)
+                                       (flash/error "Failed to update profile")))))
 
       (render :viewer viewer :values values :flash flash))))

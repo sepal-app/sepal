@@ -1,5 +1,7 @@
 (ns sepal.app.routes.accession.detail.collection
-  (:require [sepal.app.http-response :as http]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -11,7 +13,6 @@
             [sepal.collection.interface.activity :as coll.activity]
             [sepal.collection.interface.datum :as datum]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -199,21 +200,18 @@
        :elevation-accuracy (:collection/elevation-accuracy collection)})))
 
 (defn save! [db accession-id created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [existing (coll.i/get-by-accession-id tx accession-id)
-            saved (if existing
-                    (coll.i/update! tx (:collection/id existing) data)
-                    (coll.i/create! tx (assoc data :accession-id accession-id)))]
-        (coll.activity/create! tx
-                               (if existing
-                                 coll.activity/updated
-                                 coll.activity/created)
-                               created-by
-                               saved)
-        saved))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [existing (coll.i/get-by-accession-id tx accession-id)
+          saved (if existing
+                  (coll.i/update! tx (:collection/id existing) data)
+                  (coll.i/create! tx (assoc data :accession-id accession-id)))]
+      (coll.activity/create! tx
+                             (if existing
+                               coll.activity/updated
+                               coll.activity/created)
+                             created-by
+                             saved)
+      saved)))
 
 (def FormParams
   [:map {:closed true}
@@ -258,16 +256,15 @@
       (http/not-found)
       (case request-method
         :post
-        (let [result (validation.i/validate-form-values FormParams form-params)]
-          (if (error.i/error? result)
-            (http/validation-errors (validation.i/humanize result))
-            (let [coll-data (form-params->collection-data result)
-                  saved (save! db (:accession/id accession) (:user/id viewer)
-                               coll-data)]
-              (if-not (error.i/error? saved)
-                (http/hx-redirect (z/url-for accession.routes/detail-collection
-                                             {:id (:accession/id accession)}))
-                (http/validation-errors (validation.i/humanize saved))))))
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                        _saved (f/try* (save! db (:accession/id accession) (:user/id viewer)
+                                              (form-params->collection-data data)))]
+          (http/hx-redirect (z/url-for accession.routes/detail-collection
+                                       {:id (:accession/id accession)}))
+          (f/when-failed [e]
+            (http/failure-response e (-> (http/hx-redirect (z/url-for accession.routes/detail-collection
+                                                                      {:id (:accession/id accession)}))
+                                         (flash/error "Could not save the collection data")))))
 
         (let [panel-data (accession.panel/fetch-panel-data db accession)]
           (render :accession accession

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.create
-  (:require [sepal.accession.interface :as accession.i]
+  (:require [failjure.core :as f]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.form :as material.form]
@@ -7,7 +8,6 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
@@ -34,13 +34,10 @@
                            "New material"]))
 
 (defn create! [db created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [acc (material.i/create! tx data)]
-        (material.activity/create! tx material.activity/created created-by acc)
-        acc))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [acc (material.i/create! tx data)]
+      (material.activity/create! tx material.activity/created created-by acc)
+      acc)))
 
 (def FormParams
   [:map {:closed true}
@@ -55,12 +52,13 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (create! db (:user/id viewer) result)]
-            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-                (flash/success "Material created successfully")))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      saved (f/try* (create! db (:user/id viewer) data))]
+        (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+            (flash/success "Material created successfully"))
+        (f/when-failed [e]
+          (http/failure-response e (-> (http/hx-redirect material.routes/new)
+                                       (flash/error "Could not create the material")))))
 
       ;; The location panel's "Plant here" link names the accession, which is
       ;; the only way this form knows one: the select is searched client-side.

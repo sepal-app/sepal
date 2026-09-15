@@ -1,10 +1,11 @@
 (ns sepal.app.routes.media.uploaded
-  (:require [sepal.app.html :as html]
-            [sepal.app.params :as params]
+  (:require [failjure.core :as f]
+            [sepal.app.html :as html]
+            [sepal.app.http-response :as http]
             [sepal.app.ui.media :as media.ui]
-            [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
 (def FormParams
@@ -18,26 +19,15 @@
    [:size :int]])
 
 (defn handler [& {:keys [::z/context form-params viewer] :as _request}]
-  (let [{:keys [db]} context
-        {filename :filename
-         content-type :contentType
-         link-resource-type :linkResourceType
-         link-resource-id :linkResourceId
-         s3-bucket :s3Bucket
-         s3-key :s3Key
-         size :size} (params/decode FormParams form-params)
-        result (media.i/create! db
-                                {:media-type content-type
-                                 :s3-bucket s3-bucket
-                                 :s3-key s3-key
-                                 :size-in-bytes size
-                                 :title filename
-                                 :created-by (:user/id viewer)})]
-
-    (if (error.i/error? result)
-      ;; TODO: handle error properly
-      (throw (ex-info "Failed to create media" {:error result}))
-
+  (let [{:keys [db]} context]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    result (f/try* (media.i/create! db
+                                                    {:media-type (:contentType data)
+                                                     :s3-bucket (:s3Bucket data)
+                                                     :s3-key (:s3Key data)
+                                                     :size-in-bytes (:size data)
+                                                     :title (:filename data)
+                                                     :created-by (:user/id viewer)}))]
       (let [media (assoc result :thumbnail-url (media.ui/thumbnail-url (:media/id result)))]
         ;; Create activity record for the media creation
         (media.activity/create! db
@@ -47,12 +37,16 @@
 
         ;; If we were sent a resource type and resource id to link then link
         ;; the media and the resource
-        (when (and (some? link-resource-type)
-                   (some? link-resource-id))
+        (when (and (some? (:linkResourceType data))
+                   (some? (:linkResourceId data)))
           (media.i/link! db
                          (:media/id media)
-                         link-resource-id
-                         link-resource-type))
+                         (:linkResourceId data)
+                         (:linkResourceType data)))
 
         (-> (media.ui/media-item :item media)
-            (html/render-partial))))))
+            (html/render-partial)))
+      (f/when-failed [e]
+        (http/failure-response e (http/unprocessable-entity
+                                   [:div {:class "spl-error"}
+                                    "The upload could not be saved."]))))))

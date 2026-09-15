@@ -1,4 +1,9 @@
 {:sort-ns-references? true
+ ;; Both bind like let rather than taking their arguments in a call
+ ;; position, so the body lines up at two spaces instead of under the
+ ;; binding vector.
+ :extra-indents {failjure.core/attempt-all [[:block 1]]
+                 failjure.core/when-failed [[:block 1]]}
  :function-arguments-indentation :cursive
  :parallel? true
  :paths ["components" "bases" "projects"]}
