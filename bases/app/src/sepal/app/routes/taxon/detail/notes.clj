@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.notes
-  (:require [sepal.app.html :as html]
+  (:require [failjure.core :as f]
+            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.panel :as taxon.panel]
@@ -8,7 +9,6 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.note.interface :as note.i]
             [sepal.note.interface.activity :as note.activity]
             [sepal.validation.interface :as validation.i]
@@ -28,11 +28,8 @@
     (z/url-for taxon.routes/detail-note {:id taxon-id :note-id note-id})))
 
 (defn- write! [db created-by f]
-  (try
-    (db.i/with-transaction [tx db]
-      (f tx created-by))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (f tx created-by)))
 
 (defn render-list [db taxon]
   (let [id (:taxon/id taxon)]
@@ -73,20 +70,18 @@
         id (:taxon/id resource)]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (write! db (:user/id viewer)
-                              (fn [tx created-by]
-                                (let [note (note.i/create! tx {:body (:body result)
-                                                               :resource-type resource-type
-                                                               :resource-id id
-                                                               :created-by created-by})]
-                                  (note.activity/create! tx note.activity/created created-by note)
-                                  note)))]
-            (if (error.i/error? saved)
-              (http/validation-errors (validation.i/humanize saved))
-              (render-list db resource)))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (write! db (:user/id viewer)
+                                             (fn [tx created-by]
+                                               (let [note (note.i/create! tx {:body (:body data)
+                                                                              :resource-type resource-type
+                                                                              :resource-id id
+                                                                              :created-by created-by})]
+                                                 (note.activity/create! tx note.activity/created created-by note)
+                                                 note))))]
+        (render-list db resource)
+        (f/when-failed [e]
+          (http/failure-partial e "The note could not be saved.")))
 
       (let [panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
@@ -105,25 +100,23 @@
       (http/not-found)
       (case request-method
         :post
-        (let [result (validation.i/validate-form-values FormParams form-params)]
-          (if (error.i/error? result)
-            (http/validation-errors (validation.i/humanize result))
-            (let [saved (write! db (:user/id viewer)
-                                (fn [tx created-by]
-                                  (let [updated (note.i/update! tx note-id {:body (:body result)})]
-                                    (note.activity/create! tx note.activity/updated created-by updated)
-                                    updated)))]
-              (if (error.i/error? saved)
-                (http/validation-errors (validation.i/humanize saved))
-                (render-list db resource)))))
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                        _saved (f/try* (write! db (:user/id viewer)
+                                               (fn [tx created-by]
+                                                 (let [updated (note.i/update! tx note-id {:body (:body data)})]
+                                                   (note.activity/create! tx note.activity/updated created-by updated)
+                                                   updated))))]
+          (render-list db resource)
+          (f/when-failed [e]
+            (http/failure-partial e "The note could not be saved.")))
 
         :delete
-        (let [deleted (write! db (:user/id viewer)
-                              (fn [tx created-by]
-                                (note.activity/create! tx note.activity/deleted created-by note)
-                                (note.i/delete! tx note-id)))]
-          (if (error.i/error? deleted)
-            (http/validation-errors (validation.i/humanize deleted))
-            (render-list db resource)))
+        (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
+                                                 (fn [tx created-by]
+                                                   (note.activity/create! tx note.activity/deleted created-by note)
+                                                   (note.i/delete! tx note-id))))]
+          (render-list db resource)
+          (f/when-failed [e]
+            (http/failure-partial e "The note could not be deleted.")))
 
         (http/not-found)))))

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.setup.regional
   (:require [clojure.string :as str]
+            [failjure.core :as f]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
@@ -81,17 +82,17 @@
 
     (case request-method
       :post
-      (let [;; Default empty timezone to UTC before validation
-            form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))
-            result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (html/render-page (render :values form-params
-                                    :errors (validation.i/humanize result)))
-          (do
-            (settings.i/set-value! db "organization.timezone" (:timezone result))
-            (setup.shared/set-current-step! db 5)
-            (-> (http/see-other setup.routes/taxonomy)
-                (flash/success "Timezone saved")))))
+      ;; Default empty timezone to UTC before validation
+      (let [form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))]
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                        _saved (f/try* (do
+                                         (settings.i/set-value! db "organization.timezone" (:timezone data))
+                                         (setup.shared/set-current-step! db 5)))]
+          (-> (http/see-other setup.routes/taxonomy)
+              (flash/success "Timezone saved"))
+          (f/when-failed [e]
+            (html/render-page (render :values form-params
+                                      :errors (error.i/humanize e))))))
 
       ;; GET
       (do

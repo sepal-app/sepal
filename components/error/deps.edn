@@ -1,4 +1,4 @@
 {:paths ["src" "resources"]
- :deps {}
+ :deps {failjure/failjure {:mvn/version "2.3.62"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}

@@ -1,5 +1,7 @@
 {:linters {:refer-all {:exclude [clojure.test]}
            :unused-binding {:exclude-destructured-as true}
            :unresolved-var {:exclude [instaparse.core/transform]}}
- :lint-as {sepal.database.interface/with-transaction clojure.core/let}
+ :lint-as {sepal.database.interface/with-transaction clojure.core/let
+           failjure.core/attempt-all clojure.core/let
+           failjure.core/when-failed clojure.core/fn}
  :hooks {:analyze-call {sepal.app.cli.system/with-system hooks.with-system/with-system}}}

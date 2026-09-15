@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.general
-  (:require [sepal.accession.interface :as accession.i]
+  (:require [failjure.core :as f]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
@@ -11,7 +12,6 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
@@ -65,13 +65,10 @@
                                                        :taxon taxon)))
 
 (defn save! [db material-id updated-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [material (material.i/update! tx material-id data)]
-        (material.activity/create! tx material.activity/updated updated-by material)
-        material))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [material (material.i/update! tx material-id data)]
+      (material.activity/create! tx material.activity/updated updated-by material)
+      material)))
 
 (def FormParams
   [:map {:closed true}
@@ -100,12 +97,12 @@
                 :type (:material/type resource)}]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (save! db (:material/id resource) (:user/id viewer) result)]
-            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-                (flash/success "Material updated successfully")))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
+        (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+            (flash/success "Material updated successfully"))
+        (f/when-failed [e]
+          (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)}) "Could not save the material")))
 
       (let [panel-data (material.panel/fetch-panel-data db resource)
             reasons (material.i/list-reasons db)]

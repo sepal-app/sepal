@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.users.invite
-  (:require [pogonos.core :as mustache]
+  (:require [failjure.core :as f]
+            [pogonos.core :as mustache]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -109,48 +110,48 @@
                 invitation-email-from invitation-email-subject]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values InvitationForm form-params)]
-        (if (error.i/error? result)
+      (f/attempt-all [result (validation.i/validate-form-values InvitationForm form-params)]
+        (let [{:keys [email role full-name]} result
+              email-exists-error (check-email-exists db email)]
+          (if email-exists-error
+            (render :viewer viewer
+                    :errors email-exists-error
+                    :values form-params)
+            ;; Create user and send invitation
+            (f/attempt-all [user-result (f/try* (user.i/create! db {:email email
+                                                                    :password (generate-random-password)
+                                                                    :role role
+                                                                    :full-name full-name
+                                                                    :status :invited}))]
+              (let [_ (user.activity/create-user! db (:user/id viewer) user-result)
+                    token (token.i/encode token-service
+                                          {:email email
+                                           :expires-at (token.i/expires-in-hours 24)})
+                    accept-url (build-accept-url app-base-url token)
+                    inviter-name (or (:user/full-name viewer) (:user/email viewer))]
+                (try
+                  (send-invitation-email mail
+                                         {:to email
+                                          :full-name full-name
+                                          :inviter-name inviter-name
+                                          :inviter-email (:user/email viewer)
+                                          :accept-url accept-url
+                                          :from invitation-email-from
+                                          :subject invitation-email-subject})
+                  (-> (http/see-other settings.routes/users)
+                      (flash/add-message (str "Invitation sent to " email)))
+                  (catch Exception e
+                    (println (str "Error: Could not send invitation email: " (ex-message e)))
+                    (-> (http/see-other settings.routes/users)
+                        (flash/error "User created but failed to send invitation email")))))
+              (f/when-failed [_e]
+                (render :viewer viewer
+                        :errors {:email ["Failed to create user"]}
+                        :values form-params)))))
+        (f/when-failed [e]
           (render :viewer viewer
-                  :errors (validation.i/humanize result)
-                  :values form-params)
-          (let [{:keys [email role full-name]} result
-                email-exists-error (check-email-exists db email)]
-            (if email-exists-error
-              (render :viewer viewer
-                      :errors email-exists-error
-                      :values form-params)
-              ;; Create user and send invitation
-              (let [user-result (user.i/create! db {:email email
-                                                    :password (generate-random-password)
-                                                    :role role
-                                                    :full-name full-name
-                                                    :status :invited})]
-                (if (error.i/error? user-result)
-                  (render :viewer viewer
-                          :errors {:email ["Failed to create user"]}
-                          :values form-params)
-                  (let [_ (user.activity/create-user! db (:user/id viewer) user-result)
-                        token (token.i/encode token-service
-                                              {:email email
-                                               :expires-at (token.i/expires-in-hours 24)})
-                        accept-url (build-accept-url app-base-url token)
-                        inviter-name (or (:user/full-name viewer) (:user/email viewer))]
-                    (try
-                      (send-invitation-email mail
-                                             {:to email
-                                              :full-name full-name
-                                              :inviter-name inviter-name
-                                              :inviter-email (:user/email viewer)
-                                              :accept-url accept-url
-                                              :from invitation-email-from
-                                              :subject invitation-email-subject})
-                      (-> (http/see-other settings.routes/users)
-                          (flash/add-message (str "Invitation sent to " email)))
-                      (catch Exception e
-                        (println (str "Error: Could not send invitation email: " (ex-message e)))
-                        (-> (http/see-other settings.routes/users)
-                            (flash/error "User created but failed to send invitation email")))))))))))
+                  :errors (error.i/humanize e)
+                  :values form-params)))
 
       ;; GET
       (render :viewer viewer :values form-params))))

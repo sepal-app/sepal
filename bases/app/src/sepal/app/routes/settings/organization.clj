@@ -1,11 +1,11 @@
 (ns sepal.app.routes.settings.organization
   (:require [clojure.string :as str]
+            [failjure.core :as f]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
-            [sepal.error.interface :as error.i]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
@@ -164,18 +164,18 @@
         values (settings->form-values current-settings)]
     (case request-method
       :post
-      (let [;; Default empty timezone to UTC before validation
-            form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))
-            result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [new-settings (form-values->settings result)]
-            (settings.i/set-values! db new-settings)
-            (settings.activity/create! db
-                                       settings.activity/updated
-                                       (:user/id viewer)
-                                       {:changes new-settings})
-            (-> (http/see-other settings.routes/organization)
-                (flash/success "Organization settings updated successfully")))))
+      ;; Default empty timezone to UTC before validation
+      (let [form-params (update form-params "timezone" #(if (str/blank? %) "UTC" %))]
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                        _saved (f/try* (let [new-settings (form-values->settings data)]
+                                         (settings.i/set-values! db new-settings)
+                                         (settings.activity/create! db
+                                                                    settings.activity/updated
+                                                                    (:user/id viewer)
+                                                                    {:changes new-settings})))]
+          (-> (http/see-other settings.routes/organization)
+              (flash/success "Organization settings updated successfully"))
+          (f/when-failed [e]
+            (http/failure-flash e (http/see-other settings.routes/organization) "Could not save the organization settings"))))
 
       (render :viewer viewer :values values :flash flash))))

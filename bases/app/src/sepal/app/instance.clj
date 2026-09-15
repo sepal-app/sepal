@@ -16,7 +16,6 @@
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.mail.interface :as mail.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.material.interface :as material.i]
@@ -589,9 +588,6 @@
                                    :password password
                                    :role :admin
                                    :status :active})]
-      (when (error.i/error? user)
-        (throw (ex-info "Could not create the admin user"
-                        {:reason :create-user-failed :error user :email email})))
       (setup.shared/complete-setup! db)
       {:user-id (:user/id user)})))
 
@@ -669,9 +665,6 @@
                                                      :password (random-password)
                                                      :role :admin
                                                      :status :invited})]
-                     (when (error.i/error? created)
-                       (throw (ex-info "Could not create the owner"
-                                       {:reason :create-user-failed :error created :email email})))
                      created))
           token (token.i/encode token-service {:email email
                                                :expires-at (token.i/expires-in-hours 24)})

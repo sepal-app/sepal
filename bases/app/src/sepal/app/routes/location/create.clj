@@ -1,12 +1,12 @@
 (ns sepal.app.routes.location.create
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.validation.interface :as validation.i]
@@ -27,13 +27,10 @@
                            "New location"]))
 
 (defn create! [db created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [location (location.i/create! tx data)]
-        (location.activity/create! tx location.activity/created created-by location)
-        location))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [location (location.i/create! tx data)]
+      (location.activity/create! tx location.activity/created created-by location)
+      location)))
 
 (def FormParams
   [:map {:closed true}
@@ -45,11 +42,11 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (create! db (:user/id viewer) result)]
-            (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
-                (flash/success "Location created successfully")))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      saved (f/try* (create! db (:user/id viewer) data))]
+        (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
+            (flash/success "Location created successfully"))
+        (f/when-failed [e]
+          (http/failure-flash e (http/hx-redirect location.routes/new) "Could not create the location")))
 
       (render :values form-params))))

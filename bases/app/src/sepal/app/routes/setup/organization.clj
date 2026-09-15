@@ -1,5 +1,6 @@
 (ns sepal.app.routes.setup.organization
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.setup.layout :as layout]
@@ -99,16 +100,16 @@
 
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (let [new-settings (form-values->settings data)]
+                                       (when (seq new-settings)
+                                         (settings.i/set-values! db new-settings))
+                                       (setup.shared/set-current-step! db 4)))]
+        (-> (http/see-other setup.routes/regional)
+            (flash/success "Organization information saved"))
+        (f/when-failed [e]
           (html/render-page (render :values form-params
-                                    :errors (validation.i/humanize result)))
-          (let [new-settings (form-values->settings result)]
-            (when (seq new-settings)
-              (settings.i/set-values! db new-settings))
-            (setup.shared/set-current-step! db 4)
-            (-> (http/see-other setup.routes/regional)
-                (flash/success "Organization information saved")))))
+                                    :errors (error.i/humanize e)))))
 
       ;; GET
       (do

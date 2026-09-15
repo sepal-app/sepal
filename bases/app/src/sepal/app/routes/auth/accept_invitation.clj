@@ -1,5 +1,6 @@
 (ns sepal.app.routes.auth.accept-invitation
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -82,31 +83,33 @@
           (= :invited (:user/status user))
           (case request-method
             :post
-            (let [result (validation.i/validate-form-values AcceptInvitationForm params)]
-              (if (error.i/error? result)
+            (f/attempt-all [result (validation.i/validate-form-values AcceptInvitationForm params)]
+              (if-not (passwords-match? result)
+                (render :email email
+                        :full-name (:full-name result)
+                        :token token
+                        :errors {:confirm-password ["Passwords do not match"]})
+                ;; All good - activate user
+                (f/attempt-all [_activated (f/try* (let [{:keys [password full-name]} result
+                                                         user-id (:user/id user)]
+                                                     ;; Update full name if provided
+                                                     (when full-name
+                                                       (user.i/update! db user-id {:full-name full-name}))
+                                                     ;; Set password
+                                                     (user.i/set-password! db user-id password)
+                                                     ;; Activate user
+                                                     (user.i/activate! db user-id)))]
+                  ;; Redirect to login with email prefilled
+                  (let [display-name (or (:full-name result) (:user/full-name user) email)]
+                    (-> (http/found auth.routes/login {:email email})
+                        (flash/add-message (str "Password set for " display-name ". Please log in."))))
+                  (f/when-failed [e]
+                    (http/failure-flash e (http/found auth.routes/login {:email email}) "Could not set your password. Please try again."))))
+              (f/when-failed [e]
                 (render :email email
                         :full-name (or (get params "full-name") (:user/full-name user))
                         :token token
-                        :errors (validation.i/humanize result))
-                (if-not (passwords-match? result)
-                  (render :email email
-                          :full-name (:full-name result)
-                          :token token
-                          :errors {:confirm-password ["Passwords do not match"]})
-                  ;; All good - activate user
-                  (let [{:keys [password full-name]} result
-                        user-id (:user/id user)]
-                    ;; Update full name if provided
-                    (when full-name
-                      (user.i/update! db user-id {:full-name full-name}))
-                    ;; Set password
-                    (user.i/set-password! db user-id password)
-                    ;; Activate user
-                    (user.i/activate! db user-id)
-                    ;; Redirect to login with email prefilled
-                    (let [display-name (or full-name (:user/full-name user) email)]
-                      (-> (http/found auth.routes/login {:email email})
-                          (flash/add-message (str "Password set for " display-name ". Please log in."))))))))
+                        :errors (error.i/humanize e))))
 
             ;; GET - show form
             (render :email email

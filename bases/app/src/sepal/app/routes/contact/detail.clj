@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.detail
-  (:require [sepal.app.authorization :as authz]
+  (:require [failjure.core :as f]
+            [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
@@ -15,7 +16,6 @@
             [sepal.contact.interface.permission :as contact.perm]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -46,13 +46,10 @@
                            (:contact/name contact)]))
 
 (defn update! [db contact-id updated-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [contact (contact.i/update! tx contact-id data)]
-        (contact.activity/create! tx contact.activity/updated updated-by contact)
-        contact))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [contact (contact.i/update! tx contact-id data)]
+      (contact.activity/create! tx contact.activity/updated updated-by contact)
+      contact)))
 
 (def FormParams
   [:map {:closed true}
@@ -101,12 +98,12 @@
                     :notes (:contact/notes resource)}]
         (case request-method
           :post
-          (let [result (validation.i/validate-form-values FormParams form-params)]
-            (if (error.i/error? result)
-              (http/validation-errors (validation.i/humanize result))
-              (let [saved (update! db id (:user/id viewer) result)]
-                (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-                    (flash/success "Contact updated successfully")))))
+          (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                          saved (f/try* (update! db id (:user/id viewer) data))]
+            (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+                (flash/success "Contact updated successfully"))
+            (f/when-failed [e]
+              (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) "Could not save the contact")))
 
           (let [panel-data (contact.panel/fetch-panel-data db resource)]
             (render :contact resource

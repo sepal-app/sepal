@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.backups.index
-  (:require [sepal.app.backup.core :as backup]
+  (:require [failjure.core :as f]
+            [sepal.app.backup.core :as backup]
             [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
@@ -7,7 +8,6 @@
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
-            [sepal.error.interface :as error.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -132,17 +132,17 @@
         config (backup/get-config db backup-dir)]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [frequency (some-> (:frequency result) keyword)]
-            (backup/set-config! db {:frequency frequency})
-            (settings.activity/create! db
-                                       settings.activity/updated
-                                       (:user/id viewer)
-                                       {:changes {"backup.frequency" (or (:frequency result) "disabled")}})
-            (-> (http/see-other settings.routes/backups)
-                (flash/success "Backup settings updated successfully")))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (let [frequency (some-> (:frequency data) keyword)]
+                                       (backup/set-config! db {:frequency frequency})
+                                       (settings.activity/create! db
+                                                                  settings.activity/updated
+                                                                  (:user/id viewer)
+                                                                  {:changes {"backup.frequency" (or (:frequency data) "disabled")}})))]
+        (-> (http/see-other settings.routes/backups)
+            (flash/success "Backup settings updated successfully"))
+        (f/when-failed [e]
+          (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings")))
 
       ;; GET
       (let [backups (backup/list-backups (:path config) :limit 5)]

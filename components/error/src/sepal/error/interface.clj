@@ -1,14 +1,21 @@
 (ns sepal.error.interface
   (:refer-clojure :exclude [type])
-  (:require [malli.error :as me]))
+  (:require [failjure.core :as f]
+            [malli.error :as me]))
+
+(defrecord Failure [type message data]
+  f/HasFailed
+  (failed? [_] true)
+  ;; str because ex->error copies malli's :message straight out of ex-data, and
+  ;; malli sets that to the keyword :malli.core/coercion. f/message returns a
+  ;; string.
+  (message [_] (str message)))
 
 (defn error
   ([type msg]
    (error type msg nil))
   ([type msg data]
-   ^::error {::type type
-             ::message msg
-             ::data data}))
+   (->Failure type msg data)))
 
 (defn ex->error [ex]
   (let [{:keys [type message data] :as exd} (ex-data ex)]
@@ -17,13 +24,13 @@
       (error (clojure.core/type ex) (ex-message ex) ex))))
 
 (defn type [err]
-  (::type err))
+  (:type err))
 
 (defn message [err]
-  (::message err))
+  (:message err))
 
 (defn data [err]
-  (::data err))
+  (:data err))
 
 (defn explain [err]
   (-> err data :explain))
@@ -32,16 +39,6 @@
   (-> err explain me/humanize))
 
 (defn error?
-  ([err] (true? (-> err meta ::error)))
-  ([err type] (and (error? err)
-                   (= type (type err)))))
-
-(defn throw-error [err]
-  (throw (ex-info (message err) err)))
-
-(defn throw-if-error
-  "If err is an error then throw it else return it."
-  [err]
-  (if (error? err)
-    (throw-error err)
-    err))
+  ([err] (instance? Failure err))
+  ([err t] (and (error? err)
+                (= t (:type err)))))

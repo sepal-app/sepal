@@ -42,7 +42,7 @@
           result (validation.i/validate-form-values schema {:d "bad-date"})]
       (is (error.i/error? result))
       (is (= {:d ["must be a valid date (YYYY-MM-DD)"]}
-             (validation.i/humanize result)))))
+             (error.i/humanize result)))))
 
   (testing "impossible date returns error"
     (let [schema [:map [:d [:maybe validation.i/date]]]

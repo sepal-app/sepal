@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.detail
-  (:require [sepal.app.authorization :as authz]
+  (:require [failjure.core :as f]
+            [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
@@ -11,7 +12,6 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.permission :as location.perm]
@@ -49,13 +49,10 @@
                            (:location/name location)]))
 
 (defn update! [db location-id updated-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [location (location.i/update! tx location-id data)]
-        (location.activity/create! tx location.activity/updated updated-by location)
-        location))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [location (location.i/update! tx location-id data)]
+      (location.activity/create! tx location.activity/updated updated-by location)
+      location)))
 
 (def FormParams
   [:map {:closed true}
@@ -94,12 +91,12 @@
                     :description (:location/description resource)}]
         (case request-method
           :post
-          (let [result (validation.i/validate-form-values FormParams form-params)]
-            (if (error.i/error? result)
-              (http/validation-errors (validation.i/humanize result))
-              (let [saved (update! db id (:user/id viewer) result)]
-                (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
-                    (flash/success "Location updated successfully")))))
+          (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                          saved (f/try* (update! db id (:user/id viewer) data))]
+            (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
+                (flash/success "Location updated successfully"))
+            (f/when-failed [e]
+              (http/failure-flash e (http/hx-redirect location.routes/detail {:id id}) "Could not save the location")))
 
           (let [panel-data (location.panel/fetch-panel-data db resource)]
             (render :location resource

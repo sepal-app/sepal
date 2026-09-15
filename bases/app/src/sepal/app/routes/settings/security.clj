@@ -1,10 +1,10 @@
 (ns sepal.app.routes.settings.security
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
-            [sepal.error.interface :as error.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -58,20 +58,20 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [{:keys [current_password new_password]} result]
-            (if (user.i/verify-password db (:user/email viewer) current_password)
-              (do
-                (user.i/set-password! db (:user/id viewer) new_password)
-                (user.activity/create! db
-                                       (:user/id viewer)  ;; created-by
-                                       viewer             ;; user entity
-                                       {})                ;; additional data
-                (-> (http/see-other settings.routes/security)
-                    (flash/success "Password changed successfully")))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        (let [{:keys [current_password new_password]} data]
+          (if (user.i/verify-password db (:user/email viewer) current_password)
+            (do
+              (user.i/set-password! db (:user/id viewer) new_password)
+              (user.activity/create! db
+                                     (:user/id viewer)  ;; created-by
+                                     viewer             ;; user entity
+                                     {})                ;; additional data
               (-> (http/see-other settings.routes/security)
-                  (flash/error "Current password is incorrect"))))))
+                  (flash/success "Password changed successfully")))
+            (-> (http/see-other settings.routes/security)
+                (flash/error "Current password is incorrect"))))
+        (f/when-failed [e]
+          (http/failure-flash e (http/see-other settings.routes/security) "Could not change the password")))
 
       (render :viewer viewer :flash flash))))

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.synonyms
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+  (:require [failjure.core :as f]
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
@@ -13,7 +14,6 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.synonym.interface.activity :as synonym.activity]
             [sepal.validation.interface :as validation.i]
@@ -98,35 +98,27 @@
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)))
 
 (defn add! [db taxon-id created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [synonym (synonym.i/add-synonym! tx (assoc data
-                                                      :taxon-id taxon-id
-                                                      :created-by created-by))]
-        (synonym.activity/create! tx synonym.activity/created created-by synonym)
-        synonym))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [synonym (synonym.i/add-synonym! tx (assoc data
+                                                    :taxon-id taxon-id
+                                                    :created-by created-by))]
+      (synonym.activity/create! tx synonym.activity/created created-by synonym)
+      synonym)))
 
 (defn remove! [db removed-by synonym]
-  (try
-    (db.i/with-transaction [tx db]
-      (synonym.i/remove-synonym! tx (:synonym/id synonym))
-      (synonym.activity/create! tx synonym.activity/deleted removed-by synonym))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (synonym.i/remove-synonym! tx (:synonym/id synonym))
+    (synonym.activity/create! tx synonym.activity/deleted removed-by synonym)))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (add! db (:taxon/id resource) (:user/id viewer) result)]
-            (if-not (error.i/error? saved)
-              (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
-              (http/validation-errors (validation.i/humanize saved))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
+        (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
+        (f/when-failed [e]
+          (http/failure-partial e "The synonym could not be added.")))
 
       :get
       (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
@@ -145,6 +137,8 @@
         synonym (when synonym-id
                   (some #(when (= synonym-id (:synonym/id %)) %)
                         (synonym.i/list-for-taxon context db (:taxon/id resource))))]
-    (when synonym
-      (remove! db (:user/id viewer) synonym))
-    (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))))
+    (f/attempt-all [_removed (f/try* (when synonym
+                                       (remove! db (:user/id viewer) synonym)))]
+      (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
+      (f/when-failed [e]
+        (http/failure-partial e "The synonym could not be removed.")))))

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.create
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.routes :as contact.routes]
@@ -9,7 +10,6 @@
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
-            [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -28,14 +28,10 @@
                            "New contact"]))
 
 (defn create! [db created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [contact (contact.i/create! tx data)]
-        (tap> (str "contact: " contact))
-        (contact.activity/create! tx contact.activity/created created-by contact)
-        contact))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [contact (contact.i/create! tx data)]
+      (contact.activity/create! tx contact.activity/created created-by contact)
+      contact)))
 
 (def FormParams
   [:map {:closed true}
@@ -69,13 +65,11 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (create! db (:user/id viewer) result)]
-            (if (error.i/error? saved)
-              (http/validation-errors (validation.i/humanize saved))
-              (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-                  (flash/success "Contact created successfully"))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      saved (f/try* (create! db (:user/id viewer) data))]
+        (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+            (flash/success "Contact created successfully"))
+        (f/when-failed [e]
+          (http/failure-flash e (http/hx-redirect contact.routes/new) "Could not create the contact")))
 
       (render :values form-params))))

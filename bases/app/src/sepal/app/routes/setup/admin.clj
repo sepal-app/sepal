@@ -1,5 +1,6 @@
 (ns sepal.app.routes.setup.admin
-  (:require [sepal.app.flash :as flash]
+  (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -149,33 +150,33 @@
       :else
       (case request-method
         :post
-        (let [result (validation.i/validate-form-values FormParams form-params)]
-          (if (error.i/error? result)
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+          (let [{:keys [email password full_name]} data]
+            (if (user.i/exists? db email)
+              ;; Check email doesn't already exist
+              (html/render-page (render-create-admin :values form-params
+                                                     :errors {:email ["An account with this email already exists"]}))
+              ;; Create the admin user
+              (f/attempt-all [user-result (f/try* (user.i/create! db {:email email
+                                                                      :password password
+                                                                      :full-name full_name
+                                                                      :role :admin
+                                                                      :status :active}))]
+                (do
+                  ;; The setup wizard runs before anyone can be signed in,
+                  ;; so the admin being created is its own actor.
+                  (user.activity/create-user! db (:user/id user-result) user-result)
+                  (setup.shared/set-current-step! db 2)
+                  (-> (http/see-other setup.routes/server)
+                      (flash/success "Admin account created successfully")
+                      ;; Log the user in
+                      (assoc :session {:user/id (:user/id user-result)})))
+                (f/when-failed [_e]
+                  (-> (http/see-other setup.routes/admin)
+                      (flash/error "Failed to create admin account"))))))
+          (f/when-failed [e]
             (html/render-page (render-create-admin :values form-params
-                                                   :errors (validation.i/humanize result)))
-            (let [{:keys [email password full_name]} result]
-              (if (user.i/exists? db email)
-                ;; Check email doesn't already exist
-                (html/render-page (render-create-admin :values form-params
-                                                       :errors {:email ["An account with this email already exists"]}))
-                ;; Create the admin user
-                (let [user-result (user.i/create! db {:email email
-                                                      :password password
-                                                      :full-name full_name
-                                                      :role :admin
-                                                      :status :active})]
-                  (if (error.i/error? user-result)
-                    (-> (http/see-other setup.routes/admin)
-                        (flash/error "Failed to create admin account"))
-                    (do
-                      ;; The setup wizard runs before anyone can be signed in,
-                      ;; so the admin being created is its own actor.
-                      (user.activity/create-user! db (:user/id user-result) user-result)
-                      (setup.shared/set-current-step! db 2)
-                      (-> (http/see-other setup.routes/server)
-                          (flash/success "Admin account created successfully")
-                          ;; Log the user in
-                          (assoc :session {:user/id (:user/id user-result)})))))))))
+                                                   :errors (error.i/humanize e)))))
 
         ;; GET request - show the form
         (html/render-page (render-create-admin :flash-messages (:messages flash)))))))
