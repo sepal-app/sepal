@@ -18,6 +18,7 @@
     :media (lucide/image :size size)
     :contact (lucide/contact-round)
     :setup (lucide/circle-check :size size)
+    :import (lucide/download :size size)
     ;; Default fallback
     nil))
 

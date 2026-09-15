@@ -286,7 +286,7 @@
             (is (= 1 (:c (db.i/execute-one!
                            db {:select [[[:count :*] :c]]
                                :from [:activity]
-                               :where [:= :type "settings/import-completed"]})))))
+                               :where [:= :type "import/completed"]})))))
 
           (finally
             (fs/delete-tree dir)

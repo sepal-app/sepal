@@ -35,6 +35,7 @@
             [sepal.accession.interface.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.cli.activity :as import.activity]
             [sepal.collection.interface :as collection.i]
             [sepal.collection.interface.activity]
             [sepal.collection.interface.spec :as collection.spec]
@@ -54,7 +55,6 @@
             [sepal.note.interface.activity]
             [sepal.note.interface.spec :as note.spec]
             [sepal.settings.interface :as settings.i]
-            [sepal.settings.interface.activity :as settings.activity]
             [sepal.synonym.interface :as synonym.i]
             [sepal.synonym.interface.activity]
             [sepal.synonym.interface.spec :as synonym.spec]
@@ -580,9 +580,9 @@ only unique within its own system, so nothing here can be idempotent.")
             (reset! state st)
             (when (or dry-run (seq (:failures st)))
               (throw (ex-info "rolled back" {::rollback true})))
-            (settings.activity/create! tx settings.activity/import-completed
-                                       (:user/id viewer)
-                                       {:counts (:counts st)})))
+            (import.activity/create! tx import.activity/completed
+                                     (:user/id viewer)
+                                     {:counts (:counts st)})))
         (catch clojure.lang.ExceptionInfo ex
           (when-not (::rollback (ex-data ex))
             (throw ex))))
