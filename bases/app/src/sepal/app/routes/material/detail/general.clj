@@ -1,6 +1,7 @@
 (ns sepal.app.routes.material.detail.general
   (:require [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.codes :as codes]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
@@ -73,6 +74,8 @@
 (def FormParams
   [:map {:closed true}
    [:code [:string {:min 1}]]
+   ;; Posted only by the confirmation tickbox a strict mismatch swaps in.
+   [:code-override {:optional true} [:maybe :string]]
    [:accession-id [:int {:min 1}]]
    [:location-id [:maybe :int]]
    [:quantity [:int {:min 0}]]
@@ -82,6 +85,7 @@
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource timezone]} context
+        config (codes/material db)
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
         location (location.i/get-by-id db (:material/location-id resource))
@@ -97,12 +101,24 @@
                 :type (:material/type resource)}]
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
-        (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-            (flash/success "Material updated successfully"))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        (if (and (codes/rejects? config (:code data))
+                 ;; Skipped when the code is untouched, as on the accession.
+                 (not= (:code data) (:material/code resource))
+                 (not= "1" (:code-override data)))
+          (http/unprocessable-entity
+            (codes/confirm-swap (material.i/next-code db
+                                                      (:template config)
+                                                      (:material/accession-id resource))))
+          (f/attempt-all [saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
+            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+                (flash/success "Material updated successfully"))
+            (f/when-failed [e]
+              (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
+                                  "Could not save the material"))))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)}) "Could not save the material")))
+          (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
+                              "Could not save the material")))
 
       (let [panel-data (material.panel/fetch-panel-data db resource)
             reasons (material.i/list-reasons db)]

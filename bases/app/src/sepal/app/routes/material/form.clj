@@ -1,8 +1,10 @@
 (ns sepal.app.routes.material.form
-  (:require [sepal.app.html :as html]
+  (:require [sepal.app.codes :as codes]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as form]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
@@ -16,6 +18,27 @@
      [:location-id :string]])
 
 ;; (def types ["Plant"])
+
+(defn code-input
+  "The Code control, rendered both by the form and by the next-code endpoint.
+
+  Two of the three ways into this form do not know an accession -- the list
+  create button and its empty state both link to a bare /material/new -- so
+  the suggestion arrives from the endpoint rather than from the first render.
+  It swaps this element for itself."
+  [& {:keys [value accession-id]}]
+  [:input {:autocomplete "off"
+           :class "spl-input w-full"
+           :placeholder (if accession-id "Required" "Choose an accession first")
+           :required true
+           :id "code"
+           :name "code"
+           :type "text"
+           :hx-get (z/url-for material.routes/next-code)
+           :hx-trigger "material:accession-changed from:body"
+           :hx-include "#accession-id"
+           :hx-swap "outerHTML"
+           :value value}])
 
 (defn form [& {:keys [action errors values reasons]}]
   (let [statuses (->> material.spec/status rest (mapv name))
@@ -33,18 +56,10 @@
            :title "Identity"
            :hint "Which accession this material came from, and where it lives."
            :children
-           [(form/field :label "Code"
-                        :name "code"
-                        :errors (:code errors)
-                        :input [:input {:autocomplete "off"
-                                        :class "spl-input w-full"
-                                        :placeholder "Required"
-                                        :required true
-                                        :id "code"
-                                        :name "code"
-                                        :type "text"
-                                        :value (:code values)}])
-            (let [url (z/url-for accession.routes/index)]
+           ;; Accession first: the code is numbered within its accession, so
+           ;; asking for the code above the field it depends on asks you to
+           ;; look up an answer the form has not been told yet.
+           [(let [url (z/url-for accession.routes/index)]
               (form/field :label "Accession"
                           :name "accession-id"
                           :errors (:accession-id errors)
@@ -56,6 +71,12 @@
                                   (when (:accession-id values)
                                     [:option {:value (:accession-id values)}
                                      (:accession-code values)])]))
+            (form/field :label "Code"
+                        :name "code"
+                        :errors (:code errors)
+                        :input (code-input :value (:code values)
+                                           :accession-id (:accession-id values)))
+            (codes/confirm-slot)
             (let [url (z/url-for location.routes/index)]
               (form/field :label "Location"
                           :name "location-id"

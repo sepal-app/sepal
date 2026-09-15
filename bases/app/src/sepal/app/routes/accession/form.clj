@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.form
   (:require [clojure.string :as str]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.codes :as codes]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
@@ -14,6 +15,19 @@
       (name)
       (str/replace "_" " ")
       (str/capitalize)))
+
+(defn code-input
+  "The Code control on its own, so a collision can swap it for one carrying the
+  recomputed suggestion."
+  [& {:keys [value]}]
+  [:input {:autocomplete "off"
+           :class "spl-input"
+           :id "code"
+           :name "code"
+           :required true
+           :minlength 1
+           :type "text"
+           :value value}])
 
 (defn form [& {:keys [action errors location supplier taxon values]}]
   [:div
@@ -29,13 +43,13 @@
         :title "Identity"
         :hint "What this accession is, and what you call it."
         :children
-        [(ui.form/input-field :label "Code"
-                              :name "code"
-                              :required true
-                              :minlength 1
-                              :value (:code values)
-                              :errors (:code errors)
-                              :help "Your garden's accession number. Must be unique.")
+        [(ui.form/field :label "Code"
+                        :name "code"
+                        :required true
+                        :errors (:code errors)
+                        :help "Your garden's accession number. Must be unique."
+                        :input (code-input :value (:code values)))
+         (codes/confirm-slot)
 
          (let [taxa-url (z/url-for taxon.routes/index)]
            (ui.form/field :label "Taxon"
