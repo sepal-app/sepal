@@ -4,6 +4,7 @@
 (def profile :settings/profile)
 (def security :settings/security)
 (def organization :settings/organization)
+(def codes :settings/codes)
 (def backups :settings/backups)
 (def backup-download :settings/backup-download)
 

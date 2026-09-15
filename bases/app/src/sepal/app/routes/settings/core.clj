@@ -3,6 +3,7 @@
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.settings.backups.download :as backups.download]
             [sepal.app.routes.settings.backups.index :as backups.index]
+            [sepal.app.routes.settings.codes :as codes]
             [sepal.app.routes.settings.organization :as organization]
             [sepal.app.routes.settings.profile :as profile]
             [sepal.app.routes.settings.routes :as settings.routes]
@@ -26,6 +27,10 @@
    ["/organization" {:name settings.routes/organization
                      :middleware [[middleware/require-admin]]
                      :handler #'organization/handler}]
+   ["/codes" {:name settings.routes/codes
+              :middleware [[middleware/require-admin]]
+              :get #'codes/handler
+              :post #'codes/handler}]
    ;; Backups (admin only)
    ["/backups" {:middleware [[middleware/require-admin]]}
     ["" {:name settings.routes/backups

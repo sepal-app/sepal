@@ -3,6 +3,8 @@
             [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -77,6 +79,8 @@
 (def FormParams
   [:map {:closed true}
    [:code [:string {:min 1}]]
+   ;; Posted only by the confirmation tickbox a strict mismatch swaps in.
+   [:code-override {:optional true} [:maybe :string]]
    [:taxon-id [:int {:min 0}]]
    ;; [:private {:decode/form validation.i/empty->nil} [:maybe accession.spec/private]]
    [:id-qualifier {:decode/form validation.i/empty->nil} [:maybe accession.spec/id-qualifier]]
@@ -92,6 +96,7 @@
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db organization resource timezone]} context
+        config (codes/accession db)
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         supplier (contact.i/get-by-id db (:accession/supplier-contact-id resource))
         intended-location (location.i/get-by-id db (:accession/intended-location-id resource))
@@ -112,11 +117,23 @@
 
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
-        (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        (if (and (codes/rejects? config (:code data))
+                 ;; Skipped when the code is untouched. Moving an accession to
+                 ;; a new location must not make you confirm a code you never
+                 ;; edited, or every save on every legacy record grows a step.
+                 (not= (:code data) (:accession/code resource))
+                 (not= "1" (:code-override data)))
+          (http/unprocessable-entity
+            (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
+          (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
+            (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+            (f/when-failed [e]
+              (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                                  "Could not save the accession"))))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)})) "Could not save the accession")))
+          (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                              "Could not save the accession")))
 
       (let [panel-data (accession.panel/fetch-panel-data db resource)
             collection (coll.i/get-by-accession-id db (:accession/id resource))]

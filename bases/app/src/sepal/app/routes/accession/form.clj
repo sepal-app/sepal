@@ -1,12 +1,14 @@
 (ns sepal.app.routes.accession.form
   (:require [clojure.string :as str]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.codes :as codes]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
+            [sepal.app.ui.icons.lucide :as lucide]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]
@@ -15,7 +17,47 @@
       (str/replace "_" " ")
       (str/capitalize)))
 
-(defn form [& {:keys [action errors location supplier taxon values]}]
+(def code-help "Your garden's accession number. Must be unique.")
+
+(defn code-input
+  "The Code control on its own, so a collision can swap it for one carrying the
+  recomputed suggestion.
+
+  Hand-rolled rather than ui.form/input-field, which returns a whole field and
+  cannot be swapped on its own -- so this has to carry the same aria wiring
+  input-field would have given it."
+  [& {:keys [value errors help]}]
+  [:input (cond-> {:autocomplete "off"
+                   :class "spl-input"
+                   :id "code"
+                   :name "code"
+                   :required true
+                   :minlength 1
+                   :type "text"
+                   :value value
+                   :aria-describedby (ui.form/describedby "code" {:help help
+                                                                  :errors errors})}
+            (seq errors) (assoc :aria-invalid "true"))])
+
+(defn- next-code-button
+  "Replaces the Code field with the current next code.
+
+  A code read when the page loaded can be taken by the time you save, and the
+  form gives no other way to ask again short of reloading and losing the rest
+  of what you typed. Create forms only: on an edit this would overwrite a
+  record's existing code with no undo."
+  [& {:keys [url include]}]
+  [:button (cond-> {:type "button"
+                    :class "spl-btn spl-btn--sm spl-btn--icon"
+                    :hx-get url
+                    :hx-target "#code"
+                    :hx-swap "outerHTML"
+                    :title "Use the next available code"
+                    :aria-label "Use the next available code"}
+             include (assoc :hx-include include))
+   (lucide/rotate-cw :class "size-4")])
+
+(defn form [& {:keys [action errors location supplier taxon next-code-url values]}]
   [:div
    (ui.form/form
      {:id "accession-form"
@@ -29,13 +71,18 @@
         :title "Identity"
         :hint "What this accession is, and what you call it."
         :children
-        [(ui.form/input-field :label "Code"
-                              :name "code"
-                              :required true
-                              :minlength 1
-                              :value (:code values)
-                              :errors (:code errors)
-                              :help "Your garden's accession number. Must be unique.")
+        [(ui.form/field :label "Code"
+                        :name "code"
+                        :required true
+                        :errors (:code errors)
+                        :help code-help
+                        :input [:div {:class "flex items-center gap-2"}
+                                (code-input :value (:code values)
+                                            :errors (:code errors)
+                                            :help code-help)
+                                (when next-code-url
+                                  (next-code-button :url next-code-url))])
+         (codes/confirm-slot)
 
          (let [taxa-url (z/url-for taxon.routes/index)]
            (ui.form/field :label "Taxon"

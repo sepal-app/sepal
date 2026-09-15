@@ -9,6 +9,7 @@
             [sepal.app.routes.material.detail.tags :as detail-tags]
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.index :as index]
+            [sepal.app.routes.material.next-code :as next-code]
             [sepal.app.routes.material.panel :as panel]
             [sepal.app.routes.material.routes :as routes]
             [sepal.material.interface :as material.i]
@@ -28,6 +29,11 @@
     {:name routes/export
      :conflicting true
      :handler #'export/handler}]
+   ["/next-code/"
+    {:name routes/next-code
+     :conflicting true
+     :middleware [[middleware/require-editor-or-admin]]
+     :handler #'next-code/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

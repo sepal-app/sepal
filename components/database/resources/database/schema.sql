@@ -356,6 +356,8 @@ CREATE TRIGGER trigger_media_link_updated_at after update on media_link
 begin
   update media_link set updated_at = datetime('now') where id = NEW.id;
 end;
+CREATE UNIQUE INDEX accession_code_idx ON accession (code);
+CREATE UNIQUE INDEX material_accession_id_code_idx ON material (accession_id, code);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -455,3 +457,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260907140000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260909120000', '2026-09-09 23:52:51');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913120000', '2026-09-13 17:54:36');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913130000', '2026-09-13 18:38:31');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260914120000', '2026-09-15 01:13:12');

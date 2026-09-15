@@ -8,6 +8,7 @@
                               poly/aws-s3 {:local/root "components/aws-s3"}
                               poly/scheduler {:local/root "components/scheduler"}
                               poly/collection {:local/root "components/collection"}
+                              poly/code-template {:local/root "components/code-template"}
                               poly/config {:local/root "components/config"}
                               poly/contact {:local/root "components/contact"}
                               poly/database {:local/root "components/database"}
@@ -49,6 +50,7 @@
                                 "components/accession/test"
                                 "components/activity/test"
                                 "components/aws-s3/test"
+                                "components/code-template/test"
                                 "components/collection/test"
                                 "components/config/test"
                                 "components/contact/test"

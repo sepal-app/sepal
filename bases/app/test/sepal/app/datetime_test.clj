@@ -7,6 +7,17 @@
   "A fixed instant for testing: 2025-01-18T14:30:00Z"
   (Instant/parse "2025-01-18T14:30:00Z"))
 
+(deftest test-today-is-the-gardens-day
+  ;; Kiritimati is UTC+14 and Midway UTC-11, 25 hours apart, so their local
+  ;; dates never coincide. A `today` that ignored its timezone would return the
+  ;; server's date for both and these would be equal.
+  (testing "the date is read in the garden's zone, not the server's"
+    (is (not= (datetime/today "Pacific/Kiritimati")
+              (datetime/today "Pacific/Midway"))))
+
+  (testing "an unset timezone falls back to UTC rather than throwing"
+    (is (some? (datetime/today nil)))))
+
 (deftest format-datetime-test
   (testing "formats instant in UTC timezone"
     (is (some? (datetime/format-datetime test-instant "UTC")))

@@ -3,6 +3,8 @@
             [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
+            [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.form :as accession.form]
@@ -16,6 +18,7 @@
 (defn page-content [& {:keys [errors values]}]
   (accession.form/form :action (z/url-for accession.routes/new)
                        :errors errors
+                       :next-code-url (z/url-for accession.routes/next-code)
                        :values values))
 
 (defn footer-buttons []
@@ -57,14 +60,33 @@
    [:quantity-received {:decode/form parse-long} [:maybe accession.spec/quantity-received]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db]} context]
+  (let [{:keys [db timezone]} context
+        config (codes/accession db)
+        today (datetime/today timezone)]
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      saved (f/try* (create! db (:user/id viewer) data))]
-        (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
-            (flash/success "Accession created successfully"))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        ;; Create is a wall: new data stays clean, and there is no override.
+        (if (codes/rejects? config (:code data))
+          (http/validation-errors
+            (codes/shape-error (accession.i/next-code db (:template config) today)))
+          (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
+            (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
+                (flash/success "Accession created successfully"))
+            (f/when-failed [e]
+              (if (codes/unique-violation? e)
+                (codes/taken-response
+                  (:code data)
+                  #(accession.form/code-input :value (:code data)
+                                              :errors %
+                                              :help accession.form/code-help))
+                (http/failure-flash e (http/hx-redirect accession.routes/new)
+                                    "Could not create the accession")))))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect accession.routes/new) "Could not create the accession")))
+          (http/failure-flash e (http/hx-redirect accession.routes/new)
+                              "Could not create the accession")))
 
-      (render :values form-params))))
+      ;; The field arrives filled in. With strict off it is a prefill you can
+      ;; select and overwrite.
+      (render :values (merge {:code (accession.i/next-code db (:template config) today)}
+                             form-params)))))

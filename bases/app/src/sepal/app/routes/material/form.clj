@@ -1,9 +1,12 @@
 (ns sepal.app.routes.material.form
-  (:require [sepal.app.html :as html]
+  (:require [sepal.app.codes :as codes]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as form]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
 
@@ -17,7 +20,48 @@
 
 ;; (def types ["Plant"])
 
-(defn form [& {:keys [action errors values reasons]}]
+(defn code-input
+  "The Code control, rendered both by the form and by the next-code endpoint.
+
+  Two of the three ways into this form do not know an accession -- the list
+  create button and its empty state both link to a bare /material/new -- so
+  the suggestion arrives from the endpoint rather than from the first render.
+  It swaps this element for itself."
+  [& {:keys [value accession-id errors]}]
+  [:input (cond-> {:autocomplete "off"
+                   :class "spl-input w-full"
+                   :placeholder (if accession-id "Required" "Choose an accession first")
+                   :required true
+                   :id "code"
+                   :name "code"
+                   :type "text"
+                   :hx-get (z/url-for material.routes/next-code)
+                   :hx-trigger "material:accession-changed from:body"
+                   :hx-include "#accession-id"
+                   :hx-swap "outerHTML"
+                   :value value
+                   :aria-describedby (form/describedby "code" {:errors errors})}
+            (seq errors) (assoc :aria-invalid "true"))])
+
+(defn- next-code-button
+  "Replaces the Code field with the current next code.
+
+  A code read when the page loaded can be taken by the time you save, and the
+  form gives no other way to ask again short of reloading and losing the rest
+  of what you typed. Create forms only: on an edit this would overwrite a
+  record's existing code with no undo."
+  [& {:keys [url include]}]
+  [:button (cond-> {:type "button"
+                    :class "spl-btn spl-btn--sm spl-btn--icon"
+                    :hx-get url
+                    :hx-target "#code"
+                    :hx-swap "outerHTML"
+                    :title "Use the next available code"
+                    :aria-label "Use the next available code"}
+             include (assoc :hx-include include))
+   (lucide/rotate-cw :class "size-4")])
+
+(defn form [& {:keys [action errors values reasons next-code-url]}]
   (let [statuses (->> material.spec/status rest (mapv name))
         types (->> material.spec/type rest (mapv name))]
     [:div
@@ -33,18 +77,10 @@
            :title "Identity"
            :hint "Which accession this material came from, and where it lives."
            :children
-           [(form/field :label "Code"
-                        :name "code"
-                        :errors (:code errors)
-                        :input [:input {:autocomplete "off"
-                                        :class "spl-input w-full"
-                                        :placeholder "Required"
-                                        :required true
-                                        :id "code"
-                                        :name "code"
-                                        :type "text"
-                                        :value (:code values)}])
-            (let [url (z/url-for accession.routes/index)]
+           ;; Accession first: the code is numbered within its accession, so
+           ;; asking for the code above the field it depends on asks you to
+           ;; look up an answer the form has not been told yet.
+           [(let [url (z/url-for accession.routes/index)]
               (form/field :label "Accession"
                           :name "accession-id"
                           :errors (:accession-id errors)
@@ -56,6 +92,17 @@
                                   (when (:accession-id values)
                                     [:option {:value (:accession-id values)}
                                      (:accession-code values)])]))
+            (form/field :label "Code"
+                        :name "code"
+                        :errors (:code errors)
+                        :input [:div {:class "flex items-center gap-2"}
+                                (code-input :value (:code values)
+                                            :accession-id (:accession-id values)
+                                            :errors (:code errors))
+                                (when next-code-url
+                                  (next-code-button :url next-code-url
+                                                    :include "#accession-id"))])
+            (codes/confirm-slot)
             (let [url (z/url-for location.routes/index)]
               (form/field :label "Location"
                           :name "location-id"

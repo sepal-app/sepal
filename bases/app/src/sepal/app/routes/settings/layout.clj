@@ -41,6 +41,9 @@
          (sidebar-item :href (z/url-for settings.routes/organization)
                        :label "General"
                        :current? (= current-route settings.routes/organization))
+         (sidebar-item :href (z/url-for settings.routes/codes)
+                       :label "Codes"
+                       :current? (= current-route settings.routes/codes))
          (sidebar-item :href (z/url-for settings.routes/users)
                        :label "Users"
                        :current? (= current-route settings.routes/users))

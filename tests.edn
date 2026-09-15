@@ -8,6 +8,7 @@
                         "components/accession/test"
                         "components/activity/test"
                         "components/aws-s3/test"
+                        "components/code-template/test"
                         "components/collection/test"
                         "components/config/test"
                         "components/contact/test"

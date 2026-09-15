@@ -47,6 +47,14 @@
   [db location-id]
   (core/moved-out-by-location-id db location-id))
 
+(defn next-code
+  "The next material code within this accession, or nil when the template is
+  unusable."
+  ([db template accession-id]
+   (core/next-code db template accession-id))
+  ([db template accession-id date]
+   (core/next-code db template accession-id date)))
+
 (defn count-by-accession-id
   "Count materials for a given accession."
   [db accession-id]

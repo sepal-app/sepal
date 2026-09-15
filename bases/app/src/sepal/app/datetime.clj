@@ -4,7 +4,7 @@
    All timestamps are formatted on the server using the organization's timezone."
   (:require [clojure.string :as str]
             [sepal.settings.interface :as settings.i])
-  (:import [java.time Duration Instant ZoneId]
+  (:import [java.time Duration Instant LocalDate ZoneId]
            [java.time.format DateTimeFormatter FormatStyle]
            [java.util Locale]))
 
@@ -26,6 +26,13 @@
   "Convert a timezone string to a ZoneId."
   [timezone]
   (ZoneId/of (or timezone default-timezone)))
+
+(defn today
+  "The garden's current date. A code template renders {year} and {day} from
+  this, so a server in UTC must not hand a garden in Belize tomorrow's number
+  six hours early."
+  [timezone]
+  (LocalDate/now (->zone-id timezone)))
 
 (defn sqlite-datetime->instant
   "Parse a SQLite datetime string as an Instant.

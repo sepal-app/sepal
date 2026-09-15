@@ -18,6 +18,13 @@
   [db id]
   (core/delete! db id))
 
+(defn next-code
+  "The next accession code for `template`, or nil when it is unusable."
+  ([db template]
+   (core/next-code db template))
+  ([db template date]
+   (core/next-code db template date)))
+
 (defn count-by-taxon-id
   "Count accessions for a given taxon."
   [db taxon-id]

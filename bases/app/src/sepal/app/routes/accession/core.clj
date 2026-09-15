@@ -13,6 +13,7 @@
             [sepal.app.routes.accession.detail.tags :as detail-tags]
             [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.index :as index]
+            [sepal.app.routes.accession.next-code :as next-code]
             [sepal.app.routes.accession.panel :as panel]
             [sepal.app.routes.accession.routes :as routes]))
 
@@ -30,6 +31,11 @@
     {:name routes/export
      :conflicting true
      :handler #'export/handler}]
+   ["/next-code/"
+    {:name routes/next-code
+     :conflicting true
+     :middleware [[middleware/require-editor-or-admin]]
+     :handler #'next-code/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

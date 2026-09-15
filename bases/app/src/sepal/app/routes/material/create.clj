@@ -1,6 +1,8 @@
 (ns sepal.app.routes.material.create
   (:require [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.form :as material.form]
@@ -17,6 +19,7 @@
 (defn page-content [& {:keys [errors values]}]
   (material.form/form :action (z/url-for material.routes/new)
                       :errors errors
+                      :next-code-url (z/url-for material.routes/next-code)
                       :values values))
 
 (defn footer-buttons []
@@ -49,15 +52,30 @@
    [:type [:string {:min 1}]]])
 
 (defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
-  (let [{:keys [db]} context]
+  (let [{:keys [db timezone]} context
+        today (datetime/today timezone)]
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      saved (f/try* (create! db (:user/id viewer) data))]
-        (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-            (flash/success "Material created successfully"))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        ;; Create is a wall, as it is for accessions.
+        (if (codes/rejects? (codes/material db) (:code data))
+          (http/validation-errors
+            (codes/shape-error (material.i/next-code db (:template (codes/material db)) (:accession-id data) today)))
+          (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
+            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
+                (flash/success "Material created successfully"))
+            (f/when-failed [e]
+              (if (codes/unique-violation? e)
+                (codes/taken-response
+                  (:code data)
+                  #(material.form/code-input :value (:code data)
+                                             :accession-id (:accession-id data)
+                                             :errors %))
+                (http/failure-flash e (http/hx-redirect material.routes/new)
+                                    "Could not create the material")))))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect material.routes/new) "Could not create the material")))
+          (http/failure-flash e (http/hx-redirect material.routes/new)
+                              "Could not create the material")))
 
       ;; The location panel's "Plant here" link names the accession, which is
       ;; the only way this form knows one: the select is searched client-side.
@@ -69,7 +87,13 @@
         (render :values (cond-> {}
                           accession
                           (assoc :accession-id (:accession/id accession)
-                                 :accession-code (:accession/code accession))
+                                 :accession-code (:accession/code accession)
+                                 ;; Arriving from "Plant here" the accession is
+                                 ;; known, so the code is prefilled on render.
+                                 :code (material.i/next-code db
+                                                             (:template (codes/material db))
+                                                             (:accession/id accession)
+                                                             today))
 
                           intended
                           (assoc :intended-location-label

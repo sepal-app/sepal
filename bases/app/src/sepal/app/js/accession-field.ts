@@ -46,6 +46,13 @@ const AccessionField: DirectiveCallback = (el, directive, { cleanup, evaluate })
                 // This is kind of a hack to get x-form-state for the form to set the
                 // dirty state when the value changes
                 el.form?.dispatchEvent(new CustomEvent("form-state.dirty"))
+                // SlimSelect replaces the control, so the underlying <select>
+                // never fires a native change event that htmx could hang off.
+                // The material Code field listens for this one to fetch its
+                // suggestion.
+                document.body.dispatchEvent(
+                    new CustomEvent("material:accession-changed", { bubbles: true }),
+                )
             },
         },
     })
