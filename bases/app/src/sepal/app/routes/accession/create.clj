@@ -18,6 +18,7 @@
 (defn page-content [& {:keys [errors values]}]
   (accession.form/form :action (z/url-for accession.routes/new)
                        :errors errors
+                       :next-code-url (z/url-for accession.routes/next-code)
                        :values values))
 
 (defn footer-buttons []

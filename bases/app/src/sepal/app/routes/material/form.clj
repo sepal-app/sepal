@@ -6,6 +6,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.form :as form]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
 
@@ -42,7 +43,25 @@
                    :aria-describedby (form/describedby "code" {:errors errors})}
             (seq errors) (assoc :aria-invalid "true"))])
 
-(defn form [& {:keys [action errors values reasons]}]
+(defn- next-code-button
+  "Replaces the Code field with the current next code.
+
+  A code read when the page loaded can be taken by the time you save, and the
+  form gives no other way to ask again short of reloading and losing the rest
+  of what you typed. Create forms only: on an edit this would overwrite a
+  record's existing code with no undo."
+  [& {:keys [url include]}]
+  [:button (cond-> {:type "button"
+                    :class "spl-btn spl-btn--sm spl-btn--icon"
+                    :hx-get url
+                    :hx-target "#code"
+                    :hx-swap "outerHTML"
+                    :title "Use the next available code"
+                    :aria-label "Use the next available code"}
+             include (assoc :hx-include include))
+   (lucide/rotate-cw :class "size-4")])
+
+(defn form [& {:keys [action errors values reasons next-code-url]}]
   (let [statuses (->> material.spec/status rest (mapv name))
         types (->> material.spec/type rest (mapv name))]
     [:div
@@ -76,9 +95,13 @@
             (form/field :label "Code"
                         :name "code"
                         :errors (:code errors)
-                        :input (code-input :value (:code values)
-                                           :accession-id (:accession-id values)
-                                           :errors (:code errors)))
+                        :input [:div {:class "flex items-center gap-2"}
+                                (code-input :value (:code values)
+                                            :accession-id (:accession-id values)
+                                            :errors (:code errors))
+                                (when next-code-url
+                                  (next-code-button :url next-code-url
+                                                    :include "#accession-id"))])
             (codes/confirm-slot)
             (let [url (z/url-for location.routes/index)]
               (form/field :label "Location"

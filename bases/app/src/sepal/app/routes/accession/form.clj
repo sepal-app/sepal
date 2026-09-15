@@ -8,6 +8,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
+            [sepal.app.ui.icons.lucide :as lucide]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]
@@ -38,7 +39,25 @@
                                                                   :errors errors})}
             (seq errors) (assoc :aria-invalid "true"))])
 
-(defn form [& {:keys [action errors location supplier taxon values]}]
+(defn- next-code-button
+  "Replaces the Code field with the current next code.
+
+  A code read when the page loaded can be taken by the time you save, and the
+  form gives no other way to ask again short of reloading and losing the rest
+  of what you typed. Create forms only: on an edit this would overwrite a
+  record's existing code with no undo."
+  [& {:keys [url include]}]
+  [:button (cond-> {:type "button"
+                    :class "spl-btn spl-btn--sm spl-btn--icon"
+                    :hx-get url
+                    :hx-target "#code"
+                    :hx-swap "outerHTML"
+                    :title "Use the next available code"
+                    :aria-label "Use the next available code"}
+             include (assoc :hx-include include))
+   (lucide/rotate-cw :class "size-4")])
+
+(defn form [& {:keys [action errors location supplier taxon next-code-url values]}]
   [:div
    (ui.form/form
      {:id "accession-form"
@@ -57,9 +76,12 @@
                         :required true
                         :errors (:code errors)
                         :help code-help
-                        :input (code-input :value (:code values)
-                                           :errors (:code errors)
-                                           :help code-help))
+                        :input [:div {:class "flex items-center gap-2"}
+                                (code-input :value (:code values)
+                                            :errors (:code errors)
+                                            :help code-help)
+                                (when next-code-url
+                                  (next-code-button :url next-code-url))])
          (codes/confirm-slot)
 
          (let [taxa-url (z/url-for taxon.routes/index)]

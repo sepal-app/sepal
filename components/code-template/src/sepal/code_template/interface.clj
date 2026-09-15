@@ -144,8 +144,11 @@
   suggestion without configuring anything and there is nothing to seed."
   [settings]
   (letfn [(for-resource [resource default-template]
-            {:template (or (get settings (str "codes." resource "_template"))
-                           default-template)
+            ;; `get` with a default, not `or`: a stored "" is a garden that
+            ;; turned the suggestion off, and must not fall back to the
+            ;; default the way an absent row does.
+            {:template (get settings (str "codes." resource "_template")
+                            default-template)
              :strict? (= "1" (get settings (str "codes." resource "_strict")))})]
     {:accession (for-resource "accession" "{year}.{seq:0000}")
      :material (for-resource "material" "{seq}")}))

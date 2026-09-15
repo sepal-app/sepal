@@ -6,6 +6,7 @@
             [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
+            [sepal.app.json :as json]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
@@ -20,21 +21,30 @@
   "Tokens: {year} {year2} {month} {day}, and exactly one {seq}. Zeros after a
   colon set the width, so {seq:0000} counts 0001, 0002.")
 
-(defn- strict-checkbox [& {:keys [name label checked? errors]}]
-  (form/field
-    :label label
-    :name name
-    :errors errors
+(defn- strict-checkbox
+  "A bare wrapping label, like every other checkbox in the app.
+
+  Not form/field: that emits its own <label for>, which would give the control
+  two labels, an accessible name of \"Enforcement Reject a code…\", and a
+  heading that toggles the box when you click it.
+
+  Disabled while the template beside it is blank, because enforcing nothing is
+  what the server refuses anyway. A disabled box posts nothing, which is
+  exactly the off value."
+  [& {:keys [name checked? errors]}]
+  [:div {:class "spl-field"}
+   [:label {:class "flex items-center gap-2 cursor-pointer"}
     ;; spl-checkbox sizes the box itself at 16px. On the wrapping label it
     ;; sizes the label, and the text wraps one word per line.
-    :input [:label {:class "flex items-center gap-2 cursor-pointer"}
-            [:input {:type "checkbox"
-                     :class "spl-checkbox"
-                     :id name
-                     :name name
-                     :value "1"
-                     :checked (boolean checked?)}]
-            [:span "Reject a code that does not fit"]]))
+    [:input {:type "checkbox"
+             :class "spl-checkbox"
+             :id name
+             :name name
+             :value "1"
+             :checked (boolean checked?)
+             :x-bind:disabled "!template.trim()"}]
+    [:span {:class "spl-label"} "Reject a code that does not fit"]]
+   (form/error-list name errors :hx-swap-oob? true)])
 
 (defn codes-form [& {:keys [values errors previews]}]
   (form/form
@@ -46,36 +56,38 @@
     ;; inside a record page, so on a settings page it indents the fields 30px
     ;; further than every other settings page and past its own Save button.
     [:div
-     (form/section
-       :title "Accessions"
-       :hint (str "How an accession code is suggested on the create form. "
-                  token-legend)
-       :children
-       [(form/input-field :label "Template"
-                          :name "accession_template"
-                          :value (:accession_template values)
-                          :errors (:accession_template errors)
-                          :help (when-let [next-code (:accession previews)]
-                                  (str "Next: " next-code)))
-        (strict-checkbox :name "accession_strict"
-                         :label "Enforcement"
-                         :checked? (:accession_strict values)
-                         :errors (:accession_strict errors))])
+     [:div {:x-data (json/js {:template (or (:accession_template values) "")})}
+      (form/section
+        :title "Accessions"
+        :hint (str "How an accession code is suggested on the create form. "
+                   "Leave it blank to suggest nothing. " token-legend)
+        :children
+        [(form/input-field :label "Template"
+                           :name "accession_template"
+                           :value (:accession_template values)
+                           :errors (:accession_template errors)
+                           :input-attrs {:x-model "template"}
+                           :help (when-let [next-code (:accession previews)]
+                                   (str "Next: " next-code)))
+         (strict-checkbox :name "accession_strict"
+                          :checked? (:accession_strict values)
+                          :errors (:accession_strict errors))])]
 
-     (form/section
-       :title "Material"
-       :hint "Material is numbered within its accession, so it starts again at one for every accession."
-       :children
-       [(form/input-field :label "Template"
-                          :name "material_template"
-                          :value (:material_template values)
-                          :errors (:material_template errors)
-                          :help (when-let [example (:material previews)]
-                                  (str "For example: " example)))
-        (strict-checkbox :name "material_strict"
-                         :label "Enforcement"
-                         :checked? (:material_strict values)
-                         :errors (:material_strict errors))])]
+     [:div {:x-data (json/js {:template (or (:material_template values) "")})}
+      (form/section
+        :title "Material"
+        :hint "Material is numbered within its accession, so it starts again at one for every accession. Leave it blank to suggest nothing."
+        :children
+        [(form/input-field :label "Template"
+                           :name "material_template"
+                           :value (:material_template values)
+                           :errors (:material_template errors)
+                           :input-attrs {:x-model "template"}
+                           :help (when-let [example (:material previews)]
+                                   (str "For example: " example)))
+         (strict-checkbox :name "material_strict"
+                          :checked? (:material_strict values)
+                          :errors (:material_strict errors))])]]
 
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
@@ -141,8 +153,11 @@
         (assoc :material_template strict-blank)))))
 
 (defn- ->settings [data]
-  {"codes.accession_template" (:accession_template data)
-   "codes.material_template" (:material_template data)
+  ;; "" rather than nil for a cleared template. An absent row means "never
+  ;; configured" and takes the default; a present empty one means the garden
+  ;; turned the suggestion off, and must survive a page reload.
+  {"codes.accession_template" (or (:accession_template data) "")
+   "codes.material_template" (or (:material_template data) "")
    "codes.accession_strict" (if (= "1" (:accession_strict data)) "1" "0")
    "codes.material_strict" (if (= "1" (:material_strict data)) "1" "0")})
 

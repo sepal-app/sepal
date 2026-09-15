@@ -19,6 +19,7 @@
 (defn page-content [& {:keys [errors values]}]
   (material.form/form :action (z/url-for material.routes/new)
                       :errors errors
+                      :next-code-url (z/url-for material.routes/next-code)
                       :values values))
 
 (defn footer-buttons []

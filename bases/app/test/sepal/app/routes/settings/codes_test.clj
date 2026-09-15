@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.codes-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -76,6 +77,33 @@
         (is (= "1" (get stored "codes.accession_strict")))
         (is (= "0" (get stored "codes.material_strict"))
             "an unticked checkbox posts nothing and is stored as off")))))
+
+(deftest test-the-enforcement-checkbox-has-one-label
+  (testing "not form/field's label as well as its own"
+    (let [sess (admin-session)
+          {:keys [response]} (peri/request sess "/settings/codes")
+          body (Jsoup/parse ^String (:body response))]
+      ;; Two labels make the accessible name "Enforcement Reject a code that
+      ;; does not fit", and clicking the heading toggles the box.
+      (is (zero? (.size (.select body "label[for=accession_strict]")))
+          "no second label pointing at the checkbox")
+      (is (= 1 (.size (.select body "input#accession_strict")))))))
+
+(deftest test-a-blank-template-can-be-set-and-sticks
+  (testing "clearing a template turns the suggestion off for good"
+    (let [{:keys [response]} (post-codes {:accession_template ""
+                                          :material_template ""})]
+      (is (= 303 (:status response)) "a blank template is a valid setting"))
+
+    (let [stored (settings.i/get-values *db* "codes")]
+      (is (= "" (get stored "codes.accession_template"))
+          "stored as empty, not absent -- an absent row would take the default"))
+
+    (testing "and the page comes back blank rather than showing the default"
+      (let [sess (admin-session)
+            {:keys [response]} (peri/request sess "/settings/codes")
+            body (Jsoup/parse ^String (:body response))]
+        (is (str/blank? (.attr (.selectFirst body "#accession_template") "value")))))))
 
 (deftest test-an-invalid-template-is-rejected
   (testing "a template with no seq token comes back as a field error"

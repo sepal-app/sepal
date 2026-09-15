@@ -109,6 +109,38 @@
         (is (= 200 (:status response)))
         (is (= "2" (attr-value body "#code")))))))
 
+(deftest test-the-next-code-button
+  (tf/testing "a create form can ask for the current next code"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [_]
+      (set-codes! {"codes.accession_template" accession-template})
+      (let [sess (editor-session)]
+        (testing "the button is on the create form"
+          (let [{:keys [response]} (peri/request sess "/accession/new/")
+                body (Jsoup/parse ^String (:body response))
+                button (.selectFirst body "button[hx-get*=next-code]")]
+            (is (some? button) "a refresh control beside the Code field")
+            (is (= "#code" (.attr button "hx-target")))
+            (is (= "Use the next available code" (.attr button "aria-label"))
+                "an icon-only control needs a name")))
+
+        (testing "and the endpoint answers with the Code field"
+          (let [{:keys [response]} (peri/request sess "/accession/next-code/")
+                body (Jsoup/parse ^String (:body response))]
+            (is (= 200 (:status response)))
+            (is (re-matches #"ZT\d{4}-\d{4}" (attr-value body "#code")))))))))
+
+(deftest test-a-blank-template-suggests-nothing
+  (tf/testing "a garden that turned the suggestion off"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [_]
+      (set-codes! {"codes.accession_template" ""})
+      (let [sess (editor-session)
+            {:keys [response]} (peri/request sess "/accession/new/")
+            body (Jsoup/parse ^String (:body response))]
+        (is (str/blank? (attr-value body "#code"))
+            "no prefill, rather than falling back to the built-in default")))))
+
 ;; ------------------------------------------------------------ enforcement
 
 (defn- accession-params
