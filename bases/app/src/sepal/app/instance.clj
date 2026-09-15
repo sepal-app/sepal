@@ -189,7 +189,8 @@
   {:db-path db-path})
 
 ;; Schema versioning, exposed on the instance API so the control plane never
-;; needs to require a component namespace. Thin wrappers over sepal.database.
+;; needs to require a component namespace. Thin wrappers over sepal.database,
+;; except has-active-user? below, which queries the database file directly.
 
 (defn schema-version
   "The migration version a database is at, or nil."
@@ -207,8 +208,9 @@
 
   Active only. An invited user has no password of their own yet and their way
   in is the invitation link; an archived one cannot log in at all. The address
-  is lowercased and trimmed to match what sepal.user.interface.spec stores, so
-  the unique index on user.email is used and no scan happens.
+  is trimmed and lowercased before the lookup — sepal.user.interface.spec only
+  lowercases what it stores, so trimming here is what lets a pasted address
+  with stray whitespace still hit the unique index on user.email, with no scan.
 
   A missing file is false, not an error: the caller is walking a directory
   listing and a garden that has just been purged is an ordinary thing to meet."

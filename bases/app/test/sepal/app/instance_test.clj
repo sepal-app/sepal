@@ -1104,5 +1104,14 @@
         (let [before (fs/last-modified-time db-path)]
           (instance/has-active-user? {:db-path db-path :email "active@example.com"})
           (is (= before (fs/last-modified-time db-path)))))
+
+      (testing "a write through the probe's own datasource is refused"
+        ;; The guarantee this function exists to make. Without this assertion,
+        ;; dropping :open_mode 1 would break nothing any test can see.
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)
+                                       :open_mode 1})]
+          (is (thrown? java.sql.SQLException
+                       (jdbc/execute! ds ["update \"user\" set full_name = 'x' where email = ?"
+                                          "active@example.com"])))))
       (finally
         (fs/delete-tree dir)))))
