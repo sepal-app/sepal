@@ -1,21 +1,7 @@
 (ns sepal.validation.interface
   (:require [malli.core :as m]
-            [malli.error :as me]
             [malli.transform :as mt]
             [sepal.error.interface :as error.i]))
-
-(defn as-error [data]
-  (with-meta data {:error true}))
-
-(defn validate [spec data]
-  (some-> (me/humanize (m/explain spec data))
-          (as-error)))
-
-(defn invalid? [spec data]
-  (not (m/validate spec data)))
-
-(defn error? [data]
-  (-> data (meta) :error some?))
 
 (def form-transformer
   "Transformer for decoding and validating form params.
@@ -33,10 +19,6 @@
     (m/coerce spec values form-transformer)
     (catch Exception e
       (error.i/ex->error e))))
-
-(defn humanize
-  [err]
-  (-> err error.i/data :explain me/humanize))
 
 (def email-re
   "Must stay inside the HTML format for `<input type=email>`. The login field is

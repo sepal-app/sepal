@@ -51,10 +51,9 @@ Each component follows Polylith conventions:
 
 ### Interface Return Conventions
 
-Interface functions that retrieve data typically return:
+Interface functions that retrieve data return:
 - The entity map when found
 - `nil` when not found (NOT an error)
-- An error map (checked with `error.i/error?`) only for actual failures (e.g., database errors, validation failures)
 
 Check for `nil` for "not found" cases, not `error.i/error?`:
 ```clojure
@@ -70,13 +69,15 @@ Check for `nil` for "not found" cases, not `error.i/error?`:
     (do-something entity)))
 ```
 
-Use `error.i/error?` for operations that can fail (create, update, validation):
-```clojure
-(let [result (some.i/create! db data)]
-  (if (error.i/error? result)
-    (handle-error result)
-    (handle-success result)))
-```
+**Write operations throw.** `store.i/create!` lets malli and JDBC exceptions
+escape and the component interfaces pass them on, so there is no error value to
+check. A route that wants a value rather than a throw wraps the call in
+`f/try*` — see Form Validation.
+
+`error.i/error` builds a `Failure` record implementing failjure's `HasFailed`,
+so `f/attempt-all` stops on one exactly as it stops on an exception. Construct
+one when a route classifies a failure itself, as `routes/tag/detail.clj` does
+for a duplicate tag name.
 
 ## Tech Stack
 
@@ -87,6 +88,7 @@ Use `error.i/error?` for operations that can fail (create, update, validation):
 - **Zodiac** - Web framework (wraps Ring/Reitit)
 - **Reitit** - Routing
 - **Malli** - Schema validation and generation
+- **failjure** - Failure values and `attempt-all` control flow in route handlers
 - **next.jdbc** - Database access
 - **HoneySQL** - SQL generation
 - **SQLite** - Database (with FTS5 full-text search)
@@ -371,13 +373,25 @@ The frontend uses HTMX for server-driven interactivity and Alpine.js for client-
 
 ### Form Validation
 
-Use `sepal.validation.interface` for form validation. Forms use `hx-swap="none"` with out-of-band error swaps:
+Route handlers use failjure. `f/attempt-all` binds the validated params and the
+save, and one `f/when-failed` answers every way either can fail:
+
 ```clojure
-(let [result (validation.i/validate-form-values FormSchema form-params)]
-  (if (error.i/error? result)
-    (http/validation-errors (validation.i/humanize result))  ; 422 with OOB errors to #field-errors
-    (do-something-with result)))
+(f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                saved (f/try* (create! db (:user/id viewer) data))]
+  (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+  (f/when-failed [e]
+    (http/failure-response e (-> (http/hx-redirect taxon.routes/new)
+                                 (flash/error "Could not create the taxon")))))
 ```
+
+`http/failure-response` picks the response: a failure carrying a malli explain
+becomes a 422 with per-field out-of-band errors, and anything else is logged
+and becomes the fallback you pass. Forms use `hx-swap="none"`, so the errors
+swap into `#field-errors` targets.
+
+`f/try*` is what turns a throwing component call into a value `attempt-all`
+stops on. Without it an exception escapes the handler as a 500.
 
 **Empty String Handling:** Use `validation.i/empty->nil` decoder for optional fields:
 ```clojure

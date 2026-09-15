@@ -1,5 +1,6 @@
 (ns sepal.app.routes.tag.detail
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+  (:require [failjure.core :as f]
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
@@ -87,19 +88,23 @@
         values {:name (:tag/name resource) :description (:tag/description resource)}]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (update! db id (:user/id viewer) result)]
-            (if (error.i/error? saved)
-              (http/validation-errors (if (= ::name-taken (error.i/type saved))
-                                        {:name [name-taken-message]}
-                                        (validation.i/humanize saved)))
-              (-> (http/hx-redirect tag.routes/index)
-                  (flash/success "Tag updated successfully"))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (update! db id (:user/id viewer) data))]
+        (-> (http/hx-redirect tag.routes/index)
+            (flash/success "Tag updated successfully"))
+        (f/when-failed [e]
+          ;; The one failure this route classifies itself: a duplicate name is a
+          ;; field error, not a generic save failure.
+          (if (error.i/error? e ::name-taken)
+            (http/validation-errors {:name [name-taken-message]})
+            (http/failure-response e (-> (http/hx-redirect tag.routes/index)
+                                         (flash/error "Could not save the tag"))))))
 
       :delete
-      (do (delete! db id (:user/id viewer) resource)
-          (http/hx-redirect tag.routes/index))
+      (f/attempt-all [_deleted (f/try* (delete! db id (:user/id viewer) resource))]
+        (http/hx-redirect tag.routes/index)
+        (f/when-failed [e]
+          (http/failure-response e (-> (http/hx-redirect tag.routes/index)
+                                       (flash/error "Could not delete the tag")))))
 
       (render :tag resource :values values))))

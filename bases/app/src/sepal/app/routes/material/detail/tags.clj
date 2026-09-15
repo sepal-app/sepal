@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.tags
-  (:require [sepal.accession.interface :as accession.i]
+  (:require [failjure.core :as f]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.panel :as material.panel]
@@ -69,46 +70,39 @@
         created)))
 
 (defn add! [db material-id created-by data]
-  (try
-    (db.i/with-transaction [tx db]
-      (let [tag (resolve-or-create-tag! tx (:tag-name data) created-by)]
-        (if (error.i/error? tag)
-          tag
-          (let [linked? (tag.i/tag! tx (:tag/id tag) material-id :material)]
-            (if (error.i/error? linked?)
-              linked?
-              (do
-                ;; tag! returns false when the link already existed (a true
-                ;; no-op) -- only a real state change gets an activity event.
-                (when linked?
-                  (tag.activity/create-link! tx tag.activity/linked created-by tag :material material-id))
-                tag))))))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    (let [tag (resolve-or-create-tag! tx (:tag-name data) created-by)]
+      (if (error.i/error? tag)
+        tag
+        (let [linked? (tag.i/tag! tx (:tag/id tag) material-id :material)]
+          (if (error.i/error? linked?)
+            linked?
+            (do
+              ;; tag! returns false when the link already existed (a true
+              ;; no-op) -- only a real state change gets an activity event.
+              (when linked?
+                (tag.activity/create-link! tx tag.activity/linked created-by tag :material material-id))
+              tag)))))))
 
 (defn remove! [db material-id removed-by tag]
-  (try
-    (db.i/with-transaction [tx db]
-      ;; untag! returns false when there was no such link to remove (a stale
-      ;; id, a double-DELETE) -- only a real state change gets an activity
-      ;; event.
-      (when (tag.i/untag! tx (:tag/id tag) material-id :material)
-        (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :material material-id)))
-    (catch Exception ex
-      (error.i/ex->error ex))))
+  (db.i/with-transaction [tx db]
+    ;; untag! returns false when there was no such link to remove (a stale
+    ;; id, a double-DELETE) -- only a real state change gets an activity
+    ;; event.
+    (when (tag.i/untag! tx (:tag/id tag) material-id :material)
+      (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :material material-id))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource timezone]} context
         id (:material/id resource)]
     (case request-method
       :post
-      (let [result (validation.i/validate-form-values FormParams form-params)]
-        (if (error.i/error? result)
-          (http/validation-errors (validation.i/humanize result))
-          (let [saved (add! db id (:user/id viewer) result)]
-            (if (error.i/error? saved)
-              (http/validation-errors (validation.i/humanize saved))
-              (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))))))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _saved (f/try* (add! db id (:user/id viewer) data))]
+        (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))
+        (f/when-failed [e]
+          (http/failure-response e (http/unprocessable-entity
+                                     [:div {:class "spl-error"} "The tag could not be added."]))))
 
       (let [accession (accession.i/get-by-id db (:material/accession-id resource))
             taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -130,6 +124,9 @@
         ;; deleted a row, so a stale or foreign id is a true no-op -- no
         ;; exception, and no `unlinked` activity event gets written for it.
         tag (when tag-id (tag.i/get-by-id db tag-id))]
-    (when tag
-      (remove! db id (:user/id viewer) tag))
-    (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))))
+    (f/attempt-all [_removed (f/try* (when tag
+                                       (remove! db id (:user/id viewer) tag)))]
+      (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))
+      (f/when-failed [e]
+        (http/failure-response e (http/unprocessable-entity
+                                   [:div {:class "spl-error"} "The tag could not be removed."]))))))
