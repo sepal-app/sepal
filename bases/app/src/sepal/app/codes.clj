@@ -90,19 +90,20 @@
          (some-> (ex-message e) (->> (re-find #"UNIQUE constraint failed"))))))
 
 (defn taken-response
-  "422 naming the code that is taken, with the field re-suggested.
+  "422 naming the code that is taken, leaving the field as it was submitted.
 
-  No automatic retry: saving the record under a different code than the one on
-  screen is worse than asking.
+  The value is deliberately not replaced with the next suggestion. A failed
+  save must not quietly change what is on screen -- the refresh control beside
+  the field is how you ask for another number, and asking is a decision you
+  make rather than one the form makes for you.
 
   `input-fn` takes the errors and returns the Code control, so the swapped-in
-  field carries the same aria-invalid and aria-describedby the field it
-  replaces would have had. Without that the one field in error is the only one
-  with no error styling."
-  [code suggestion input-fn]
+  field carries the aria-invalid and aria-describedby the field it replaces
+  had. Without that the one field in error is the only one with no error
+  styling."
+  [code input-fn]
   (let [errors [(str code " is already taken")]]
     (http/unprocessable-entity
       [:div
        (ui.form/error-list "code" errors :hx-swap-oob? true)
-       (when suggestion
-         (assoc-in (input-fn errors) [1 :hx-swap-oob] "true"))])))
+       (assoc-in (input-fn errors) [1 :hx-swap-oob] "true")])))

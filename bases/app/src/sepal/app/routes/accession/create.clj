@@ -75,13 +75,11 @@
                 (flash/success "Accession created successfully"))
             (f/when-failed [e]
               (if (codes/unique-violation? e)
-                (let [suggestion (accession.i/next-code db (:template config) today)]
-                  (codes/taken-response
-                    (:code data)
-                    suggestion
-                    #(accession.form/code-input :value suggestion
-                                                :errors %
-                                                :help accession.form/code-help)))
+                (codes/taken-response
+                  (:code data)
+                  #(accession.form/code-input :value (:code data)
+                                              :errors %
+                                              :help accession.form/code-help))
                 (http/failure-flash e (http/hx-redirect accession.routes/new)
                                     "Could not create the accession")))))
         (f/when-failed [e]

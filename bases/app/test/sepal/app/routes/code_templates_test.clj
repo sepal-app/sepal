@@ -219,8 +219,10 @@
             body (Jsoup/parse ^String (:body response))]
         (is (= 422 (:status response)))
         (is (re-find #"ZT2026-0777 is already taken" (text-of body "#code-errors")))
-        (is (= "ZT2026-0778" (attr-value body "#code"))
-            "the field is swapped to the recomputed suggestion")
+        ;; Not the next suggestion. A failed save must not quietly change what
+        ;; is on screen; the refresh control is how you ask for another.
+        (is (= "ZT2026-0777" (attr-value body "#code"))
+            "the field still holds what was submitted")
         ;; The swapped-in field is the one field in error, so it has to carry
         ;; the error state. aria-invalid is what draws its red border.
         (is (= "true" (.attr (.selectFirst body "#code") "aria-invalid"))

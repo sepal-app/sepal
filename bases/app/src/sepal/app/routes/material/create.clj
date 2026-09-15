@@ -66,13 +66,11 @@
                 (flash/success "Material created successfully"))
             (f/when-failed [e]
               (if (codes/unique-violation? e)
-                (let [suggestion (material.i/next-code db (:template (codes/material db)) (:accession-id data) today)]
-                  (codes/taken-response
-                    (:code data)
-                    suggestion
-                    #(material.form/code-input :value suggestion
-                                               :accession-id (:accession-id data)
-                                               :errors %)))
+                (codes/taken-response
+                  (:code data)
+                  #(material.form/code-input :value (:code data)
+                                             :accession-id (:accession-id data)
+                                             :errors %))
                 (http/failure-flash e (http/hx-redirect material.routes/new)
                                     "Could not create the material")))))
         (f/when-failed [e]
