@@ -106,7 +106,12 @@
    [:forgot-password-email-from {:optional true} [:string {:min 1}]]
    [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
    [:invitation-email-from {:optional true} [:string {:min 1}]]
-   [:invitation-email-subject {:optional true} [:string {:min 1}]]])
+   [:invitation-email-subject {:optional true} [:string {:min 1}]]
+   ;; The parent domain the login route sets the remembered-gardens cookie on —
+   ;; sepal.app for a managed garden, so the marketing site can read it. Unset,
+   ;; no cookie is written, which is what a self-hosted install wants: its
+   ;; parent domain is not ours to set cookies on.
+   [:remembered-gardens-cookie-domain {:optional true} [:maybe [:string {:min 1}]]]])
 
 (def Usage
   "The countable things in a garden. Closed, so adding one is a deliberate change
@@ -329,7 +334,8 @@
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request?
                    forgot-password-email-from forgot-password-email-subject
-                   invitation-email-from invitation-email-subject] :as opts}]
+                   invitation-email-from invitation-email-subject
+                   remembered-gardens-cookie-domain] :as opts}]
   (cond->
     {:sepal.token.interface/service
      {:secret (token-secret (:master-secret process) slug)}
@@ -395,7 +401,8 @@
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
-                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)}}
+                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)
+                        :remembered-gardens-cookie-domain remembered-gardens-cookie-domain}}
 
      :sepal.scheduler.interface/scheduler {}
 
