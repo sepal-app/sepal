@@ -6,6 +6,7 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.authorization :as authz]
+            [sepal.app.cli.activity :as import.activity]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
@@ -240,6 +241,25 @@
    :resource-url nil
    :context "Initial setup completed"})
 
+;; Without this the row is filtered out of the feed entirely -- `renderable`
+;; keeps only what `activity-data` answers for -- so the event was written and
+;; then shown to nobody.
+(defmethod activity-data import.activity/completed [activity]
+  (let [counts (get-in activity [:activity/data :counts])
+        total (reduce + 0 (vals counts))]
+    {:resource-type :import
+     :resource-name (format "%,d records" total)
+     :resource-url nil
+     ;; The per-table counts are the whole payload, and the chip's title is
+     ;; the only place they can be read without querying.
+     ;; `name`, because activity.data is decoded with keywordized keys on the
+     ;; way back out -- the counts go in as "accession" and come out as
+     ;; :accession.
+     :context (->> counts
+                   (sort-by (comp name key))
+                   (map (fn [[table n]] (format "%s %d" (name table) n)))
+                   (str/join ", "))}))
+
 ;;; Grouping logic
 
 (defn group-consecutive-by-user
@@ -276,7 +296,8 @@
    "contact" ["a contact" "contacts"]
    "media" ["a media item" "media items"]
    "setup" ["setup" "setup"]
-   "settings" ["settings" "settings"]})
+   "settings" ["settings" "settings"]
+   "import" ["an import" "imports"]})
 
 (defn- noun [resource n]
   (let [[singular plural] (get resource-nouns resource [(str "a " resource)

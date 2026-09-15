@@ -1,6 +1,8 @@
 (ns sepal.app.routes.activity.index-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [peridot.core :as peri]
+            [sepal.app.cli.activity :as import.activity]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -131,6 +133,32 @@
         (let [response (get-activity-page user)]
           (is (app.test/body-contains? response "No activity yet")
               "An activity with no renderer should not suppress the empty state"))))))
+
+(deftest test-an-import-is-rendered-rather-than-filtered-out
+  ;; It was not. The loader wrote the event and the feed dropped it, because
+  ;; `renderable` keeps only what `activity-data` answers for and this type had
+  ;; no method. Written, and shown to nobody.
+  (tf/testing "a completed import appears in the feed, with its counts"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (with-cleared-activity
+        (import.activity/create! *db*
+                                 import.activity/completed
+                                 (:user/id user)
+                                 {:counts {"accession" 2646 "material" 3437}})
+        (let [response (get-activity-page user)]
+          (is (not (app.test/body-contains? response "No activity yet"))
+              "an import should suppress the empty state")
+          (is (app.test/body-contains? response "6,083 records")
+              "the total is what the row names")
+          ;; The raw body, not `body-contains?`: that reads visible text, and
+          ;; the counts sit in the chip's `title` the way every other chip
+          ;; carries its context.
+          (is (str/includes? (:body response) "accession 2646, material 3437")
+              "and the per-table counts are there to be read, since they are
+               the whole of what the event records"))))))
 
 (deftest test-empty-state-not-appended-to-a-later-page
   (tf/testing "A later page that comes back empty renders nothing, not the empty
