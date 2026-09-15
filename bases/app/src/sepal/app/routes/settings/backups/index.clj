@@ -142,8 +142,7 @@
         (-> (http/see-other settings.routes/backups)
             (flash/success "Backup settings updated successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/see-other settings.routes/backups)
-                                       (flash/error "Could not save the backup settings")))))
+          (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings")))
 
       ;; GET
       (let [backups (backup/list-backups (:path config) :limit 5)]

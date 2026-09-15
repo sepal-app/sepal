@@ -2,6 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [dev.onionpancakes.chassis.core :as chassis]
             [ring.util.http-response :as http]
+            [sepal.app.flash :as flash]
             [sepal.app.ui.form :as ui.form]
             [sepal.error.interface :as error.i]
             [zodiac.core :as z]))
@@ -57,6 +58,22 @@
       (validation-errors errors)
       (do (log/error e "form post failed")
           fallback))))
+
+(defn failure-partial
+  "Fallback for a handler that answers with an HTML partial. A redirect would
+   be wrong for a partial swap, so the message goes back as a 422."
+  [e message]
+  (failure-response e (unprocessable-entity [:div {:class "spl-error"} message])))
+
+(defn failure-flash
+  "Fallback for a handler that answers with a redirect: `response` carrying
+   `message` as a flash error.
+
+   The response is passed in rather than a route name because the redirect
+   kind genuinely varies across callers -- hx-redirect, see-other and found
+   are all in use, and a default would make the odd ones read wrong."
+  [e response message]
+  (failure-response e (flash/error response message)))
 
 (defn hx-redirect
   "Returns 200 with HX-Redirect header for HTMX client-side redirect.

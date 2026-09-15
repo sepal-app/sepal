@@ -96,8 +96,7 @@
             (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
                 (flash/success "Location updated successfully"))
             (f/when-failed [e]
-              (http/failure-response e (-> (http/hx-redirect location.routes/detail {:id id})
-                                           (flash/error "Could not save the location")))))
+              (http/failure-flash e (http/hx-redirect location.routes/detail {:id id}) "Could not save the location")))
 
           (let [panel-data (location.panel/fetch-panel-data db resource)]
             (render :location resource

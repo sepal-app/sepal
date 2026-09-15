@@ -118,8 +118,7 @@
                       _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
         (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
         (f/when-failed [e]
-          (http/failure-response e (http/unprocessable-entity
-                                     [:div {:class "spl-error"} "The synonym could not be added."]))))
+          (http/failure-partial e "The synonym could not be added.")))
 
       :get
       (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
@@ -142,5 +141,4 @@
                                        (remove! db (:user/id viewer) synonym)))]
       (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
       (f/when-failed [e]
-        (http/failure-response e (http/unprocessable-entity
-                                   [:div {:class "spl-error"} "The synonym could not be removed."]))))))
+        (http/failure-partial e "The synonym could not be removed.")))))

@@ -1,6 +1,5 @@
 (ns sepal.app.routes.accession.detail.collection
   (:require [failjure.core :as f]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
@@ -262,9 +261,7 @@
           (http/hx-redirect (z/url-for accession.routes/detail-collection
                                        {:id (:accession/id accession)}))
           (f/when-failed [e]
-            (http/failure-response e (-> (http/hx-redirect (z/url-for accession.routes/detail-collection
-                                                                      {:id (:accession/id accession)}))
-                                         (flash/error "Could not save the collection data")))))
+            (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})) "Could not save the collection data")))
 
         (let [panel-data (accession.panel/fetch-panel-data db accession)]
           (render :accession accession

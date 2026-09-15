@@ -72,7 +72,6 @@
             (-> (http/see-other settings.routes/security)
                 (flash/error "Current password is incorrect"))))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/see-other settings.routes/security)
-                                       (flash/error "Could not change the password")))))
+          (http/failure-flash e (http/see-other settings.routes/security) "Could not change the password")))
 
       (render :viewer viewer :flash flash))))

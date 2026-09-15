@@ -47,7 +47,6 @@
         (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
             (flash/success "Location created successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect location.routes/new)
-                                       (flash/error "Could not create the location")))))
+          (http/failure-flash e (http/hx-redirect location.routes/new) "Could not create the location")))
 
       (render :values form-params))))

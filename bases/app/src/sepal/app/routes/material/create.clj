@@ -57,8 +57,7 @@
         (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
             (flash/success "Material created successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect material.routes/new)
-                                       (flash/error "Could not create the material")))))
+          (http/failure-flash e (http/hx-redirect material.routes/new) "Could not create the material")))
 
       ;; The location panel's "Plant here" link names the accession, which is
       ;; the only way this form knows one: the select is searched client-side.

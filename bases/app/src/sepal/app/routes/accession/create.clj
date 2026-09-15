@@ -65,7 +65,6 @@
         (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
             (flash/success "Accession created successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect accession.routes/new)
-                                       (flash/error "Could not create the accession")))))
+          (http/failure-flash e (http/hx-redirect accession.routes/new) "Could not create the accession")))
 
       (render :values form-params))))

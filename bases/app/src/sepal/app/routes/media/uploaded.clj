@@ -47,6 +47,4 @@
         (-> (media.ui/media-item :item media)
             (html/render-partial)))
       (f/when-failed [e]
-        (http/failure-response e (http/unprocessable-entity
-                                   [:div {:class "spl-error"}
-                                    "The upload could not be saved."]))))))
+        (http/failure-partial e "The upload could not be saved.")))))

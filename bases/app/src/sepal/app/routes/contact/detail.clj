@@ -103,8 +103,7 @@
             (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
                 (flash/success "Contact updated successfully"))
             (f/when-failed [e]
-              (http/failure-response e (-> (http/hx-redirect contact.routes/detail {:id id})
-                                           (flash/error "Could not save the contact")))))
+              (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) "Could not save the contact")))
 
           (let [panel-data (contact.panel/fetch-panel-data db resource)]
             (render :contact resource

@@ -176,7 +176,6 @@
           (-> (http/see-other settings.routes/organization)
               (flash/success "Organization settings updated successfully"))
           (f/when-failed [e]
-            (http/failure-response e (-> (http/see-other settings.routes/organization)
-                                         (flash/error "Could not save the organization settings"))))))
+            (http/failure-flash e (http/see-other settings.routes/organization) "Could not save the organization settings"))))
 
       (render :viewer viewer :values values :flash flash))))

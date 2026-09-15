@@ -3,7 +3,6 @@
             [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -117,8 +116,7 @@
                       _saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
         (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                                       (flash/error "Could not save the accession")))))
+          (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)})) "Could not save the accession")))
 
       (let [panel-data (accession.panel/fetch-panel-data db resource)
             collection (coll.i/get-by-accession-id db (:accession/id resource))]

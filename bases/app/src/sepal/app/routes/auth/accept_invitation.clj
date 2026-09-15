@@ -104,8 +104,7 @@
                     (-> (http/found auth.routes/login {:email email})
                         (flash/add-message (str "Password set for " display-name ". Please log in."))))
                   (f/when-failed [e]
-                    (http/failure-response e (-> (http/found auth.routes/login {:email email})
-                                                 (flash/error "Could not set your password. Please try again."))))))
+                    (http/failure-flash e (http/found auth.routes/login {:email email}) "Could not set your password. Please try again."))))
               (f/when-failed [e]
                 (render :email email
                         :full-name (or (get params "full-name") (:user/full-name user))

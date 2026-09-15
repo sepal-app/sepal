@@ -102,8 +102,7 @@
         (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
             (flash/success "Material updated successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect material.routes/detail {:id (:material/id resource)})
-                                       (flash/error "Could not save the material")))))
+          (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)}) "Could not save the material")))
 
       (let [panel-data (material.panel/fetch-panel-data db resource)
             reasons (material.i/list-reasons db)]

@@ -97,14 +97,12 @@
           ;; field error, not a generic save failure.
           (if (error.i/error? e ::name-taken)
             (http/validation-errors {:name [name-taken-message]})
-            (http/failure-response e (-> (http/hx-redirect tag.routes/index)
-                                         (flash/error "Could not save the tag"))))))
+            (http/failure-flash e (http/hx-redirect tag.routes/index) "Could not save the tag"))))
 
       :delete
       (f/attempt-all [_deleted (f/try* (delete! db id (:user/id viewer) resource))]
         (http/hx-redirect tag.routes/index)
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect tag.routes/index)
-                                       (flash/error "Could not delete the tag")))))
+          (http/failure-flash e (http/hx-redirect tag.routes/index) "Could not delete the tag")))
 
       (render :tag resource :values values))))

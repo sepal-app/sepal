@@ -90,8 +90,7 @@
                       _saved (f/try* (add! db id (:user/id viewer) data))]
         (http/hx-redirect (z/url-for taxon.routes/detail-tags {:id id}))
         (f/when-failed [e]
-          (http/failure-response e (http/unprocessable-entity
-                                     [:div {:class "spl-error"} "The tag could not be added."]))))
+          (http/failure-partial e "The tag could not be added.")))
 
       (let [tags (tag.i/get-for-resource db :taxon id)
             all-tags (tag.i/list-all db)
@@ -115,5 +114,4 @@
                                        (remove! db id (:user/id viewer) tag)))]
       (http/hx-redirect (z/url-for taxon.routes/detail-tags {:id id}))
       (f/when-failed [e]
-        (http/failure-response e (http/unprocessable-entity
-                                   [:div {:class "spl-error"} "The tag could not be removed."]))))))
+        (http/failure-partial e "The tag could not be removed.")))))

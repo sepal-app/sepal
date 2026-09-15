@@ -68,7 +68,6 @@
           (-> (http/see-other settings.routes/profile)
               (flash/success "Profile updated successfully")))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/see-other settings.routes/profile)
-                                       (flash/error "Failed to update profile")))))
+          (http/failure-flash e (http/see-other settings.routes/profile) "Failed to update profile")))
 
       (render :viewer viewer :values values :flash flash))))

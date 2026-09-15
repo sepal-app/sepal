@@ -30,7 +30,6 @@
 (defn create! [db created-by data]
   (db.i/with-transaction [tx db]
     (let [contact (contact.i/create! tx data)]
-      (tap> (str "contact: " contact))
       (contact.activity/create! tx contact.activity/created created-by contact)
       contact)))
 
@@ -71,7 +70,6 @@
         (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
             (flash/success "Contact created successfully"))
         (f/when-failed [e]
-          (http/failure-response e (-> (http/hx-redirect contact.routes/new)
-                                       (flash/error "Could not create the contact")))))
+          (http/failure-flash e (http/hx-redirect contact.routes/new) "Could not create the contact")))
 
       (render :values form-params))))

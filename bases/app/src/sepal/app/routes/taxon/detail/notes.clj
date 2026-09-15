@@ -81,8 +81,7 @@
                                                  note))))]
         (render-list db resource)
         (f/when-failed [e]
-          (http/failure-response e (http/unprocessable-entity
-                                     [:div {:class "spl-error"} "The note could not be saved."]))))
+          (http/failure-partial e "The note could not be saved.")))
 
       (let [panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
@@ -109,8 +108,7 @@
                                                    updated))))]
           (render-list db resource)
           (f/when-failed [e]
-            (http/failure-response e (http/unprocessable-entity
-                                       [:div {:class "spl-error"} "The note could not be saved."]))))
+            (http/failure-partial e "The note could not be saved.")))
 
         :delete
         (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
@@ -119,7 +117,6 @@
                                                    (note.i/delete! tx note-id))))]
           (render-list db resource)
           (f/when-failed [e]
-            (http/failure-response e (http/unprocessable-entity
-                                       [:div {:class "spl-error"} "The note could not be deleted."]))))
+            (http/failure-partial e "The note could not be deleted.")))
 
         (http/not-found)))))

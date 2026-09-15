@@ -220,7 +220,6 @@
           (flash/error {} "Error: Could not link resource")))
       :delete
       (let [result (media.i/unlink! db (:media/id resource))]
-        (tap> (str "result: " result))
         (if-not (error.i/error? result)
           (render :media resource)
           ;; TODO: render an error
