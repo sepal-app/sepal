@@ -1,6 +1,7 @@
 (ns sepal.app.routes.auth.login
   (:require [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
+            [sepal.app.remembered-gardens :as remembered]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.dashboard.routes :as dashboard.routes]
@@ -42,8 +43,8 @@
                              :next next)]
              :flash flash))
 
-(defn handler [{:keys [::z/context flash params request-method]}]
-  (let [{:keys [db]} context
+(defn handler [{:keys [::z/context cookies flash params request-method]}]
+  (let [{:keys [db app-domain remembered-gardens-cookie-domain]} context
         ;; TODO: we need to params encode this because we're getting the params
         ;; with string keys
         {:strs [email password invitation next]} params]
@@ -56,8 +57,14 @@
             error (when-not user "Invalid password")
             session (when-not error (session/user->session user))]
         (if-not error
-          (-> (http/see-other dashboard.routes/index)
-              (assoc :session session))
+          (cond-> (-> (http/see-other dashboard.routes/index)
+                      (assoc :session session))
+            ;; Only a garden that was told its parent domain remembers itself.
+            remembered-gardens-cookie-domain
+            (assoc :cookies {remembered/cookie-name
+                             (remembered/cookie {:domain remembered-gardens-cookie-domain
+                                                 :existing (get-in cookies [remembered/cookie-name :value])
+                                                 :hostname app-domain})}))
           ;; TODO: pass params on redirect
           (-> (http/see-other auth.routes/login)
               (flash/error error))))

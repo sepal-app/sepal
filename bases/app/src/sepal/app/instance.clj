@@ -106,7 +106,12 @@
    [:forgot-password-email-from {:optional true} [:string {:min 1}]]
    [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
    [:invitation-email-from {:optional true} [:string {:min 1}]]
-   [:invitation-email-subject {:optional true} [:string {:min 1}]]])
+   [:invitation-email-subject {:optional true} [:string {:min 1}]]
+   ;; The parent domain the login route sets the remembered-gardens cookie on —
+   ;; sepal.app for a managed garden, so the marketing site can read it. Unset,
+   ;; no cookie is written, which is what a self-hosted install wants: its
+   ;; parent domain is not ours to set cookies on.
+   [:remembered-gardens-cookie-domain {:optional true} [:maybe [:string {:min 1}]]]])
 
 (def Usage
   "The countable things in a garden. Closed, so adding one is a deliberate change
@@ -189,12 +194,39 @@
   {:db-path db-path})
 
 ;; Schema versioning, exposed on the instance API so the control plane never
-;; needs to require a component namespace. Thin wrappers over sepal.database.
+;; needs to require a component namespace. Thin wrappers over sepal.database,
+;; except has-active-user? below, which queries the database file directly.
 
 (defn schema-version
   "The migration version a database is at, or nil."
   [{:keys [db-path]}]
   (db.i/schema-version {:db-path db-path}))
+
+(defn has-active-user?
+  "Whether the database at db-path holds an active user with this address.
+
+  Path-taking like schema-version, so a caller that hosts gardens can ask about
+  one that is not running without starting it. Opens the file read-only —
+  sqlite-jdbc's open_mode 1 — because this is the one function here that a
+  control plane calls against every garden on a machine, and it must be
+  incapable of changing any of them.
+
+  Active only. An invited user has no password of their own yet and their way
+  in is the invitation link; an archived one cannot log in at all. The address
+  is trimmed and lowercased before the lookup — sepal.user.interface.spec only
+  lowercases what it stores, so trimming here is what lets a pasted address
+  with stray whitespace still hit the unique index on user.email, with no scan.
+
+  A missing file is false, not an error: the caller is walking a directory
+  listing and a garden that has just been purged is an ordinary thing to meet."
+  [{:keys [db-path email]}]
+  (let [address (some-> email str/trim str/lower-case not-empty)]
+    (boolean
+      (when (and address (fs/exists? db-path))
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)
+                                       :open_mode 1})]
+          (jdbc/execute-one! ds ["select 1 as hit from \"user\" where email = ? and status = 'active' limit 1"
+                                 address]))))))
 
 (defn latest-schema-version
   "The migration version this build of Sepal expects."
@@ -302,7 +334,8 @@
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request?
                    forgot-password-email-from forgot-password-email-subject
-                   invitation-email-from invitation-email-subject] :as opts}]
+                   invitation-email-from invitation-email-subject
+                   remembered-gardens-cookie-domain] :as opts}]
   (cond->
     {:sepal.token.interface/service
      {:secret (token-secret (:master-secret process) slug)}
@@ -368,7 +401,8 @@
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
-                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)}}
+                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)
+                        :remembered-gardens-cookie-domain remembered-gardens-cookie-domain}}
 
      :sepal.scheduler.interface/scheduler {}
 
