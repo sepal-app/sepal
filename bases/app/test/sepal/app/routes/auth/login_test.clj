@@ -1,5 +1,6 @@
 (ns sepal.app.routes.auth.login-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
             [malli.generator :as mg]
             [matcher-combinators.matchers :refer [mismatch]]
             [matcher-combinators.test :refer [match?]]
@@ -67,6 +68,22 @@
                      (Jsoup/parse)
                      (.selectFirst "nav[aria-label=Breadcrumb] [aria-current=page]")
                      (.text)))))))
+
+    (tf/testing "post - no cookie domain configured, no remembered-gardens cookie"
+      {[::user.i/factory :key/user] {:db db
+                                     :password "12345678"}}
+      (fn [{:keys [user]}]
+        (let [{:keys [response] :as sess} (-> (peri/session *app*)
+                                              (peri/request "/login"))
+              token (test.i/response-anti-forgery-token response)
+              response (:response (peri/request sess "/login"
+                                                :request-method :post
+                                                :params {:__anti-forgery-token token
+                                                         :email (:user/email user)
+                                                         :password "12345678"}))]
+          (is (= 303 (:status response)))
+          (is (not-any? #(str/starts-with? % "sepal_gardens=")
+                        (get-in response [:headers "Set-Cookie"]))))))
 
     (tf/testing "post - invalid password"
       {[::user.i/factory :key/user] {:db db

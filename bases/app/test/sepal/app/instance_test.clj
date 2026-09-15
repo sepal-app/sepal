@@ -1,5 +1,6 @@
 (ns sepal.app.instance-test
   (:require [babashka.fs :as fs]
+            [clojure.data.json :as json]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [integrant.core :as ig]
@@ -1060,6 +1061,138 @@
             (is (not (re-find #"\(\) has invited" (:body (first @sent))))))
           (finally
             (instance/stop! garden))))
+      (finally
+        (instance/stop-process! process)
+        (fs/delete-tree dir)))))
+
+(defn- insert-user!
+  "A row straight into a provisioned database, bypassing the component: this test
+  is about the probe, and the component would lowercase the address for us."
+  [db-path {:keys [email status]}]
+  (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+    (jdbc/execute! ds ["insert into \"user\" (email, password, role, status) values (?, ?, ?, ?)"
+                       email (str "pw-" email) "editor" status])))
+
+(deftest test-has-active-user
+  (let [dir (fs/create-temp-dir {:prefix "sepal-has-user"})
+        db-path (str (fs/path dir "sepal.db"))]
+    (try
+      (instance/provision! {:db-path db-path})
+      (insert-user! db-path {:email "active@example.com" :status "active"})
+      (insert-user! db-path {:email "archived@example.com" :status "archived"})
+      (insert-user! db-path {:email "invited@example.com" :status "invited"})
+
+      (testing "an active user answers true"
+        (is (true? (instance/has-active-user? {:db-path db-path :email "active@example.com"}))))
+
+      (testing "the address is matched regardless of case and surrounding space"
+        (is (true? (instance/has-active-user? {:db-path db-path :email "  Active@Example.COM "}))))
+
+      (testing "archived and invited users are not a way in, so they answer false"
+        (is (false? (instance/has-active-user? {:db-path db-path :email "archived@example.com"})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email "invited@example.com"}))))
+
+      (testing "an unknown address and a blank one answer false"
+        (is (false? (instance/has-active-user? {:db-path db-path :email "nobody@example.com"})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email ""})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email nil}))))
+
+      (testing "a missing file answers false rather than throwing"
+        (is (false? (instance/has-active-user? {:db-path (str (fs/path dir "nope.db"))
+                                                :email "active@example.com"}))))
+
+      (testing "the probe leaves the file untouched"
+        (let [before (fs/last-modified-time db-path)]
+          (instance/has-active-user? {:db-path db-path :email "active@example.com"})
+          (is (= before (fs/last-modified-time db-path)))))
+
+      (testing "a write through the probe's own datasource is refused"
+        ;; The guarantee this function exists to make. Without this assertion,
+        ;; dropping :open_mode 1 would break nothing any test can see.
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)
+                                       :open_mode 1})]
+          (is (thrown? java.sql.SQLException
+                       (jdbc/execute! ds ["update \"user\" set full_name = 'x' where email = ?"
+                                          "active@example.com"])))))
+      (finally
+        (fs/delete-tree dir)))))
+
+(deftest test-the-request-context-carries-the-cookie-domain
+  (testing "the opt reaches the request context, and is nil when not given"
+    (let [config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts
+                                                    :remembered-gardens-cookie-domain "sepal.app"))]
+      (is (= "sepal.app"
+             (get-in config [:sepal.app.server/zodiac :request-context
+                             :remembered-gardens-cookie-domain]))))
+    (let [config (#'instance/instance-config {:master-secret master} valid-instance-opts)]
+      (is (nil? (get-in config [:sepal.app.server/zodiac :request-context
+                                :remembered-gardens-cookie-domain])))))
+
+  (testing "the opt is part of the closed schema"
+    (is (nil? (#'instance/validate! instance/InstanceOpts
+                                    (assoc valid-instance-opts :remembered-gardens-cookie-domain "sepal.app")
+                                    "instance opts")))))
+
+(defn- set-cookie-named
+  "The Set-Cookie header for one cookie, out of a response. Ring emits a seq of
+  strings, one per cookie."
+  [response name]
+  (->> (get-in response [:headers "Set-Cookie"])
+       (filter #(str/starts-with? % (str name "=")))
+       first))
+
+(deftest test-login-remembers-the-garden
+  (let [dir (fs/create-temp-dir {:prefix "sepal-remembered"})
+        process (test-process)
+        opts (assoc (garden-opts dir "brooklyn")
+                    :app-domain "brooklyn.sepal.app"
+                    :remembered-gardens-cookie-domain "sepal.app")]
+    (try
+      (instance/provision! {:db-path (:db-path opts)})
+      (let [garden (instance/start! process opts)]
+        (try
+          (instance/create-admin-user! garden {:email "admin@example.com" :password "a-password"})
+          (testing "a successful login sets the cookie on the parent domain for a year"
+            (let [response (:response (login (instance/handler garden) "admin@example.com" "a-password"))
+                  header (set-cookie-named response "sepal_gardens")]
+              (is (not= "/login" (get-in response [:headers "Location"])) "the login should succeed")
+              (is (some? header) "sepal_gardens should be set")
+              (is (str/includes? header "Domain=sepal.app"))
+              (is (str/includes? header "Max-Age=31536000"))
+              (is (str/includes? header "Secure"))
+              (is (str/includes? header "SameSite=Lax"))
+              (is (not (str/includes? header "HttpOnly")))
+              (is (str/includes? header "brooklyn.sepal.app"))))
+
+          (testing "a garden already in the cookie is moved to the front, not added twice"
+            (let [existing (java.net.URLEncoder/encode "[\"queens.sepal.app\",\"brooklyn.sepal.app\"]" "UTF-8")
+                  {:keys [response] :as session} (-> (peri/session (instance/handler garden))
+                                                     (peri/request "/login"))
+                  token (test.i/response-anti-forgery-token response)
+                  ;; Seeded into peridot's cookie jar rather than sent as a
+                  ;; :headers override: peridot computes its own Cookie header
+                  ;; from the jar on every request, and a :headers override
+                  ;; replaces that header outright, silently dropping the
+                  ;; ring-session cookie the anti-forgery check depends on.
+                  session (assoc-in session [:cookie-jar "localhost" "sepal_gardens"]
+                                    {:value existing :path "/" :domain "localhost"
+                                     :raw (str "sepal_gardens=" existing)})
+                  response (:response (peri/request session "/login"
+                                                    :request-method :post
+                                                    :params {:__anti-forgery-token token
+                                                             :email "admin@example.com"
+                                                             :password "a-password"}))
+                  header (set-cookie-named response "sepal_gardens")
+                  value (-> header (str/split #";") first (subs (count "sepal_gardens="))
+                            (java.net.URLDecoder/decode "UTF-8"))]
+              (is (= ["brooklyn.sepal.app" "queens.sepal.app"]
+                     (json/read-str value)))))
+
+          (testing "a failed login sets no cookie"
+            (let [response (:response (login (instance/handler garden) "admin@example.com" "wrong"))]
+              (is (nil? (set-cookie-named response "sepal_gardens")))))
+          (finally (instance/stop! garden))))
       (finally
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
