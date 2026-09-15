@@ -1063,3 +1063,46 @@
       (finally
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
+
+(defn- insert-user!
+  "A row straight into a provisioned database, bypassing the component: this test
+  is about the probe, and the component would lowercase the address for us."
+  [db-path {:keys [email status]}]
+  (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+    (jdbc/execute! ds ["insert into \"user\" (email, password, role, status) values (?, ?, ?, ?)"
+                       email (str "pw-" email) "editor" status])))
+
+(deftest test-has-active-user
+  (let [dir (fs/create-temp-dir {:prefix "sepal-has-user"})
+        db-path (str (fs/path dir "sepal.db"))]
+    (try
+      (instance/provision! {:db-path db-path})
+      (insert-user! db-path {:email "active@example.com" :status "active"})
+      (insert-user! db-path {:email "archived@example.com" :status "archived"})
+      (insert-user! db-path {:email "invited@example.com" :status "invited"})
+
+      (testing "an active user answers true"
+        (is (true? (instance/has-active-user? {:db-path db-path :email "active@example.com"}))))
+
+      (testing "the address is matched regardless of case and surrounding space"
+        (is (true? (instance/has-active-user? {:db-path db-path :email "  Active@Example.COM "}))))
+
+      (testing "archived and invited users are not a way in, so they answer false"
+        (is (false? (instance/has-active-user? {:db-path db-path :email "archived@example.com"})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email "invited@example.com"}))))
+
+      (testing "an unknown address and a blank one answer false"
+        (is (false? (instance/has-active-user? {:db-path db-path :email "nobody@example.com"})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email ""})))
+        (is (false? (instance/has-active-user? {:db-path db-path :email nil}))))
+
+      (testing "a missing file answers false rather than throwing"
+        (is (false? (instance/has-active-user? {:db-path (str (fs/path dir "nope.db"))
+                                                :email "active@example.com"}))))
+
+      (testing "the probe leaves the file untouched"
+        (let [before (fs/last-modified-time db-path)]
+          (instance/has-active-user? {:db-path db-path :email "active@example.com"})
+          (is (= before (fs/last-modified-time db-path)))))
+      (finally
+        (fs/delete-tree dir)))))

@@ -196,6 +196,31 @@
   [{:keys [db-path]}]
   (db.i/schema-version {:db-path db-path}))
 
+(defn has-active-user?
+  "Whether the database at db-path holds an active user with this address.
+
+  Path-taking like schema-version, so a caller that hosts gardens can ask about
+  one that is not running without starting it. Opens the file read-only —
+  sqlite-jdbc's open_mode 1 — because this is the one function here that a
+  control plane calls against every garden on a machine, and it must be
+  incapable of changing any of them.
+
+  Active only. An invited user has no password of their own yet and their way
+  in is the invitation link; an archived one cannot log in at all. The address
+  is lowercased and trimmed to match what sepal.user.interface.spec stores, so
+  the unique index on user.email is used and no scan happens.
+
+  A missing file is false, not an error: the caller is walking a directory
+  listing and a garden that has just been purged is an ordinary thing to meet."
+  [{:keys [db-path email]}]
+  (let [address (some-> email str/trim str/lower-case not-empty)]
+    (boolean
+      (when (and address (fs/exists? db-path))
+        (let [ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)
+                                       :open_mode 1})]
+          (jdbc/execute-one! ds ["select 1 as hit from \"user\" where email = ? and status = 'active' limit 1"
+                                 address]))))))
+
 (defn latest-schema-version
   "The migration version this build of Sepal expects."
   []
