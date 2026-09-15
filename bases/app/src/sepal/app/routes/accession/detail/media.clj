@@ -55,7 +55,9 @@
                :src (html/static-url "app/routes/media/media.ts")}]]))
 
 (defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
-  (ui.page/page :page-title-buttons (title-buttons accession)
+  (ui.page/page :page-title-buttons (accession.shared/actions
+                                      :accession accession
+                                      :primary (media.ui/upload-button))
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :page page
                                                   :page-size page-size

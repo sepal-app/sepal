@@ -7,11 +7,22 @@
 (def AntiForgeryField
   [(keyword anti-forgery-field-name) :string])
 
-(defn form [attrs & children]
+(defn form
+  "Every form in the app.
+
+  Cmd/Ctrl+Enter submits from any field in it. Save is a plain button on most
+  of these forms rather than a submit button, so Enter alone does nothing, and
+  a textarea needs the modifier regardless. Two listeners because Alpine ANDs
+  the modifiers on one — there is no way to say cmd-or-ctrl in a single
+  directive. `requestSubmit` is what the Save button ends up calling too, so
+  both routes run native validation and go through HTMX the same way."
+  [attrs & children]
   [:form (merge {:x-data true
                  :x-ref "form"
                  :class "grid gap-1"
-                 :x-form-state {}}
+                 :x-form-state {}
+                 :x-on:keydown.enter.cmd.prevent "$el.requestSubmit()"
+                 :x-on:keydown.enter.ctrl.prevent "$el.requestSubmit()"}
                 attrs)
    children])
 

@@ -153,9 +153,7 @@
                                     {:id (:accession/id accession)}))])))
 
 (defn render [& {:keys [errors accession taxon values collection? panel-data timezone]}]
-  (page/page :page-title-buttons (ui.delete/button
-                                   :delete-url (z/url-for accession.routes/delete
-                                                          {:id (:accession/id accession)}))
+  (page/page :page-title-buttons (accession.shared/actions :accession accession)
              :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer
                                                          :buttons (footer-buttons

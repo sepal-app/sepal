@@ -129,25 +129,37 @@
             "Add vernacular name"
             :side "right")]
          [:div {:class "spl-form-fields"}
-          [:template {:x-for "(vn, index) in vernacularNames"}
-           [:div {:class "flex flex-row gap-2 items-center"}
-            [:input {:name "vernacular-name-name"
-                     :class "spl-input flex-grow"
-                     :aria-label "Vernacular name"
-                     :x-model "vn.name"}]
-            [:input {:name "vernacular-name-language"
-                     :class "spl-input flex-grow"
-                     :aria-label "Language"
-                     :x-model "vn.language"}]
-            (tooltip/wrap
-              [:button {:type "button"
-                        :class "spl-btn spl-btn--danger spl-btn--icon"
-                        :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
-                        :aria-label "Delete"}
-               [:span {:aria-hidden true}
-                (heroicons/outline-trash)]]
-              "Delete"
-              :side "left")]]
+          ;; The rows repeat, so the columns are headed once rather than each
+          ;; input carrying its own label. Header and rows declare the same
+          ;; grid template so they line up; the third column is the delete
+          ;; button's width, from .spl-btn--icon. They share a wrapper because
+          ;; .spl-form-fields spaces its children 15px apart, which is the gap
+          ;; between fields, not between a heading and the row under it.
+          [:div {:class "flex flex-col gap-2"}
+           [:div {:x-show "vernacularNames?.length"
+                  :class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
+            [:span {:class "spl-label" :aria-hidden true} "Name"]
+            [:span {:class "spl-label" :aria-hidden true} "Language"]
+            [:span]]
+           [:template {:x-for "(vn, index) in vernacularNames"}
+            [:div {:class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
+             [:input {:name "vernacular-name-name"
+                      :class "spl-input min-w-0"
+                      :aria-label "Vernacular name"
+                      :x-model "vn.name"}]
+             [:input {:name "vernacular-name-language"
+                      :class "spl-input min-w-0"
+                      :aria-label "Language"
+                      :x-model "vn.language"}]
+             (tooltip/wrap
+               [:button {:type "button"
+                         :class "spl-btn spl-btn--danger spl-btn--icon"
+                         :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
+                         :aria-label "Delete"}
+                [:span {:aria-hidden true}
+                 (heroicons/outline-trash)]]
+               "Delete"
+               :side "left")]]]
           ;; Inside the section, so it takes the same 576px column as the
           ;; fields. As a bare div it ran the full width of the page.
           [:p {:x-show "!vernacularNames?.length"

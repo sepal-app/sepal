@@ -61,7 +61,7 @@
                               :value (:address values)
                               :errors (:address errors))
          [:div {:class "spl-form-pair"}
-          (ui.form/input-field :label "Province"
+          (ui.form/input-field :label "Province / State"
                                :name "province"
                                :value (:province values)
                                :errors (:province errors))

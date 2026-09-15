@@ -6,7 +6,7 @@
             [sepal.app.routes.location.form :as location.form]
             [sepal.app.routes.location.panel :as location.panel]
             [sepal.app.routes.location.routes :as location.routes]
-            [sepal.app.ui.delete :as ui.delete]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -28,7 +28,7 @@
                               :values values)))
 
 (defn render [& {:keys [errors location values panel-data timezone]}]
-  (page/page :page-title-buttons (ui.delete/button
+  (page/page :page-title-buttons (ui.actions/menu
                                    :delete-url (z/url-for location.routes/delete
                                                           {:id (:location/id location)}))
              :content (pages.detail/page-content-with-panel

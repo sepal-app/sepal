@@ -135,9 +135,24 @@
 
          (ui.form/field :label "Supplier"
                         :name "supplier-contact-id"
+                        ;; The select only searches contacts that already
+                        ;; exist, so a garden with none has no way in from
+                        ;; here. The link opens in a new tab because this form
+                        ;; is usually half filled in by the time you find out.
+                        :help (list "Suppliers come from your contacts. "
+                                    [:a {:class "spl-link"
+                                         :href (z/url-for contact.routes/new)
+                                         :target "_blank"
+                                         :rel "noreferrer"}
+                                     "Create a contact"]
+                                    " in a new tab if the one you want is missing.")
                         :input [:select {:x-contact-field (json/js {:url (z/url-for contact.routes/index)})
                                          :id "supplier-contact-id"
                                          :name "supplier-contact-id"
+                                         ;; ui.form/field wires this up for the
+                                         ;; controls it builds itself, not for
+                                         ;; one handed to it as :input.
+                                         :aria-describedby (ui.form/description-id "supplier-contact-id")
                                          :autocomplete "off"}
                                 [:option {:value "" :data-placeholder "true"} ""]
                                 (when (:contact/id supplier)

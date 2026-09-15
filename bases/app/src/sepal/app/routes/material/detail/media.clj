@@ -15,9 +15,6 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn title-buttons []
-  (media.ui/upload-button))
-
 (defn next-page-url [& {:keys [material current-page]}]
   (z/url-for material.routes/detail-media
              {:id (:material/id material)}
@@ -72,7 +69,9 @@
     :breadcrumbs (material.shared/breadcrumbs :accession accession
                                               :material material
                                               :taxon taxon)
-    :page-title-buttons (title-buttons)))
+    :page-title-buttons (material.shared/actions
+                          :material material
+                          :primary (media.ui/upload-button))))
 
 (def Params
   [:map

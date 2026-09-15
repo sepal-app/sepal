@@ -1,5 +1,7 @@
 (ns sepal.app.routes.taxon.detail.shared
-  (:require [sepal.app.routes.taxon.routes :as taxon.routes]
+  (:require [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
@@ -47,3 +49,18 @@
 (defn breadcrumbs [taxon]
   [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
    [:span (taxon-name/render (:taxon/name taxon))]])
+
+(defn actions
+  "The same actions on every one of a taxon's sections. Defined here rather
+  than per section, which is how the sections diverged in the first place.
+
+  :primary is the media section's Upload button. Nothing else varies."
+  [& {:keys [taxon primary]}]
+  (let [id (:taxon/id taxon)]
+    (ui.actions/menu
+      :primary primary
+      :items [{:label "Add an accession"
+               :href (z/url-for accession.routes/new nil {:taxon-id id})}
+              {:label "Add a child taxon"
+               :href (z/url-for taxon.routes/new nil {:parent-id id})}]
+      :delete-url (z/url-for taxon.routes/delete {:id id}))))

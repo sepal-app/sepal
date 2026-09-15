@@ -2,6 +2,7 @@
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
@@ -55,3 +56,13 @@
    [:a {:href (z/url-for material.routes/index {} {:accession-id (:accession/id accession)})}
     "Materials"]
    (str (:accession/code accession) "." (:material/code material))])
+
+(defn actions
+  "The same actions on every one of a material's sections. Defined here rather
+  than per section, which is how the sections diverged in the first place.
+
+  :primary is the media section's Upload button. Nothing else varies."
+  [& {:keys [material primary]}]
+  (ui.actions/menu
+    :primary primary
+    :delete-url (z/url-for material.routes/delete {:id (:material/id material)})))
