@@ -3,8 +3,10 @@
             [malli.generator :as mg]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.interface.spec :as spec]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
-            [sepal.store.interface :as store.i]))
+            [sepal.store.interface :as store.i])
+  (:import [java.time LocalDate]))
 
 (defn get-by-id [db id]
   (store.i/get-by-id db :accession id spec/Accession))
@@ -58,6 +60,24 @@
   [db]
   (db.i/count db {:select [:id]
                   :from [:accession]}))
+
+(defn next-code
+  "The next accession code for `template`, derived from the codes already
+  stored rather than from a counter. nil when the template is blank or
+  unparseable, so a broken setting leaves the field empty instead of 500ing.
+
+  The `like` narrows the scan in SQL and the shape match runs in Clojure,
+  because SQLite's glob cannot express a bounded digit run. A prefix holding
+  a LIKE wildcard only widens the scan; the shape match still decides."
+  ([db template]
+   (next-code db template (LocalDate/now)))
+  ([db template ^LocalDate date]
+   (when-let [prefix (ct.i/scan-prefix template date)]
+     (->> (db.i/execute! db {:select [:code]
+                             :from [:accession]
+                             :where [:like :code (str prefix "%")]})
+          (map :accession/code)
+          (#(ct.i/next-code template % date))))))
 
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)

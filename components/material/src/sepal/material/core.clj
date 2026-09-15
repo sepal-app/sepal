@@ -3,9 +3,27 @@
             [malli.generator :as mg]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.material.interface.spec :as spec]
-            [sepal.store.interface :as store.i]))
+            [sepal.store.interface :as store.i])
+  (:import [java.time LocalDate]))
+
+(defn next-code
+  "The next material code within `accession-id`. Material is numbered inside
+  its accession, so the scan is scoped to that accession rather than to a
+  prefix, and every accession starts again at one."
+  ([db template accession-id]
+   (next-code db template accession-id (LocalDate/now)))
+  ([db template accession-id ^LocalDate date]
+   (when-let [prefix (ct.i/scan-prefix template date)]
+     (->> (db.i/execute! db {:select [:code]
+                             :from [:material]
+                             :where [:and
+                                     [:= :accession_id accession-id]
+                                     [:like :code (str prefix "%")]]})
+          (map :material/code)
+          (#(ct.i/next-code template % date))))))
 
 (defn get-by-id [db id]
   (store.i/get-by-id db :material id spec/Material))
@@ -126,16 +144,20 @@
 (create-ns 'sepal.material.interface)
 (alias 'mat.i 'sepal.material.interface)
 
-(defn factory [{:keys [db accession location] :as args}]
-  (let [data (-> (mg/generate spec/CreateMaterial)
-                 (assoc :accession-id (:accession/id accession))
-                 (assoc :location-id (:location/id location)))
+(defn factory
+  "Build material for tests. Fields are generated from the spec unless `:data`
+  overrides them -- which a test needs when behaviour depends on a particular
+  value, since a generated one differs run to run."
+  [{:keys [db accession location data] :as args}]
+  (let [generated (-> (mg/generate spec/CreateMaterial)
+                      (assoc :accession-id (:accession/id accession))
+                      (assoc :location-id (:location/id location)))
         ;; The schema CHECK forbids a positive quantity on a non-current lot
         ;; (dead, transferred, other), which the generator otherwise produces.
-        data (if (contains? #{:alive :dormant :unknown} (:status data))
-               data
-               (assoc data :quantity 0))
-        result (create! db data)]
+        generated (if (contains? #{:alive :dormant :unknown} (:status generated))
+                    generated
+                    (assoc generated :quantity 0))
+        result (create! db (merge generated data))]
     (vary-meta result assoc :db db)))
 
 (defmethod ig/halt-key! ::mat.i/factory [_ data]
