@@ -56,7 +56,11 @@
           body (Jsoup/parse ^String (:body response))]
       (is (= 200 (:status response)))
       (is (re-matches #"ZT\d{4}-\d{4}" (attr-value body "#code"))
-          "prefilled with the next code, not left empty"))))
+          "prefilled with the next code, not left empty")
+      ;; The control is hand-rolled rather than built by ui.form/input-field,
+      ;; so it has to carry the aria wiring input-field would have supplied.
+      (is (= "code-description" (.attr (.selectFirst body "#code") "aria-describedby"))
+          "the help text is announced with the field"))))
 
 (deftest test-material-create-get-depends-on-the-accession
   (tf/testing "material cannot suggest a code until it knows the accession"

@@ -50,7 +50,15 @@
             "the default comes from code, not from a seeded settings row")
         (is (re-find #"Next: \d{4}\.\d{4}"
                      (.text (.selectFirst body ".spl-settings-content")))
-            "the field says what it would generate right now")))))
+            "the field says what it would generate right now")
+
+        ;; spl-checkbox sizes the box at 16px square. Put it on the wrapping
+        ;; label instead and the label is 16px wide, so its text wraps one word
+        ;; per line and overflows the section below it.
+        (is (some? (.selectFirst body "input#accession_strict.spl-checkbox"))
+            "the checkbox class is on the input")
+        (is (nil? (.selectFirst body "label.spl-checkbox"))
+            "and not on a label")))))
 
 (deftest test-saving-both-templates-and-both-flags
   (testing "POST /settings/codes stores the four rows"

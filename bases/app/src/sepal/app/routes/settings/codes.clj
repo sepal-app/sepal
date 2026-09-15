@@ -16,22 +16,25 @@
             [zodiac.core :as z])
   (:import [java.time LocalDate]))
 
-(def token-help
-  "{year} {year2} {month} {day} and one {seq}. Zeros after a colon set the
-  width, so {seq:0000} counts 0001, 0002.")
+(def token-legend
+  "Tokens: {year} {year2} {month} {day}, and exactly one {seq}. Zeros after a
+  colon set the width, so {seq:0000} counts 0001, 0002.")
 
 (defn- strict-checkbox [& {:keys [name label checked? errors]}]
   (form/field
     :label label
     :name name
     :errors errors
-    :input [:label {:class "spl-checkbox"}
+    ;; spl-checkbox sizes the box itself at 16px. On the wrapping label it
+    ;; sizes the label, and the text wraps one word per line.
+    :input [:label {:class "flex items-center gap-2 cursor-pointer"}
             [:input {:type "checkbox"
+                     :class "spl-checkbox"
                      :id name
                      :name name
                      :value "1"
                      :checked (boolean checked?)}]
-            "Reject a code that does not fit"]))
+            [:span "Reject a code that does not fit"]]))
 
 (defn codes-form [& {:keys [values errors previews]}]
   (form/form
@@ -42,15 +45,15 @@
     [:div {:class "spl-form"}
      (form/section
        :title "Accessions"
-       :hint "How an accession code is suggested on the create form."
+       :hint (str "How an accession code is suggested on the create form. "
+                  token-legend)
        :children
        [(form/input-field :label "Template"
                           :name "accession_template"
                           :value (:accession_template values)
                           :errors (:accession_template errors)
-                          :help (if-let [next-code (:accession previews)]
-                                  (str "Next: " next-code ". " token-help)
-                                  token-help))
+                          :help (when-let [next-code (:accession previews)]
+                                  (str "Next: " next-code)))
         (strict-checkbox :name "accession_strict"
                          :label "Enforcement"
                          :checked? (:accession_strict values)
@@ -58,16 +61,14 @@
 
      (form/section
        :title "Material"
-       :hint "Material is numbered within its accession, so it starts again at
-              one for every accession."
+       :hint "Material is numbered within its accession, so it starts again at one for every accession."
        :children
        [(form/input-field :label "Template"
                           :name "material_template"
                           :value (:material_template values)
                           :errors (:material_template errors)
-                          :help (if-let [example (:material previews)]
-                                  (str "For example: " example ". " token-help)
-                                  token-help))
+                          :help (when-let [example (:material previews)]
+                                  (str "For example: " example)))
         (strict-checkbox :name "material_strict"
                          :label "Enforcement"
                          :checked? (:material_strict values)

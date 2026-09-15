@@ -63,13 +63,21 @@
   [:div {:id confirm-target-id
          :hx-swap-oob "true"
          :class "spl-alert spl-alert--warning"}
-   [:p (if example
-         (str "This code does not match the garden's template, which would give "
-              example ".")
-         "This code does not match the garden's template.")]
-   [:label {:class "spl-checkbox"}
-    [:input {:type "checkbox" :name "code-override" :value "1"}]
-    "Save it anyway"]])
+   ;; spl-alert lays its children out in a row, so the warning and the tickbox
+   ;; go inside one column rather than side by side. spl-checkbox sizes the box
+   ;; itself at 16px; on the wrapping label it sizes the label, and the text
+   ;; wraps one word per line.
+   [:div {:class "flex flex-col gap-2"}
+    [:p (if example
+          (str "This code does not match the garden's template. "
+               "A code that fits looks like " example ".")
+          "This code does not match the garden's template.")]
+    [:label {:class "flex items-center gap-2 cursor-pointer"}
+     [:input {:type "checkbox"
+              :class "spl-checkbox"
+              :name "code-override"
+              :value "1"}]
+     [:span "Save it anyway"]]]])
 
 (defn unique-violation?
   "Did this failure come from one of the code unique indexes?

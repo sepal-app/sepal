@@ -16,18 +16,27 @@
       (str/replace "_" " ")
       (str/capitalize)))
 
+(def code-help "Your garden's accession number. Must be unique.")
+
 (defn code-input
   "The Code control on its own, so a collision can swap it for one carrying the
-  recomputed suggestion."
-  [& {:keys [value]}]
-  [:input {:autocomplete "off"
-           :class "spl-input"
-           :id "code"
-           :name "code"
-           :required true
-           :minlength 1
-           :type "text"
-           :value value}])
+  recomputed suggestion.
+
+  Hand-rolled rather than ui.form/input-field, which returns a whole field and
+  cannot be swapped on its own -- so this has to carry the same aria wiring
+  input-field would have given it."
+  [& {:keys [value errors help]}]
+  [:input (cond-> {:autocomplete "off"
+                   :class "spl-input"
+                   :id "code"
+                   :name "code"
+                   :required true
+                   :minlength 1
+                   :type "text"
+                   :value value
+                   :aria-describedby (ui.form/describedby "code" {:help help
+                                                                  :errors errors})}
+            (seq errors) (assoc :aria-invalid "true"))])
 
 (defn form [& {:keys [action errors location supplier taxon values]}]
   [:div
@@ -47,8 +56,10 @@
                         :name "code"
                         :required true
                         :errors (:code errors)
-                        :help "Your garden's accession number. Must be unique."
-                        :input (code-input :value (:code values)))
+                        :help code-help
+                        :input (code-input :value (:code values)
+                                           :errors (:code errors)
+                                           :help code-help))
          (codes/confirm-slot)
 
          (let [taxa-url (z/url-for taxon.routes/index)]
