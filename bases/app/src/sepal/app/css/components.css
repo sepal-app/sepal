@@ -194,6 +194,11 @@
 }
 .spl-error:empty { display: none; }
 
+/* The slot an out-of-band code confirmation swaps into. It sits in the field
+ * column on every accession and material form and is empty almost always, and
+ * an empty flex item still takes a gap on both sides. */
+.spl-code-confirm:empty { display: none; }
+
 /* ── SlimSelect ────────────────────────────────────────────────────────────
  * The taxon, contact, location and material pickers are SlimSelect, so they
  * have to be indistinguishable from a plain field — a form where two controls
@@ -387,6 +392,9 @@
 
 .spl-settings-content { flex: 1; min-width: 0; max-width: 576px; }
 .spl-settings-content .spl-field + .spl-field { margin-top: 15px; }
+/* Except inside a form section, which already spaces its own fields. Both
+ * applied is 30px where every other settings page has 15px. */
+.spl-settings-content .spl-form-fields .spl-field + .spl-field { margin-top: 0; }
 
 .spl-subnav { flex: 0 0 256px; }
 .spl-subnav-group { margin-bottom: 24px; }

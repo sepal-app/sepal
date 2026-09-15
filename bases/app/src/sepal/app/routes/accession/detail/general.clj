@@ -4,6 +4,7 @@
             [sepal.accession.interface.activity :as accession.activity]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -124,7 +125,7 @@
                  (not= (:code data) (:accession/code resource))
                  (not= "1" (:code-override data)))
           (http/unprocessable-entity
-            (codes/confirm-swap (accession.i/next-code db (:template config))))
+            (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
           (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
             (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
             (f/when-failed [e]

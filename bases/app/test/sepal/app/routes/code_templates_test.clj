@@ -188,7 +188,14 @@
         (is (= 422 (:status response)))
         (is (re-find #"ZT2026-0777 is already taken" (text-of body "#code-errors")))
         (is (= "ZT2026-0778" (attr-value body "#code"))
-            "the field is swapped to the recomputed suggestion")))))
+            "the field is swapped to the recomputed suggestion")
+        ;; The swapped-in field is the one field in error, so it has to carry
+        ;; the error state. aria-invalid is what draws its red border.
+        (is (= "true" (.attr (.selectFirst body "#code") "aria-invalid"))
+            "the replacement field still reads as invalid")
+        (is (= "code-description code-errors"
+               (.attr (.selectFirst body "#code") "aria-describedby"))
+            "and still points at the message beside it")))))
 
 ;; ------------------------------------------------------------------- edit
 

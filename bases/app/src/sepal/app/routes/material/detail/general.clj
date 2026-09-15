@@ -2,6 +2,7 @@
   (:require [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
             [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
@@ -109,7 +110,8 @@
           (http/unprocessable-entity
             (codes/confirm-swap (material.i/next-code db
                                                       (:template config)
-                                                      (:material/accession-id resource))))
+                                                      (:material/accession-id resource)
+                                                      (datetime/today timezone))))
           (f/attempt-all [saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
                 (flash/success "Material updated successfully"))

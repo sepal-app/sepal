@@ -26,19 +26,21 @@
   create button and its empty state both link to a bare /material/new -- so
   the suggestion arrives from the endpoint rather than from the first render.
   It swaps this element for itself."
-  [& {:keys [value accession-id]}]
-  [:input {:autocomplete "off"
-           :class "spl-input w-full"
-           :placeholder (if accession-id "Required" "Choose an accession first")
-           :required true
-           :id "code"
-           :name "code"
-           :type "text"
-           :hx-get (z/url-for material.routes/next-code)
-           :hx-trigger "material:accession-changed from:body"
-           :hx-include "#accession-id"
-           :hx-swap "outerHTML"
-           :value value}])
+  [& {:keys [value accession-id errors]}]
+  [:input (cond-> {:autocomplete "off"
+                   :class "spl-input w-full"
+                   :placeholder (if accession-id "Required" "Choose an accession first")
+                   :required true
+                   :id "code"
+                   :name "code"
+                   :type "text"
+                   :hx-get (z/url-for material.routes/next-code)
+                   :hx-trigger "material:accession-changed from:body"
+                   :hx-include "#accession-id"
+                   :hx-swap "outerHTML"
+                   :value value
+                   :aria-describedby (form/describedby "code" {:errors errors})}
+            (seq errors) (assoc :aria-invalid "true"))])
 
 (defn form [& {:keys [action errors values reasons]}]
   (let [statuses (->> material.spec/status rest (mapv name))
@@ -75,7 +77,8 @@
                         :name "code"
                         :errors (:code errors)
                         :input (code-input :value (:code values)
-                                           :accession-id (:accession-id values)))
+                                           :accession-id (:accession-id values)
+                                           :errors (:code errors)))
             (codes/confirm-slot)
             (let [url (z/url-for location.routes/index)]
               (form/field :label "Location"

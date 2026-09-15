@@ -3,6 +3,7 @@
             [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
             [sepal.app.codes :as codes]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
@@ -13,8 +14,7 @@
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDate]))
+            [zodiac.core :as z]))
 
 (def token-legend
   "Tokens: {year} {year2} {month} {day}, and exactly one {seq}. Zeros after a
@@ -42,7 +42,10 @@
      :action (z/url-for settings.routes/codes)}
     (form/anti-forgery-field)
 
-    [:div {:class "spl-form"}
+    ;; No spl-form wrapper: it carries 26px/30px padding that is reset only
+    ;; inside a record page, so on a settings page it indents the fields 30px
+    ;; further than every other settings page and past its own Save button.
+    [:div
      (form/section
        :title "Accessions"
        :hint (str "How an accession code is suggested on the create form. "
@@ -106,8 +109,8 @@
   "What each template would produce right now. The accession preview is the
   real next code; material's is an illustration, because its real answer
   depends on which accession you are adding to."
-  [db config]
-  (let [today (LocalDate/now)]
+  [db config timezone]
+  (let [today (datetime/today timezone)]
     {:accession (accession.i/next-code db (-> config :accession :template) today)
      :material (let [parts (ct.i/parse (-> config :material :template))]
                  (when-not (f/failed? parts)
@@ -144,7 +147,7 @@
    "codes.material_strict" (if (= "1" (:material_strict data)) "1" "0")})
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         config (codes/config db)]
     (case request-method
       :post
@@ -156,7 +159,7 @@
                            :accession_strict (= "1" (:accession_strict data))
                            :material_strict (= "1" (:material_strict data))}
                   :errors errors
-                  :previews (previews db config))
+                  :previews (previews db config timezone))
           (f/attempt-all [_saved (f/try* (let [new-settings (->settings data)]
                                            (settings.i/set-values! db new-settings)
                                            (settings.activity/create! db
@@ -173,9 +176,9 @@
           (render :viewer viewer
                   :values (settings->values config)
                   :errors (error.i/humanize e)
-                  :previews (previews db config))))
+                  :previews (previews db config timezone))))
 
       (render :viewer viewer
               :values (settings->values config)
               :flash flash
-              :previews (previews db config)))))
+              :previews (previews db config timezone)))))

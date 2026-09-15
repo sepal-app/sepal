@@ -49,7 +49,7 @@
   "The empty target the confirmation swaps into. Lives inside the form, so the
   checkbox it receives is posted with the next submit."
   []
-  [:div {:id confirm-target-id}])
+  [:div {:id confirm-target-id :class "spl-code-confirm"}])
 
 (defn confirm-swap
   "What an edit gets when strict enforcement would refuse the code: a warning
@@ -62,7 +62,7 @@
   [example]
   [:div {:id confirm-target-id
          :hx-swap-oob "true"
-         :class "spl-alert spl-alert--warning"}
+         :class "spl-code-confirm spl-alert spl-alert--warning"}
    ;; spl-alert lays its children out in a row, so the warning and the tickbox
    ;; go inside one column rather than side by side. spl-checkbox sizes the box
    ;; itself at 16px; on the wrapping label it sizes the label, and the text
@@ -93,10 +93,16 @@
   "422 naming the code that is taken, with the field re-suggested.
 
   No automatic retry: saving the record under a different code than the one on
-  screen is worse than asking."
-  [code suggestion input]
-  (http/unprocessable-entity
-    [:div
-     (ui.form/error-list "code" [(str code " is already taken")] :hx-swap-oob? true)
-     (when suggestion
-       (assoc-in input [1 :hx-swap-oob] "true"))]))
+  screen is worse than asking.
+
+  `input-fn` takes the errors and returns the Code control, so the swapped-in
+  field carries the same aria-invalid and aria-describedby the field it
+  replaces would have had. Without that the one field in error is the only one
+  with no error styling."
+  [code suggestion input-fn]
+  (let [errors [(str code " is already taken")]]
+    (http/unprocessable-entity
+      [:div
+       (ui.form/error-list "code" errors :hx-swap-oob? true)
+       (when suggestion
+         (assoc-in (input-fn errors) [1 :hx-swap-oob] "true"))])))
