@@ -140,3 +140,27 @@
                     "the cleared value should render as empty")))))
         (finally
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-the-actions-menu-keeps-every-action
+  (tf/testing "render used to pass :page-title-buttons twice in one call — the
+               later key won, so the Delete button never reached the page. One
+               argument now carries the lot."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/taxon/" (:taxon/id taxon) "/name/")))
+            body (Jsoup/parse ^String (:body response))
+            items (.select body ".spl-actions [role=menuitem]")
+            labels (mapv #(.text %) items)]
+        (is (= ["Add an accession" "Add a child taxon" "Delete"] labels))
+        (testing "the two links carry the taxon, so the form they open knows it"
+          (is (str/includes? (.attr (.first items) "href")
+                             (str "taxon-id=" (:taxon/id taxon))))
+          (is (str/includes? (.attr (.get items 1) "href")
+                             (str "parent-id=" (:taxon/id taxon)))))
+        (is (some? (.selectFirst body "#delete-modal-container"))
+            "and Delete has somewhere to put its confirmation")))))

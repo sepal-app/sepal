@@ -13,9 +13,6 @@
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
-(defn title-buttons []
-  (media.ui/upload-button))
-
 (defn next-page-url [& {:keys [taxon current-page]}]
   (z/url-for taxon.routes/detail-media
              {:id (:taxon/id taxon)}
@@ -63,7 +60,9 @@
                                             :activities (:activities panel-data)
                                             :activity-count (:activity-count panel-data)))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)
-                :page-title-buttons (title-buttons)))
+                :page-title-buttons (taxon.shared/actions
+                                      :taxon taxon
+                                      :primary (media.ui/upload-button))))
 
 (def Params
   [:map

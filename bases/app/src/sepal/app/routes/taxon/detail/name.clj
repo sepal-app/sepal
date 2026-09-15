@@ -6,8 +6,6 @@
             [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.alert :as alert]
-            [sepal.app.ui.delete :as ui.delete]
-            [sepal.app.ui.dropdown :as dropdown]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -16,10 +14,6 @@
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
-
-(defn page-title-buttons [& {:keys []}]
-  (dropdown/dropdown "Actions"
-                     (dropdown/item (z/url-for taxon.routes/new) "Add a taxon")))
 
 (defn page-content [& {:keys [errors taxon values footer]}]
   (taxon.shared/page
@@ -38,10 +32,7 @@
                         :values values)])))
 
 (defn render [& {:keys [errors taxon values panel-data]}]
-  (page/page :page-title-buttons (ui.delete/button
-                                   :delete-url (z/url-for taxon.routes/delete
-                                                          {:id (:taxon/id taxon)}))
-             :content (pages.detail/page-content-with-panel
+  (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
                                                :errors errors
                                                :taxon taxon
@@ -56,7 +47,7 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)))
              :breadcrumbs (taxon.shared/breadcrumbs taxon)
-             :page-title-buttons (page-title-buttons)))
+             :page-title-buttons (taxon.shared/actions :taxon taxon)))
 
 (defn save! [db taxon-id updated-by data]
   (db.i/with-transaction [tx db]

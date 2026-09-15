@@ -73,3 +73,21 @@
         (is (not (str/includes? html cls))
             (str "button still emits " cls)))
       (is (str/includes? html "spl-btn")))))
+
+(deftest test-cmd-or-ctrl-enter-submits
+  (testing "Save is a plain button on most of these forms, so Enter alone
+            submits nothing, and a textarea needs a modifier regardless"
+    (let [body (parse (form/form {:id "taxon-form"} [:input {:name "name"}]))
+          form-el (.selectFirst body "form")]
+      (is (= "$el.requestSubmit()"
+             (.attr form-el "x-on:keydown.enter.cmd.prevent")))
+      (is (= "$el.requestSubmit()"
+             (.attr form-el "x-on:keydown.enter.ctrl.prevent"))
+          "Alpine ANDs the modifiers on one listener, so ctrl needs its own"))))
+
+(deftest test-a-form-can-override-the-submit-shortcut
+  (let [body (parse (form/form {:x-on:keydown.enter.cmd.prevent "noop()"}
+                               [:input {:name "name"}]))
+        form-el (.selectFirst body "form")]
+    (is (= "noop()" (.attr form-el "x-on:keydown.enter.cmd.prevent"))
+        "caller attrs win over the defaults, as with every other attribute")))

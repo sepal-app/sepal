@@ -9,7 +9,6 @@
             [sepal.app.routes.material.form :as material.form]
             [sepal.app.routes.material.panel :as material.panel]
             [sepal.app.routes.material.routes :as material.routes]
-            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -39,9 +38,7 @@
   (ui.form/footer-buttons :form-event "material-form" :on-cancel :reload))
 
 (defn render [& {:keys [errors org material accession taxon values reasons timezone panel-data]}]
-  (page/page :page-title-buttons (ui.delete/button
-                                   :delete-url (z/url-for material.routes/delete
-                                                          {:id (:material/id material)}))
+  (page/page :page-title-buttons (material.shared/actions :material material)
              :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
                                                :errors errors

@@ -316,3 +316,58 @@
              while every params-map test still passes")
         (is (some? (.selectFirst body "input#quantity-received"))
             "same for the quantity input")))))
+
+(deftest test-supplier-field-offers-a-way-to-create-a-contact
+  (tf/testing "the select only searches contacts that already exist, so a
+               garden with none had no route to one from this form"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/accession/new/"))
+            body (Jsoup/parse ^String (:body response))
+            help (.selectFirst body "#supplier-contact-id-description")
+            link (some-> help (.selectFirst "a"))
+            select (.selectFirst body "select#supplier-contact-id")]
+        (is (some? link) "the help text carries a link to the contact form")
+        (is (= "Create a contact" (.text link)))
+        (is (str/ends-with? (.attr link "href") "/contact/new/"))
+        (is (= "_blank" (.attr link "target"))
+            "a new tab, because this form is usually half filled in by then")
+        (is (str/includes? (.attr select "aria-describedby")
+                           "supplier-contact-id-description")
+            "the help is announced with the field rather than orphaned")))))
+
+(deftest test-taxon-id-prefills-the-form
+  (tf/testing "a taxon's \"Add an accession\" names the taxon. The select is
+               searched client-side, so without the option rendered here the
+               field arrives empty and the link saves nothing."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request "/accession/new/"
+                                                 :params {:taxon-id (str (:taxon/id taxon))}))
+            body (Jsoup/parse ^String (:body response))
+            option (.selectFirst body "select#taxon-id option")]
+        (is (some? option) "the taxon arrives as the select's one option")
+        (is (= (str (:taxon/id taxon)) (.attr option "value")))
+        (is (= (:taxon/name taxon) (.text option)))))))
+
+(deftest test-an-unknown-taxon-id-is-ignored
+  (tf/testing "a stale link should still render a usable empty form"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request "/accession/new/"
+                                                 :params {:taxon-id "0"}))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (nil? (.selectFirst body "select#taxon-id option")))))))

@@ -7,6 +7,27 @@
   (:require [sepal.app.delete :as app.delete]
             [sepal.app.ui.form :as ui.form]))
 
+(defn modal-container
+  "Where the confirmation dialog swaps in. One per page."
+  []
+  [:div {:id "delete-modal-container"}])
+
+(defn menu-item
+  "Delete as an entry in the actions menu.
+
+  The same fetch-then-open as the standalone button; only the classes differ.
+  `ui.actions/menu` renders the container alongside it."
+  [& {:keys [delete-url]}]
+  [:button {:type "button"
+            :class "spl-menu-item spl-menu-item--danger"
+            :role "menuitem"
+            :hx-get delete-url
+            :hx-target "#delete-modal-container"
+            :hx-swap "innerHTML"
+            (keyword "hx-on::after-request")
+            "if (event.detail.successful) document.getElementById('delete_modal').showModal()"}
+   "Delete"])
+
 (defn button
   "The topbar button, and the container its dialog swaps into.
 
@@ -32,7 +53,7 @@
               (keyword "hx-on::after-request")
               "if (event.detail.successful) document.getElementById('delete_modal').showModal()"}
      "Delete"]
-    [:div {:id "delete-modal-container"}]))
+    (modal-container)))
 
 (defn dialog
   "The confirmation. With blockers it explains; without them it offers the

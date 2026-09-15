@@ -31,9 +31,20 @@
       (taxon.activity/create! tx taxon.activity/created created-by taxon)
       taxon)))
 
-(defn get-handler [{:keys [params flash]}]
-  (let [{:keys [field-errors]} flash
-        values (merge params (-> flash :values))]
+(defn get-handler [{:keys [::z/context params query-params flash]}]
+  (let [{:keys [db]} context
+        {:keys [field-errors]} flash
+        values (merge params (-> flash :values))
+        ;; A taxon's "Add a child taxon" names the parent, which is the only
+        ;; way this form knows one: the select is searched client-side, so the
+        ;; parent's name has to arrive as its option. Same shape as the
+        ;; material form's accession-id.
+        parent (some->> (get query-params "parent-id")
+                        (parse-long)
+                        (taxon.i/get-by-id db))
+        values (cond-> values
+                 parent (assoc :parent-id (:taxon/id parent)
+                               :parent-name (:taxon/name parent)))]
     (render :errors field-errors
             :flash flash
             :values values)))

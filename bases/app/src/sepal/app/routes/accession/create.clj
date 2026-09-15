@@ -12,22 +12,25 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors values]}]
+(defn page-content [& {:keys [errors taxon values]}]
   (accession.form/form :action (z/url-for accession.routes/new)
                        :errors errors
                        :next-code-url (z/url-for accession.routes/next-code)
+                       :taxon taxon
                        :values values))
 
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "accession-form" :on-cancel :back))
 
-(defn render [& {:keys [errors values]}]
+(defn render [& {:keys [errors taxon values]}]
   ;; Breadcrumbs rather than a page title: the top bar already answers "where
   ;; am I", and a heading repeating it pushed the first field down the page.
   (ui.page/page :content (page-content :errors errors
+                                       :taxon taxon
                                        :values values)
                 :footer (ui.form/footer :buttons (footer-buttons))
                 :breadcrumbs [[:a {:href (z/url-for accession.routes/index)}
@@ -59,7 +62,7 @@
    [:received-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/received-type]]
    [:quantity-received {:decode/form parse-long} [:maybe accession.spec/quantity-received]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
   (let [{:keys [db timezone]} context
         config (codes/accession db)
         today (datetime/today timezone)]
@@ -88,5 +91,14 @@
 
       ;; The field arrives filled in. With strict off it is a prefill you can
       ;; select and overwrite.
-      (render :values (merge {:code (accession.i/next-code db (:template config) today)}
-                             form-params)))))
+      ;;
+      ;; A taxon's "Add an accession" names the taxon, which is the only way
+      ;; this form knows one: the select is searched client-side, so the
+      ;; taxon has to arrive as its option.
+      (let [taxon (some->> (get query-params "taxon-id")
+                           (parse-long)
+                           (taxon.i/get-by-id db))]
+        (render :taxon taxon
+                :values (cond-> (merge {:code (accession.i/next-code db (:template config) today)}
+                                       form-params)
+                          taxon (assoc :taxon-id (:taxon/id taxon))))))))

@@ -6,7 +6,7 @@
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.panel :as contact.panel]
             [sepal.app.routes.contact.routes :as contact.routes]
-            [sepal.app.ui.delete :as ui.delete]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -29,7 +29,7 @@
                        :values values)))
 
 (defn render [& {:keys [errors contact values panel-data]}]
-  (page/page :page-title-buttons (ui.delete/button
+  (page/page :page-title-buttons (ui.actions/menu
                                    :delete-url (z/url-for contact.routes/delete
                                                           {:id (:contact/id contact)}))
              :content (pages.detail/page-content-with-panel

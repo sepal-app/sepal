@@ -20,10 +20,18 @@ export default (
     data.dirty = false
     data.valid = true
 
+    // `change` as well as `input`: SlimSelect writes the value straight onto
+    // the native <select> and dispatches `change`, so an `input` listener
+    // never sees a taxon, supplier or location being picked. Save is bound to
+    // `valid`, so the button stayed disabled on a form that was valid.
+    const events = ["input", "change"]
+
     function addListeners() {
         const inputs = findInputs()
         for (const input of inputs) {
-            input.addEventListener("input", handler)
+            for (const event of events) {
+                input.addEventListener(event, handler)
+            }
         }
         el.addEventListener("form-state.dirty", handler)
     }
@@ -31,7 +39,9 @@ export default (
     function removeListeners() {
         const inputs = findInputs()
         for (const input of inputs) {
-            input.removeEventListener("input", handler)
+            for (const event of events) {
+                input.removeEventListener(event, handler)
+            }
         }
         el.removeEventListener("form-state.dirty", handler)
     }

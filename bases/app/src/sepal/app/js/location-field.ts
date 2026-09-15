@@ -22,10 +22,16 @@ const LocationField: DirectiveCallback = (el, directive, { cleanup, evaluate }) 
                     if (!data || data.length === 0) {
                         return reject("No results found")
                     }
-                    const options = data.map((d) => ({
-                        text: d.text,
-                        value: d.id,
-                    }))
+                    // SlimSelect keeps the selected option and appends what
+                    // the search resolves, so returning the selected record
+                    // again leaves two options for the one location. You see
+                    // them both the moment you pick something else.
+                    const options = data
+                        .filter((d) => String(d.id) !== el.value)
+                        .map((d) => ({
+                            text: d.text,
+                            value: String(d.id),
+                        }))
                     resolve(options)
                 })
                 .catch((e) => {

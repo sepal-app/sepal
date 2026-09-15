@@ -33,12 +33,18 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
                         if (!data || data.length === 0) {
                             return reject("No results found")
                         }
-                        const options = data.map((d) => ({
-                            text: d.matchedSynonym
-                                ? `${d.text} — matches synonym ${d.matchedSynonym}`
-                                : d.text,
-                            value: d.id,
-                        }))
+                        // Same as location-field: SlimSelect keeps the
+                        // selected option and appends these, so resolving the
+                        // selected record again leaves two options for the
+                        // one taxon.
+                        const options = data
+                            .filter((d) => String(d.id) !== el.value)
+                            .map((d) => ({
+                                text: d.matchedSynonym
+                                    ? `${d.text} — matches synonym ${d.matchedSynonym}`
+                                    : d.text,
+                                value: String(d.id),
+                            }))
                         resolve(options)
                     })
                     .catch((e) => {

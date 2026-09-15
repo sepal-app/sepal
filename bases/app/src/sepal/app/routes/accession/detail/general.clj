@@ -10,7 +10,6 @@
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
-            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -44,9 +43,7 @@
 
 (defn render [& {:keys [errors org accession location supplier taxon values panel-data
                         timezone collection-available?]}]
-  (page/page :page-title-buttons (ui.delete/button
-                                   :delete-url (z/url-for accession.routes/delete
-                                                          {:id (:accession/id accession)}))
+  (page/page :page-title-buttons (accession.shared/actions :accession accession)
              :content (pages.detail/page-content-with-panel
                         :content (page-content :collection-available? collection-available?
                                                :footer (ui.form/footer :buttons (footer-buttons))
