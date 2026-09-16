@@ -663,31 +663,3 @@
                   test-fields
                   {:terms [] :filters [{:field "private" :value "yes" :negated false}]}
                   base-stmt)))))
-
-(deftest relevance-order-test
-  (testing "a free-text query orders by bm25 over the same table it filters on"
-    (let [[[expr dir]] (compiler/relevance-order test-fields
-                                                 {:terms ["quercus"]})]
-      (is (= :asc dir) "FTS5 scores lower as the match gets better")
-      (is (= {:select [[[:bm25 :taxon_fts]]]
-              :from [:taxon_fts]
-              :where [:and
-                      [:match :taxon_fts "\"quercus\"*"]
-                      [:= :rowid :t.id]]}
-             expr))))
-
-  (testing "multiple terms rank on the same expression the WHERE filters on,
-            so every row being ordered is a row that matched"
-    (let [[[expr _]] (compiler/relevance-order test-fields
-                                               {:terms ["quercus" "alb"]})]
-      (is (= "\"quercus\" \"alb\"*" (get-in expr [:where 1 2])))))
-
-  (testing "nothing to rank by without free-text terms"
-    (is (nil? (compiler/relevance-order test-fields {:terms []})))
-    (is (nil? (compiler/relevance-order test-fields {:terms nil})))
-    (is (nil? (compiler/relevance-order test-fields
-                                        {:filters [{:field "code" :value "X"}]}))))
-
-  (testing "nothing to rank by when the resource has no FTS field"
-    (is (nil? (compiler/relevance-order {:code {:column :m.code :type :text}}
-                                        {:terms ["quercus"]})))))

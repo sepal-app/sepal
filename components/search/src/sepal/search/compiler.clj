@@ -250,33 +250,6 @@
                         :from [fts-table]
                         :where [:match fts-table match]}]))))
 
-(defn relevance-order
-  "Order-by terms ranking rows by how well they match the free-text query, or
-  nil when the query carries no free-text terms.
-
-  bm25 over the same table and MATCH expression `terms->clause` filters on,
-  correlated by rowid. FTS5 scores lower as the match gets better, so this
-  sorts ascending. The correlated lookup is paid only for rows the WHERE has
-  already reduced to matches.
-
-  Returns terms to put before a caller's own ordering, not to replace it: bm25
-  ties are common and an unbroken tie orders arbitrarily, which a page offset
-  turns into rows repeated on one page and missing from the next. The caller's
-  existing sort becomes the tiebreaker.
-
-  Without this a LIMIT cuts an alphabetical list, so a six-row autocomplete for
-  `triloba` could answer with six names that merely contain it and leave out
-  Asimina triloba."
-  [fields {:keys [terms]}]
-  (when-let [match (terms->match terms)]
-    (when-let [[_ {:keys [column fts-table]}] (primary-fts-field fields)]
-      [[{:select [[[:bm25 fts-table]]]
-         :from [fts-table]
-         :where [:and
-                 [:match fts-table match]
-                 [:= :rowid (column->id-column column)]]}
-        :asc]])))
-
 (defn compile-query
   "Compile a parsed AST into HoneySQL for a specific resource context.
 

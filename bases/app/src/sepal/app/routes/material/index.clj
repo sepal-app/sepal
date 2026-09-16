@@ -193,8 +193,7 @@
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by (concat (search.i/relevance-order :material ast)
-                                                        [[:m.id :asc]])))
+                                      :order-by [[:m.id :asc]]))
 
         ;; Fetch entities for breadcrumbs if filtering by ID
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)

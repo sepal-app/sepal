@@ -2,6 +2,8 @@ import { type DirectiveCallback } from "alpinejs"
 
 import SlimSelect, { Option } from "slim-select"
 
+import { debounceSearch } from "./debounce-search"
+
 interface DirectiveExpression {
     url: string
 }
@@ -64,7 +66,7 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
             hideSelected: true,
         },
         events: {
-            search: onSearch,
+            search: debounceSearch(onSearch),
             afterChange: (newVal) => {
                 // This is kind of a hack to get x-form-state for the form to set the
                 // dirty state when the value changes

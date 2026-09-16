@@ -173,8 +173,7 @@
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by (concat (search.i/relevance-order :accession ast)
-                                                        [[:a.code :asc]])))
+                                      :order-by [:a.code]))
 
         ;; Fetch taxon for breadcrumb if filtering by taxon.id
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)

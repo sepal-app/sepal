@@ -277,8 +277,7 @@
                        #(db.i/execute! db (assoc stmt
                                                  :limit page-size
                                                  :offset offset
-                                                 :order-by (concat (search.i/relevance-order :taxon ast)
-                                                                   [[:t.name :asc]])))
+                                                 :order-by [[:t.name :asc]]))
                        #(db.i/count db count-stmt))]
 
     (cond
