@@ -29,11 +29,15 @@ set -Eeuo pipefail
 DB="$1"
 RO="file:$DB?mode=ro"
 
-# The schema itself.
+# The schema itself. The grep drops FTS5's shadow tables: a virtual table
+# creates its own, and naming one in the baseline fails the load with "object
+# name reserved for internal use". `_content` is the one an FTS5 table that
+# keeps its own copy of the text has -- taxon_fts, which computes its
+# vernacular-name column and so cannot take its content from a table.
 sqlite3 "$RO" ".schema" \
   | sed -e 's/^CREATE TABLE IF NOT EXISTS /CREATE TABLE /' \
   | grep -v "^CREATE TABLE sqlite_sequence(name,seq);$" \
-  | grep -vE "^CREATE TABLE '[a-z_]+_fts_(data|idx|docsize|config)'" \
+  | grep -vE "^CREATE TABLE '[a-z_]+_fts_(data|idx|docsize|config|content)'" \
   | perl -0pe "s{\n/\* [a-z_]+\([a-z_,]+\) \*/;}{;}g"
 
 # The seeded lookup tables, discovered by shape.

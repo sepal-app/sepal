@@ -11,7 +11,6 @@ CREATE TABLE "user" (
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
-CREATE VIRTUAL TABLE taxon_fts using fts5(name, content='taxon', content_rowid='id');
 CREATE TABLE contact (
   id integer primary key autoincrement,
   name text not null,
@@ -229,16 +228,6 @@ CREATE TRIGGER trigger_taxon_updated_at after update on taxon
 begin
   update taxon set updated_at = datetime('now') where id = NEW.id;
 end;
-CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
-CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-end;
-CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
-  insert into taxon_fts(taxon_fts, rowid, name) values('delete', old.id, old.name);
-  insert into taxon_fts(rowid, name) values (new.id, new.name);
-end;
 CREATE TABLE material_status (
   name text primary key
 ) strict;
@@ -358,6 +347,25 @@ begin
 end;
 CREATE UNIQUE INDEX accession_code_idx ON accession (code);
 CREATE UNIQUE INDEX material_accession_id_code_idx ON material (accession_id, code);
+CREATE VIRTUAL TABLE taxon_fts USING fts5(name, vernacular_names);
+CREATE TRIGGER trigger_taxon_after_insert after insert on taxon begin
+  insert into taxon_fts(rowid, name, vernacular_names)
+  values (new.id,
+          new.name,
+          (select group_concat(json_extract(value, '$.name'), ' ')
+             from json_each(new.vernacular_names)));
+end;
+CREATE TRIGGER trigger_taxon_after_delete after delete on taxon begin
+  delete from taxon_fts where rowid = old.id;
+end;
+CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
+  delete from taxon_fts where rowid = old.id;
+  insert into taxon_fts(rowid, name, vernacular_names)
+  values (new.id,
+          new.name,
+          (select group_concat(json_extract(value, '$.name'), ' ')
+             from json_each(new.vernacular_names)));
+end;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -458,3 +466,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260909120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913120000', '2026-09-13 17:54:36');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913130000', '2026-09-13 18:38:31');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260914120000', '2026-09-15 01:13:12');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916120000', '2026-09-16 13:01:15');

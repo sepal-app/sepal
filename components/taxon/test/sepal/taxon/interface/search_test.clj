@@ -20,3 +20,57 @@
               rows (db.i/execute! *db* stmt)]
           (is (some #(= (:taxon/id taxon) (:taxon/id %)) rows)))
         (tag.i/delete! *db* (:tag/id tag))))))
+
+(defn- search-ids
+  "The taxon ids a free-text search returns."
+  [q]
+  (let [ast (search.i/parse q)
+        stmt (search.i/compile-query :taxon ast {:select [:t.id] :from [[:taxon :t]]})]
+    (->> (db.i/execute! *db* stmt) (map :taxon/id) set)))
+
+(deftest test-a-vernacular-name-is-searchable
+  (tf/testing "a plant is looked for by what people call it. taxon_fts indexed
+               `name` alone, so a common name found nothing."
+    {[::taxon.i/factory :key/named] {:db *db*
+                                     :name "Acerus searchtestii"
+                                     :vernacular-names [{:name "spottedsearchbloom"
+                                                         :language "Nihongo"}]}
+     [::taxon.i/factory :key/other] {:db *db* :name "Quercus searchtestii"}}
+    (fn [{:keys [named other]}]
+      (is (contains? (search-ids "spottedsearchbloom") (:taxon/id named))
+          "found by its common name")
+      (is (not (contains? (search-ids "spottedsearchbloom") (:taxon/id other)))
+          "and only that one")
+      (is (contains? (search-ids "Acerus searchtestii") (:taxon/id named))
+          "the scientific name still finds it too"))))
+
+(deftest test-only-the-name-is-indexed
+  (tf/testing "not the language beside it, and not the JSON keys. Indexing the
+               column as stored would have made `name`, `language` and every
+               language value into search terms."
+    {[::taxon.i/factory :key/taxon] {:db *db*
+                                     :name "Acerus quiettestii"
+                                     :vernacular-names [{:name "quietbloom"
+                                                         :language "Nihongo"}]}}
+    (fn [{:keys [taxon]}]
+      (is (contains? (search-ids "quietbloom") (:taxon/id taxon)))
+      (is (not (contains? (search-ids "Nihongo") (:taxon/id taxon)))
+          "the language is not a search term")
+      (is (not (contains? (search-ids "language") (:taxon/id taxon)))
+          "nor is the JSON key"))))
+
+(deftest test-a-vernacular-name-follows-an-edit
+  (tf/testing "the index keeps its own copy of the text, so an edit has to
+               replace it or the old common name keeps matching"
+    {[::taxon.i/factory :key/taxon] {:db *db*
+                                     :name "Acerus editestii"
+                                     :vernacular-names [{:name "oldbloomname"
+                                                         :language "English"}]}}
+    (fn [{:keys [taxon]}]
+      (is (contains? (search-ids "oldbloomname") (:taxon/id taxon)))
+      (taxon.i/update! *db* (:taxon/id taxon)
+                       {:vernacular-names [{:name "newbloomname" :language "English"}]})
+      (is (empty? (search-ids "oldbloomname"))
+          "the old common name stops matching")
+      (is (contains? (search-ids "newbloomname") (:taxon/id taxon))
+          "and the new one matches"))))
