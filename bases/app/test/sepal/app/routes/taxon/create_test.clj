@@ -145,6 +145,47 @@
             (is (= 1 (count templates))
                 (str "expected one grid template, got " templates))))))))
 
+(deftest test-rank-guess-endpoint
+  (tf/testing "plain text, and blank when the name implies nothing — a blank
+               leaves the field alone rather than clearing it"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            guess (fn [n]
+                    (-> sess
+                        (peri/request "/taxon/rank-guess/" :params {:name n})
+                        :response :body))]
+        (is (= "family" (guess "Rosaceae")))
+        (is (= "genus" (guess "Acer")))
+        (is (= "species" (guess "Acer palmatum")))
+        (is (= "variety" (guess "Acer palmatum var. dissectum")))
+        (is (= "cultivar" (guess "Rosa 'Peace'")))
+        (is (= "" (guess "Acer palmatum dissectum"))
+            "three bare words name no rank it can be sure of")
+        (is (= "" (guess "")))))))
+
+(deftest test-only-the-create-form-guesses-the-rank
+  (tf/testing "the edit form must not re-rank a taxon you are only renaming"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            name-input (fn [path]
+                         (-> sess
+                             (peri/request path)
+                             :response :body
+                             (as-> b (Jsoup/parse ^String b))
+                             (.selectFirst "input#name")))]
+        (is (= "/taxon/rank-guess/" (.attr (name-input "/taxon/new/") "hx-get"))
+            "the create form asks")
+        (is (str/blank? (.attr (name-input (str "/taxon/" (:taxon/id taxon) "/name/"))
+                               "hx-get"))
+            "the edit form does not")))))
+
 (deftest test-parent-id-prefills-the-form
   (tf/testing "a taxon's \"Add a child taxon\" names the parent. The select is
                searched client-side, so without the option rendered here the

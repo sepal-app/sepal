@@ -46,7 +46,8 @@
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [accession taxon supplier intended-location stats notes note-count
              activities activity-count timezone on-close]}]
-  (let [{:accession/keys [id code provenance-type received-type quantity-received]} accession
+  (let [{:accession/keys [id code provenance-type received-type quantity-received
+                          date-received date-accessioned]} accession
         {:keys [material-count]} stats
         sci-name (:taxon/name taxon)]
     (panel/panel-container
@@ -83,7 +84,9 @@
                                 (:location/name intended-location)])}
                      {:label "Received as"
                       :value (some-> received-type accession.form/enum-label-fn)}
-                     {:label "Quantity received" :value quantity-received}]))
+                     {:label "Quantity received" :value quantity-received}
+                     {:label "Date received" :value date-received}
+                     {:label "Date accessioned" :value date-accessioned}]))
 
         ;; Statistics section
         (panel/collapsible-section

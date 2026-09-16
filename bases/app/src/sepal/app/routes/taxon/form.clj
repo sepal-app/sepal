@@ -45,7 +45,14 @@
                             [:name [:string {:min 1}]]
                             [:language [:maybe :string]]]]]]])
 
-(defn form [& {:keys [action errors read-only values]}]
+(defn form
+  "The create page and the edit page share this.
+
+  `guess-rank-url` is create-only. Given it, the Name field asks the server
+  what rank the name implies and the page fills Rank in — until you set Rank
+  yourself, after which it stops. The edit form never passes it, so nothing
+  can quietly re-rank a taxon you are only renaming."
+  [& {:keys [action errors read-only values guess-rank-url]}]
   (let [ranks (->> taxon.spec/rank rest (mapv name))]
     [:div
      (form/form
@@ -67,7 +74,20 @@
                              :required true
                              :read-only read-only
                              :value (:name values)
-                             :errors (:name errors))
+                             :errors (:name errors)
+                             :input-attrs
+                             (when guess-rank-url
+                               {:hx-get guess-rank-url
+                                :hx-trigger "keyup changed delay:300ms"
+                                ;; after-request, not after-swap, and nothing
+                                ;; is swapped: htmx fires afterSwap on the
+                                ;; swapped-in content, while afterRequest
+                                ;; fires on the element that asked. Same trap
+                                ;; ui/delete.clj records.
+                                :hx-swap "none"
+                                (keyword "hx-on::after-request")
+                                (str "if (event.detail.successful) "
+                                     "window.applyRankGuess(event.detail.xhr.responseText)")}))
            (form/input-field :label "Author"
                              :name "author"
                              :read-only read-only

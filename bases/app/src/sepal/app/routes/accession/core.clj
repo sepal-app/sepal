@@ -15,6 +15,7 @@
             [sepal.app.routes.accession.index :as index]
             [sepal.app.routes.accession.next-code :as next-code]
             [sepal.app.routes.accession.panel :as panel]
+            [sepal.app.routes.accession.provenance-suggestion :as provenance-suggestion]
             [sepal.app.routes.accession.routes :as routes]))
 
 (def accession-loader
@@ -36,6 +37,11 @@
      :conflicting true
      :middleware [[middleware/require-editor-or-admin]]
      :handler #'next-code/handler}]
+   ["/provenance-suggestion/"
+    {:name routes/provenance-suggestion
+     :conflicting true
+     :middleware [[middleware/require-editor-or-admin]]
+     :handler #'provenance-suggestion/handler}]
    ["/new/"
     {:name routes/new
      :middleware [[middleware/require-editor-or-admin]]

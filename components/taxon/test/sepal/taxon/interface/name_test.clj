@@ -77,3 +77,49 @@
   (testing "an unpaired quote must not swallow the name"
     (is (= [{:text "Quercus alba'" :role :scientific}]
            (taxon.name/segments "Quercus alba'")))))
+
+(deftest test-guess-rank
+  (testing "a quoted epithet is a cultivar, whatever else the name carries"
+    (is (= :cultivar (taxon.name/guess-rank "Rosa 'Peace'")))
+    (is (= :cultivar (taxon.name/guess-rank "Acer palmatum 'Sango-kaku'")))
+    (is (= :cultivar (taxon.name/guess-rank "Camellia 'Nuccio's Pearl'"))
+        "an epithet may contain an apostrophe of its own"))
+
+  (testing "a trailing Group is a cultivar group"
+    (is (= :group (taxon.name/guess-rank "Rhododendron Ponticum Group")))
+    (is (= :group (taxon.name/guess-rank "Hosta Sieboldiana group"))))
+
+  (testing "the connecting term decides, wherever it sits"
+    (is (= :subspecies (taxon.name/guess-rank "Pinus nigra subsp. salzmannii")))
+    (is (= :variety (taxon.name/guess-rank "Acer palmatum var. dissectum")))
+    (is (= :form (taxon.name/guess-rank "Acer palmatum f. latilobatum")))
+    (is (= :subvariety (taxon.name/guess-rank "Rosa canina subvar. dumalis")))
+    (is (= :convariety (taxon.name/guess-rank "Brassica oleracea convar. capitata"))))
+
+  (testing "a one-word name takes its rank from a reserved ending"
+    (is (= :family (taxon.name/guess-rank "Rosaceae")))
+    (is (= :order (taxon.name/guess-rank "Rosales")))
+    (is (= :subfamily (taxon.name/guess-rank "Rosoideae")))
+    (is (= :tribe (taxon.name/guess-rank "Roseae")))
+    (is (= :subtribe (taxon.name/guess-rank "Rosinae")))
+    (testing "and -oideae wins over -eae, which it ends with"
+      (is (= :subfamily (taxon.name/guess-rank "Faboideae")))))
+
+  (testing "otherwise the word count: one is a genus, two a species"
+    (is (= :genus (taxon.name/guess-rank "Acer")))
+    (is (= :species (taxon.name/guess-rank "Acer palmatum"))))
+
+  (testing "a hybrid marker is not a rank — a nothospecies is filed as a
+            species, so the marker drops out of the count"
+    (is (= :species (taxon.name/guess-rank "Acer × freemanii")))
+    (is (= :genus (taxon.name/guess-rank "× Fatshedera"))))
+
+  (testing "it stays quiet rather than guess"
+    (is (nil? (taxon.name/guess-rank nil)))
+    (is (nil? (taxon.name/guess-rank "")))
+    (is (nil? (taxon.name/guess-rank "   ")))
+    (is (nil? (taxon.name/guess-rank "Acer palmatum dissectum"))
+        "three bare words name no rank this can be sure of"))
+
+  (testing "surrounding whitespace does not change the answer"
+    (is (= :species (taxon.name/guess-rank "  Acer palmatum  ")))))

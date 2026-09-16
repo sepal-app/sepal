@@ -59,3 +59,60 @@
     (let [[botanical epithet] (split-cultivar s)]
       (cond-> (split-upright botanical)
         epithet (conj {:text epithet :role :upright})))))
+
+(def ^:private infraspecific-ranks
+  "The connecting term a name carries, and the rank it makes it."
+  {" subsp. " :subspecies
+   " var. " :variety
+   " f. " :form
+   " subvar. " :subvariety
+   " subf. " :subform
+   " convar. " :convariety})
+
+(def ^:private rank-suffixes
+  "Endings the botanical code reserves for a rank, longest first so `-oideae`
+   is tested before `-eae`. These apply to a one-word name: `Rosaceae` is a
+   family, not a genus that happens to end that way."
+  [["aceae" :family]
+   ["oideae" :subfamily]
+   ["ineae" :suborder]
+   ["ales" :order]
+   ["inae" :subtribe]
+   ["eae" :tribe]])
+
+(defn guess-rank
+  "The rank a name implies, or nil when it implies nothing.
+
+   For a create form to fill in while you type, so it is deliberately quiet:
+   anything it is not sure about returns nil and leaves the field alone.
+
+   A quoted epithet is a cultivar under the ICNCP, and a trailing `Group` is a
+   cultivar group. Otherwise the connecting term decides, then the reserved
+   ending of a one-word name, then the word count — one word is a genus and
+   two a species. A hybrid marker is not itself a rank: `Acer × freemanii` is
+   a nothospecies, which is filed as a species, and the marker drops out of the
+   count."
+  [s]
+  (when-not (str/blank? s)
+    (let [s (str/trim s)
+          [botanical epithet] (split-cultivar s)]
+      (cond
+        epithet :cultivar
+
+        (re-find #"(?i)\bgroup$" s) :group
+
+        :else
+        (or (some (fn [[term rank]]
+                    (when (str/includes? botanical term) rank))
+                  infraspecific-ranks)
+            (let [words (->> (str/split (str/trim botanical) #"\s+")
+                             (remove #{"×" "x" "+"})
+                             (remove str/blank?))]
+              (case (count words)
+                1 (let [word (str/lower-case (first words))]
+                    (or (some (fn [[suffix rank]]
+                                (when (str/ends-with? word suffix) rank))
+                              rank-suffixes)
+                        :genus))
+                2 :species
+                nil)))))))

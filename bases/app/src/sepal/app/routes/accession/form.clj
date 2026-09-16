@@ -57,7 +57,15 @@
              include (assoc :hx-include include))
    (lucide/rotate-cw :class "size-4")])
 
-(defn form [& {:keys [action errors location supplier taxon next-code-url values]}]
+(defn form
+  "The create page and the edit page share this.
+
+  `provenance-suggestion-url` is create-only. Given it, picking a taxon asks
+  the server whether its rank implies a provenance and the page fills
+  Provenance Type in — until you set it yourself. The edit form never passes
+  it, so nothing can quietly reclassify an accession you are only correcting."
+  [& {:keys [action errors location supplier taxon next-code-url values
+             provenance-suggestion-url]}]
   [:div
    (ui.form/form
      {:id "accession-form"
@@ -88,11 +96,24 @@
            (ui.form/field :label "Taxon"
                           :name "taxon-id"
                           :errors (:taxon-id errors)
-                          :input [:select {:x-taxon-field (json/js {:url taxa-url})
-                                           :id "taxon-id"
-                                           :required true
-                                           :name "taxon-id"
-                                           :autocomplete "off"}
+                          :input [:select (cond-> {:x-taxon-field (json/js {:url taxa-url})
+                                                   :id "taxon-id"
+                                                   :required true
+                                                   :name "taxon-id"
+                                                   :autocomplete "off"}
+                                            provenance-suggestion-url
+                                            (assoc :hx-get provenance-suggestion-url
+                                                   ;; SlimSelect writes the
+                                                   ;; value straight onto the
+                                                   ;; select and dispatches
+                                                   ;; change, so that is the
+                                                   ;; event to listen for.
+                                                   :hx-trigger "change"
+                                                   :hx-swap "none"
+                                                   (keyword "hx-on::after-request")
+                                                   (str "if (event.detail.successful) "
+                                                        "window.applyProvenanceSuggestion("
+                                                        "event.detail.xhr.responseText)")))
                                   ;; A single select must hold a selection, so
                                   ;; without this SlimSelect selects the first
                                   ;; search result and hideSelected hides it —
@@ -135,7 +156,10 @@
                          :input (ui.form/enum-select "provenance-type"
                                                      accession.spec/provenance-type
                                                      (:provenance-type values)
-                                                     :label-fn enum-label-fn))
+                                                     :label-fn enum-label-fn
+                                                     ;; Set it yourself and the
+                                                     ;; suggestion stops.
+                                                     :attrs {:x-on:change "$el.dataset.touched = 'true'"}))
 
           ;; TODO: This should only be set when the provenance type is "wild"
           (ui.form/field :label "Wild Provenance Status"

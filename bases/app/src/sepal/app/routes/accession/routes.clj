@@ -3,6 +3,7 @@
 (def index ::index)
 (def new ::new)
 (def next-code ::next-code)
+(def provenance-suggestion ::provenance-suggestion)
 (def detail ::detail)
 (def detail-general ::detail-general)
 (def detail-collection ::detail-collection)

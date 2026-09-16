@@ -15,7 +15,10 @@
   [:div
    (taxon.form/form :action (z/url-for taxon.routes/new)
                     :errors errors
-                    :values values)])
+                    :values values
+                    ;; Create only. The edit form must not re-rank a taxon
+                    ;; you are only renaming.
+                    :guess-rank-url (z/url-for taxon.routes/rank-guess))])
 
 (defn render [& {:keys [errors flash values]}]
   (page/page :content (page-content :errors errors

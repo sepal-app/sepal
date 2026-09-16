@@ -2,6 +2,7 @@
 
 (def index ::index)
 (def new ::new)
+(def rank-guess ::rank-guess)
 (def detail ::detail)
 (def detail-name ::detail-name)
 (def detail-media ::detail-media)

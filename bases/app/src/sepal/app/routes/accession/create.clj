@@ -20,6 +20,9 @@
   (accession.form/form :action (z/url-for accession.routes/new)
                        :errors errors
                        :next-code-url (z/url-for accession.routes/next-code)
+                       ;; Create only. The edit form must not reclassify an
+                       ;; accession you are only correcting.
+                       :provenance-suggestion-url (z/url-for accession.routes/provenance-suggestion)
                        :taxon taxon
                        :values values))
 

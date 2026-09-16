@@ -62,3 +62,39 @@
         (is (= 200 (:status response)))
         (is (nil? (summary-value body "Received as")))
         (is (nil? (summary-value body "Quantity received")))))))
+
+(deftest test-the-panel-shows-the-receipt-dates
+  (tf/testing "the panel carried what arrived and how much of it, but not when
+               — so the dates were only visible by opening the form"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :reader}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession]
+     {:db *db*
+      :taxon (ig/ref :key/taxon)
+      :data {:date-received "2026-03-04" :date-accessioned "2026-03-05"}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (str "/accession/" (:accession/id accession) "/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (= "2026-03-04" (summary-value body "Date received")))
+        (is (= "2026-03-05" (summary-value body "Date accessioned")))))))
+
+(deftest test-the-panel-omits-the-receipt-dates-when-unset
+  (tf/testing "an accession with no dates shows no empty rows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :reader}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession]
+     {:db *db*
+      :taxon (ig/ref :key/taxon)
+      :data {:date-received nil :date-accessioned nil}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (str "/accession/" (:accession/id accession) "/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (nil? (summary-value body "Date received")))
+        (is (nil? (summary-value body "Date accessioned")))))))

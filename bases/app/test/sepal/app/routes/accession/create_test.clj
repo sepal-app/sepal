@@ -2,6 +2,7 @@
   (:require [clojure.set :as set]
             [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
@@ -339,6 +340,51 @@
         (is (str/includes? (.attr select "aria-describedby")
                            "supplier-contact-id-description")
             "the help is announced with the field rather than orphaned")))))
+
+(deftest test-provenance-suggestion-endpoint
+  (tf/testing "cultivar, Group and grex are the three ranks the cultivated
+               plant code governs, so a plant of any of them is cultivated.
+               Every other rank answers blank, which leaves the field alone
+               rather than clearing it."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/cultivar] {:db *db* :rank :cultivar}
+     [::taxon.i/factory :key/species] {:db *db* :rank :species}}
+    (fn [{:keys [user cultivar species]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            suggest (fn [id]
+                      (-> sess
+                          (peri/request "/accession/provenance-suggestion/"
+                                        :params {:taxon-id (str id)})
+                          :response :body))]
+        (is (= "cultivated" (suggest (:taxon/id cultivar))))
+        (is (= "" (suggest (:taxon/id species))))
+        (is (= "" (suggest 0)) "an unknown taxon suggests nothing")))))
+
+(deftest test-only-the-create-form-suggests-a-provenance
+  (tf/testing "the edit form must not reclassify an accession you are only
+               correcting"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            taxon-select (fn [path]
+                           (-> sess
+                               (peri/request path)
+                               :response :body
+                               (as-> b (Jsoup/parse ^String b))
+                               (.selectFirst "select#taxon-id")))]
+        (is (= "/accession/provenance-suggestion/"
+               (.attr (taxon-select "/accession/new/") "hx-get"))
+            "the create form asks")
+        (is (str/blank? (.attr (taxon-select (str "/accession/" (:accession/id accession)
+                                                  "/general/"))
+                               "hx-get"))
+            "the edit form does not")))))
 
 (deftest test-taxon-id-prefills-the-form
   (tf/testing "a taxon's \"Add an accession\" names the taxon. The select is

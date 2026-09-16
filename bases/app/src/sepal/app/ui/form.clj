@@ -190,16 +190,20 @@
     children]))
 
 (defn enum-select
-  "Helper for the common case of building a <select/> from a malli :enum spec."
-  [name enum value & {:keys [label-fn value-fn filter-fn]
+  "Helper for the common case of building a <select/> from a malli :enum spec.
+
+  `attrs` is merged onto the control, for the odd field that needs one of its
+  own — the accession form marks Provenance Type as touched from here."
+  [name enum value & {:keys [label-fn value-fn filter-fn attrs]
                       :or {value-fn clojure.core/name
                            label-fn clojure.core/name
                            filter-fn keyword?}}]
-  [:select {:name name
-            :class "spl-input spl-select"
-            :autocomplete "off"
-            :id name
-            :value value}
+  [:select (merge {:name name
+                   :class "spl-input spl-select"
+                   :autocomplete "off"
+                   :id name
+                   :value value}
+                  attrs)
    [:option ""]
    (for [[val label] (map #(vector (value-fn %) (label-fn %))
                           (->> enum rest (filter filter-fn)))]

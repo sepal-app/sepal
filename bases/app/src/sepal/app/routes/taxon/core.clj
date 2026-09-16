@@ -11,6 +11,7 @@
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
+            [sepal.app.routes.taxon.rank-guess :as rank-guess]
             [sepal.app.routes.taxon.routes :as routes]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.permission :as taxon.perm]))
@@ -24,6 +25,10 @@
    ["/export/" {:name routes/export
                 :conflicting true
                 :handler #'export/handler}]
+   ["/rank-guess/" {:name routes/rank-guess
+                    :middleware [[middleware/require-editor-or-admin]]
+                    :handler #'rank-guess/handler
+                    :conflicting true}]
    ["/new/" {:name routes/new
              :middleware [[middleware/require-editor-or-admin]]
              :get #'create/get-handler
