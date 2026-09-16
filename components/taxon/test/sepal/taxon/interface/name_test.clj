@@ -184,3 +184,42 @@
 
   (testing "surrounding whitespace does not change the answer"
     (is (= :species (taxon.name/guess-rank "  Acer palmatum  ")))))
+
+(deftest test-a-typed-x-becomes-the-hybrid-marker
+  (testing "the WFO reference writes the multiplication sign in all 6,503 of
+            its hybrid names and a standalone x in none, so a name has to be
+            written that way to match one. A keyboard offers the letter."
+    (are [in out] (= out (taxon.name/normalize-hybrid-marker in))
+      "Acer x freemanii"          "Acer × freemanii"
+      "Acer X freemanii"          "Acer × freemanii"
+      "Acer rubra x freemanii"    "Acer rubra × freemanii"
+      "x Abacopterella"           "× Abacopterella"
+      "Acer × freemanii"          "Acer × freemanii"))
+
+  (testing "an x inside a word is part of the word"
+    (are [in out] (= out (taxon.name/normalize-hybrid-marker in))
+      "Ilex"                      "Ilex"
+      "Rumex acetosa"             "Rumex acetosa"
+      "Ilex x altaclerensis"      "Ilex × altaclerensis"))
+
+  (testing "nothing to do"
+    (is (= "" (taxon.name/normalize-hybrid-marker "")))
+    (is (nil? (taxon.name/normalize-hybrid-marker nil)))))
+
+(deftest test-a-hybrid-formula-is-a-species
+  (testing "`Acer rubra × freemanii` states parentage rather than naming a
+            taxon, and what it denotes is an interspecific hybrid — which is a
+            nothospecies, which WFO files at species rank."
+    (are [in out] (= out (taxon.name/guess-rank in))
+      "Acer rubra × freemanii"           :species
+      "Acer rubra x freemanii"           :species
+      "Acer rubrum × Acer saccharinum"   :species
+      ;; Still works: the marker between genus and epithet is a nothospecies.
+      "Acer × freemanii"                 :species
+      "Acer rubrum"                      :species
+      "Acer"                             :genus))
+
+  (testing "three words and no marker is not a formula, and stays a guess this
+            function will not make"
+    (is (nil? (taxon.name/guess-rank "Acer rubrum something")))))
+

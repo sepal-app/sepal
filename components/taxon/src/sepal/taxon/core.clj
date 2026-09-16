@@ -6,6 +6,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.store.interface :as store.i]
+            [sepal.taxon.interface.name :as taxon.name]
             [sepal.taxon.interface.spec :as spec]))
 
 (defn get-by-id [db id]
@@ -37,8 +38,18 @@
                           :where [:= :name taxon-name]})
        (mapv #(store.i/coerce spec/Taxon %))))
 
+(defn- normalize-name
+  "Write the hybrid marker the way the reference taxonomy does.
+
+  Here rather than in the form, so every writer gets it: the importer and the
+  CLI save names too, and a name that came in as `Acer x freemanii` would
+  otherwise never match the WFO row it names."
+  [data]
+  (cond-> data
+    (:name data) (update :name taxon.name/normalize-hybrid-marker)))
+
 (defn create! [db data]
-  (let [data (cond-> data
+  (let [data (cond-> (normalize-name data)
                (not (contains? data :vernacular-names))
                (assoc :vernacular-names []))]
     (store.i/create! db :taxon data spec/CreateTaxon spec/Taxon)))
@@ -62,7 +73,7 @@
   ())
 
 (defn update! [db id data]
-  (store.i/update! db :taxon id data spec/UpdateTaxon spec/Taxon))
+  (store.i/update! db :taxon id (normalize-name data) spec/UpdateTaxon spec/Taxon))
 
 (defn delete! [db id]
   (jdbc.sql/delete! db :taxon {:id id})

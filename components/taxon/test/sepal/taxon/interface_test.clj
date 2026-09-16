@@ -167,3 +167,29 @@
             (is (= 1 (taxon.i/count-children db parent-id)))
             (taxon.i/delete! db (:taxon/id child))
             (is (zero? (taxon.i/count-children db parent-id)))))))))
+
+(deftest test-a-saved-name-carries-the-hybrid-marker-not-a-letter
+  ;; In the component rather than the form, so the importer and the CLI get it
+  ;; too: a name stored as "Acer x freemanii" would never match the WFO row it
+  ;; names, since the reference writes the multiplication sign in every one of
+  ;; its hybrid names.
+  (testing "on create"
+    (let [taxon (taxon.i/create! *db* {:name "Acer x freemanii" :rank "species"})]
+      (try
+        (is (= "Acer × freemanii" (:taxon/name taxon)))
+        (finally (jdbc.sql/delete! *db* :taxon {:id (:taxon/id taxon)})))))
+
+  (testing "on update"
+    (let [taxon (taxon.i/create! *db* {:name "Acer rubrum" :rank "species"})]
+      (try
+        (is (= "Acer rubra × freemanii"
+               (:taxon/name (taxon.i/update! *db* (:taxon/id taxon)
+                                             {:name "Acer rubra x freemanii"}))))
+        (finally (jdbc.sql/delete! *db* :taxon {:id (:taxon/id taxon)})))))
+
+  (testing "an x that belongs to the word is left alone"
+    (let [taxon (taxon.i/create! *db* {:name "Ilex opaca" :rank "species"})]
+      (try
+        (is (= "Ilex opaca" (:taxon/name taxon)))
+        (finally (jdbc.sql/delete! *db* :taxon {:id (:taxon/id taxon)}))))))
+

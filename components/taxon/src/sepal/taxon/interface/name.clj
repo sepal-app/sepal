@@ -80,6 +80,33 @@
    ["inae" :subtribe]
    ["eae" :tribe]])
 
+(def hybrid-marker
+  "The multiplication sign, U+00D7. Not the letter x, and not the mathematical
+   operator U+2715."
+  "\u00d7")
+
+(def ^:private typed-markers
+  "What someone reaches for when the keyboard has no ×."
+  #{"x" "X"})
+
+(defn normalize-hybrid-marker
+  "Rewrite a typed x to the hybrid marker it stands for.
+
+   The WFO reference taxonomy writes × in all 6,503 of its hybrid names and a
+   standalone x in none, so this is what a name has to look like to match one
+   — and the letter is what a keyboard offers.
+
+   Only a standalone token is a marker. Ilex and Rumex carry an x that belongs
+   to the word, and rewriting that would be a bug. Runs of whitespace collapse
+   to single spaces, which is the same normalising the name needs anyway."
+  [s]
+  (when s
+    (if (str/blank? s)
+      s
+      (->> (str/split (str/trim s) #"\s+")
+           (map #(if (typed-markers %) hybrid-marker %))
+           (str/join " ")))))
+
 (defn hybrid-marker-variants
   "The ways this name might have been written, differing only in the hybrid
    marker.
@@ -171,14 +198,29 @@
         (or (some (fn [[term rank]]
                     (when (str/includes? botanical term) rank))
                   infraspecific-ranks)
-            (let [words (->> (str/split (str/trim botanical) #"\s+")
-                             (remove #{"×" "x" "+"})
-                             (remove str/blank?))]
-              (case (count words)
-                1 (let [word (str/lower-case (first words))]
-                    (or (some (fn [[suffix rank]]
-                                (when (str/ends-with? word suffix) rank))
-                              rank-suffixes)
-                        :genus))
-                2 :species
-                nil)))))))
+            (let [tokens (->> (str/split (str/trim botanical) #"\s+")
+                              (remove str/blank?))
+                  marker? (some #{"×" "x" "X" "+"} tokens)
+                  ;; A formula names the parents rather than the hybrid:
+                  ;; `Acer rubrum × saccharinum` abbreviates `Acer rubrum ×
+                  ;; Acer saccharinum`. Both parents are species, so the cross
+                  ;; is one too. Read the rank off the first parent, which is
+                  ;; the only part written out in full.
+                  before (take-while (complement #{"×" "x" "X" "+"}) tokens)
+                  words (remove #{"×" "x" "X" "+"} tokens)]
+              (cond
+                ;; Two names joined by a marker. `Acer × freemanii` is not
+                ;; this: its left side is a bare genus, which is a
+                ;; nothospecies epithet hanging off it rather than a parent.
+                (and marker? (= 2 (count before)))
+                :species
+
+                :else
+                (case (count words)
+                  1 (let [word (str/lower-case (first words))]
+                      (or (some (fn [[suffix rank]]
+                                  (when (str/ends-with? word suffix) rank))
+                                rank-suffixes)
+                          :genus))
+                  2 :species
+                  nil))))))))
