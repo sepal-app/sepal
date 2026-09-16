@@ -269,17 +269,20 @@
      [::taxon.i/factory :key/taxon] {:db *db*}}
     (fn [{:keys [user taxon]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            parent-select (fn [path]
-                            (-> sess
-                                (peri/request path)
-                                :response :body
-                                (as-> b (Jsoup/parse ^String b))
-                                (.selectFirst "select#parent-id")))]
+            ;; The hx-* attributes sit on a listener element beside the
+            ;; select, not on the select: htmx marks its requesting element
+            ;; with htmx-request, and SlimSelect rebuilds from a class change
+            ;; on the select it owns, which closes an open dropdown.
+            listener (fn [path]
+                       (-> sess
+                           (peri/request path)
+                           :response :body
+                           (as-> b (Jsoup/parse ^String b))
+                           (.selectFirst "#parent-suggestion")))]
         (is (= "/taxon/parent-suggestion/"
-               (.attr (parent-select "/taxon/new/") "hx-get"))
+               (.attr (listener "/taxon/new/") "hx-get"))
             "the create form asks")
-        (is (str/blank? (.attr (parent-select (str "/taxon/" (:taxon/id taxon) "/name/"))
-                               "hx-get"))
+        (is (nil? (listener (str "/taxon/" (:taxon/id taxon) "/name/")))
             "the edit form does not")))))
 
 (deftest test-parent-id-prefills-the-form

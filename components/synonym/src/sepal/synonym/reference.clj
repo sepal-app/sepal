@@ -16,18 +16,51 @@
   {:jdbcUrl (format "jdbc:sqlite:file:%s?mode=ro&immutable=1" path)
    :maximumPoolSize 4})
 
-(defn open
-  "A pool over the reference file, or nil when there is no file.
-
-  nil is a supported state, not an error: a garden with no reference file runs
-  with the WFO half of every synonym read empty."
-  [path]
-  (when (and path (seq path) (fs/exists? path))
-    (connection/->pool HikariDataSource (spec path))))
-
 (defn close! [pool]
   (when pool
     (.close ^HikariDataSource pool)))
+
+(defn file-present?
+  "Whether there is a file at `path` at all.
+
+  Lets a caller tell 'this garden has no reference' apart from 'the file it
+  has is not one', which want different things said about them."
+  [path]
+  (boolean (and path (seq path) (fs/exists? path))))
+
+(def ^:private required-tables
+  "What every read in this namespace needs, all three created by
+  bin/build-synonym-ref.sh. A file holding fewer than these is not a
+  reference, whatever else it is."
+  #{"syn" "syn_fts" "metadata"})
+
+(defn- reference?
+  "Whether this pool is open on a synonym reference rather than some other
+  SQLite file."
+  [pool]
+  (try
+    (let [present (into #{}
+                        (map #(or (:sqlite_master/name %) (:name %)))
+                        (jdbc/execute! pool ["select name from sqlite_master
+                                               where type = 'table'"]))]
+      (every? present required-tables))
+    (catch Exception _ false)))
+
+(defn open
+  "A pool over the reference file, or nil when there is no usable one.
+
+  nil is a supported state, not an error: a garden without a reference runs
+  with the WFO half of every synonym read empty. A file that exists but is not
+  a reference -- a truncated download, or a path aimed at another database --
+  gives nil for the same reason. Opening it anyway would let a pool out of
+  here whose every read throws, and a taxon search that asks for WFO synonyms
+  would answer 500 instead of answering with the garden's own rows."
+  [path]
+  (when (file-present? path)
+    (let [pool (connection/->pool HikariDataSource (spec path))]
+      (if (reference? pool)
+        pool
+        (do (close! pool) nil)))))
 
 (defn version
   "The WFO release this file was built from, for logging."

@@ -102,41 +102,40 @@
              (let [url (z/url-for taxon.routes/index)]
                (form/field :label "Parent"
                            :name "parent-id"
-                           :input [:select (cond-> {:x-taxon-field (json/js {:url url})
-                                                    :name "parent-id"
-                                                    :id "parent-id"
-                                                    :read-only read-only
-                                                    :autocomplete "off"}
-                                             parent-suggestion-url
-                                             (assoc
-                                               :x-suggestable ""
-                                               :hx-get parent-suggestion-url
-                                               ;; It is the Name field that
-                                               ;; changes, so this listens
-                                               ;; there and sends that value
-                                               ;; rather than its own.
-                                               :hx-trigger "keyup changed delay:300ms from:#name"
-                                               :hx-include "#name"
-                                               :hx-params "name"
-                                               :hx-swap "none"
-                                               (keyword "hx-on::after-request")
-                                               (str "if (event.detail.successful) "
-                                                    "window.applyParentSuggestion("
-                                                    "event.detail.xhr.responseText)")))
-                                   ;; A single select must hold a selection, so
-                                   ;; without this SlimSelect selects the first
-                                   ;; search result and hideSelected hides it —
-                                   ;; a search matching one taxon showed an
-                                   ;; empty list. It doubles as "no parent".
-                                   [:option {:value "" :data-placeholder "true"} ""]
-                                   (when (:parent-id values)
-                                     ;; `selected` is load-bearing: the
-                                     ;; placeholder is the first option, and a
-                                     ;; browser takes the first one unless told
-                                     ;; otherwise.
-                                     [:option {:value (:parent-id values)
-                                               :selected "selected"}
-                                      (:parent-name values)])])))
+                           :input
+                           (list
+                             [:select (cond-> {:x-taxon-field (json/js {:url url})
+                                               :name "parent-id"
+                                               :id "parent-id"
+                                               :read-only read-only
+                                               :autocomplete "off"}
+                                        parent-suggestion-url
+                                        (assoc :x-suggestable ""))
+                              ;; A single select must hold a selection, so
+                              ;; without this SlimSelect selects the first
+                              ;; search result and hideSelected hides it —
+                              ;; a search matching one taxon showed an
+                              ;; empty list. It doubles as "no parent".
+                              [:option {:value "" :data-placeholder "true"} ""]
+                              (when (:parent-id values)
+                                ;; `selected` is load-bearing: the
+                                ;; placeholder is the first option, and a
+                                ;; browser takes the first one unless told
+                                ;; otherwise.
+                                [:option {:value (:parent-id values)
+                                          :selected "selected"}
+                                 (:parent-name values)])]
+                             (when parent-suggestion-url
+                               (form/suggestion-listener
+                                 :id "parent-suggestion"
+                                 :url parent-suggestion-url
+                                 ;; It is the Name field that changes, so this
+                                 ;; listens there and sends that value rather
+                                 ;; than the select's own.
+                                 :trigger "keyup changed delay:300ms from:#name"
+                                 :include "#name"
+                                 :params "name"
+                                 :apply-fn "window.applyParentSuggestion"))))))
            (if read-only
              (form/input-field :label "Rank"
                                :name "rank"

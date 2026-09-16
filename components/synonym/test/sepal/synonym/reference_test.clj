@@ -32,6 +32,29 @@
     (is (nil? (reference/open nil)))
     (is (nil? (reference/open "/nonexistent/sepal-synonyms.db")))))
 
+(deftest test-a-file-that-is-not-a-reference-yields-no-pool
+  ;; The setup wizard downloads this file. A truncated download, or a path
+  ;; pointed at some other SQLite database, leaves a file that exists and opens
+  ;; but has no syn table -- and every read against it threw, which turned
+  ;; taxon search into a 500 rather than a search without WFO results.
+  (let [dir (fs/create-temp-dir)
+        path (fs/path dir "not-a-reference.db")]
+    (with-open [conn (jdbc/get-connection
+                       (jdbc/get-datasource {:dbtype "sqlite" :dbname (str path)}))]
+      (jdbc/execute! conn ["create table something_else (id integer)"]))
+    (is (nil? (reference/open (str path))))))
+
+(deftest test-a-partial-reference-yields-no-pool
+  ;; syn without syn_fts is what an interrupted build leaves behind. Half a
+  ;; reference is not a reference: `search` reads syn_fts.
+  (let [dir (fs/create-temp-dir)
+        path (fs/path dir "half-built.db")]
+    (with-open [conn (jdbc/get-connection
+                       (jdbc/get-datasource {:dbtype "sqlite" :dbname (str path)}))]
+      (jdbc/execute! conn ["create table syn (name text not null, accepted_core text not null,
+                            accepted_wfo_id text not null, name_id text not null) strict"]))
+    (is (nil? (reference/open (str path))))))
+
 (deftest test-a-nil-pool-yields-empty-results
   ;; The default install has no reference file, so every function here must
   ;; degrade to an empty result rather than throw. Task 8 relies on this: it

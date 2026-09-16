@@ -91,9 +91,19 @@
 
 (defmethod ig/init-key ::reference-pool [_ {:keys [path]}]
   (let [pool (reference/open path)]
-    (if pool
+    (cond
+      pool
       (tel/log! {:level :info :data {:path path :wfo-version (reference/version pool)}}
                 "Opened the WFO synonym reference")
+
+      ;; Warn, not info: a garden that meant to have a reference has a file
+      ;; where it expects one, and would otherwise be told nothing while every
+      ;; synonym search quietly came back short.
+      (reference/file-present? path)
+      (tel/log! {:level :warn :data {:path path}}
+                "The file at this path is not a WFO synonym reference; synonym search covers local rows only")
+
+      :else
       (tel/log! {:level :info :data {:path path}}
                 "No WFO synonym reference; synonym search covers local rows only"))
     pool))

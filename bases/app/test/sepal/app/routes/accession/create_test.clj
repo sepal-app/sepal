@@ -372,18 +372,20 @@
      [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
     (fn [{:keys [user accession]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            taxon-select (fn [path]
-                           (-> sess
-                               (peri/request path)
-                               :response :body
-                               (as-> b (Jsoup/parse ^String b))
-                               (.selectFirst "select#taxon-id")))]
+            ;; The hx-* attributes sit on a listener element beside the
+            ;; select, not on the select: htmx marks its requesting element
+            ;; with htmx-request, and SlimSelect rebuilds from a class change
+            ;; on the select it owns, which closes an open dropdown.
+            listener (fn [path]
+                       (-> sess
+                           (peri/request path)
+                           :response :body
+                           (as-> b (Jsoup/parse ^String b))
+                           (.selectFirst "#provenance-suggestion")))]
         (is (= "/accession/provenance-suggestion/"
-               (.attr (taxon-select "/accession/new/") "hx-get"))
+               (.attr (listener "/accession/new/") "hx-get"))
             "the create form asks")
-        (is (str/blank? (.attr (taxon-select (str "/accession/" (:accession/id accession)
-                                                  "/general/"))
-                               "hx-get"))
+        (is (nil? (listener (str "/accession/" (:accession/id accession) "/general/")))
             "the edit form does not")))))
 
 (deftest test-taxon-id-prefills-the-form

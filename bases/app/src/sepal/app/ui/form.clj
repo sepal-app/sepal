@@ -91,6 +91,32 @@
      [:span {:class "spl-help" :id (description-id name)} help])
    (error-list name errors :hx-swap-oob? true)])
 
+(defn suggestion-listener
+  "An element that asks the server for a suggestion and applies the answer.
+
+  Hidden and empty: it exists only to carry the hx-* attributes, which cannot
+  sit on the control they suggest for when that control is a SlimSelect one.
+  htmx marks its requesting element with htmx-request, htmx-swapping and
+  htmx-settling; SlimSelect watches its <select> for class changes and rebuilds
+  its own elements from them, and that rebuild drops the ss-open class the
+  dropdown needs to be visible. Suggesting mid-search closed the completions.
+
+  The value the endpoint reads has to be named in :include, because a div
+  carries no value of its own the way the select did. :apply-fn names a global
+  taking the response body, and :id is what says in the markup which
+  suggestion this is."
+  [& {:keys [id url trigger include params apply-fn]}]
+  [:div (cond-> {:id id
+                 :hidden true
+                 :hx-get url
+                 :hx-trigger trigger
+                 :hx-swap "none"
+                 (keyword "hx-on::after-request")
+                 (str "if (event.detail.successful) "
+                      apply-fn "(event.detail.xhr.responseText)")}
+          include (assoc :hx-include include)
+          params (assoc :hx-params params))])
+
 (defn input-field [& {:keys [id label name read-only required type value errors
                              help minlength maxlength input-attrs]}]
   (let [control-id (or id name)]

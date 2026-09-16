@@ -97,39 +97,38 @@
            (ui.form/field :label "Taxon"
                           :name "taxon-id"
                           :errors (:taxon-id errors)
-                          :input [:select (cond-> {:x-taxon-field (json/js {:url taxa-url})
-                                                   :id "taxon-id"
-                                                   :required true
-                                                   :name "taxon-id"
-                                                   :autocomplete "off"}
-                                            provenance-suggestion-url
-                                            (assoc :hx-get provenance-suggestion-url
-                                                   ;; SlimSelect writes the
-                                                   ;; value straight onto the
-                                                   ;; select and dispatches
-                                                   ;; change, so that is the
-                                                   ;; event to listen for.
-                                                   :hx-trigger "change"
-                                                   :hx-swap "none"
-                                                   (keyword "hx-on::after-request")
-                                                   (str "if (event.detail.successful) "
-                                                        "window.applyProvenanceSuggestion("
-                                                        "event.detail.xhr.responseText)")))
-                                  ;; A single select must hold a selection, so
-                                  ;; without this SlimSelect selects the first
-                                  ;; search result and hideSelected hides it —
-                                  ;; a search matching one taxon showed an
-                                  ;; empty list. Same placeholder the supplier
-                                  ;; and location fields carry.
-                                  [:option {:value "" :data-placeholder "true"} ""]
-                                  (when (:taxon/id taxon)
-                                    ;; `selected` is load-bearing: the
-                                    ;; placeholder is the first option, and a
-                                    ;; browser takes the first one unless told
-                                    ;; otherwise.
-                                    [:option {:value (:taxon/id taxon)
-                                              :selected "selected"}
-                                     (:taxon/name taxon)])]
+                          :input
+                          (list
+                            [:select {:x-taxon-field (json/js {:url taxa-url})
+                                      :id "taxon-id"
+                                      :required true
+                                      :name "taxon-id"
+                                      :autocomplete "off"}
+                             ;; A single select must hold a selection, so
+                             ;; without this SlimSelect selects the first
+                             ;; search result and hideSelected hides it —
+                             ;; a search matching one taxon showed an
+                             ;; empty list. Same placeholder the supplier
+                             ;; and location fields carry.
+                             [:option {:value "" :data-placeholder "true"} ""]
+                             (when (:taxon/id taxon)
+                               ;; `selected` is load-bearing: the
+                               ;; placeholder is the first option, and a
+                               ;; browser takes the first one unless told
+                               ;; otherwise.
+                               [:option {:value (:taxon/id taxon)
+                                         :selected "selected"}
+                                (:taxon/name taxon)])]
+                            (when provenance-suggestion-url
+                              (ui.form/suggestion-listener
+                                :id "provenance-suggestion"
+                                :url provenance-suggestion-url
+                                ;; SlimSelect writes the value straight onto
+                                ;; the select and dispatches change, so that
+                                ;; is the event to listen for.
+                                :trigger "change from:#taxon-id"
+                                :include "#taxon-id"
+                                :apply-fn "window.applyProvenanceSuggestion")))
                           :required true
                           :help "Start typing a name to search the taxonomy."))
 
