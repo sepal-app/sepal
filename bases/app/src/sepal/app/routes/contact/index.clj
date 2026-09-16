@@ -136,7 +136,8 @@
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:c.name]))]
+                                      :order-by (concat (search.i/relevance-order :contact ast)
+                                                        [[:c.name :asc]])))]
 
     (cond
       (= (get headers "accept") "application/json")

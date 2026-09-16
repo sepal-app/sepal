@@ -178,6 +178,21 @@
   (let [fields (get-fields resource-type)]
     (compiler/compile-query fields ast base-stmt)))
 
+(defn relevance-order
+  "Order-by terms ranking rows by how well they match the query's free-text
+  part, or nil when it has none.
+
+   Put these before the list's own ordering rather than instead of it — they
+   rank matches against each other and leave ties to whatever the caller
+   already sorted by. With no free-text terms there is nothing to rank and the
+   caller's ordering stands alone.
+
+   Example:
+     (assoc stmt :order-by (concat (relevance-order :taxon ast)
+                                   [[:t.name :asc]]))"
+  [resource-type ast]
+  (compiler/relevance-order (get-fields resource-type) ast))
+
 ;; =============================================================================
 ;; UI Helpers
 ;; =============================================================================

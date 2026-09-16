@@ -256,6 +256,9 @@
   border-radius: var(--radius-control);
   background: var(--color-surface);
   width: 100%;
+  /* SlimSelect centres the chevron with auto block margins, which the margin
+   * below overrides. This centres value and chevron together instead. */
+  align-items: center;
 }
 /* Placed after .ss-main rather than beside .spl-input--edited: the two
  * selectors have the same specificity, so the resting field colours above
@@ -302,16 +305,20 @@
   background: var(--color-surface);
   box-shadow: 0 12px 28px -14px rgb(18 33 30 / .35);
 }
+/* No border and no focus ring, which is what SlimSelect itself draws here.
+ * The box fills the top of the dropdown, so both landed on the dropdown's own
+ * edge, and .ss-content clips an outline everywhere but the bottom — leaving a
+ * stray brand line under the box and nowhere else. .ss-search carries the
+ * divider between the box and the list. */
 .ss-content .ss-search input {
   font: 400 13.5px/1.4 var(--font-sans);
   color: var(--color-text-table);
   padding: 7px 10px;
-  border: 1px solid var(--color-field);
-  border-radius: var(--radius-control);
+  border: none;
+  border-radius: 0;
 }
 .ss-content .ss-search input:focus {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 1px;
+  outline: none;
   box-shadow: none;
 }
 .ss-content .ss-list .ss-option {
