@@ -24,6 +24,19 @@
                           :where [:= :wfo_taxon_id wfo-taxon-id]})
        (mapv #(store.i/coerce spec/Taxon %))))
 
+(defn list-by-name
+  "Every taxon with exactly this name, as a vector.
+
+  A vector rather than one row because `taxon.name` carries a plain index, not
+  a unique one: two gardens' worth of imported data can name the same thing
+  twice, and a caller resolving a name to a taxon has to be able to tell one
+  hit from two."
+  [db taxon-name]
+  (->> (db.i/execute! db {:select [:*]
+                          :from [:taxon]
+                          :where [:= :name taxon-name]})
+       (mapv #(store.i/coerce spec/Taxon %))))
+
 (defn create! [db data]
   (let [data (cond-> data
                (not (contains? data :vernacular-names))

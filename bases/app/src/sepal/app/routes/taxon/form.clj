@@ -48,11 +48,12 @@
 (defn form
   "The create page and the edit page share this.
 
-  `guess-rank-url` is create-only. Given it, the Name field asks the server
-  what rank the name implies and the page fills Rank in — until you set Rank
-  yourself, after which it stops. The edit form never passes it, so nothing
-  can quietly re-rank a taxon you are only renaming."
-  [& {:keys [action errors read-only values guess-rank-url]}]
+  `guess-rank-url` and `parent-suggestion-url` are create-only. Given them,
+  the Name field asks the server what rank the name implies and which taxon it
+  hangs off, and the page fills Rank and Parent in — each until you set that
+  field yourself, after which it stops. The edit form passes neither, so
+  nothing can quietly re-rank or re-parent a taxon you are only renaming."
+  [& {:keys [action errors read-only values guess-rank-url parent-suggestion-url]}]
   (let [ranks (->> taxon.spec/rank rest (mapv name))]
     [:div
      (form/form
@@ -101,11 +102,27 @@
              (let [url (z/url-for taxon.routes/index)]
                (form/field :label "Parent"
                            :name "parent-id"
-                           :input [:select {:x-taxon-field (json/js {:url url})
-                                            :name "parent-id"
-                                            :id "parent-id"
-                                            :read-only read-only
-                                            :autocomplete "off"}
+                           :input [:select (cond-> {:x-taxon-field (json/js {:url url})
+                                                    :name "parent-id"
+                                                    :id "parent-id"
+                                                    :read-only read-only
+                                                    :autocomplete "off"}
+                                             parent-suggestion-url
+                                             (assoc
+                                               :x-suggestable ""
+                                               :hx-get parent-suggestion-url
+                                               ;; It is the Name field that
+                                               ;; changes, so this listens
+                                               ;; there and sends that value
+                                               ;; rather than its own.
+                                               :hx-trigger "keyup changed delay:300ms from:#name"
+                                               :hx-include "#name"
+                                               :hx-params "name"
+                                               :hx-swap "none"
+                                               (keyword "hx-on::after-request")
+                                               (str "if (event.detail.successful) "
+                                                    "window.applyParentSuggestion("
+                                                    "event.detail.xhr.responseText)")))
                                    ;; A single select must hold a selection, so
                                    ;; without this SlimSelect selects the first
                                    ;; search result and hideSelected hides it —

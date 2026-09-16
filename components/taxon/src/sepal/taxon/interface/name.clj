@@ -80,6 +80,50 @@
    ["inae" :subtribe]
    ["eae" :tribe]])
 
+(defn parent-name
+  "The name of the taxon this one sits under, or nil when the name does not
+   say.
+
+   Strip the last thing the name adds: a cultivar epithet leaves the botanical
+   part, an infraspecific term leaves what came before it, and a binomial
+   leaves its genus. A one-word name — a genus, a family, an order — names no
+   parent, because nothing above it can be read off the name itself."
+  [s]
+  (when-not (str/blank? s)
+    (let [s (str/trim s)
+          [botanical epithet] (split-cultivar s)
+          botanical (str/trim botanical)]
+      (or
+        ;; A cultivar hangs off the whole botanical name before its epithet:
+        ;; `Acer palmatum 'Bloodgood'` is a cultivar of the species, and
+        ;; `Rosa 'Peace'` one of the genus.
+        (when epithet (not-empty botanical))
+
+        ;; A Group's own epithet is the last word, so drop it as well:
+        ;; `Rhododendron Ponticum Group` sits under the genus and
+        ;; `Brassica oleracea Capitata Group` under the species.
+        (when (re-find #"(?i)\bgroup$" s)
+          (->> (str/split (str/replace botanical #"(?i)\s+group$" "") #"\s+")
+               (remove str/blank?)
+               (butlast)
+               (str/join " ")
+               (not-empty)))
+
+        ;; The earliest connecting term: `X subsp. Y var. Z` hangs off
+        ;; `X subsp. Y`, not off `X`.
+        (when-let [idx (->> (keys infraspecific-ranks)
+                            (keep #(str/index-of botanical %))
+                            (sort)
+                            (last))]
+          (-> (subs botanical 0 idx) (str/trim) (not-empty)))
+
+        ;; A binomial hangs off its genus. The hybrid marker is not a word.
+        (let [words (->> (str/split botanical #"\s+")
+                         (remove #{"×" "x" "+"})
+                         (remove str/blank?))]
+          (when (= 2 (count words))
+            (first words)))))))
+
 (defn guess-rank
   "The rank a name implies, or nil when it implies nothing.
 

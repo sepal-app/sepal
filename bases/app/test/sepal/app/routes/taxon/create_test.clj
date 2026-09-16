@@ -186,6 +186,81 @@
                                "hx-get"))
             "the edit form does not")))))
 
+(deftest test-parent-suggestion-endpoint
+  (tf/testing "it answers only when the name says what its parent is called,
+               exactly one taxon has that name, and that taxon's rank is the
+               one the parent's own name implies. Hanging a taxon off the
+               wrong parent is worse than leaving the field empty."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/genus] {:db *db* :name "Zzyzxia" :rank :genus}}
+    (fn [{:keys [user genus]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            suggest (fn [n]
+                      (-> sess
+                          (peri/request "/taxon/parent-suggestion/" :params {:name n})
+                          :response :body))]
+        (is (str/includes? (suggest "Zzyzxia testica") (str (:taxon/id genus)))
+            "a binomial resolves to its genus")
+        (is (str/includes? (suggest "Zzyzxia 'Cultivarname'") (str (:taxon/id genus)))
+            "a cultivar of a genus resolves to that genus")
+        (is (= "" (suggest "Zzyzxia"))
+            "a one-word name says nothing about what is above it")
+        (is (= "" (suggest "Nosuchgenus testica"))
+            "no taxon by that name")
+        (is (= "" (suggest "")))))))
+
+(deftest test-parent-suggestion-needs-the-rank-to-fit
+  (tf/testing "a taxon named like a genus but filed as something else is not
+               the parent the name describes"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/mis-ranked] {:db *db* :name "Zzyzxib" :rank :family}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")]
+        (is (= "" (-> sess
+                      (peri/request "/taxon/parent-suggestion/"
+                                    :params {:name "Zzyzxib testica"})
+                      :response :body))
+            "`Zzyzxib` implies a genus, and this one is a family")))))
+
+(deftest test-parent-suggestion-needs-exactly-one-match
+  (tf/testing "two taxa of the same name is ambiguous, so it answers nothing"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/one] {:db *db* :name "Zzyzxic" :rank :genus}
+     [::taxon.i/factory :key/two] {:db *db* :name "Zzyzxic" :rank :genus}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")]
+        (is (= "" (-> sess
+                      (peri/request "/taxon/parent-suggestion/"
+                                    :params {:name "Zzyzxic testica"})
+                      :response :body)))))))
+
+(deftest test-only-the-create-form-suggests-a-parent
+  (tf/testing "the edit form must not re-parent a taxon you are only renaming"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            parent-select (fn [path]
+                            (-> sess
+                                (peri/request path)
+                                :response :body
+                                (as-> b (Jsoup/parse ^String b))
+                                (.selectFirst "select#parent-id")))]
+        (is (= "/taxon/parent-suggestion/"
+               (.attr (parent-select "/taxon/new/") "hx-get"))
+            "the create form asks")
+        (is (str/blank? (.attr (parent-select (str "/taxon/" (:taxon/id taxon) "/name/"))
+                               "hx-get"))
+            "the edit form does not")))))
+
 (deftest test-parent-id-prefills-the-form
   (tf/testing "a taxon's \"Add a child taxon\" names the parent. The select is
                searched client-side, so without the option rendered here the

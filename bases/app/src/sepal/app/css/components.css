@@ -208,6 +208,7 @@
   background: var(--color-surface-alt);
   border-top: 1px solid var(--color-border-light);
 }
+
 .spl-error {
   list-style: none;
   margin: 0;
@@ -361,6 +362,44 @@
   padding: 0 22px;
   border-bottom: 1px solid var(--color-border-light);
   overflow-x: auto;
+}
+
+/* ── One column on a record page ───────────────────────────────────────────
+ * The record's name, the section tabs, the fields and the action bar sit on
+ * the same left and right edges. Once the form centred they did not: the name
+ * and the first tab stayed hard left while the fields moved to the middle.
+ *
+ * The gutter grows rather than the column, so the tab row's underline and the
+ * footer's tinted surface still span the whole pane and only their contents
+ * move. All four are children of .spl-record-page, so they have the same width
+ * to divide, which is what makes them agree.
+ *
+ * The extra right padding is .spl-record-body's reserved scrollbar gutter.
+ * That element is the only one of the four that scrolls, so without matching
+ * it the other three would run 8px wider on the right.
+ *
+ * .spl-record-body also drops the form's own cap: two elements each centring
+ * themselves, in containers of different widths, do not line up. */
+.spl-record,
+.spl-tabs,
+.spl-record-body,
+.spl-form-footer {
+  padding-inline: max(22px, calc((100% - 576px) / 2));
+}
+.spl-record,
+.spl-tabs,
+.spl-form-footer {
+  padding-right: calc(max(22px, (100% - 576px) / 2) + 8px);
+}
+.spl-record-body > .spl-form,
+.spl-record-body .spl-form { max-width: none; margin-inline: 0; }
+@media (max-width: 639px) {
+  .spl-record,
+  .spl-tabs,
+  .spl-record-body,
+  .spl-form-footer {
+    padding-inline: 16px;
+  }
 }
 .spl-tab {
   font: 400 13.5px/1 var(--font-sans);

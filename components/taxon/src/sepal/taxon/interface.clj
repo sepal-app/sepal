@@ -8,6 +8,11 @@
 (defn list-by-wfo-taxon-id [db wfo-taxon-id]
   (core/list-by-wfo-taxon-id db wfo-taxon-id))
 
+(defn list-by-name
+  "Every taxon with exactly this name. A vector: `taxon.name` is not unique."
+  [db taxon-name]
+  (core/list-by-name db taxon-name))
+
 (defn create! [db data]
   (core/create! db data))
 

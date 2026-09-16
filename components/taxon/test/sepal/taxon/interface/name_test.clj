@@ -5,7 +5,7 @@
    Counts below are from the WFO reference taxonomy loaded in development:
    453,167 taxa, of which 6,011 carry a hybrid marker, 26,214 ` subsp. `,
    25,919 ` var. ` and 756 ` f. `."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer [are deftest is testing]]
             [sepal.taxon.interface.name :as taxon.name]))
 
 (deftest test-plain-binomial
@@ -77,6 +77,47 @@
   (testing "an unpaired quote must not swallow the name"
     (is (= [{:text "Quercus alba'" :role :scientific}]
            (taxon.name/segments "Quercus alba'")))))
+
+(deftest test-parent-name
+  (testing "a binomial hangs off its genus"
+    (is (= "Acer" (taxon.name/parent-name "Acer palmatum")))
+    (is (= "Acer" (taxon.name/parent-name "Acer × freemanii"))
+        "the hybrid marker is not a word"))
+
+  (testing "a cultivar hangs off the whole name before its epithet"
+    (is (= "Acer palmatum" (taxon.name/parent-name "Acer palmatum 'Bloodgood'")))
+    (is (= "Rosa" (taxon.name/parent-name "Rosa 'Peace'"))
+        "a cultivar of a genus, not of a species"))
+
+  (testing "a Group's own epithet is the last word, so it goes too"
+    (is (= "Rhododendron" (taxon.name/parent-name "Rhododendron Ponticum Group")))
+    (is (= "Brassica oleracea"
+           (taxon.name/parent-name "Brassica oleracea Capitata Group"))))
+
+  (testing "an infraspecific name hangs off what precedes the term"
+    (is (= "Acer palmatum" (taxon.name/parent-name "Acer palmatum var. dissectum")))
+    (is (= "Pinus nigra" (taxon.name/parent-name "Pinus nigra subsp. salzmannii")))
+    (testing "and off the nearest one, not the first"
+      (is (= "Acer palmatum subsp. amoenum"
+             (taxon.name/parent-name "Acer palmatum subsp. amoenum var. matsumurae")))))
+
+  (testing "a one-word name says nothing about what is above it"
+    (is (nil? (taxon.name/parent-name "Acer")))
+    (is (nil? (taxon.name/parent-name "Rosaceae")))
+    (is (nil? (taxon.name/parent-name nil)))
+    (is (nil? (taxon.name/parent-name "")))))
+
+(deftest test-parent-name-and-guess-rank-agree
+  (testing "the rank the parent name implies is what the auto-select checks a
+            candidate against, so the two have to line up"
+    (are [child parent-rank] (= parent-rank
+                                (some-> (taxon.name/parent-name child)
+                                        (taxon.name/guess-rank)))
+      "Acer palmatum" :genus
+      "Acer palmatum 'Bloodgood'" :species
+      "Rosa 'Peace'" :genus
+      "Acer palmatum var. dissectum" :species
+      "Rhododendron Ponticum Group" :genus)))
 
 (deftest test-guess-rank
   (testing "a quoted epithet is a cultivar, whatever else the name carries"
