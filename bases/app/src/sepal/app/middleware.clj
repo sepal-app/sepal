@@ -160,18 +160,31 @@
   [handler]
   (fn [{:keys [htmx-request?] :as request}]
     (let [response (handler request)
-          flash-messages (get-in response [:flash :messages])]
-      (if (and htmx-request?
-               (seq flash-messages)
-               (not (redirect-response? response))
-               (html-response? response)
-               (string? (:body response)))
+          flash-messages (get-in response [:flash :messages])
+          incoming (get-in request [:flash :messages])]
+      (cond
         ;; HTMX partial response: inject OOB flash into body
+        (and htmx-request?
+             (seq flash-messages)
+             (not (redirect-response? response))
+             (html-response? response)
+             (string? (:body response)))
         (-> response
             (update :body str (chassis/html (flash/banner-oob flash-messages)))
             (update :flash dissoc :messages))  ;; Clear from session since we rendered it
+
+        ;; A redirect renders nothing, and a flash survives exactly one
+        ;; request, so without this the message dies on the hop. Saving an
+        ;; accession redirects to /accession/12/, which redirects again to
+        ;; /accession/12/general/ — two requests, and "saved successfully"
+        ;; never reached a page. Taxa and material bounce the same way.
+        (and (redirect-response? response)
+             (seq incoming)
+             (not (seq flash-messages)))
+        (assoc-in response [:flash :messages] incoming)
+
         ;; Regular response or redirect: leave flash in session
-        response))))
+        :else response))))
 
 (defn wrap-org-settings
   "Middleware that loads organization settings into the request context.

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.create
   (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.form :as taxon.form]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -57,6 +58,7 @@
   (let [{:keys [db]} context]
     (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
                     saved (f/try* (create! db (:user/id viewer) data))]
-      (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+      (-> (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+          (flash/success "Taxon created successfully"))
       (f/when-failed [e]
         (http/failure-flash e (http/hx-redirect taxon.routes/new) "Could not create the taxon")))))

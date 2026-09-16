@@ -236,3 +236,53 @@
           (is (= :plant (:material/type material)))
           (finally
             (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))))
+
+(deftest test-a-save-says-so
+  (tf/testing "the whole path, because two separate things broke it: no page
+               passed :flash to the shell, and the redirect chain
+               /accession/:id/ -> /general/ ate the message before any page
+               rendered it. A save that looks like it did nothing is
+               indistinguishable from one that failed."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession taxon]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              general-url (str "/accession/" (:accession/id accession) "/general/")
+              {:keys [response] :as sess} (-> sess (peri/request general-url))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response] :as sess}
+              (-> sess
+                  (peri/request general-url
+                                :request-method :post
+                                :params {:__anti-forgery-token token
+                                         :code (:accession/code accession)
+                                         :taxon-id (str (:taxon/id taxon))
+                                         :id-qualifier ""
+                                         :id-qualifier-rank ""
+                                         :provenance-type ""
+                                         :wild-provenance-status ""
+                                         :supplier-contact-id ""
+                                         :intended-location-id ""
+                                         :date-received ""
+                                         :date-accessioned ""
+                                         :received-type ""
+                                         :quantity-received "3"}))]
+          (is (contains? #{200 204 302} (:status response))
+              (str "the save itself should succeed, got " (:status response)))
+
+          ;; Exactly the hop a browser makes: htmx follows HX-Redirect to
+          ;; /accession/:id/, which redirects again to the general tab.
+          (let [{:keys [response] :as sess}
+                (-> sess (peri/request (str "/accession/" (:accession/id accession) "/")))
+                _ (is (contains? #{302 303} (:status response))
+                      "the record root is a redirect, which is what ate the flash")
+                {:keys [response]} (-> sess (peri/request general-url))
+                body (Jsoup/parse ^String (:body response))]
+            (is (.contains (.text body) "Accession updated successfully")
+                "the banner has to survive the hop and reach a rendered page")))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))

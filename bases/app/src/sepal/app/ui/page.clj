@@ -155,10 +155,18 @@
      (when code [:p {:class "spl-record-code"} code])
      (when name [:p {:class "spl-record-name"} name])]))
 
-(defn page [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
-  (base/html
-    [:div (merge {:x-data true} attrs)
-     [:div
+(defn page
+  "The application shell.
+
+  `flash` defaults to the request's own, so a page cannot forget to show one.
+  It used to be passed by hand and eleven of the fourteen callers did not, so
+  every record save left its \"saved successfully\" sitting in the session and
+  rendered nowhere — the save looked like it had done nothing."
+  [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
+  (let [flash (or flash (:flash z/*request*))]
+    (base/html
+      [:div (merge {:x-data true} attrs)
+       [:div
       ;; The rail's open state is a checkbox its siblings select on — no
       ;; JavaScript, so the shell is correct on first paint. Below 1024px the
       ;; rail is off-canvas over a scrim; above it, pinned. That is the
@@ -166,37 +174,37 @@
       ;; The checked state is rendered from a cookie, so the rail is already
       ;; expanded on first paint rather than snapping open after a script runs.
       ;; The handler writes the cookie back so the choice survives navigation.
-      [:input (cond-> {:id "sidebar-drawer-toggle"
-                       :type "checkbox"
-                       :class "spl-drawer-toggle"
-                       :onchange (str "document.cookie = 'spl-rail=' + "
-                                      "(this.checked ? '1' : '0') + "
-                                      "'; path=/; max-age=31536000; samesite=lax'")}
-                g/*rail-open?* (assoc :checked "checked"))]
-      [:div {:class "spl-shell"}
-       (sidebar)
-       [:label {:for "sidebar-drawer-toggle"
-                :class "spl-scrim"
-                :aria-hidden "true"}]
-       [:div {:class "spl-content"}
-        (navbar :breadcrumbs breadcrumbs
-                :page-title-buttons page-title-buttons)
-        [:main
+        [:input (cond-> {:id "sidebar-drawer-toggle"
+                         :type "checkbox"
+                         :class "spl-drawer-toggle"
+                         :onchange (str "document.cookie = 'spl-rail=' + "
+                                        "(this.checked ? '1' : '0') + "
+                                        "'; path=/; max-age=31536000; samesite=lax'")}
+                  g/*rail-open?* (assoc :checked "checked"))]
+        [:div {:class "spl-shell"}
+         (sidebar)
+         [:label {:for "sidebar-drawer-toggle"
+                  :class "spl-scrim"
+                  :aria-hidden "true"}]
+         [:div {:class "spl-content"}
+          (navbar :breadcrumbs breadcrumbs
+                  :page-title-buttons page-title-buttons)
+          [:main
          ;; No title block unless a page asks for one. The breadcrumb already
          ;; names where you are, and an empty band of margin above every list
          ;; is what made the redesign read as the old layout in new colours.
-         (when page-title
-           (page-inner
-             [:h1 {:class "spl-page-title"} page-title]))
+           (when page-title
+             (page-inner
+               [:h1 {:class "spl-page-title"} page-title]))
 
-         [:div {:class "spl-main"}
-          content]
-         [:div {:id "flash-container"}
-          (flash/banner (:messages flash))]
+           [:div {:class "spl-main"}
+            content]
+           [:div {:id "flash-container"}
+            (flash/banner (:messages flash))]
 
-         (when footer
-           [:div {:id "page-footer"}
-            footer])
+           (when footer
+             [:div {:id "page-footer"}
+              footer])
 
-         [:script {:type "module"
-                   :src (html/static-url "app/ui/page.ts")}]]]]]]))
+           [:script {:type "module"
+                     :src (html/static-url "app/ui/page.ts")}]]]]]])))

@@ -5,6 +5,7 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.codes :as codes]
             [sepal.app.datetime :as datetime]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -124,7 +125,8 @@
           (http/unprocessable-entity
             (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
           (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
-            (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+            (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                (flash/success "Accession updated successfully"))
             (f/when-failed [e]
               (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
                                   "Could not save the accession"))))

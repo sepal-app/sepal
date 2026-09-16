@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.name
   (:require [failjure.core :as f]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
@@ -61,7 +62,8 @@
       :post
       (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
                       saved (f/try* (save! db (:taxon/id resource) (:user/id viewer) data))]
-        (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+        (-> (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
+            (flash/success "Taxon updated successfully"))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect taxon.routes/detail {:id (:taxon/id resource)}) "Could not save the taxon")))
 
