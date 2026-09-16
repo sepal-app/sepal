@@ -12,14 +12,19 @@
 
 (def ^:private password "testpassword123")
 
-(defn- picker-results
-  "What the material form's location field shows for `q`."
+(defn- picker-body
+  "What a picker endpoint answers: the options, and how many matched in all."
   [sess q]
   (-> sess
-      (peri/request "/location/" :params {"q" q "page-size" "25"}
+      (peri/request "/location/" :params {"q" q "page-size" "100"}
                     :headers {"accept" "application/json"})
       :response :body
       (json/parse-string true)))
+
+(defn- picker-results
+  "What the material form's location field shows for `q`."
+  [sess q]
+  (:options (picker-body sess q)))
 
 (deftest test-the-picker-finds-a-location-by-name-and-by-code
   (tf/testing "every location a garden has must be reachable from the field
@@ -57,5 +62,9 @@
         (try
           (is (= 20 (count (picker-results sess "bed")))
               "every location matching what was typed should be offered")
+          (is (= 20 (:total (picker-body sess "bed")))
+              "and the total comes back beside them, so a list that did have
+               to be cut could say how much it was hiding — anything past the
+               limit is unreachable, since the dropdown does not page")
           (finally
             (doseq [{:location/keys [id]} made] (location.i/delete! *db* id))))))))

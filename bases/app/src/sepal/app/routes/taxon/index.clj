@@ -275,10 +275,10 @@
         ;; Execute queries in parallel
         [rows total] (pcalls
                        #(db.i/execute-bounded! db (assoc stmt
-                                                 :limit page-size
-                                                 :offset offset
-                                                 :order-by (concat (search.i/relevance-order :taxon ast)
-                                                                   [[:t.name :asc]])))
+                                                         :limit page-size
+                                                         :offset offset
+                                                         :order-by (concat (search.i/relevance-order :taxon ast)
+                                                                           [[:t.name :asc]])))
                        #(db.i/count-bounded db count-stmt))]
 
     (cond
@@ -301,7 +301,7 @@
                                        :out (conj out hit)})))
                                 {:seen seen :out []}
                                 synonym-matches))]
-        (json/json-response
+        (json/picker-response
           (concat
             (for [taxon rows]
               {:text (:taxon/name taxon)
@@ -315,7 +315,11 @@
               {:text (:taxon/name hit)
                :name (:taxon/name hit)
                :id (:taxon/id hit)
-               :matchedSynonym (:synonym/synonym-name hit)}))))
+               :matchedSynonym (:synonym/synonym-name hit)}))
+          ;; The synonym matches are appended to the page of name matches
+          ;; rather than counted in it, so they have to be added here or the
+          ;; total would understate what the search actually found.
+          (+ total (count extra))))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

@@ -55,7 +55,8 @@
                        (peri/header "accept" "application/json")
                        (peri/request "/taxon/" :params {"q" "Encyclia"})
                        :response :body
-                       (json/read-str :key-fn keyword))]
+                       (json/read-str :key-fn keyword)
+                       (:options))]
           (is (some #(= "Encyclia cochleata" (:matchedSynonym %)) body))
           (is (some #(= (:taxon/id taxon) (:id %)) body))
           (is (every? (comp string? :text) body)))))))
@@ -75,7 +76,8 @@
                        (peri/header "accept" "application/json")
                        (peri/request "/taxon/" :params {"q" "Encyclia"})
                        :response :body
-                       (json/read-str :key-fn keyword))
+                       (json/read-str :key-fn keyword)
+                       (:options))
               ids (map :id body)]
           (is (= (count ids) (count (distinct ids)))))))))
 

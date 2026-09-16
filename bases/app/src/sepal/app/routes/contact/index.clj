@@ -134,19 +134,21 @@
         ;; Execute queries
         total (db.i/count-bounded db stmt)
         rows (db.i/execute-bounded! db (assoc stmt
-                                      :limit page-size
-                                      :offset offset
-                                      :order-by (concat (search.i/relevance-order :contact ast)
+                                              :limit page-size
+                                              :offset offset
+                                              :order-by (concat (search.i/relevance-order :contact ast)
                                                                 [[:c.name :asc]])))]
 
     (cond
       (= (get headers "accept") "application/json")
-      (json/json-response (for [contact rows]
-                            {:name (:contact/name contact)
-                             :text (contact.name/label contact)
-                             :id (:contact/id contact)
-                             :business (:contact/business contact)
-                             :description (:contact/description contact)}))
+      (json/picker-response
+        (for [contact rows]
+          {:name (:contact/name contact)
+           :text (contact.name/label contact)
+           :id (:contact/id contact)
+           :business (:contact/business contact)
+           :description (:contact/description contact)})
+        total)
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
       (some? (get query-params "rows"))

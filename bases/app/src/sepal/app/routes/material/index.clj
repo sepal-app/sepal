@@ -191,9 +191,9 @@
         ;; none. There was no ordering here at all, so the de facto order was
         ;; rowid; naming it keeps that and makes it total.
         rows (db.i/execute-bounded! db (assoc stmt
-                                      :limit page-size
-                                      :offset offset
-                                      :order-by (concat (search.i/relevance-order :material ast)
+                                              :limit page-size
+                                              :offset offset
+                                              :order-by (concat (search.i/relevance-order :material ast)
                                                                 [[:m.id :asc]])))
 
         ;; Fetch entities for breadcrumbs if filtering by ID
@@ -204,14 +204,16 @@
 
     (cond
       (= (get headers "accept") "application/json")
-      (json/json-response (for [material rows]
-                            {:code (:material/code material)
-                             :id (:material/id material)
-                             :text (format "%s.%s (%s)"
-                                           (:accession/code material)
-                                           (:material/code material)
-                                           (:taxon/name material))
-                             :accession-id (:material/accession-id material)}))
+      (json/picker-response
+        (for [material rows]
+          {:code (:material/code material)
+           :id (:material/id material)
+           :text (format "%s.%s (%s)"
+                         (:accession/code material)
+                         (:material/code material)
+                         (:taxon/name material))
+           :accession-id (:material/accession-id material)})
+        total)
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
       (some? (get query-params "rows"))

@@ -2,6 +2,11 @@ import { type DirectiveCallback } from "alpinejs"
 import SlimSelect, { Option } from "slim-select"
 
 import { debounceSearch } from "./debounce-search"
+import {
+    PAGE_SIZE,
+    type PickerResponse,
+    truncationNotice,
+} from "./picker-results"
 
 interface DirectiveExpression {
     url: string
@@ -21,20 +26,27 @@ const MaterialField: DirectiveCallback = (el, directive, { cleanup, evaluate }) 
             // locations than this matching what was typed simply never saw the
             // rest, and the answer to a picker that cannot find a location is
             // to create it again.
-            const params = new URLSearchParams({ q: search, "page-size": "25" })
+            const params = new URLSearchParams({
+                q: search,
+                "page-size": String(PAGE_SIZE),
+            })
             fetch(url + "?" + params.toString(), {
                 headers: { Accept: "application/json" },
             })
                 .then((response) => response.json())
-                .then((data) => {
-                    if (!data || data.length === 0) {
+                .then((data: PickerResponse) => {
+                    const rows = data?.options ?? []
+                    if (rows.length === 0) {
                         return reject("No results found")
                     }
-                    const options = data.map((d) => ({
+                    const options = rows.map((d) => ({
                         text: d.text,
                         value: d.id,
                     }))
-                    resolve(options)
+                    resolve([
+                        ...options,
+                        ...truncationNotice(options.length, data.total),
+                    ])
                 })
                 .catch((e) => {
                     console.error(e)

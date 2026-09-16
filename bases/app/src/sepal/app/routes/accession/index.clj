@@ -171,9 +171,9 @@
         ;; Execute queries
         total (db.i/count-bounded db stmt)
         rows (db.i/execute-bounded! db (assoc stmt
-                                      :limit page-size
-                                      :offset offset
-                                      :order-by (concat (search.i/relevance-order :accession ast)
+                                              :limit page-size
+                                              :offset offset
+                                              :order-by (concat (search.i/relevance-order :accession ast)
                                                                 [[:a.code :asc]])))
 
         ;; Fetch taxon for breadcrumb if filtering by taxon.id
@@ -182,12 +182,14 @@
 
     (cond
       (= (get headers "accept") "application/json")
-      (json/json-response (for [row rows]
-                            {:text (format "%s (%s)"
-                                           (:accession/code row)
-                                           (:taxon/name row))
-                             :code (:accession/code row)
-                             :id (:accession/id row)}))
+      (json/picker-response
+        (for [row rows]
+          {:text (format "%s (%s)"
+                         (:accession/code row)
+                         (:taxon/name row))
+           :code (:accession/code row)
+           :id (:accession/id row)})
+        total)
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them, so this returns <tr>s with no page around

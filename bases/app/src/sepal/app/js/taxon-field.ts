@@ -3,6 +3,11 @@ import { type DirectiveCallback } from "alpinejs"
 import SlimSelect, { Option } from "slim-select"
 
 import { debounceSearch } from "./debounce-search"
+import {
+    PAGE_SIZE,
+    type PickerResponse,
+    truncationNotice,
+} from "./picker-results"
 
 interface DirectiveExpression {
     url: string
@@ -27,7 +32,10 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
             // locations than this matching what was typed simply never saw the
             // rest, and the answer to a picker that cannot find a location is
             // to create it again.
-            const params = new URLSearchParams({ q: search, "page-size": "25" })
+            const params = new URLSearchParams({
+                q: search,
+                "page-size": String(PAGE_SIZE),
+            })
 
             return (
                 fetch(url + "?" + params.toString(), {
@@ -37,15 +45,16 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
                     // remove the current taxon from the completion list
                     // TODO: Allow filtering the parent from the taxon
                     // .then((data) => data.filter((t) => t.id.toString() == exclude))
-                    .then((data) => {
-                        if (!data || data.length === 0) {
+                    .then((data: PickerResponse) => {
+                        const rows = data?.options ?? []
+                        if (rows.length === 0) {
                             return reject("No results found")
                         }
                         // Same as location-field: SlimSelect keeps the
                         // selected option and appends these, so resolving the
                         // selected record again leaves two options for the
                         // one taxon.
-                        const options = data
+                        const options = rows
                             .filter((d) => String(d.id) !== el.value)
                             .map((d) => ({
                                 text: d.matchedSynonym
@@ -53,7 +62,10 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
                                     : d.text,
                                 value: String(d.id),
                             }))
-                        resolve(options)
+                        resolve([
+                        ...options,
+                        ...truncationNotice(options.length, data.total),
+                    ])
                     })
                     .catch((e) => {
                         console.error(e)
