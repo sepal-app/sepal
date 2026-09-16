@@ -189,7 +189,7 @@
   rendered nowhere — the save looked like it had done nothing."
   [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
   (let [flash (or flash (:flash z/*request*))
-        organization-name (get-in z/*request* [::z/context :organization-name])]
+        organization-name g/*organization-name*]
     (base/html
       [:div (merge {:x-data true} attrs)
        [:div

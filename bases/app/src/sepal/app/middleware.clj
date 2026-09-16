@@ -204,10 +204,13 @@
                                  (keep #(settings.i/get-value db %))
                                  (remove str/blank?)
                                  (first))]
-      (-> request
-          (assoc-in [::z/context :timezone] timezone)
-          (assoc-in [::z/context :organization-name] organization-name)
-          handler))))
+      ;; Bound as well as assoc'd: z/*request* is bound before this runs, so a
+      ;; renderer reading the context there would not see either of these.
+      (binding [g/*organization-name* organization-name]
+        (-> request
+            (assoc-in [::z/context :timezone] timezone)
+            (assoc-in [::z/context :organization-name] organization-name)
+            handler)))))
 
 (defn- setup-excluded-path?
   "Returns true if the path should be excluded from setup redirect.
