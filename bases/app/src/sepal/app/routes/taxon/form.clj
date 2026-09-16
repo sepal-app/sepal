@@ -86,8 +86,19 @@
                                             :id "parent-id"
                                             :read-only read-only
                                             :autocomplete "off"}
+                                   ;; A single select must hold a selection, so
+                                   ;; without this SlimSelect selects the first
+                                   ;; search result and hideSelected hides it —
+                                   ;; a search matching one taxon showed an
+                                   ;; empty list. It doubles as "no parent".
+                                   [:option {:value "" :data-placeholder "true"} ""]
                                    (when (:parent-id values)
-                                     [:option {:value (:parent-id values)}
+                                     ;; `selected` is load-bearing: the
+                                     ;; placeholder is the first option, and a
+                                     ;; browser takes the first one unless told
+                                     ;; otherwise.
+                                     [:option {:value (:parent-id values)
+                                               :selected "selected"}
                                       (:parent-name values)])])))
            (if read-only
              (form/input-field :label "Rank"
