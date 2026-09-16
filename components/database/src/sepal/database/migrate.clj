@@ -127,10 +127,26 @@
   "Run one migration and record its version, in a single transaction. Throws on
   failure, leaving the database as it was."
   [db-path [version sql]]
-  (let [script (str "begin transaction;\n"
-                    sql "\n"
-                    (format "insert into schema_version (version) values ('%s');\n" version)
-                    "commit;\n")
+  (let [script (str
+                 ;; A fresh sqlite3 process waits zero milliseconds for a lock,
+                 ;; so the loser of a write race fails outright instead of
+                 ;; waiting -- which is exactly what connection.clj sets
+                 ;; busy_timeout on the pool to prevent. The migration was the
+                 ;; one writer without it. It cost an outage on 2026-09-16: a
+                 ;; garden serving traffic held the write lock for a moment and
+                 ;; the taxon_fts backfill died on "database is locked (5)",
+                 ;; 503ing the first request after the deploy.
+                 ;;
+                 ;; Longer than the pool's 5s because a migration waits on
+                 ;; ordinary request traffic and is worth more than one request
+                 ;; is. It bounds the wait rather than removing it: a genuinely
+                 ;; stuck writer still fails the migration, and the garden then
+                 ;; does not start rather than serving a half-applied schema.
+                 "pragma busy_timeout=30000;\n"
+                 "begin transaction;\n"
+                 sql "\n"
+                 (format "insert into schema_version (version) values ('%s');\n" version)
+                 "commit;\n")
         file (File/createTempFile (str "sepal-migration-" version) ".sql")]
     (try
       (spit file script)

@@ -474,3 +474,34 @@
                     (str type " payload was rewritten"))))))
         (finally
           (fs/delete-tree dir))))))
+
+(deftest test-a-migration-waits-for-a-held-write-lock
+  ;; The regression test for the 2026-09-16 outage. A fresh sqlite3 process
+  ;; waits zero milliseconds for a lock, so a garden serving traffic held the
+  ;; write lock for a moment and the migration died on "database is locked
+  ;; (5)", 503ing the first request after the deploy. Every earlier migration
+  ;; was fast DDL, which is why the window had never been hit.
+  (testing "a migration waits out a concurrent writer rather than failing"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-migrate-lock"})
+          migrations (fs/create-dirs (fs/path dir "migrations"))
+          version "29990101000000"]
+      (try
+        (let [db-path (fresh-db dir)
+              holder (jdbc/get-connection (db.i/hikari-spec {:db-path db-path}))
+              released (promise)]
+          (spit (str (fs/path migrations (str version "_add_probe.sql")))
+                "create table probe (id integer primary key);\n")
+          ;; Hold the write lock the way a request being served does, and let
+          ;; go while the migration is still waiting.
+          (jdbc/execute! holder ["begin immediate"])
+          (jdbc/execute! holder ["create table lock_holder (id integer)"])
+          (future (Thread/sleep 1500)
+                  (jdbc/execute! holder ["commit"])
+                  (.close holder)
+                  (deliver released true))
+          (is (= {:applied [version]}
+                 (db.i/migrate! {:db-path db-path :migrations-dir (str migrations)}))
+              "the migration waits for the lock instead of failing outright")
+          @released
+          (is (seq (query db-path "select name from sqlite_master where name = 'probe'"))))
+        (finally (fs/delete-tree dir))))))

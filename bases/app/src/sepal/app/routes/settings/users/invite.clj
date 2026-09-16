@@ -103,8 +103,11 @@
     (not (str/blank? configured)) configured
     :else "You have been invited to Sepal"))
 
-(defn- send-invitation-email [mail {:keys [to full-name inviter-name inviter-email
-                                           accept-url from subject organization-name]}]
+(defn send-invitation-email
+  "Public so resend-invitation sends the same email. It was a private copy
+  there, and the two had already drifted: only this one names the garden."
+  [mail {:keys [to full-name inviter-name inviter-email
+                accept-url from subject organization-name]}]
   (let [content (mustache/render-resource "app/email/invitation.mustache"
                                           {:full-name full-name
                                            :inviter-name inviter-name
