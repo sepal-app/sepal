@@ -1,0 +1,88 @@
+#!/bin/bash
+# Run unit tests in parallel across multiple processes
+# Each process gets its own subset of namespaces and temp database
+
+set -euo pipefail
+
+# PARALLELISM=${1:-$(nproc)}  # Default to number of CPU cores
+PARALLELISM=${1:-4} # Default to number of CPU cores
+
+echo "Running tests with parallelism: $PARALLELISM"
+
+# Get test paths from deps.edn :test alias
+TEST_PATHS=$(grep -A 30 ':test {' deps.edn | grep -oP '(?<=\")[^\"]+/test(?=\")' | tr '\n' ' ')
+
+# Discover test namespaces by extracting ns form from each test file
+NAMESPACES=()
+for dir in $TEST_PATHS; do
+    if [[ -d "$dir" ]]; then
+        while IFS= read -r file; do
+            ns=$(grep -m1 "^(ns " "$file" | sed 's/(ns \([^ )]*\).*/\1/')
+            if [[ -n "$ns" ]]; then
+                NAMESPACES+=("$ns")
+            fi
+        done < <(find "$dir" -name "*_test.clj" | grep -v integration | sort)
+    fi
+done
+
+NS_COUNT=${#NAMESPACES[@]}
+echo "Found $NS_COUNT test namespaces"
+
+if [[ $NS_COUNT -eq 0 ]]; then
+    echo "No test namespaces found!"
+    exit 1
+fi
+
+# Adjust parallelism if we have fewer namespaces than processes
+if [[ $PARALLELISM -gt $NS_COUNT ]]; then
+    PARALLELISM=$NS_COUNT
+fi
+
+# Create temp directory for output logs
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
+# Build focus args for each group and write to temp files
+for i in "${!NAMESPACES[@]}"; do
+    group_idx=$((i % PARALLELISM))
+    echo "--focus ${NAMESPACES[$i]}" >>"$TMPDIR/group-$group_idx-args.txt"
+done
+
+# Run each group in background
+PIDS=()
+for g in $(seq 0 $((PARALLELISM - 1))); do
+    args_file="$TMPDIR/group-$g-args.txt"
+    if [[ -f "$args_file" ]]; then
+        # Read args from file and run
+        FOCUS_ARGS=$(cat "$args_file" | tr '\n' ' ')
+        echo "Starting group $g with $(wc -l <"$args_file") namespaces..."
+        eval "clojure -M:dev:test:test-runner :unit $FOCUS_ARGS" >"$TMPDIR/group-$g.log" 2>&1 &
+        PIDS+=($!)
+    fi
+done
+
+echo "Waiting for ${#PIDS[@]} test processes..."
+
+# Wait for all and collect exit codes
+EXIT_CODE=0
+for i in "${!PIDS[@]}"; do
+    if ! wait "${PIDS[$i]}"; then
+        EXIT_CODE=1
+        echo ""
+        echo "=== Group $i FAILED ==="
+    else
+        echo ""
+        echo "=== Group $i passed ==="
+    fi
+    cat "$TMPDIR/group-$i.log"
+done
+
+if [[ $EXIT_CODE -eq 0 ]]; then
+    echo ""
+    echo "All test groups passed!"
+else
+    echo ""
+    echo "Some test groups failed!"
+fi
+
+exit $EXIT_CODE
