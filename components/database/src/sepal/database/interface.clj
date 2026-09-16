@@ -8,6 +8,7 @@
             [sepal.database.honeysql :as honeysql]
             [sepal.database.migrate :as migrate]
             [sepal.database.sqlite :as sqlite]
+            [sepal.database.timeout :as timeout]
             [zodiac.ext.sql :as z.sql]))
 
 (defn init []
@@ -25,6 +26,13 @@
 (def exists? #'z.sql/exists?)
 
 (def hikari-spec #'connection/hikari-spec)
+
+;; A list page runs whatever the reader typed into the search box, so its two
+;; queries are the ones that can be made arbitrarily expensive from outside.
+;; These are those two, under a deadline.
+(def execute-bounded! #'timeout/execute!)
+(def count-bounded #'timeout/count)
+(def default-query-timeout-ms timeout/default-timeout-ms)
 
 (defmethod ig/init-key ::extensions [_ {:keys [zodiac extensions] :as config}]
   (let [db (::z.sql/db zodiac)

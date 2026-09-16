@@ -132,11 +132,12 @@
         stmt (search.i/compile-query :contact ast base-stmt)
 
         ;; Execute queries
-        total (db.i/count db stmt)
-        rows (db.i/execute! db (assoc stmt
+        total (db.i/count-bounded db stmt)
+        rows (db.i/execute-bounded! db (assoc stmt
                                       :limit page-size
                                       :offset offset
-                                      :order-by [:c.name]))]
+                                      :order-by (concat (search.i/relevance-order :contact ast)
+                                                                [[:c.name :asc]])))]
 
     (cond
       (= (get headers "accept") "application/json")

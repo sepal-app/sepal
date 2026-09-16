@@ -274,11 +274,12 @@
 
         ;; Execute queries in parallel
         [rows total] (pcalls
-                       #(db.i/execute! db (assoc stmt
+                       #(db.i/execute-bounded! db (assoc stmt
                                                  :limit page-size
                                                  :offset offset
-                                                 :order-by [[:t.name :asc]]))
-                       #(db.i/count db count-stmt))]
+                                                 :order-by (concat (search.i/relevance-order :taxon ast)
+                                                                   [[:t.name :asc]])))
+                       #(db.i/count-bounded db count-stmt))]
 
     (cond
       ;; We return JSON for autocomplete fields. Only this branch merges the

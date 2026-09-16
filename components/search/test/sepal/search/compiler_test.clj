@@ -663,3 +663,36 @@
                   test-fields
                   {:terms [] :filters [{:field "private" :value "yes" :negated false}]}
                   base-stmt)))))
+
+(deftest relevance-order-test
+  (testing "four bands over the field the free-text search reads"
+    (let [[[expr dir]] (compiler/relevance-order test-fields {:terms ["quercus"]})]
+      (is (= :asc dir))
+      (is (= [:case
+              [:= [:lower :t.name] "quercus"] 0
+              [:= [:instr [:lower :t.name] "quercus"] 1] 1
+              [:> [:instr [:|| " " [:lower :t.name]] " quercus"] 0] 2
+              :else 3]
+             expr))))
+
+  (testing "multiple terms band on the whole phrase, so `quercus alb` puts
+            Quercus alba above a name that only matches one word"
+    (let [[[expr _]] (compiler/relevance-order test-fields {:terms ["quercus" "alb"]})]
+      (is (= "quercus alb" (get-in expr [1 2])))))
+
+  (testing "nothing to rank by without free-text terms"
+    (is (nil? (compiler/relevance-order test-fields {:terms []})))
+    (is (nil? (compiler/relevance-order test-fields {:terms nil})))
+    (is (nil? (compiler/relevance-order test-fields
+                                        {:filters [{:field "code" :value "X"}]}))))
+
+  (testing "nothing to rank by when the resource has no FTS field"
+    (is (nil? (compiler/relevance-order {:code {:column :m.code :type :text}}
+                                        {:terms ["quercus"]}))))
+
+  (testing "the ordering never reaches back into the FTS table. A per-row
+            lookup there is what made a two-letter query take ten seconds, so
+            this is the property worth pinning rather than the shape alone."
+    (let [sql (pr-str (compiler/relevance-order test-fields {:terms ["pr"]}))]
+      (is (not (re-find #"taxon_fts|bm25|rank" sql)) sql))))
+

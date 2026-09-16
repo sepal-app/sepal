@@ -250,6 +250,39 @@
                         :from [fts-table]
                         :where [:match fts-table match]}]))))
 
+(defn relevance-order
+  "Order-by terms putting the closest names first, or nil when the query has no
+  free-text part.
+
+  Four bands over the field the free-text search reads: the query as the whole
+  value, as the start of it, as the start of a word in it, and then everything
+  else the FTS match turned up. `Aa` is a genus, so two characters has to keep
+  working and an exact match has to win outright.
+
+  All four are string tests against a value already on the row, so they cost
+  the sort that was happening anyway. The bm25 ranking this replaces had to
+  score every matched row against every term a prefix expands to, which is
+  cheap for `prunus` and 10s for `pr`.
+
+  Returns terms to put before a caller's own ordering, not to replace it. Ties
+  inside a band are the common case, and an unbroken tie orders arbitrarily,
+  which a page offset turns into rows repeated on one page and missing from the
+  next."
+  [fields {:keys [terms]}]
+  (when (seq terms)
+    (when-let [[_ {:keys [column]}] (primary-fts-field fields)]
+      (let [query (str/lower-case (str/join " " terms))
+            value [:lower column]]
+        [[[:case
+           [:= value query] 0
+           [:= [:instr value query] 1] 1
+           ;; A space in front of both, so the query has to start a word rather
+           ;; than land mid-one: a curator typing an epithet wants Asimina
+           ;; triloba above a name that merely contains the letters.
+           [:> [:instr [:|| " " value] (str " " query)] 0] 2
+           :else 3]
+          :asc]]))))
+
 (defn compile-query
   "Compile a parsed AST into HoneySQL for a specific resource context.
 

@@ -178,6 +178,20 @@
   (let [fields (get-fields resource-type)]
     (compiler/compile-query fields ast base-stmt)))
 
+(defn relevance-order
+  "Order-by terms putting the closest matches for the query's free-text part
+  first, or nil when it has none.
+
+   Put these before the list's own ordering rather than instead of it: they
+   sort matches into bands and leave everything inside a band to whatever the
+   caller already sorted by.
+
+   Example:
+     (assoc stmt :order-by (concat (relevance-order :taxon ast)
+                                   [[:t.name :asc]]))"
+  [resource-type ast]
+  (compiler/relevance-order (get-fields resource-type) ast))
+
 ;; =============================================================================
 ;; UI Helpers
 ;; =============================================================================
