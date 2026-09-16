@@ -257,6 +257,13 @@
   background: var(--color-surface);
   width: 100%;
 }
+/* Placed after .ss-main rather than beside .spl-input--edited: the two
+ * selectors have the same specificity, so the resting field colours above
+ * would win and an edited picker would look untouched. */
+.ss-main.spl-input--edited {
+  background: var(--color-brand-tint);
+  border-color: var(--color-brand);
+}
 .ss-main:focus,
 .ss-main:focus-visible {
   outline: 2px solid var(--color-brand);
