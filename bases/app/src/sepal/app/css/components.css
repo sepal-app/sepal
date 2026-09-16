@@ -98,6 +98,16 @@
   background: var(--color-surface);
   width: 100%;
 }
+/* A field you have changed but not yet saved. The form as a whole already
+ * knew it was dirty; this says which parts of it a Save is about to write.
+ * Brand tint rather than a border change, so it reads at a glance down a
+ * column of fields and does not compete with the invalid state below — which
+ * comes after this rule and so wins on a field that is both. */
+.spl-input--edited {
+  background: var(--color-brand-tint);
+  border-color: var(--color-brand);
+}
+
 /* A 1px border in a different colour was the only signal a field was
  * rejected, and danger red against the resting field green is exactly the
  * pair a red-green deficiency flattens. The tint changes lightness rather
@@ -1010,6 +1020,14 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 .spl-panel-identity { min-width: 0; }
+/* The same actions the record page carries in its top bar, for the panel a
+ * list opens. Right-aligned under the identity so it does not crowd the close
+ * button, and on the panel's own gutter. */
+.spl-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 14px 12px;
+}
 .spl-panel-code {
   font-family: var(--font-mono);
   font-size: 12px;

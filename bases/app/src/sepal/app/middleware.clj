@@ -189,13 +189,24 @@
 (defn wrap-org-settings
   "Middleware that loads organization settings into the request context.
    Currently loads:
-   - :timezone - Organization timezone string (defaults to 'UTC')"
+   - :timezone - Organization timezone string (defaults to 'UTC')
+   - :organization-name - What the garden calls itself, or nil
+
+   The short name first: it is what a garden picks to be called in passing,
+   which is what a browser tab and an email subject want. Nil rather than a
+   placeholder, so a caller can leave the part out entirely instead of writing
+   the word \"Organization\" into a page title."
   [handler]
   (fn [{:keys [::z/context] :as request}]
     (let [{:keys [db]} context
-          timezone (or (settings.i/get-value db "organization.timezone") "UTC")]
+          timezone (or (settings.i/get-value db "organization.timezone") "UTC")
+          organization-name (->> ["organization.short_name" "organization.long_name"]
+                                 (keep #(settings.i/get-value db %))
+                                 (remove str/blank?)
+                                 (first))]
       (-> request
           (assoc-in [::z/context :timezone] timezone)
+          (assoc-in [::z/context :organization-name] organization-name)
           handler))))
 
 (defn- setup-excluded-path?

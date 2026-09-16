@@ -1,7 +1,8 @@
 {{#full-name}}Hello {{full-name}},{{/full-name}}
 {{^full-name}}Hello,{{/full-name}}
 
-{{inviter-name}} ({{inviter-email}}) has invited you to join Sepal, a botanical collection management system.
+{{#organization-name}}{{inviter-name}} ({{inviter-email}}) has invited you to join {{organization-name}} on Sepal, a botanical collection management system.{{/organization-name}}
+{{^organization-name}}{{inviter-name}} ({{inviter-email}}) has invited you to join Sepal, a botanical collection management system.{{/organization-name}}
 
 To accept this invitation and set up your account, click the link below:
 

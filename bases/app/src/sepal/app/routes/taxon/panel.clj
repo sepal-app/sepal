@@ -7,6 +7,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.notes :as ui.notes]
             [sepal.app.ui.resource-panel :as panel]
@@ -57,7 +58,7 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [taxon parent stats synonyms notes note-count activities activity-count timezone on-close]}]
+  [& {:keys [taxon parent stats synonyms notes note-count activities activity-count timezone on-close actions]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id distribution]} taxon
         {:keys [accession-count material-count]} stats]
     (panel/panel-container
@@ -67,7 +68,8 @@
         (panel/panel-header
           :title (taxon-name/render name)
           :subtitle (when author author)
-          :on-close on-close)
+          :on-close on-close
+          :actions actions)
 
         ;; Summary section
         (panel/collapsible-section
@@ -197,4 +199,8 @@
         :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
+        ;; Only here, not from a record page: that page already carries
+        ;; the same menu in its top bar, and a second one would put a
+        ;; second #delete-modal-container on the page.
+        :actions (taxon.shared/actions :taxon resource)
         :timezone timezone))))

@@ -249,10 +249,28 @@
         ;; pagination and the total stay consistent with each other. An empty id
         ;; set still emits a clause -- dropping it would widen the search to
         ;; every taxon, the opposite of what a filter means.
-        stmt (if synonym-filter
-               (let [clause [:in :t.id (or (seq (:ids synonym-hit)) [-1])]]
-                 (update stmt :where #(if % [:and % clause] clause)))
-               stmt)
+        narrow-to-synonyms
+        (fn [statement]
+          (if synonym-filter
+            (let [clause [:in :t.id (or (seq (:ids synonym-hit)) [-1])]]
+              (update statement :where #(if % [:and % clause] clause)))
+            statement))
+
+        stmt (narrow-to-synonyms stmt)
+
+        ;; The count is compiled from a base without the parent join. That
+        ;; join exists to display a parent's name, and joining on p.id — the
+        ;; primary key — it matches at most one row, so it cannot change a
+        ;; count. Counting through it made SQLite scan 453k rows and do a
+        ;; 453k-iteration index search for nothing: 88ms against 1.6ms, and
+        ;; the whole cost of the page.
+        ;;
+        ;; Compiled rather than stripped, because `parent:Acer` puts p.name in
+        ;; the WHERE and so still needs the join — the compiler adds it here
+        ;; since the alias is no longer already present.
+        count-stmt (-> (search.i/compile-query :taxon ast {:select [[:t.id :id]]
+                                                           :from [[:taxon :t]]})
+                       (narrow-to-synonyms))
 
         ;; Execute queries in parallel
         [rows total] (pcalls
@@ -260,7 +278,7 @@
                                                  :limit page-size
                                                  :offset offset
                                                  :order-by [[:t.name :asc]]))
-                       #(db.i/count db stmt))]
+                       #(db.i/count db count-stmt))]
 
     (cond
       ;; We return JSON for autocomplete fields. Only this branch merges the

@@ -217,23 +217,30 @@
    Options:
    - :title     - Main title (e.g., accession code)
    - :subtitle  - Optional subtitle (e.g., taxon name)
-   - :on-close  - When provided, shows close button (for list page panel)"
-  [& {:keys [title subtitle on-close]}]
+   - :on-close  - When provided, shows close button (for list page panel)
+   - :actions   - When provided, an action menu under the identity. Passed by
+                  the panel route only: a record page already carries the same
+                  menu in its top bar, and a second one would put a second
+                  #delete-modal-container on the page."
+  [& {:keys [title subtitle on-close actions]}]
   ;; Same identity treatment as a record page's header: the identifier in mono
   ;; brand green above the name. The panel and the page it opens from should
   ;; not label the same record two different ways.
-  [:div {:class "spl-panel-header"}
-   [:div {:class "spl-panel-identity"}
-    [:p {:class "spl-panel-code"} title]
-    (when subtitle
-      [:p {:class "spl-panel-name"} subtitle])]
-   (when on-close
-     (tooltip/wrap
-       [:button {:class "spl-panel-close"
-                 :type "button"
-                 :data-panel-close ""
-                 :aria-label "Close panel"
-                 :x-on:click on-close}
-        (lucide/x :class "w-4 h-4")]
-       "Close panel"
-       :side "left"))])
+  (list
+    [:div {:class "spl-panel-header"}
+     [:div {:class "spl-panel-identity"}
+      [:p {:class "spl-panel-code"} title]
+      (when subtitle
+        [:p {:class "spl-panel-name"} subtitle])]
+     (when on-close
+       (tooltip/wrap
+         [:button {:class "spl-panel-close"
+                   :type "button"
+                   :data-panel-close ""
+                   :aria-label "Close panel"
+                   :x-on:click on-close}
+          (lucide/x :class "w-4 h-4")]
+         "Close panel"
+         :side "left"))]
+    (when actions
+      [:div {:class "spl-panel-actions"} actions])))

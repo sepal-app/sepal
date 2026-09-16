@@ -155,6 +155,31 @@
      (when code [:p {:class "spl-record-code"} code])
      (when name [:p {:class "spl-record-name"} name])]))
 
+(defn- crumb-text
+  "The words in a breadcrumb item.
+
+  They are hiccup — a link, or a scientific name split into italic and upright
+  runs — so this walks for strings rather than assuming one. Attribute maps are
+  not vectors and so are never descended into, which keeps hrefs out of it."
+  [item]
+  (some-> (->> (tree-seq vector? seq item)
+               (filter string?)
+               (apply str))
+          (str/replace #"\s+" " ")
+          (str/trim)
+          (not-empty)))
+
+(defn document-title
+  "What the browser tab says: where you are, then whose garden, then Sepal.
+
+  Most specific first, because a tab truncates from the right and the page is
+  what tells two Sepal tabs apart. Any part that is unknown is left out rather
+  than filled with a placeholder."
+  [& {:keys [breadcrumbs organization-name]}]
+  (->> [(crumb-text (last breadcrumbs)) organization-name "Sepal"]
+       (remove nil?)
+       (str/join " — ")))
+
 (defn page
   "The application shell.
 
@@ -163,7 +188,8 @@
   every record save left its \"saved successfully\" sitting in the session and
   rendered nowhere — the save looked like it had done nothing."
   [& {:keys [breadcrumbs content flash footer page-title page-title-buttons attrs]}]
-  (let [flash (or flash (:flash z/*request*))]
+  (let [flash (or flash (:flash z/*request*))
+        organization-name (get-in z/*request* [::z/context :organization-name])]
     (base/html
       [:div (merge {:x-data true} attrs)
        [:div
@@ -207,4 +233,6 @@
               footer])
 
            [:script {:type "module"
-                     :src (html/static-url "app/ui/page.ts")}]]]]]])))
+                     :src (html/static-url "app/ui/page.ts")}]]]]]]
+      :title (document-title :breadcrumbs breadcrumbs
+                             :organization-name organization-name))))

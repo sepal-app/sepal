@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.users.invite
-  (:require [clojure.tools.logging :as log]
+  (:require [clojure.string :as str]
+            [clojure.tools.logging :as log]
             [failjure.core :as f]
             [pogonos.core :as mustache]
             [sepal.app.flash :as flash]
@@ -89,11 +90,26 @@
 (defn- build-accept-url [app-base-url token]
   (str app-base-url (z/url-for auth.routes/accept-invitation nil {:token token})))
 
-(defn- send-invitation-email [mail {:keys [to full-name inviter-name inviter-email accept-url from subject]}]
+(defn invitation-subject
+  "What the invitation is called in an inbox.
+
+  The garden's name leads, because that is what tells the recipient which
+  invitation this is — someone may keep records for more than one. Falls back
+  to the configured subject, and then to a plain one, so a garden that has not
+  named itself still sends a sensible email."
+  [organization-name configured]
+  (cond
+    organization-name (str "You have been invited to " organization-name " on Sepal")
+    (not (str/blank? configured)) configured
+    :else "You have been invited to Sepal"))
+
+(defn- send-invitation-email [mail {:keys [to full-name inviter-name inviter-email
+                                           accept-url from subject organization-name]}]
   (let [content (mustache/render-resource "app/email/invitation.mustache"
                                           {:full-name full-name
                                            :inviter-name inviter-name
                                            :inviter-email inviter-email
+                                           :organization-name organization-name
                                            :accept-url accept-url})]
     (mail.i/send-message mail {:from from
                                :to to
@@ -107,7 +123,7 @@
       {:email ["This email is already registered"]})))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [app-base-url db mail token-service
+  (let [{:keys [app-base-url db mail token-service organization-name
                 invitation-email-from invitation-email-subject]} context]
     (case request-method
       :post
@@ -137,8 +153,11 @@
                                           :inviter-name inviter-name
                                           :inviter-email (:user/email viewer)
                                           :accept-url accept-url
+                                          :organization-name organization-name
                                           :from invitation-email-from
-                                          :subject invitation-email-subject})
+                                          :subject (invitation-subject
+                                                     organization-name
+                                                     invitation-email-subject)})
                   (-> (http/see-other settings.routes/users)
                       (flash/add-message (str "Invitation sent to " email)))
                   (catch Exception e

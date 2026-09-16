@@ -8,6 +8,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.notes :as ui.notes]
@@ -97,7 +98,7 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [material accession taxon location history notes note-count
-             activities activity-count timezone on-close]}]
+             activities activity-count timezone on-close actions]}]
   (let [{:material/keys [code material-type quantity status]} material
         sci-name (:taxon/name taxon)]
     (panel/panel-container
@@ -107,7 +108,8 @@
         (panel/panel-header
           :title code
           :subtitle (when accession (:accession/code accession))
-          :on-close on-close)
+          :on-close on-close
+          :actions actions)
 
         ;; Summary section
         (panel/collapsible-section
@@ -229,6 +231,10 @@
         :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
+        ;; Only here, not from a record page: that page already carries
+        ;; the same menu in its top bar, and a second one would put a
+        ;; second #delete-modal-container on the page.
+        :actions (material.shared/actions :material resource)
         :timezone timezone))))
 
 (defn history-handler

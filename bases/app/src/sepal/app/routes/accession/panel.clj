@@ -4,6 +4,7 @@
   (:require [clojure.string :as str]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
+            [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.contact.routes :as contact.routes]
@@ -45,7 +46,7 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [accession taxon supplier intended-location stats notes note-count
-             activities activity-count timezone on-close]}]
+             activities activity-count timezone on-close actions]}]
   (let [{:accession/keys [id code provenance-type received-type quantity-received
                           date-received date-accessioned]} accession
         {:keys [material-count]} stats
@@ -57,7 +58,8 @@
         (panel/panel-header
           :title code
           :subtitle (when taxon (taxon-name/render sci-name))
-          :on-close on-close)
+          :on-close on-close
+          :actions actions)
 
         ;; Summary section
         (panel/collapsible-section
@@ -181,4 +183,8 @@
         :note-count (:note-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
+        ;; Only here, not from a record page: that page already carries the
+        ;; same menu in its top bar, and a second one would put a second
+        ;; #delete-modal-container on the page.
+        :actions (accession.shared/actions :accession resource)
         :timezone timezone))))
