@@ -28,9 +28,19 @@
                               :values values)))
 
 (defn render [& {:keys [errors location values panel-data timezone]}]
-  (page/page :page-title-buttons (ui.actions/menu
-                                   :delete-url (z/url-for location.routes/delete
-                                                          {:id (:location/id location)}))
+  (page/page :page-title-buttons
+             (let [id (:location/id location)
+                   archived? (= :archived (:location/status location))]
+               (ui.actions/menu
+                 ;; A location that has ever held material cannot be deleted —
+                 ;; the move log names it — so archiving is the only way it
+                 ;; leaves the garden, and it belongs beside Delete rather than
+                 ;; behind it.
+                 :archive-url (when-not archived?
+                                (z/url-for location.routes/archive {:id id}))
+                 :unarchive-url (when archived?
+                                  (z/url-for location.routes/unarchive {:id id}))
+                 :delete-url (z/url-for location.routes/delete {:id id})))
              :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (location.form/footer-buttons))
                                                :errors errors

@@ -16,9 +16,14 @@
 
 (use-fixtures :once default-system-fixture)
 
-(def test-location-data
+(defonce ^:private code-seq (atom 0))
+
+(defn- test-location-data
+  "Fresh data per call. A location code is unique in the garden and these tests
+  share one database, so a fixed code fails whichever test runs second."
+  []
   {:name "Test Location"
-   :code "LOC-001"
+   :code (format "LOC-%03d" (swap! code-seq inc))
    :description ""})
 
 (deftest test-update-location-validation-errors
@@ -27,7 +32,7 @@
                                    :password "testpassword123"
                                    :role :editor}}
     (fn [{:keys [user]}]
-      (let [location (location.i/create! *db* test-location-data)
+      (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
             detail-url (str "/location/" (:location/id location) "/")
             {:keys [response] :as sess} (-> sess
@@ -62,7 +67,7 @@
                                    :password "testpassword123"
                                    :role :editor}}
     (fn [{:keys [user]}]
-      (let [location (location.i/create! *db* test-location-data)
+      (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess
                                    (peri/request (str "/location/" (:location/id location) "/")))
@@ -80,7 +85,7 @@
                                    :password "testpassword123"
                                    :role :editor}}
     (fn [{:keys [user]}]
-      (let [location (location.i/create! *db* test-location-data)
+      (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess
                                    (peri/request (str "/location/" (:location/id location) "/")))

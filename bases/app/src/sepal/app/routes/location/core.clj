@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.location.archive :as archive]
             [sepal.app.routes.location.create :as create]
             [sepal.app.routes.location.delete :as delete]
             [sepal.app.routes.location.detail :as detail]
@@ -38,5 +39,16 @@
                                  location.perm/delete (constantly routes/detail))]]
                  :get #'delete/handler
                  :post #'delete/handler}]
+    ;; Archiving is an edit, not a delete: it is reversible, and it is the only
+    ;; way a location with a history ever leaves the garden.
+    ["/archive/" {:name routes/archive
+                  :middleware [[(middleware/require-permission-or-redirect
+                                  location.perm/edit (constantly routes/detail))]]
+                  :get #'archive/handler
+                  :post #'archive/handler}]
+    ["/unarchive/" {:name routes/unarchive
+                    :middleware [[(middleware/require-permission-or-redirect
+                                    location.perm/edit (constantly routes/detail))]]
+                    :post #'archive/unarchive-handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]]])

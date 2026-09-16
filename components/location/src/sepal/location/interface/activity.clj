@@ -7,6 +7,8 @@
 (def created :location/created)
 (def deleted :location/deleted)
 (def updated :location/updated)
+(def archived :location/archived)
+(def unarchived :location/unarchived)
 
 (def LocationActivityData
   [:map
@@ -31,4 +33,10 @@
   LocationActivityData)
 
 (defmethod activity.i/data-schema deleted [_]
+  LocationActivityData)
+
+(defmethod activity.i/data-schema archived [_]
+  LocationActivityData)
+
+(defmethod activity.i/data-schema unarchived [_]
   LocationActivityData)

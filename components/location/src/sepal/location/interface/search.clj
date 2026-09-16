@@ -25,6 +25,14 @@
                   :type :id
                   :label "ID"}
 
+    ;; A retired location is out of the way unless asked for: `archived:true`
+    ;; lists them, `archived:false` the rest, and a query that says neither
+    ;; gets the active ones. The column holds a word rather than a flag, so the
+    ;; comparison is the column and the boolean tests its result.
+    :archived    {:column [:= :l.status "archived"]
+                  :type :boolean
+                  :label "Archived"}
+
     ;; Related: "contains taxon X" (through material → accession → taxon)
     :taxon    {:column :t.name
                :type :fts

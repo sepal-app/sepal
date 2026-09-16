@@ -7,3 +7,5 @@
 
 (def panel ::panel)
 (def delete ::delete)
+(def archive ::archive)
+(def unarchive ::unarchive)

@@ -11,7 +11,8 @@
   passed `:page-title-buttons` twice in one call to `ui.page/page`, and the
   later key won, so the Delete button never rendered at all. There is one
   argument to pass now, so there is nothing to pass twice."
-  (:require [sepal.app.ui.delete :as ui.delete]
+  (:require [sepal.app.ui.archive :as ui.archive]
+            [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.icons.heroicons :as heroicons]))
 
 (defn- menu-link [{:keys [label href]}]
@@ -28,14 +29,16 @@
               the container its confirmation dialog swaps into. Passing this
               rather than an item is what keeps `ui.delete` the only place that
               knows how that dialog is fetched and opened.
+  :archive-url / :unarchive-url render Archive or Restore above the rule, on
+              the same terms. A record has one or the other, never both.
 
   Returns nil when there is nothing to show, so a page with no actions renders
   no empty bar."
-  [& {:keys [primary items delete-url]}]
-  (when (or primary (seq items) delete-url)
+  [& {:keys [primary items delete-url archive-url unarchive-url]}]
+  (when (or primary (seq items) delete-url archive-url unarchive-url)
     [:div {:class "spl-actions"}
      primary
-     (when (or (seq items) delete-url)
+     (when (or (seq items) delete-url archive-url unarchive-url)
        [:div {:class "spl-actions-menu"
               :x-data "{open: false}"
               :x-id "['actions-menu']"
@@ -57,9 +60,16 @@
               ;; painted on first render, and it sits over the page.
               :style "display: none;"}
          (map menu-link items)
+         (when archive-url
+           [:li (ui.archive/menu-item :archive-url archive-url)])
+         (when unarchive-url
+           [:li (ui.archive/restore-item :unarchive-url unarchive-url)])
          (when delete-url
            (list
-             (when (seq items) [:li [:hr {:class "spl-menu-sep"}]])
+             (when (or (seq items) archive-url unarchive-url)
+               [:li [:hr {:class "spl-menu-sep"}]])
              [:li (ui.delete/menu-item :delete-url delete-url)]))]])
      (when delete-url
-       (ui.delete/modal-container))]))
+       (ui.delete/modal-container))
+     (when archive-url
+       (ui.archive/modal-container))]))

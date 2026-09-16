@@ -57,8 +57,12 @@
 
 (defn dialog
   "The confirmation. With blockers it explains; without them it offers the
-  delete."
-  [& {:keys [action label blockers]}]
+  delete.
+
+  `archive-url` turns one blocker from a dead end into a next step. A location
+  named by the move log can never be deleted — no action a curator takes will
+  clear that — so a dialog that only says no leaves them nowhere to go."
+  [& {:keys [action label blockers archive-url]}]
   [:dialog#delete_modal {:class "spl-modal"}
    [:div {:class "spl-modal-box"}
     [:h3 {:class "font-bold text-lg"} (str "Delete " label "?")]
@@ -68,13 +72,22 @@
        [:ul {:class "list-disc pl-5"}
         (for [blocker blockers]
           [:li {:key (:reason blocker)} (app.delete/blocker-label blocker)])]
-       [:p {:class "text-text-soft text-sm"}
-        "Delete or move those records first."]
+       (if (and archive-url (= [:material-change] (mapv :reason blockers)))
+         [:p {:class "text-text-soft text-sm"}
+          "The move log will always name this location, so it cannot be
+           deleted. Archive it instead: it keeps its place in the history and
+           stops appearing when you file material."]
+         [:p {:class "text-text-soft text-sm"}
+          "Delete or move those records first."])
        [:div {:class "spl-modal-actions"}
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "delete_modal.close()"}
-         "Close"]]]
+         "Close"]
+        (when (and archive-url (= [:material-change] (mapv :reason blockers)))
+          [:a {:class "spl-btn spl-btn--primary"
+               :href archive-url}
+           "Archive instead"])]]
       [:form {:method "post"
               :action action
               :class "py-4 flex flex-col gap-2"}

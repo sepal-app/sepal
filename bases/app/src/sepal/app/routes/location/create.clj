@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.create
   (:require [failjure.core :as f]
+            [sepal.app.codes :as codes]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.form :as location.form]
@@ -42,10 +43,21 @@
   (let [{:keys [db]} context]
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      saved (f/try* (create! db (:user/id viewer) data))]
-        (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
-            (flash/success "Location created successfully"))
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+        (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
+          (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
+              (flash/success "Location created successfully"))
+          (f/when-failed [e]
+            ;; A code already in the garden is the one failure the form can
+            ;; answer for itself. Saying so on the field beats a flash on a
+            ;; reloaded page, which is what a second location with the same
+            ;; code used to cost -- back when nothing refused it at all.
+            (if (codes/unique-violation? e)
+              (codes/taken-response (:code data)
+                                    #(location.form/code-input :value (:code data)
+                                                               :errors %))
+              (http/failure-flash e (http/hx-redirect location.routes/new)
+                                  "Could not create the location"))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect location.routes/new) "Could not create the location")))
 

@@ -123,8 +123,22 @@
         base-stmt {:select [:l.*]
                    :from [[:location :l]]}
 
+        ;; The pickers ask for JSON. They exist to file material somewhere, and
+        ;; an archived location takes none, so they never offer one whatever
+        ;; the query says.
+        picker? (= (get headers "accept") "application/json")
+
+        ;; The list hides them too, until asked. `archived:true` lists the
+        ;; retired ones and `archived:false` the rest; either way the reader
+        ;; has said what they want and this leaves the query alone.
+        asked-about-archived? (boolean (some #(= "archived" (:field %))
+                                             (:filters ast)))
+
         ;; Compile search query (adds WHERE clause and joins)
-        stmt (search.i/compile-query :location ast base-stmt)
+        stmt (cond-> (search.i/compile-query :location ast base-stmt)
+               (or picker? (not asked-about-archived?))
+               (update :where #(let [active [:= :l.status "active"]]
+                                 (if % [:and % active] active))))
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)

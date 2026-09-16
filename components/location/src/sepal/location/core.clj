@@ -14,6 +14,9 @@
 (defn update! [db id data]
   (store.i/update! db :location id data spec/UpdateLocation spec/Location))
 
+(defn set-status! [db id status]
+  (update! db id {:status status}))
+
 (defn delete! [db id]
   (jdbc.sql/delete! db :location {:id id})
   nil)
@@ -21,8 +24,15 @@
 (create-ns 'sepal.location.interface)
 (alias 'loc.i 'sepal.location.interface)
 
+(defonce ^:private factory-code-seq (atom 0))
+
 (defn factory [{:keys [db] :as args}]
-  (let [data (mg/generate spec/CreateLocation)
+  (let [data (-> (mg/generate spec/CreateLocation)
+                 ;; A location code is unique in the garden, and the spec asks
+                 ;; only for two characters -- generated ones collide often
+                 ;; enough to fail a suite at random, on whichever test drew
+                 ;; second.
+                 (assoc :code (format "L%05d" (swap! factory-code-seq inc))))
         result (create! db data)]
     (vary-meta result assoc :db db)))
 

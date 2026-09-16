@@ -32,7 +32,8 @@ CREATE TABLE location (
   description text,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, status text not null default 'active'
+  check(status in ('active', 'archived'))) strict;
 CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
@@ -366,6 +367,8 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
           (select group_concat(json_extract(value, '$.name'), ' ')
              from json_each(new.vernacular_names)));
 end;
+CREATE INDEX location_status_idx on location (status);
+CREATE UNIQUE INDEX location_code_idx ON location (code);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -467,3 +470,5 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260913130000', '2026-09-13 18:38:31');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260914120000', '2026-09-15 01:13:12');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916120000', '2026-09-16 13:01:15');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916140000', '2026-09-16 20:09:46');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916150000', '2026-09-16 20:09:46');

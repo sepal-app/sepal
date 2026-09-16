@@ -4,6 +4,17 @@
 (defn footer-buttons []
   (form/footer-buttons :form-event "location-form" :on-cancel :back))
 
+(defn code-input
+  "The Code control on its own, so a save refused for a taken code can swap the
+  field back carrying the error rather than reloading the page and losing what
+  was typed."
+  [& {:keys [value errors]}]
+  (form/input-field :label "Code"
+                    :name "code"
+                    :required true
+                    :value value
+                    :errors errors))
+
 (defn form [& {:keys [action errors values]}]
   [:div
    (form/form
@@ -24,11 +35,7 @@
                              :required true
                              :value (:name values)
                              :errors (:name errors))
-           (form/input-field :label "Code"
-                             :name "code"
-                             :required true
-                             :value (:code values)
-                             :errors (:code errors))]
+           (code-input :value (:code values) :errors (:code errors))]
           (form/textarea-field :label "Description"
                                :name "description"
                                :value (:description values)

@@ -1,0 +1,22 @@
+-- A location code is unique in the garden, the way an accession code already
+-- is. Nothing enforced it, so a location saved twice simply became two rows
+-- with the same code and name -- and the picker, which shows a bounded number
+-- of matches, could hide the first one and invite exactly that.
+--
+-- Run this before deploying, on every live database. A duplicate makes the
+-- migration fail, and a failed migration means the instance does not start:
+--
+--   select code, count(*) from location group by code having count(*) > 1;
+--
+-- To resolve one, move any material off the copy and delete it. Which copy
+-- material is standing in:
+--
+--   select l.id, l.code, l.name, count(m.id) as material
+--     from location l left join material m on m.location_id = l.id
+--    where l.code in (select code from location group by code having count(*) > 1)
+--    group by l.id order by l.code, material desc;
+--
+-- A copy holding no material and named by no move can be deleted outright; one
+-- named by a move can be archived instead, which is what archiving is for.
+
+CREATE UNIQUE INDEX location_code_idx ON location (code);

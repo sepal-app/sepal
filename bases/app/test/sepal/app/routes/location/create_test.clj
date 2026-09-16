@@ -4,6 +4,8 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.database.interface :as db.i]
+            [sepal.location.interface :as location.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -72,3 +74,33 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "#name-errors"))
             "Name field should have error container with id name-errors")))))
+
+(deftest test-a-second-location-cannot-take-a-code-already-in-use
+  ;; Nothing refused a duplicate code, so a location saved twice simply became
+  ;; two rows with the same code and name.
+  (tf/testing "POST with a code another location already has"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [existing (location.i/create! *db* {:code "DUPE" :name "First bed"})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess "/location/new/")
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess "/location/new/"
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :name "Second bed"
+                                                      :code "DUPE"
+                                                      :description ""})]
+        (try
+          (is (= 422 (:status response))
+              (str "Expected 422, got " (:status response)))
+          (is (re-find #"already taken" (:body response))
+              "the field says which code is taken rather than reloading the page")
+          (is (= 1 (count (db.i/execute! *db* {:select [:id] :from [:location]
+                                               :where [:= :code "DUPE"]})))
+              "and no second row was written")
+          (finally
+            (location.i/delete! *db* (:location/id existing))))))))
+

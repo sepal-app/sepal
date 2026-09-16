@@ -18,7 +18,9 @@
     (ui.delete/dialog
       :action (z/url-for location.routes/delete {:id (:location/id location)})
       :label (label location)
-      :blockers (app.delete/blockers resource-type db location))))
+      :blockers (app.delete/blockers resource-type db location)
+      :archive-url (z/url-for location.routes/archive
+                              {:id (:location/id location)}))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
   (let [{:keys [db resource]} context]
