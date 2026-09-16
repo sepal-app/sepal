@@ -83,7 +83,7 @@
    Arguments:
      filter    - Map with :field, :value/:values, :op, :negated
      field-def - Field definition from search-config with :column, :type, etc."
-  [{:keys [value values op negated]} {:keys [column type fts-table]}]
+  [{:keys [value values op negated]} {:keys [column type fts-table id-column]}]
   (let [clause (cond
                  ;; Multi-value → IN clause (no operator support)
                  ;; Enum values stored as strings in SQLite
@@ -124,10 +124,10 @@
 
                  (= type :fts)
                  (when-let [match (terms->match [value])]
-                   (let [id-column (column->id-column column)]
-                     [:in id-column {:select [:rowid]
-                                     :from [fts-table]
-                                     :where [:match fts-table match]}]))
+                   [:in (or id-column (column->id-column column))
+                    {:select [:rowid]
+                     :from [fts-table]
+                     :where [:match fts-table match]}])
 
                  ;; ID exact match
                  (= type :id)
@@ -231,11 +231,20 @@
          vec)))
 
 (defn- primary-fts-field
-  "The FTS field a free-text query searches: the first without joins, which is
-  the resource's own, falling back to the first of any."
+  "The FTS field a free-text query searches: the resource's own, falling back
+  to the first of any.
+
+  Its own means reached without a join and without an :id-column. Both of those
+  say the field indexes some other row -- :parent on :taxon is the taxon table's
+  own FTS table keyed by the child's parent_id -- and a bare word typed into the
+  search box is about the resource, not its relations. Without the :id-column
+  half, dropping :joins from such a field silently made it the field every
+  free-text search ran against, and every search returned nothing."
   [fields]
   (let [fts-fields (filter (fn [[_ v]] (= :fts (:type v))) fields)]
-    (or (first (filter (fn [[_ v]] (nil? (:joins v))) fts-fields))
+    (or (first (filter (fn [[_ v]] (and (nil? (:joins v))
+                                        (nil? (:id-column v))))
+                       fts-fields))
         (first fts-fields))))
 
 (defn- terms->clause
@@ -244,11 +253,11 @@
    Uses a subquery to properly correlate with joined tables."
   [terms fields]
   (when-let [match (terms->match terms)]
-    (when-let [[_ {:keys [column fts-table]}] (primary-fts-field fields)]
-      (let [id-column (column->id-column column)]
-        [:in id-column {:select [:rowid]
-                        :from [fts-table]
-                        :where [:match fts-table match]}]))))
+    (when-let [[_ {:keys [column fts-table id-column]}] (primary-fts-field fields)]
+      [:in (or id-column (column->id-column column))
+       {:select [:rowid]
+        :from [fts-table]
+        :where [:match fts-table match]}])))
 
 (defn relevance-order
   "Order-by terms putting the closest names first, or nil when the query has no

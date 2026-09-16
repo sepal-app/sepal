@@ -412,3 +412,33 @@
                 (is (= 200 (-> sess
                                (peri/request "/taxon/" :params {"q" q})
                                :response :status)))))))))))
+
+(deftest test-a-parent-filter-finds-the-children-of-a-taxon
+  ;; Characterisation, not a new feature: `parent:` is being moved off a
+  ;; LIKE '%value%' that no index can serve onto the FTS table, and the rows it
+  ;; answers with have to be the same ones afterwards.
+  (tf/testing "parent:Quercus"
+    {[::taxon.i/factory :key/parent] {:db *db*}
+     [::taxon.i/factory :key/child] {:db *db*}
+     [::taxon.i/factory :key/other] {:db *db*}}
+    (fn [{:keys [parent child other]}]
+      (jdbc.sql/update! *db* :taxon {:name "Quercus"} {:id (:taxon/id parent)})
+      (jdbc.sql/update! *db* :taxon {:name "Quercus alba" :parent_id (:taxon/id parent)}
+                        {:id (:taxon/id child)})
+      (jdbc.sql/update! *db* :taxon {:name "Zzz unrelated" :parent_id nil}
+                        {:id (:taxon/id other)})
+      (try
+        (let [email (create-user! *db*)
+              sess (app.test/login email password)
+              body (-> sess
+                       (peri/request "/taxon/" :params {"q" "parent:Quercus"})
+                       :response :body)]
+          (is (re-find #"Quercus alba" body)
+              "a taxon whose parent is named Quercus")
+          (is (not (re-find #"Zzz unrelated" body))
+              "and nothing else — a filter that lost its clause returns everything"))
+        (finally
+          ;; The factory's teardown deletes each taxon, and a child still
+          ;; naming this parent makes that a foreign key violation.
+          (jdbc.sql/update! *db* :taxon {:parent_id nil} {:id (:taxon/id child)}))))))
+

@@ -25,11 +25,23 @@
              :type :id
              :label "ID"}
 
-    ;; Related: parent taxon
+    ;; Related: parent taxon.
+    ;;
+    ;; Filtered through t.parent_id, which the row already carries, so this
+    ;; needs no join of its own. As :text against the joined p.name it was
+    ;; LIKE '%value%' -- an index serves no leading wildcard -- and the list
+    ;; page left-joins p to show the parent's name, so the filter sat on the
+    ;; right side of that join and SQLite had to read all 452k taxa to apply
+    ;; it. 200ms, against 0.34ms driving from taxon_parent_id_idx.
+    ;;
+    ;; Matching is by whole word with a trailing prefix now rather than any
+    ;; substring, the same as the name search: `parent:quer` finds Quercus and
+    ;; `parent:uercu` no longer does.
     :parent    {:column :p.name
-                :type :text
-                :label "Parent"
-                :joins [[:taxon :p] [:= :p.id :t.parent_id]]}
+                :type :fts
+                :fts-table :taxon_fts
+                :id-column :t.parent_id
+                :label "Parent"}
 
     :parent.id {:column :p.id
                 :type :id

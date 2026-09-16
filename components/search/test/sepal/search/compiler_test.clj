@@ -696,3 +696,37 @@
     (let [sql (pr-str (compiler/relevance-order test-fields {:terms ["pr"]}))]
       (is (not (re-find #"taxon_fts|bm25|rank" sql)) sql))))
 
+(deftest id-column-test
+  (testing "a field names the column holding the rowid its FTS table is keyed
+            by, so the filter lands on a column the row already carries"
+    (let [fields {:parent {:column :p.name
+                           :type :fts
+                           :fts-table :taxon_fts
+                           :id-column :t.parent_id}}
+          {:keys [where]} (compiler/compile-query
+                            fields
+                            {:filters [{:field "parent" :value "Quercus"}]}
+                            {:select [:*] :from [[:taxon :t]]})]
+      (is (= :t.parent_id (second where))
+          "not p.id: filtering through the join makes the join drive the query")))
+
+  (testing "without one, the id column is still derived from the field's own"
+    (let [{:keys [where]} (compiler/compile-query
+                            test-fields
+                            {:filters [{:field "taxon" :value "Quercus"}]}
+                            {:select [:*] :from [[:material :m]]})]
+      (is (= :t.id (second where))))))
+
+(deftest primary-fts-field-test
+  (testing "a free-text search runs against the resource's own FTS field, not
+            one that reaches the same table through another row's id. Dropping
+            :joins from such a field once made it the primary, and every bare
+            search returned nothing."
+    (let [fields {:parent {:column :p.name :type :fts :fts-table :taxon_fts
+                           :id-column :t.parent_id}
+                  :name {:column :t.name :type :fts :fts-table :taxon_fts}}
+          {:keys [where]} (compiler/compile-query fields
+                                                  {:terms ["quercus"]}
+                                                  {:select [:*] :from [[:taxon :t]]})]
+      (is (= :t.id (second where))))))
+

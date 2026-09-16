@@ -64,7 +64,11 @@
      :label     - Human-readable label for UI
      :joins     - Vector of [table-alias join-condition] pairs (optional)
      :values    - For :enum type, the allowed values (optional)
-     :fts-table - For :fts type, the FTS virtual table name"
+     :fts-table - For :fts type, the FTS virtual table name
+     :id-column - For :fts type, the column holding the rowid that FTS table is
+                  keyed by. Defaults to the field's own table. Naming a column
+                  the row already carries lets a filter skip the join the field
+                  otherwise needs."
   (fn [resource-type] resource-type))
 
 (defmethod search-config :default [resource-type]
