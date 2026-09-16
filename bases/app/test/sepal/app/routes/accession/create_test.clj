@@ -9,6 +9,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.contact.interface :as contact.i]
             [sepal.location.interface :as location.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
@@ -397,3 +398,98 @@
                 (str id "'s first option must be the empty placeholder"))
             (is (= "true" (.attr first-option "data-placeholder"))
                 (str id "'s placeholder is not marked for SlimSelect"))))))))
+
+(deftest test-every-field-survives-a-create
+  (tf/testing "one assertion per field, because these were found one at a time
+               by hand: provenance, supplier and both dates each went missing
+               separately. A field dropped anywhere between the form, the
+               closed FormParams map and the closed CreateAccession spec
+               disappears without an error."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::contact.i/factory :key/contact] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user taxon contact location]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (-> sess (peri/request "/accession/new/"))
+              token (test.i/response-anti-forgery-token response)
+              params {:__anti-forgery-token token
+                      :code "ALLFIELDS-1"
+                      :taxon-id (str (:taxon/id taxon))
+                      :id-qualifier "aff"
+                      :id-qualifier-rank "genus"
+                      :provenance-type "wild"
+                      :wild-provenance-status "wild_native"
+                      :supplier-contact-id (str (:contact/id contact))
+                      :intended-location-id (str (:location/id location))
+                      :date-received "2026-03-04"
+                      :date-accessioned "2026-03-05"
+                      :received-type "seed"
+                      :quantity-received "7"}
+              {:keys [response]} (-> sess
+                                     (peri/request "/accession/new/"
+                                                   :request-method :post
+                                                   :params params))]
+          (is (= 200 (:status response))
+              (str "expected 200, got " (:status response) ": " (:body response)))
+          (let [redirect (get-in response [:headers "HX-Redirect"])
+                id (parse-long (last (remove empty? (str/split redirect #"/"))))
+                saved (accession.i/get-by-id *db* id)]
+            (is (= "ALLFIELDS-1" (:accession/code saved)))
+            (is (= (:taxon/id taxon) (:accession/taxon-id saved)))
+            (is (= :aff (:accession/id-qualifier saved)) "id qualifier")
+            (is (= :genus (:accession/id-qualifier-rank saved)) "id qualifier rank")
+            (is (= :wild (:accession/provenance-type saved)) "provenance type")
+            (is (= :wild_native (:accession/wild-provenance-status saved))
+                "wild provenance status")
+            (is (= (:contact/id contact) (:accession/supplier-contact-id saved))
+                "supplier")
+            (is (= (:location/id location) (:accession/intended-location-id saved))
+                "intended location")
+            (is (= "2026-03-04" (:accession/date-received saved)) "date received")
+            (is (= "2026-03-05" (:accession/date-accessioned saved))
+                "date accessioned")
+            (is (= :seed (:accession/received-type saved)) "received type")
+            (is (= 7 (:accession/quantity-received saved)) "quantity received")
+
+            ;; Saving worked all along. What made every one of these look
+            ;; broken is the edit page rendering them blank — and a blank
+            ;; control posts an empty string, so the next save erases the
+            ;; value for real.
+            (let [body (-> sess
+                           (peri/request (str "/accession/" id "/general/"))
+                           :response :body
+                           (as-> b (Jsoup/parse ^String b)))
+                  input-value (fn [id] (some-> (.selectFirst body (str "input#" id))
+                                               (.val)))
+                  selected (fn [id] (some-> (.selectFirst body
+                                                          (str "select#" id " option[selected]"))
+                                            (.attr "value")))]
+              (is (= "ALLFIELDS-1" (input-value "code")) "code renders")
+              (is (= "2026-03-04" (input-value "date-received"))
+                  "date received renders")
+              (is (= "2026-03-05" (input-value "date-accessioned"))
+                  "date accessioned renders")
+              (is (= "7" (input-value "quantity-received"))
+                  "quantity received renders")
+              (is (= (str (:taxon/id taxon)) (selected "taxon-id"))
+                  "taxon renders as selected")
+              (is (= (str (:contact/id contact)) (selected "supplier-contact-id"))
+                  "supplier renders as selected")
+              (is (= (str (:location/id location)) (selected "intended-location-id"))
+                  "intended location renders as selected")
+              (is (= "aff" (selected "id-qualifier")) "id qualifier renders")
+              (is (= "genus" (selected "id-qualifier-rank"))
+                  "id qualifier rank renders")
+              (is (= "wild" (selected "provenance-type"))
+                  "provenance type renders")
+              (is (= "wild_native" (selected "wild-provenance-status"))
+                  "wild provenance status renders")
+              (is (= "seed" (selected "received-type"))
+                  "received type renders"))))
+        (finally
+          (jdbc.sql/delete! *db* :accession {:code "ALLFIELDS-1"})
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))

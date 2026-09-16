@@ -168,7 +168,15 @@
                                          :autocomplete "off"}
                                 [:option {:value "" :data-placeholder "true"} ""]
                                 (when (:contact/id supplier)
-                                  [:option {:value (:contact/id supplier)}
+                                  ;; `selected` is load-bearing, as on the
+                                  ;; intended location: the placeholder is the
+                                  ;; first option and a browser takes the first
+                                  ;; one unless told otherwise. Without it the
+                                  ;; edit page showed no supplier on a record
+                                  ;; that had one, and saving that blank field
+                                  ;; erased it.
+                                  [:option {:value (:contact/id supplier)
+                                            :selected "selected"}
                                    (:contact/name supplier)])])])
 
       (ui.form/section
