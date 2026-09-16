@@ -5,6 +5,7 @@
             [sepal.app.cli.activity :as import.activity]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
+            [sepal.app.routes.activity.index :as activity.index]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
@@ -174,3 +175,13 @@
                                                    :headers {"hx-request" "true"}))]
           (is (not (app.test/body-contains? response "No activity yet"))
               "Page 2 should not render the empty state"))))))
+
+(deftest test-a-chip-tooltip-carries-its-own-timestamp
+  ;; A card collapses a run of events into one sentence with one relative time,
+  ;; so without this a chip's own timestamp is nowhere on the page.
+  (is (= "Accession \u2022 Quercus alba \u2022 September 16, 2026 at 9:00 AM EDT"
+         (activity.index/chip-title "Accession \u2022 Quercus alba"
+                                    (java.time.Instant/parse "2026-09-16T13:00:00Z")
+                                    "America/New_York")))
+  (is (= "Accession"
+         (activity.index/chip-title "Accession" nil "America/New_York"))))

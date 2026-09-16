@@ -1155,10 +1155,14 @@
   margin: 0;
 }
 .spl-changelog-actor { font-weight: 600; color: var(--color-text); }
+/* The margin is on top of a word space in the markup. Keep both: the space is
+ * what lets the line wrap here, the margin is what separates the time from the
+ * summary it follows. */
 .spl-changelog-time {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--color-text-dim);
+  margin-left: 6px;
 }
 .spl-changelog-refs {
   display: flex;

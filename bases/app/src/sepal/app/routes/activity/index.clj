@@ -31,9 +31,8 @@
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z])
-  (:import [java.time Instant ZoneId]
-           [java.time.format DateTimeFormatter]
-           [java.time.temporal ChronoUnit]))
+  (:import [java.time Instant LocalDate ZoneId]
+           [java.time.format DateTimeFormatter]))
 
 ;;; Legacy components (to be removed after refactor)
 
@@ -337,14 +336,25 @@
 
 ;;; New activity components
 
+(defn chip-title
+  "What a chip's tooltip says: the record's context, then when it happened.
+
+  A card shows one relative time for a whole run of events, so this is the only
+  place an individual record's own timestamp appears."
+  [context ^Instant instant timezone]
+  (->> [context (datetime/format-datetime-full instant timezone)]
+       (remove str/blank?)
+       (str/join " \u2022 ")))
+
 (defn activity-item
   "Render a single activity item with icon, link, badge, and context."
-  [activity]
+  [activity timezone]
   (when-let [{:keys [resource-type resource-name resource-url context]}
              (activity-data activity)]
     ;; A chip naming one affected record. The sentence above already says what
     ;; happened, so the chip carries identity and context only.
-    [:span {:class "spl-chip" :title context}
+    [:span {:class "spl-chip"
+            :title (chip-title context (:activity/created-at activity) timezone)}
      [:span {:class "spl-chip-icon" :aria-hidden "true"}
       (ui.activity/resource-icon resource-type)]
      (if resource-url
@@ -369,7 +379,7 @@
      (datetime/relative-time time timezone :class "spl-changelog-time")]
     [:div {:class "spl-changelog-refs"}
      (for [activity activities]
-       (activity-item activity))]]])
+       (activity-item activity timezone))]]])
 
 (defn day-header
   "Render a day section header."
@@ -418,20 +428,27 @@
 (def ^:private day-header-formatter
   (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy"))
 
-(defn- format-day-header
-  "Format an Instant as a day header string (e.g., 'Monday, December 8, 2025')."
+(defn activity-day
+  "The date an activity happened, in the garden's own timezone.
+
+  A LocalDate, not an instant: the feed groups by this and names the group with
+  format-day-header, and both must mean the same day. Truncating the instant in
+  UTC instead files anything after 20:00 in New York under the previous date."
   [^Instant instant timezone-str]
-  (let [timezone (ZoneId/of (or timezone-str "UTC"))
-        today (-> (Instant/now)
-                  (.atZone timezone)
-                  (.truncatedTo ChronoUnit/DAYS))
-        yesterday (.minusDays today 1)
-        day (-> instant
-                (.atZone timezone)
-                (.truncatedTo ChronoUnit/DAYS))]
+  (-> instant
+      (.atZone (ZoneId/of (or timezone-str "UTC")))
+      (.toLocalDate)))
+
+(defn format-day-header
+  "Name a day: 'Today', 'Yesterday', or 'Monday, December 8, 2025'.
+
+  Takes the same LocalDate the feed grouped by, so the heading and the group
+  cannot disagree."
+  [^LocalDate day timezone-str]
+  (let [today (LocalDate/now (ZoneId/of (or timezone-str "UTC")))]
     (cond
       (.equals day today) "Today"
-      (.equals day yesterday) "Yesterday"
+      (.equals day (.minusDays today 1)) "Yesterday"
       :else (.format day-header-formatter day))))
 
 (defn- next-page-url
@@ -485,8 +502,7 @@
         ;; that a page whose every row lacks an activity-data method counts as
         ;; empty rather than rendering a run of empty day sections.
         renderable (filter #(some? (activity-data %)) activity)
-        activity-by-date (group-by #(.truncatedTo (:activity/created-at %)
-                                                  ChronoUnit/DAYS)
+        activity-by-date (group-by #(activity-day (:activity/created-at %) timezone)
                                    renderable)
         ;; dates in descending order (most recent first)
         dates (sort #(.isAfter %1 %2) (keys activity-by-date))
