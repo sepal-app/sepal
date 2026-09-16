@@ -159,10 +159,14 @@
                                    (peri/request "/taxon/new/"
                                                  :params {:parent-id (str (:taxon/id parent))}))
             body (Jsoup/parse ^String (:body response))
-            option (.selectFirst body "select#parent-id option")]
-        (is (some? option) "the parent arrives as the select's one option")
-        (is (= (str (:taxon/id parent)) (.attr option "value")))
-        (is (= (:taxon/name parent) (.text option)))))))
+            options (.select body "select#parent-id option")
+            chosen (.last options)]
+        (is (= 2 (.size options)) "the placeholder, then the parent")
+        (is (= (str (:taxon/id parent)) (.attr chosen "value")))
+        (is (= (:taxon/name parent) (.text chosen)))
+        (is (.hasAttr chosen "selected")
+            "load-bearing: the placeholder is first, and a browser takes the
+             first option unless told otherwise")))))
 
 (deftest test-an-unknown-parent-id-is-ignored
   (tf/testing "a stale link should still render a usable empty form"
@@ -174,6 +178,11 @@
             {:keys [response]} (-> sess
                                    (peri/request "/taxon/new/"
                                                  :params {:parent-id "0"}))
-            body (Jsoup/parse ^String (:body response))]
+            body (Jsoup/parse ^String (:body response))
+            options (.select body "select#parent-id option")]
         (is (= 200 (:status response)))
-        (is (nil? (.selectFirst body "select#parent-id option")))))))
+        (is (= 1 (.size options)) "the placeholder, and no parent")
+        (is (= "" (.attr (.first options) "value")))
+        (is (= "true" (.attr (.first options) "data-placeholder"))
+            "without it SlimSelect selects the first search result and
+             hideSelected hides it, so a one-match search looks empty")))))

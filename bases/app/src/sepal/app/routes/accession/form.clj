@@ -93,8 +93,20 @@
                                            :required true
                                            :name "taxon-id"
                                            :autocomplete "off"}
+                                  ;; A single select must hold a selection, so
+                                  ;; without this SlimSelect selects the first
+                                  ;; search result and hideSelected hides it —
+                                  ;; a search matching one taxon showed an
+                                  ;; empty list. Same placeholder the supplier
+                                  ;; and location fields carry.
+                                  [:option {:value "" :data-placeholder "true"} ""]
                                   (when (:taxon/id taxon)
-                                    [:option {:value (:taxon/id taxon)}
+                                    ;; `selected` is load-bearing: the
+                                    ;; placeholder is the first option, and a
+                                    ;; browser takes the first one unless told
+                                    ;; otherwise.
+                                    [:option {:value (:taxon/id taxon)
+                                              :selected "selected"}
                                      (:taxon/name taxon)])]
                           :required true
                           :help "Start typing a name to search the taxonomy."))

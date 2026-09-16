@@ -353,10 +353,14 @@
                                    (peri/request "/accession/new/"
                                                  :params {:taxon-id (str (:taxon/id taxon))}))
             body (Jsoup/parse ^String (:body response))
-            option (.selectFirst body "select#taxon-id option")]
-        (is (some? option) "the taxon arrives as the select's one option")
-        (is (= (str (:taxon/id taxon)) (.attr option "value")))
-        (is (= (:taxon/name taxon) (.text option)))))))
+            options (.select body "select#taxon-id option")
+            chosen (.last options)]
+        (is (= 2 (.size options)) "the placeholder, then the taxon")
+        (is (= (str (:taxon/id taxon)) (.attr chosen "value")))
+        (is (= (:taxon/name taxon) (.text chosen)))
+        (is (.hasAttr chosen "selected")
+            "load-bearing: the placeholder is first, and a browser takes the
+             first option unless told otherwise")))))
 
 (deftest test-an-unknown-taxon-id-is-ignored
   (tf/testing "a stale link should still render a usable empty form"
@@ -368,6 +372,28 @@
             {:keys [response]} (-> sess
                                    (peri/request "/accession/new/"
                                                  :params {:taxon-id "0"}))
-            body (Jsoup/parse ^String (:body response))]
+            body (Jsoup/parse ^String (:body response))
+            options (.select body "select#taxon-id option")]
         (is (= 200 (:status response)))
-        (is (nil? (.selectFirst body "select#taxon-id option")))))))
+        (is (= 1 (.size options)) "the placeholder, and no taxon")
+        (is (= "" (.attr (.first options) "value")))))))
+
+(deftest test-the-searchable-selects-carry-a-placeholder
+  (tf/testing "a single select must hold a selection. With no empty option
+               SlimSelect selects the first search result and hideSelected
+               hides it, so a search matching exactly one taxon rendered an
+               empty list and the taxon looked missing."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/accession/new/"))
+            body (Jsoup/parse ^String (:body response))]
+        (doseq [id ["taxon-id" "supplier-contact-id" "intended-location-id"]]
+          (let [first-option (.selectFirst body (str "select#" id " option"))]
+            (is (some? first-option) (str id " has no options at all"))
+            (is (= "" (.attr first-option "value"))
+                (str id "'s first option must be the empty placeholder"))
+            (is (= "true" (.attr first-option "data-placeholder"))
+                (str id "'s placeholder is not marked for SlimSelect"))))))))
