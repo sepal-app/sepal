@@ -33,15 +33,20 @@
 
 (defn validation-errors
   "Returns 422 with OOB error elements for each field.
-   errors should be a map of field-name -> [error-messages]"
+   errors should be a map of field-name -> [error-messages]
+
+   Also raises a banner. The per-field message can be below the fold on a long
+   form, so a rejected save otherwise looked like nothing happened —
+   `wrap-flash-messages` swaps this in alongside the field errors."
   [errors]
   (let [oob-elements (for [[field-name messages] errors]
                        (ui.form/error-list (name field-name)
                                            messages
                                            :hx-swap-oob? true))]
-    {:status 422
-     :headers {"Content-Type" "text/html"}
-     :body (str (chassis/html (into [:div] oob-elements)))}))
+    (-> {:status 422
+         :headers {"Content-Type" "text/html"}
+         :body (str (chassis/html (into [:div] oob-elements)))}
+        (flash/error "Nothing was saved. Check the highlighted fields."))))
 
 (defn failure-response
   "The response for a failed form post.

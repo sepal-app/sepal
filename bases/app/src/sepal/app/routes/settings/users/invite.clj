@@ -1,5 +1,6 @@
 (ns sepal.app.routes.settings.users.invite
-  (:require [failjure.core :as f]
+  (:require [clojure.tools.logging :as log]
+            [failjure.core :as f]
             [pogonos.core :as mustache]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
@@ -144,9 +145,18 @@
                     (println (str "Error: Could not send invitation email: " (ex-message e)))
                     (-> (http/see-other settings.routes/users)
                         (flash/error "User created but failed to send invitation email")))))
-              (f/when-failed [_e]
+              (f/when-failed [e]
+                ;; Log it. This swallowed the exception and showed one fixed
+                ;; sentence, so an invitation failing in production told
+                ;; nobody what went wrong — including the operator reading
+                ;; the logs.
+                (log/error e "could not create the invited user")
                 (render :viewer viewer
-                        :errors {:email ["Failed to create user"]}
+                        :errors (or (error.i/humanize
+                                      (if (instance? Exception e)
+                                        (error.i/ex->error e)
+                                        e))
+                                    {:email ["Failed to create user"]})
                         :values form-params)))))
         (f/when-failed [e]
           (render :viewer viewer
