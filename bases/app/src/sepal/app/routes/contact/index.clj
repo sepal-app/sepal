@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
@@ -17,6 +18,28 @@
             [zodiac.core :as z]))
 
 (def default-page-size 25)
+
+(defn completion-text
+  "How a contact reads in a completion list.
+
+  The name leads, as it does in the table, and the parenthetical is whatever
+  first tells two of them apart: the business, then the email, then the phone.
+  A contact with none of those is just its name, and one whose business is its
+  name does not say it twice.
+
+  The old format was `business (name)`, which rendered \" (Kew Seed Bank)\" for
+  every contact with no business — most of them."
+  [contact]
+  (let [contact-name (:contact/name contact)
+        detail (->> [(:contact/business contact)
+                     (:contact/email contact)
+                     (:contact/phone contact)]
+                    (remove str/blank?)
+                    (remove #(= % contact-name))
+                    (first))]
+    (if detail
+      (format "%s (%s)" contact-name detail)
+      contact-name)))
 
 (defn create-button []
   (pages.list/create-button :href (z/url-for contact.routes/new)))
@@ -141,9 +164,7 @@
       (= (get headers "accept") "application/json")
       (json/json-response (for [contact rows]
                             {:name (:contact/name contact)
-                             :text (format "%s (%s)"
-                                           (:contact/business contact)
-                                           (:contact/name contact))
+                             :text (completion-text contact)
                              :id (:contact/id contact)
                              :business (:contact/business contact)
                              :description (:contact/description contact)}))

@@ -108,7 +108,18 @@
  * a fixed 24rem, so the bar reads as one row at any width. */
 .spl-search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; max-width: 420px; }
 .spl-input--search { padding: 6px 10px; font-size: 12.5px; }
-.spl-select { appearance: auto; }
+/* A native select drew the operating system's chevron while SlimSelect drew
+ * its own, so two selects sitting side by side in the same form looked like
+ * different controls. The inset matches SlimSelect's: 11px to the edge, a
+ * 12px glyph, 8px before the text. */
+.spl-select {
+  appearance: none;
+  padding-right: 31px;
+  background-image: var(--chevron-down);
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 12px 12px;
+}
 
 /* Forms cap at 576px; pairs sit side by side inside that column and stack on a
  * phone. Headings mark the regions, so no boxes and no rules between them. */
