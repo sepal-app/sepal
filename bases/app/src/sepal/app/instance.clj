@@ -561,7 +561,14 @@
       (try
         (fs/create-dirs media-cache-dir)
         (let [config (instance-config process (assoc opts :schema-version current))
-              _ (ig/load-namespaces config)
+              ;; clojure.core/require takes no lock -- only the private
+              ;; serialized-require does -- and integrant's try-require calls the
+              ;; bare one. The first start in a process loads the whole route
+              ;; tree, so two instances starting at once can each define the same
+              ;; class and leave a protocol extended on the copy the other
+              ;; discarded. Uncontended once the namespaces are loaded.
+              _ (locking clojure.lang.RT/REQUIRE_LOCK
+                  (ig/load-namespaces config))
               system (try
                        (ig/init config)
                        (catch clojure.lang.ExceptionInfo e
