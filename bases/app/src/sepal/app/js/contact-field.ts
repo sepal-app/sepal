@@ -13,7 +13,10 @@ const ContactField: DirectiveCallback = (el, directive, { cleanup, evaluate }) =
         _currentData: Array<Partial<Option>>,
     ): Promise<Option[]> {
         return new Promise((resolve, reject) => {
-            const params = new URLSearchParams({ q: search, page_size: "6" })
+            // page-size, not page_size: the routes decode a dashed key, so the
+            // underscore never matched and every picker fell back to the
+            // list default of 25.
+            const params = new URLSearchParams({ q: search, "page-size": "10" })
             return fetch(url + "?" + params.toString(), {
                 headers: { Accept: "application/json" },
             })

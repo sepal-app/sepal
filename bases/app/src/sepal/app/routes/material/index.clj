@@ -185,9 +185,16 @@
 
         ;; Execute queries
         total (db.i/count db stmt)
+        ;; m.id last and always: this list is read a page at a time by offset,
+        ;; and an order that leaves any two rows tied lets SQLite return them
+        ;; in either order per page — the same row on two pages and another on
+        ;; none. There was no ordering here at all, so the de facto order was
+        ;; rowid; naming it keeps that and makes it total.
         rows (db.i/execute! db (assoc stmt
                                       :limit page-size
-                                      :offset offset))
+                                      :offset offset
+                                      :order-by (concat (search.i/relevance-order :material ast)
+                                                        [[:m.id :asc]])))
 
         ;; Fetch entities for breadcrumbs if filtering by ID
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)

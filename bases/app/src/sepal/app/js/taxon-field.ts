@@ -19,7 +19,10 @@ const TaxonField: DirectiveCallback = (el, directive, { cleanup, evaluate }) => 
             if (search.length < 2) {
                 return reject("Search must be at least 2 characters")
             }
-            const params = new URLSearchParams({ q: search, page_size: "6" })
+            // page-size, not page_size: the routes decode a dashed key, so the
+            // underscore never matched and every picker fell back to the
+            // list default of 25.
+            const params = new URLSearchParams({ q: search, "page-size": "10" })
 
             return (
                 fetch(url + "?" + params.toString(), {
