@@ -1142,12 +1142,13 @@
 }
 .spl-changelog-entry {
   display: grid;
-  grid-template-columns: 26px 1fr;
+  grid-template-columns: 32px 1fr;
   gap: 11px;
   padding: 12px 0;
   border-bottom: 1px solid var(--color-hairline);
 }
-.spl-changelog-avatar { width: 26px; }
+/* Matches .spl-avatar--sm. A column narrower than the avatar squashes it. */
+.spl-changelog-avatar { width: 32px; }
 .spl-changelog-body { min-width: 0; }
 .spl-changelog-line {
   font: 400 13.5px/1.5 var(--font-sans);
@@ -1511,15 +1512,28 @@
   font-weight: 500;
 }
 
-.spl-avatar { border-radius: 50%; overflow: hidden; }
-.spl-avatar--placeholder {
-  background: var(--color-brand-tint);
-  color: var(--color-brand);
-  display: flex;
+/* Width and height are both set, and flex-none holds them: an avatar sits in a
+ * grid column or a flex row, either of which will otherwise stretch or squash
+ * it out of round. line-height 1 keeps the initials on the circle's centre
+ * rather than on a text baseline that is taller than the glyphs. */
+.spl-avatar {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  line-height: 1;
+}
+.spl-avatar--placeholder {
+  background: var(--color-neutral);
+  color: var(--color-surface);
   font-weight: 600;
 }
+.spl-avatar--xs { width: 24px; height: 24px; font-size: 10px; }
+.spl-avatar--sm { width: 32px; height: 32px; font-size: 12px; }
+.spl-avatar--md { width: 40px; height: 40px; font-size: 15px; }
+.spl-avatar--lg { width: 48px; height: 48px; font-size: 18px; }
 
 /* @tailwindcss/forms sets `appearance: none` on checkboxes and paints the
  * checked state from `color`, which defaults to its own blue — `accent-color`

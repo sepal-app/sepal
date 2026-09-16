@@ -1,7 +1,8 @@
 (ns sepal.app.routes.activity.day-test
   (:require [clojure.test :refer [deftest is testing]]
             [sepal.app.routes.activity.index :as activity.index])
-  (:import [java.time Instant LocalDate ZoneId]))
+  (:import [java.time Instant LocalDate ZoneId]
+           [java.time.format DateTimeFormatter]))
 
 (deftest test-the-day-is-the-one-the-garden-was-in
   (testing "an accession created at 09:00 in New York belongs to that morning,
@@ -48,3 +49,19 @@
           today (LocalDate/now (ZoneId/of zone))]
       (is (= "Today" (activity.index/format-day-header today zone)))
       (is (= "Yesterday" (activity.index/format-day-header (.minusDays today 1) zone))))))
+
+(deftest test-a-relative-heading-carries-the-date-in-a-tooltip
+  (let [zone "America/New_York"
+        today (LocalDate/now (ZoneId/of zone))
+        attrs (fn [day] (second (activity.index/day-header day zone)))]
+    (testing "'Today' names a section but not a date, so the date is the tooltip"
+      (is (= (.format (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy") today)
+             (:title (attrs today)))))
+    (testing "a heading that already reads as a date gets no tooltip"
+      (is (nil? (:title (attrs (LocalDate/of 2025 12 8))))))))
+
+(deftest test-parse-day-answers-nil-rather-than-throwing
+  (is (= (LocalDate/of 2025 12 8) (activity.index/parse-day "2025-12-08")))
+  (is (nil? (activity.index/parse-day "not-a-date")))
+  (is (nil? (activity.index/parse-day "")))
+  (is (nil? (activity.index/parse-day nil))))

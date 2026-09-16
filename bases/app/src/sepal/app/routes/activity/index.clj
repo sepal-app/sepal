@@ -381,11 +381,6 @@
      (for [activity activities]
        (activity-item activity timezone))]]])
 
-(defn day-header
-  "Render a day section header."
-  [date-str]
-  [:h2 {:class "spl-changelog-day"} date-str])
-
 (defn empty-state
   "Render what the feed shows when it has nothing to render.
 
@@ -451,12 +446,44 @@
       (.equals day (.minusDays today 1)) "Yesterday"
       :else (.format day-header-formatter day))))
 
+(defn day-header
+  "A day section's heading, with the date itself in a tooltip.
+
+  'Today' and 'Yesterday' say which section you are in but not which date that
+  is. A heading that already reads as a date gets no tooltip."
+  [^LocalDate day timezone]
+  (let [label (format-day-header day timezone)
+        date-text (.format day-header-formatter day)]
+    [:h2 (cond-> {:class "spl-changelog-day"}
+           (not= label date-text) (assoc :title date-text))
+     label]))
+
+(defn parse-day
+  "Read a LocalDate off a query parameter, or nil if it is absent or malformed.
+
+  Nil is a valid answer, not a failure: the parameter only suppresses a
+  repeated heading, so a bad one costs a duplicate heading and nothing else."
+  [s]
+  (when-not (str/blank? s)
+    (try
+      (LocalDate/parse s)
+      (catch java.time.format.DateTimeParseException _ nil))))
+
 (defn- next-page-url
-  "Generate URL for the next page of activities."
-  [page page-size]
+  "Generate URL for the next page of activities.
+
+  last-day is the day this page ends on. The next page repeats that day when
+  its events straddle the page boundary, and carrying the date is what lets it
+  leave the heading off the second time."
+  [page page-size ^LocalDate last-day]
   (str (z/url-for :sepal.app.routes.activity.routes/index)
        "?page=" (inc page)
-       "&page-size=" page-size))
+       "&page-size=" page-size
+       (when last-day (str "&last-day=" last-day))))
+
+(def ^:private feed-id
+  "The one container every page of the feed is appended into."
+  "activity-days")
 
 (def ^:private loading-id "activity-loading")
 
@@ -480,7 +507,7 @@
          ;; never scrolls. This worked before the redesign and stopped when the
          ;; panes began scrolling internally.
          :hx-trigger "intersect once"
-         :hx-target "#activity-feed"
+         :hx-target (str "#" feed-id)
          :hx-swap "beforeend"
          :hx-indicator (str "#" loading-id)}])
 
@@ -497,7 +524,7 @@
 (defn timeline-content
   "Render just the activity content (day sections with cards) without page wrapper.
    Used for both initial render and HTMX partial responses."
-  [& {:keys [activity page page-size timezone viewer]}]
+  [& {:keys [activity appending? last-day page page-size timezone viewer]}]
   (let [;; Filter out activities that don't have data. Done before grouping, so
         ;; that a page whose every row lacks an activity-data method counts as
         ;; empty rather than rendering a run of empty day sections.
@@ -519,21 +546,36 @@
             ;; rather than not at all.
             trigger-at (max 0 (- total prefetch-offset))
             sentinel (when has-more?
-                       (infinite-scroll-sentinel (next-page-url page page-size)))]
-        [:div {:class "spl-changelog"}
-         ;; The running index is what lets the sentinel be placed by its
-         ;; position in the whole page rather than within one day.
-         (first
-           (reduce (fn [[acc i] [date groups]]
-                     [(conj acc
-                            [:div {:key (str date)}
-                             (day-header (format-day-header date timezone))
-                             (for [[j group] (map-indexed vector groups)]
-                               (list (activity-card group timezone)
-                                     (when (= (+ i j) trigger-at) sentinel)))])
-                      (+ i (count groups))])
-                   [[] 0]
-                   sections))]))))
+                       (infinite-scroll-sentinel
+                         (next-page-url page page-size (last dates))))
+            days
+            ;; The running index is what lets the sentinel be placed by its
+            ;; position in the whole page rather than within one day.
+            (first
+              (reduce (fn [[acc i] [date groups]]
+                        [(conj acc
+                               [:div {:key (str date)}
+                                ;; A day whose events straddle a page boundary
+                                ;; opens the next page too. Only the first
+                                ;; section can repeat the previous page's day,
+                                ;; and it keeps its cards either way -- just
+                                ;; not a second heading.
+                                (when-not (and (empty? acc)
+                                               (= date last-day))
+                                  (day-header date timezone))
+                                (for [[j group] (map-indexed vector groups)]
+                                  (list (activity-card group timezone)
+                                        (when (= (+ i j) trigger-at) sentinel)))])
+                         (+ i (count groups))])
+                      [[] 0]
+                      sections))]
+        ;; A render that is being appended into the feed must not bring a
+        ;; second container with it, or the gutter is paid twice and a gap
+        ;; opens at every page boundary. Keyed off appending? rather than the
+        ;; page number so that loading ?page=2 directly still gets a container.
+        (if appending?
+          days
+          [:div {:id feed-id :class "spl-changelog"} days])))))
 
 (defn timeline
   "Render the activity timeline grouped by day and consecutive user."
@@ -558,10 +600,13 @@
                 :breadcrumbs ["Activity"]))
 
 (defn render-partial
-  "Render just the activity content for HTMX requests (no page wrapper)."
-  [& {:keys [activity page page-size timezone viewer]}]
+  "Render the activity content for the infinite-scroll sentinel, which appends
+  it into the feed the first page opened."
+  [& {:keys [activity last-day page page-size timezone viewer]}]
   (html/render-partial
     (timeline-content :activity activity
+                      :appending? true
+                      :last-day last-day
                       :page page
                       :page-size page-size
                       :timezone timezone
@@ -646,15 +691,17 @@
   [:map
    [:page {:default 1} :int]
    [:page-size {:default 25} :int]
+   [:last-day {:optional true} [:maybe :string]]
    [:q :string]])
 
 (defn handler [& {:keys [::z/context headers query-params viewer]}]
   (let [{:keys [db timezone]} context
-        {:keys [page page-size _q]} (params/decode Params query-params)
+        {:keys [last-day page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)
         htmx-request? (get headers "hx-request")]
     (if htmx-request?
       (render-partial :activity activity
+                      :last-day (parse-day last-day)
                       :page page
                       :page-size page-size
                       :timezone timezone

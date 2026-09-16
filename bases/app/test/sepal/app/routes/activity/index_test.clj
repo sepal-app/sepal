@@ -185,3 +185,69 @@
                                     "America/New_York")))
   (is (= "Accession"
          (activity.index/chip-title "Accession" nil "America/New_York"))))
+
+(deftest test-a-day-that-straddles-a-page-boundary-gets-one-heading
+  (tf/testing "The next page of a day repeats its cards, not its heading. Days
+  are grouped within a page, so without the last-day the previous page ended on
+  the reader sees 'Yesterday' twice with a page gutter between them."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (with-cleared-activity
+        (dotimes [_ 4]
+          (location.activity/create! *db*
+                                     location.activity/created
+                                     (:user/id user)
+                                     location))
+        (let [session (app.test/login (:user/email user) password)
+              today (str (java.time.LocalDate/now (java.time.ZoneId/of "UTC")))
+              page-2 (fn [query]
+                       (-> session
+                           (peri/request (str "/activity?page=2&page-size=2" query)
+                                         :headers {"hx-request" "true"})
+                           :response
+                           (app.test/parse-body)))]
+          (is (some? (.selectFirst (page-2 "") "h2.spl-changelog-day"))
+              "With no last-day the second page repeats the heading")
+          (is (nil? (.selectFirst (page-2 (str "&last-day=" today))
+                                  "h2.spl-changelog-day"))
+              "Carrying the day the previous page ended on drops the repeat")
+          (is (some? (.selectFirst (page-2 (str "&last-day=" today))
+                                   ".spl-changelog-entry"))
+              "and the cards on that page are still rendered")
+          (is (some? (.selectFirst (page-2 "&last-day=not-a-date")
+                                   "h2.spl-changelog-day"))
+              "A malformed last-day costs a repeated heading, not an error"))))))
+
+(deftest test-only-the-first-page-carries-the-feed-container
+  (tf/testing "Later pages are appended into it, so a second one would pay the
+  gutter twice and open a visible gap at every page boundary"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (with-cleared-activity
+        (dotimes [_ 4]
+          (location.activity/create! *db*
+                                     location.activity/created
+                                     (:user/id user)
+                                     location))
+        (let [session (app.test/login (:user/email user) password)
+              body (fn [query & {:keys [htmx?]}]
+                     (-> session
+                         (peri/request (str "/activity?page-size=2&" query)
+                                       :headers (if htmx?
+                                                  {"hx-request" "true"}
+                                                  {}))
+                         :response
+                         (app.test/parse-body)))]
+          (is (some? (.selectFirst (body "page=1") "#activity-days"))
+              "A page load opens the container")
+          (is (nil? (.selectFirst (body "page=2" :htmx? true) "#activity-days"))
+              "The sentinel's response is appended into it rather than opening
+               another")
+          (is (some? (.selectFirst (body "page=2") "#activity-days"))
+              "but a browser loading page 2 directly still gets a container"))))))
