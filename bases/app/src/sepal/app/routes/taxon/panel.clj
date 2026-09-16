@@ -95,7 +95,7 @@
             :stats [{:label "Accessions"
                      :value accession-count
                      :href (z/url-for accession.routes/index nil {:taxon-id id})}
-                    {:label "Materials"
+                    {:label "Material"
                      :value material-count
                      :href (z/url-for material.routes/index nil {:taxon-id id})}]))
 

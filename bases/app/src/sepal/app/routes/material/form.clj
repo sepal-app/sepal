@@ -164,16 +164,20 @@
                                              :selected (when (= type (some-> values :type name))
                                                          "selected")}
                                     type])]])
-            (form/field :label "Reason for change"
-                        :name "reason"
-                        :errors (:reason errors)
-                        :hint "Recorded in this material's history when the location or quantity changes."
-                        :input [:select {:name "reason"
-                                         :id "reason"
-                                         :autocomplete "off"
-                                         :class "spl-input w-full"}
-                                [:option {:value ""} "None"]
-                                (for [{:material-change-reason/keys [code label]} reasons]
-                                  [:option {:value code} label])])])]])
+            ;; Only where a change can happen. The create page passes no
+            ;; reasons, and a record being made for the first time has not
+            ;; changed from anything — the field offered None and nothing else.
+            (when (seq reasons)
+              (form/field :label "Reason for change"
+                          :name "reason"
+                          :errors (:reason errors)
+                          :hint "Recorded in this material's history when the location or quantity changes."
+                          :input [:select {:name "reason"
+                                           :id "reason"
+                                           :autocomplete "off"
+                                           :class "spl-input w-full"}
+                                  [:option {:value ""} "None"]
+                                  (for [{:material-change-reason/keys [code label]} reasons]
+                                    [:option {:value code} label])]))])]])
      [:script {:type "module"
                :src (html/static-url "app/routes/material/form.ts")}]]))

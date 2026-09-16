@@ -211,6 +211,27 @@
             "no taxon by that name")
         (is (= "" (suggest "")))))))
 
+(deftest test-parent-suggestion-matches-either-hybrid-marker
+  (tf/testing "WFO stores × and a keyboard types x, so a cultivar of a
+               nothospecies must find its parent whichever was typed"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/notho] {:db *db*
+                                     :name "Zzyzxid × testica"
+                                     :rank :species}}
+    (fn [{:keys [user notho]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            suggest (fn [n]
+                      (-> sess
+                          (peri/request "/taxon/parent-suggestion/" :params {:name n})
+                          :response :body))
+            id (str (:taxon/id notho))]
+        (is (str/includes? (suggest "Zzyzxid × testica 'Cultivarname'") id)
+            "typed with the multiplication sign")
+        (is (str/includes? (suggest "Zzyzxid x testica 'Cultivarname'") id)
+            "typed with a letter x, which is what a keyboard offers")))))
+
 (deftest test-parent-suggestion-needs-the-rank-to-fit
   (tf/testing "a taxon named like a genus but filed as something else is not
                the parent the name describes"

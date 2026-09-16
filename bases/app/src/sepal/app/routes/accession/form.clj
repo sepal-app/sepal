@@ -9,6 +9,7 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.contact.interface.name :as contact.name]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]
@@ -201,7 +202,10 @@
                                   ;; erased it.
                                   [:option {:value (:contact/id supplier)
                                             :selected "selected"}
-                                   (:contact/name supplier)])])])
+                                   ;; The same label the completion list uses,
+                                   ;; so what you picked still reads the same
+                                   ;; once the page reloads.
+                                   (contact.name/label supplier)])])])
 
       (ui.form/section
         :title "Placement"

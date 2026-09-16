@@ -7,6 +7,7 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
@@ -146,3 +147,40 @@
         (is (= 200 (:status response)))
         (is (nil? (.selectFirst body "select#accession-id option[value]"))
             "the accession select should have no preselected option")))))
+
+(deftest test-no-reason-for-change-on-the-create-form
+  (tf/testing "a record being made for the first time has not changed from
+               anything. The create page passes no reasons, so the select
+               offered None and nothing else."
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/material/new/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (nil? (.selectFirst body "select#reason"))
+            "the field is absent, not an empty picker")
+        (is (not (.contains (.text body) "Reason for change")))))))
+
+(deftest test-the-edit-form-still-asks-for-a-reason
+  (tf/testing "there a change is exactly what is happening"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [user material]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/material/" (:material/id material)
+                                                      "/general/")))
+            body (Jsoup/parse ^String (:body response))]
+        (is (some? (.selectFirst body "select#reason")))
+        (is (pos? (.size (.select body "select#reason option")))
+            "and it offers more than nothing")))))

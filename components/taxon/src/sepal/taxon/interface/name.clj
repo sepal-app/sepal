@@ -80,6 +80,28 @@
    ["inae" :subtribe]
    ["eae" :tribe]])
 
+(defn hybrid-marker-variants
+  "The ways this name might have been written, differing only in the hybrid
+   marker.
+
+   The multiplication sign is the correct character and is what the WFO
+   reference taxonomy stores, but a keyboard offers a letter x and that is what
+   people type. A lookup by name has to find the row either way.
+
+   Only a standalone token is a marker — `Ilex` and `Rumex` contain an x that
+   is part of the word, and replacing that would be a bug. Returns the name
+   unchanged in a one-element vector when it carries no marker."
+  [s]
+  (if (str/blank? s)
+    []
+    (let [swap (fn [marker]
+                 (->> (str/split (str/trim s) #"\s+")
+                      (map #(if (#{"x" "×"} %) marker %))
+                      (str/join " ")))]
+      (->> [(str/trim s) (swap "×") (swap "x")]
+           (distinct)
+           (vec)))))
+
 (defn parent-name
   "The name of the taxon this one sits under, or nil when the name does not
    say.

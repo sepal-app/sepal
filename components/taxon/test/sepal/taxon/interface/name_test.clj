@@ -78,6 +78,26 @@
     (is (= [{:text "Quercus alba'" :role :scientific}]
            (taxon.name/segments "Quercus alba'")))))
 
+(deftest test-hybrid-marker-variants
+  (testing "the reference taxonomy stores × and a keyboard types x, so a
+            lookup by name has to find the row either way"
+    (is (= ["Acer × freemanii" "Acer x freemanii"]
+           (taxon.name/hybrid-marker-variants "Acer × freemanii")))
+    (is (= ["Acer x freemanii" "Acer × freemanii"]
+           (taxon.name/hybrid-marker-variants "Acer x freemanii")))
+    (is (= ["× Fatshedera" "x Fatshedera"]
+           (taxon.name/hybrid-marker-variants "× Fatshedera"))))
+
+  (testing "only a standalone token is a marker"
+    (is (= ["Ilex"] (taxon.name/hybrid-marker-variants "Ilex"))
+        "the x in Ilex is part of the word")
+    (is (= ["Rumex acetosa"] (taxon.name/hybrid-marker-variants "Rumex acetosa"))))
+
+  (testing "a name with no marker is itself, once"
+    (is (= ["Acer palmatum"] (taxon.name/hybrid-marker-variants "Acer palmatum")))
+    (is (= [] (taxon.name/hybrid-marker-variants nil)))
+    (is (= [] (taxon.name/hybrid-marker-variants "")))))
+
 (deftest test-parent-name
   (testing "a binomial hangs off its genus"
     (is (= "Acer" (taxon.name/parent-name "Acer palmatum")))

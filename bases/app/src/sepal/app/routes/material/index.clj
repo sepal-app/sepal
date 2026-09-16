@@ -133,7 +133,7 @@
                                    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})
                                         :class "italic"}
                                     (:accession/code accession)])
-                   :always (conj "Materials"))
+                   :always (conj "Material"))
     :page-title-buttons (when (authz/user-has-permission? viewer material.perm/create)
                           (create-button))))
 

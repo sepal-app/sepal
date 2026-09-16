@@ -11,7 +11,7 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [material panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Materials"]
+    :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Material"]
                   (:material/code material)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (material.panel/panel-content

@@ -96,7 +96,7 @@
           :empty-label "none"
           :children
           (panel/statistics-section
-            :stats [{:label "Materials"
+            :stats [{:label "Material"
                      :value material-count
                      :href (z/url-for material.routes/index nil {:accession-id id})}]))
 

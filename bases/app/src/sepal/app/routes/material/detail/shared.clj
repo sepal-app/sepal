@@ -54,7 +54,7 @@
    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})}
     (:accession/code accession)]
    [:a {:href (z/url-for material.routes/index {} {:accession-id (:accession/id accession)})}
-    "Materials"]
+    "Material"]
    (str (:accession/code accession) "." (:material/code material))])
 
 (defn actions

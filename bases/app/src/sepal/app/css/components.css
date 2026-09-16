@@ -245,8 +245,17 @@
   border-color: var(--color-field);
   box-shadow: none;
 }
-.ss-main .ss-values .ss-placeholder { color: var(--color-text-dim); }
-.ss-main .ss-values .ss-single { color: var(--color-text-table); }
+/* SlimSelect insets its own value a further 5px, and its placeholder 7px, on
+ * top of the padding .ss-main already shares with .spl-input. A select and a
+ * text input side by side started their text in different places. */
+.ss-main .ss-values .ss-placeholder {
+  color: var(--color-text-dim);
+  padding-inline: 0;
+}
+.ss-main .ss-values .ss-single {
+  color: var(--color-text-table);
+  margin-inline: 0;
+}
 .ss-main .ss-arrow { margin: 0 0 0 8px; }
 .ss-main .ss-arrow path { stroke: var(--color-text-dim); }
 
