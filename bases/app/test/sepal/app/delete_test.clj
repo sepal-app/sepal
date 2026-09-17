@@ -336,3 +336,39 @@
   (is (= "This name comes from the World Flora Online list"
          (app.delete/blocker-label {:reason :wfo :count 1}))
       "a reason with nothing to count renders without a number"))
+
+(deftest test-deleting-a-hybrid-takes-its-parentage-with-it
+  ;; A hybrid's own taxon_parentage rows reference it, so without clearing them
+  ;; the foreign key refuses and a hybrid cannot be deleted at all. Synonyms
+  ;; are already handled this way.
+  (tf/testing "a cross and the rows recording it"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [a (taxon.i/create! *db* {:name "Acer rubrum" :rank :species})
+            hybrid (taxon.i/create! *db* {:name "Acer × freemanii" :rank :species})]
+        (taxon.i/set-parentage! *db* (:taxon/id hybrid)
+                                [{:parent-taxon-id (:taxon/id a)}])
+        (is (nil? (app.delete/delete! :taxon *db* hybrid (:user/id user)))
+            "deleting the hybrid should succeed")
+        (is (empty? (taxon.i/list-parentage *db* (:taxon/id hybrid)))
+            "and leave no parentage row pointing at a taxon that is gone")
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-a-taxon-named-in-a-cross-says-so-rather-than-failing
+  ;; The foreign key would refuse anyway; the point is that the dialog names
+  ;; the reason instead of surfacing a constraint error.
+  (tf/testing "a parent of a recorded cross"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [parent (taxon.i/create! *db* {:name "Cattleya" :rank :genus})
+            hybrid (taxon.i/create! *db* {:name "Laeliocattleya" :rank :genus})]
+        (taxon.i/set-parentage! *db* (:taxon/id hybrid)
+                                [{:parent-taxon-id (:taxon/id parent)}])
+        (let [found (app.delete/blockers :taxon *db* parent)]
+          (is (= [:parentage] (mapv :reason found)))
+          (is (= [1] (mapv :count found)))
+          (is (re-find #"cross"
+                       (app.delete/blocker-label (first found)))
+              "the label should say what a parentage row is"))
+        (jdbc.sql/delete! *db* :taxon_parentage {:taxon_id (:taxon/id hybrid)})
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))

@@ -62,6 +62,27 @@
                      :where [:= :p.parent_taxon_id parent-taxon-id]
                      :order-by [[:t.name :asc]]}))
 
+(defn count-children
+  "How many crosses name this taxon as a parent.
+
+  For the delete dialog, which has to say why rather than let the foreign key
+  refuse with a constraint error."
+  [db parent-taxon-id]
+  (:c (db.i/execute-one! db {:select [[[:count :*] :c]]
+                             :from [:taxon_parentage]
+                             :where [:= :parent_taxon_id parent-taxon-id]})))
+
+(defn delete-for-taxon!
+  "Remove this taxon's own parentage.
+
+  Its rows reference it, so deleting the taxon without this leaves the foreign
+  key to refuse and a hybrid cannot be deleted at all. Rows naming it as a
+  *parent* are a different matter and block the delete instead — losing them
+  would quietly rewrite another taxon's ancestry."
+  [db taxon-id]
+  (db.i/execute-one! db {:delete-from :taxon_parentage
+                         :where [:= :taxon_id taxon-id]}))
+
 (defn set-for-taxon!
   "Replace this taxon's parentage with `parents`, in the order given.
 

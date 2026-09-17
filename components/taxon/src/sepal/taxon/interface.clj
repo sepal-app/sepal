@@ -35,6 +35,14 @@
   "The crosses naming this taxon as a parent."
   #'parentage/list-children)
 
+(def count-parentage-children
+  "How many crosses name this taxon as a parent."
+  #'parentage/count-children)
+
+(def delete-parentage!
+  "Remove this taxon's own parentage rows."
+  #'parentage/delete-for-taxon!)
+
 (def set-parentage!
   "Replace this taxon's parentage with the given parents, in order."
   #'parentage/set-for-taxon!)

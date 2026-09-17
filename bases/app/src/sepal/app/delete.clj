@@ -84,6 +84,10 @@
   (let [id (:taxon/id taxon)]
     (->> [(counted :accession (accession.i/count-by-taxon-id db id))
           (counted :child-taxon (taxon.i/count-children db id))
+          ;; A cross naming this taxon as a parent. Not cleared with the
+          ;; delete: removing it would quietly rewrite another taxon's
+          ;; ancestry, so this refuses and says so.
+          (counted :parentage (taxon.i/count-parentage-children db id))
           ;; Reference data this garden received, not a record it authored.
           ;; Pressing delete on one is a mis-click.
           (when (:taxon/wfo-taxon-id taxon) {:reason :wfo :count 1})]
@@ -93,6 +97,9 @@
   (let [id (:taxon/id taxon)]
     (taxon.activity/create! tx taxon.activity/deleted deleted-by taxon)
     (synonym.i/delete-for-taxon! tx id)
+    ;; This taxon's own parentage, which references it. Without this the
+    ;; foreign key refuses and a hybrid cannot be deleted at all.
+    (taxon.i/delete-parentage! tx id)
     (note.i/delete-for-resource! tx :taxon id)
     (tag.i/delete-for-resource! tx :taxon id)
     (media.i/unlink-resource! tx :taxon id)
@@ -141,6 +148,7 @@
    :material-change "%d move(s) in the history reference this location"
    :accession "%d accession(s) reference this"
    :child-taxon "%d taxa name this one as their parent"
+   :parentage "%d cross(es) name this taxon as a parent"
    :wfo "This name comes from the World Flora Online list"})
 
 (defn blocker-label [{:keys [reason count]}]
