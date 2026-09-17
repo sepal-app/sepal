@@ -13,13 +13,20 @@
   "What kind of party a contact is, over Bauble's source_type vocabulary.
    BG and Research/FieldStation are spelled out because Bauble's codes were
    abbreviations for a fixed-width UI, and a slash in an enum value invites
-   escaping problems."
+   escaping problems.
+
+   Must match the `contact_type` lookup table exactly. The table is what the
+   database enforces; this is what a read coerces against, and a value in one
+   but not the other is a 500 on the contact page."
   [:enum {:decode/store keyword
           :encode/store name-encoder
           :decode/params keyword-encoder}
    :expedition
    :staff
    :commercial
+   :nursery
+   :seed_bank
+   :arboretum
    :gene_bank
    :university_department
    :individual

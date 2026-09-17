@@ -8,6 +8,7 @@
             [sepal.contact.interface :as contact.i]
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.spec :as contact.spec]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as err.i]
             [sepal.user.interface :as user.i]))
 
@@ -18,6 +19,12 @@
   [:expedition :staff :commercial :gene_bank :university_department
    :individual :botanic_garden :club :other :research_station
    :municipal_department :unknown])
+
+(def sepal-contact-types
+  "The three Sepal adds beyond Bauble's list. A garden that buys from
+  nurseries and swaps with seed banks outgrew the vocabulary an old desktop
+  application shipped with."
+  [:nursery :seed_bank :arboretum])
 
 (deftest test-type-enum-validates-every-bauble-value
   (doseq [t contact-types]
@@ -107,3 +114,33 @@
           (is (some? (contact.i/get-by-id db id)))
           (contact.i/delete! db id)
           (is (nil? (contact.i/get-by-id db id))))))))
+
+(deftest test-the-enum-and-the-lookup-table-say-the-same-thing
+  (testing "contact_type is what the database enforces and contact.spec/type is
+            what a read coerces against. A value in one and not the other is
+            either a row nobody can save or a 500 on the contact page, and
+            neither announces itself until someone hits it."
+    (let [in-table (->> (db.i/execute! *db* {:select [:name] :from [:contact_type]})
+                        (map :contact-type/name)
+                        (set))
+          in-spec (->> (m/children contact.spec/type)
+                       (map name)
+                       (set))]
+      (is (= in-spec in-table)
+          (str "only in the spec: " (sort (remove in-table in-spec))
+               "; only in the table: " (sort (remove in-spec in-table)))))))
+
+(deftest test-a-type-the-vocabulary-does-not-know-is-refused
+  ;; The failure this replaces: an unknown value wrote without complaint and
+  ;; came back as a coercion error on every later read of that contact.
+  (tf/testing "the database rejects it rather than storing it"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [_]
+      (is (thrown? Exception
+                   (jdbc.sql/insert! *db* :contact {:name "Bad Co"
+                                                    :type "not_a_type"}))))))
+
+(deftest test-the-types-sepal-adds-beyond-bauble-validate
+  (doseq [t sepal-contact-types]
+    (is (m/validate contact.spec/CreateContact {:name "Fairchild" :type t})
+        (str "CreateContact should accept " t))))

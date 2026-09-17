@@ -11,20 +11,6 @@ CREATE TABLE "user" (
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 ) strict;
-CREATE TABLE contact (
-  id integer primary key autoincrement,
-  name text not null,
-  email text,
-  address text,
-  province text,
-  postal_code text,
-  country text,
-  phone text,
-  business text,
-  notes text,
-  created_at text not null default (datetime('now')),
-  updated_at text not null default (datetime('now'))
-, type text, address1 text, address2 text, city text) strict;
 CREATE TABLE location (
   id integer primary key autoincrement,
   code text not null,
@@ -132,10 +118,6 @@ CREATE TRIGGER trigger_user_updated_at after update on "user"
 begin
   update "user" set updated_at = datetime('now') where id = NEW.id;
 end;
-CREATE TRIGGER trigger_contact_updated_at after update on contact
-begin
-  update contact set updated_at = datetime('now') where id = NEW.id;
-end;
 CREATE TRIGGER trigger_location_updated_at after update on location
 begin
   update location set updated_at = datetime('now') where id = NEW.id;
@@ -195,20 +177,6 @@ CREATE VIRTUAL TABLE contact_fts USING fts5(
   content='contact',
   content_rowid='id'
 );
-CREATE TRIGGER trigger_contact_fts_insert AFTER INSERT ON contact BEGIN
-  INSERT INTO contact_fts(rowid, name, business, email)
-  VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
-END;
-CREATE TRIGGER trigger_contact_fts_delete AFTER DELETE ON contact BEGIN
-  INSERT INTO contact_fts(contact_fts, rowid, name, business, email)
-  VALUES('delete', old.id, old.name, COALESCE(old.business, ''), COALESCE(old.email, ''));
-END;
-CREATE TRIGGER trigger_contact_fts_update AFTER UPDATE OF name, business, email ON contact BEGIN
-  INSERT INTO contact_fts(contact_fts, rowid, name, business, email)
-  VALUES('delete', old.id, old.name, COALESCE(old.business, ''), COALESCE(old.email, ''));
-  INSERT INTO contact_fts(rowid, name, business, email)
-  VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
-END;
 CREATE TABLE taxon_rank (name text primary key) strict;
 CREATE TABLE "taxon" (
   id integer primary key autoincrement,
@@ -369,7 +337,44 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
 end;
 CREATE INDEX location_status_idx on location (status);
 CREATE UNIQUE INDEX location_code_idx ON location (code);
+CREATE TABLE contact_type (name text primary key) strict;
+CREATE TABLE "contact" (
+  id integer primary key autoincrement,
+  name text not null,
+  email text,
+  address text,
+  address1 text,
+  address2 text,
+  city text,
+  province text,
+  postal_code text,
+  country text,
+  phone text,
+  business text,
+  type text references contact_type(name),
+  notes text,
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
 CREATE INDEX contact_city_idx on contact (city);
+CREATE TRIGGER trigger_contact_updated_at after update on contact
+begin
+  update contact set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TRIGGER trigger_contact_fts_insert AFTER INSERT ON contact BEGIN
+  INSERT INTO contact_fts(rowid, name, business, email)
+  VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
+END;
+CREATE TRIGGER trigger_contact_fts_delete AFTER DELETE ON contact BEGIN
+  INSERT INTO contact_fts(contact_fts, rowid, name, business, email)
+  VALUES('delete', old.id, old.name, COALESCE(old.business, ''), COALESCE(old.email, ''));
+END;
+CREATE TRIGGER trigger_contact_fts_update AFTER UPDATE OF name, business, email ON contact BEGIN
+  INSERT INTO contact_fts(contact_fts, rowid, name, business, email)
+  VALUES('delete', old.id, old.name, COALESCE(old.business, ''), COALESCE(old.email, ''));
+  INSERT INTO contact_fts(rowid, name, business, email)
+  VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
+END;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -398,6 +403,21 @@ INSERT INTO accession_received_type VALUES('tuber');
 INSERT INTO accession_received_type VALUES('unknown');
 INSERT INTO accession_received_type VALUES('unrooted_cutting');
 INSERT INTO accession_received_type VALUES('vegetative_spreading');
+INSERT INTO contact_type VALUES('arboretum');
+INSERT INTO contact_type VALUES('botanic_garden');
+INSERT INTO contact_type VALUES('club');
+INSERT INTO contact_type VALUES('commercial');
+INSERT INTO contact_type VALUES('expedition');
+INSERT INTO contact_type VALUES('gene_bank');
+INSERT INTO contact_type VALUES('individual');
+INSERT INTO contact_type VALUES('municipal_department');
+INSERT INTO contact_type VALUES('nursery');
+INSERT INTO contact_type VALUES('other');
+INSERT INTO contact_type VALUES('research_station');
+INSERT INTO contact_type VALUES('seed_bank');
+INSERT INTO contact_type VALUES('staff');
+INSERT INTO contact_type VALUES('university_department');
+INSERT INTO contact_type VALUES('unknown');
 INSERT INTO material_change_reason VALUES('dead','Dead');
 INSERT INTO material_change_reason VALUES('discarded','Discarded');
 INSERT INTO material_change_reason VALUES('discarded_weedy','Discarded, weedy');
@@ -474,3 +494,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916140000', '2026-09-16 20:09:46');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916150000', '2026-09-16 20:09:46');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917120000', '2026-09-17 15:05:28');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917130000', '2026-09-17 15:34:45');
