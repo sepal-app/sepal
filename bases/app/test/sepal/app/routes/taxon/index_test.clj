@@ -1,6 +1,6 @@
 (ns sepal.app.routes.taxon.index-test
-  (:require [clojure.string :as str]
-            [babashka.fs :as fs]
+  (:require [babashka.fs :as fs]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]

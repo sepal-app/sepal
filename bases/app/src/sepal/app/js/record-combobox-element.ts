@@ -235,13 +235,31 @@ export class SepalCombobox extends HTMLElement {
                 // which would leave the field holding a name that matches
                 // nothing while a record is still selected underneath. Once you
                 // have typed over it, backspace is backspace again.
-                if (!this.selected) return
-                if (this.input.value !== this.selected.text) return
+                if (!this.committedIntact()) return
                 event.preventDefault()
                 this.commit(null)
                 this.close()
                 break
+            default:
+                // Typing over a committed record replaces it, for the same
+                // reason backspace clears it whole: it is one thing, not text
+                // to edit. The caret sits at the end, so without this the
+                // letter appended to the name and searched for a record called
+                // "Prunus salicinarosa" — a request that answers nothing,
+                // which reads as the field being broken.
+                if (event.key.length !== 1) return
+                if (event.ctrlKey || event.metaKey || event.altKey) return
+                if (!this.committedIntact()) return
+                this.commit(null)
+                this.input.value = ""
+                break
         }
+    }
+
+    /** Whether the field still holds exactly the record that was chosen. Once
+     *  you have edited the text it is a query, and behaves like one. */
+    private committedIntact() {
+        return !!this.selected && this.input.value === this.selected.text
     }
 
     // ── searching ────────────────────────────────────────────────────────────

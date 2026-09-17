@@ -12,7 +12,7 @@
 
 (defn- memory-db []
   (jdbc/with-options (jdbc/get-datasource {:dbtype "sqlite" :dbname ":memory:"})
-                     jdbc/snake-kebab-opts))
+    jdbc/snake-kebab-opts))
 
 (deftest test-a-runaway-query-is-interrupted
   (testing "sqlite3_interrupt reaches a statement that is merely slow, which is

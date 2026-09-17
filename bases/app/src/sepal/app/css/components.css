@@ -212,8 +212,11 @@
 @media (max-width: 639px) {
   .spl-record-body { padding: 16px; }
 }
+/* A control fills its field. The picker is one of these now, so it needs no
+ * rule of its own. */
 .spl-form .spl-input,
-.spl-form select,
+.spl-form select { width: 100%; }
+
 /* In flow at the foot of the form, not pinned across the viewport: the action
  * belongs to the form, and a bar spanning the window implied it belonged to
  * the page. Right-aligned on the tinted surface with a hairline above. */
