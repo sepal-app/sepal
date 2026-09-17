@@ -730,3 +730,34 @@
                                                   {:select [:*] :from [[:taxon :t]]})]
       (is (= :t.id (second where))))))
 
+(deftest search-fields-test
+  (testing "a resource can say which fields a bare word searches, and they are
+            ORed. Material is identified by its accession's code as much as by
+            its own, and by the plant it is — searching only one of the three
+            means typing a code you can see on the page finds nothing."
+    (let [fields {:code {:column :m.code :type :text :search? true}
+                  :accession {:column :a.code
+                              :type :fts
+                              :fts-table :accession_fts
+                              :id-column :m.accession_id
+                              :search? true}
+                  :taxon {:column :t.name
+                          :type :fts
+                          :fts-table :taxon_fts
+                          :search? true
+                          :joins [[:accession :a] [:= :a.id :m.accession_id]
+                                  [:taxon :t] [:= :t.id :a.taxon_id]]}}
+          {:keys [where]} (compiler/compile-query fields
+                                                  {:terms ["2026"]}
+                                                  {:select [:*] :from [[:material :m]]})]
+      (is (= :or (first where)) "the marked fields are alternatives")
+      (is (= 3 (count (rest where))))
+      (is (some #(= :m.accession_id (second %)) (rest where))
+          "the accession's code is reached through the column the row carries")))
+
+  (testing "with none marked it still searches the one FTS field, as it did"
+    (let [{:keys [where]} (compiler/compile-query test-fields
+                                                  {:terms ["quercus"]}
+                                                  {:select [:*] :from [[:material :m]]})]
+      (is (= :in (first where))))))
+

@@ -202,20 +202,19 @@
       clause)))
 
 (defn- collect-joins
-  "Gather unique joins from all filters, preserving order.
+  "Gather unique joins from the given field definitions, preserving order.
 
    Joins are deduplicated by table alias to avoid duplicate joins
    when multiple filters use the same related table, or when a join
    already exists in the base statement (either :join or :left-join)."
-  [filters fields base-stmt]
+  [field-defs base-stmt]
   (let [;; Extract existing table aliases from base statement joins
         existing-aliases (->> (concat (:join base-stmt) (:left-join base-stmt))
                               (partition-all 2)
                               (map first)  ; get [table alias] pairs
                               set)]
-    (->> filters
-         (mapcat (fn [{:keys [field]}]
-                   (get-in fields [(keyword field) :joins])))
+    (->> field-defs
+         (mapcat :joins)
          (partition-all 2)
          (reduce (fn [seen [tbl _condition :as join]]
                    (if (or (nil? tbl)
@@ -247,17 +246,51 @@
                        fts-fields))
         (first fts-fields))))
 
-(defn- terms->clause
-  "Convert free-text terms to an FTS clause.
+(defn- fts-in-clause
+  "`id-column IN (rowids matching)`. A subquery, so it correlates with a joined
+   table rather than needing one."
+  [{:keys [column fts-table id-column]} match]
+  [:in (or id-column (column->id-column column))
+   {:select [:rowid]
+    :from [fts-table]
+    :where [:match fts-table match]}])
 
-   Uses a subquery to properly correlate with joined tables."
+(defn- searchable-fields
+  "The fields a bare word searches, in the order they are declared.
+
+   A resource marks them `:search? true`. With none marked the bare word goes
+   to the one primary FTS field, which is what every resource but material
+   wants: its own name or code."
+  [fields]
+  (let [marked (filter (fn [[_ v]] (:search? v)) fields)]
+    (if (seq marked)
+      marked
+      (when-let [primary (primary-fts-field fields)]
+        [primary]))))
+
+(defn- terms->clause
+  "Convert free-text terms to a clause over every field the resource says a
+   bare word searches.
+
+   ORed, because they are alternatives: a material is identified by its own
+   code, by the code of the accession it came from and by the plant it is, and
+   which of those someone types is not something the search gets to choose."
   [terms fields]
   (when-let [match (terms->match terms)]
-    (when-let [[_ {:keys [column fts-table id-column]}] (primary-fts-field fields)]
-      [:in (or id-column (column->id-column column))
-       {:select [:rowid]
-        :from [fts-table]
-        :where [:match fts-table match]}])))
+    (let [clauses (->> (searchable-fields fields)
+                       (keep (fn [[_ {:keys [type] :as field}]]
+                               (if (= :fts type)
+                                 (fts-in-clause field match)
+                                 ;; A plain column has no index behind it, so
+                                 ;; this is the ordinary contains match the
+                                 ;; same field gives as a filter.
+                                 (when-let [value (first terms)]
+                                   [:like (:column field) (str "%" value "%")]))))
+                       (vec))]
+      (case (count clauses)
+        0 nil
+        1 (first clauses)
+        (into [:or] clauses)))))
 
 (defn relevance-order
   "Order-by terms putting the closest names first, or nil when the query has no
@@ -352,8 +385,19 @@
                         (cond-> term-clause (conj term-clause))
                         (into excluded-clauses))
 
-        ;; Collect joins from all filters (excluding those already in base-stmt)
-        joins (collect-joins filters fields base-stmt)
+        ;; Joins for every field the query reads, not only the filtered ones:
+        ;; a bare word can search a related table too, and a caller whose base
+        ;; statement happens not to join it would otherwise compile SQL naming
+        ;; a column that is not there.
+        joins (collect-joins (concat (keep #(get fields (keyword (:field %))) filters)
+                                     ;; Keyed off the clause rather than the
+                                     ;; terms: terms that are all blank compile
+                                     ;; to nothing, and a join for a search that
+                                     ;; is not happening is a join that changes
+                                     ;; the row count for no reason.
+                                     (when term-clause
+                                       (map second (searchable-fields fields))))
+                             base-stmt)
 
         ;; Build final WHERE clause
         where-clause (when (seq all-clauses)

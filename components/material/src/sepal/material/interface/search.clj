@@ -5,9 +5,14 @@
 (defmethod search.i/search-config :material [_]
   {:table [:material :m]
    :fields
-   {;; Direct fields
+   {;; A bare word searches the three things a material is known by: its own
+    ;; code, the code of the accession it came from, and the plant it is. They
+    ;; are what the picker shows on one line — "2026.0001.1 (Prunus salicina)"
+    ;; — and searching only the last of them meant typing a code you could read
+    ;; on screen found nothing.
     :code   {:column :m.code
              :type :text
+             :search? true
              :label "Code"}
 
     :type   {:column :m.type
@@ -24,11 +29,17 @@
              :type :id
              :label "ID"}
 
-    ;; Related: accession (direct FK)
+    ;; Related: accession (direct FK).
+    ;;
+    ;; Through accession_fts keyed by the foreign key the material already
+    ;; carries, so this needs no join and matches whole words the way the
+    ;; accession list does.
     :accession    {:column :a.code
-                   :type :text
-                   :label "Accession"
-                   :joins [[:accession :a] [:= :a.id :m.accession_id]]}
+                   :type :fts
+                   :fts-table :accession_fts
+                   :id-column :m.accession_id
+                   :search? true
+                   :label "Accession"}
 
     :accession.id {:column :a.id
                    :type :id
@@ -39,6 +50,7 @@
     :taxon       {:column :t.name
                   :type :fts
                   :fts-table :taxon_fts
+                  :search? true
                   :label "Taxon"
                   :joins [[:accession :a] [:= :a.id :m.accession_id]
                           [:taxon :t] [:= :t.id :a.taxon_id]]}

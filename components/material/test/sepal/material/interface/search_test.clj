@@ -1,5 +1,6 @@
 (ns sepal.material.interface.search-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [sepal.accession.interface :as accession.i]
             [sepal.app.test.fixtures :as tf]
@@ -29,3 +30,34 @@
               rows (db.i/execute! *db* stmt)]
           (is (some #(= (:material/id material) (:material/id %)) rows)))
         (tag.i/delete! *db* (:tag/id tag))))))
+
+(deftest test-a-bare-word-finds-material-by-code-taxon-or-accession
+  (tf/testing "the picker shows \"2026.0001.1 (Prunus salicina)\" on one line,
+               so all three parts of that have to find it. Only the taxon did,
+               which meant typing a code you could read on the screen found
+               nothing."
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [taxon accession material]}]
+      (material.i/update! *db* (:material/id material) {:code "SEARCHME"})
+      (let [found (fn [q]
+                    (->> (search.i/compile-query :material
+                                                 (search.i/parse q)
+                                                 {:select [:m.id] :from [[:material :m]]})
+                         (db.i/execute! *db*)
+                         (map :material/id)
+                         (set)))
+            id (:material/id material)]
+        (is (contains? (found "SEARCHME") id)
+            "its own code")
+        (is (contains? (found (:accession/code accession)) id)
+            "the code of the accession it came from")
+        (is (contains? (found (first (str/split (:taxon/name taxon) #"\s+"))) id)
+            "the plant it is")
+        (is (not (contains? (found "nothingmatchesthis") id))
+            "and a word that matches none of the three finds nothing")))))
+
