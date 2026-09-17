@@ -12,10 +12,10 @@
          :viewBox "0 0 24 24",
          :height "24"}
    [:path {:d "M16 2v2"}]
-   [:path {:d "M17.915 22a6 6 0 0 0-12 0"}]
+   [:path {:d "M17.915 21a6 6 0 10-12 0"}]
    [:path {:d "M8 2v2"}]
-   [:circle {:cx "12", :cy "12", :r "4"}]
-   [:rect {:x "3", :y "4", :width "18", :height "18", :rx "2"}]])
+   [:circle {:cx "12" :cy "11" :r "4"}]
+   [:rect {:x "3" :y "3" :width "18" :height "18" :rx "2"}]])
 
 (defn settings []
   [:svg {:stroke "currentColor"
@@ -86,9 +86,9 @@
          :stroke-linecap "round"
          :stroke-linejoin "round"
          :class class}
+   [:path {:d "m16 11 2 2 4-4"}]
    [:path {:d "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"}]
-   [:circle {:cx "9" :cy "7" :r "4"}]
-   [:polyline {:points "16 11 18 13 22 9"}]])
+   [:circle {:cx "9" :cy "7" :r "4"}]])
 
 (defn user-plus
   "User plus icon from Lucide (for invite user)."
@@ -204,7 +204,7 @@
          :width size
          :height size}
    [:circle {:cx "12" :cy "12" :r "10"}]
-   [:path {:d "m9 12 2 2 4-4"}]])
+   [:path {:d "m16 9-5.5 5.5L8 12"}]])
 
 ;; ── Section rail ──────────────────────────────────────────────────────────
 ;; The rail's icons, all from Lucide so they share one 24 grid and one stroke
