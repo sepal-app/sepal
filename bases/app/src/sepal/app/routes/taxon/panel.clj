@@ -44,6 +44,24 @@
       (when (= "wfo" source)
         [:span {:class "spl-badge spl-badge--neutral"} "WFO"])])])
 
+(defn- vernacular-names-section
+  "What this taxon is called in everyday speech.
+
+   Plain text, not `taxon-name/render`: a vernacular name is not a scientific
+   name and italicising it would claim it is one. Not links either, for the
+   same reason synonyms are not — there is nothing to navigate to.
+
+   The language sits beside the name wherever the record carries one, because
+   the same common name means different plants in different places."
+  [& {:keys [vernacular-names]}]
+  [:div {:class "space-y-0"}
+   (for [{vernacular-name :name language :language} vernacular-names]
+     ^{:key (str language "-" vernacular-name)}
+     [:div {:class "flex items-center gap-2 text-sm -mx-2 px-2 py-1.5"}
+      [:span vernacular-name]
+      (when (seq language)
+        [:span {:class "text-xs text-text-dim"} language])])])
+
 (defn panel-content
   "Render the taxon panel content.
 
@@ -59,7 +77,8 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [taxon parent stats synonyms notes note-count activities activity-count timezone on-close actions]}]
-  (let [{:taxon/keys [id name author rank wfo-taxon-id distribution]} taxon
+  (let [{:taxon/keys [id name author rank wfo-taxon-id distribution
+                      vernacular-names]} taxon
         {:keys [accession-count material-count]} stats]
     (panel/panel-container
       :children
@@ -87,6 +106,17 @@
                       (conj {:label "Distribution" :value distribution})
                       true
                       (conj {:label "WFO ID" :value wfo-taxon-id}))))
+
+        ;; Vernacular names. Above the counts, because the panel is the whole
+        ;; view for a read-only visitor and the common name is often the only
+        ;; name they know the plant by.
+        (panel/collapsible-section
+          :title "Vernacular names"
+          :count (count vernacular-names)
+          :disabled? (empty? vernacular-names)
+          :empty-label "none"
+          :children
+          (vernacular-names-section :vernacular-names vernacular-names))
 
         ;; Statistics section
         (panel/collapsible-section

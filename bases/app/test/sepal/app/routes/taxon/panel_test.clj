@@ -65,3 +65,45 @@
         (is (not (re-find #"Encyclia cochleata" body))
             "another taxon's synonym must not appear in this panel")
         (synonym.i/remove-synonym! *db* (:synonym/id row))))))
+
+(deftest test-a-taxons-vernacular-names-appear-in-the-panel
+  (tf/testing "the common name and its language reach the rendered panel"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon]
+     {:db *db*
+      :vernacular-names [{:name "cockleshell orchid" :language "English"}
+                         {:name "concha" :language "Spanish"}]}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (panel-body sess (:taxon/id taxon))]
+        (is (re-find #"Vernacular names" body))
+        (is (re-find #"cockleshell orchid" body))
+        (is (re-find #"concha" body))
+        (testing "the language is shown, because the same common name means
+                  different plants in different places"
+          (is (re-find #"English" body))
+          (is (re-find #"Spanish" body)))))))
+
+(deftest test-a-vernacular-name-is-not-italicised
+  ;; taxon-name/render italicises the epithet of a scientific name. A common
+  ;; name is not one, so rendering it that way would claim it is.
+  (tf/testing "a common name is not dressed as a scientific one"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon]
+     {:db *db* :vernacular-names [{:name "cockleshell orchid" :language "English"}]}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (panel-body sess (:taxon/id taxon))]
+        (is (not (re-find #"<i[^>]*>[^<]*cockleshell" body)))
+        (is (not (re-find #"<em[^>]*>[^<]*cockleshell" body)))))))
+
+(deftest test-the-vernacular-names-section-is-present-when-empty
+  ;; Present but disabled, matching Synonyms and External Links — a section
+  ;; that vanishes makes the panel's shape vary between taxa.
+  (tf/testing "no vernacular names of its own"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (panel-body sess (:taxon/id taxon))]
+        (is (re-find #"Vernacular names" body) "the section is present, not absent")))))
