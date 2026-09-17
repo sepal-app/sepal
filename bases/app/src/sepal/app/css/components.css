@@ -399,7 +399,12 @@
   gap: 22px;
   padding: 0 22px;
   border-bottom: 1px solid var(--color-border-light);
-  overflow-x: auto;
+  /* Wraps rather than scrolls. `overflow-x: auto` forces overflow-y to compute
+     to auto too, and that clipped the disabled tab's reason, which sits below
+     a container only as tall as the tabs — the same trap the rail hit, see the
+     .spl-rail comment. Five short labels only wrap under about 340px, and a
+     wrapped tab beats one parked off the edge of a scroller. */
+  flex-wrap: wrap;
 }
 
 /* ── One column on a record page ───────────────────────────────────────────
