@@ -100,23 +100,24 @@
 (defn- sections
   "The section rail's entries.
 
-   The three record sections run most specific to least — Material is one
-   plant, an accession is a batch from one source, a taxon is a kind of plant —
-   which also puts the section a garden works in daily at the top.
+   The three record sections run in the order a garden has to create them: a
+   taxon before an accession of it, an accession before material from it. That
+   is general above specific, which is also how every other hierarchy here
+   reads, down to the Taxa list putting a parent above its children.
 
-   Every icon is Lucide, one 24 grid at stroke 2. Material and Taxa both draw
-   plants, which the order above keeps apart — a sprout is low and wide with a
-   ground line, trees are two trunks filling the box. The flower Taxa used to
-   draw sat next to the sprout and read as the same shape at 20px."
+   Every icon is Lucide, one 24 grid at stroke 2. Taxa and Material both draw
+   plants, which Accessions between them keeps apart — trees are two trunks
+   filling the box, a sprout is low and wide with a ground line. The flower
+   Taxa used to draw sat next to the sprout and read as the same shape at 20px."
   []
   [{:label "Activity" :href (z/url-for activity.routes/index)
     :icon (lucide/history)}
-   {:label "Material" :href (z/url-for material.routes/index)
-    :icon (lucide/sprout)}
-   {:label "Accessions" :href (z/url-for accession.routes/index)
-    :icon (lucide/clipboard-list)}
    {:label "Taxa" :href (z/url-for taxon.routes/index)
     :icon (lucide/trees)}
+   {:label "Accessions" :href (z/url-for accession.routes/index)
+    :icon (lucide/clipboard-list)}
+   {:label "Material" :href (z/url-for material.routes/index)
+    :icon (lucide/sprout)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
    {:label "Tags" :href (z/url-for tag.routes/index)
