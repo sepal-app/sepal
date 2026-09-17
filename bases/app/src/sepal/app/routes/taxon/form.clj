@@ -7,6 +7,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.tooltip :as tooltip]
+            [sepal.taxon.interface.name :as taxon.name]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -19,17 +20,25 @@
   [& {:keys [on-cancel] :or {on-cancel :reload}}]
   (form/footer-buttons :form-event "taxon-form" :on-cancel on-cancel))
 
-(defn- vernacular-name-decoder [form-data]
+(defn- vernacular-name-decoder
+  "Collect the repeated name and language fields into one list.
+
+  Rows with no name are dropped rather than rejected. The form always offers
+  an empty row so there is somewhere to type without pressing anything first,
+  and an untouched row is not something to complain about — the same rule the
+  parentage slots follow."
+  [form-data]
   (let [names (cond-> (:vernacular-name-name form-data)
                 (-> form-data :vernacular-name-name string?)
                 vector)
         langs (cond-> (:vernacular-name-language form-data)
                 (-> form-data :vernacular-name-language string?)
                 vector)
-        vernacular-names (mapv (fn [name lang]
-                                 {:name name
-                                  :language lang})
-                               names langs)]
+        vernacular-names (->> (mapv (fn [name lang]
+                                      {:name name
+                                       :language lang})
+                                    names langs)
+                              (filterv #(not (str/blank? (:name %)))))]
     (-> form-data
         (assoc :vernacular-names vernacular-names)
         (dissoc :vernacular-name-name
@@ -78,6 +87,17 @@
     [:parentage [:* [:map
                      [:parent-taxon-id [:string {:min 1}]]
                      [:role [:enum "seed" "pollen" "unknown"]]]]]]])
+
+(defn- hybrid-name?
+  "Whether this name carries a standalone hybrid marker.
+
+   Goes through `normalize-hybrid-marker` rather than matching a regex here,
+   so the rule about what counts as a marker is stated once — Ilex and Rumex
+   carry an x that belongs to the word."
+  [nm]
+  (boolean (some-> nm
+                   (taxon.name/normalize-hybrid-marker)
+                   (str/includes? (str " " taxon.name/hybrid-marker " ")))))
 
 (def ^:private hybrid-name-test
   "A standalone × or x is a hybrid marker. Ilex and Rumex carry an x that
@@ -130,7 +150,7 @@
                                {:index next-index})
             :hx-target "#parentage-rows"
             :hx-swap "beforeend"}
-   "Add parent"])
+   "Add another parent"])
 
 (defn- parentage-section
   "What a hybrid was crossed from.
@@ -141,33 +161,33 @@
   wiring alike. Two slots to begin with, because a cross usually has two
   parents and a form that starts empty asks you to press something first.
 
-  Disabled rather than hidden until the name carries a hybrid marker, and
-  tracked live off the Name field so it opens as you type. A section that
-  vanishes makes the form's shape vary between taxa, which is the reasoning the
-  panel's own sections already follow; disabling says the field exists and why
-  it is not yours yet.
+  Collapsed until the name carries a hybrid marker, not hidden and not
+  disabled. Hidden makes the form's shape vary between taxa. Disabled was
+  wrong for a subtler reason: the section is not unavailable, it is merely not
+  relevant yet, and a hybrid whose name was typed without the marker could
+  then never have its cross recorded at all. Closed-but-openable leaves that
+  door open.
 
-  `<fieldset disabled>` does the work: it disables the combobox's inner native
-  input, and the spec bars a form-associated custom element inside one from
-  submitting, so an unopened section posts nothing."
+  A native `<details>`, so the toggle is keyboard-operable and announced as a
+  disclosure without script. Alpine only opens it — typing a marker expands the
+  section, and removing one leaves it where you put it rather than shutting it
+  under you."
   [& {:keys [values errors read-only]}]
   (let [rows (vec (:parentage values))
         slots (max 2 (count rows))]
-    [:fieldset
-     {:class "spl-form-section spl-fieldset"
-      :data-section "parentage"
-      :x-data (json/js {:hybrid false})
-      :x-init (str "const f = () => hybrid = " hybrid-name-test
-                   ".test(document.getElementById('name')?.value ?? '');"
-                   " f(); document.getElementById('name')"
-                   "?.addEventListener('input', f)")
-      :x-bind:disabled "!hybrid"
-      :x-bind:class "hybrid ? '' : 'opacity-50'"}
-     [:legend {:class "spl-form-section-title"} "Hybrid parentage"]
+    [:details
+     (cond-> {:class "spl-form-section spl-form-details"
+              :data-section "parentage"
+              :x-init (str "const d = $el, n = document.getElementById('name');"
+                           " const f = () => { if (" hybrid-name-test
+                           ".test(n?.value ?? '')) d.open = true };"
+                           " f(); n?.addEventListener('input', f)")}
+       (hybrid-name? (:name values)) (assoc :open true))
+     [:summary {:class "spl-form-section-title"} "Hybrid parentage"]
      [:div {:class "spl-form-fields"}
       [:p {:class "spl-help"}
-       "The taxa this hybrid was crossed from. Available once the name carries
-        a hybrid marker (×)."]
+       "The taxa this hybrid was crossed from. Opens on its own once the name
+        carries a hybrid marker (×)."]
       (if read-only
         (if (seq rows)
           (for [{:keys [parent-name role]} rows]
@@ -289,8 +309,13 @@
 
         [:fieldset {:class "spl-form-section spl-fieldset"
                     :data-section "vernacular-names"
-                    :x-data (json/js {:vernacularNames (or (:vernacular-names values)
-                                                           [])})}
+                    ;; One empty row when there are none, rather than a line
+                    ;; saying there are none: somewhere to type beats something
+                    ;; to read, and it matches the parentage slots below.
+                    :x-data (json/js {:vernacularNames
+                                      (if (seq (:vernacular-names values))
+                                        (:vernacular-names values)
+                                        [{}])})}
          [:legend {:class "spl-form-section-title flex items-center gap-2"}
           "Vernacular names"
           (tooltip/wrap
@@ -310,8 +335,7 @@
           ;; .spl-form-fields spaces its children 15px apart, which is the gap
           ;; between fields, not between a heading and the row under it.
           [:div {:class "flex flex-col gap-2"}
-           [:div {:x-show "vernacularNames?.length"
-                  :class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
+           [:div {:class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
             [:span {:class "spl-label" :aria-hidden true} "Name"]
             [:span {:class "spl-label" :aria-hidden true} "Language"]
             [:span]]
@@ -333,12 +357,7 @@
                 [:span {:aria-hidden true}
                  (heroicons/outline-trash)]]
                "Delete"
-               :side "left")]]]
-          ;; Inside the section, so it takes the same 576px column as the
-          ;; fields. As a bare div it ran the full width of the page.
-          [:p {:x-show "!vernacularNames?.length"
-               :class "spl-help"}
-           "None yet."]]]
+               :side "left")]]]]]
 
         (parentage-section :values values
                            :errors errors

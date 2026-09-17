@@ -154,6 +154,29 @@
   margin-bottom: 14px;
 }
 .spl-form-fields { display: flex; flex-direction: column; gap: 15px; }
+
+/* A form section that opens. A native <details>, so the toggle is
+ * keyboard-operable and announced as a disclosure with no script behind it.
+ * The native marker is replaced by the chevron a select draws, so the two
+ * kinds of "there is more here" look alike. */
+.spl-form-details > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.spl-form-details > summary::-webkit-details-marker { display: none; }
+.spl-form-details > summary::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  flex: none;
+  background: var(--chevron-down) no-repeat center / contain;
+  transform: rotate(-90deg);
+  transition: transform .15s;
+}
+.spl-form-details[open] > summary::before { transform: rotate(0deg); }
 /* A section without a hint has nothing between its heading and its first
  * label, so the heading needs the space the hint would have supplied. */
 .spl-form-section-title + .spl-form-fields { margin-top: 12px; }

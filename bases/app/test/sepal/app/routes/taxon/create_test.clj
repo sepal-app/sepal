@@ -376,15 +376,19 @@
             body (Jsoup/parse ^String (:body response))
             section (.selectFirst body "[data-section=parentage]")]
         (is (some? section) "the section is rendered")
-        (testing "but disabled until the name carries a hybrid marker, tracked
-                  off the Name field rather than waiting for a save. Disabled
-                  rather than hidden: a section that vanishes makes the form's
-                  shape vary, and a disabled fieldset still says the field
-                  exists. It also posts nothing, which is what keeps an
-                  unopened section from writing a cross."
-          (is (= "!hybrid" (.attr section "x-bind:disabled")))
+        (testing "closed until the name carries a hybrid marker, tracked off the
+                  Name field rather than waiting for a save. Closed rather than
+                  hidden, because a section that vanishes makes the form's shape
+                  vary; and closed rather than disabled, because a hybrid whose
+                  name was typed without the marker must still be able to record
+                  its cross."
+          (is (= "details" (.tagName section)))
+          (is (not (.hasAttr section "open")) "a plain name starts it closed")
           (is (= "" (.attr section "x-show")) "not hidden")
-          (is (str/includes? (.attr section "x-init") "getElementById('name')")))
+          (is (= "" (.attr section "x-bind:disabled")) "not disabled")
+          (is (str/includes? (.attr section "x-init") "getElementById('name')"))
+          (is (str/includes? (.attr section "x-init") "d.open = true")
+              "Alpine only opens it -- removing a marker must not shut it"))
         (testing "and it offers two slots, because a cross usually has two parents"
           (is (some? (.selectFirst body "[name=parentage-parent-0]")))
           (is (some? (.selectFirst body "[name=parentage-parent-1]")))
@@ -434,3 +438,20 @@
             (is (str/includes? (.attr button "hx-get") "index=2"))
             (is (= "#parentage-rows" (.attr button "hx-target")))
             (is (= "beforeend" (.attr button "hx-swap")))))))))
+
+(deftest test-the-hybrid-section-starts-open-for-a-name-that-has-a-marker
+  ;; Editing a hybrid should not require opening the section that holds the
+  ;; thing you came to edit.
+  (tf/testing "a taxon already named as a cross"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [taxon (taxon.i/create! *db* {:name "Acer × freemanii" :rank :species})
+            sess (app.test/login (:user/email user) "testpassword123")
+            ;; /name/ is the tab holding the form; /taxon/:id/ is the record page.
+            {:keys [response]} (-> sess (peri/request (str "/taxon/" (:taxon/id taxon) "/name/")))
+            section (.selectFirst (Jsoup/parse ^String (:body response))
+                                  "[data-section=parentage]")]
+        (is (some? section))
+        (is (.hasAttr section "open"))))))
