@@ -93,3 +93,34 @@
       (doseq [[path line tok] (used-spl-classes)]
         (is (contains? defined tok)
             (format "%s:%d uses %s, which no stylesheet defines" path line tok))))))
+
+(defn- select-attr-blocks
+  "For every `[:select` in the sources, the text from it up to its first
+   `[:option` — which is its attribute map, since options always follow.
+
+   Returns `[file line text]` triples."
+  []
+  (for [^java.io.File f (clj-sources)
+        :let [src (slurp f)]
+        [idx] (->> (re-seq #"\[:select" src)
+                   (reduce (fn [{:keys [from acc]} _]
+                             (let [i (str/index-of src "[:select" from)]
+                               {:from (inc i) :acc (conj acc [i])}))
+                           {:from 0 :acc []})
+                   :acc)]
+    [(.getPath f)
+     (inc (count (re-seq #"\n" (subs src 0 idx))))
+     (let [tail (subs src idx)
+           stop (or (str/index-of tail "[:option") (min 600 (count tail)))]
+       (subs tail 0 stop))]))
+
+(deftest test-every-select-carries-the-select-classes
+  (testing "a <select> without `spl-input spl-select` gets the browser's own
+            control — a different border and the native chevron instead of the
+            one in tokens.css. The taxon rank field and three on the material
+            form each drifted this way, and nothing said so."
+    (doseq [[file line text] (select-attr-blocks)]
+      (is (str/includes? text "spl-select")
+          (format "%s:%s renders a <select> with no spl-select class" file line))
+      (is (str/includes? text "spl-input")
+          (format "%s:%s renders a <select> with no spl-input class" file line)))))

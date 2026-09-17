@@ -127,11 +127,17 @@
                                :value (:rank values))
              (form/field :label "Rank"
                          :name "rank"
+                         ;; Built here rather than through `form/enum-select`
+                         ;; because the rank guess drives it through
+                         ;; `x-rank-field`. It still has to carry the same
+                         ;; classes: without them the browser draws its own
+                         ;; control, and this was the one select on any form
+                         ;; with a different border and chevron.
                          :input [:select {:name "rank"
+                                          :class "spl-input spl-select"
                                           :x-rank-field {}
                                           :autocomplete "off"
                                           :id "rank"
-                                          :read-only read-only
                                           :required true
                                           :value (:rank values)}
                                  (for [rank ranks]

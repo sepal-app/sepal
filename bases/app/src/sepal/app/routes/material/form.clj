@@ -133,6 +133,7 @@
                          :name "status"
                          :errors (:status errors)
                          :input [:select {:name "status"
+                                          :class "spl-input spl-select"
                                           :autocomplete "off"
                                           :id "status"
                                           :required true
@@ -146,6 +147,7 @@
                         :name "type"
                         :errors (:type errors)
                         :input [:select {:name "type"
+                                         :class "spl-input spl-select"
                                          :autocomplete "off"
                                          :id "type"
                                          :required true
@@ -166,7 +168,7 @@
                           :input [:select {:name "reason"
                                            :id "reason"
                                            :autocomplete "off"
-                                           :class "spl-input w-full"}
+                                           :class "spl-input spl-select w-full"}
                                   [:option {:value ""} "None"]
                                   (for [{:material-change-reason/keys [code label]} reasons]
                                     [:option {:value code} label])]))])]])]))
