@@ -20,7 +20,9 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:keys [contact stats activities activity-count timezone on-close]}]
-  (let [{:contact/keys [id name email phone business type]} contact
+  (let [{:contact/keys [id name email phone business type
+                        address address1 address2 city province postal-code
+                        country]} contact
         {:keys [accession-count]} stats]
     (panel/panel-container
       :children
@@ -42,6 +44,28 @@
                       :value (some-> type clojure.core/name (str/replace "_" " ") str/capitalize)}
                      {:label "Email" :value email}
                      {:label "Phone" :value phone}]))
+
+        ;; Address. The panel is the whole record for a reader — see
+        ;; `contact.detail/render-panel-page` — so a contact's address has to
+        ;; be readable here and not only in the form.
+        ;;
+        ;; `summary-section` drops a field with no value, so a contact carrying
+        ;; the old one-line address shows that and a contact with the split
+        ;; fields shows those, without either needing a branch.
+        (panel/collapsible-section
+          :title "Address"
+          :disabled? (not-any? seq [address address1 address2 city province
+                                    postal-code country])
+          :empty-label "none"
+          :children
+          (panel/summary-section
+            :fields [{:label "Address" :value address}
+                     {:label "Address 1" :value address1}
+                     {:label "Address 2" :value address2}
+                     {:label "City" :value city}
+                     {:label "Province" :value province}
+                     {:label "Postal Code" :value postal-code}
+                     {:label "Country" :value country}]))
 
         ;; Statistics section
         (panel/collapsible-section

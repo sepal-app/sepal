@@ -15,6 +15,9 @@
    {:key :contact/name :header "contact_name" :column :c.name}
    {:key :contact/email :header "contact_email" :column :c.email}
    {:key :contact/address :header "contact_address" :column :c.address}
+   {:key :contact/address1 :header "contact_address1" :column :c.address1}
+   {:key :contact/address2 :header "contact_address2" :column :c.address2}
+   {:key :contact/city :header "contact_city" :column :c.city}
    {:key :contact/province :header "contact_province" :column :c.province}
    {:key :contact/postal-code :header "contact_postal_code" :column :c.postal_code}
    {:key :contact/country :header "contact_country" :column :c.country}

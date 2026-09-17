@@ -24,7 +24,11 @@
    :business ""
    :type "expedition"
    :email ""
-   :address ""
+   ;; No :address. The form renders that one only for a contact saved before
+   ;; the split, and neither of these has one, so a browser posts no such field.
+   :address1 ""
+   :address2 ""
+   :city ""
    :province ""
    :postal-code ""
    :country ""

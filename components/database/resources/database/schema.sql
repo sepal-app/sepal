@@ -24,7 +24,7 @@ CREATE TABLE contact (
   notes text,
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-, type text) strict;
+, type text, address1 text, address2 text, city text) strict;
 CREATE TABLE location (
   id integer primary key autoincrement,
   code text not null,
@@ -369,6 +369,7 @@ CREATE TRIGGER trigger_taxon_after_update after update on taxon begin
 end;
 CREATE INDEX location_status_idx on location (status);
 CREATE UNIQUE INDEX location_code_idx ON location (code);
+CREATE INDEX contact_city_idx on contact (city);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -472,3 +473,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260914120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916120000', '2026-09-16 13:01:15');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916140000', '2026-09-16 20:09:46');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916150000', '2026-09-16 20:09:46');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917120000', '2026-09-17 15:05:28');

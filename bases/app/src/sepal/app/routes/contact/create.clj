@@ -37,7 +37,13 @@
   [:map {:closed true}
    [:name [:string {:min 1}]]
    [:email {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:address {:decode/form validation.i/empty->nil} [:maybe :string]]
+   ;; Optional, unlike the rest: the form only renders it for a contact that
+   ;; already has one, so a new contact posts no `address` field at all and a
+   ;; closed map would reject the create.
+   [:address {:optional true :decode/form validation.i/empty->nil} [:maybe :string]]
+   [:address1 {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:address2 {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:city {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:province {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:postal-code {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:country {:decode/form validation.i/empty->nil} [:maybe :string]]

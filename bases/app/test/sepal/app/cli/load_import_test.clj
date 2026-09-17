@@ -470,3 +470,44 @@
         (testing "two matches fail rather than guessing"
           (is (re-find #"^2 taxa"
                        (:error (resolve "wfo-0000000002-2025-06")))))))))
+
+(deftest test-a-contacts-split-address-round-trips-through-a-load
+  ;; `data` goes to `contact.i/create!` verbatim and has to match
+  ;; `CreateContact` exactly, so a field the spec does not know is a reported
+  ;; failure rather than a dropped one. That makes the load the check on
+  ;; whether the three address fields really reached the spec.
+  (tf/testing "address1, address2 and city survive an import"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-contact"})]
+        (try
+          (spit (fs/file (fs/path dir "contact.json"))
+                (json/write-str
+                  [(rec "contact:1-addr"
+                        {"name" "Fairchild Tropical Garden"
+                         "address1" "10901 Old Cutler Road"
+                         "address2" "Attn: Herbarium"
+                         "city" "Coral Gables"
+                         "country" "USA"})]))
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+          (let [row (db.i/execute-one!
+                      db {:select [:address :address1 :address2 :city]
+                          :from [:contact]
+                          :where [:= :name "Fairchild Tropical Garden"]})]
+            (is (= "10901 Old Cutler Road" (:contact/address1 row)))
+            (is (= "Attn: Herbarium" (:contact/address2 row)))
+            (is (= "Coral Gables" (:contact/city row)))
+            (testing "and the field they replaced stays empty"
+              (is (nil? (:contact/address row)))))
+          (finally
+            (fs/delete-tree dir)
+            ;; The suite shares one database, and the fixture-garden test
+            ;; asserts on `select distinct source_table from import_record`
+            ;; across the whole table. A contact left behind here shows up
+            ;; there, so this clears its own rows.
+            (jdbc.sql/delete! db :import_record {:source_table "contact"})
+            (jdbc.sql/delete! db :contact {:name "Fairchild Tropical Garden"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))

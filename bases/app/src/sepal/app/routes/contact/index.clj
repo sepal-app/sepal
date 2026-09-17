@@ -52,6 +52,10 @@
     :type :text
     :priority 2
     :cell :contact/email}
+   {:name "City"
+    :type :text
+    :priority 3
+    :cell :contact/city}
    {:name "Phone"
     :type :text
     :priority 3
