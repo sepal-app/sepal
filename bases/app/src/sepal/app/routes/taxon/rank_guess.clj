@@ -1,11 +1,10 @@
 (ns sepal.app.routes.taxon.rank-guess
   "The rank a name implies, for the create form to fill in while you type.
 
-  Plain text rather than markup, and the client decides whether to use it. The
-  rank control is a SlimSelect, so swapping it would leave the widget it
-  generated orphaned beside the replacement; `routes/taxon/form.ts` sets the
-  value through SlimSelect instead, and only while you have not set the rank
-  yourself."
+  Plain text rather than markup, and the client decides whether to use it.
+  Swapping the control itself would drop whatever the page has wired to it, so
+  `routes/taxon/form.ts` sets the value instead — and only while you have not
+  set the rank yourself."
   (:require [sepal.taxon.interface.name :as taxon.name]))
 
 (defn handler [{:keys [query-params]}]

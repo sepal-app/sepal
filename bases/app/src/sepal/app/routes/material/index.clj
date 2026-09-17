@@ -3,13 +3,14 @@
             [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.combobox :as ui.combobox]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -163,7 +164,7 @@
        first
        :value))
 
-(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -203,17 +204,24 @@
         accession (when accession-id (accession.i/get-by-id db accession-id))]
 
     (cond
-      (= (get headers "accept") "application/json")
-      (json/picker-response
-        (for [material rows]
-          {:code (:material/code material)
-           :id (:material/id material)
-           :text (format "%s.%s (%s)"
-                         (:accession/code material)
-                         (:material/code material)
-                         (:taxon/name material))
-           :accession-id (:material/accession-id material)})
-        total)
+      ;; The combobox asks for its rows as markup, so what an option looks
+      ;; like is decided here with the rest of the UI.
+      (some? (get query-params "options"))
+      (html/render-partial
+        (ui.combobox/options-fragment
+          :total total
+          :items (for [material rows]
+                   {:id (:material/id material)
+                    :text (format "%s.%s (%s)"
+                                  (:accession/code material)
+                                  (:material/code material)
+                                  (:taxon/name material))
+                    :content (ui.combobox/option-content
+                               :icon (lucide/sprout)
+                               :title (format "%s.%s"
+                                              (:accession/code material)
+                                              (:material/code material))
+                               :meta (taxon-name/render (:taxon/name material)))})))
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
       (some? (get query-params "rows"))

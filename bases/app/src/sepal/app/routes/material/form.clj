@@ -1,10 +1,9 @@
 (ns sepal.app.routes.material.form
   (:require [sepal.app.codes :as codes]
-            [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.material.interface.spec :as material.spec]
@@ -80,18 +79,15 @@
            ;; Accession first: the code is numbered within its accession, so
            ;; asking for the code above the field it depends on asks you to
            ;; look up an answer the form has not been told yet.
-           [(let [url (z/url-for accession.routes/index)]
-              (form/field :label "Accession"
-                          :name "accession-id"
-                          :errors (:accession-id errors)
-                          :input [:select {:x-accession-field (json/js {:url url})
-                                           :placeholder "Required"
-                                           :name "accession-id"
-                                           :id "accession-id"
-                                           :required true}
-                                  (when (:accession-id values)
-                                    [:option {:value (:accession-id values)}
-                                     (:accession-code values)])]))
+           [(combobox/combobox
+              :name "accession-id"
+              :label "Accession"
+              :url (z/url-for accession.routes/index)
+              :required true
+              :errors (:accession-id errors)
+              :selected (when (:accession-id values)
+                          {:id (:accession-id values)
+                           :text (:accession-code values)}))
             (form/field :label "Code"
                         :name "code"
                         :errors (:code errors)
@@ -103,22 +99,19 @@
                                   (next-code-button :url next-code-url
                                                     :include "#accession-id"))])
             (codes/confirm-slot)
-            (let [url (z/url-for location.routes/index)]
-              (form/field :label "Location"
-                          :name "location-id"
-                          :errors (:location-id errors)
-                          :help (when-let [label (:intended-location-label values)]
-                                  (str "This accession is intended for " label "."))
-                          :input [:select {:x-location-field (json/js {:url url})
-                                           :placeholder "Required"
-                                           :required true
-                                           :name "location-id"
-                                           :id "location-id"}
-                                  (when (:location-id values)
-                                    [:option {:value (:location-id values)}
-                                     (format "%s (%s)"
-                                             (:location-code values)
-                                             (:location-name values))])]))])
+            (combobox/combobox
+              :name "location-id"
+              :label "Location"
+              :url (z/url-for location.routes/index)
+              :required true
+              :errors (:location-id errors)
+              :help (when-let [label (:intended-location-label values)]
+                      (str "This accession is intended for " label "."))
+              :selected (when (:location-id values)
+                          {:id (:location-id values)
+                           :text (format "%s (%s)"
+                                         (:location-code values)
+                                         (:location-name values))}))])
 
          (form/section
            :title "Holding"
@@ -140,7 +133,6 @@
                          :name "status"
                          :errors (:status errors)
                          :input [:select {:name "status"
-                                          :x-material-status-field true
                                           :autocomplete "off"
                                           :id "status"
                                           :required true
@@ -154,7 +146,6 @@
                         :name "type"
                         :errors (:type errors)
                         :input [:select {:name "type"
-                                         :x-material-type-field true
                                          :autocomplete "off"
                                          :id "type"
                                          :required true
@@ -178,6 +169,4 @@
                                            :class "spl-input w-full"}
                                   [:option {:value ""} "None"]
                                   (for [{:material-change-reason/keys [code label]} reasons]
-                                    [:option {:value code} label])]))])]])
-     [:script {:type "module"
-               :src (html/static-url "app/routes/material/form.ts")}]]))
+                                    [:option {:value code} label])]))])]])]))

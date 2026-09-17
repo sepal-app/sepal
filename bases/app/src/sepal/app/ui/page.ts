@@ -10,7 +10,7 @@ window.htmx = htmx
 
 import FormState from "~/js/form-state"
 import { queryBuilder, accessionsOnlyFilter } from "~/js/query-builder"
-import TimezoneField from "~/js/timezone-field"
+import { defineCombobox } from "~/js/record-combobox-element"
 
 window.Alpine = Alpine
 
@@ -19,10 +19,13 @@ Alpine.plugin(focus)
 Alpine.plugin(morph)
 Alpine.plugin(ui)
 
+// Custom elements register themselves; htmx swaps re-run connectedCallback,
+// which is the seam a picker has to survive.
+defineCombobox()
+
 document.addEventListener("alpine:init", () => {
     // setup global directives
     Alpine.directive("form-state", FormState)
-    Alpine.directive("timezone-field", TimezoneField)
 
     // setup global data components
     Alpine.data("queryBuilder", queryBuilder)

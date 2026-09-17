@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.create-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
@@ -129,9 +130,9 @@
                                                       (:accession/id accession))))
             body (Jsoup/parse ^String (:body response))]
         (is (= 200 (:status response)))
-        (is (some? (.selectFirst body (str "select#accession-id option[value=\""
-                                           (:accession/id accession) "\"]")))
-            "the accession should already be selected")
+        (is (= (str (:accession/id accession))
+               (.attr (.selectFirst body "sepal-combobox#accession-id") "data-value"))
+            "the accession should already be chosen")
         (is (.contains (.text body) (:location/name location))
             "the form should name the accession's intended location")))))
 
@@ -145,8 +146,9 @@
             {:keys [response]} (-> sess (peri/request "/material/new/"))
             body (Jsoup/parse ^String (:body response))]
         (is (= 200 (:status response)))
-        (is (nil? (.selectFirst body "select#accession-id option[value]"))
-            "the accession select should have no preselected option")))))
+        (is (str/blank? (.attr (.selectFirst body "sepal-combobox#accession-id")
+                               "data-value"))
+            "the accession picker should start empty")))))
 
 (deftest test-no-reason-for-change-on-the-create-form
   (tf/testing "a record being made for the first time has not changed from

@@ -1,6 +1,5 @@
 (ns sepal.app.routes.location.archive-test
-  (:require [cheshire.core :as json]
-            [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -37,18 +36,20 @@
       (let [loc (location.i/create! *db* {:code "ARCH1" :name "Retired bed"})
             id (:location/id loc)
             sess (app.test/login (:user/email user) password)
-            picker (fn [] (-> sess
-                              (peri/request "/location/" :params {"q" "Retired"}
-                                            :headers {"accept" "application/json"})
-                              :response :body
-                              (json/parse-string true)
-                              :options))]
+            ;; The rows come back as markup; the id is on each one.
+            picker (fn [] (->> (-> sess
+                                   (peri/request "/location/"
+                                                 :params {"q" "Retired" "options" "1"})
+                                   :response :body
+                                   (as-> ^String b (Jsoup/parse b))
+                                   (.select "[role=option]"))
+                               (map #(parse-long (.attr % "data-value")))))]
         (try
-          (is (some #(= id (:id %)) (picker))
+          (is (some #(= id %) (picker))
               "offered while active")
           (is (= 303 (:status (post-archive sess id "/archive/"))))
           (is (= :archived (:location/status (location.i/get-by-id *db* id))))
-          (is (not (some #(= id (:id %)) (picker)))
+          (is (not (some #(= id %) (picker)))
               "an archived location takes no new material, so it is not offered")
           (is (not (re-find #"Retired bed"
                             (-> sess (peri/request "/location/") :response :body)))
@@ -60,7 +61,7 @@
               "until asked for, which is how one is found again to restore")
           (is (= 303 (:status (post-archive sess id "/unarchive/"))))
           (is (= :active (:location/status (location.i/get-by-id *db* id))))
-          (is (some #(= id (:id %)) (picker))
+          (is (some #(= id %) (picker))
               "and restoring puts it back")
           (finally
             ;; Archiving records activity against the user the fixture is

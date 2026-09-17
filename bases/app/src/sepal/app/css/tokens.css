@@ -31,7 +31,7 @@
   --color-text-muted: #5C6E69;
   --color-text-dim: #627771;
 
-  /* The chevron a native select draws, as the one SlimSelect draws: same path,
+  /* The chevron a native select draws, matched to the picker's: same path,
    * stroke width and size, so the two kinds of select look alike. It lives
    * here rather than in components.css because it carries a colour, and a data
    * URI cannot read a custom property — the stroke repeats --color-text-dim

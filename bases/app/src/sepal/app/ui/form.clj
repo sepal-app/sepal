@@ -94,12 +94,11 @@
 (defn suggestion-listener
   "An element that asks the server for a suggestion and applies the answer.
 
-  Hidden and empty: it exists only to carry the hx-* attributes, which cannot
-  sit on the control they suggest for when that control is a SlimSelect one.
-  htmx marks its requesting element with htmx-request, htmx-swapping and
-  htmx-settling; SlimSelect watches its <select> for class changes and rebuilds
-  its own elements from them, and that rebuild drops the ss-open class the
-  dropdown needs to be visible. Suggesting mid-search closed the completions.
+  Hidden and empty: it exists only to carry the hx-* attributes, which stay off
+  the control they suggest for. htmx marks its requesting element with
+  htmx-request, htmx-swapping and htmx-settling as a request runs, and a picker
+  that reacted to its own class list changing is how suggesting mid-search used
+  to close the completions.
 
   The value the endpoint reads has to be named in :include, because a div
   carries no value of its own the way the select did. :apply-fn names a global

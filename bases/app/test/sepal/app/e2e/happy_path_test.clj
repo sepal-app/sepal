@@ -64,10 +64,8 @@
 
               ;; Fill taxon form
               (pw/fill "input[name=\"name\"]" "Rosa")
-              ;; Select rank from SlimSelect dropdown
-              (pw/click "select[name=\"rank\"] + .ss-main") ;; Open SlimSelect
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/click ".ss-content.ss-open .ss-option:has-text(\"genus\")") ;; Select genus option
+              ;; Rank is a plain <select>: it was only ever wrapped for looks.
+              (pw/select-option "select[name=\"rank\"]" "genus")
 
               ;; Submit
               (pw/click "button:has-text(\"Save\")")
@@ -84,20 +82,13 @@
 
               ;; Fill child taxon form
               (pw/fill "input[name=\"name\"]" "Rosa canina")
-              ;; Select rank from SlimSelect dropdown
-              (pw/click "select[name=\"rank\"] + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/click ".ss-content.ss-open .ss-option:has-text(\"species\")")
-              (pw/wait-for-hidden ".ss-content.ss-open")
-
-              ;; Select parent taxon via SlimSelect (uses async search, min 2 chars)
-              (pw/click "select#parent-id + .ss-main") ;; Open SlimSelect dropdown
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "Ros") ;; Type partial search (3 chars triggers search)
-              (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa\")") ;; Wait for AJAX search results
-              (pw/press "ArrowDown") ;; Navigate to first result
-              (pw/press "Tab") ;; Select it and move to next field
-              (pw/wait-for-hidden ".ss-content.ss-open")
+              (pw/select-option "select[name=\"rank\"]" "species")
+              ;; parent-id is a <sepal-combobox>: type in the field itself.
+              (pw/click "#parent-id-input")
+              (pw/fill "#parent-id-input" "Ros")
+              (pw/wait-for-attached "#parent-id-listbox [role=option]:has-text(\"Rosa\")")
+              (pw/press "ArrowDown")
+              (pw/press "Enter")
 
               ;; Submit
               (pw/click "button:has-text(\"Save\")")
@@ -113,15 +104,12 @@
 
               ;; Fill accession form
               (pw/fill "input[name=\"code\"]" "ACC-001")
-
-              ;; Select taxon via SlimSelect (async search)
-              (pw/click "select#taxon-id + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "Rosa")
-              (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Rosa canina\")") ;; Wait for AJAX
+              ;; taxon-id is a <sepal-combobox>: type in the field itself.
+              (pw/click "#taxon-id-input")
+              (pw/fill "#taxon-id-input" "Rosa")
+              (pw/wait-for-attached "#taxon-id-listbox [role=option]:has-text(\"Rosa canina\")")
               (pw/press "ArrowDown")
-              (pw/press "Tab")
-              (pw/wait-for-hidden ".ss-content.ss-open")
+              (pw/press "Enter")
 
               ;; The Collection tab holds wild-collection data, so it is only
               ;; available on a wild accession. Step 5.5 opens it.
@@ -185,40 +173,25 @@
               ;; Fill material form
               (pw/fill "input[name=\"code\"]" "MAT-001")
 
-              ;; Select accession via SlimSelect (async search)
-              (pw/click "select#accession-id + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "ACC")
-              (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"ACC-001\")") ;; Wait for AJAX
+              ;; A <sepal-combobox>: type in the field itself.
+              (pw/click "#accession-id-input")
+              (pw/fill "#accession-id-input" "ACC")
+              (pw/wait-for-attached "#accession-id-listbox [role=option]:has-text(\"ACC-001\")")
               (pw/press "ArrowDown")
-              (pw/press "Tab")
-
-              ;; Wait for accession dropdown to fully close
-              (pw/wait-for-hidden ".ss-content.ss-open")
-
-              ;; Select location via SlimSelect (async search)
-              (pw/click "select#location-id + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "Gre")
-              (pw/wait-for-attached ".ss-content.ss-open .ss-option:has-text(\"Greenhouse A\")") ;; Extra time for AJAX
+              (pw/press "Enter")
+              (pw/wait-for-hidden "#accession-id-listbox")
+              ;; location-id is a <sepal-combobox>: type in the field itself.
+              (pw/click "#location-id-input")
+              (pw/fill "#location-id-input" "Gre")
+              (pw/wait-for-attached "#location-id-listbox [role=option]:has-text(\"Greenhouse A\")")
               (pw/press "ArrowDown")
-              (pw/press "Tab")
-              (pw/wait-for-hidden ".ss-content.ss-open")
+              (pw/press "Enter")
 
               ;; Fill other fields
               (pw/fill "input[name=\"quantity\"]" "5")
-              ;; Select status and type from SlimSelect dropdowns
-              (pw/click "select[name=\"status\"] + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "active")
-              (pw/press ".ss-content.ss-open .ss-search input" "Tab")
-              (pw/wait-for-hidden ".ss-content.ss-open")
+              (pw/select-option "select[name=\"status\"]" "alive")
 
-              (pw/click "select[name=\"type\"] + .ss-main")
-              (pw/wait-for-selector ".ss-content.ss-open")
-              (pw/fill ".ss-content.ss-open .ss-search input" "seed")
-              (pw/press ".ss-content.ss-open .ss-search input" "Tab")
-              (pw/wait-for-hidden ".ss-content.ss-open")
+              (pw/select-option "select[name=\"type\"]" "seed")
 
               ;; Submit
               (pw/click "button:has-text(\"Save\")")

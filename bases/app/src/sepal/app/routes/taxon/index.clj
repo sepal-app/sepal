@@ -3,10 +3,10 @@
             [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -188,7 +188,7 @@
    [:q :string]])
 
 (defn handler
-  [& {:keys [::z/context headers query-params uri viewer]}]
+  [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -282,10 +282,14 @@
                        #(db.i/count-bounded db count-stmt))]
 
     (cond
-      ;; We return JSON for autocomplete fields. Only this branch merges the
-      ;; two result sets — see index_test.clj and the task brief for why the
-      ;; other branches keep them separate.
-      (= (get headers "accept") "application/json")
+      ;; The combobox asks for its rows as markup, so a scientific name keeps
+      ;; its italics — the JSON this used to answer could only carry a string,
+      ;; which made the dropdown the one place in the app where a name was not
+      ;; set the way the convention requires.
+      ;;
+      ;; Only this branch merges the two result sets — see index_test.clj and
+      ;; the task brief for why the other branches keep them separate.
+      (some? (get query-params "options"))
       (let [;; A historical name that resolves to a taxon the name search
             ;; above would not find. Only this branch merges the two result
             ;; sets; the infinite-scroll branch below never calls resolve at
@@ -301,25 +305,30 @@
                                        :out (conj out hit)})))
                                 {:seen seen :out []}
                                 synonym-matches))]
-        (json/picker-response
-          (concat
-            (for [taxon rows]
-              {:text (:taxon/name taxon)
-               :name (:taxon/name taxon)
-               :id (:taxon/id taxon)
-               :rank (:taxon/rank taxon)
-               :author (:taxon/author taxon)
-               :parentId (:taxon/parent-id taxon)
-               :parentName (:taxon/parent-name taxon)})
-            (for [hit extra]
-              {:text (:taxon/name hit)
-               :name (:taxon/name hit)
-               :id (:taxon/id hit)
-               :matchedSynonym (:synonym/synonym-name hit)}))
-          ;; The synonym matches are appended to the page of name matches
-          ;; rather than counted in it, so they have to be added here or the
-          ;; total would understate what the search actually found.
-          (+ total (count extra))))
+        (html/render-partial
+          (ui.combobox/options-fragment
+            ;; The synonym matches are appended to the page of name matches
+            ;; rather than counted in it, so they have to be added here or the
+            ;; total would understate what the search actually found.
+            :total (+ total (count extra))
+            :items
+            (concat
+              (for [taxon rows]
+                {:id (:taxon/id taxon)
+                 :text (:taxon/name taxon)
+                 :content (ui.combobox/option-content
+                            :title (taxon-name/render (:taxon/name taxon))
+                            :meta (->> [(some-> (:taxon/rank taxon) name)
+                                        (:taxon/author taxon)]
+                                       (remove str/blank?)
+                                       (str/join " · ")))})
+              (for [hit extra]
+                {:id (:taxon/id hit)
+                 :text (:taxon/name hit)
+                 :content (ui.combobox/option-content
+                            :title (taxon-name/render (:taxon/name hit))
+                            :meta (str "matches synonym "
+                                       (:synonym/synonym-name hit)))})))))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

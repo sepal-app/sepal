@@ -20,10 +20,10 @@ export default (
     data.dirty = false
     data.valid = true
 
-    // `change` as well as `input`: SlimSelect writes the value straight onto
-    // the native <select> and dispatches `change`, so an `input` listener
-    // never sees a taxon, supplier or location being picked. Save is bound to
-    // `valid`, so the button stayed disabled on a form that was valid.
+    // `change` as well as `input`: a picker commits by writing its value and
+    // dispatching `change`, so an `input` listener never sees a taxon,
+    // supplier or location being chosen. Save is bound to `valid`, so the
+    // button stayed disabled on a form that was filled in.
     const events = ["input", "change"]
 
     function addListeners() {
@@ -75,28 +75,13 @@ export default (
         return v == null ? "" : String(v)
     }
 
-    // Where the edited mark goes. SlimSelect hides the native <select> and
-    // watches it for attribute changes, copying its class list onto .ss-main
-    // and onto the dropdown. The copy does not preserve ss-open, and without
-    // that class the dropdown is opacity 0 and scaleY(0) -- so marking the
-    // select mid-search made the completions vanish before you could pick one.
-    // data-id is SlimSelect's own marker on the controls it has taken over.
-    function editedTarget(input: HTMLElement): HTMLElement {
-        if (!input.dataset.id?.startsWith("ss-")) return input
-        const main = input.nextElementSibling
-        return main instanceof HTMLElement && main.classList.contains("ss-main")
-            ? main
-            : input
-    }
-
     // Which fields a save is about to write. The form as a whole already knew
     // it was dirty; this says which parts of it are.
     function markEdited(input: Element) {
         if (!(input instanceof HTMLElement)) return
         const initial = input.dataset.initialValue
         if (initial === undefined) return
-        const edited = currentValue(input) !== initial
-        editedTarget(input).classList.toggle("spl-input--edited", edited)
+        input.classList.toggle("spl-input--edited", currentValue(input) !== initial)
     }
 
     const handler = (event?: Event) => {

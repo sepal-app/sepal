@@ -1,30 +1,36 @@
 (ns sepal.app.routes.location.picker-test
-  (:require [cheshire.core :as json]
-            [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.location.interface :as location.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
 (def ^:private password "testpassword123")
 
 (defn- picker-body
-  "What a picker endpoint answers: the options, and how many matched in all."
+  "The rows a picker endpoint answers with. Markup rather than JSON, so what an
+  option looks like is decided with the rest of the UI."
   [sess q]
   (-> sess
-      (peri/request "/location/" :params {"q" q "page-size" "100"}
-                    :headers {"accept" "application/json"})
+      (peri/request "/location/" :params {"q" q "page-size" "100" "options" "1"})
       :response :body
-      (json/parse-string true)))
+      (as-> ^String b (Jsoup/parse b))))
 
 (defn- picker-results
-  "What the material form's location field shows for `q`."
+  "The ids the field offers for `q`."
   [sess q]
-  (:options (picker-body sess q)))
+  (->> (.select (picker-body sess q) "[role=option]")
+       (mapv #(parse-long (.attr % "data-value")))))
+
+(defn- picker-note
+  "The last line, when the list was cut short or found nothing."
+  [sess q]
+  (some-> (.selectFirst (picker-body sess q) ".spl-combobox-note") (.text)))
 
 (deftest test-the-picker-finds-a-location-by-name-and-by-code
   (tf/testing "every location a garden has must be reachable from the field
@@ -40,9 +46,9 @@
             sess (app.test/login (:user/email user) password)]
         (try
           (doseq [{:location/keys [id code name]} made]
-            (is (some #(= id (:id %)) (picker-results sess name))
+            (is (some #(= id %) (picker-results sess name))
                 (str "searching the name " (pr-str name) " did not find it"))
-            (is (some #(= id (:id %)) (picker-results sess code))
+            (is (some #(= id %) (picker-results sess code))
                 (str "searching the code " (pr-str code) " did not find it")))
           (finally
             (doseq [{:location/keys [id]} made]
@@ -62,9 +68,23 @@
         (try
           (is (= 20 (count (picker-results sess "bed")))
               "every location matching what was typed should be offered")
-          (is (= 20 (:total (picker-body sess "bed")))
-              "and the total comes back beside them, so a list that did have
-               to be cut could say how much it was hiding — anything past the
-               limit is unreachable, since the dropdown does not page")
+          (is (nil? (picker-note sess "bed"))
+              "and none were cut, so there is no line saying so — anything past
+               the limit is unreachable, since the dropdown does not page")
           (finally
             (doseq [{:location/keys [id]} made] (location.i/delete! *db* id))))))))
+
+(deftest test-a-row-carries-what-the-field-will-show
+  (tf/testing "the text is on the row, so choosing one fills the field without
+               another request"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}}
+    (fn [{:keys [user]}]
+      (let [loc (location.i/create! *db* {:code "SHOW1" :name "Show bed"})
+            sess (app.test/login (:user/email user) password)]
+        (try
+          (let [row (.selectFirst (picker-body sess "Show bed") "[role=option]")]
+            (is (some? row))
+            (is (= "SHOW1 (Show bed)" (.attr row "data-text")))
+            (is (= "false" (.attr row "aria-selected"))))
+          (finally
+            (location.i/delete! *db* (:location/id loc))))))))

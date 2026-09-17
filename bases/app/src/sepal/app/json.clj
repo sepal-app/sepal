@@ -19,15 +19,3 @@
   {:status 200
    :headers {"content-type" "application/json"}
    :body (write-str data)})
-
-(defn picker-response
-  "What an autocomplete gets back: the options it may offer, and how many
-  records matched in all.
-
-  The total is there so a list cut short can say so. Without it a picker ends
-  silently at whatever it asked for, and a record past that point looks to the
-  reader like one the garden does not have — which is how a location nobody
-  could find got created a second time."
-  [options total]
-  (json-response {:options (vec options) :total total}))
-

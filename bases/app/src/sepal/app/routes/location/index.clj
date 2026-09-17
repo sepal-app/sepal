@@ -2,11 +2,12 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.location.export :as export]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.export :as ui.export]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -111,7 +112,7 @@
    [:page-size {:default default-page-size} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -126,7 +127,7 @@
         ;; The pickers ask for JSON. They exist to file material somewhere, and
         ;; an archived location takes none, so they never offer one whatever
         ;; the query says.
-        picker? (= (get headers "accept") "application/json")
+        picker? (some? (get query-params "options"))
 
         ;; The list hides them too, until asked. `archived:true` lists the
         ;; retired ones and `archived:false` the rest; either way the reader
@@ -149,17 +150,24 @@
                                                                 [[:l.name :asc]])))]
 
     (cond
-      (= (get headers "accept") "application/json")
-      (json/picker-response
-        (for [location rows]
-          {:name (:location/name location)
-           :text (format "%s (%s)"
-                         (:location/code location)
-                         (:location/name location))
-           :id (:location/id location)
-           :code (:location/code location)
-           :description (:location/description location)})
-        total)
+      ;; The combobox asks for its rows as markup, so what an option looks like
+      ;; is decided here with the rest of the UI rather than assembled from
+      ;; JSON in the browser.
+      (some? (get query-params "options"))
+      (html/render-partial
+        (ui.combobox/options-fragment
+          :total total
+          :items (for [location rows]
+                   {:id (:location/id location)
+                    ;; What the field shows once it is chosen: one line, plain.
+                    :text (format "%s (%s)"
+                                  (:location/code location)
+                                  (:location/name location))
+                    :content (ui.combobox/option-content
+                               :icon (lucide/map-pin)
+                               :title (:location/name location)
+                               :meta (:location/code location))})))
+
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
       (some? (get query-params "rows"))

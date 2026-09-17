@@ -2,6 +2,7 @@
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.tooltip :as tooltip]
@@ -100,42 +101,25 @@
                                :read-only read-only
                                :value (:parent-name values))
              (let [url (z/url-for taxon.routes/index)]
-               (form/field :label "Parent"
-                           :name "parent-id"
-                           :input
-                           (list
-                             [:select (cond-> {:x-taxon-field (json/js {:url url})
-                                               :name "parent-id"
-                                               :id "parent-id"
-                                               :read-only read-only
-                                               :autocomplete "off"}
-                                        parent-suggestion-url
-                                        (assoc :x-suggestable ""))
-                              ;; A single select must hold a selection, so
-                              ;; without this SlimSelect selects the first
-                              ;; search result and hideSelected hides it —
-                              ;; a search matching one taxon showed an
-                              ;; empty list. It doubles as "no parent".
-                              [:option {:value "" :data-placeholder "true"} ""]
-                              (when (:parent-id values)
-                                ;; `selected` is load-bearing: the
-                                ;; placeholder is the first option, and a
-                                ;; browser takes the first one unless told
-                                ;; otherwise.
-                                [:option {:value (:parent-id values)
-                                          :selected "selected"}
-                                 (:parent-name values)])]
-                             (when parent-suggestion-url
-                               (form/suggestion-listener
-                                 :id "parent-suggestion"
-                                 :url parent-suggestion-url
-                                 ;; It is the Name field that changes, so this
-                                 ;; listens there and sends that value rather
-                                 ;; than the select's own.
-                                 :trigger "keyup changed delay:300ms from:#name"
-                                 :include "#name"
-                                 :params "name"
-                                 :apply-fn "window.applyParentSuggestion"))))))
+               (list
+                 (combobox/combobox
+                   :name "parent-id"
+                   :label "Parent"
+                   :url url
+                   :errors (:parent-id errors)
+                   :selected (when (:parent-id values)
+                               {:id (:parent-id values)
+                                :text (:parent-name values)}))
+                 (when parent-suggestion-url
+                   (form/suggestion-listener
+                     :id "parent-suggestion"
+                     :url parent-suggestion-url
+                     ;; It is the Name field that changes, so this listens
+                     ;; there and sends that value rather than the picker's.
+                     :trigger "keyup changed delay:300ms from:#name"
+                     :include "#name"
+                     :params "name"
+                     :apply-fn "window.applyParentSuggestion")))))
            (if read-only
              (form/input-field :label "Rank"
                                :name "rank"

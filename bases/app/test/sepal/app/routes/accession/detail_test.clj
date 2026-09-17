@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -146,12 +147,13 @@
                                                       (:accession/id accession)
                                                       "/general/")))
             body (Jsoup/parse ^String (:body response))
-            option (.selectFirst body (str "select#intended-location-id "
-                                           "option[value=\""
-                                           (:location/id location) "\"]"))]
-        (is (some? option) "the saved location should be an option")
-        (is (.hasAttr option "selected")
-            "the saved location's option should be selected")))))
+            picker (.selectFirst body "sepal-combobox#intended-location-id")]
+        (is (some? picker) "the edit form should have the location picker")
+        (is (= (str (:location/id location)) (.attr picker "data-value"))
+            "the saved location should be the one chosen")
+        (is (not (str/blank? (.attr picker "data-text")))
+            "and it should arrive with a label, so the field is not blank on a
+             record that has one — saving that blank erased it before")))))
 
 (deftest test-accession-panel-shows-the-intended-location
   (tf/testing "the panel names the location and links to it"

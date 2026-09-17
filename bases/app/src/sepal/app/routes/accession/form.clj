@@ -3,10 +3,10 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.codes :as codes]
             [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.contact.interface.name :as contact.name]
@@ -94,43 +94,23 @@
          (codes/confirm-slot)
 
          (let [taxa-url (z/url-for taxon.routes/index)]
-           (ui.form/field :label "Taxon"
-                          :name "taxon-id"
-                          :errors (:taxon-id errors)
-                          :input
-                          (list
-                            [:select {:x-taxon-field (json/js {:url taxa-url})
-                                      :id "taxon-id"
-                                      :required true
-                                      :name "taxon-id"
-                                      :autocomplete "off"}
-                             ;; A single select must hold a selection, so
-                             ;; without this SlimSelect selects the first
-                             ;; search result and hideSelected hides it —
-                             ;; a search matching one taxon showed an
-                             ;; empty list. Same placeholder the supplier
-                             ;; and location fields carry.
-                             [:option {:value "" :data-placeholder "true"} ""]
-                             (when (:taxon/id taxon)
-                               ;; `selected` is load-bearing: the
-                               ;; placeholder is the first option, and a
-                               ;; browser takes the first one unless told
-                               ;; otherwise.
-                               [:option {:value (:taxon/id taxon)
-                                         :selected "selected"}
-                                (:taxon/name taxon)])]
-                            (when provenance-suggestion-url
-                              (ui.form/suggestion-listener
-                                :id "provenance-suggestion"
-                                :url provenance-suggestion-url
-                                ;; SlimSelect writes the value straight onto
-                                ;; the select and dispatches change, so that
-                                ;; is the event to listen for.
-                                :trigger "change from:#taxon-id"
-                                :include "#taxon-id"
-                                :apply-fn "window.applyProvenanceSuggestion")))
-                          :required true
-                          :help "Start typing a name to search the taxonomy."))
+           (list
+             (ui.combobox/combobox
+               :name "taxon-id"
+               :label "Taxon"
+               :url taxa-url
+               :required true
+               :errors (:taxon-id errors)
+               :help "Start typing a name to search the taxonomy."
+               :selected (when (:taxon/id taxon)
+                           {:id (:taxon/id taxon) :text (:taxon/name taxon)}))
+             (when provenance-suggestion-url
+               (ui.form/suggestion-listener
+                 :id "provenance-suggestion"
+                 :url provenance-suggestion-url
+                 :trigger "change from:#taxon-id-input"
+                 :include "#taxon-id"
+                 :apply-fn "window.applyProvenanceSuggestion"))))
 
          [:div {:class "spl-form-pair"}
           (ui.form/field :label "ID Qualifier"
@@ -169,67 +149,41 @@
                                                      (:wild-provenance-status values)
                                                      :label-fn enum-label-fn))]
 
-         (ui.form/field :label "Supplier"
-                        :name "supplier-contact-id"
-                        ;; The select only searches contacts that already
-                        ;; exist, so a garden with none has no way in from
-                        ;; here. The link opens in a new tab because this form
-                        ;; is usually half filled in by the time you find out.
-                        :help (list "Suppliers come from your contacts. "
-                                    [:a {:class "spl-link"
-                                         :href (z/url-for contact.routes/new)
-                                         :target "_blank"
-                                         :rel "noreferrer"}
-                                     "Create a contact"]
-                                    " in a new tab if the one you want is missing.")
-                        :input [:select {:x-contact-field (json/js {:url (z/url-for contact.routes/index)})
-                                         :id "supplier-contact-id"
-                                         :name "supplier-contact-id"
-                                         ;; ui.form/field wires this up for the
-                                         ;; controls it builds itself, not for
-                                         ;; one handed to it as :input.
-                                         :aria-describedby (ui.form/description-id "supplier-contact-id")
-                                         :autocomplete "off"}
-                                [:option {:value "" :data-placeholder "true"} ""]
-                                (when (:contact/id supplier)
-                                  ;; `selected` is load-bearing, as on the
-                                  ;; intended location: the placeholder is the
-                                  ;; first option and a browser takes the first
-                                  ;; one unless told otherwise. Without it the
-                                  ;; edit page showed no supplier on a record
-                                  ;; that had one, and saving that blank field
-                                  ;; erased it.
-                                  [:option {:value (:contact/id supplier)
-                                            :selected "selected"}
-                                   ;; The same label the completion list uses,
-                                   ;; so what you picked still reads the same
-                                   ;; once the page reloads.
-                                   (contact.name/label supplier)])])])
+         (ui.combobox/combobox
+           :name "supplier-contact-id"
+           :label "Supplier"
+           :url (z/url-for contact.routes/index)
+           :errors (:supplier-contact-id errors)
+           ;; The picker only searches contacts that already exist, so a garden
+           ;; with none has no way in from here. The link opens in a new tab
+           ;; because this form is usually half filled in by the time you find
+           ;; out.
+           :help (list "Suppliers come from your contacts. "
+                       [:a {:class "spl-link"
+                            :href (z/url-for contact.routes/new)
+                            :target "_blank"
+                            :rel "noreferrer"}
+                        "Create a contact"]
+                       " in a new tab if the one you want is missing.")
+           :selected (when (:contact/id supplier)
+                       {:id (:contact/id supplier)
+                        :text (contact.name/label supplier)}))])
 
       (ui.form/section
         :title "Placement"
         :hint "Where this material is meant to go before it is planted."
         :children
-        [(let [locations-url (z/url-for location.routes/index)]
-           (ui.form/field :label "Intended location"
-                          :name "intended-location-id"
-                          :errors (:intended-location-id errors)
-                          :input [:select {:x-location-field (json/js {:url locations-url})
-                                           :id "intended-location-id"
-                                           :name "intended-location-id"
-                                           :autocomplete "off"}
-                                  [:option {:value "" :data-placeholder "true"} ""]
-                                  (when (:location/id location)
-                                    ;; `selected` is load-bearing: the empty
-                                    ;; placeholder above is the first option,
-                                    ;; and a browser selects the first one
-                                    ;; unless told otherwise.
-                                    [:option {:value (:location/id location)
-                                              :selected "selected"}
-                                     (format "%s (%s)"
-                                             (:location/code location)
-                                             (:location/name location))])]
-                          :help "Leave it empty until the bed is decided."))])
+        [(ui.combobox/combobox
+           :name "intended-location-id"
+           :label "Intended location"
+           :url (z/url-for location.routes/index)
+           :errors (:intended-location-id errors)
+           :help "Leave it empty until the bed is decided."
+           :selected (when (:location/id location)
+                       {:id (:location/id location)
+                        :text (format "%s (%s)"
+                                      (:location/code location)
+                                      (:location/name location))}))])
 
       (ui.form/section
         :title "Receipt"

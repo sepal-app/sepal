@@ -2,10 +2,11 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
-            [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.contact.export :as export]
             [sepal.app.routes.contact.routes :as contact.routes]
+            [sepal.app.ui.combobox :as ui.combobox]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
@@ -116,7 +117,7 @@
    [:page-size {:default default-page-size} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context headers query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -140,15 +141,19 @@
                                                                 [[:c.name :asc]])))]
 
     (cond
-      (= (get headers "accept") "application/json")
-      (json/picker-response
-        (for [contact rows]
-          {:name (:contact/name contact)
-           :text (contact.name/label contact)
-           :id (:contact/id contact)
-           :business (:contact/business contact)
-           :description (:contact/description contact)})
-        total)
+      ;; The combobox asks for its rows as markup, so what an option looks
+      ;; like is decided here with the rest of the UI.
+      (some? (get query-params "options"))
+      (html/render-partial
+        (ui.combobox/options-fragment
+          :total total
+          :items (for [contact rows]
+                   {:id (:contact/id contact)
+                    :text (contact.name/label contact)
+                    :content (ui.combobox/option-content
+                               :icon (lucide/contact-round)
+                               :title (:contact/name contact)
+                               :meta (:contact/business contact))})))
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
       (some? (get query-params "rows"))

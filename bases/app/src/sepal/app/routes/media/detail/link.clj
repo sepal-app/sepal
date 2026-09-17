@@ -8,6 +8,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.database.interface :as db.i]
@@ -25,54 +26,48 @@
    {:label "Location"
     :value "location"}])
 
-(defn taxon-field [& {:keys [taxon-name name id taxon-id]}]
-  (let [url (z/url-for taxon.routes/index)]
-    [:select {:x-taxon-field (json/js {:url url})
-              :id (or id name)
-              :class "spl-input"
-              :name name
-              :autocomplete "off"
-              :required true}
-     (when taxon-id
-       [:option {:value taxon-id}
-        taxon-name])]))
+(defn- resource-field
+  "One of the four pickers this form swaps between.
 
-(defn accession-field [& {:keys [accession-name name id accession-id]}]
-  (let [url (z/url-for taxon.routes/index)]
-    [:select {:x-accession-field (json/js {:url url})
-              :id (or id name)
-              :class "spl-input"
-              :name name
-              :autocomplete "off"
-              :required true}
-     (when accession-id
-       [:option {:value accession-id}
-        accession-name])]))
+  They share a name and an outer label, so each carries its own through
+  aria-label rather than rendering a second visible one."
+  [& {:keys [label name url selected]}]
+  (combobox/combobox :name name
+                     :label label
+                     :label-hidden? true
+                     :required true
+                     :url url
+                     :selected selected))
 
-(defn location-field [& {:keys [location-name name id location-id]}]
-  ;; TODO: Are these routes correct?
-  (let [url (z/url-for taxon.routes/index)]
-    [:select {:x-location-field (json/js {:url url})
-              :id (or id name)
-              :class "spl-input"
-              :name name
-              :autocomplete "off"
-              :required true}
-     (when location-id
-       [:option {:value location-id}
-        location-name])]))
+(defn taxon-field [& {:keys [taxon-name name taxon-id]}]
+  (resource-field :label "Taxon"
+                  :name name
+                  :url (z/url-for taxon.routes/index)
+                  :selected (when taxon-id {:id taxon-id :text taxon-name})))
 
-(defn material-field [& {:keys [material-name name id material-id]}]
-  (let [url (z/url-for material.routes/index)]
-    [:select {:x-material-field (json/js {:url url})
-              :id (or id name)
-              :class "spl-input spl-select w-full max-w-xs px-2"
-              :name name
-              :autocomplete "off"
-              :required true}
-     (when material-id
-       [:option {:value material-id}
-        material-name])]))
+(defn accession-field [& {:keys [accession-name name accession-id]}]
+  (resource-field :label "Accession"
+                  :name name
+                  ;; accession.routes, not taxon.routes. Both this and the
+                  ;; location field below searched the taxonomy, so neither
+                  ;; could find what it was for.
+                  :url (z/url-for accession.routes/index)
+                  :selected (when accession-id
+                              {:id accession-id :text accession-name})))
+
+(defn location-field [& {:keys [location-name name location-id]}]
+  (resource-field :label "Location"
+                  :name name
+                  :url (z/url-for location.routes/index)
+                  :selected (when location-id
+                              {:id location-id :text location-name})))
+
+(defn material-field [& {:keys [material-name name material-id]}]
+  (resource-field :label "Material"
+                  :name name
+                  :url (z/url-for material.routes/index)
+                  :selected (when material-id
+                              {:id material-id :text material-name})))
 
 (defn media-link-form [& {:keys [media]}]
   (form/form

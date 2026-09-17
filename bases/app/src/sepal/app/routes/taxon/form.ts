@@ -1,8 +1,6 @@
 import Alpine from "alpinejs"
 import "htmx.org"
-import SlimSelect from "slim-select"
 
-import TaxonField from "~/js/taxon-field"
 
 // Set by the rank field while it is on the page. The create form asks the
 // server what rank a name implies and drops the answer into #rank-guess;
@@ -23,13 +21,20 @@ window.applyRankGuess = (rank: string) => {
 
 // The parent the name implies, when the server is sure enough to name one.
 // Blank means it is not, which must leave the field alone rather than clear
-// it. SlimSelect owns the control, so the option is added through it — and it
-// assigns itself to the select as `slim`, which is the only way in from here.
+// it. The picker is a <sepal-combobox>, which takes a record through
+// setSelection — silently, so x-suggestable does not read it as a change you
+// made and stop suggesting.
 window.applyParentSuggestion = (body: string) => {
-    const select = document.getElementById(
-        "parent-id",
-    ) as (HTMLSelectElement & { slim?: SlimSelect }) | null
-    if (!select || select.dataset.touched === "true" || !select.slim) return
+    const select = document.getElementById("parent-id") as
+        | (HTMLElement & {
+              setSelection?: (
+                  option: { id: string; text: string } | null,
+                  opts?: { silent?: boolean },
+              ) => void
+              value?: string
+          })
+        | null
+    if (!select || select.dataset.touched === "true" || !select.setSelection) return
 
     let suggestion: { id: number; text: string } | null = null
     if (body) {
@@ -46,9 +51,7 @@ window.applyParentSuggestion = (body: string) => {
     // taxon under it. A parent set by hand is never touched.
     if (!suggestion || !suggestion.id) {
         if (select.dataset.suggested === "true") {
-            apply(select, () => {
-                select.slim!.setData([{ text: "", value: "", placeholder: true }])
-            })
+            apply(select, () => select.setSelection!(null, { silent: true }))
             delete select.dataset.suggested
         }
         return
@@ -56,14 +59,9 @@ window.applyParentSuggestion = (body: string) => {
 
     const value = String(suggestion.id)
     if (select.value === value) return
-    const text = suggestion.text
-    apply(select, () => {
-        select.slim!.setData([
-            { text: "", value: "", placeholder: true },
-            { text, value },
-        ])
-        select.slim!.setSelected(value, false)
-    })
+    apply(select, () =>
+        select.setSelection!({ id: value, text: suggestion.text }, { silent: true }),
+    )
     select.dataset.suggested = "true"
 }
 
@@ -79,7 +77,6 @@ function apply(el: HTMLElement, f: () => void) {
 }
 
 document.addEventListener("alpine:init", () => {
-    Alpine.directive("taxon-field", TaxonField)
 
     // A field a suggestion may fill in, until it is set by hand. Changes the
     // suggestion itself makes are marked and do not count.
@@ -91,8 +88,11 @@ document.addEventListener("alpine:init", () => {
         cleanup(() => el.removeEventListener("change", mark))
     })
 
+    // A plain <select> now. It was wrapped in a widget purely for looks, and
+    // the form's other enum controls never were — so this is one fewer thing
+    // between a guess and the field it writes.
     Alpine.directive("rank-field", (el, {}, { cleanup }) => {
-        const select = new SlimSelect({ select: el })
+        const select = el as HTMLSelectElement
 
         // Set the rank yourself and the guessing stops for good. The flag
         // lives on the element rather than in a closure so the guard survives
@@ -109,14 +109,13 @@ document.addEventListener("alpine:init", () => {
             // wrong and a later one corrects it. That is fine: this only ever
             // writes a field you have not set.
             applying = true
-            select.setSelected(rank, false)
+            select.value = rank
             applying = false
         }
 
         cleanup(() => {
             el.removeEventListener("change", markTouched)
             applyGuess = null
-            select.destroy()
         })
     })
 })

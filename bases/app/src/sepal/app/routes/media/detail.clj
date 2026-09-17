@@ -4,7 +4,6 @@
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [ring.util.codec :as codec]
             [sepal.app.flash :as flash]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.routes.media.keys :as media.keys]
@@ -78,9 +77,7 @@
                            (:1x srcset-urls)
                            (:2x srcset-urls)
                            (:3x srcset-urls))
-           :class "preview"}]]
-   [:script {:type "module"
-             :src (html/static-url "app/routes/media/detail.ts")}]])
+           :class "preview"}]]])
 
 (defn render [& {:keys [dl-url media preview-url srcset-urls zoom-url]}]
   ;; We have to put the x-data in the page attrs b/c the zoom var is needed by

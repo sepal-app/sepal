@@ -191,8 +191,8 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess (peri/request "/accession/new/"))
             body (Jsoup/parse ^String (:body response))]
-        (is (some? (.selectFirst body "select#intended-location-id"))
-            "the accession form should have an intended location select")))))
+        (is (some? (.selectFirst body "sepal-combobox#intended-location-id"))
+            "the accession form should have an intended location picker")))))
 
 (defn- receipt-params
   "The full field set a browser submits, with empty strings for blank fields.
@@ -331,7 +331,7 @@
             body (Jsoup/parse ^String (:body response))
             help (.selectFirst body "#supplier-contact-id-description")
             link (some-> help (.selectFirst "a"))
-            select (.selectFirst body "select#supplier-contact-id")]
+            select (.selectFirst body "#supplier-contact-id-input")]
         (is (some? link) "the help text carries a link to the contact form")
         (is (= "Create a contact" (.text link)))
         (is (str/ends-with? (.attr link "href") "/contact/new/"))
@@ -374,8 +374,8 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             ;; The hx-* attributes sit on a listener element beside the
             ;; select, not on the select: htmx marks its requesting element
-            ;; with htmx-request, and SlimSelect rebuilds from a class change
-            ;; on the select it owns, which closes an open dropdown.
+            ;; with htmx-request as a request runs, and a picker that reacted
+            ;; to its own class list changing closed its open dropdown.
             listener (fn [path]
                        (-> sess
                            (peri/request path)
@@ -402,14 +402,12 @@
                                    (peri/request "/accession/new/"
                                                  :params {:taxon-id (str (:taxon/id taxon))}))
             body (Jsoup/parse ^String (:body response))
-            options (.select body "select#taxon-id option")
-            chosen (.last options)]
-        (is (= 2 (.size options)) "the placeholder, then the taxon")
-        (is (= (str (:taxon/id taxon)) (.attr chosen "value")))
-        (is (= (:taxon/name taxon) (.text chosen)))
-        (is (.hasAttr chosen "selected")
-            "load-bearing: the placeholder is first, and a browser takes the
-             first option unless told otherwise")))))
+            picker (.selectFirst body "sepal-combobox#taxon-id")]
+        (is (some? picker))
+        (is (= (str (:taxon/id taxon)) (.attr picker "data-value")))
+        (is (= (:taxon/name taxon) (.attr picker "data-text"))
+            "the name is on the element, so the field reads it back without a
+             request — it is what the input shows on arrival")))))
 
 (deftest test-an-unknown-taxon-id-is-ignored
   (tf/testing "a stale link should still render a usable empty form"
@@ -422,16 +420,18 @@
                                    (peri/request "/accession/new/"
                                                  :params {:taxon-id "0"}))
             body (Jsoup/parse ^String (:body response))
-            options (.select body "select#taxon-id option")]
+            picker (.selectFirst body "sepal-combobox#taxon-id")]
         (is (= 200 (:status response)))
-        (is (= 1 (.size options)) "the placeholder, and no taxon")
-        (is (= "" (.attr (.first options) "value")))))))
+        (is (some? picker))
+        (is (str/blank? (.attr picker "data-value")) "no taxon chosen")))))
 
-(deftest test-the-searchable-selects-carry-a-placeholder
-  (tf/testing "a single select must hold a selection. With no empty option
-               SlimSelect selects the first search result and hideSelected
-               hides it, so a search matching exactly one taxon rendered an
-               empty list and the taxon looked missing."
+(deftest test-a-picker-starts-empty-and-knows-where-to-search
+  ;; This replaces a test for an empty placeholder <option>, which existed
+  ;; because the old widget would otherwise select the first search result and
+  ;; then hide it. The picker has no options until you type, so there is nothing to
+  ;; select by accident — what matters now is that it starts with no value and
+  ;; carries the endpoint it searches.
+  (tf/testing "each picker on the create form"
     {[::user.i/factory :key/user] {:db *db*
                                    :password "testpassword123"
                                    :role :editor}}
@@ -440,12 +440,14 @@
             {:keys [response]} (-> sess (peri/request "/accession/new/"))
             body (Jsoup/parse ^String (:body response))]
         (doseq [id ["taxon-id" "supplier-contact-id" "intended-location-id"]]
-          (let [first-option (.selectFirst body (str "select#" id " option"))]
-            (is (some? first-option) (str id " has no options at all"))
-            (is (= "" (.attr first-option "value"))
-                (str id "'s first option must be the empty placeholder"))
-            (is (= "true" (.attr first-option "data-placeholder"))
-                (str id "'s placeholder is not marked for SlimSelect"))))))))
+          (let [picker (.selectFirst body (str "sepal-combobox#" id))]
+            (is (some? picker) (str id " is not a picker"))
+            (is (str/blank? (.attr picker "data-value"))
+                (str id " starts with a value"))
+            (is (not (str/blank? (.attr picker "data-url")))
+                (str id " has nowhere to search"))
+            (is (= id (.attr picker "name"))
+                (str id " would not submit under its own name"))))))))
 
 (deftest test-every-field-survives-a-create
   (tf/testing "one assertion per field, because these were found one at a time
@@ -515,7 +517,12 @@
                                                (.val)))
                   selected (fn [id] (some-> (.selectFirst body
                                                           (str "select#" id " option[selected]"))
-                                            (.attr "value")))]
+                                            (.attr "value")))
+                  ;; A picker carries its value on the element rather than on a
+                  ;; selected <option>, since its options are not in the page.
+                  picked (fn [id] (some-> (.selectFirst body
+                                                        (str "sepal-combobox#" id))
+                                          (.attr "data-value")))]
               (is (= "ALLFIELDS-1" (input-value "code")) "code renders")
               (is (= "2026-03-04" (input-value "date-received"))
                   "date received renders")
@@ -523,11 +530,11 @@
                   "date accessioned renders")
               (is (= "7" (input-value "quantity-received"))
                   "quantity received renders")
-              (is (= (str (:taxon/id taxon)) (selected "taxon-id"))
+              (is (= (str (:taxon/id taxon)) (picked "taxon-id"))
                   "taxon renders as selected")
-              (is (= (str (:contact/id contact)) (selected "supplier-contact-id"))
+              (is (= (str (:contact/id contact)) (picked "supplier-contact-id"))
                   "supplier renders as selected")
-              (is (= (str (:location/id location)) (selected "intended-location-id"))
+              (is (= (str (:location/id location)) (picked "intended-location-id"))
                   "intended location renders as selected")
               (is (= "aff" (selected "id-qualifier")) "id qualifier renders")
               (is (= "genus" (selected "id-qualifier-rank"))

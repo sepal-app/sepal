@@ -271,8 +271,8 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             ;; The hx-* attributes sit on a listener element beside the
             ;; select, not on the select: htmx marks its requesting element
-            ;; with htmx-request, and SlimSelect rebuilds from a class change
-            ;; on the select it owns, which closes an open dropdown.
+            ;; with htmx-request as a request runs, and a picker that reacted
+            ;; to its own class list changing closed its open dropdown.
             listener (fn [path]
                        (-> sess
                            (peri/request path)
@@ -299,14 +299,12 @@
                                    (peri/request "/taxon/new/"
                                                  :params {:parent-id (str (:taxon/id parent))}))
             body (Jsoup/parse ^String (:body response))
-            options (.select body "select#parent-id option")
-            chosen (.last options)]
-        (is (= 2 (.size options)) "the placeholder, then the parent")
-        (is (= (str (:taxon/id parent)) (.attr chosen "value")))
-        (is (= (:taxon/name parent) (.text chosen)))
-        (is (.hasAttr chosen "selected")
-            "load-bearing: the placeholder is first, and a browser takes the
-             first option unless told otherwise")))))
+            picker (.selectFirst body "sepal-combobox#parent-id")]
+        (is (some? picker))
+        (is (= (str (:taxon/id parent)) (.attr picker "data-value")))
+        (is (= (:taxon/name parent) (.attr picker "data-text"))
+            "the name rides on the element, so the field shows it on arrival
+             without asking the server for a record it was just given")))))
 
 (deftest test-an-unknown-parent-id-is-ignored
   (tf/testing "a stale link should still render a usable empty form"
@@ -319,10 +317,7 @@
                                    (peri/request "/taxon/new/"
                                                  :params {:parent-id "0"}))
             body (Jsoup/parse ^String (:body response))
-            options (.select body "select#parent-id option")]
+            picker (.selectFirst body "sepal-combobox#parent-id")]
         (is (= 200 (:status response)))
-        (is (= 1 (.size options)) "the placeholder, and no parent")
-        (is (= "" (.attr (.first options) "value")))
-        (is (= "true" (.attr (.first options) "data-placeholder"))
-            "without it SlimSelect selects the first search result and
-             hideSelected hides it, so a one-match search looks empty")))))
+        (is (some? picker))
+        (is (str/blank? (.attr picker "data-value")) "no parent chosen")))))

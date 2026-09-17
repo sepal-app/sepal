@@ -1,6 +1,6 @@
 (ns sepal.app.routes.taxon.index-test
-  (:require [babashka.fs :as fs]
-            [clojure.data.json :as json]
+  (:require [clojure.string :as str]
+            [babashka.fs :as fs]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
@@ -52,14 +52,15 @@
         (let [email (create-user! *db*)
               sess (app.test/login email password)
               body (-> sess
-                       (peri/header "accept" "application/json")
-                       (peri/request "/taxon/" :params {"q" "Encyclia"})
+                       (peri/request "/taxon/" :params {"q" "Encyclia" "options" "1"})
                        :response :body
-                       (json/read-str :key-fn keyword)
-                       (:options))]
-          (is (some #(= "Encyclia cochleata" (:matchedSynonym %)) body))
-          (is (some #(= (:taxon/id taxon) (:id %)) body))
-          (is (every? (comp string? :text) body)))))))
+                       (as-> ^String b (Jsoup/parse b)))
+              options (.select body "[role=option]")]
+          (is (re-find #"matches synonym Encyclia cochleata" (.html body))
+              "a row that matched by synonym says which one")
+          (is (some #(= (str (:taxon/id taxon)) (.attr % "data-value")) options))
+          (is (every? #(not (str/blank? (.attr % "data-text"))) options)
+              "every row carries the text the field shows once it is chosen"))))))
 
 (deftest test-the-picker-does-not-list-a-taxon-twice
   ;; Both the name search and the synonym search can return the same taxon.
@@ -73,12 +74,10 @@
         (let [email (create-user! *db*)
               sess (app.test/login email password)
               body (-> sess
-                       (peri/header "accept" "application/json")
-                       (peri/request "/taxon/" :params {"q" "Encyclia"})
+                       (peri/request "/taxon/" :params {"q" "Encyclia" "options" "1"})
                        :response :body
-                       (json/read-str :key-fn keyword)
-                       (:options))
-              ids (map :id body)]
+                       (as-> ^String b (Jsoup/parse b)))
+              ids (map #(.attr % "data-value") (.select body "[role=option]"))]
           (is (= (count ids) (count (distinct ids)))))))))
 
 (deftest test-the-list-shows-synonym-matches-in-their-own-block

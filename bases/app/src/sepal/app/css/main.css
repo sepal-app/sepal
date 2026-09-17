@@ -12,23 +12,14 @@
 
 @import "./tokens.css";
 
-/* Both go in Tailwind's `components` layer so a utility in the markup wins.
- * Unlayered they beat every utility no matter the specificity, which is why
- * `class="spl-btn w-full"` used to ignore the w-full.
- *
- * SlimSelect comes first: within one layer the later rule wins a tie, and the
- * point of the widget styling in components.css is to override the library. */
-@import "slim-select/styles" layer(components);
+/* In Tailwind's `components` layer so a utility in the markup wins. Unlayered
+ * it beats every utility no matter the specificity, which is why
+ * `class="spl-btn w-full"` used to ignore the w-full. */
 @import "./components.css" layer(components);
 
 @plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";
-
-/* SlimSelect is styled with the rest of the design system, in components.css.
- * The rules that used to live here referenced DaisyUI variables
- * (--radius-field, --color-base-content, --depth) that no longer exist, so
- * they did nothing and the widget fell back to its own library styling. */
 
 td {
     a:hover {

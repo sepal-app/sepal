@@ -7,6 +7,7 @@
             [sepal.app.routes.setup.layout :as layout]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
+            [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
             [sepal.settings.interface :as settings.i]
@@ -33,19 +34,18 @@
                   :label (format "(UTC%s) %s" offset zone-id)})))))
 
 (defn timezone-select [& {:keys [value errors]}]
-  (form/field
-    :label "Timezone"
+  (combobox/combobox
     :name "timezone"
+    :label "Timezone"
     :errors errors
-    :input [:select {:name "timezone"
-                     :id "timezone"
-                     :x-timezone-field true
-                     :required true}
-            [:option {:value ""} "Select a timezone..."]
-            (for [{opt-value :value opt-label :label} (timezone-options)]
-              [:option {:value opt-value
-                        :selected (= opt-value value)}
-               opt-label])]))
+    ;; Four hundred names that never change, so they travel with the page and
+    ;; the field filters them here. No request, and no minimum before it will
+    ;; show you anything.
+    :items (for [{opt-value :value opt-label :label} (timezone-options)]
+             {:id opt-value :text opt-label})
+    :selected (when-let [match (first (filter #(= value (:value %))
+                                              (timezone-options)))]
+                {:id (:value match) :text (:label match)})))
 
 (defn regional-form [& {:keys [values errors]}]
   (form/form
