@@ -51,10 +51,15 @@
              :page-title-buttons (taxon.shared/actions :taxon taxon)))
 
 (defn save! [db taxon-id updated-by data]
-  (db.i/with-transaction [tx db]
-    (let [taxon (taxon.i/update! tx taxon-id data)]
-      (taxon.activity/create! tx taxon.activity/updated updated-by taxon)
-      taxon)))
+  ;; See create.clj: parentage is not a taxon column and UpdateTaxon is
+  ;; closed. Always written, not only when non-empty, because clearing every
+  ;; slot is how a cross is removed.
+  (let [parentage (:parentage data)]
+    (db.i/with-transaction [tx db]
+      (let [taxon (taxon.i/update! tx taxon-id (dissoc data :parentage))]
+        (taxon.i/set-parentage! tx taxon-id parentage :created-by updated-by)
+        (taxon.activity/create! tx taxon.activity/updated updated-by taxon)
+        taxon))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource]} context]
@@ -77,7 +82,12 @@
                     :parent-id (:taxon/id parent)
                     :parent-name (:taxon/name parent)
                     :distribution (:taxon/distribution resource)
-                    :vernacular-names (:taxon/vernacular-names resource)}
+                    :vernacular-names (:taxon/vernacular-names resource)
+                    :parentage (mapv (fn [r]
+                                       {:parent-taxon-id (:parentage/parent-taxon-id r)
+                                        :parent-name (:parent/name r)
+                                        :role (:parentage/role r)})
+                                     (taxon.i/list-parentage db (:taxon/id resource)))}
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :values values

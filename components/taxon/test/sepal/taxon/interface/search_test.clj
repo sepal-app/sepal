@@ -1,5 +1,5 @@
 (ns sepal.taxon.interface.search-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
@@ -74,3 +74,29 @@
           "the old common name stops matching")
       (is (contains? (search-ids "newbloomname") (:taxon/id taxon))
           "and the new one matches"))))
+
+(deftest test-parentage-finds-a-cross-by-its-parent
+  (tf/testing "what do I hold with Cattleya in its parentage"
+    {}
+    (fn [_]
+      (let [genus! (fn [nm] (taxon.i/create! *db* {:name nm :rank :genus}))
+            cattleya (genus! "Cattleya")
+            laelia (genus! "Laelia")
+            hybrid (genus! "Laeliocattleya")
+            unrelated (genus! "Masdevallia")]
+        (taxon.i/set-parentage! *db* (:taxon/id hybrid)
+                                [{:parent-taxon-id (:taxon/id cattleya)}
+                                 {:parent-taxon-id (:taxon/id laelia)}])
+        (let [ast (search.i/parse "parentage:Cattleya")
+              stmt (search.i/compile-query :taxon ast
+                                           {:select [:t.id] :from [[:taxon :t]]})
+              ids (set (map :taxon/id (db.i/execute! *db* stmt)))]
+          (is (contains? ids (:taxon/id hybrid))
+              "the cross is found by a parent's name")
+          (is (not (contains? ids (:taxon/id unrelated)))
+              "a taxon in no cross is not")
+          (is (not (contains? ids (:taxon/id cattleya)))
+              "the parent itself is not its own descendant")
+          (testing "and a cross of several parents is one row, not one per parent"
+            (is (= 1 (count (filter #(= (:taxon/id hybrid) %)
+                                    (map :taxon/id (db.i/execute! *db* stmt))))))))))))

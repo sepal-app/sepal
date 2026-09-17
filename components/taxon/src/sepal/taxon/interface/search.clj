@@ -48,6 +48,23 @@
                 :label "Parent"
                 :joins [[:taxon :p] [:= :p.id :t.parent_id]]}
 
+    ;; Related: what a hybrid was crossed from, which is not its parent.
+    ;;
+    ;; Through taxon_fts keyed by the parent id the join carries, the same
+    ;; shape `parent` uses — an FTS rowid is a taxon id, so the parent's name
+    ;; needs no second join to `taxon`. Matching is whole-word with a trailing
+    ;; prefix, so `parentage:catt` finds a cross from Cattleya.
+    ;;
+    ;; The join multiplies a taxon by its number of parents; the compiler
+    ;; switches to select-distinct whenever a field brings joins, so a cross
+    ;; of four genera is still one row.
+    :parentage {:column :pt.name
+                :type :fts
+                :fts-table :taxon_fts
+                :id-column :pg.parent_taxon_id
+                :label "Parentage"
+                :joins [[:taxon_parentage :pg] [:= :pg.taxon_id :t.id]]}
+
     ;; Related: "has materials of type X" (through accession → material)
     :material.type {:column :m.type
                     :type :enum

@@ -44,6 +44,25 @@
       (when (= "wfo" source)
         [:span {:class "spl-badge spl-badge--neutral"} "WFO"])])])
 
+(defn- parentage-section
+  "What this hybrid was crossed from.
+
+   Links, unlike synonyms and vernacular names: a parent is a taxon row, which
+   is the whole reason the relation is a table rather than a string in the
+   name. The role is shown only where it is known — every row would otherwise
+   carry \"unknown\", which says nothing and reads as a defect."
+  [& {:keys [parentage]}]
+  [:div {:class "space-y-0"}
+   (for [{:parentage/keys [parent-taxon-id role] parent-name :parent/name} parentage]
+     ^{:key parent-taxon-id}
+     [:div {:class "flex items-center gap-2 text-sm -mx-2 px-2 py-1.5"}
+      [:a {:href (z/url-for taxon.routes/detail {:id parent-taxon-id})
+           :class "spl-link"}
+       (taxon-name/render parent-name)]
+      (when (and role (not= :unknown role))
+        [:span {:class "text-xs text-text-dim"}
+         (if (= :seed role) "seed parent" "pollen parent")])])])
+
 (defn- vernacular-names-section
   "What this taxon is called in everyday speech.
 
@@ -76,7 +95,7 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [taxon parent stats synonyms notes note-count activities activity-count timezone on-close actions]}]
+  [& {:keys [taxon parent stats synonyms parentage notes note-count activities activity-count timezone on-close actions]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id distribution
                       vernacular-names]} taxon
         {:keys [accession-count material-count]} stats]
@@ -106,6 +125,17 @@
                       (conj {:label "Distribution" :value distribution})
                       true
                       (conj {:label "WFO ID" :value wfo-taxon-id}))))
+
+        ;; Parentage. Only a hybrid has one, so this is disabled far more often
+        ;; than it is filled — but a section that comes and goes makes the
+        ;; panel's shape vary between taxa, which is why the others stay too.
+        (panel/collapsible-section
+          :title "Parentage"
+          :count (count parentage)
+          :disabled? (empty? parentage)
+          :empty-label "none"
+          :children
+          (parentage-section :parentage parentage))
 
         ;; Vernacular names. Above the counts, because the panel is the whole
         ;; view for a read-only visitor and the common name is often the only
@@ -203,12 +233,14 @@
         activity-count (activity.i/count-by-resource db
                                                      :resource-type :taxon
                                                      :resource-id taxon-id)
-        synonyms (synonym.i/list-for-taxon ctx db taxon-id)]
+        synonyms (synonym.i/list-for-taxon ctx db taxon-id)
+        parentage (taxon.i/list-parentage db taxon-id)]
     {:taxon taxon
      :parent parent
      :stats {:accession-count accession-count
              :material-count material-count}
      :synonyms synonyms
+     :parentage parentage
      :notes notes
      :note-count note-count
      :activities activities
@@ -225,6 +257,7 @@
         :parent (:parent panel-data)
         :stats (:stats panel-data)
         :synonyms (:synonyms panel-data)
+        :parentage (:parentage panel-data)
         :notes (:notes panel-data)
         :note-count (:note-count panel-data)
         :activities (:activities panel-data)

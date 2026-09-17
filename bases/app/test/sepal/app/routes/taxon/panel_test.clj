@@ -107,3 +107,51 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             body (panel-body sess (:taxon/id taxon))]
         (is (re-find #"Vernacular names" body) "the section is present, not absent")))))
+
+(deftest test-a-hybrids-parentage-appears-in-the-panel
+  (tf/testing "the cross reaches the rendered panel, each parent a link"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            seed (taxon.i/create! *db* {:name "Acer rubrum" :rank :species})
+            pollen (taxon.i/create! *db* {:name "Acer saccharinum" :rank :species})
+            hybrid (taxon.i/create! *db* {:name "Acer × freemanii" :rank :species})]
+        (taxon.i/set-parentage! *db* (:taxon/id hybrid)
+                                [{:parent-taxon-id (:taxon/id seed) :role :seed}
+                                 {:parent-taxon-id (:taxon/id pollen) :role :pollen}])
+        (let [body (panel-body sess (:taxon/id hybrid))]
+          (is (re-find #"Parentage" body))
+          (is (re-find #"Acer rubrum" body))
+          (is (re-find #"Acer saccharinum" body))
+          (testing "a parent is a link, which is the point of it being a row
+                    rather than a string in the name"
+            (is (re-find (re-pattern (str "/taxon/" (:taxon/id seed))) body)))
+          (testing "and a known direction is named"
+            (is (re-find #"seed parent" body))
+            (is (re-find #"pollen parent" body))))))))
+
+(deftest test-an-unknown-direction-is-not-labelled
+  ;; Every row would otherwise read "unknown", which says nothing and looks
+  ;; like a defect.
+  (tf/testing "parents with no recorded direction"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            a (taxon.i/create! *db* {:name "Cattleya" :rank :genus})
+            hybrid (taxon.i/create! *db* {:name "Cattleytonia" :rank :genus})]
+        (taxon.i/set-parentage! *db* (:taxon/id hybrid)
+                                [{:parent-taxon-id (:taxon/id a)}])
+        (let [body (panel-body sess (:taxon/id hybrid))]
+          (is (re-find #"Cattleya" body))
+          (is (not (re-find #"unknown" body))))))))
+
+(deftest test-the-parentage-section-is-present-for-a-taxon-with-no-cross
+  ;; Present but disabled, matching Synonyms and Vernacular names — most taxa
+  ;; are not hybrids, so this is the common case.
+  (tf/testing "a plain species"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (panel-body sess (:taxon/id taxon))]
+        (is (re-find #"Parentage" body) "the section is present, not absent")))))

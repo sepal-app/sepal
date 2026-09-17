@@ -31,10 +31,18 @@
                            "New taxon"]))
 
 (defn create! [db created-by data]
-  (db.i/with-transaction [tx db]
-    (let [taxon (taxon.i/create! tx data)]
-      (taxon.activity/create! tx taxon.activity/created created-by taxon)
-      taxon)))
+  ;; `parentage` rides in on the form params but is not a taxon column, and
+  ;; CreateTaxon is a closed map — so it comes out before the create and goes
+  ;; in after, inside the same transaction. A taxon whose cross half-saved
+  ;; would claim a parentage it does not have.
+  (let [parentage (:parentage data)]
+    (db.i/with-transaction [tx db]
+      (let [taxon (taxon.i/create! tx (dissoc data :parentage))]
+        (when (seq parentage)
+          (taxon.i/set-parentage! tx (:taxon/id taxon) parentage
+                                  :created-by created-by))
+        (taxon.activity/create! tx taxon.activity/created created-by taxon)
+        taxon))))
 
 (defn get-handler [{:keys [::z/context params query-params flash]}]
   (let [{:keys [db]} context

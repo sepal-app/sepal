@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.form
-  (:require [sepal.app.html :as html]
+  (:require [clojure.string :as str]
+            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.combobox :as combobox]
@@ -34,9 +35,38 @@
         (dissoc :vernacular-name-name
                 :vernacular-name-language))))
 
+(defn- parentage-decoder
+  "Collect the indexed parentage rows into one ordered vector.
+
+  Indexed rather than repeated, unlike the vernacular-name rows: every id a
+  `<sepal-combobox>` renders is derived from its `name`, so two pickers
+  sharing a name would share `parentage-parent-0-input` and break both
+  `<label for>` and the aria wiring. One name per slot keeps them distinct.
+
+  A slot with no taxon chosen is dropped rather than rejected — the form
+  always offers a spare, and an unused spare is not an error. Order comes from
+  the index, which is what the formula reads back as."
+  [form-data]
+  (let [rows (->> form-data
+                  (keep (fn [[k v]]
+                          (when-let [[_ i] (re-matches #"parentage-parent-(\d+)"
+                                                       (name k))]
+                            (when-not (str/blank? v)
+                              {:index (parse-long i)
+                               :parent-taxon-id v
+                               :role (get form-data
+                                          (keyword (str "parentage-role-" i)))}))))
+                  (sort-by :index)
+                  (mapv #(-> % (dissoc :index)
+                             (update :role (fn [r] (if (str/blank? r) "unknown" r))))))]
+    (-> form-data
+        (assoc :parentage rows)
+        (as-> fd (apply dissoc fd (filter #(str/starts-with? (name %) "parentage-")
+                                          (keys fd)))))))
+
 (def FormParams
   [:and
-   [:map {:decode/form {:enter vernacular-name-decoder}}
+   [:map {:decode/form {:enter (comp parentage-decoder vernacular-name-decoder)}}
     [:name [:string {:min 1}]]
     [:author :string]
     [:rank [:string {:min 1}]]
@@ -44,7 +74,82 @@
     [:distribution {:optional true :decode/form validation.i/empty->nil} [:maybe :string]]
     [:vernacular-names [:* [:map
                             [:name [:string {:min 1}]]
-                            [:language [:maybe :string]]]]]]])
+                            [:language [:maybe :string]]]]]
+    [:parentage [:* [:map
+                     [:parent-taxon-id [:string {:min 1}]]
+                     [:role [:enum "seed" "pollen" "unknown"]]]]]]])
+
+(def ^:private hybrid-name-test
+  "A standalone × or x is a hybrid marker. Ilex and Rumex carry an x that
+   belongs to the word, which is why this needs the boundaries — the same rule
+   `taxon.interface.name/normalize-hybrid-marker` applies server-side."
+  "/(^|\\s)[\u00d7x](\\s|$)/")
+
+(defn- parentage-section
+  "What a hybrid was crossed from.
+
+  Slots are indexed rather than repeated, and always one more than are filled:
+  every id a `<sepal-combobox>` renders comes from its `name`, so a cloned row
+  would share `parentage-parent-0-input` and break `<label for>` and the aria
+  wiring alike. Two slots to begin with, because a cross usually has two
+  parents and a form that starts empty asks you to press something first.
+
+  Shown only for a name carrying the hybrid marker, tracked live off the Name
+  field so it appears as you type rather than after a save."
+  [& {:keys [values errors read-only]}]
+  (let [rows (vec (:parentage values))
+        slots (max 2 (inc (count rows)))
+        url (z/url-for taxon.routes/index)]
+    [:fieldset
+     {:class "spl-form-section spl-fieldset"
+      :data-section "parentage"
+      :x-cloak ""
+      :x-data (json/js {:hybrid false})
+      :x-init (str "const f = () => hybrid = " hybrid-name-test
+                   ".test(document.getElementById('name')?.value ?? '');"
+                   " f(); document.getElementById('name')"
+                   "?.addEventListener('input', f)")
+      :x-show "hybrid"}
+     [:legend {:class "spl-form-section-title"} "Parentage"]
+     [:div {:class "spl-form-fields"}
+      [:p {:class "spl-help"}
+       "The taxa this hybrid was crossed from. Separate from Parent, which is
+        the genus it sits in."]
+      (if read-only
+        (if (seq rows)
+          (for [{:keys [parent-name role]} rows]
+            [:p {:class "spl-help"}
+             parent-name
+             (when (and role (not= "unknown" (str (clojure.core/name role))))
+               (str " (" (clojure.core/name role) ")"))])
+          [:p {:class "spl-help"} "None recorded."])
+        (for [i (range slots)]
+          (let [row (get rows i)]
+            [:div {:key i
+                   :class "grid grid-cols-[1fr_140px] gap-2 items-end"}
+             (combobox/combobox
+               :name (str "parentage-parent-" i)
+               :label (if (zero? i) "Crossed from" "and")
+               :url url
+               :errors (:parentage errors)
+               :selected (when row
+                           {:id (:parent-taxon-id row)
+                            :text (:parent-name row)}))
+             (form/field
+               :label "Role"
+               :name (str "parentage-role-" i)
+               :input [:select {:name (str "parentage-role-" i)
+                                :id (str "parentage-role-" i)
+                                :class "spl-input spl-select"
+                                :autocomplete "off"}
+                       (for [[v label] [["unknown" "Unknown"]
+                                        ["seed" "Seed parent"]
+                                        ["pollen" "Pollen parent"]]]
+                         [:option {:value v
+                                   :selected (when (= v (some-> row :role
+                                                                clojure.core/name))
+                                               "selected")}
+                          label])])])))]]))
 
 (defn form
   "The create page and the edit page share this.
@@ -152,6 +257,7 @@
                              :errors (:distribution errors))])
 
         [:fieldset {:class "spl-form-section spl-fieldset"
+                    :data-section "vernacular-names"
                     :x-data (json/js {:vernacularNames (or (:vernacular-names values)
                                                            [])})}
          [:legend {:class "spl-form-section-title flex items-center gap-2"}
@@ -201,7 +307,11 @@
           ;; fields. As a bare div it ran the full width of the page.
           [:p {:x-show "!vernacularNames?.length"
                :class "spl-help"}
-           "None yet."]]]])
+           "None yet."]]]
+
+        (parentage-section :values values
+                           :errors errors
+                           :read-only read-only)])
 
      [:script {:type "module"
                :src (html/static-url "app/routes/taxon/form.ts")}]]))

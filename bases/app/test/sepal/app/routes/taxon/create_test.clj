@@ -133,12 +133,12 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess (peri/request "/taxon/new/"))
             body (Jsoup/parse ^String (:body response))
-            headers (->> (.select body ".spl-fieldset .spl-label")
+            headers (->> (.select body "[data-section=vernacular-names] .spl-label")
                          (mapv #(.text %)))]
         (is (= ["Name" "Language"] headers))
         (testing "header and rows declare the same grid, which is what lines
                   them up — two grids with different templates would not"
-          (let [templates (->> (.select body ".spl-fieldset [class*=grid-cols-]")
+          (let [templates (->> (.select body "[data-section=vernacular-names] [class*=grid-cols-]")
                                (map #(.attr % "class"))
                                (map #(re-find #"grid-cols-\[[^\]]*\]" %))
                                set)]
@@ -321,3 +321,66 @@
         (is (= 200 (:status response)))
         (is (some? picker))
         (is (str/blank? (.attr picker "data-value")) "no parent chosen")))))
+
+(deftest test-creating-a-hybrid-records-what-it-was-crossed-from
+  (tf/testing "the cross posts with the taxon and lands as parentage rows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (try
+        (let [seed (taxon.i/create! *db* {:name "Acer rubrum" :rank :species})
+              pollen (taxon.i/create! *db* {:name "Acer saccharinum" :rank :species})
+              sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (-> sess (peri/request "/taxon/new/"))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request "/taxon/new/"
+                                                   :request-method :post
+                                                   :params {:name "Acer × freemanii"
+                                                            :author ""
+                                                            :rank "species"
+                                                            :parentage-parent-0 (str (:taxon/id seed))
+                                                            :parentage-role-0 "seed"
+                                                            :parentage-parent-1 (str (:taxon/id pollen))
+                                                            :parentage-role-1 "pollen"
+                                                            :parentage-parent-2 ""
+                                                            :parentage-role-2 ""
+                                                            :__anti-forgery-token token}))]
+          (is (= 200 (:status response))
+              (str "Expected 200, got " (:status response) " with body: " (:body response)))
+          (let [redirect (get-in response [:headers "HX-Redirect"])
+                id (parse-long (last (remove empty? (str/split redirect #"/"))))
+                rows (taxon.i/list-parentage *db* id)]
+            (is (= ["Acer rubrum" "Acer saccharinum"] (mapv :parent/name rows)))
+            (is (= [:seed :pollen] (mapv :parentage/role rows)))
+            (testing "and the empty third slot recorded nothing"
+              (is (= 2 (count rows))))
+            (testing "while parent_id is untouched -- containment is not the cross"
+              (is (nil? (:taxon/parent-id (taxon.i/get-by-id *db* id)))))))
+        (finally
+          ;; taxon_parentage.created_by references "user", and the user
+          ;; factory's teardown hard-deletes -- the only hard delete in the
+          ;; codebase. Clear the rows or the foreign key refuses it.
+          (jdbc.sql/delete! *db* :taxon_parentage {:created_by (:user/id user)})
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-the-parentage-section-is-only-offered-for-a-hybrid
+  (tf/testing "a non-hybrid name has no cross to record"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/taxon/new/"))
+            body (Jsoup/parse ^String (:body response))
+            section (.selectFirst body "fieldset:has(legend:contains(Parentage))")]
+        (is (some? section) "the section is rendered")
+        (testing "but hidden until the name carries a hybrid marker, which is
+                  tracked off the Name field rather than waiting for a save"
+          (is (= "hybrid" (.attr section "x-show")))
+          (is (str/includes? (.attr section "x-init") "getElementById('name')")))
+        (testing "and it offers two slots, because a cross usually has two parents"
+          (is (some? (.selectFirst body "[name=parentage-parent-0]")))
+          (is (some? (.selectFirst body "[name=parentage-parent-1]")))
+          (is (nil? (.selectFirst body "[name=parentage-parent-2]"))))))))
