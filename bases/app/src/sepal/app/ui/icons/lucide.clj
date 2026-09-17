@@ -263,6 +263,22 @@
    [:path {:d "M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4"}]
    [:path {:d "M5 21h14"}]])
 
+(defn lock
+  "Lock icon from Lucide. Marks a control that is unavailable rather than
+  merely inactive."
+  [& {:keys [size] :or {size 24}}]
+  [:svg {:xmlns "http://www.w3.org/2000/svg"
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width "2"
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :width size
+         :height size}
+   [:rect {:width "18" :height "11" :x "3" :y "11" :rx "2" :ry "2"}]
+   [:path {:d "M7 11V7a5 5 0 0 1 10 0v4"}]])
+
 (defn trees
   "Trees icon from Lucide. Taxa — a taxonomy is a tree, and these are plants,
   so the glyph reads both ways.

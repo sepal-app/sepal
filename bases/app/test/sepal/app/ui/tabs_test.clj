@@ -46,6 +46,15 @@
           disabled (.selectFirst body "[aria-disabled=true]")]
       (is (= "0" (.attr disabled "tabindex"))))))
 
+(deftest test-disabled-tab-lock-is-decorative
+  (testing "the reason says it in words, so a screen reader announcing the lock
+            too would be hearing it twice"
+    (let [body (nav)
+          lock (.selectFirst body ".spl-tab-lock")]
+      (is (some? lock))
+      (is (= "true" (.attr lock "aria-hidden")))
+      (is (some? (.selectFirst lock "svg"))))))
+
 (deftest test-disabled-tab-explains-itself-accessibly
   (testing "a CSS ::after tooltip reaches neither keyboard nor screen reader"
     (let [body (nav)

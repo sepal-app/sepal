@@ -4,7 +4,8 @@
   These are links to separate documents — /accession/1/general/,
   /collection/, /media/ — so they are a nav, not a tablist. ARIA tab semantics
   promise a panel in the same document that the tab controls; putting them on
-  cross-document links misdescribes the widget to a screen reader.")
+  cross-document links misdescribes the widget to a screen reader."
+  (:require [sepal.app.ui.icons.lucide :as lucide]))
 
 (defn item
   "One section link.
@@ -25,6 +26,9 @@
               :aria-disabled "true"
               :aria-describedby reason-id}
        label
+       ;; Decoration: the reason below already says it in words, so a screen
+       ;; reader hearing "Collection, lock" would only be hearing it twice.
+       [:span {:class "spl-tab-lock" :aria-hidden "true"} (lucide/lock :size 12)]
        [:span {:id reason-id :class "spl-tab-reason"} disabled]])
     [:a (cond-> {:href href
                  :class (cond-> ["spl-tab"]

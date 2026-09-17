@@ -456,18 +456,19 @@
 }
 .spl-tabs-actions { margin-left: auto; display: flex; gap: 7px; padding-bottom: 6px; }
 /* Unavailable. The text ramp bottoms out at --color-text-dim, one step off
- * --color-text-muted, so colour alone barely reads as different — the cursor
- * and the dotted underline carry the signal, and the underline doubles as the
- * hint that hovering or focusing says why. */
+ * --color-text-muted, so colour alone barely reads as different — the lock and
+ * the cursor carry it. The lock is also what suggests there is a reason to
+ * hover or focus for. */
 .spl-tab--disabled {
   color: var(--color-text-dim);
   cursor: not-allowed;
   position: relative;
-  text-decoration: underline dotted;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .spl-tab--disabled:hover { color: var(--color-text-dim); }
+.spl-tab-lock { flex: none; display: flex; }
 
 /* The reason a tab is unavailable. It must be a real element in the document
  * so aria-describedby can point at it — a CSS ::after tooltip reaches neither
