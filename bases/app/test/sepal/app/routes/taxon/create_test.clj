@@ -374,13 +374,63 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess (peri/request "/taxon/new/"))
             body (Jsoup/parse ^String (:body response))
-            section (.selectFirst body "fieldset:has(legend:contains(Parentage))")]
+            section (.selectFirst body "[data-section=parentage]")]
         (is (some? section) "the section is rendered")
-        (testing "but hidden until the name carries a hybrid marker, which is
-                  tracked off the Name field rather than waiting for a save"
-          (is (= "hybrid" (.attr section "x-show")))
+        (testing "but disabled until the name carries a hybrid marker, tracked
+                  off the Name field rather than waiting for a save. Disabled
+                  rather than hidden: a section that vanishes makes the form's
+                  shape vary, and a disabled fieldset still says the field
+                  exists. It also posts nothing, which is what keeps an
+                  unopened section from writing a cross."
+          (is (= "!hybrid" (.attr section "x-bind:disabled")))
+          (is (= "" (.attr section "x-show")) "not hidden")
           (is (str/includes? (.attr section "x-init") "getElementById('name')")))
         (testing "and it offers two slots, because a cross usually has two parents"
           (is (some? (.selectFirst body "[name=parentage-parent-0]")))
           (is (some? (.selectFirst body "[name=parentage-parent-1]")))
           (is (nil? (.selectFirst body "[name=parentage-parent-2]"))))))))
+
+(deftest test-a-cross-of-four-genera-can-be-entered-in-one-pass
+  ;; × Potinara is Brassavola × Cattleya × Laelia × Sophronitis, and that case
+  ;; is why parentage is a table rather than two columns. A form that grew by
+  ;; one slot per save would make it the most tedious thing to record.
+  (tf/testing "Add parent fetches another slot, indexed past the last"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/taxon/parentage-row/?index=2"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (testing "the slot carries the index it was asked for, so its ids stay
+                  distinct from the rows already on the page"
+          (is (some? (.selectFirst body "[name=parentage-parent-2]")))
+          (is (some? (.selectFirst body "[name=parentage-role-2]")))
+          (is (nil? (.selectFirst body "[name=parentage-parent-0]"))))
+        (testing "and the button comes back out of band holding the next index,
+                  because the server is the only thing that knows which index
+                  it just handed out"
+          (let [button (.selectFirst body "#parentage-add")]
+            (is (some? button))
+            (is (= "true" (.attr button "hx-swap-oob")))
+            (is (str/includes? (.attr button "hx-get") "index=3"))))))))
+
+(deftest test-the-form-starts-with-two-slots-and-an-add-button
+  (tf/testing "a cross usually has two parents"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/taxon/new/"))
+            body (Jsoup/parse ^String (:body response))]
+        (is (some? (.selectFirst body "[name=parentage-parent-0]")))
+        (is (some? (.selectFirst body "[name=parentage-parent-1]")))
+        (is (nil? (.selectFirst body "[name=parentage-parent-2]")))
+        (testing "with a way to reach the third"
+          (let [button (.selectFirst body "#parentage-add")]
+            (is (some? button))
+            (is (str/includes? (.attr button "hx-get") "index=2"))
+            (is (= "#parentage-rows" (.attr button "hx-target")))
+            (is (= "beforeend" (.attr button "hx-swap")))))))))

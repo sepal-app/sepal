@@ -1,6 +1,7 @@
 (ns sepal.taxon.parentage-test
   "The cross a hybrid came from, which is not `taxon.parent_id`."
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.taxon.interface :as taxon.i]
@@ -8,8 +9,15 @@
 
 (use-fixtures :once default-system-fixture)
 
-(defn- genus! [nm]
-  (taxon.i/create! *db* {:name nm :rank :genus}))
+(defn- genus!
+  "A genus with a name no other test shares.
+
+  The suite runs against one database and nothing here deletes what it makes,
+  so two files both creating a bare \"Cattleya\" leave two rows that a lookup
+  by name cannot tell apart. The suffix keeps each test's taxa its own."
+  [nm]
+  (taxon.i/create! *db* {:name (str nm "-" (subs (str (random-uuid)) 0 8))
+                         :rank :genus}))
 
 (deftest test-a-cross-of-more-than-two-round-trips
   (testing "× Potinara is Brassavola × Cattleya × Laelia × Sophronitis. Four
@@ -27,7 +35,7 @@
           (is (= 4 (count rows)))
           (testing "in the order given, because position is the formula's order"
             (is (= ["Brassavola" "Cattleya" "Laelia" "Sophronitis"]
-                   (mapv :parent/name rows)))
+                   (mapv #(first (clojure.string/split (:parent/name %) #"-")) rows)))
             (is (= [0 1 2 3] (mapv :parentage/position rows))))
           (testing "and the direction defaults to unknown rather than a guess"
             (is (= [:unknown :unknown :unknown :unknown]
@@ -62,7 +70,8 @@
                                 [{:parent-taxon-id (:taxon/id c)}])
         (let [rows (taxon.i/list-parentage *db* (:taxon/id hybrid))]
           (is (= 1 (count rows)))
-          (is (= ["Betula"] (mapv :parent/name rows))))))))
+          (is (= ["Betula"]
+                 (mapv #(first (clojure.string/split (:parent/name %) #"-")) rows))))))))
 
 (deftest test-clearing-parentage-leaves-nothing
   (tf/testing "saved empty"
@@ -92,7 +101,8 @@
                                   [{:parent-taxon-id (:taxon/id shared)}])
           (let [found (taxon.i/list-parentage-children *db* (:taxon/id shared))]
             (is (= ["Cattleytonia" "Sophrocattleya"]
-                   (sort (mapv :taxon/name found)))))
+                   (sort (mapv #(first (clojure.string/split (:taxon/name %) #"-"))
+                               found)))))
           (testing "and a taxon in no cross is found by nothing"
             (is (empty? (taxon.i/list-parentage-children
                           *db* (:taxon/id (genus! "Unrelated")))))))))))

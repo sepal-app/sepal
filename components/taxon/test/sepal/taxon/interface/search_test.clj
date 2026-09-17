@@ -79,7 +79,11 @@
   (tf/testing "what do I hold with Cattleya in its parentage"
     {}
     (fn [_]
-      (let [genus! (fn [nm] (taxon.i/create! *db* {:name nm :rank :genus}))
+      ;; Suffixed: the suite shares one database and another file also makes a
+      ;; Cattleya, which a search by that name would then find twice.
+      (let [suffix (subs (str (random-uuid)) 0 8)
+            genus! (fn [nm] (taxon.i/create! *db* {:name (str nm suffix)
+                                                   :rank :genus}))
             cattleya (genus! "Cattleya")
             laelia (genus! "Laelia")
             hybrid (genus! "Laeliocattleya")
@@ -87,7 +91,7 @@
         (taxon.i/set-parentage! *db* (:taxon/id hybrid)
                                 [{:parent-taxon-id (:taxon/id cattleya)}
                                  {:parent-taxon-id (:taxon/id laelia)}])
-        (let [ast (search.i/parse "parentage:Cattleya")
+        (let [ast (search.i/parse (str "parentage:Cattleya" suffix))
               stmt (search.i/compile-query :taxon ast
                                            {:select [:t.id] :from [[:taxon :t]]})
               ids (set (map :taxon/id (db.i/execute! *db* stmt)))]

@@ -4,6 +4,7 @@
 (def new ::new)
 (def rank-guess ::rank-guess)
 (def parent-suggestion ::parent-suggestion)
+(def parentage-row ::parentage-row)
 (def detail ::detail)
 (def detail-name ::detail-name)
 (def detail-media ::detail-media)

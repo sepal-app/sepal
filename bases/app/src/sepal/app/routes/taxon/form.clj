@@ -85,6 +85,53 @@
    `taxon.interface.name/normalize-hybrid-marker` applies server-side."
   "/(^|\\s)[\u00d7x](\\s|$)/")
 
+(defn parentage-row
+  "One parent slot. Public because the Add button fetches another from the
+   server rather than cloning one in the browser: every id a
+   `<sepal-combobox>` renders comes from its `name`, so a cloned row would
+   duplicate `parentage-parent-0-input` and break `<label for>` with it."
+  [& {:keys [index row errors]}]
+  [:div {:class "grid grid-cols-[1fr_140px] gap-2 items-end"}
+   (combobox/combobox
+     :name (str "parentage-parent-" index)
+     :label (if (zero? index) "Crossed from" "and")
+     :url (z/url-for taxon.routes/index)
+     :errors (:parentage errors)
+     :selected (when row
+                 {:id (:parent-taxon-id row)
+                  :text (:parent-name row)}))
+   (form/field
+     :label "Role"
+     :name (str "parentage-role-" index)
+     :input [:select {:name (str "parentage-role-" index)
+                      :id (str "parentage-role-" index)
+                      :class "spl-input spl-select"
+                      :autocomplete "off"}
+             (for [[v label] [["unknown" "Unknown"]
+                              ["seed" "Seed parent"]
+                              ["pollen" "Pollen parent"]]]
+               [:option {:value v
+                         :selected (when (= v (some-> row :role
+                                                      clojure.core/name))
+                                     "selected")}
+                label])])])
+
+(defn parentage-add-button
+  "Fetches one more slot, and swaps itself for a copy carrying the next index.
+
+   The index has to come from somewhere, and the server is the only thing that
+   knows how many slots it rendered — so the response replaces this button out
+   of band rather than the page counting rows in JavaScript."
+  [& {:keys [next-index]}]
+  [:button {:type "button"
+            :id "parentage-add"
+            :class "spl-btn spl-btn--sm self-start"
+            :hx-get (z/url-for taxon.routes/parentage-row nil
+                               {:index next-index})
+            :hx-target "#parentage-rows"
+            :hx-swap "beforeend"}
+   "Add parent"])
+
 (defn- parentage-section
   "What a hybrid was crossed from.
 
@@ -94,27 +141,33 @@
   wiring alike. Two slots to begin with, because a cross usually has two
   parents and a form that starts empty asks you to press something first.
 
-  Shown only for a name carrying the hybrid marker, tracked live off the Name
-  field so it appears as you type rather than after a save."
+  Disabled rather than hidden until the name carries a hybrid marker, and
+  tracked live off the Name field so it opens as you type. A section that
+  vanishes makes the form's shape vary between taxa, which is the reasoning the
+  panel's own sections already follow; disabling says the field exists and why
+  it is not yours yet.
+
+  `<fieldset disabled>` does the work: it disables the combobox's inner native
+  input, and the spec bars a form-associated custom element inside one from
+  submitting, so an unopened section posts nothing."
   [& {:keys [values errors read-only]}]
   (let [rows (vec (:parentage values))
-        slots (max 2 (inc (count rows)))
-        url (z/url-for taxon.routes/index)]
+        slots (max 2 (count rows))]
     [:fieldset
      {:class "spl-form-section spl-fieldset"
       :data-section "parentage"
-      :x-cloak ""
       :x-data (json/js {:hybrid false})
       :x-init (str "const f = () => hybrid = " hybrid-name-test
                    ".test(document.getElementById('name')?.value ?? '');"
                    " f(); document.getElementById('name')"
                    "?.addEventListener('input', f)")
-      :x-show "hybrid"}
-     [:legend {:class "spl-form-section-title"} "Parentage"]
+      :x-bind:disabled "!hybrid"
+      :x-bind:class "hybrid ? '' : 'opacity-50'"}
+     [:legend {:class "spl-form-section-title"} "Hybrid parentage"]
      [:div {:class "spl-form-fields"}
       [:p {:class "spl-help"}
-       "The taxa this hybrid was crossed from. Separate from Parent, which is
-        the genus it sits in."]
+       "The taxa this hybrid was crossed from. Available once the name carries
+        a hybrid marker (×)."]
       (if read-only
         (if (seq rows)
           (for [{:keys [parent-name role]} rows]
@@ -123,33 +176,11 @@
              (when (and role (not= "unknown" (str (clojure.core/name role))))
                (str " (" (clojure.core/name role) ")"))])
           [:p {:class "spl-help"} "None recorded."])
-        (for [i (range slots)]
-          (let [row (get rows i)]
-            [:div {:key i
-                   :class "grid grid-cols-[1fr_140px] gap-2 items-end"}
-             (combobox/combobox
-               :name (str "parentage-parent-" i)
-               :label (if (zero? i) "Crossed from" "and")
-               :url url
-               :errors (:parentage errors)
-               :selected (when row
-                           {:id (:parent-taxon-id row)
-                            :text (:parent-name row)}))
-             (form/field
-               :label "Role"
-               :name (str "parentage-role-" i)
-               :input [:select {:name (str "parentage-role-" i)
-                                :id (str "parentage-role-" i)
-                                :class "spl-input spl-select"
-                                :autocomplete "off"}
-                       (for [[v label] [["unknown" "Unknown"]
-                                        ["seed" "Seed parent"]
-                                        ["pollen" "Pollen parent"]]]
-                         [:option {:value v
-                                   :selected (when (= v (some-> row :role
-                                                                clojure.core/name))
-                                               "selected")}
-                          label])])])))]]))
+        (list
+          [:div {:id "parentage-rows" :class "flex flex-col gap-2"}
+           (for [i (range slots)]
+             (parentage-row :index i :row (get rows i) :errors errors))]
+          (parentage-add-button :next-index slots)))]]))
 
 (defn form
   "The create page and the edit page share this.

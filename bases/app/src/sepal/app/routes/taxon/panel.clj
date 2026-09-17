@@ -130,7 +130,7 @@
         ;; than it is filled — but a section that comes and goes makes the
         ;; panel's shape vary between taxa, which is why the others stay too.
         (panel/collapsible-section
-          :title "Parentage"
+          :title "Hybrid parentage"
           :count (count parentage)
           :disabled? (empty? parentage)
           :empty-label "none"

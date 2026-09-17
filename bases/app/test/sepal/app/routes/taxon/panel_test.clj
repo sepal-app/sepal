@@ -120,7 +120,7 @@
                                 [{:parent-taxon-id (:taxon/id seed) :role :seed}
                                  {:parent-taxon-id (:taxon/id pollen) :role :pollen}])
         (let [body (panel-body sess (:taxon/id hybrid))]
-          (is (re-find #"Parentage" body))
+          (is (re-find #"Hybrid parentage" body))
           (is (re-find #"Acer rubrum" body))
           (is (re-find #"Acer saccharinum" body))
           (testing "a parent is a link, which is the point of it being a row
@@ -154,4 +154,4 @@
     (fn [{:keys [user taxon]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
             body (panel-body sess (:taxon/id taxon))]
-        (is (re-find #"Parentage" body) "the section is present, not absent")))))
+        (is (re-find #"Hybrid parentage" body) "the section is present, not absent")))))

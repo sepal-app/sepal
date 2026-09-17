@@ -12,6 +12,7 @@
             [sepal.app.routes.taxon.index :as index]
             [sepal.app.routes.taxon.panel :as panel]
             [sepal.app.routes.taxon.parent-suggestion :as parent-suggestion]
+            [sepal.app.routes.taxon.parentage-row :as parentage-row]
             [sepal.app.routes.taxon.rank-guess :as rank-guess]
             [sepal.app.routes.taxon.routes :as routes]
             [sepal.taxon.interface :as taxon.i]
@@ -30,6 +31,10 @@
                            :middleware [[middleware/require-editor-or-admin]]
                            :handler #'parent-suggestion/handler
                            :conflicting true}]
+   ["/parentage-row/" {:name routes/parentage-row
+                       :middleware [[middleware/require-editor-or-admin]]
+                       :handler #'parentage-row/handler
+                       :conflicting true}]
    ["/rank-guess/" {:name routes/rank-guess
                     :middleware [[middleware/require-editor-or-admin]]
                     :handler #'rank-guess/handler
