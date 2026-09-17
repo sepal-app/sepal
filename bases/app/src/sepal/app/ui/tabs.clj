@@ -11,14 +11,17 @@
 
   :active   marks the current section, emitting aria-current=page.
   :disabled is the reason the section is unavailable, as a string. A disabled
-            item renders as a span rather than an anchor, so it is neither
-            focusable nor activatable, and the reason is a real element
-            referenced by aria-describedby — a CSS tooltip reaches neither a
-            keyboard nor a screen reader."
+            item renders as a span rather than an anchor, so there is no href
+            to follow, and the reason is a real element referenced by
+            aria-describedby — a CSS tooltip reaches neither a keyboard nor a
+            screen reader. It keeps tabindex=0 all the same: aria-disabled
+            marks a control unavailable without removing it from the tab order,
+            and a reason a keyboard cannot reach is a reason nobody hears."
   [label & [{:keys [href active disabled]}]]
   (if disabled
     (let [reason-id (str "tab-reason-" (hash label))]
       [:span {:class "spl-tab spl-tab--disabled"
+              :tabindex "0"
               :aria-disabled "true"
               :aria-describedby reason-id}
        label

@@ -455,7 +455,18 @@
   border-bottom-color: var(--color-brand);
 }
 .spl-tabs-actions { margin-left: auto; display: flex; gap: 7px; padding-bottom: 6px; }
-.spl-tab--disabled { color: var(--color-text-dim); cursor: default; position: relative; }
+/* Unavailable. The text ramp bottoms out at --color-text-dim, one step off
+ * --color-text-muted, so colour alone barely reads as different — the cursor
+ * and the dotted underline carry the signal, and the underline doubles as the
+ * hint that hovering or focusing says why. */
+.spl-tab--disabled {
+  color: var(--color-text-dim);
+  cursor: not-allowed;
+  position: relative;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
 .spl-tab--disabled:hover { color: var(--color-text-dim); }
 
 /* The reason a tab is unavailable. It must be a real element in the document

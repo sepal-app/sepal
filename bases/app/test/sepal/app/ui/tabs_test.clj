@@ -30,13 +30,21 @@
     (is (= "General" (str/trim (.text current))))))
 
 (deftest test-disabled-tab-is-not-a-link
-  (testing "a disabled destination must not be focusable or activatable"
+  (testing "a disabled destination must not be activatable"
     (let [body (nav)
           disabled (.selectFirst body "[aria-disabled=true]")]
       (is (some? disabled))
       (is (not= "a" (.tagName disabled))
           "rendered as a span, so there is no href to follow")
       (is (str/includes? (.text disabled) "Collection")))))
+
+(deftest test-disabled-tab-stays-in-the-tab-order
+  (testing "aria-disabled marks a control unavailable without removing it from
+            the tab order. Dropping it would leave the reason reachable by
+            mouse alone, since the tooltip only appears on hover or focus."
+    (let [body (nav)
+          disabled (.selectFirst body "[aria-disabled=true]")]
+      (is (= "0" (.attr disabled "tabindex"))))))
 
 (deftest test-disabled-tab-explains-itself-accessibly
   (testing "a CSS ::after tooltip reaches neither keyboard nor screen reader"
