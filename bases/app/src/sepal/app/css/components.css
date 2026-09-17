@@ -142,6 +142,8 @@
 
 /* Forms cap at 576px; pairs sit side by side inside that column and stack on a
  * phone. Headings mark the regions, so no boxes and no rules between them. */
+/* Every section is spaced the same way from one place. A section that sets its
+ * own spacing is a section that can disagree with the next one. */
 .spl-form-section { max-width: 576px; margin-bottom: 30px; }
 .spl-form-section-title {
   font: 600 14px/1.3 var(--font-sans);
@@ -1604,7 +1606,13 @@
 }
 .spl-toggle { accent-color: var(--color-brand); }
 .spl-loading { opacity: .6; }
-.spl-fieldset { border: 0; padding: 0; margin: 0; }
+/* A fieldset used for grouping rather than for the browser's box. Only the
+ * inline margin is reset, which is the whole of the UA default (2px each
+ * side) — `margin: 0` also zeroed the block margin, and since this sits
+ * 1400 lines below `.spl-form-section` at equal specificity it silently took
+ * the 30px between sections with it. Spacing between sections belongs to
+ * .spl-form-section and nothing here should have an opinion about it. */
+.spl-fieldset { border: 0; padding: 0; margin-inline: 0; }
 
 .spl-tooltip { position: relative; }
 
