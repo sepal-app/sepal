@@ -35,9 +35,18 @@
   "The three things the REPL wants and no other caller does. Paths are relative
   to the repository root, which is where the REPL is expected to start: vite
   runs as a subprocess with :package-json-dir as its working directory."
-  {:vite {:mode :dev-server
+  {;; `:build`, not `:dev-server`. Both layouts load the stylesheet with a
+   ;; plain <link rel=stylesheet> — see ui/base.clj — and a dev server hands
+   ;; back CSS as a JavaScript module, which a <link> cannot use: the page
+   ;; fetches it, gets 200, and applies nothing. `vite.config.dev.js` sets
+   ;; build.watch, so this rebuilds on save; a browser refresh picks it up.
+   :vite {:mode :build
           :config-file "vite.config.dev.js"
           :package-json-dir "bases/app"}
+   ;; vite's build watch rewrites the manifest on every save; a cached one
+   ;; keeps handing out the hashes it read at startup, which are files the
+   ;; rebuild has already deleted.
+   :cache-manifest? false
    :hot-reload {:watch-paths ["bases/app/src"]
                 :watch-extensions #{".clj" ".cljc" ".edn" ".html"}}
    :reload-per-request? true})

@@ -101,6 +101,12 @@
    ;; the control plane. Omitting :vite is not the same as passing nil: see the
    ;; note on ::zodiac-assets in instance-config.
    [:vite {:optional true} [:maybe :map]]
+   ;; Defaults true, which is what a deployed garden wants: the manifest is
+   ;; written once at build time and re-reading it per request is waste.
+   ;; The REPL sets it false, because vite's build watch rewrites the
+   ;; manifest on every save and a cached one keeps serving the hashes it
+   ;; held at startup -- assets that no longer exist.
+   [:cache-manifest? {:optional true} :boolean]
    [:hot-reload {:optional true} [:maybe :map]]
    [:reload-per-request? {:optional true} :boolean]
    [:forgot-password-email-from {:optional true} [:string {:min 1}]]
@@ -332,10 +338,12 @@
 (defn- instance-config
   [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
                    start-server? jetty-host jetty-port
-                   vite hot-reload reload-per-request?
+                   vite hot-reload reload-per-request? cache-manifest?
                    forgot-password-email-from forgot-password-email-subject
                    invitation-email-from invitation-email-subject
-                   remembered-gardens-cookie-domain] :as opts}]
+                   remembered-gardens-cookie-domain]
+            :or {cache-manifest? true}
+            :as opts}]
   (cond->
     {:sepal.token.interface/service
      {:secret (token-secret (:master-secret process) slug)}
@@ -367,7 +375,7 @@
    ;; per instance. Only the REPL passes a value.
      {:manifest-path "app/build/.vite/manifest.json"
       :asset-resource-path "app/build/assets"
-      :cache-manifest? true
+      :cache-manifest? cache-manifest?
       :vite vite}
 
      :sepal.app.server/zodiac
