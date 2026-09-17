@@ -104,10 +104,10 @@
    plant, an accession is a batch from one source, a taxon is a kind of plant —
    which also puts the section a garden works in daily at the top.
 
-   Every icon is Lucide, one 24 grid at stroke 2. Only Material is botanical:
-   a taxon is a name in a hierarchy rather than a plant, so it draws the
-   hierarchy. Two leafy glyphs side by side meant the rail had to be read
-   rather than scanned."
+   Every icon is Lucide, one 24 grid at stroke 2. Material and Taxa both draw
+   plants, which the order above keeps apart — a sprout is low and wide with a
+   ground line, trees are two trunks filling the box. The flower Taxa used to
+   draw sat next to the sprout and read as the same shape at 20px."
   []
   [{:label "Activity" :href (z/url-for activity.routes/index)
     :icon (lucide/history)}
@@ -116,7 +116,7 @@
    {:label "Accessions" :href (z/url-for accession.routes/index)
     :icon (lucide/clipboard-list)}
    {:label "Taxa" :href (z/url-for taxon.routes/index)
-    :icon (lucide/list-tree)}
+    :icon (lucide/trees)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
    {:label "Tags" :href (z/url-for tag.routes/index)

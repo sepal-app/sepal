@@ -263,12 +263,14 @@
    [:path {:d "M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4"}]
    [:path {:d "M5 21h14"}]])
 
-(defn list-tree
-  "List-tree icon from Lucide. Taxa — a hierarchy of ranks, not a plant.
+(defn trees
+  "Trees icon from Lucide. Taxa — a taxonomy is a tree, and these are plants,
+  so the glyph reads both ways.
 
-  Five strokes, which is what survives the rail's 20px. The flower it replaced
-  packed a four-lobe blossom, a centre circle, a stem and two leaves into the
-  same box and went to mush."
+  Two trunks filling the box, against Material's low, wide sprout with its
+  ground line. The flower it replaced packed a four-lobe blossom, a centre
+  circle, a stem and two leaves into the same box and went to mush at the
+  rail's 20px."
   [& {:keys [size] :or {size 24}}]
   [:svg {:xmlns "http://www.w3.org/2000/svg"
          :viewBox "0 0 24 24"
@@ -279,11 +281,10 @@
          :stroke-linejoin "round"
          :width size
          :height size}
-   [:path {:d "M21 12h-8"}]
-   [:path {:d "M21 6H8"}]
-   [:path {:d "M21 18h-8"}]
-   [:path {:d "M3 6v4c0 1.1.9 2 2 2h3"}]
-   [:path {:d "M3 10v6c0 1.1.9 2 2 2h3"}]])
+   [:path {:d "M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"}]
+   [:path {:d "M7 16v6"}]
+   [:path {:d "M13 19v3"}]
+   [:path {:d "M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"}]])
 
 (defn map-pin
   "Map-pin icon from Lucide. Locations."

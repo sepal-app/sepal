@@ -13,7 +13,7 @@
   (case resource-type
     :accession (lucide/clipboard-list :size size)
     :material (lucide/sprout :size size)
-    :taxon (lucide/list-tree :size size)
+    :taxon (lucide/trees :size size)
     :location (lucide/map-pin :size size)
     :media (lucide/image :size size)
     :contact (lucide/contact-round)
