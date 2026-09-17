@@ -224,3 +224,18 @@
                           :genus))
                   2 :species
                   nil))))))))
+
+(defn formula
+  "The cross written out: parent names joined by the hybrid marker, in order.
+
+   Lives here because this namespace already owns how a name is written, and
+   because `\" × \"` is one of the upright terms above — so `segments` splits
+   the result correctly with no further work, italicising each parent and
+   leaving the marker upright.
+
+   Blank names are dropped rather than rendered as an empty slot: a cross with
+   one parent recorded reads as that parent, not as `\"× Cattleya\"`."
+  [parent-names]
+  (->> parent-names
+       (remove str/blank?)
+       (str/join (str " " hybrid-marker " "))))

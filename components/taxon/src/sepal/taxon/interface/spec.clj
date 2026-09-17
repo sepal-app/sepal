@@ -116,3 +116,35 @@
      ;; TODO: I think writing already saves maps and vectors as json
      [:vernacular-names {:encode/store json/write-str}
       [:* VernacularName]]]))
+
+(def parentage-role
+  "Which side of the cross a parent was.
+
+   `unknown` is the default and the common case: convention writes the seed
+   parent first and reciprocal crosses genuinely differ, but for most garden
+   records nobody recorded which way it went. A row saying so is honest where
+   a guess would not be.
+
+   A closed set, so it is a check constraint on `taxon_parentage` rather than
+   a lookup table. Contrast `contact_type`, a vocabulary a garden outgrows."
+  [:enum {:decode/store csk/->kebab-case-keyword
+          :encode/store csk/->kebab-case-string}
+   :seed :pollen :unknown])
+
+(def Parentage
+  "One parent of one cross, as stored."
+  [:map {:closed true}
+   [:parentage/id id]
+   [:parentage/taxon-id id]
+   [:parentage/parent-taxon-id id]
+   [:parentage/role parentage-role]
+   [:parentage/position :int]
+   [:parentage/created-by [:maybe pos-int?]]
+   [:parentage/created-at :any]])
+
+(def CreateParentage
+  "One parent as a caller supplies it. `position` is assigned by the writer
+   from the order of the collection, so a caller does not carry it."
+  [:map {:closed true}
+   [:parent-taxon-id {:decode/store validate.i/coerce-int} id]
+   [:role {:optional true} parentage-role]])

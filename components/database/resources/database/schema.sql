@@ -375,6 +375,23 @@ CREATE TRIGGER trigger_contact_fts_update AFTER UPDATE OF name, business, email 
   INSERT INTO contact_fts(rowid, name, business, email)
   VALUES (new.id, new.name, COALESCE(new.business, ''), COALESCE(new.email, ''));
 END;
+CREATE TABLE taxon_parentage (
+  id integer primary key autoincrement,
+  taxon_id integer not null references taxon(id),
+  parent_taxon_id integer not null references taxon(id),
+  role text not null default 'unknown'
+    check(role in ('seed', 'pollen', 'unknown')),
+  position integer not null,
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now')),
+  -- No cross means this, and it would loop a renderer that walks the chain.
+  check (parent_taxon_id <> taxon_id)
+) strict;
+CREATE INDEX taxon_parentage_taxon_id_idx on taxon_parentage (taxon_id);
+CREATE INDEX taxon_parentage_parent_taxon_id_idx
+  on taxon_parentage (parent_taxon_id);
+CREATE UNIQUE INDEX taxon_parentage_position_idx
+  on taxon_parentage (taxon_id, position);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -495,3 +512,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916140000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916150000', '2026-09-16 20:09:46');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917120000', '2026-09-17 15:05:28');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917130000', '2026-09-17 15:34:45');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917140000', '2026-09-17 17:00:44');

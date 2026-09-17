@@ -1,6 +1,7 @@
 (ns sepal.taxon.interface
   (:require [integrant.core :as ig]
-            [sepal.taxon.core :as core]))
+            [sepal.taxon.core :as core]
+            [sepal.taxon.parentage :as parentage]))
 
 (defn get-by-id [db id]
   (core/get-by-id db id))
@@ -25,6 +26,18 @@
   bases/app/src/sepal/app/delete.clj."
   [db id]
   (core/delete! db id))
+
+(def list-parentage
+  "This taxon's parents, ordered as the formula is written."
+  #'parentage/list-for-taxon)
+
+(def list-parentage-children
+  "The crosses naming this taxon as a parent."
+  #'parentage/list-children)
+
+(def set-parentage!
+  "Replace this taxon's parentage with the given parents, in order."
+  #'parentage/set-for-taxon!)
 
 (defn count-children
   "How many taxa name this one as their parent."
