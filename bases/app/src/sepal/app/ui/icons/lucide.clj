@@ -263,8 +263,12 @@
    [:path {:d "M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4"}]
    [:path {:d "M5 21h14"}]])
 
-(defn flower-2
-  "Flower-2 icon from Lucide. Taxa."
+(defn list-tree
+  "List-tree icon from Lucide. Taxa — a hierarchy of ranks, not a plant.
+
+  Five strokes, which is what survives the rail's 20px. The flower it replaced
+  packed a four-lobe blossom, a centre circle, a stem and two leaves into the
+  same box and went to mush."
   [& {:keys [size] :or {size 24}}]
   [:svg {:xmlns "http://www.w3.org/2000/svg"
          :viewBox "0 0 24 24"
@@ -275,11 +279,11 @@
          :stroke-linejoin "round"
          :width size
          :height size}
-   [:path {:d "M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1"}]
-   [:circle {:cx "12" :cy "8" :r "2"}]
-   [:path {:d "M12 10v12"}]
-   [:path {:d "M12 22c4.2 0 7-1.667 7-5-4.2 0-7 1.667-7 5Z"}]
-   [:path {:d "M12 22c-4.2 0-7-1.667-7-5 4.2 0 7 1.667 7 5Z"}]])
+   [:path {:d "M21 12h-8"}]
+   [:path {:d "M21 6H8"}]
+   [:path {:d "M21 18h-8"}]
+   [:path {:d "M3 6v4c0 1.1.9 2 2 2h3"}]
+   [:path {:d "M3 10v6c0 1.1.9 2 2 2h3"}]])
 
 (defn map-pin
   "Map-pin icon from Lucide. Locations."

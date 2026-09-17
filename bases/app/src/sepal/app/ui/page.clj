@@ -100,20 +100,23 @@
 (defn- sections
   "The section rail's entries.
 
-   Every icon is Lucide, one 24 grid at stroke 2. The rail used to mix three
-   sets — Heroicons at stroke 1.5, Lucide at 2, and a filled 16-grid Bootstrap
-   flower that read heavier than everything beside it — and Material and Tags
-   both drew the same tag, so two sections were indistinguishable. Tags keeps
-   the tag, being literally one; Material is a sprout, the plant in the ground."
+   The three record sections run most specific to least — Material is one
+   plant, an accession is a batch from one source, a taxon is a kind of plant —
+   which also puts the section a garden works in daily at the top.
+
+   Every icon is Lucide, one 24 grid at stroke 2. Only Material is botanical:
+   a taxon is a name in a hierarchy rather than a plant, so it draws the
+   hierarchy. Two leafy glyphs side by side meant the rail had to be read
+   rather than scanned."
   []
   [{:label "Activity" :href (z/url-for activity.routes/index)
     :icon (lucide/history)}
-   {:label "Accessions" :href (z/url-for accession.routes/index)
-    :icon (lucide/clipboard-list)}
    {:label "Material" :href (z/url-for material.routes/index)
     :icon (lucide/sprout)}
+   {:label "Accessions" :href (z/url-for accession.routes/index)
+    :icon (lucide/clipboard-list)}
    {:label "Taxa" :href (z/url-for taxon.routes/index)
-    :icon (lucide/flower-2)}
+    :icon (lucide/list-tree)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
    {:label "Tags" :href (z/url-for tag.routes/index)
