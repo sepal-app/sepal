@@ -870,6 +870,44 @@
       (is (= version
              (get-in config [:sepal.app.server/zodiac :request-context :schema-version]))))))
 
+(deftest test-instance-opts-accept-managed-backups
+  (testing "the key validates"
+    (is (nil? (#'instance/validate! instance/InstanceOpts
+                                    (assoc valid-instance-opts :managed-backups? true)
+                                    "instance opts"))))
+
+  (testing "it is optional"
+    (is (nil? (#'instance/validate! instance/InstanceOpts
+                                    valid-instance-opts
+                                    "instance opts"))))
+
+  (testing "a non-boolean is rejected"
+    (let [thrown (try
+                   (#'instance/validate! instance/InstanceOpts
+                                         (assoc valid-instance-opts :managed-backups? "yes")
+                                         "instance opts")
+                   nil
+                   (catch clojure.lang.ExceptionInfo e e))]
+      (is (some? thrown))
+      (is (= :invalid-opts (:reason (ex-data thrown)))))))
+
+(deftest test-the-request-context-carries-managed-backups
+  ;; Asserted against the config instance-config builds rather than a started
+  ;; instance, for the reason spelled out on
+  ;; test-the-request-context-carries-the-schema-version: zodiac closes
+  ;; :request-context into a middleware closure that :system does not surface.
+  (testing "the flag threads through when set"
+    (let [config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts :managed-backups? true))]
+      (is (true? (get-in config [:sepal.app.server/zodiac :request-context :managed-backups?])))))
+
+  (testing "an omitted flag arrives as false, not nil"
+    ;; The page branches on this value. nil and false render the same today, but
+    ;; a nil in the context is a hole a later reader has to think about.
+    (let [config (#'instance/instance-config {:master-secret master}
+                                             valid-instance-opts)]
+      (is (false? (get-in config [:sepal.app.server/zodiac :request-context :managed-backups?]))))))
+
 (deftest test-start-passes-the-current-schema-version-into-instance-config
   ;; The test above proves instance-config copies whatever :schema-version it's
   ;; given; it says nothing about provenance, and would pass unchanged against a

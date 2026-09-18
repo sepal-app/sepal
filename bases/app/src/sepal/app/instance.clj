@@ -91,6 +91,11 @@
    [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
+   ;; Something outside this process operates the backup schedule and retention:
+   ;; a control plane, or a self-hoster's own cron and offsite copy. The settings
+   ;; page then lists the backups it finds and offers no schedule to change,
+   ;; because changing it here would not change what actually runs.
+   [:managed-backups? {:optional true} :boolean]
    [:media-cache-size-mb {:optional true} pos-int?]
    [:start-server? {:optional true} :boolean]
    [:jetty-host {:optional true} [:maybe :string]]
@@ -336,7 +341,7 @@
   (atom setup.shared/initial-job-state))
 
 (defn- instance-config
-  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir
+  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir managed-backups?
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request? cache-manifest?
                    forgot-password-email-from forgot-password-email-subject
@@ -406,6 +411,7 @@
                         :media-upload-bucket (:media-upload-bucket process)
                         :media-key-prefix media-key-prefix
                         :backup-dir backup-dir
+                        :managed-backups? (boolean managed-backups?)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
