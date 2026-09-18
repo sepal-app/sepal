@@ -137,3 +137,24 @@
           sess (app.test/login editor-email password)
           {:keys [response]} (peri/request sess "/settings/backups/sepal-backup-2026-01-01T020000.zip/download")]
       (is (= 403 (:status response))))))
+
+(deftest test-backups-page-lists-more-than-five
+  (testing "GET /settings/backups lists every backup on disk, not the newest five"
+    ;; Written directly rather than through create-backup!, which would take one
+    ;; VACUUM per file and can only produce one filename per second.
+    (let [names (for [d (range 1 8)]
+                  (format "sepal-backup-2026-08-%02dT020000.zip" d))]
+      (doseq [n names]
+        (spit (java.io.File. ^String *backup-dir* ^String n) "not a real zip"))
+      (try
+        (let [password "testpassword123"
+              email (create-user! *db* :admin password)
+              sess (app.test/login email password)
+              {:keys [response]} (peri/request sess "/settings/backups")]
+          (is (= 200 (:status response)))
+          (doseq [n names]
+            (is (.contains (:body response) n)
+                (str n " should be listed"))))
+        (finally
+          (doseq [n names]
+            (.delete (java.io.File. ^String *backup-dir* ^String n))))))))

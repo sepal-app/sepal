@@ -154,7 +154,7 @@
             (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings"))))
 
       ;; GET
-      (let [backups (backup/list-backups (:path config) :limit 5)]
+      (let [backups (backup/list-backups (:path config))]
         (render :viewer viewer
                 :config config
                 :flash flash

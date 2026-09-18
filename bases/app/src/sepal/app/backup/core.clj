@@ -191,20 +191,21 @@
 
 (defn list-backups
   "List backup files in the backup directory.
-   Returns a sequence of maps sorted by created-at descending."
-  [backup-path & {:keys [limit] :or {limit 5}}]
+   Returns a sequence of maps sorted by created-at descending. Without :limit the
+   whole directory is returned — the caller that shows them decides the window."
+  [backup-path & {:keys [limit]}]
   (let [dir (io/file backup-path)]
     (if (and (.exists dir) (.isDirectory dir))
-      (->> (.listFiles dir)
-           (filter #(.isFile ^File %))
-           (filter #(str/ends-with? (.getName ^File %) ".zip"))
-           (keep (fn [^File f]
-                   (when-let [created-at (parse-backup-filename (.getName f))]
-                     {:filename (.getName f)
-                      :size-bytes (.length f)
-                      :created-at created-at})))
-           (sort-by :created-at #(compare %2 %1))
-           (take limit))
+      (cond->> (->> (.listFiles dir)
+                    (filter #(.isFile ^File %))
+                    (filter #(str/ends-with? (.getName ^File %) ".zip"))
+                    (keep (fn [^File f]
+                            (when-let [created-at (parse-backup-filename (.getName f))]
+                              {:filename (.getName f)
+                               :size-bytes (.length f)
+                               :created-at created-at})))
+                    (sort-by :created-at #(compare %2 %1)))
+        limit (take limit))
       [])))
 
 (defn get-backup-file
