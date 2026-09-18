@@ -137,17 +137,21 @@
         config (backup/get-config db backup-dir)]
     (case request-method
       :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _saved (f/try* (let [frequency (some-> (:frequency data) keyword)]
-                                       (backup/set-config! db {:frequency frequency})
-                                       (settings.activity/create! db
-                                                                  settings.activity/updated
-                                                                  (:user/id viewer)
-                                                                  {:changes {"backup.frequency" (or (:frequency data) "disabled")}})))]
-        (-> (http/see-other settings.routes/backups)
-            (flash/success "Backup settings updated successfully"))
-        (f/when-failed [e]
-          (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings")))
+      (if managed-backups?
+        ;; Not 403: on a managed garden this write does not exist at all, which
+        ;; is what the page already shows by offering no form.
+        (http/not-found)
+        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                        _saved (f/try* (let [frequency (some-> (:frequency data) keyword)]
+                                         (backup/set-config! db {:frequency frequency})
+                                         (settings.activity/create! db
+                                                                    settings.activity/updated
+                                                                    (:user/id viewer)
+                                                                    {:changes {"backup.frequency" (or (:frequency data) "disabled")}})))]
+          (-> (http/see-other settings.routes/backups)
+              (flash/success "Backup settings updated successfully"))
+          (f/when-failed [e]
+            (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings"))))
 
       ;; GET
       (let [backups (backup/list-backups (:path config) :limit 5)]

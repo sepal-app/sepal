@@ -4,6 +4,7 @@
             [sepal.app.backup.core :as backup]
             [sepal.app.test :as app.test]
             [sepal.app.test.system :refer [*backup-dir* *db* managed-backups-system-fixture]]
+            [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
 
@@ -41,3 +42,21 @@
               "the download link is the point of the page"))
         (finally
           (.delete (java.io.File. ^String *backup-dir* ^String (:filename result))))))))
+
+(deftest test-managed-page-refuses-a-hand-rolled-write
+  (testing "POST /settings/backups is not a route on a managed garden"
+    ;; The form is gone from the page, so there is no anti-forgery token to lift
+    ;; from it — sepal.test.core/response-anti-forgery-token reads
+    ;; input[name=__anti-forgery-token] out of the body and would throw on nil.
+    ;; A caller forging this request would have to get a token from another page,
+    ;; which is what this does: the token is per session, not per page.
+    (let [sess (admin-session)
+          {:keys [response]} (peri/request sess "/settings/profile")
+          token (test.i/response-anti-forgery-token response)
+          {:keys [response]} (peri/request sess "/settings/backups"
+                                           :request-method :post
+                                           :params {:__anti-forgery-token token
+                                                    :frequency "disabled"})]
+      (is (= 404 (:status response)))
+      (is (nil? (:frequency (backup/get-config *db* *backup-dir*)))
+          "the schedule the sweep depends on is untouched"))))
