@@ -592,14 +592,20 @@
 /* ── Shell ─────────────────────────────────────────────────────────────────
  * The rail's open state is a checkbox its siblings select on. No JavaScript,
  * so the shell is right on first paint — which principle 6 requires. */
-.spl-drawer-toggle { position: absolute; opacity: 0; pointer-events: none; }
+.spl-drawer-toggle,
+.spl-mobile-toggle { position: absolute; opacity: 0; pointer-events: none; }
 
 /* The shell fills the viewport and never scrolls itself. Each pane scrolls
  * inside its own bounds, which is what lets the rail stay put and the form's
  * action bar stay pinned to the bottom of the screen. */
 .spl-shell {
   display: flex;
-  height: 100vh;
+  /* dvh, not vh. On a phone vh is measured with the browser toolbar
+     retracted, so a 100vh shell is taller than what you can see and the page
+     scrolls by the toolbar's height — carrying the form's action bar up with
+     it, even though that bar sits outside .spl-main's scroll. dvh tracks the
+     visible area, so there is nothing for the page to scroll. */
+  height: 100dvh;
   overflow: hidden;
   background: var(--color-page);
 }
@@ -639,7 +645,7 @@
      the flash banner (50). */
   z-index: 10;
   align-self: flex-start;
-  height: 100vh;
+  height: 100dvh;
   /* Visible, not auto. The collapsed rail is 64px wide and its items say
      nothing but their glyph, so each one carries a .spl-tip that paints to the
      right of the rail. `overflow-y: auto` forces overflow-x to compute to auto
@@ -688,14 +694,36 @@
   .spl-rail {
     position: fixed;
     inset: 0 auto 0 0;
-    height: auto;
+    /* dvh, not vh or auto. A phone browser's toolbar retracts as you scroll,
+       and vh is measured against the viewport with it retracted, so the rail
+       runs past the bottom of what you can see while the bar is showing. dvh
+       tracks the visible area. */
+    height: 100dvh;
     align-self: auto;
     z-index: 40;
     transform: translateX(-100%);
     transition: transform .18s ease;
   }
-  .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { transform: none; }
-  .spl-drawer-toggle:checked ~ .spl-shell .spl-scrim {
+  /* The drawer is either off-canvas or open, so it is always the labelled
+     full-width rail — independent of the width preference the cookie holds for
+     a wide screen. `flex-basis` does not reach a fixed-position box, so the
+     width is set outright. */
+  .spl-rail { width: 216px; }
+  .spl-nav-label { display: inline; }
+  .spl-nav-item { justify-content: flex-start; padding: 0 10px; }
+  /* The label is right there; a tip repeating it is noise, and on a touch
+     screen there is no hover to summon it anyway. */
+  .spl-nav-item .spl-tip { display: none; }
+
+  /* The shell fills the screen and `.spl-main` is what scrolls, so the page
+     itself has nothing to scroll and must not try. Without this the document
+     ends up a little taller than the viewport and the whole thing slides,
+     carrying the form's action bar up with it — the bar sits outside
+     `.spl-main`, so it should never move. */
+  html, body { overflow: hidden; }
+
+  .spl-mobile-toggle:checked ~ .spl-shell .spl-rail { transform: none; }
+  .spl-mobile-toggle:checked ~ .spl-shell .spl-scrim {
     display: block;
     position: fixed;
     inset: 0;
@@ -727,6 +755,16 @@
   cursor: pointer;
 }
 .spl-toggle:hover { background: var(--color-surface-alt); color: var(--color-text-soft); }
+/* Two controls on the bar, one per width, because they toggle different
+   things: the rail's width on a wide screen, the off-canvas drawer on a narrow
+   one. The swap lives here rather than in the rail's media block above,
+   because a media query carries no extra specificity and this rule, being
+   later in the file, would win. */
+.spl-toggle--drawer { display: none; }
+@media (max-width: 1023px) {
+  .spl-toggle--rail { display: none; }
+  .spl-toggle--drawer { display: flex; }
+}
 
 .spl-crumbs ol {
   list-style: none;

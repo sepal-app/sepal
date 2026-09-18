@@ -68,9 +68,18 @@
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
   [:header {:class "spl-topbar"}
+   ;; Two controls, one per width, because they toggle different things: the
+   ;; rail's width on a wide screen and the drawer on a narrow one. Only one is
+   ;; ever displayed, so only one is in the accessibility tree.
    (tooltip/wrap
      [:label {:for "sidebar-drawer-toggle"
-              :class "spl-toggle"
+              :class "spl-toggle spl-toggle--rail"
+              :aria-label "Toggle sections"}
+      (sidebar-toggle-icon)]
+     "Toggle sections")
+   (tooltip/wrap
+     [:label {:for "sidebar-mobile-toggle"
+              :class "spl-toggle spl-toggle--drawer"
               :aria-label "Toggle sections"}
       (sidebar-toggle-icon)]
      "Toggle sections")
@@ -211,9 +220,17 @@
                                         "(this.checked ? '1' : '0') + "
                                         "'; path=/; max-age=31536000; samesite=lax'")}
                   g/*rail-open?* (assoc :checked "checked"))]
+        ;; The off-canvas drawer's own state, and deliberately never rendered
+        ;; checked. Below 1024px the checkbox above would mean "drawer open",
+        ;; and it is restored from a cookie — so choosing a section left the
+        ;; drawer standing open on the page you arrived at. One state is a
+        ;; preference that should outlive a page, the other is not.
+        [:input {:id "sidebar-mobile-toggle"
+                 :type "checkbox"
+                 :class "spl-mobile-toggle"}]
         [:div {:class "spl-shell"}
          (sidebar)
-         [:label {:for "sidebar-drawer-toggle"
+         [:label {:for "sidebar-mobile-toggle"
                   :class "spl-scrim"
                   :aria-hidden "true"}]
          [:div {:class "spl-content"}
