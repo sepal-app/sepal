@@ -4,6 +4,7 @@
             [sepal.app.backup.core :as backup]
             [sepal.app.test :as app.test]
             [sepal.app.test.system :refer [*backup-dir* *db* managed-backups-system-fixture]]
+            [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -56,7 +57,10 @@
           {:keys [response]} (peri/request sess "/settings/backups"
                                            :request-method :post
                                            :params {:__anti-forgery-token token
-                                                    :frequency "disabled"})]
+                                                    :frequency "daily"})]
       (is (= 404 (:status response)))
       (is (nil? (:frequency (backup/get-config *db* *backup-dir*)))
-          "the schedule the sweep depends on is untouched"))))
+          "the schedule the sweep depends on is untouched")
+      ;; In case the refusal regresses and the write goes through, leave no
+      ;; frequency behind for the other tests in this namespace.
+      (settings.i/set-values! *db* {"backup.frequency" nil}))))
