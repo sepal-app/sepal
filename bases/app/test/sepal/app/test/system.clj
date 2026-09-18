@@ -107,42 +107,45 @@
   (fs/copy @schema-template db-path)
   {:db-path db-path})
 
-(defn- start-test-instance []
-  (let [dir (fs/create-temp-dir {:prefix "sepal-test"})
-        db-path (str (fs/path dir "sepal.db"))
-        backup-dir (str (fs/path dir "backups"))
-        mail (create-mock-mail-client)
-        process (instance/start-process!
-                  {:master-secret "1234567890123456"
-                   :mail mail
-                   :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
-    ;; start! creates the media cache directory but not the backup directory —
-    ;; in production sepal.app.backup.core/ensure-backup-dir! makes it on first
-    ;; use. Tests are handed *backup-dir* to write into directly, so make it
-    ;; usable here.
-    (fs/create-dirs backup-dir)
-    ;; The floor leg builds a database as it stood at the floor and hands it to
-    ;; start! still at the floor; the latest leg provisions from the current
-    ;; schema. Neither migrates here, because start! migrates a behind database
-    ;; itself — that is the property this leg exists to exercise, and doing it
-    ;; here first would test the fixture instead.
-    (fresh-database! {:db-path db-path})
-    (let [garden (instance/start! process
-                                  {:slug "test"
-                                   :db-path db-path
-                                   :app-domain "test.sepal.app"
-                                   :media-key-prefix "media/"
-                                   :media-cache-dir (str (fs/path dir "cache"))
-                                   :backup-dir backup-dir
-                                   :start-server? false})]
-      {:dir dir
-       :process process
-       :garden garden
-       :mail mail
-       :backup-dir backup-dir})))
+(defn- start-test-instance
+  ([] (start-test-instance nil))
+  ([extra-opts]
+   (let [dir (fs/create-temp-dir {:prefix "sepal-test"})
+         db-path (str (fs/path dir "sepal.db"))
+         backup-dir (str (fs/path dir "backups"))
+         mail (create-mock-mail-client)
+         process (instance/start-process!
+                   {:master-secret "1234567890123456"
+                    :mail mail
+                    :extensions-library-path (System/getenv "EXTENSIONS_LIBRARY_PATH")})]
+     ;; start! creates the media cache directory but not the backup directory —
+     ;; in production sepal.app.backup.core/ensure-backup-dir! makes it on first
+     ;; use. Tests are handed *backup-dir* to write into directly, so make it
+     ;; usable here.
+     (fs/create-dirs backup-dir)
+     ;; The floor leg builds a database as it stood at the floor and hands it to
+     ;; start! still at the floor; the latest leg provisions from the current
+     ;; schema. Neither migrates here, because start! migrates a behind database
+     ;; itself — that is the property this leg exists to exercise, and doing it
+     ;; here first would test the fixture instead.
+     (fresh-database! {:db-path db-path})
+     (let [garden (instance/start! process
+                                   (merge {:slug "test"
+                                           :db-path db-path
+                                           :app-domain "test.sepal.app"
+                                           :media-key-prefix "media/"
+                                           :media-cache-dir (str (fs/path dir "cache"))
+                                           :backup-dir backup-dir
+                                           :start-server? false}
+                                          extra-opts))]
+       {:dir dir
+        :process process
+        :garden garden
+        :mail mail
+        :backup-dir backup-dir}))))
 
-(defn default-system-fixture [f]
-  (let [{:keys [dir process garden mail backup-dir]} (start-test-instance)
+(defn- system-fixture [extra-opts f]
+  (let [{:keys [dir process garden mail backup-dir]} (start-test-instance extra-opts)
         db (get-in garden [:system :sepal.app.server/zodiac ::z.sql/db])]
     (try
       ;; Mark setup as complete so tests bypass the setup wizard
@@ -159,3 +162,12 @@
         (instance/stop! garden)
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
+
+(defn default-system-fixture [f]
+  (system-fixture nil f))
+
+(defn managed-backups-system-fixture
+  "Like default-system-fixture, but the instance declares that something outside
+  it operates its backups."
+  [f]
+  (system-fixture {:managed-backups? true} f))

@@ -111,7 +111,7 @@
 ;; -----------------------------------------------------------------------------
 ;; Render
 
-(defn render [& {:keys [viewer config errors flash backups timezone]}]
+(defn render [& {:keys [viewer config errors flash backups timezone managed-backups?]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/backups
@@ -119,16 +119,21 @@
     :title "Backups"
     :flash flash
     :content
-    [:div
-     (alert-note)
-     (backup-form :config config :errors errors :timezone timezone)
-     (backups-table backups timezone)]))
+    (if managed-backups?
+      ;; Nothing to configure, so nothing is offered. No note replaces the
+      ;; warning: an empty space makes no claim that has to stay true as the
+      ;; surrounding storage work lands.
+      [:div (backups-table backups timezone)]
+      [:div
+       (alert-note)
+       (backup-form :config config :errors errors :timezone timezone)
+       (backups-table backups timezone)])))
 
 ;; -----------------------------------------------------------------------------
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db timezone backup-dir]} context
+  (let [{:keys [db timezone backup-dir managed-backups?]} context
         config (backup/get-config db backup-dir)]
     (case request-method
       :post
@@ -150,4 +155,5 @@
                 :config config
                 :flash flash
                 :backups backups
-                :timezone timezone)))))
+                :timezone timezone
+                :managed-backups? managed-backups?)))))
