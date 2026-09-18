@@ -92,7 +92,17 @@
              (last breadcrumbs)]]]])
    [:div {:class "spl-topbar-spacer"}]
    [:div {:class "spl-topbar-actions"}
-    page-title-buttons]])
+    page-title-buttons
+    ;; Brings the resource panel in from the right on a narrow screen. Rendered
+    ;; on every page and shown by CSS only where the panel exists, so the navbar
+    ;; needs to know nothing about what the page below it is.
+    (tooltip/wrap
+      [:label {:for "detail-panel-toggle"
+               :class "spl-toggle spl-toggle--panel"
+               :aria-label "Toggle details"}
+       (lucide/panel-right :size 18)]
+      "Toggle details"
+      :side "bottom")]])
 
 (defn- current-section?
   "A section is current when the request URI sits under its prefix, so a detail

@@ -761,6 +761,15 @@
    because a media query carries no extra specificity and this rule, being
    later in the file, would win. */
 .spl-toggle--drawer { display: none; }
+
+/* The resource panel's control. Rendered on every page, so it is shown only
+   where a panel exists and only where the panel is off-canvas — `:has` asks
+   the document that question, which keeps the navbar ignorant of the page
+   below it. */
+.spl-toggle--panel { display: none; }
+@media (max-width: 1023px) {
+  body:has(.spl-panel-toggle) .spl-toggle--panel { display: flex; }
+}
 @media (max-width: 1023px) {
   .spl-toggle--rail { display: none; }
   .spl-toggle--drawer { display: flex; }
@@ -902,9 +911,36 @@
   border-left: 1px solid var(--color-border);
   overflow-y: auto;
 }
+.spl-panel-toggle { position: absolute; opacity: 0; pointer-events: none; }
+.spl-panel-scrim { display: none; }
+
+/* Below 1024px the panel is off-canvas from the right rather than stacked
+   under the form. Stacked, an edit page was the whole form and then the whole
+   panel below it — Summary, Statistics, Synonyms, Notes, Activity — most of
+   which the form above had just shown you.
+ *
+ * A reader never reaches this: their detail route renders the panel as the
+ * page, so there is no form to put it beside and nothing to toggle. */
 @media (max-width: 1023px) {
-  .spl-panes { flex-direction: column; }
-  .spl-detail-panel { width: auto; border-left: 0; border-top: 1px solid var(--color-border); }
+  .spl-detail-panel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(320px, 88vw);
+    height: 100dvh;
+    z-index: 40;
+    border-left: 1px solid var(--color-border);
+    border-top: 0;
+    transform: translateX(100%);
+    transition: transform .18s ease;
+  }
+  .spl-panel-toggle:checked ~ .spl-detail-panel { transform: none; }
+  .spl-panel-toggle:checked ~ .spl-panel-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgb(18 33 30 / .34);
+  }
 }
 
 /* Below 640px the search takes its own line and the bar wraps around it. The
