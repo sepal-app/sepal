@@ -137,16 +137,17 @@ connections, the system map and whatever state you had set up.
 `(restart)` is for the changes the reloader cannot pick up — `deps.edn`, a new
 integrant key, a change to the system's shape. Not for editing a handler.
 
-To run with instance options `env-opts` does not read — `:app-base-url`,
+To run with instance options `env-opts` does not read — `:backup-store`,
 say — do not edit `main.clj` to add an environment variable you do not want.
 Start the instance from the REPL with the option you need:
 
 ```clojure
-(require '[sepal.app.main :as main] '[sepal.app.instance :as instance])
+(require '[sepal.app.main :as main] '[sepal.app.instance :as instance]
+         '[sepal.app.backup.local :as backup.local])
 (def opts (main/env-opts (System/getenv)))
 (def process (instance/start-process! (:process opts)))
 (def garden (instance/start! process (assoc (:instance opts)
-                                            :app-base-url "http://demo.localhost:3000"
+                                            :backup-store (backup.local/->LocalBackupStore "/tmp/backups")
                                             :start-server? true)))
 ```
 
