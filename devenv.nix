@@ -31,6 +31,9 @@ in
     clojure-lsp
     google-cloud-sdk
     libspatialite
+    # cwebp, for sepal.app.screenshot. Playwright writes PNG only, and the
+    # marketing site wants WebP.
+    libwebp
     sqlfluff
     sqlite
   ] ++ [ sqlite-migrate ]
