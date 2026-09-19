@@ -1028,6 +1028,11 @@
 .spl-col--name { width: auto; }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
+/* The narrow form is emitted on every row and hidden until the table collapses.
+ * display:none rather than visibility or clipping, so it costs nothing to the
+ * accessibility tree at either width. */
+.spl-cell-narrow { display: none; }
+
 /* A list is not a card. It fills its pane edge to edge — no border, no radius,
  * no shadow — because a box around a full-width table is a boundary that
  * separates nothing from nothing. Hairlines between rows carry the structure. */
@@ -1266,16 +1271,8 @@
     overflow: visible;
     overflow-wrap: anywhere;
   }
-  .spl-table td:first-child::after {
-    content: attr(data-stacked);
-    display: block;
-    margin-top: 3px;
-    font-family: var(--font-sans);
-    font-size: 13px;
-    color: var(--color-text);
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
+  .spl-table td:first-child .spl-cell-wide { display: none; }
+  .spl-table td:first-child .spl-cell-narrow { display: block; }
 }
 
 /* ── Activity changelog ────────────────────────────────────────────────────

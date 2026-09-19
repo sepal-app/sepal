@@ -284,3 +284,30 @@
                    "text-gray-900" "rounded-box"]]
         (is (not (str/includes? html cls))
             (str "table still emits " cls))))))
+
+(deftest test-stacked-renders-markup
+  ;; The narrow presentation used to be a string in a data attribute painted by
+  ;; content: attr(...), so it could not hold a link — which is why a backups
+  ;; page on a phone had no way to download anything.
+  (testing "a link in the stacked form survives into the markup"
+    (let [cols [{:name "Name"
+                 :cell :name
+                 :stacked (fn [row]
+                            [:a {:href (str "/thing/" (:name row))} "Download"])}
+                {:name "Size" :cell :size}]
+          body (parse :columns cols :rows [{:name "alpha" :size "1 KB"}])
+          narrow (.selectFirst body ".spl-cell-narrow")]
+      (is (some? narrow) "a narrow presentation is rendered")
+      (is (some? (.selectFirst narrow "a[href=/thing/alpha]"))
+          "the anchor is a real element, not escaped text in an attribute")
+      (is (some? (.selectFirst body ".spl-cell-wide")))))
+
+  (testing "a string stacked value still renders, so unmigrated callers keep working"
+    (let [cols [{:name "Name" :cell :name :stacked (fn [row] (str (:size row) " on disk"))}
+                {:name "Size" :cell :size}]
+          out (chassis/html (table/table :columns cols :rows [{:name "alpha" :size "1 KB"}]))]
+      (is (.contains out "1 KB on disk"))))
+
+  (testing "a column with no stacked function adds no narrow element"
+    (let [out (chassis/html (table/table :columns columns :rows rows))]
+      (is (not (.contains out "spl-cell-narrow"))))))

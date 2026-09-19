@@ -132,9 +132,15 @@
           [:tr (when row-attrs (row-attrs row))
            (for [col columns]
              [:td (cond-> {:class (column-classes col)}
-                    (:stacked col) (assoc :data-stacked ((:stacked col) row))
                     (:attrs col) (merge ((:attrs col) row)))
-              ((:cell col) row)])]))
+              (if-let [stacked (:stacked col)]
+                ;; Both forms are emitted and CSS shows one: server-rendered
+                ;; HTML cannot know the viewport. display:none takes the
+                ;; inactive one out of the accessibility tree too, so nothing is
+                ;; announced twice and no aria-hidden is needed.
+                (list [:span {:class "spl-cell-wide"} ((:cell col) row)]
+                      [:div {:class "spl-cell-narrow"} (stacked row)])
+                ((:cell col) row))])]))
       (when paging?
         (if next-url
           (sentinel-row n)
