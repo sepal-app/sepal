@@ -95,7 +95,7 @@ for a duplicate tag name.
 - **Aero** - Configuration with profiles
 - **Chassis** - HTML generation (Hiccup-like)
 - **HTMX** - Frontend interactivity
-- **TailwindCSS** - Styling, with a hand-written `spl-` component layer. No DaisyUI
+- **TailwindCSS** - Styling, with a hand-written `spl-` component layer
 
 ### Testing
 - **Kaocha** - Test runner
