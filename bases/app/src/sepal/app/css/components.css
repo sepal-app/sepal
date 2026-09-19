@@ -697,7 +697,15 @@
 .spl-nav-label { display: none; }
 .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { flex-basis: 216px; }
 .spl-drawer-toggle:checked ~ .spl-shell .spl-nav-label { display: inline; }
-.spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+/* Wide screens only. Collapsing is a preference the cookie holds for a wide
+   screen; below 1024px the drawer is always the labelled 216px rail. This
+   selector is four classes deep, the narrow rule that lays the items out is
+   one, and a media query adds no specificity — so ungated this wins on a phone
+   and centres every item, putting each icon at a different offset depending on
+   how long its label is. Same trap as .spl-toggle--rail below. */
+@media (min-width: 1024px) {
+  .spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+}
 /* Expanded, the label is right there. A tip repeating it is noise. */
 .spl-drawer-toggle:checked ~ .spl-shell .spl-nav-item .spl-tip { display: none; }
 
