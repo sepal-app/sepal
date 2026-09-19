@@ -125,9 +125,9 @@
 
   There is no pager: lists load the next page as you reach the bottom, and the
   row count lives in the toolbar beside the search."
-  [table]
+  [content]
   [:div {:class "spl-table-card"}
-   [:div {:class "spl-table-scroll"} table]])
+   [:div {:class "spl-table-scroll"} content]])
 
 (defn page-content [& {:keys [table-actions content]}]
   [:form {:method "get"

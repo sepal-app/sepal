@@ -56,7 +56,7 @@
     :cell :synonym/source}
    {:name ""
     :type :actions
-    :priority 2
+    :priority 1
     :cell (fn [synonym] (delete-button :taxon taxon :synonym synonym))}])
 
 (defn- synonyms-table [& {:keys [taxon synonyms]}]

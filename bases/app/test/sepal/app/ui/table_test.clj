@@ -133,9 +133,10 @@
     (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
 
 (deftest test-the-rows-container-id-is-conditional-on-paging
-  ;; rows-container-id is the infinite-scroll append target. Dropping it from
-  ;; a paginating table's tbody would silently break scroll-to-load with a
-  ;; green suite — nothing else in the response depends on the id at all.
+  ;; rows-container-id tracks paging state, not an append target — the
+  ;; prefetch row targets the sentinel by its own id, with hx-swap outerHTML.
+  ;; A table that never appends must not claim this id, or it collides with
+  ;; another table on the same page that does.
   (testing "a paginating table's tbody carries it"
     (let [body (with-next-page rows)]
       (is (= table/rows-container-id (.attr (.selectFirst body "tbody") "id")))))

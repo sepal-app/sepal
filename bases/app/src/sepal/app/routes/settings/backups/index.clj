@@ -114,7 +114,7 @@
     :cell (fn [{:keys [created-at]}] (datetime/datetime created-at timezone))}
    {:name "Actions"
     :type :actions
-    :priority 2
+    :priority 1
     :cell (fn [{:keys [filename]}] (download-link filename))}])
 
 (defn- backups-table [backups timezone]

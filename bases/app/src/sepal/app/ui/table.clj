@@ -164,7 +164,10 @@
                 take all the slack, as a table with one long identifier and
                 several short fields does.
     :priority — 1 never sheds. Higher numbers are hidden first as the viewport
-                narrows, and are what a future column picker reads.
+                narrows, and are what a future column picker reads. A column
+                holding the row's only action must be priority 1: a shed
+                action is unreachable at that width, and the narrow form
+                below does not appear until 640px.
     :stacked  — (fn [row] …) returning the one-line summary the cell shows
                 below 640px, where the table collapses to a single column and
                 every other cell is hidden. Belongs on the first column; that
