@@ -560,22 +560,37 @@
   color: var(--color-text-dim);
   padding: 0 12px 8px;
 }
-/* Below 1024px the aside becomes the same horizontal strip the accession edit
-   tabs use, groups flattened. It cannot become a second drawer — the section
-   rail already is one at this width. */
+/* Below 1024px the aside becomes one headed strip per group, stacked. It
+   cannot become a second drawer — the section rail already is one at this
+   width.
+
+   The groups keep their headings. Flattened into a single row there was
+   nothing to say which tabs were the account's and which the organization's,
+   and the breadcrumb names only the group you are already in.
+
+   Each group wraps rather than scrolls, the same choice .spl-tabs records for
+   the same problem. Nothing overflows in practice — Organization's four tabs
+   come to 224px of a 358px strip at 390px wide — so the wrap is the safety net
+   for a narrower screen or a longer label, and neither axis scrolls. */
 @media (max-width: 1023px) {
   .spl-settings-layout { flex-direction: column; gap: 16px; }
-  .spl-subnav {
-    flex: none;
-    width: 100%;
+  .spl-subnav { flex: none; width: 100%; display: block; }
+  .spl-subnav-group {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-end;
-    gap: 22px;
+    /* Column only. A row gap would open 22px between a heading and the tabs it
+       names. */
+    column-gap: 22px;
+    row-gap: 0;
+    margin-bottom: 0;
     border-bottom: 1px solid var(--color-border-light);
-    overflow-x: auto;
   }
-  .spl-subnav-group { display: contents; }
-  .spl-subnav-heading { display: none; }
+  .spl-subnav-group + .spl-subnav-group { margin-top: 14px; }
+  /* Full width, so it takes a line of its own and the tabs wrap below it. The
+     desktop's 12px inset goes, so the heading starts on the same left edge as
+     the first tab. */
+  .spl-subnav-heading { width: 100%; padding: 0 0 4px; }
   .spl-subnav-item {
     display: inline-block;
     padding: 11px 0 9px;
@@ -682,7 +697,15 @@
 .spl-nav-label { display: none; }
 .spl-drawer-toggle:checked ~ .spl-shell .spl-rail { flex-basis: 216px; }
 .spl-drawer-toggle:checked ~ .spl-shell .spl-nav-label { display: inline; }
-.spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+/* Wide screens only. Collapsing is a preference the cookie holds for a wide
+   screen; below 1024px the drawer is always the labelled 216px rail. This
+   selector is four classes deep, the narrow rule that lays the items out is
+   one, and a media query adds no specificity — so ungated this wins on a phone
+   and centres every item, putting each icon at a different offset depending on
+   how long its label is. Same trap as .spl-toggle--rail below. */
+@media (min-width: 1024px) {
+  .spl-drawer-toggle:not(:checked) ~ .spl-shell .spl-nav-item { justify-content: center; padding: 0; }
+}
 /* Expanded, the label is right there. A tip repeating it is noise. */
 .spl-drawer-toggle:checked ~ .spl-shell .spl-nav-item .spl-tip { display: none; }
 
