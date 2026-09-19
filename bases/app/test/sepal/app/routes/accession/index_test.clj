@@ -84,11 +84,11 @@
 
 (deftest test-identifier-cell-carries-stacked-content-for-phones
   (tf/testing "below 640px the table collapses to one column whose cell stacks
-               the row; the stacked text comes from data-stacked"
+               the row; the stacked text renders in .spl-cell-narrow"
     (fixtures)
     (fn [{:keys [user]}]
       (let [body (list-page user)
             cell (.selectFirst body "td.spl-col--identifier")]
         (is (some? cell))
-        (is (seq (.attr cell "data-stacked"))
+        (is (seq (.text (.selectFirst cell ".spl-cell-narrow")))
             "the identifier cell carries the phone-width summary")))))

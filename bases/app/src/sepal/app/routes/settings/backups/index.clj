@@ -8,6 +8,7 @@
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.table :as ui.table]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -86,30 +87,42 @@
       [:div {:class "mt-4"}
        (layout/save-button "Save changes")])))
 
+(defn- download-link [filename]
+  [:a {:href (z/url-for settings.routes/backup-download {:filename filename})
+       :class "spl-btn spl-btn--sm spl-btn--ghost"}
+   (lucide/download :class "size-4")
+   "Download"])
+
+(defn- table-columns [timezone]
+  [{:name "Filename"
+    :type :name
+    :priority 1
+    :stacked (fn [{:keys [filename size-bytes created-at]}]
+               (list [:span {:class "spl-stacked-line"}
+                      (format-bytes size-bytes)
+                      " · "
+                      (datetime/datetime created-at timezone)]
+                     (download-link filename)))
+    :cell (fn [{:keys [filename]}] [:span {:class "font-mono text-sm"} filename])}
+   {:name "Size"
+    :type :number
+    :priority 2
+    :cell (fn [{:keys [size-bytes]}] (format-bytes size-bytes))}
+   {:name "Created"
+    :type :datetime
+    :priority 2
+    :cell (fn [{:keys [created-at]}] (datetime/datetime created-at timezone))}
+   {:name "Actions"
+    :type :actions
+    :priority 1
+    :cell (fn [{:keys [filename]}] (download-link filename))}])
+
 (defn- backups-table [backups timezone]
   [:div {:class "mt-8"}
    [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
-   (if (seq backups)
-     [:div {:class "overflow-x-auto"}
-      [:table {:class "spl-table"}
-       [:thead
-        [:tr
-         [:th "Filename"]
-         [:th "Size"]
-         [:th "Created"]
-         [:th "Actions"]]]
-       [:tbody
-        (for [{:keys [filename size-bytes created-at]} backups]
-          [:tr
-           [:td {:class "font-mono text-sm"} filename]
-           [:td (format-bytes size-bytes)]
-           [:td (datetime/datetime created-at timezone)]
-           [:td
-            [:a {:href (z/url-for settings.routes/backup-download {:filename filename})
-                 :class "spl-btn spl-btn--sm spl-btn--ghost"}
-             (lucide/download :class "size-4")
-             "Download"]]])]]]
-     [:p {:class "text-text-muted"} "No backups yet."])])
+   (ui.table/table :columns (table-columns timezone)
+                   :rows backups
+                   :empty-state [:p {:class "text-text-muted"} "No backups yet."])])
 
 ;; -----------------------------------------------------------------------------
 ;; Render

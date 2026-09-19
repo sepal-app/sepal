@@ -110,12 +110,15 @@
    [:td {:colspan column-count} "End of list"]])
 
 (defn- body-rows
-  "The <tr>s, the prefetch trigger and whichever of the sentinel or the end
-  marker belongs at the bottom.
+  "The <tr>s, and the paging chrome when there is paging.
 
   The initial render and an infinite-scroll response both come through here, so
-  a row appended by scrolling is built the same way as one present on load."
-  [& {:keys [columns rows row-attrs next-url]}]
+  a row appended by scrolling is built the same way as one present on load.
+
+  `paging?` rather than a test of `next-url`: the end marker belongs at the
+  bottom of a list that pages and has run out, and nowhere at all on a list
+  that never paged. Those are different facts and only one of them is `nil`."
+  [& {:keys [columns rows row-attrs next-url paging?]}]
   (let [n (count columns)
         ;; Clamped, so a short final response still prefetches from near its top
         ;; rather than not at all.
@@ -129,12 +132,19 @@
           [:tr (when row-attrs (row-attrs row))
            (for [col columns]
              [:td (cond-> {:class (column-classes col)}
-                    (:stacked col) (assoc :data-stacked ((:stacked col) row))
                     (:attrs col) (merge ((:attrs col) row)))
-              ((:cell col) row)])]))
-      (if next-url
-        (sentinel-row n)
-        (end-of-list n)))))
+              (if-let [stacked (:stacked col)]
+                ;; Both forms are emitted and CSS shows one: server-rendered
+                ;; HTML cannot know the viewport. display:none takes the
+                ;; inactive one out of the accessibility tree too, so nothing is
+                ;; announced twice and no aria-hidden is needed.
+                (list [:span {:class "spl-cell-wide"} ((:cell col) row)]
+                      [:div {:class "spl-cell-narrow"} (stacked row)])
+                ((:cell col) row))])]))
+      (when paging?
+        (if next-url
+          (sentinel-row n)
+          (end-of-list n))))))
 
 (defn table
   "A table component.
@@ -143,12 +153,22 @@
 
     :name     — the header text.
     :cell     — (fn [row] …) returning the cell's content.
-    :type     — :identifier, :name, :date or :text. Defaults to :text.
-                Drives column width and typeface: identifiers and dates are
-                mono with tabular figures, because they are scanned down a
-                column and compared rather than read.
+    :type     — :identifier, :identifier-compound, :name, :date, :datetime,
+                :number, :actions or
+                :text. Defaults to :text. Drives column width and typeface:
+                identifiers, dates, timestamps and numbers are mono with
+                tabular figures, because they are scanned down a column and
+                compared rather than read. :name and :text carry no width, so
+                they absorb whatever the sized columns leave; several unsized
+                columns split that space evenly rather than each claiming it
+                whole. Give exactly one column an unsized type when it should
+                take all the slack, as a table with one long identifier and
+                several short fields does.
     :priority — 1 never sheds. Higher numbers are hidden first as the viewport
-                narrows, and are what a future column picker reads.
+                narrows, and are what a future column picker reads. A column
+                holding the row's only action must be priority 1: a shed
+                action is unreachable at that width, and the narrow form
+                below does not appear until 640px.
     :stacked  — (fn [row] …) returning the one-line summary the cell shows
                 below 640px, where the table collapses to a single column and
                 every other cell is hidden. Belongs on the first column; that
@@ -184,25 +204,15 @@
          [:th {:scope "col"
                :class (column-classes col)}
           (:name col)])]]
-     [:tbody {:id rows-container-id}
+     [:tbody (when (and href page page-size total) {:id rows-container-id})
       (body-rows :columns columns
                  :rows rows
                  :row-attrs row-attrs
+                 :paging? (boolean (and href page page-size total))
                  :next-url (next-page-url :href href
                                           :page page
                                           :page-size page-size
                                           :total total))]]))
-
-(defn card-table
-  "The list surface. Rows scroll inside it; the header stays put.
-
-  There is no pager: lists load the next page as you reach the bottom, and the
-  row count lives in the toolbar beside the search. See `sentinel-row`."
-  ([table]
-   [:div {:class "spl-table-card"}
-    [:div {:class "spl-table-scroll"} table]])
-  ([table _paginator]
-   (card-table table)))
 
 (def count-id
   "The toolbar's row count. An infinite-scroll response swaps it out of band, so
@@ -234,6 +244,7 @@
     (body-rows :columns columns
                :rows rows
                :row-attrs row-attrs
+               :paging? true
                :next-url (next-page-url :href href
                                         :page page
                                         :page-size page-size

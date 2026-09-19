@@ -970,7 +970,7 @@
   border-collapse: collapse;
 }
 .spl-table th {
-  font: 400 10px/1.4 var(--font-mono);
+  font: 500 10px/1.4 var(--font-mono);
   letter-spacing: .08em;
   text-align: left;
   color: var(--color-text-dim);
@@ -987,19 +987,73 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.spl-col--identifier {
-  width: 104px;
+.spl-col--identifier { width: 104px; }
+.spl-table td.spl-col--identifier {
   font-family: var(--font-mono);
   font-size: 12.5px;
 }
-.spl-col--date {
-  width: 96px;
+.spl-col--date { width: 96px; }
+.spl-table td.spl-col--date {
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--color-text-dim);
 }
+/* A timestamp, not a date: "Sep 18, 2026, 9:01 PM" needs half again the width
+ * of "2026-09-18", and clipping the time off a list of backups taken on the
+ * same day leaves rows that cannot be told apart. */
+.spl-col--datetime { width: 152px; }
+.spl-table td.spl-col--datetime {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-dim);
+}
+/* Counts and sizes are compared down a column, so they take the same tabular
+ * figures an identifier does. */
+.spl-col--number { width: 80px; }
+.spl-table td.spl-col--number {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+/* A compound identifier: a material's code carries its accession's too, so
+ * `2026.0001.01` is a third longer than the code a plain :identifier holds and
+ * clips in that column's 104px. Wide enough for fourteen monospace characters
+ * after padding, which covers today's convention with a little room. Sized
+ * rather than unsized on purpose — left to absorb the slack it took a third of
+ * a wide table for twelve characters. */
+.spl-col--identifier-compound { width: 136px; }
+.spl-table td.spl-col--identifier-compound {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+/* Wide enough for one small button with its glyph. An actions column that
+ * absorbs the remainder starves whichever column actually holds the row's
+ * name. */
+.spl-col--actions { width: 112px; }
+/* Stated rather than implied. A name column carries no width so it takes what
+ * the sized columns leave, and no typeface: the serif on a scientific name
+ * comes from the cell's own markup, not from the column. Four callers used
+ * this type for a while against no rule at all. */
+.spl-col--name { width: auto; }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
+
+/* The wide form's own wrapper, present so a narrow screen's CSS has something
+ * to address without touching a column's markup. display:contents gives it no
+ * box of its own — wrapping a link or a name in a span must not change how it
+ * lays out. */
+.spl-cell-wide { display: contents; }
+
+/* The narrow form is emitted on every row and hidden until the table collapses.
+ * display:none rather than visibility or clipping, so it costs nothing to the
+ * accessibility tree at either width. */
+.spl-cell-narrow { display: none; }
+
+/* A stacked form that is one line of secondary text. Callers whose narrow form
+ * is richer than this compose their own markup instead. */
+.spl-stacked-line { font-size: 13px; color: var(--color-text-muted); }
 
 /* A list is not a card. It fills its pane edge to edge — no border, no radius,
  * no shadow — because a box around a full-width table is a boundary that
@@ -1239,15 +1293,15 @@
     overflow: visible;
     overflow-wrap: anywhere;
   }
-  .spl-table td:first-child::after {
-    content: attr(data-stacked);
-    display: block;
+  .spl-table td:first-child .spl-cell-narrow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
     margin-top: 3px;
     font-family: var(--font-sans);
     font-size: 13px;
     color: var(--color-text);
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 }
 

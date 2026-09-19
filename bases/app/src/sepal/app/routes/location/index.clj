@@ -65,7 +65,7 @@
                    :total total))
 
 (defn table [& {:keys [rows page-num href page-size total search-query]}]
-  (table/card-table
+  (pages.list/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs

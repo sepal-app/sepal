@@ -74,15 +74,32 @@
 (deftest test-empty-rows-render-a-table-with-no-body-rows
   (let [body (parse :rows [])]
     (is (some? (.selectFirst body "table")) "the header still renders")
-    (is (zero? (.size (.select body "tbody tr:not(.spl-end)")))
-        "no data rows")
-    (is (some? (.selectFirst body "tr.spl-end"))
-        "an empty list still shows where it ends")))
+    (is (zero? (.size (.select body "tbody tr")))
+        "no data rows, and with no paging state, no chrome to fill the gap")))
+
+(deftest test-a-table-without-paging-has-no-paging-chrome
+  ;; Every table that does not paginate hand-rolled its own markup rather than
+  ;; wear an "End of list" it never asked for. This is why.
+  (testing "no sentinel, no prefetch row and no end marker"
+    (let [out (render)]
+      (is (not (str/includes? out table/sentinel-id)) "no sentinel row")
+      (is (not (str/includes? out "spl-prefetch")) "no prefetch trigger")
+      (is (not (str/includes? out "End of list")) "no end marker")))
+
+  (testing "the rows themselves are all there"
+    (let [out (render)]
+      (is (str/includes? out "Quercus alba")))))
 
 (deftest test-last-page-ends-the-list
   (testing "with no next page the list shows its bottom rather than stopping
             silently, which is indistinguishable from still loading"
-    (let [body (parse)]
+    (let [body (Jsoup/parseBodyFragment
+                 (chassis/html (table/table :columns columns
+                                            :rows rows
+                                            :href "/accession/"
+                                            :page 1
+                                            :page-size 1
+                                            :total 1)))]
       (is (some? (.selectFirst body "tr.spl-end")))
       (is (nil? (.selectFirst body "tr.spl-sentinel"))))))
 
@@ -114,6 +131,20 @@
         "the sentinel carries no trigger of its own — two triggers race, and a
          fast scroll fetches the same page twice")
     (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
+
+(deftest test-the-rows-container-id-is-conditional-on-paging
+  ;; rows-container-id tracks paging state, not an append target — the
+  ;; prefetch row targets the sentinel by its own id, with hx-swap outerHTML.
+  ;; A table that never appends must not claim this id, or it collides with
+  ;; another table on the same page that does.
+  (testing "a paginating table's tbody carries it"
+    (let [body (with-next-page rows)]
+      (is (= table/rows-container-id (.attr (.selectFirst body "tbody") "id")))))
+
+  (testing "a table with no paging state does not — this is what lets two
+            non-paginating tables share a page"
+    (let [body (parse)]
+      (is (str/blank? (.attr (.selectFirst body "tbody") "id"))))))
 
 (deftest test-the-fetch-is-triggered-three-rows-early
   (let [body (with-next-page (many-rows 25))
@@ -209,11 +240,11 @@
 
 (deftest test-a-fixed-list-has-no-scroll-machinery
   (testing "settings tables pass no paging state and must not sprout a
-            sentinel, a trigger or a count"
+            sentinel, a trigger, a count or an end marker"
     (let [body (parse)]
       (is (nil? (.selectFirst body "tr.spl-prefetch")))
       (is (nil? (.selectFirst body "tr.spl-sentinel")))
-      (is (some? (.selectFirst body "tr.spl-end"))))))
+      (is (nil? (.selectFirst body "tr.spl-end"))))))
 
 (deftest test-an-empty-list-explains-itself
   (testing "a header row over nothing, with END OF LIST under it, reads as a
@@ -231,7 +262,8 @@
   (testing "settings tables pass none and must keep their header"
     (let [body (parse :rows [])]
       (is (some? (.selectFirst body "table")))
-      (is (some? (.selectFirst body "tr.spl-end"))))))
+      (is (nil? (.selectFirst body "tr.spl-end"))
+          "no paging state means no end marker either"))))
 
 (deftest test-rows-only-matches-what-the-table-renders
   (testing "an appended row is built by the same code as a row present on load"
@@ -253,3 +285,30 @@
                    "text-gray-900" "rounded-box"]]
         (is (not (str/includes? html cls))
             (str "table still emits " cls))))))
+
+(deftest test-stacked-renders-markup
+  ;; The narrow presentation used to be a string in a data attribute painted by
+  ;; content: attr(...), so it could not hold a link — which is why a backups
+  ;; page on a phone had no way to download anything.
+  (testing "a link in the stacked form survives into the markup"
+    (let [cols [{:name "Name"
+                 :cell :name
+                 :stacked (fn [row]
+                            [:a {:href (str "/thing/" (:name row))} "Download"])}
+                {:name "Size" :cell :size}]
+          body (parse :columns cols :rows [{:name "alpha" :size "1 KB"}])
+          narrow (.selectFirst body ".spl-cell-narrow")]
+      (is (some? narrow) "a narrow presentation is rendered")
+      (is (some? (.selectFirst narrow "a[href=/thing/alpha]"))
+          "the anchor is a real element, not escaped text in an attribute")
+      (is (some? (.selectFirst body ".spl-cell-wide")))))
+
+  (testing "a string stacked value still renders, so unmigrated callers keep working"
+    (let [cols [{:name "Name" :cell :name :stacked (fn [row] (str (:size row) " on disk"))}
+                {:name "Size" :cell :size}]
+          out (chassis/html (table/table :columns cols :rows [{:name "alpha" :size "1 KB"}]))]
+      (is (.contains out "1 KB on disk"))))
+
+  (testing "a column with no stacked function adds no narrow element"
+    (let [out (chassis/html (table/table :columns columns :rows rows))]
+      (is (not (.contains out "spl-cell-narrow"))))))

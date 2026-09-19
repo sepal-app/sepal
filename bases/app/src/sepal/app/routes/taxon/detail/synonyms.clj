@@ -11,6 +11,7 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.app.ui.table :as ui.table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
@@ -41,26 +42,29 @@
       "Remove synonym"
       :side "left")))
 
-(defn- synonym-row [& {:keys [taxon synonym]}]
-  [:tr
-   [:td (taxon-name/render (:synonym/synonym-name synonym))]
-   [:td (:synonym/source synonym)]
-   [:td (delete-button :taxon taxon :synonym synonym)]])
+(defn- table-columns [taxon]
+  [{:name "Name"
+    :type :name
+    :priority 1
+    :stacked (fn [synonym]
+               (list [:span {:class "spl-stacked-line"} (:synonym/source synonym)]
+                     (delete-button :taxon taxon :synonym synonym)))
+    :cell (fn [synonym] (taxon-name/render (:synonym/synonym-name synonym)))}
+   {:name "Source"
+    :type :text
+    :priority 2
+    :cell :synonym/source}
+   {:name ""
+    :type :actions
+    :priority 1
+    :cell (fn [synonym] (delete-button :taxon taxon :synonym synonym))}])
 
 (defn- synonyms-table [& {:keys [taxon synonyms]}]
-  (if (seq synonyms)
-    [:table {:class "spl-table"}
-     [:thead
-      [:tr
-       [:th "Name"]
-       [:th "Source"]
-       [:th ""]]]
-     [:tbody
-      (for [synonym synonyms]
-        (synonym-row :taxon taxon :synonym synonym))]]
-    (ui.empty/empty-state
-      :title "No synonyms yet"
-      :body "Other names this garden uses for this taxon show up here.")))
+  (ui.table/table :columns (table-columns taxon)
+                  :rows synonyms
+                  :empty-state (ui.empty/empty-state
+                                 :title "No synonyms yet"
+                                 :body "Other names this garden uses for this taxon show up here.")))
 
 (defn- add-form [& {:keys [taxon]}]
   (ui.form/form

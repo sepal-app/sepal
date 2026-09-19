@@ -36,9 +36,15 @@
 (defn- stacked-summary
   "What the identifier cell shows below 640px, where the table collapses to a
   single column. Taxon and date are what tell two accessions apart in the
-  field, so they are what survives."
+  field, so they are what survives.
+
+  Markup rather than a joined string, so the name keeps the serif it carries
+  in every other place this app prints one. A scientific name set in the body
+  sans reads as a different kind of thing."
   [row]
-  (table/summary (:taxon/name row) (:accession/date-received row)))
+  (list (taxon-name/render (:taxon/name row))
+        (when-let [received (:accession/date-received row)]
+          (str " \u00b7 " received))))
 
 (defn table-columns []
   [{:name "Code"
@@ -77,7 +83,7 @@
                    :total total))
 
 (defn table [& {:keys [rows page href page-size total search-query]}]
-  (table/card-table
+  (pages.list/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs
