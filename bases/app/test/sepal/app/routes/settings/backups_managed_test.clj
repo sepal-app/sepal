@@ -28,7 +28,7 @@
       (is (nil? (.selectFirst body "form[action*=/settings/backups]"))
           "and nothing to submit; scoped to this route because the layout has forms of its own")
       (is (not (.contains (:body response) "Media files are stored separately"))
-          "the manual-media warning is false here: this garden's media is not on disk")
+          "the media warning is hidden by the same managed?/manages-schedule? branch that hides the schedule form")
       (is (not (.contains (:body response) "Next backup"))))))
 
 (deftest test-page-lists-what-the-store-reports
@@ -60,7 +60,7 @@
                                                     :frequency "daily"})]
       (is (= 404 (:status response)))
       (is (nil? (:frequency (backup/get-config *db*)))
-          "the schedule the sweep depends on is untouched")
+          "a garden whose store owns the schedule has no frequency of its own, and the refused POST leaves it that way")
       ;; In case the refusal regresses and the write goes through, leave no
       ;; frequency behind for the other tests in this namespace.
       (settings.i/set-values! *db* {"backup.frequency" nil}))))

@@ -150,6 +150,11 @@
     (if managed?
       ;; Nothing to configure, so nothing is offered. No note replaces the
       ;; warning: an empty space makes no claim that has to stay true.
+      ;;
+      ;; The media warning is hidden here too, deliberately: every shipped
+      ;; store that owns the schedule is also one where media is not on this
+      ;; disk, so the two questions have never come apart in practice, even
+      ;; though manages-schedule? only answers the first one.
       [:div (backups-table :backups backups :store store :timezone timezone
                            :unreachable? unreachable?)]
       [:div
