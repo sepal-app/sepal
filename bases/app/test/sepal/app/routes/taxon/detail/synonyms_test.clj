@@ -11,7 +11,8 @@
             [sepal.synonym.interface.activity :as synonym.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -114,6 +115,32 @@
         (is (some #(= synonym.activity/deleted (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :taxon :resource-id id)))
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-the-narrow-form-carries-its-own-delete-button
+  ;; Below 640px every cell but the first is hidden, so the stacked form under
+  ;; the first column is the only place a phone can remove a synonym from. A
+  ;; body-wide match on the button would pass even with an empty stacked form,
+  ;; because the actions column's copy is still in the markup; asserting the
+  ;; button inside .spl-cell-narrow is what proves this form actually carries
+  ;; one rather than the button having simply moved.
+  (tf/testing "a non-wfo synonym's delete button reaches the stacked form, and the actions column keeps its own copy"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            id (:taxon/id taxon)
+            row (synonym.i/add-synonym! *db* {:taxon-id id
+                                              :synonym-name "Dypsis lutescens"})
+            {:keys [response]} (peri/request sess (format "/taxon/%s/synonyms/" id))
+            body (Jsoup/parseBodyFragment (:body response))
+            delete-href (format "/taxon/%s/synonyms/%s/" id (:synonym/id row))
+            narrow (.selectFirst body ".spl-cell-narrow")]
+        (is (some? narrow) "the narrow presentation is rendered")
+        (is (some? (.selectFirst narrow (format "button[hx-delete=%s]" delete-href)))
+            "the stacked form carries its own delete button")
+        (is (some? (.selectFirst body (format "td.spl-col--actions button[hx-delete=%s]" delete-href)))
+            "the actions column keeps its own copy for the wide layout")
+        (synonym.i/remove-synonym! *db* (:synonym/id row))))))
 
 (deftest test-a-get-on-the-row-route-does-not-delete
   ;; The row route is wired to :delete only. Reitit must refuse a GET here
