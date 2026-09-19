@@ -137,7 +137,7 @@ connections, the system map and whatever state you had set up.
 `(restart)` is for the changes the reloader cannot pick up — `deps.edn`, a new
 integrant key, a change to the system's shape. Not for editing a handler.
 
-To run with instance options `env-opts` does not read — `:managed-backups?`,
+To run with instance options `env-opts` does not read — `:app-base-url`,
 say — do not edit `main.clj` to add an environment variable you do not want.
 Start the instance from the REPL with the option you need:
 
@@ -146,7 +146,7 @@ Start the instance from the REPL with the option you need:
 (def opts (main/env-opts (System/getenv)))
 (def process (instance/start-process! (:process opts)))
 (def garden (instance/start! process (assoc (:instance opts)
-                                            :managed-backups? true
+                                            :app-base-url "http://demo.localhost:3000"
                                             :start-server? true)))
 ```
 
@@ -288,6 +288,7 @@ than leaving it off. Comment the line out instead.
 - **Environment**: `sepal.app.main/env-opts` maps an environment map to those options, and is the only place Sepal reads environment variables. It takes the map as an argument, so it is tested without mutating the process environment.
 - **Callers**: `-main` (self-hosted), `development/src/user.clj` (REPL), `sepal.app.cli` (a small pool only), the test and e2e fixtures, and the control-plane dispatcher all go through that one vocabulary.
 - **Database Configuration**: Database path defaults to `$SEPAL_DATA_HOME/sepal.db`. Pragmas and the SpatiaLite extension come from `sepal.database.interface/hikari-spec`, so every connection pool in the process opens a database the same way. Tests use temporary files.
+- **Backup Store**: `sepal.app.backup.protocols/BackupStore` decides where a garden's backups are written, listed and downloaded from. The app ships one implementation, `sepal.app.backup.local/LocalBackupStore`, over a local directory — what every self-hosted install runs. A caller that operates backups elsewhere injects its own implementation at `start!`, the way it may inject its own mail client.
 
 ## Code Patterns
 
