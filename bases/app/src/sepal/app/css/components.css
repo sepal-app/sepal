@@ -1017,6 +1017,18 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+/* A compound identifier: a material's code carries its accession's too, so
+ * `2026.0001.01` is a third longer than the code a plain :identifier holds and
+ * clips in that column's 104px. Wide enough for fourteen monospace characters
+ * after padding, which covers today's convention with a little room. Sized
+ * rather than unsized on purpose — left to absorb the slack it took a third of
+ * a wide table for twelve characters. */
+.spl-col--identifier-compound { width: 136px; }
+.spl-table td.spl-col--identifier-compound {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
 /* Wide enough for one small button with its glyph. An actions column that
  * absorbs the remainder starves whichever column actually holds the row's
  * name. */

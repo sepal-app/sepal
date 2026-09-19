@@ -153,7 +153,8 @@
 
     :name     — the header text.
     :cell     — (fn [row] …) returning the cell's content.
-    :type     — :identifier, :name, :date, :datetime, :number, :actions or
+    :type     — :identifier, :identifier-compound, :name, :date, :datetime,
+                :number, :actions or
                 :text. Defaults to :text. Drives column width and typeface:
                 identifiers, dates, timestamps and numbers are mono with
                 tabular figures, because they are scanned down a column and

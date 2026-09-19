@@ -35,28 +35,32 @@
 
 (defn- stacked-summary
   "What the code cell shows below 640px, where the table collapses to a single
-  column. Taxon and location are what tell two materials apart on a bench."
+  column. Taxon and location are what tell two materials apart on a bench.
+
+  Markup rather than a joined string, so the name keeps the serif it carries
+  in every other place this app prints one."
   [row]
-  (table/summary (:taxon/name row) (:location/code row)))
+  (list (taxon-name/render (:taxon/name row))
+        (when-let [loc (:location/code row)]
+          (str " \u00b7 " loc))))
 
 (defn table-columns []
+  ;; One identifier, not two. A material's code is issued within its accession,
+  ;; so `2026.0001.01` is how a garden writes the whole thing down — and a
+  ;; separate Accession column only repeated the prefix. The accession stays one
+  ;; click away: clicking the row opens the preview panel, which links it.
+  ;; Linking the two halves separately was the other option and was rejected —
+  ;; the second half is a couple of characters wide and nowhere near a tap
+  ;; target.
   [{:name "Code"
-    :type :identifier
+    :type :identifier-compound
     :priority 1
     :stacked stacked-summary
     :cell (fn [row] [:a {:href (z/url-for material.routes/detail
                                           {:id (:material/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:material/code row)])}
-   {:name "Accession"
-    :type :identifier
-    :priority 2
-    :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
-                                          {:id (:accession/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (:accession/code row)])}
+                     (:accession/code row) "." (:material/code row)])}
    {:name "Taxon"
     :type :name
     :priority 2
