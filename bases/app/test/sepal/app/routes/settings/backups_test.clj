@@ -158,3 +158,22 @@
         (finally
           (doseq [n names]
             (.delete (java.io.File. ^String *backup-dir* ^String n))))))))
+
+(deftest test-backups-are-downloadable-on-a-narrow-screen
+  ;; The 640px collapse hides every cell but the first, so a hand-rolled table
+  ;; whose action lives in the last column loses it entirely. The narrow form
+  ;; has to carry the download link itself.
+  (testing "the stacked form carries a download link, not just text"
+    (let [password "testpassword123"
+          email (create-user! *db* :admin password)
+          result (backup/create-backup! *db* *backup-dir*)]
+      (try
+        (let [sess (app.test/login email password)
+              {:keys [response]} (peri/request sess "/settings/backups")
+              body (Jsoup/parse ^String (:body response))
+              narrow (.selectFirst body ".spl-cell-narrow")]
+          (is (some? narrow) "a narrow presentation is rendered")
+          (is (some? (.selectFirst narrow (str "a[href*=" (:filename result) "]")))
+              "and it contains the download link, which is what a phone needs"))
+        (finally
+          (.delete (java.io.File. ^String *backup-dir* ^String (:filename result))))))))
