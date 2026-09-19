@@ -344,6 +344,12 @@
 (defmethod ig/init-key ::setup-job [_ _]
   (atom setup.shared/initial-job-state))
 
+(defn- resolve-backup-store
+  "The injected store, or the local one over :backup-dir when the caller omits
+  it — what every self-hosted install runs."
+  [backup-store backup-dir]
+  (or backup-store (backup.local/->LocalBackupStore backup-dir)))
+
 (defn- instance-config
   [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir backup-store
                    start-server? jetty-host jetty-port
@@ -353,88 +359,87 @@
                    remembered-gardens-cookie-domain]
             :or {cache-manifest? true}
             :as opts}]
-  (let [store (or backup-store (backup.local/->LocalBackupStore backup-dir))]
-    (cond->
-      {:sepal.token.interface/service
-       {:secret (token-secret (:master-secret process) slug)}
+  (cond->
+    {:sepal.token.interface/service
+     {:secret (token-secret (:master-secret process) slug)}
 
      ;; The setup wizard's taxonomy import runs on a background thread and
      ;; writes its progress here; the SSE endpoint reads it. Per instance
      ;; because the import is per garden. No halt-key!: an atom holds no
      ;; resource.
-       ::setup-job {}
+     ::setup-job {}
 
-       :sepal.media-transform.interface/service
+     :sepal.media-transform.interface/service
    ;; Per instance, not shared: cache-key is SHA-256 over a per-database row id,
    ;; so two gardens sharing one cache directory would serve each other's
    ;; derivatives for the same id. Separate directories remove the collision.
-       {:cache-dir media-cache-dir
-        :max-cache-size-mb (or media-cache-size-mb 500)}
+     {:cache-dir media-cache-dir
+      :max-cache-size-mb (or media-cache-size-mb 500)}
 
-       :sepal.app.server/zodiac-sql
+     :sepal.app.server/zodiac-sql
    ;; No :schema-dump-file: ::zodiac-sql no longer loads a schema on its own.
    ;; provision! owns schema loading. Pragmas and extensions come from
    ;; sepal.database.interface, so every pool in the process agrees.
-       {:database-path db-path
-        :extension-library-path (:extensions-library-path process)
-        :context-key :db}
+     {:database-path db-path
+      :extension-library-path (:extensions-library-path process)
+      :context-key :db}
 
-       :sepal.app.server/zodiac-assets
+     :sepal.app.server/zodiac-assets
    ;; :vite is emitted explicitly even when the caller omits it — an omitted
    ;; :vite means {:mode :build} to zodiac-assets, which runs npm and vite once
    ;; per instance. Only the REPL passes a value.
-       {:manifest-path "app/build/.vite/manifest.json"
-        :asset-resource-path "app/build/assets"
-        :cache-manifest? cache-manifest?
-        :vite vite}
+     {:manifest-path "app/build/.vite/manifest.json"
+      :asset-resource-path "app/build/assets"
+      :cache-manifest? cache-manifest?
+      :vite vite}
 
-       :sepal.app.server/zodiac
-       {:extensions (cond-> [(ig/ref :sepal.app.server/zodiac-sql)
-                             (ig/ref :sepal.app.server/zodiac-assets)]
-                      hot-reload (conj (ig/ref :sepal.app.server/zodiac-hot-reload)))
-        :cookie-secret (cookie-key (:master-secret process) slug)
-        :start-server? (boolean start-server?)
-        :reload-per-request? (boolean reload-per-request?)
-        :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}
-        :request-context {;; Kept for setup/shared's health check, which reports
+     :sepal.app.server/zodiac
+     {:extensions (cond-> [(ig/ref :sepal.app.server/zodiac-sql)
+                           (ig/ref :sepal.app.server/zodiac-assets)]
+                    hot-reload (conj (ig/ref :sepal.app.server/zodiac-hot-reload)))
+      :cookie-secret (cookie-key (:master-secret process) slug)
+      :start-server? (boolean start-server?)
+      :reload-per-request? (boolean reload-per-request?)
+      :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}
+      :request-context {;; Kept for setup/shared's health check, which reports
                         ;; whether a domain is configured at all. Links are built
                         ;; from :app-base-url, which carries scheme and port too.
-                          :app-domain app-domain
-                          :app-base-url (base-url opts)
-                          :schema-version schema-version
-                          :setup-job (ig/ref ::setup-job)
+                        :app-domain app-domain
+                        :app-base-url (base-url opts)
+                        :schema-version schema-version
+                        :setup-job (ig/ref ::setup-job)
                         ;; Where the setup wizard puts the synonym reference it
                         ;; downloads. One file per machine, so it comes from the
                         ;; process rather than from these instance opts.
-                          :synonym-ref-path (:synonym-ref-path process)
-                          :mail (:mail process)
-                          :token-service (ig/ref :sepal.token.interface/service)
-                          :s3-client (:s3-client process)
-                          :s3-presigner (:s3-presigner process)
-                          :synonym-reference (:synonym-reference process)
-                          :media-transform-service (ig/ref :sepal.media-transform.interface/service)
-                          :media-upload-bucket (:media-upload-bucket process)
-                          :media-key-prefix media-key-prefix
-                          :backup-dir backup-dir
-                          :backup-store store
-                          :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
-                          :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
-                          :invitation-email-from (or invitation-email-from default-invitation-email-from)
-                          :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)
-                          :remembered-gardens-cookie-domain remembered-gardens-cookie-domain}}
+                        :synonym-ref-path (:synonym-ref-path process)
+                        :mail (:mail process)
+                        :token-service (ig/ref :sepal.token.interface/service)
+                        :s3-client (:s3-client process)
+                        :s3-presigner (:s3-presigner process)
+                        :synonym-reference (:synonym-reference process)
+                        :media-transform-service (ig/ref :sepal.media-transform.interface/service)
+                        :media-upload-bucket (:media-upload-bucket process)
+                        :media-key-prefix media-key-prefix
+                        :backup-dir backup-dir
+                        :backup-store (resolve-backup-store backup-store backup-dir)
+                        :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
+                        :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
+                        :invitation-email-from (or invitation-email-from default-invitation-email-from)
+                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)
+                        :remembered-gardens-cookie-domain remembered-gardens-cookie-domain}}
 
-       :sepal.scheduler.interface/scheduler {}
+     :sepal.scheduler.interface/scheduler {}
 
-       :sepal.app.backup/job
-       {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
-        :zodiac (ig/ref :sepal.app.server/zodiac)
-        :mail (:mail process)
-        :app-base-url (base-url opts)
-        :backup-dir backup-dir
-        :backup-store store}}
+     :sepal.app.backup/job
+     {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
+      :zodiac (ig/ref :sepal.app.server/zodiac)
+      :mail (:mail process)
+      :app-base-url (base-url opts)
+      :backup-dir backup-dir
+      :backup-store (resolve-backup-store backup-store backup-dir)}}
 
-      hot-reload
-      (assoc :sepal.app.server/zodiac-hot-reload hot-reload))))
+    hot-reload
+    (assoc :sepal.app.server/zodiac-hot-reload hot-reload)))
 
 (defn- canonical-path
   [path]
