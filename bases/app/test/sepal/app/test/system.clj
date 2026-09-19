@@ -32,6 +32,7 @@
 (def ^:dynamic *mail-client* nil)
 (def ^:dynamic *token-service* nil)
 (def ^:dynamic *backup-dir* nil)
+(def ^:dynamic *garden* nil)
 
 (defn floor-leg?
   "Whether this run is the CI matrix's floor leg. See load-floor-schema! for
@@ -157,7 +158,8 @@
                 *cookie-store* (get-in garden [:system :sepal.app.server/zodiac ::z/cookie-store])
                 *mail-client* mail
                 *token-service* (get-in garden [:system :sepal.token.interface/service])
-                *backup-dir* backup-dir]
+                *backup-dir* backup-dir
+                *garden* garden]
         (f))
       (finally
         (instance/stop! garden)

@@ -13,6 +13,7 @@
             [next.jdbc :as jdbc]
             [pogonos.core :as mustache]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.backup.core :as backup]
             [sepal.app.backup.local :as backup.local]
             [sepal.app.backup.protocols :as backup.p]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -635,6 +636,10 @@
   [instance]
   (get-in instance [:system :sepal.app.server/zodiac ::z.sql/db]))
 
+(defn- instance-backup-store
+  [instance]
+  (get-in instance [:system :sepal.app.backup/job :backup-store]))
+
 (defn create-admin-user!
   "Create an active admin user in a running instance and mark its setup wizard
   complete. Takes the instance rather than a path so the caller never holds a
@@ -772,3 +777,20 @@
                 :media-bytes (media.i/total-size-in-bytes db)}]
     (validate! Usage result "usage")
     result))
+
+(defn backup!
+  "Back this instance's database up through its store, and return
+  {:filename :size-bytes :created-at}.
+
+  For a caller that operates the schedule itself: the instance's own job does
+  not run when its store manages the schedule, so this is the only thing that
+  produces a backup for such a garden. Throws if the backup was created but
+  could not be stored.
+
+  Takes the instance rather than a path, like `usage`: the caller never holds a
+  database handle, and the store came from this instance's opts with this
+  garden's location closed over, so there is no argument here that could name
+  another garden's backups."
+  [instance]
+  (backup.p/put-backup (instance-backup-store instance)
+                       #(backup/create-backup! (instance-db instance) %)))
