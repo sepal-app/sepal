@@ -38,8 +38,11 @@
 ;; UI Components
 
 (defn- alert-note []
-  [:div {:class "spl-alert spl-alert--warning mb-6"}
-   (lucide/triangle-alert :class "size-5 shrink-0")
+  ;; Informational, not a warning. --warning and --danger resolve to the same
+  ;; red tokens on purpose — one attention colour, not two — so a note that is
+  ;; merely telling you where your media lives reads as something broken.
+  [:div {:class "spl-alert spl-alert--info mb-6"}
+   (lucide/info :class "size-5 shrink-0")
    [:span "Backups include the database only. Media files are stored separately and must be backed up manually."]])
 
 (defn- frequency-select [value]
