@@ -158,8 +158,11 @@
                 identifiers, dates, timestamps and numbers are mono with
                 tabular figures, because they are scanned down a column and
                 compared rather than read. :name and :text carry no width, so
-                they absorb whatever the sized columns leave — give exactly one
-                column per table an unsized type, or they will split it.
+                they absorb whatever the sized columns leave; several unsized
+                columns split that space evenly rather than each claiming it
+                whole. Give exactly one column an unsized type when it should
+                take all the slack, as a table with one long identifier and
+                several short fields does.
     :priority — 1 never sheds. Higher numbers are hidden first as the viewport
                 narrows, and are what a future column picker reads.
     :stacked  — (fn [row] …) returning the one-line summary the cell shows
