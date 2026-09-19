@@ -970,7 +970,7 @@
   border-collapse: collapse;
 }
 .spl-table th {
-  font: 400 10px/1.4 var(--font-mono);
+  font: 500 10px/1.4 var(--font-mono);
   letter-spacing: .08em;
   text-align: left;
   color: var(--color-text-dim);
@@ -999,6 +999,33 @@
   font-variant-numeric: tabular-nums;
   color: var(--color-text-dim);
 }
+/* A timestamp, not a date: "Sep 18, 2026, 9:01 PM" needs half again the width
+ * of "2026-09-18", and clipping the time off a list of backups taken on the
+ * same day leaves rows that cannot be told apart. */
+.spl-col--datetime {
+  width: 152px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-dim);
+}
+/* Counts and sizes are compared down a column, so they take the same tabular
+ * figures an identifier does. */
+.spl-col--number {
+  width: 80px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+/* Wide enough for one small button with its glyph. An actions column that
+ * absorbs the remainder starves whichever column actually holds the row's
+ * name. */
+.spl-col--actions { width: 112px; }
+/* Stated rather than implied. A name column carries no width so it takes what
+ * the sized columns leave, and no typeface: the serif on a scientific name
+ * comes from the cell's own markup, not from the column. Four callers used
+ * this type for a while against no rule at all. */
+.spl-col--name { width: auto; }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
 /* A list is not a card. It fills its pane edge to edge — no border, no radius,

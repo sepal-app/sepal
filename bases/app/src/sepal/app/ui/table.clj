@@ -147,10 +147,13 @@
 
     :name     — the header text.
     :cell     — (fn [row] …) returning the cell's content.
-    :type     — :identifier, :name, :date or :text. Defaults to :text.
-                Drives column width and typeface: identifiers and dates are
-                mono with tabular figures, because they are scanned down a
-                column and compared rather than read.
+    :type     — :identifier, :name, :date, :datetime, :number, :actions or
+                :text. Defaults to :text. Drives column width and typeface:
+                identifiers, dates, timestamps and numbers are mono with
+                tabular figures, because they are scanned down a column and
+                compared rather than read. :name and :text carry no width, so
+                they absorb whatever the sized columns leave — give exactly one
+                column per table an unsized type, or they will split it.
     :priority — 1 never sheds. Higher numbers are hidden first as the viewport
                 narrows, and are what a future column picker reads.
     :stacked  — (fn [row] …) returning the one-line summary the cell shows
