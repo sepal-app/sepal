@@ -15,6 +15,6 @@
     rows)
 
   (download-url [_ filename]
-    (str "https://backups.example/" filename "?signed=1"))
+    (str "https://backups.example/" filename))
 
   (manages-schedule? [_] manages-schedule?))
