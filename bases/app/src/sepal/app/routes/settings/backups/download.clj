@@ -5,10 +5,9 @@
             [zodiac.core :as z]))
 
 (defn handler [{:keys [path-params ::z/context]}]
-  (let [{:keys [db backup-dir]} context
+  (let [{:keys [backup-dir]} context
         {:keys [filename]} path-params
-        config (backup/get-config db backup-dir)
-        file (backup/get-backup-file (:path config) filename)]
+        file (backup/get-backup-file backup-dir filename)]
     (if file
       {:status 200
        :headers {"Content-Type" "application/zip"

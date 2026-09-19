@@ -3,13 +3,13 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.test :as app.test]
-            [sepal.app.test.system :refer [*backup-dir* *db* managed-backups-system-fixture]]
+            [sepal.app.test.system :refer [*db* injected-backup-store-system-fixture]]
             [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
 
-(use-fixtures :once managed-backups-system-fixture)
+(use-fixtures :once injected-backup-store-system-fixture)
 
 (defn- admin-session []
   (let [password "testpassword123"
@@ -31,18 +31,18 @@
           "the manual-media warning is false here: this garden's media is not on disk")
       (is (not (.contains (:body response) "Next backup"))))))
 
-(deftest test-managed-page-still-lists-and-links-backups
-  (testing "GET /settings/backups lists the zips that exist, with a download link"
-    (let [result (backup/create-backup! *db* *backup-dir*)]
-      (try
-        (let [sess (admin-session)
-              {:keys [response]} (peri/request sess "/settings/backups")
-              body (Jsoup/parse ^String (:body response))]
-          (is (.contains (:body response) (:filename result)))
-          (is (some? (.selectFirst body (str "a[href*=" (:filename result) "]")))
-              "the download link is the point of the page"))
-        (finally
-          (.delete (java.io.File. ^String *backup-dir* ^String (:filename result))))))))
+(deftest test-page-lists-what-the-store-reports
+  (testing "the rows come from the store, not from a directory on this machine"
+    (let [sess (admin-session)
+          {:keys [response]} (peri/request sess "/settings/backups")
+          body (Jsoup/parse ^String (:body response))]
+      (is (= 200 (:status response)))
+      (is (.contains (:body response) "sepal-backup-2026-01-02T020000.zip")
+          "and nothing wrote that file anywhere on disk")
+      (is (some? (.selectFirst
+                   body
+                   "a[href^=https://backups.example/]"))
+          "the download link is wherever the store says, not this app's route"))))
 
 (deftest test-managed-page-refuses-a-hand-rolled-write
   (testing "POST /settings/backups is not a route on a managed garden"
@@ -59,7 +59,7 @@
                                            :params {:__anti-forgery-token token
                                                     :frequency "daily"})]
       (is (= 404 (:status response)))
-      (is (nil? (:frequency (backup/get-config *db* *backup-dir*)))
+      (is (nil? (:frequency (backup/get-config *db*)))
           "the schedule the sweep depends on is untouched")
       ;; In case the refusal regresses and the write goes through, leave no
       ;; frequency behind for the other tests in this namespace.

@@ -28,12 +28,15 @@
    :last-run-at "backup.last_run_at"})
 
 (defn get-config
-  "Get backup configuration from settings, for the given backup directory."
-  [db backup-dir]
+  "Get backup configuration from settings.
+
+   Where a garden's backups live is the injected store's business now, not
+   this map's — accepts and ignores a trailing backup-dir argument so a call
+   site this change does not touch keeps compiling."
+  [db & _]
   (let [settings (settings.i/get-values db "backup")]
     {:frequency (some-> (get settings (:frequency setting-keys))
                         keyword)
-     :path backup-dir
      :last-run-at (some-> (get settings (:last-run-at setting-keys))
                           Instant/parse)}))
 

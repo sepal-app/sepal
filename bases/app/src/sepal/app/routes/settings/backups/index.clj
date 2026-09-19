@@ -1,6 +1,8 @@
 (ns sepal.app.routes.settings.backups.index
-  (:require [failjure.core :as f]
+  (:require [clojure.tools.logging :as log]
+            [failjure.core :as f]
             [sepal.app.backup.core :as backup]
+            [sepal.app.backup.protocols :as backup.p]
             [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
@@ -87,13 +89,13 @@
       [:div {:class "mt-4"}
        (layout/save-button "Save changes")])))
 
-(defn- download-link [filename]
-  [:a {:href (z/url-for settings.routes/backup-download {:filename filename})
+(defn- download-link [store filename]
+  [:a {:href (backup.p/download-url store filename)
        :class "spl-btn spl-btn--sm spl-btn--ghost"}
    (lucide/download :class "size-4")
    "Download"])
 
-(defn- table-columns [timezone]
+(defn- table-columns [store timezone]
   [{:name "Filename"
     :type :name
     :priority 1
@@ -102,7 +104,7 @@
                       (format-bytes size-bytes)
                       " · "
                       (datetime/datetime created-at timezone)]
-                     (download-link filename)))
+                     (download-link store filename)))
     :cell (fn [{:keys [filename]}] [:span {:class "font-mono text-sm"} filename])}
    {:name "Size"
     :type :number
@@ -115,19 +117,29 @@
    {:name "Actions"
     :type :actions
     :priority 1
-    :cell (fn [{:keys [filename]}] (download-link filename))}])
+    :cell (fn [{:keys [filename]}] (download-link store filename))}])
 
-(defn- backups-table [backups timezone]
+(defn- unreachable-note []
+  ;; --danger rather than --info: an empty list here would be a claim that the
+  ;; customer has no backups, and this is the page saying it does not know.
+  [:div {:class "spl-alert spl-alert--danger"}
+   (lucide/triangle-alert :class "size-5 shrink-0")
+   [:span "Your backups could not be reached just now. They are not lost — "
+    "try again in a few minutes."]])
+
+(defn- backups-table [& {:keys [backups store timezone unreachable?]}]
   [:div {:class "mt-8"}
    [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
-   (ui.table/table :columns (table-columns timezone)
-                   :rows backups
-                   :empty-state [:p {:class "text-text-muted"} "No backups yet."])])
+   (if unreachable?
+     (unreachable-note)
+     (ui.table/table :columns (table-columns store timezone)
+                     :rows backups
+                     :empty-state [:p {:class "text-text-muted"} "No backups yet."]))])
 
 ;; -----------------------------------------------------------------------------
 ;; Render
 
-(defn render [& {:keys [viewer config errors flash backups timezone managed-backups?]}]
+(defn render [& {:keys [viewer config errors flash backups timezone managed? store unreachable?]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/backups
@@ -135,27 +147,30 @@
     :title "Backups"
     :flash flash
     :content
-    (if managed-backups?
+    (if managed?
       ;; Nothing to configure, so nothing is offered. No note replaces the
-      ;; warning: an empty space makes no claim that has to stay true as the
-      ;; surrounding storage work lands.
-      [:div (backups-table backups timezone)]
+      ;; warning: an empty space makes no claim that has to stay true.
+      [:div (backups-table :backups backups :store store :timezone timezone
+                           :unreachable? unreachable?)]
       [:div
        (alert-note)
        (backup-form :config config :errors errors :timezone timezone)
-       (backups-table backups timezone)])))
+       (backups-table :backups backups :store store :timezone timezone
+                      :unreachable? unreachable?)])))
 
 ;; -----------------------------------------------------------------------------
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db timezone backup-dir managed-backups?]} context
-        config (backup/get-config db backup-dir)]
+  (let [{:keys [db timezone backup-store]} context
+        config (backup/get-config db)
+        managed? (backup.p/manages-schedule? backup-store)]
     (case request-method
       :post
-      (if managed-backups?
-        ;; Not 403: on a managed garden this write does not exist at all, which
-        ;; is what the page already shows by offering no form.
+      (if managed?
+        ;; Not 403: when something else owns the schedule this write does not
+        ;; exist at all, which is what the page already shows by offering no
+        ;; form.
         (http/not-found)
         (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                         _saved (f/try* (let [frequency (some-> (:frequency data) keyword)]
@@ -170,10 +185,16 @@
             (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings"))))
 
       ;; GET
-      (let [backups (backup/list-backups (:path config))]
+      (let [backups (try
+                      {:rows (backup.p/list-backups backup-store)}
+                      (catch Exception e
+                        (log/error e "Could not list backups")
+                        {:unreachable? true}))]
         (render :viewer viewer
                 :config config
                 :flash flash
-                :backups backups
+                :backups (:rows backups)
+                :unreachable? (:unreachable? backups)
+                :store backup-store
                 :timezone timezone
-                :managed-backups? managed-backups?)))))
+                :managed? managed?)))))

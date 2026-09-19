@@ -18,13 +18,13 @@
         (let [store (local/->LocalBackupStore dir)
               seen (atom nil)
               result (backup.p/put-backup
-                      store
-                      (fn [d]
-                        (reset! seen d)
-                        (spit (fs/file d "sepal-backup-2026-01-01T020000.zip") "z")
-                        {:filename "sepal-backup-2026-01-01T020000.zip"
-                         :size-bytes 1
-                         :created-at (java.time.Instant/parse "2026-01-01T02:00:00Z")}))]
+                       store
+                       (fn [d]
+                         (reset! seen d)
+                         (spit (fs/file d "sepal-backup-2026-01-01T020000.zip") "z")
+                         {:filename "sepal-backup-2026-01-01T020000.zip"
+                          :size-bytes 1
+                          :created-at (java.time.Instant/parse "2026-01-01T02:00:00Z")}))]
           (is (= dir @seen) "the store chooses the directory")
           (is (= "sepal-backup-2026-01-01T020000.zip" (:filename result))
               "and returns the create fn's result unchanged")
