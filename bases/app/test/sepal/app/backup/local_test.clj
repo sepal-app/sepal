@@ -31,6 +31,24 @@
           (is (fs/exists? (fs/path dir "sepal-backup-2026-01-01T020000.zip"))
               "the zip stays where a self-hoster's backup has always been"))))))
 
+(deftest test-put-backup-throws-when-the-directory-cannot-be-used
+  (testing "a backup-dir that is a file, not a directory, is refused before the create fn runs"
+    (with-dir
+      (fn [dir]
+        (let [not-a-dir (str (fs/path dir "not-a-directory"))]
+          (spit not-a-dir "occupying this path")
+          (let [store (local/->LocalBackupStore not-a-dir)
+                called? (atom false)]
+            (is (thrown-with-msg?
+                  clojure.lang.ExceptionInfo
+                  #"is not a directory"
+                  (backup.p/put-backup store (fn [_] (reset! called? true)))))
+            (is (false? @called?) "the create fn never runs against an unusable directory")
+            (is (= ::local/backup-dir-unusable
+                   (:type (ex-data (try
+                                     (backup.p/put-backup store (fn [_] nil))
+                                     (catch Exception e e))))))))))))
+
 (deftest test-list-backups-reads-the-directory
   (testing "newest first, and only files that parse as backups"
     (with-dir
