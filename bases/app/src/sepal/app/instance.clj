@@ -137,6 +137,15 @@
    [:users [:int {:min 0}]]
    [:media-bytes [:int {:min 0}]]])
 
+(def BackupResult
+  "What backup! returns. Closed, so widening it is a deliberate change to this
+  published API rather than a silent change to what the injected store is
+  allowed to hand back."
+  [:map {:closed true}
+   [:filename [:string {:min 1}]]
+   [:size-bytes [:int {:min 0}]]
+   [:created-at inst?]])
+
 (defn- validate!
   [schema opts what]
   (when-not (m/validate schema opts)
@@ -785,7 +794,8 @@
 
 (defn backup!
   "Back this instance's database up through its store, and return
-  {:filename :size-bytes :created-at}.
+  {:filename :size-bytes :created-at}, validated before it is returned so a
+  caller cannot receive a shape that quietly changed.
 
   For a caller that operates the schedule itself: the instance's own job does
   not run when its store manages the schedule, so this is the only thing that
@@ -797,5 +807,7 @@
   garden's location closed over, so there is no argument here that could name
   another garden's backups."
   [instance]
-  (backup.p/put-backup (instance-backup-store instance)
-                       #(backup/create-backup! (instance-db instance) %)))
+  (let [result (backup.p/put-backup (instance-backup-store instance)
+                                    #(backup/create-backup! (instance-db instance) %))]
+    (validate! BackupResult result "backup")
+    result))
