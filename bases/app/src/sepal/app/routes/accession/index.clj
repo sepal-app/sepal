@@ -40,11 +40,15 @@
 
   Markup rather than a joined string, so the name keeps the serif it carries
   in every other place this app prints one. A scientific name set in the body
-  sans reads as a different kind of thing."
+  sans reads as a different kind of thing.
+
+  Each item in the list is its own line: the narrow cell is a column flex
+  container, so a separator between them would open a line rather than join
+  anything."
   [row]
   (list (taxon-name/render (:taxon/name row))
         (when-let [received (:accession/date-received row)]
-          (str " \u00b7 " received))))
+          [:span {:class "spl-stacked-line"} received])))
 
 (defn table-columns []
   [{:name "Code"
