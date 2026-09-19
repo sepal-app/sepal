@@ -30,13 +30,13 @@
 
 (deftest test-get-set-config
   (testing "get-config returns nil frequency when not set"
-    (let [config (backup/get-config *db* (str (fs/path (fs/create-temp-dir) "backups")))]
+    (let [config (backup/get-config *db*)]
       (is (nil? (:frequency config)))
       (is (nil? (:last-run-at config)))))
 
   (testing "set-config! and get-config round-trip"
     (backup/set-config! *db* {:frequency :daily})
-    (let [config (backup/get-config *db* (str (fs/path (fs/create-temp-dir) "backups")))]
+    (let [config (backup/get-config *db*)]
       (is (= :daily (:frequency config))))
 
     ;; Clean up

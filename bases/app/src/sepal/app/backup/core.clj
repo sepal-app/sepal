@@ -28,12 +28,8 @@
    :last-run-at "backup.last_run_at"})
 
 (defn get-config
-  "Get backup configuration from settings.
-
-   Where a garden's backups live is the injected store's business now, not
-   this map's — accepts and ignores a trailing backup-dir argument so a call
-   site this change does not touch keeps compiling."
-  [db & _]
+  "Get backup configuration from settings."
+  [db]
   (let [settings (settings.i/get-values db "backup")]
     {:frequency (some-> (get settings (:frequency setting-keys))
                         keyword)
@@ -335,7 +331,7 @@
 
    Frequency of nil means backups are disabled."
   [scheduler db mail app-base-url backup-dir]
-  (let [config (get-config db backup-dir)
+  (let [config (get-config db)
         frequency (:frequency config)]
     (if frequency
       (do

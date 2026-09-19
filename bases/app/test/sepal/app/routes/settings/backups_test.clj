@@ -70,7 +70,7 @@
         (is (= 200 (:status response)))
         (is (= "Backup settings updated successfully" (flash-banner-text body)))
         ;; Verify setting was saved
-        (is (= :daily (:frequency (backup/get-config *db* *backup-dir*)))))
+        (is (= :daily (:frequency (backup/get-config *db*)))))
 
       ;; Clean up
       (settings.i/set-values! *db* {"backup.frequency" nil}))))
