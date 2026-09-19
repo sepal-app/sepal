@@ -110,12 +110,15 @@
    [:td {:colspan column-count} "End of list"]])
 
 (defn- body-rows
-  "The <tr>s, the prefetch trigger and whichever of the sentinel or the end
-  marker belongs at the bottom.
+  "The <tr>s, and the paging chrome when there is paging.
 
   The initial render and an infinite-scroll response both come through here, so
-  a row appended by scrolling is built the same way as one present on load."
-  [& {:keys [columns rows row-attrs next-url]}]
+  a row appended by scrolling is built the same way as one present on load.
+
+  `paging?` rather than a test of `next-url`: the end marker belongs at the
+  bottom of a list that pages and has run out, and nowhere at all on a list
+  that never paged. Those are different facts and only one of them is `nil`."
+  [& {:keys [columns rows row-attrs next-url paging?]}]
   (let [n (count columns)
         ;; Clamped, so a short final response still prefetches from near its top
         ;; rather than not at all.
@@ -132,9 +135,10 @@
                     (:stacked col) (assoc :data-stacked ((:stacked col) row))
                     (:attrs col) (merge ((:attrs col) row)))
               ((:cell col) row)])]))
-      (if next-url
-        (sentinel-row n)
-        (end-of-list n)))))
+      (when paging?
+        (if next-url
+          (sentinel-row n)
+          (end-of-list n))))))
 
 (defn table
   "A table component.
@@ -184,10 +188,11 @@
          [:th {:scope "col"
                :class (column-classes col)}
           (:name col)])]]
-     [:tbody {:id rows-container-id}
+     [:tbody (when (and href page page-size total) {:id rows-container-id})
       (body-rows :columns columns
                  :rows rows
                  :row-attrs row-attrs
+                 :paging? (boolean (and href page page-size total))
                  :next-url (next-page-url :href href
                                           :page page
                                           :page-size page-size
@@ -234,6 +239,7 @@
     (body-rows :columns columns
                :rows rows
                :row-attrs row-attrs
+               :paging? true
                :next-url (next-page-url :href href
                                         :page page
                                         :page-size page-size

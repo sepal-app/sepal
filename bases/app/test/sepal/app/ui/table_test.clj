@@ -74,15 +74,32 @@
 (deftest test-empty-rows-render-a-table-with-no-body-rows
   (let [body (parse :rows [])]
     (is (some? (.selectFirst body "table")) "the header still renders")
-    (is (zero? (.size (.select body "tbody tr:not(.spl-end)")))
-        "no data rows")
-    (is (some? (.selectFirst body "tr.spl-end"))
-        "an empty list still shows where it ends")))
+    (is (zero? (.size (.select body "tbody tr")))
+        "no data rows, and with no paging state, no chrome to fill the gap")))
+
+(deftest test-a-table-without-paging-has-no-paging-chrome
+  ;; Every table that does not paginate hand-rolled its own markup rather than
+  ;; wear an "End of list" it never asked for. This is why.
+  (testing "no sentinel, no prefetch row and no end marker"
+    (let [out (render)]
+      (is (not (str/includes? out table/sentinel-id)) "no sentinel row")
+      (is (not (str/includes? out "spl-prefetch")) "no prefetch trigger")
+      (is (not (str/includes? out "End of list")) "no end marker")))
+
+  (testing "the rows themselves are all there"
+    (let [out (render)]
+      (is (str/includes? out "Quercus alba")))))
 
 (deftest test-last-page-ends-the-list
   (testing "with no next page the list shows its bottom rather than stopping
             silently, which is indistinguishable from still loading"
-    (let [body (parse)]
+    (let [body (Jsoup/parseBodyFragment
+                 (chassis/html (table/table :columns columns
+                                            :rows rows
+                                            :href "/accession/"
+                                            :page 1
+                                            :page-size 1
+                                            :total 1)))]
       (is (some? (.selectFirst body "tr.spl-end")))
       (is (nil? (.selectFirst body "tr.spl-sentinel"))))))
 
@@ -209,11 +226,11 @@
 
 (deftest test-a-fixed-list-has-no-scroll-machinery
   (testing "settings tables pass no paging state and must not sprout a
-            sentinel, a trigger or a count"
+            sentinel, a trigger, a count or an end marker"
     (let [body (parse)]
       (is (nil? (.selectFirst body "tr.spl-prefetch")))
       (is (nil? (.selectFirst body "tr.spl-sentinel")))
-      (is (some? (.selectFirst body "tr.spl-end"))))))
+      (is (nil? (.selectFirst body "tr.spl-end"))))))
 
 (deftest test-an-empty-list-explains-itself
   (testing "a header row over nothing, with END OF LIST under it, reads as a
@@ -231,7 +248,8 @@
   (testing "settings tables pass none and must keep their header"
     (let [body (parse :rows [])]
       (is (some? (.selectFirst body "table")))
-      (is (some? (.selectFirst body "tr.spl-end"))))))
+      (is (nil? (.selectFirst body "tr.spl-end"))
+          "no paging state means no end marker either"))))
 
 (deftest test-rows-only-matches-what-the-table-renders
   (testing "an appended row is built by the same code as a row present on load"
