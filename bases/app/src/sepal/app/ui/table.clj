@@ -207,17 +207,6 @@
                                           :page-size page-size
                                           :total total))]]))
 
-(defn card-table
-  "The list surface. Rows scroll inside it; the header stays put.
-
-  There is no pager: lists load the next page as you reach the bottom, and the
-  row count lives in the toolbar beside the search. See `sentinel-row`."
-  ([table]
-   [:div {:class "spl-table-card"}
-    [:div {:class "spl-table-scroll"} table]])
-  ([table _paginator]
-   (card-table table)))
-
 (def count-id
   "The toolbar's row count. An infinite-scroll response swaps it out of band, so
   the number tracks what is actually loaded instead of freezing at the first

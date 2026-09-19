@@ -104,7 +104,7 @@
           [:li (format "and %d more" extra)])]])))
 
 (defn table [& {:keys [rows page href page-size total search-query]}]
-  (table/card-table
+  (pages.list/card-table
     (table/table :columns (table-columns)
                  :rows rows
                  :row-attrs row-attrs

@@ -116,6 +116,19 @@
      (table/row-count :loaded (min (* page page-size) total) :total total)
      actions]))
 
+(defn card-table
+  "The list surface. Rows scroll inside it; the header stays put.
+
+  Here rather than beside the table markup because it is a property of a list
+  page, not of a table: a settings table is short, sits in a padded pane, and a
+  scrolling card around it is a boundary around nothing.
+
+  There is no pager: lists load the next page as you reach the bottom, and the
+  row count lives in the toolbar beside the search."
+  [table]
+  [:div {:class "spl-table-card"}
+   [:div {:class "spl-table-scroll"} table]])
+
 (defn page-content [& {:keys [table-actions content]}]
   [:form {:method "get"
           :hx-get " "

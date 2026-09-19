@@ -122,10 +122,9 @@
     :cell (fn [user] (action-buttons user viewer))}])
 
 (defn- users-table [users viewer]
-  (table/card-table
-    (table/table :columns (table-columns viewer)
-                 :rows users
-                 :row-attrs row-attrs)))
+  (table/table :columns (table-columns viewer)
+               :rows users
+               :row-attrs row-attrs))
 
 (defn users-table-container
   "Renders the users table container. Exported for use by action handlers."
