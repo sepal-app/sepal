@@ -1002,8 +1002,8 @@
 /* A timestamp, not a date: "Sep 18, 2026, 9:01 PM" needs half again the width
  * of "2026-09-18", and clipping the time off a list of backups taken on the
  * same day leaves rows that cannot be told apart. */
-.spl-col--datetime {
-  width: 152px;
+.spl-col--datetime { width: 152px; }
+.spl-table td.spl-col--datetime {
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -1011,8 +1011,8 @@
 }
 /* Counts and sizes are compared down a column, so they take the same tabular
  * figures an identifier does. */
-.spl-col--number {
-  width: 80px;
+.spl-col--number { width: 80px; }
+.spl-table td.spl-col--number {
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
