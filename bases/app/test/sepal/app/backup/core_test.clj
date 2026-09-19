@@ -5,7 +5,10 @@
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [sepal.app.backup.core :as backup]
+            [sepal.app.backup.fake-store :as fake-store]
+            [sepal.app.backup.local :as local]
             [sepal.app.test.system :refer [*db* *mail-client* default-system-fixture]]
+            [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i])
   (:import [java.nio.file Files]
@@ -247,3 +250,44 @@
       (is (.isAfter (backup/get-next-backup-time :daily) now))
       (is (.isAfter (backup/get-next-backup-time :weekly) now))
       (is (.isAfter (backup/get-next-backup-time :monthly) now)))))
+
+(deftest test-backup-task-stores-through-the-store
+  (testing "the store chooses the directory and gets the result"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-task"})]
+      (try
+        (let [store (local/->LocalBackupStore (str dir))
+              task (#'backup/backup-task *db* *mail-client* "https://test.sepal.app" store)]
+          (task (java.time.Instant/now))
+          (is (= 1 (count (backup/list-backups (str dir))))
+              "one zip, in the store's directory"))
+        (finally
+          (settings.i/set-values! *db* {"backup.last_run_at" nil})
+          (fs/delete-tree dir))))))
+
+(deftest test-no-job-is-registered-when-the-store-manages-the-schedule
+  (testing "a garden whose backups are driven from outside registers nothing"
+    (let [scheduled (atom [])
+          cancelled (atom [])]
+      (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))
+                    scheduler.i/cancel! (fn [_ id] (swap! cancelled conj id))]
+        (backup/register-backup-job! ::scheduler *db* *mail-client*
+                                     "https://test.sepal.app"
+                                     (fake-store/->FakeBackupStore [] true false))
+        (is (empty? @scheduled) "nothing scheduled")
+        (is (empty? @cancelled)
+            "and nothing cancelled either: there was never a job here to cancel")))))
+
+(deftest test-a-local-store-still-registers-from-the-setting
+  (testing "a self-hosted garden's schedule still comes from its own frequency"
+    (let [scheduled (atom [])
+          dir (fs/create-temp-dir {:prefix "sepal-register"})]
+      (try
+        (backup/set-config! *db* {:frequency :daily})
+        (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))]
+          (backup/register-backup-job! ::scheduler *db* *mail-client*
+                                       "https://test.sepal.app"
+                                       (local/->LocalBackupStore (str dir))))
+        (is (= [:backup] @scheduled))
+        (finally
+          (settings.i/set-values! *db* {"backup.frequency" nil})
+          (fs/delete-tree dir))))))

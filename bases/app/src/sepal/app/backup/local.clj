@@ -12,7 +12,11 @@
   (put-backup [_ create-fn]
     ;; The directory this store lists from, so the zip is written where it will
     ;; be served from and nothing is copied or moved afterwards.
-    (create-fn backup-dir))
+    (let [check (backup/ensure-backup-dir! backup-dir)]
+      (when-not (:valid? check)
+        (throw (ex-info (:error check) {:type ::backup-dir-unusable
+                                        :backup-dir backup-dir})))
+      (create-fn (:path check))))
 
   (list-backups [_]
     ;; Uncapped on purpose: the directory is the window, and hiding a backup a
