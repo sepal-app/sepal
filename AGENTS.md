@@ -127,6 +127,29 @@ development options — the vite dev server, hot reload, and per-request reload.
 It needs `SEPAL_SECRET` set in `.env.local` and fails with a message naming the
 variable if it is not.
 
+**Drive the running system from the REPL. Do not restart the process to see a
+change.** Those three development options exist so you do not have to: hot
+reload watches `bases/app/src` and per-request reload recompiles on each
+request, so an edit to a `.clj` file is live on the next refresh. A JVM restart
+costs a vite build and thirty seconds, and it throws away the database
+connections, the system map and whatever state you had set up.
+
+`(restart)` is for the changes the reloader cannot pick up — `deps.edn`, a new
+integrant key, a change to the system's shape. Not for editing a handler.
+
+To run with instance options `env-opts` does not read — `:managed-backups?`,
+say — do not edit `main.clj` to add an environment variable you do not want.
+Start the instance from the REPL with the option you need:
+
+```clojure
+(require '[sepal.app.main :as main] '[sepal.app.instance :as instance])
+(def opts (main/env-opts (System/getenv)))
+(def process (instance/start-process! (:process opts)))
+(def garden (instance/start! process (assoc (:instance opts)
+                                            :managed-backups? true
+                                            :start-server? true)))
+```
+
 After starting the system with `(go)`, four dynamic vars become available in the `user` namespace for interactive development:
 - `*system*`: An Integrant map containing all running components of the application.
 - `*db*`: A `next.jdbc` database connection pool for direct database queries.
