@@ -189,3 +189,11 @@
   (system-fixture
     {:backup-store (fake-store/->FakeBackupStore [] true true)}
     f))
+
+(defn empty-backup-store-system-fixture
+  "A store that answers with no rows, which is a different thing from a store
+  that cannot be reached."
+  [f]
+  (system-fixture
+    {:backup-store (fake-store/->FakeBackupStore [] true false)}
+    f))
