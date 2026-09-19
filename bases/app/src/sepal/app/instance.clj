@@ -13,6 +13,8 @@
             [next.jdbc :as jdbc]
             [pogonos.core :as mustache]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.backup.local :as backup.local]
+            [sepal.app.backup.protocols :as backup.p]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
@@ -91,11 +93,12 @@
    [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
-   ;; Something outside this process operates the backup schedule and retention:
-   ;; a control plane, or a self-hoster's own cron and offsite copy. The settings
-   ;; page then lists the backups it finds and offers no schedule to change,
-   ;; because changing it here would not change what actually runs.
-   [:managed-backups? {:optional true} :boolean]
+   ;; Where this garden's backups are written to, listed from and downloaded
+   ;; through. Omitted, the app uses :backup-dir on this machine and its own
+   ;; schedule — which is what a self-hosted install does. A caller that
+   ;; operates backups elsewhere injects its own, built for this garden alone.
+   [:backup-store {:optional true}
+    [:fn #(satisfies? backup.p/BackupStore %)]]
    [:media-cache-size-mb {:optional true} pos-int?]
    [:start-server? {:optional true} :boolean]
    [:jetty-host {:optional true} [:maybe :string]]
@@ -341,7 +344,7 @@
   (atom setup.shared/initial-job-state))
 
 (defn- instance-config
-  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir managed-backups?
+  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir backup-store
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request? cache-manifest?
                    forgot-password-email-from forgot-password-email-subject
@@ -411,7 +414,8 @@
                         :media-upload-bucket (:media-upload-bucket process)
                         :media-key-prefix media-key-prefix
                         :backup-dir backup-dir
-                        :managed-backups? (boolean managed-backups?)
+                        :backup-store (or backup-store
+                                          (backup.local/->LocalBackupStore backup-dir))
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
@@ -425,7 +429,9 @@
       :zodiac (ig/ref :sepal.app.server/zodiac)
       :mail (:mail process)
       :app-base-url (base-url opts)
-      :backup-dir backup-dir}}
+      :backup-dir backup-dir
+      :backup-store (or backup-store
+                        (backup.local/->LocalBackupStore backup-dir))}}
 
     hot-reload
     (assoc :sepal.app.server/zodiac-hot-reload hot-reload)))

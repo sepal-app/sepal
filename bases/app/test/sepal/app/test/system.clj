@@ -7,6 +7,7 @@
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]
+            [sepal.app.backup.fake-store :as fake-store]
             [sepal.app.instance :as instance]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.mail.interface.protocols :as mail.p]
@@ -166,8 +167,23 @@
 (defn default-system-fixture [f]
   (system-fixture nil f))
 
-(defn managed-backups-system-fixture
-  "Like default-system-fixture, but the instance declares that something outside
-  it operates its backups."
+(defn injected-backup-store-system-fixture
+  "Like default-system-fixture, but something outside the instance operates its
+  backups: it lists one, links it somewhere else, and owns the schedule."
   [f]
-  (system-fixture {:managed-backups? true} f))
+  (system-fixture
+    {:backup-store (fake-store/->FakeBackupStore
+                     [{:filename "sepal-backup-2026-01-02T020000.zip"
+                       :size-bytes 2048
+                       :created-at (java.time.Instant/parse "2026-01-02T02:00:00Z")}]
+                     true
+                     false)}
+    f))
+
+(defn unreachable-backup-store-system-fixture
+  "A store that throws on every call, which is a different thing from a store
+  with nothing in it."
+  [f]
+  (system-fixture
+    {:backup-store (fake-store/->FakeBackupStore [] true true)}
+    f))
