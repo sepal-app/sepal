@@ -1028,6 +1028,12 @@
 .spl-col--name { width: auto; }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
+/* The wide form's own wrapper, present so a narrow screen's CSS has something
+ * to address without touching a column's markup. display:contents gives it no
+ * box of its own — wrapping a link or a name in a span must not change how it
+ * lays out. */
+.spl-cell-wide { display: contents; }
+
 /* The narrow form is emitted on every row and hidden until the table collapses.
  * display:none rather than visibility or clipping, so it costs nothing to the
  * accessibility tree at either width. */
@@ -1275,8 +1281,16 @@
     overflow: visible;
     overflow-wrap: anywhere;
   }
-  .spl-table td:first-child .spl-cell-wide { display: none; }
-  .spl-table td:first-child .spl-cell-narrow { display: block; }
+  .spl-table td:first-child .spl-cell-narrow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 3px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--color-text);
+  }
 }
 
 /* ── Activity changelog ────────────────────────────────────────────────────
