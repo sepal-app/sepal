@@ -987,13 +987,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.spl-col--identifier {
-  width: 104px;
+.spl-col--identifier { width: 104px; }
+.spl-table td.spl-col--identifier {
   font-family: var(--font-mono);
   font-size: 12.5px;
 }
-.spl-col--date {
-  width: 96px;
+.spl-col--date { width: 96px; }
+.spl-table td.spl-col--date {
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
