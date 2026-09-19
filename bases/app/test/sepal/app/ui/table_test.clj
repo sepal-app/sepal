@@ -132,6 +132,19 @@
          fast scroll fetches the same page twice")
     (is (nil? (.selectFirst body "tr.spl-end")) "not the end yet")))
 
+(deftest test-the-rows-container-id-is-conditional-on-paging
+  ;; rows-container-id is the infinite-scroll append target. Dropping it from
+  ;; a paginating table's tbody would silently break scroll-to-load with a
+  ;; green suite — nothing else in the response depends on the id at all.
+  (testing "a paginating table's tbody carries it"
+    (let [body (with-next-page rows)]
+      (is (= table/rows-container-id (.attr (.selectFirst body "tbody") "id")))))
+
+  (testing "a table with no paging state does not — this is what lets two
+            non-paginating tables share a page"
+    (let [body (parse)]
+      (is (str/blank? (.attr (.selectFirst body "tbody") "id"))))))
+
 (deftest test-the-fetch-is-triggered-three-rows-early
   (let [body (with-next-page (many-rows 25))
         triggers (.select body "tbody tr.spl-prefetch")
