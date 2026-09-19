@@ -1033,6 +1033,10 @@
  * accessibility tree at either width. */
 .spl-cell-narrow { display: none; }
 
+/* A stacked form that is one line of secondary text. Callers whose narrow form
+ * is richer than this compose their own markup instead. */
+.spl-stacked-line { font-size: 13px; color: var(--color-text-muted); }
+
 /* A list is not a card. It fills its pane edge to edge — no border, no radius,
  * no shadow — because a box around a full-width table is a boundary that
  * separates nothing from nothing. Hairlines between rows carry the structure. */
