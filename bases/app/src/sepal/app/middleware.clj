@@ -50,7 +50,7 @@
     (let [resource (try
                      (getter request)
                      (catch Exception e
-                       (log/error e)
+                       (log/error e "could not load the resource")
                        (error.i/error :resource-loader/error "Unknown error loading the resource")))]
       (cond
         (error.i/error? resource)
