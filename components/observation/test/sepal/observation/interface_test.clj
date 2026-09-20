@@ -251,3 +251,21 @@
           (finally
             ;; Clean up activity records before user fixture cleanup
             (next.jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-list-types-and-list-values
+  (tf/testing "the seeded lookup tables, which the Type and Value fields read"
+    {}
+    (fn [_]
+      (is (match? [{:observation-type/code "condition"}
+                   {:observation-type/code "disease"}
+                   {:observation-type/code "general"}
+                   {:observation-type/code "pest"}
+                   {:observation-type/code "phenology"}]
+                  (observation.i/list-types *db*)))
+      (is (match? [{:observation-value/type "condition" :observation-value/code "dead"}]
+                  (filter #(= "dead" (:observation-value/code %))
+                          (observation.i/list-values *db*))))
+      (is (some #(and (= "phenology" (:observation-value/type %))
+                      (= "flowering" (:observation-value/code %))
+                      (= "Flowering" (:observation-value/label %)))
+                (observation.i/list-values *db*))))))

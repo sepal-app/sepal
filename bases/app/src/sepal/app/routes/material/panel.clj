@@ -11,13 +11,13 @@
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
-            [sepal.app.ui.notes :as ui.notes]
+            [sepal.app.ui.observations :as ui.observations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
-            [sepal.note.interface :as note.i]
+            [sepal.observation.interface :as observation.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -91,13 +91,13 @@
    - :taxon          - The associated taxon map
    - :location       - The associated location map
    - :history        - Change rows with :from-location and :to-location maps
-   - :notes          - Recent notes for this material
-   - :note-count     - Total note count
+   - :observations   - Recent observations for this material
+   - :observation-count - Total observation count
    - :activities     - Recent activities for this material
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [material accession taxon location history notes note-count
+  [& {:keys [material accession taxon location history observations observation-count
              activities activity-count timezone on-close actions]}]
   (let [{:material/keys [code material-type quantity status]} material
         sci-name (:taxon/name taxon)]
@@ -139,18 +139,18 @@
         ;; History section
         (history-section material history timezone)
 
-        ;; Notes section
+        ;; Observations section
         (panel/collapsible-section
-          :title "Notes"
-          :count note-count
-          :disabled? (zero? (or note-count 0))
+          :title "Observations"
+          :count observation-count
+          :disabled? (zero? (or observation-count 0))
           :empty-label "none"
           :default-open? false
           :children
-          (ui.notes/panel-section
-            :notes notes
-            :note-count note-count
-            :more-url (z/url-for material.routes/detail-notes {:id (:material/id material)})))
+          (ui.observations/panel-section
+            :observations observations
+            :observation-count observation-count
+            :more-url (z/url-for material.routes/detail-observations {:id (:material/id material)})))
 
         ;; External links section
         (panel/collapsible-section
@@ -187,7 +187,7 @@
 (defn fetch-panel-data
   "Fetch all data needed for the material panel.
    Returns a map with :material, :accession, :taxon, :location, :history,
-   :notes, :note-count, :activities, :activity-count."
+   :observations, :observation-count, :activities, :activity-count."
   [db material]
   (let [material-id (:material/id material)
         accession (when-let [accession-id (:material/accession-id material)]
@@ -196,8 +196,8 @@
                 (taxon.i/get-by-id db taxon-id))
         location (when-let [location-id (:material/location-id material)]
                    (loc.i/get-by-id db location-id))
-        notes (take 3 (note.i/get-for-resource db :material material-id))
-        note-count (note.i/count-for-resource db :material material-id)
+        observations (take 3 (observation.i/get-for-resource db :material material-id))
+        observation-count (observation.i/count-for-resource db :material material-id)
         activities (activity.i/get-by-resource db
                                                :resource-type :material
                                                :resource-id material-id
@@ -210,8 +210,8 @@
      :taxon taxon
      :location location
      :history (history-for db material-id)
-     :notes notes
-     :note-count note-count
+     :observations observations
+     :observation-count observation-count
      :activities activities
      :activity-count activity-count}))
 
@@ -227,8 +227,8 @@
         :taxon (:taxon panel-data)
         :location (:location panel-data)
         :history (:history panel-data)
-        :notes (:notes panel-data)
-        :note-count (:note-count panel-data)
+        :observations (:observations panel-data)
+        :observation-count (:observation-count panel-data)
         :activities (:activities panel-data)
         :activity-count (:activity-count panel-data)
         ;; Only here, not from a record page: that page already carries

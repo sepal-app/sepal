@@ -83,6 +83,20 @@
                                 :order-by [[:o.next_check_on :asc] [:o.id :asc]]))
        (mapv row->observation)))
 
+(defn list-types
+  "Every observation_type, ordered by code."
+  [db]
+  (db.i/execute! db {:select [:*]
+                     :from [:observation-type]
+                     :order-by [[:code :asc]]}))
+
+(defn list-values
+  "Every observation_value, ordered by type then code."
+  [db]
+  (db.i/execute! db {:select [:*]
+                     :from [:observation-value]
+                     :order-by [[:type :asc] [:code :asc]]}))
+
 (defn create! [db data]
   (store.i/create! db :observation data spec/CreateObservation spec/Observation))
 

@@ -24,6 +24,17 @@
   [db on-date]
   (core/due db on-date))
 
+(defn list-types
+  "Every observation_type, ordered by code. Drives the Type field's options."
+  [db]
+  (core/list-types db))
+
+(defn list-values
+  "Every observation_value, ordered by type then code. Drives the Value
+  field's options, filtered to the selected type in the browser."
+  [db]
+  (core/list-values db))
+
 (defn create! [db data]
   (core/create! db data))
 
