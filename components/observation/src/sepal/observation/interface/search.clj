@@ -16,24 +16,24 @@
             :type :text
             :label "Value"}
 
-    :observed-on {:column :o.observed_on
-                  :type :date
-                  :label "Observed"}
+    :observed {:column :o.observed_on
+               :type :date
+               :label "Observed"}
 
-    :observed-by {:column :o.observed_by
-                  :type :text
-                  :label "Observed by"}
+    :observer {:column :o.observed_by
+               :type :text
+               :label "Observed by"}
 
-    :next-check-on {:column :o.next_check_on
-                    :type :date
-                    :label "Next check"}
+    :due {:column :o.next_check_on
+          :type :date
+          :label "Next check"}
 
-    ;; resource-type is :enum, unlike type and value: its list is closed by
+    ;; subject is :enum, unlike type and value: its list is closed by
     ;; the spec.
-    :resource-type {:column :o.resource_type
-                    :type :enum
-                    :values [:material :location]
-                    :label "Subject"}
+    :subject {:column :o.resource_type
+              :type :enum
+              :values [:material :location]
+              :label "Subject"}
 
     :id {:column :o.id
          :type :id

@@ -275,20 +275,18 @@
               other-type (observation.i/create!
                            db (assoc base :type "condition" :value "fair"
                                      :observed-on "2026-03-05"))
-              ;; Built as an AST rather than through search.i/parse: the
-              ;; query grammar's field names are `[a-z][a-z0-9]*` with no
-              ;; hyphen, so a hyphenated key like observed-on can never be
-              ;; typed into the search box as a filter. That is a limitation
-              ;; of the shared parser, not of this config, so it is worked
-              ;; around here rather than fixed.
-              ast {:terms []
-                   :filters [{:field "type" :value "phenology" :negated false}
-                             {:field "value" :value "flowering" :negated false}
-                             {:field "observed-on" :op ">=" :value "2026-03-01" :negated false}
-                             {:field "observed-on" :op "<=" :value "2026-03-10" :negated false}]}
+              ;; Through search.i/parse rather than a hand-built AST, so this
+              ;; fails if a field key ever stops being typeable into the
+              ;; search box: field names in the query grammar are
+              ;; `[a-z][a-z0-9]*` with dots as the only separator, which is
+              ;; why the config's keys are single words rather than the
+              ;; hyphenated `observed-on` an earlier draft used.
+              ast (search.i/parse
+                    "type:phenology value:flowering observed:>=2026-03-01 observed:<=2026-03-10")
               stmt (search.i/compile-query
                      :observation ast {:select [:o.id] :from [[:observation :o]]})
               ids (set (map :observation/id (db.i/execute! db stmt)))]
+          (is (not (search.i/parse-error? ast)))
           (is (= #{(:observation/id in-range)} ids))
           (doseq [o [in-range out-of-range other-type]]
             (observation.i/delete! db (:observation/id o))))))))
