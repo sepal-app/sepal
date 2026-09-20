@@ -1,0 +1,174 @@
+(ns sepal.observation.interface-test
+  (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
+            [matcher-combinators.test :refer [match?]]
+            [sepal.accession.interface :as accession.i]
+            [sepal.app.test.fixtures :as tf]
+            [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.contact.interface :as contact.i]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
+            [sepal.observation.interface :as observation.i]
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.user.interface :as user.i]))
+
+(use-fixtures :once default-system-fixture)
+
+;; A function rather than a top-level def: *db* is only bound once
+;; default-system-fixture's `binding` wraps a running test, and a top-level
+;; def evaluates at namespace load, well before that binding exists.
+(defn- material-fixtures [db]
+  {[::user.i/factory :key/user] {:db db}
+   [::taxon.i/factory :key/taxon] {:db db}
+   [::contact.i/factory :key/contact] {:db db}
+   [::location.i/factory :key/location] {:db db}
+   [::accession.i/factory :key/accession] {:db db
+                                           :taxon (ig/ref :key/taxon)
+                                           :contact (ig/ref :key/contact)}
+   ;; location-id is a required pos-int? on CreateMaterial, so the factory
+   ;; needs a location the same way every other caller supplies one.
+   [::material.i/factory :key/material] {:db db
+                                         :accession (ig/ref :key/accession)
+                                         :location (ig/ref :key/location)}})
+
+(deftest test-create-and-get
+  (let [db *db*]
+    (tf/testing "create! then get-by-id"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "phenology"
+                            :value "flowering"
+                            :observed-on "2026-03-14"
+                            :observed-by "A volunteer"
+                            :created-by (:user/id user)})]
+          (is (match? {:observation/id pos-int?
+                       :observation/resource-type :material
+                       :observation/type "phenology"
+                       :observation/value "flowering"
+                       :observation/observed-on "2026-03-14"
+                       :observation/observed-by "A volunteer"}
+                      created))
+          (is (match? {:observation/id (:observation/id created)}
+                      (observation.i/get-by-id db (:observation/id created))))
+          (is (nil? (observation.i/get-by-id db 999999)))
+          (observation.i/delete! db (:observation/id created)))))))
+
+(deftest test-a-value-from-another-type-is-refused
+  (let [db *db*]
+    (tf/testing "the composite foreign key rejects a mismatched pair"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (is (thrown? Exception
+                     (observation.i/create!
+                       db {:resource-type :material
+                           :resource-id (:material/id material)
+                           ;; `severe` belongs to pest and disease, never to
+                           ;; phenology. The database is what refuses this.
+                           :type "phenology"
+                           :value "severe"
+                           :observed-on "2026-03-14"
+                           :created-by (:user/id user)})))))))
+
+(deftest test-a-general-observation-needs-no-value
+  (let [db *db*]
+    (tf/testing "general carries prose and no value"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "general"
+                            :observed-on "2026-03-14"
+                            :note "Label needs replacing"
+                            :created-by (:user/id user)})]
+          (is (match? {:observation/type "general"
+                       :observation/value nil
+                       :observation/note "Label needs replacing"}
+                      created))
+          (observation.i/delete! db (:observation/id created)))))))
+
+(deftest test-get-for-resource-is-scoped-to-its-own-resource
+  (let [db *db*]
+    (tf/testing "get-for-resource"
+      (material-fixtures db)
+      (fn [{:keys [user material location]}]
+        (let [on-material (observation.i/create!
+                            db {:resource-type :material
+                                :resource-id (:material/id material)
+                                :type "condition"
+                                :value "good"
+                                :observed-on "2026-03-14"
+                                :created-by (:user/id user)})
+              on-location (observation.i/create!
+                            db {:resource-type :location
+                                :resource-id (:location/id location)
+                                :type "pest"
+                                :value "moderate"
+                                :observed-on "2026-03-15"
+                                :created-by (:user/id user)})]
+          (is (match? [{:observation/id (:observation/id on-material)}]
+                      (observation.i/get-for-resource
+                        db :material (:material/id material))))
+          (is (match? [{:observation/id (:observation/id on-location)}]
+                      (observation.i/get-for-resource
+                        db :location (:location/id location))))
+          (is (= 1 (observation.i/count-for-resource
+                     db :material (:material/id material))))
+          (observation.i/delete! db (:observation/id on-material))
+          (observation.i/delete! db (:observation/id on-location)))))))
+
+(deftest test-due-returns-only-rows-on-or-before-the-date
+  (let [db *db*]
+    (tf/testing "due"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [base {:resource-type :material
+                    :resource-id (:material/id material)
+                    :type "condition"
+                    :value "fair"
+                    :observed-on "2026-03-01"
+                    :created-by (:user/id user)}
+              overdue (observation.i/create!
+                        db (assoc base :next-check-on "2026-03-10"))
+              today (observation.i/create!
+                      db (assoc base :next-check-on "2026-03-14"))
+              later (observation.i/create!
+                      db (assoc base :next-check-on "2026-04-01"))
+              ;; No next-check-on at all. The row a `<=` with no null guard
+              ;; would silently include or exclude depending on the dialect.
+              never (observation.i/create! db base)
+              ids (set (map :observation/id
+                            (observation.i/due db "2026-03-14")))]
+          (is (contains? ids (:observation/id overdue)))
+          (is (contains? ids (:observation/id today)))
+          (is (not (contains? ids (:observation/id later))))
+          (is (not (contains? ids (:observation/id never))))
+          (doseq [o [overdue today later never]]
+            (observation.i/delete! db (:observation/id o))))))))
+
+(deftest test-delete-for-resource-clears-only-that-resource
+  (let [db *db*]
+    (tf/testing "delete-for-resource!"
+      (material-fixtures db)
+      (fn [{:keys [user material location]}]
+        (let [on-material (observation.i/create!
+                            db {:resource-type :material
+                                :resource-id (:material/id material)
+                                :type "general"
+                                :observed-on "2026-03-14"
+                                :note "goes away"
+                                :created-by (:user/id user)})
+              on-location (observation.i/create!
+                            db {:resource-type :location
+                                :resource-id (:location/id location)
+                                :type "general"
+                                :observed-on "2026-03-14"
+                                :note "stays"
+                                :created-by (:user/id user)})]
+          (observation.i/delete-for-resource! db :material (:material/id material))
+          (is (nil? (observation.i/get-by-id db (:observation/id on-material))))
+          (is (some? (observation.i/get-by-id db (:observation/id on-location))))
+          (observation.i/delete! db (:observation/id on-location)))))))
