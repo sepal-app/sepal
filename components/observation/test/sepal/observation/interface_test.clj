@@ -61,7 +61,10 @@
     (tf/testing "the composite foreign key rejects a mismatched pair"
       (material-fixtures db)
       (fn [{:keys [user material]}]
-        (is (thrown? Exception
+        ;; org.sqlite.SQLiteException, not a bare Exception: the point of this
+        ;; test is that the database refuses the pair, so it must fail if the
+        ;; refusal ever moved to spec coercion instead.
+        (is (thrown? org.sqlite.SQLiteException
                      (observation.i/create!
                        db {:resource-type :material
                            :resource-id (:material/id material)
@@ -88,6 +91,25 @@
                        :observation/value nil
                        :observation/note "Label needs replacing"}
                       created))
+          (observation.i/delete! db (:observation/id created)))))))
+
+(deftest test-update
+  (let [db *db*]
+    (tf/testing "update!"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "condition"
+                            :value "fair"
+                            :observed-on "2026-03-14"
+                            :created-by (:user/id user)})
+              updated (observation.i/update!
+                        db (:observation/id created) {:value "good"})]
+          (is (= "good" (:observation/value updated)))
+          (is (= (:observation/type created) (:observation/type updated)))
+          (is (= (:observation/observed-on created) (:observation/observed-on updated)))
           (observation.i/delete! db (:observation/id created)))))))
 
 (deftest test-get-for-resource-is-scoped-to-its-own-resource
@@ -120,6 +142,33 @@
           (observation.i/delete! db (:observation/id on-material))
           (observation.i/delete! db (:observation/id on-location)))))))
 
+(deftest test-get-for-resource-orders-newest-observed-first
+  (let [db *db*]
+    (tf/testing "get-for-resource"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [base {:resource-type :material
+                    :resource-id (:material/id material)
+                    :type "general"
+                    :created-by (:user/id user)}
+              earliest (observation.i/create!
+                         db (assoc base :observed-on "2026-03-01" :note "earliest"))
+              ;; Two observations on the same day: id is what breaks the tie,
+              ;; since SQLite's datetime('now') has one-second resolution and
+              ;; created_at cannot.
+              same-day-first (observation.i/create!
+                               db (assoc base :observed-on "2026-03-10" :note "same day, created first"))
+              same-day-second (observation.i/create!
+                                db (assoc base :observed-on "2026-03-10" :note "same day, created second"))
+              latest (observation.i/create!
+                       db (assoc base :observed-on "2026-03-15" :note "latest"))]
+          (is (= [(:observation/id latest) (:observation/id same-day-second)
+                  (:observation/id same-day-first) (:observation/id earliest)]
+                 (mapv :observation/id
+                       (observation.i/get-for-resource db :material (:material/id material)))))
+          (doseq [o [earliest same-day-first same-day-second latest]]
+            (observation.i/delete! db (:observation/id o))))))))
+
 (deftest test-due-returns-only-rows-on-or-before-the-date
   (let [db *db*]
     (tf/testing "due"
@@ -140,12 +189,15 @@
               ;; No next-check-on at all. The row a `<=` with no null guard
               ;; would silently include or exclude depending on the dialect.
               never (observation.i/create! db base)
-              ids (set (map :observation/id
-                            (observation.i/due db "2026-03-14")))]
+              results (observation.i/due db "2026-03-14")
+              ids (set (map :observation/id results))]
           (is (contains? ids (:observation/id overdue)))
           (is (contains? ids (:observation/id today)))
           (is (not (contains? ids (:observation/id later))))
           (is (not (contains? ids (:observation/id never))))
+          (is (= [(:observation/id overdue) (:observation/id today)]
+                 (mapv :observation/id results))
+              "oldest first")
           (doseq [o [overdue today later never]]
             (observation.i/delete! db (:observation/id o))))))))
 
