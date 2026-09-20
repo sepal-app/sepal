@@ -14,6 +14,7 @@
             [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
             [sepal.note.interface :as note.i]
+            [sepal.observation.interface :as observation.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -123,16 +124,18 @@
                                                  :location (ig/ref :key/location)})
     (fn [{:keys [user material]}]
       (let [id (:material/id material)
-            note (note.i/create! *db* {:body "a material note"
-                                       :resource-type :material
-                                       :resource-id id
-                                       :created-by (:user/id user)})]
+            observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id id
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "a material observation"
+                                                     :created-by (:user/id user)})]
         (try
           (is (empty? (app.delete/blockers :material *db* material))
               "nothing references material except material_change, which cascades")
           (is (nil? (app.delete/delete! :material *db* material (:user/id user))))
           (is (nil? (material.i/get-by-id *db* id)))
-          (is (nil? (note.i/get-by-id *db* (:note/id note))))
+          (is (nil? (observation.i/get-by-id *db* (:observation/id observation))))
           (finally
             (clear-activity! user)))))))
 
@@ -222,6 +225,26 @@
         (finally
           (clear-activity! user))))))
 
+(deftest test-deleting-a-location-takes-its-observations
+  (tf/testing "delete! :location clears observations"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (let [id (:location/id location)
+            observation (observation.i/create! *db* {:resource-type :location
+                                                     :resource-id id
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "a location observation"
+                                                     :created-by (:user/id user)})]
+        (try
+          (is (empty? (app.delete/blockers :location *db* location)))
+          (is (nil? (app.delete/delete! :location *db* location (:user/id user))))
+          (is (nil? (location.i/get-by-id *db* id)))
+          (is (nil? (observation.i/get-by-id *db* (:observation/id observation))))
+          (finally
+            (clear-activity! user)))))))
+
 ;;; ---------------------------------------------------------------------------
 ;;; contact
 
@@ -267,22 +290,30 @@
 ;;; ---------------------------------------------------------------------------
 ;;; labels
 
-(deftest test-every-note-bearing-resource-cascades-its-links
+(deftest test-every-polymorphic-resource-cascades-its-links
   ;; Replaces the guard in no-resource-delete-test, which asserted that no
   ;; route deleted an accession, material or taxon at all -- true until this
   ;; plan, and named 049 as the day it would stop being true.
   ;;
   ;; The invariant it protected still holds and still needs guarding: a note,
-  ;; a tag link and a media link all hang off a polymorphic resource_id with no
-  ;; foreign key behind it, so a delete path that forgets one strands rows that
-  ;; leak into the next record to reuse the id. The behavioural tests above
-  ;; prove it for the paths they exercise; this proves no method was added
-  ;; without it.
+  ;; an observation, a tag link and a media link all hang off a polymorphic
+  ;; resource_id with no foreign key behind it, so a delete path that forgets
+  ;; one strands rows that leak into the next record to reuse the id. The
+  ;; behavioural tests above prove it for the paths they exercise; this proves
+  ;; no method was added without it.
   (let [source (slurp "bases/app/src/sepal/app/delete.clj")]
-    (doseq [resource ["accession" "material" "taxon"]
-            [cascade f] [["note" "note.i/delete-for-resource!"]
-                         ["tag" "tag.i/delete-for-resource!"]
-                         ["media" "media.i/unlink-resource!"]]]
+    (doseq [[resource cascades]
+            [["accession" [["note" "note.i/delete-for-resource!"]
+                           ["tag" "tag.i/delete-for-resource!"]
+                           ["media" "media.i/unlink-resource!"]]]
+             ["material" [["observation" "observation.i/delete-for-resource!"]
+                          ["tag" "tag.i/delete-for-resource!"]
+                          ["media" "media.i/unlink-resource!"]]]
+             ["taxon" [["note" "note.i/delete-for-resource!"]
+                       ["tag" "tag.i/delete-for-resource!"]
+                       ["media" "media.i/unlink-resource!"]]]
+             ["location" [["observation" "observation.i/delete-for-resource!"]]]]
+            [cascade f] cascades]
       (is (re-find (re-pattern (str (java.util.regex.Pattern/quote f)
                                     " tx :" resource))
                    source)

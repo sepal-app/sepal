@@ -184,10 +184,13 @@
                           {"body" "an imported note"
                            "resource_type" "accession"}
                           {"resource_id" (ref-to "accession" accession)})
-                     (rec (str "plant_note:50-" suffix)
-                          {"body" "same id, other table"
-                           "resource_type" "material"}
-                          {"resource_id" (ref-to "material" material)})
+                     ;; Same numeric id as the note above, and the same
+                     ;; accession -- the id prefix is the only thing telling
+                     ;; the loader these are two different rows.
+                     (rec (str "second_accession_note:50-" suffix)
+                          {"body" "same id, other prefix"
+                           "resource_type" "accession"}
+                          {"resource_id" (ref-to "accession" accession)})
                      ;; A note on the taxon this run created. The converter
                      ;; used to hang this on the taxon record as a field, and
                      ;; the loader dropped it.
@@ -251,7 +254,7 @@
             (let [m (json/read-str (slurp (fs/file (fs/path dir
                                                             "loaded.json"))))]
               (is (not= (get-in m ["note" "accession_note:50-a"])
-                        (get-in m ["note" "plant_note:50-a"])))))
+                        (get-in m ["note" "second_accession_note:50-a"])))))
 
           (testing "every file that creates rows records where they came from"
             ;; A create whose id key `landed-id` does not know records nothing,

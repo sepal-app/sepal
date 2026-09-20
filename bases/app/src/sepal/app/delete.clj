@@ -25,6 +25,7 @@
             [sepal.material.interface.activity :as material.activity]
             [sepal.media.interface :as media.i]
             [sepal.note.interface :as note.i]
+            [sepal.observation.interface :as observation.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -71,7 +72,7 @@
 (defmethod delete!* :material [_ tx material deleted-by]
   (let [id (:material/id material)]
     (material.activity/create! tx material.activity/deleted deleted-by material)
-    (note.i/delete-for-resource! tx :material id)
+    (observation.i/delete-for-resource! tx :material id)
     (tag.i/delete-for-resource! tx :material id)
     (media.i/unlink-resource! tx :material id)
     ;; material_change cascades by foreign key
@@ -115,8 +116,10 @@
          (filterv some?))))
 
 (defmethod delete!* :location [_ tx location deleted-by]
-  (location.activity/create! tx location.activity/deleted deleted-by location)
-  (location.i/delete! tx (:location/id location)))
+  (let [id (:location/id location)]
+    (location.activity/create! tx location.activity/deleted deleted-by location)
+    (observation.i/delete-for-resource! tx :location id)
+    (location.i/delete! tx id)))
 
 ;;; ---------------------------------------------------------------------------
 ;;; contact
