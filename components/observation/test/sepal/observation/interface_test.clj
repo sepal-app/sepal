@@ -7,10 +7,13 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
+            [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
+            [sepal.observation.interface.search]
+            [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -251,6 +254,44 @@
           (finally
             ;; Clean up activity records before user fixture cleanup
             (next.jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-search-filters-by-type-value-and-date-range
+  (let [db *db*]
+    (tf/testing "the search-config registered under :observation"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [base {:resource-type :material
+                    :resource-id (:material/id material)
+                    :created-by (:user/id user)}
+              in-range (observation.i/create!
+                         db (assoc base :type "phenology" :value "flowering"
+                                   :observed-on "2026-03-05"))
+              ;; Same type and value, but its date falls outside the range
+              ;; the query asks for.
+              out-of-range (observation.i/create!
+                             db (assoc base :type "phenology" :value "flowering"
+                                       :observed-on "2026-04-01"))
+              ;; Inside the date range, but a different type and value.
+              other-type (observation.i/create!
+                           db (assoc base :type "condition" :value "fair"
+                                     :observed-on "2026-03-05"))
+              ;; Built as an AST rather than through search.i/parse: the
+              ;; query grammar's field names are `[a-z][a-z0-9]*` with no
+              ;; hyphen, so a hyphenated key like observed-on can never be
+              ;; typed into the search box as a filter. That is a limitation
+              ;; of the shared parser, not of this config, so it is worked
+              ;; around here rather than fixed.
+              ast {:terms []
+                   :filters [{:field "type" :value "phenology" :negated false}
+                             {:field "value" :value "flowering" :negated false}
+                             {:field "observed-on" :op ">=" :value "2026-03-01" :negated false}
+                             {:field "observed-on" :op "<=" :value "2026-03-10" :negated false}]}
+              stmt (search.i/compile-query
+                     :observation ast {:select [:o.id] :from [[:observation :o]]})
+              ids (set (map :observation/id (db.i/execute! db stmt)))]
+          (is (= #{(:observation/id in-range)} ids))
+          (doseq [o [in-range out-of-range other-type]]
+            (observation.i/delete! db (:observation/id o))))))))
 
 (deftest test-list-types-and-list-values
   (tf/testing "the seeded lookup tables, which the Type and Value fields read"
