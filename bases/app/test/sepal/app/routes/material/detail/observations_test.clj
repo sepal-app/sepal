@@ -39,6 +39,10 @@
 (defn- observations-url [material]
   (str "/material/" (:material/id material) "/observations/"))
 
+(defn- observation-url [material observation]
+  (str "/material/" (:material/id material) "/observations/"
+       (:observation/id observation) "/"))
+
 (defn- cleanup-activity! [user]
   ;; The route logs an activity whose created_by is a not-null FK to user —
   ;; left behind, it blocks the fixture teardown from deleting this test's
@@ -54,6 +58,26 @@
             body (Jsoup/parse ^String (:body response))]
         (is (= 200 (:status response)))
         (is (some? (.selectFirst body "[data-observations-empty]")))))))
+
+(deftest test-get-shows-an-existing-observation
+  (tf/testing "GET /material/:id/observations/ renders a pre-existing observation"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "phenology"
+                                                     :value "flowering"
+                                                     :observed-on "2026-03-14"
+                                                     :observed-by "A volunteer"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (some? (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))))
+        (is (some? (.selectFirst body "form#observation-form")))
+        (is (.contains (.text body) "Flowering"))
+        (observation.i/delete! *db* (:observation/id observation))))))
 
 (deftest test-post-creates-an-observation-with-a-value
   (tf/testing "POST with a type and a value that belong together"
@@ -148,6 +172,59 @@
                                                       :note "Not yet"})]
         (is (= 422 (:status response)))
         (is (empty? (observation.i/get-for-resource *db* :material (:material/id material))))))))
+
+(deftest test-post-with-a-past-next-check-on-is-accepted
+  (tf/testing "a next_check_on in the past is how you backfill"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [url (observations-url material)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess url)
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :type "general"
+                                                      :value ""
+                                                      :observed_on "2026-03-14"
+                                                      :observed_by ""
+                                                      :next_check_on "2020-01-01"
+                                                      :note "Backfilled"})]
+        (is (= 200 (:status response)))
+        (let [observations (observation.i/get-for-resource *db* :material (:material/id material))]
+          (is (= 1 (count observations)))
+          (is (= "2020-01-01" (:observation/next-check-on (first observations))))
+          (observation.i/delete! *db* (:observation/id (first observations)))
+          (cleanup-activity! user))))))
+
+(deftest test-editing-with-a-future-date-targets-that-items-own-error-id
+  (tf/testing "an edit form's error swap targets its own field, not the create form's or another item's"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "existing"
+                                                     :created-by (:user/id user)})
+            url (observation-url material observation)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (observations-url material))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :type "general"
+                                                      :value ""
+                                                      :observed_on "2099-01-01"
+                                                      :observed_by ""
+                                                      :next_check_on ""
+                                                      :note "existing"})]
+        (is (= 422 (:status response)))
+        (is (.contains (:body response)
+                       (str "id=\"observed_on-" (:observation/id observation) "-errors\"")))
+        (is (not (.contains (:body response) "id=\"observed_on-errors\"")))
+        (observation.i/delete! *db* (:observation/id observation))))))
 
 (deftest test-the-material-tab-offers-no-way-to-write-a-note
   (tf/testing "the tab list says Observations, not Notes"

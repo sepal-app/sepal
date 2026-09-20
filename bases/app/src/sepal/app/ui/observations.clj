@@ -10,6 +10,67 @@
 (defn- today []
   (str (LocalDate/now)))
 
+(defn- dated-field
+  "A date input. Not `ui.form/input-field`: that helper keys the error-list
+  id off the same `:name` it submits under, and the create form and every
+  item's own inline edit form each render a field named `observed_on` --
+  passing an item's suffixed id straight through as `input-field`'s `:name`
+  would submit under the wrong key. Building the input here keeps the real
+  `name` attribute fixed while the id -- and so the error-list id `field`
+  derives from it -- can carry the suffix."
+  [& {:keys [id-suffix name label value errors]}]
+  (let [id (str name (when id-suffix (str "-" id-suffix)))
+        described-by (ui.form/describedby id {:errors errors})]
+    (ui.form/field :label label
+                   :name id
+                   :for id
+                   :errors errors
+                   :input [:input (cond-> {:autocomplete "off"
+                                           :class "spl-input"
+                                           :id id
+                                           :name name
+                                           :type "date"
+                                           :value value}
+                                    (seq errors) (assoc :aria-invalid "true")
+                                    described-by (assoc :aria-describedby described-by))])))
+
+(defn- text-input-field
+  "A plain text input, for the same reason `dated-field` exists rather than
+  reusing `ui.form/input-field`."
+  [& {:keys [id-suffix name label value errors]}]
+  (let [id (str name (when id-suffix (str "-" id-suffix)))
+        described-by (ui.form/describedby id {:errors errors})]
+    (ui.form/field :label label
+                   :name id
+                   :for id
+                   :errors errors
+                   :input [:input (cond-> {:autocomplete "off"
+                                           :class "spl-input"
+                                           :id id
+                                           :name name
+                                           :type "text"
+                                           :value value}
+                                    (seq errors) (assoc :aria-invalid "true")
+                                    described-by (assoc :aria-describedby described-by))])))
+
+(defn- note-field
+  "The Notes textarea, for the same reason `dated-field` exists rather than
+  reusing `ui.form/textarea-field`."
+  [& {:keys [id-suffix value errors]}]
+  (let [id (str "note" (when id-suffix (str "-" id-suffix)))
+        described-by (ui.form/describedby id {:errors errors})]
+    (ui.form/field :label "Notes"
+                   :name id
+                   :for id
+                   :errors errors
+                   :input [:textarea (cond-> {:autocomplete "off"
+                                              :class "spl-input spl-textarea"
+                                              :id id
+                                              :name "note"}
+                                       (seq errors) (assoc :aria-invalid "true")
+                                       described-by (assoc :aria-describedby described-by))
+                           value])))
+
 (defn- type-value-fields
   "The Type and Value pair. Value's options track the selected Type in the
   browser, via a JSON map of every type's values passed in as x-data, and the
@@ -27,7 +88,7 @@
                              :value (:value values)
                              :valueOptionsByType value-options-by-type})}
      (ui.form/field :label "Type"
-                    :name "type"
+                    :name type-id
                     :for type-id
                     :errors (:type errors)
                     :input [:select {:name "type"
@@ -42,7 +103,7 @@
                                label])])
      [:div {:x-show "type !== 'general'"}
       (ui.form/field :label "Value"
-                     :name "value"
+                     :name value-id
                      :for value-id
                      :errors (:value errors)
                      :input [:select {:name "value"
@@ -59,36 +120,30 @@
   "Every field an observation carries, shared by the create form and each
   item's inline edit form."
   [& {:keys [id-suffix errors values type-options value-options-by-type]}]
-  (let [suffix (when id-suffix (str "-" id-suffix))
-        fid (fn [base] (str base suffix))]
-    (list
-      (type-value-fields :id-suffix id-suffix
-                         :errors errors
-                         :values values
-                         :type-options type-options
-                         :value-options-by-type value-options-by-type)
-      (ui.form/input-field :label "Observed on"
-                           :name "observed_on"
-                           :id (fid "observed_on")
-                           :type "date"
-                           :value (or (:observed_on values) (today))
-                           :errors (:observed_on errors))
-      (ui.form/input-field :label "Observed by"
-                           :name "observed_by"
-                           :id (fid "observed_by")
-                           :value (:observed_by values)
-                           :errors (:observed_by errors))
-      (ui.form/input-field :label "Next check"
-                           :name "next_check_on"
-                           :id (fid "next_check_on")
-                           :type "date"
-                           :value (:next_check_on values)
-                           :errors (:next_check_on errors))
-      (ui.form/textarea-field :label "Notes"
-                              :name "note"
-                              :id (fid "note")
-                              :value (:note values)
-                              :errors (:note errors)))))
+  (list
+    (type-value-fields :id-suffix id-suffix
+                       :errors errors
+                       :values values
+                       :type-options type-options
+                       :value-options-by-type value-options-by-type)
+    (dated-field :id-suffix id-suffix
+                 :name "observed_on"
+                 :label "Observed on"
+                 :value (or (:observed_on values) (today))
+                 :errors (:observed_on errors))
+    (text-input-field :id-suffix id-suffix
+                      :name "observed_by"
+                      :label "Observed by"
+                      :value (:observed_by values)
+                      :errors (:observed_by errors))
+    (dated-field :id-suffix id-suffix
+                 :name "next_check_on"
+                 :label "Next check"
+                 :value (:next_check_on values)
+                 :errors (:next_check_on errors))
+    (note-field :id-suffix id-suffix
+                :value (:note values)
+                :errors (:note errors))))
 
 (defn- observation-item
   "One observation: its type, value, note and metadata, and an edit form for

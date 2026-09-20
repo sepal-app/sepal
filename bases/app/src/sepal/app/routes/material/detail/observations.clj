@@ -36,6 +36,21 @@
   (when (pos? (compare observed-on (str (LocalDate/now))))
     (error.i/error ::future-observed-on future-date-message)))
 
+(defn- future-date-error
+  "The OOB error swap for a rejected observed_on.
+
+  `id-suffix` has to match the field's own id: the create form's
+  observed_on has no suffix, but each observation's inline edit form
+  suffixes every field's id with its own observation id so the same field
+  name can appear more than once on the page. A bare :observed_on here
+  would paint an edit form's error onto the create form's error list, or
+  onto another item's hidden one, instead of the field the curator is
+  actually looking at."
+  [id-suffix]
+  (http/validation-errors
+    {(keyword (str "observed_on" (when id-suffix (str "-" id-suffix))))
+     [future-date-message]}))
+
 (defn- value-options-by-type
   "Every observation_value, grouped by type and shaped for the Value field's
   Alpine data: `{type -> [{:value code :label label}]}`."
@@ -134,7 +149,7 @@
           ;; The one failure this route classifies itself: a future date is a
           ;; field error, not a generic save failure.
           (if (error.i/error? e ::future-observed-on)
-            (http/validation-errors {:observed_on [future-date-message]})
+            (future-date-error nil)
             (http/failure-partial e "The observation could not be saved."))))
 
       (let [panel-data (material.panel/fetch-panel-data db resource)]
@@ -173,7 +188,7 @@
           (render-list db resource)
           (f/when-failed [e]
             (if (error.i/error? e ::future-observed-on)
-              (http/validation-errors {:observed_on [future-date-message]})
+              (future-date-error observation-id)
               (http/failure-partial e "The observation could not be saved."))))
 
         :delete
