@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [matcher-combinators.test :refer [match?]]
+            [next.jdbc.sql :as next.jdbc.sql]
             [sepal.accession.interface :as accession.i]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -9,6 +10,7 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -224,3 +226,28 @@
           (is (nil? (observation.i/get-by-id db (:observation/id on-material))))
           (is (some? (observation.i/get-by-id db (:observation/id on-location))))
           (observation.i/delete! db (:observation/id on-location)))))))
+
+(deftest test-activity-names-the-subject-not-the-observation
+  (let [db *db*]
+    (tf/testing "an event points at the material, so the record's history shows it"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (try
+          (let [created (observation.i/create!
+                          db {:resource-type :material
+                              :resource-id (:material/id material)
+                              :type "phenology"
+                              :value "flowering"
+                              :observed-on "2026-03-14"
+                              :created-by (:user/id user)})
+                event (observation.activity/create!
+                        db observation.activity/created (:user/id user) created)]
+            (is (match? {:activity/type :observation/created
+                         :activity/resource-type :material
+                         :activity/resource-id (:material/id material)
+                         :activity/data {:observation-id (:observation/id created)}}
+                        event))
+            (observation.i/delete! db (:observation/id created)))
+          (finally
+            ;; Clean up activity records before user fixture cleanup
+            (next.jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
