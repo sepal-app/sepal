@@ -108,7 +108,11 @@
   (->> (str/split (or q "") #"\s+")
        (remove str/blank?)))
 
-(defn- overdue-term [today]
+(defn overdue-term
+  "The overdue filter term the index's own toggle applies: `due:<=<today>`.
+  Public so another page linking in to the overdue filter builds the
+  identical term rather than risking drift."
+  [today]
   (str "due:<=" today))
 
 (defn- toggle-overdue-query
