@@ -13,6 +13,9 @@
             [next.jdbc :as jdbc]
             [pogonos.core :as mustache]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.backup.core :as backup]
+            [sepal.app.backup.local :as backup.local]
+            [sepal.app.backup.protocols :as backup.p]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
@@ -91,11 +94,12 @@
    [:media-key-prefix MediaKeyPrefix]
    [:media-cache-dir [:string {:min 1}]]
    [:backup-dir [:string {:min 1}]]
-   ;; Something outside this process operates the backup schedule and retention:
-   ;; a control plane, or a self-hoster's own cron and offsite copy. The settings
-   ;; page then lists the backups it finds and offers no schedule to change,
-   ;; because changing it here would not change what actually runs.
-   [:managed-backups? {:optional true} :boolean]
+   ;; Where this garden's backups are written to, listed from and downloaded
+   ;; through. Omitted, the app uses :backup-dir on this machine and its own
+   ;; schedule — which is what a self-hosted install does. A caller that
+   ;; operates backups elsewhere injects its own, built for this garden alone.
+   [:backup-store {:optional true}
+    [:fn #(satisfies? backup.p/BackupStore %)]]
    [:media-cache-size-mb {:optional true} pos-int?]
    [:start-server? {:optional true} :boolean]
    [:jetty-host {:optional true} [:maybe :string]]
@@ -132,6 +136,15 @@
    [:materials [:int {:min 0}]]
    [:users [:int {:min 0}]]
    [:media-bytes [:int {:min 0}]]])
+
+(def BackupResult
+  "What backup! returns. Closed, so widening it is a deliberate change to this
+  published API rather than a silent change to what the injected store is
+  allowed to hand back."
+  [:map {:closed true}
+   [:filename [:string {:min 1}]]
+   [:size-bytes [:int {:min 0}]]
+   [:created-at inst?]])
 
 (defn- validate!
   [schema opts what]
@@ -340,8 +353,14 @@
 (defmethod ig/init-key ::setup-job [_ _]
   (atom setup.shared/initial-job-state))
 
+(defn- resolve-backup-store
+  "The injected store, or the local one over :backup-dir when the caller omits
+  it — what every self-hosted install runs."
+  [backup-store backup-dir]
+  (or backup-store (backup.local/->LocalBackupStore backup-dir)))
+
 (defn- instance-config
-  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir managed-backups?
+  [process {:keys [slug db-path schema-version app-domain app-base-url media-key-prefix media-cache-dir media-cache-size-mb backup-dir backup-store
                    start-server? jetty-host jetty-port
                    vite hot-reload reload-per-request? cache-manifest?
                    forgot-password-email-from forgot-password-email-subject
@@ -411,7 +430,7 @@
                         :media-upload-bucket (:media-upload-bucket process)
                         :media-key-prefix media-key-prefix
                         :backup-dir backup-dir
-                        :managed-backups? (boolean managed-backups?)
+                        :backup-store (resolve-backup-store backup-store backup-dir)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
@@ -425,7 +444,8 @@
       :zodiac (ig/ref :sepal.app.server/zodiac)
       :mail (:mail process)
       :app-base-url (base-url opts)
-      :backup-dir backup-dir}}
+      :backup-dir backup-dir
+      :backup-store (resolve-backup-store backup-store backup-dir)}}
 
     hot-reload
     (assoc :sepal.app.server/zodiac-hot-reload hot-reload)))
@@ -630,6 +650,10 @@
   [instance]
   (get-in instance [:system :sepal.app.server/zodiac ::z.sql/db]))
 
+(defn- instance-backup-store
+  [instance]
+  (get-in instance [:system :sepal.app.backup/job :backup-store]))
+
 (defn create-admin-user!
   "Create an active admin user in a running instance and mark its setup wizard
   complete. Takes the instance rather than a path so the caller never holds a
@@ -766,4 +790,24 @@
                 :users (user.i/count-all db)
                 :media-bytes (media.i/total-size-in-bytes db)}]
     (validate! Usage result "usage")
+    result))
+
+(defn backup!
+  "Back this instance's database up through its store, and return
+  {:filename :size-bytes :created-at}, validated before it is returned so a
+  caller cannot receive a shape that quietly changed.
+
+  For a caller that operates the schedule itself: the instance's own job does
+  not run when its store manages the schedule, so this is the only thing that
+  produces a backup for such a garden. Throws if the backup was created but
+  could not be stored.
+
+  Takes the instance rather than a path, like `usage`: the caller never holds a
+  database handle, and the store came from this instance's opts with this
+  garden's location closed over, so there is no argument here that could name
+  another garden's backups."
+  [instance]
+  (let [result (backup.p/put-backup (instance-backup-store instance)
+                                    #(backup/create-backup! (instance-db instance) %))]
+    (validate! BackupResult result "backup")
     result))

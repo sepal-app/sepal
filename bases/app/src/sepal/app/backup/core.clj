@@ -6,6 +6,7 @@
             [clojure.tools.logging :as log]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
+            [sepal.app.backup.protocols :as backup.p]
             [sepal.app.datetime :as datetime]
             [sepal.database.interface :as db.i]
             [sepal.mail.interface :as mail.i]
@@ -28,12 +29,11 @@
    :last-run-at "backup.last_run_at"})
 
 (defn get-config
-  "Get backup configuration from settings, for the given backup directory."
-  [db backup-dir]
+  "Get backup configuration from settings."
+  [db]
   (let [settings (settings.i/get-values db "backup")]
     {:frequency (some-> (get settings (:frequency setting-keys))
                         keyword)
-     :path backup-dir
      :last-run-at (some-> (get settings (:last-run-at setting-keys))
                           Instant/parse)}))
 
@@ -311,48 +311,48 @@
 
 (defn- backup-task
   "Create a backup task function for the scheduler."
-  [db mail app-base-url backup-dir]
+  [db mail app-base-url store]
   (fn [_scheduled-time]
-    (let [dir-check (ensure-backup-dir! backup-dir)]
-      (if-not (:valid? dir-check)
-        (do
-          (log/error "Backup directory check failed:" (:error dir-check))
-          (send-backup-failure-email! mail db (:error dir-check)))
-        (try
-          (let [result (create-backup! db (:path dir-check))]
-            (set-config! db {:last-run-at (Instant/now)})
-            (send-backup-success-email! mail db app-base-url result))
-          (catch Exception e
-            (log/error e "Scheduled backup failed")
-            (send-backup-failure-email! mail db (.getMessage e))))))))
+    (try
+      (let [result (backup.p/put-backup store #(create-backup! db %))]
+        (set-config! db {:last-run-at (Instant/now)})
+        (send-backup-success-email! mail db app-base-url result))
+      (catch Exception e
+        (log/error e "Scheduled backup failed")
+        (send-backup-failure-email! mail db (.getMessage e))))))
 
 (defn register-backup-job!
   "Register the backup job with the scheduler based on current config.
    Called on app startup and when config changes.
 
-   Frequency of nil means backups are disabled."
-  [scheduler db mail app-base-url backup-dir]
-  (let [config (get-config db backup-dir)
-        frequency (:frequency config)]
-    (if frequency
-      (do
-        (log/info "Registering backup job with frequency:" frequency)
-        (scheduler.i/schedule! scheduler
-                               :backup
-                               (map #(.toInstant ^ZonedDateTime %)
-                                    (backup-schedule frequency))
-                               (backup-task db mail app-base-url backup-dir)))
-      (do
-        (log/info "Backup not configured, cancelling any existing job")
-        (scheduler.i/cancel! scheduler :backup)))))
+   Frequency of nil means backups are disabled. A store that manages the
+   schedule means this garden has no schedule of its own: nothing is registered
+   and nothing is cancelled, because there was never a job here to cancel."
+  [scheduler db mail app-base-url store]
+  (if (backup.p/manages-schedule? store)
+    (log/info "Backups are operated outside this instance; registering no job")
+    (let [config (get-config db)
+          frequency (:frequency config)]
+      (if frequency
+        (do
+          (log/info "Registering backup job with frequency:" frequency)
+          (scheduler.i/schedule! scheduler
+                                 :backup
+                                 (map #(.toInstant ^ZonedDateTime %)
+                                      (backup-schedule frequency))
+                                 (backup-task db mail app-base-url store)))
+        (do
+          (log/info "Backup not configured, cancelling any existing job")
+          (scheduler.i/cancel! scheduler :backup))))))
 
 ;; -----------------------------------------------------------------------------
 ;; Integrant lifecycle
 
-(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-base-url backup-dir]}]
+(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-base-url backup-dir backup-store]}]
   (let [db (get zodiac :zodiac.ext.sql/db)]
-    (register-backup-job! scheduler db mail app-base-url backup-dir)
-    {:scheduler scheduler :db db :mail mail :app-base-url app-base-url :backup-dir backup-dir}))
+    (register-backup-job! scheduler db mail app-base-url backup-store)
+    {:scheduler scheduler :db db :mail mail :app-base-url app-base-url
+     :backup-dir backup-dir :backup-store backup-store}))
 
 (defmethod ig/halt-key! :sepal.app.backup/job [_ {:keys [scheduler]}]
   (scheduler.i/cancel! scheduler :backup))
