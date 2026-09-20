@@ -3,6 +3,9 @@
 (def index ::index)
 (def new ::new)
 (def detail ::detail)
+(def detail-general ::detail-general)
+(def detail-observations ::detail-observations)
+(def detail-observation ::detail-observation)
 (def export ::export)
 
 (def panel ::panel)

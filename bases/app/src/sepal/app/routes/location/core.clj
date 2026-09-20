@@ -4,6 +4,7 @@
             [sepal.app.routes.location.create :as create]
             [sepal.app.routes.location.delete :as delete]
             [sepal.app.routes.location.detail :as detail]
+            [sepal.app.routes.location.detail.general :as detail-general]
             [sepal.app.routes.location.export :as export]
             [sepal.app.routes.location.index :as index]
             [sepal.app.routes.location.panel :as panel]
@@ -34,6 +35,10 @@
             :conflicting true}
     ["/" {:name routes/detail
           :handler #'detail/handler}]
+    ["/general/" {:name routes/detail-general
+                  :middleware [[(middleware/require-permission-or-redirect
+                                  location.perm/edit (constantly routes/detail))]]
+                  :handler #'detail-general/handler}]
     ["/delete/" {:name routes/delete
                  :middleware [[(middleware/require-permission-or-redirect
                                  location.perm/delete (constantly routes/detail))]]
