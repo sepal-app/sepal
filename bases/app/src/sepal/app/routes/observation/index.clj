@@ -1,5 +1,6 @@
 (ns sepal.app.routes.observation.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.location.routes :as location.routes]
@@ -52,8 +53,7 @@
     :stacked (fn [row] (table/summary (subject-label row) (:observation/observed-on row)))
     :cell (fn [row]
             [:a {:href (z/url-for observation.routes/detail {:id (:observation/id row)})
-                 :class "spl-link"
-                 :x-on:click.stop ""}
+                 :class "spl-link"}
              (:observation/type-label row)
              (when-let [value-label (:observation/value-label row)]
                (str ": " value-label))])}
@@ -62,8 +62,7 @@
     :priority 2
     :cell (fn [row]
             [:a {:href (subject-href row)
-                 :class "spl-link"
-                 :x-on:click.stop ""}
+                 :class "spl-link"}
              (subject-label row)])}
    {:name "Observed"
     :type :date
@@ -105,25 +104,36 @@
                               was about."
                                 :searching? (seq search-query)))))
 
-(defn- overdue-query [today]
+(defn- query-tokens [q]
+  (->> (str/split (or q "") #"\s+")
+       (remove str/blank?)))
+
+(defn- overdue-term [today]
   (str "due:<=" today))
+
+(defn- toggle-overdue-query
+  "The query the Overdue link points at: the overdue term added to whatever
+  is already there, or removed from it if it is already applied. Additive
+  rather than replacing, so ticking it narrows an existing search instead of
+  discarding it."
+  [search-query today]
+  (let [term (overdue-term today)
+        tokens (query-tokens search-query)]
+    (if (some #{term} tokens)
+      (str/join " " (remove #{term} tokens))
+      (str/join " " (conj (vec tokens) term)))))
 
 (defn- overdue-toggle
   "A one-click way to reach the overdue filter, rather than something a
-  curator has to know the `due:<=<today>` syntax to type. Active state is
-  literal-string matching against the whole query rather than parsing it,
-  which is enough for a control that only ever writes or clears its own exact
-  value."
+  curator has to know the `due:<=<today>` syntax to type."
   [search-query today]
-  (let [target (overdue-query today)
-        active? (= (some-> search-query str) target)
-        href (if active?
-               "?"
-               (str "?" (uri/map->query-string {:q target})))]
+  (let [term (overdue-term today)
+        active? (contains? (set (query-tokens search-query)) term)
+        target (toggle-overdue-query search-query today)]
     [:a {:class (html/attr "spl-btn" "spl-btn--sm"
                            (if active? "spl-btn--primary" "spl-btn--ghost")
                            "gap-1")
-         :href href}
+         :href (str "?" (uri/map->query-string (cond-> {} (seq target) (assoc :q target))))}
      (lucide/triangle-alert :class "size-4")
      [:span (if active? "Showing overdue" "Overdue")]]))
 

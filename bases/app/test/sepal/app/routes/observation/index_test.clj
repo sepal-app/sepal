@@ -130,6 +130,50 @@
             link (.selectFirst body "a[href*=due]")]
         (is (some? link) "a link applies the overdue filter without typing it")))))
 
+(deftest test-the-overdue-toggle-adds-to-an-existing-query-rather-than-replacing-it
+  (tf/testing "clicking Overdue with a filter already typed"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/" "q" "type:phenology")
+            link (.selectFirst body "a[href*=due]")
+            href (.attr link "href")]
+        (is (some? link))
+        (is (.contains href "type") "the existing filter is still in the toggle's href")
+        (is (.contains href "due") "the overdue term is added to it")))))
+
+(deftest test-a-combined-query-of-a-filter-and-overdue-narrows-and-shows-active
+  (tf/testing "type:phenology plus due:<=<today> applies both filters"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [today (LocalDate/now)
+            matching (create! :resource-type :material
+                              :resource-id (:material/id material)
+                              :user user
+                              :type "phenology"
+                              :observed-on "2026-01-01"
+                              :next-check-on (str (.minusDays today 5)))
+            right-type-not-overdue (create! :resource-type :material
+                                            :resource-id (:material/id material)
+                                            :user user
+                                            :type "phenology"
+                                            :observed-on "2026-01-01"
+                                            :next-check-on (str (.plusDays today 5)))
+            overdue-but-wrong-type (create! :resource-type :material
+                                            :resource-id (:material/id material)
+                                            :user user
+                                            :type "condition"
+                                            :observed-on "2026-01-01"
+                                            :next-check-on (str (.minusDays today 5)))
+            sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/" "q" (str "type:phenology due:<=" today))]
+        (is (= #{(str (:observation/id matching))} (row-ids body))
+            "both filters narrow together")
+        (is (some? (.selectFirst body "a:contains(Showing overdue)"))
+            "the toggle reflects that the overdue term is already in the query")
+        (doseq [o [matching right-type-not-overdue overdue-but-wrong-type]]
+          (observation.i/delete! *db* (:observation/id o)))))))
+
 (deftest test-a-material-observations-row-links-to-the-material
   (tf/testing "a material observation's Subject cell links to the material"
     (fixtures)
