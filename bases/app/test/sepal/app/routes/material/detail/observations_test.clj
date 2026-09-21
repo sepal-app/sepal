@@ -4,6 +4,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -11,6 +12,7 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
@@ -241,6 +243,83 @@
         (is (.contains (:body response)
                        (str "id=\"observed_on-" (:observation/id observation) "-errors\"")))
         (is (not (.contains (:body response) "id=\"observed_on-errors\"")))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-post-to-an-observation-updates-it
+  (tf/testing "POST /material/:id/observations/:observation-id/"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "before"
+                                                     :created-by (:user/id user)})
+            url (observation-url material observation)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (observations-url material))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :type "general"
+                                                      :value ""
+                                                      :observed_on "2026-03-14"
+                                                      :observed_by ""
+                                                      :next_check_on ""
+                                                      :note "after"})]
+        (is (= 200 (:status response)))
+        (is (= "after" (:observation/note (observation.i/get-by-id *db* (:observation/id observation)))))
+        (is (some #(= observation.activity/updated (:activity/type %))
+                  (activity.i/get-by-resource *db* :resource-type :material :resource-id (:material/id material))))
+        (observation.i/delete! *db* (:observation/id observation))
+        (cleanup-activity! user)))))
+
+(deftest test-delete-removes-the-observation
+  (tf/testing "DELETE /material/:id/observations/:observation-id/"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "written by mistake"
+                                                     :created-by (:user/id user)})
+            url (observation-url material observation)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (observations-url material))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :delete
+                                             :headers {"x-csrf-token" token})]
+        (is (= 200 (:status response)))
+        (is (nil? (observation.i/get-by-id *db* (:observation/id observation))))
+        (is (some #(= observation.activity/deleted (:activity/type %))
+                  (activity.i/get-by-resource *db* :resource-type :material :resource-id (:material/id material))))
+        (cleanup-activity! user)))))
+
+(deftest test-an-observation-belonging-to-another-resource-is-not-reachable
+  (tf/testing "DELETE with an observation-id from a different subject"
+    (fixtures)
+    (fn [{:keys [user material location]}]
+      ;; The observation is on the location; the URL says material. Without a
+      ;; check that the observation belongs to the resource in the path, any
+      ;; observation in the garden is deletable through any resource's URL.
+      (let [observation (observation.i/create! *db* {:resource-type :location
+                                                     :resource-id (:location/id location)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :note "on the location"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (observations-url material))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess
+                                             (observation-url material observation)
+                                             :request-method :delete
+                                             :headers {"x-csrf-token" token})]
+        (is (= 404 (:status response)))
+        (is (some? (observation.i/get-by-id *db* (:observation/id observation))))
         (observation.i/delete! *db* (:observation/id observation))))))
 
 (deftest test-the-material-tab-offers-no-way-to-write-a-note
