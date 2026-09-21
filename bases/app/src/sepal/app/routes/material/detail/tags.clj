@@ -39,6 +39,7 @@
                            :content (page-content :material material :accession accession
                                                   :taxon taxon :tags tags :all-tags all-tags)
                            :panel-content (material.panel/panel-content
+                                            :panel-data panel-data
                                             :material (:material panel-data)
                                             :accession (:accession panel-data)
                                             :taxon (:taxon panel-data)

@@ -106,6 +106,7 @@
                                       :observations observations
                                       :timezone timezone)
                :panel-content (location.panel/panel-content
+                                :panel-data panel-data
                                 :location (:location panel-data)
                                 :stats (:stats panel-data)
                                 :awaiting (:awaiting panel-data)

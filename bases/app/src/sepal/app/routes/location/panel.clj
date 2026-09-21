@@ -7,8 +7,11 @@
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.shared :as propagation.shared]
+            [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.material.interface :as mat.i]
+            [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
 
 (defn panel-content
@@ -23,8 +26,11 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [location stats awaiting moved-out activities activity-count timezone on-close]}]
-  (let [{:location/keys [id name code description]} location
+  [& {:as opts}]
+  (let [{:keys [location stats awaiting moved-out activities activity-count timezone
+                on-close propagations type-labels status-labels]}
+        (merge (:panel-data opts) opts)
+        {:location/keys [id name code description]} location
         {:keys [material-count]} stats]
     (panel/panel-container
       :children
@@ -105,6 +111,14 @@
                   (str "to " to)
                   "removed")]]])])
 
+        ;; Propagations running here: what is on the bench alongside the
+        ;; material filed at it.
+        (ui.propagations/panel-section
+          :propagations propagations
+          :type-labels type-labels
+          :status-labels status-labels
+          :empty-label "nothing running here")
+
         ;; Activity section
         (panel/collapsible-section
           :title "Activity"
@@ -133,13 +147,20 @@
                                                :limit 5)
         activity-count (activity.i/count-by-resource db
                                                      :resource-type :location
-                                                     :resource-id location-id)]
+                                                     :resource-id location-id)
+        ;; The worklist: a completed or failed batch is history, not something
+        ;; on the bench. The raw row holds the stored string, not the keyword.
+        propagations (filter #(= "active" (name (:propagation/status %)))
+                             (propagation.i/list-by-location-id db location-id))]
     {:location location
      :stats {:material-count material-count}
      :awaiting awaiting
      :moved-out moved-out
      :activities activities
-     :activity-count activity-count}))
+     :activity-count activity-count
+     :propagations propagations
+     :type-labels (propagation.shared/type-labels db)
+     :status-labels (propagation.shared/status-labels db)}))
 
 (defn handler
   "Handler for location panel route. Returns HTML fragment for HTMX."
@@ -148,6 +169,7 @@
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
+        :panel-data panel-data
         :location (:location panel-data)
         :stats (:stats panel-data)
         :awaiting (:awaiting panel-data)

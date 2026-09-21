@@ -49,6 +49,7 @@
                                                :reasons reasons
                                                :taxon taxon)
                         :panel-content (material.panel/panel-content
+                                         :panel-data panel-data
                                          :material (:material panel-data)
                                          :accession (:accession panel-data)
                                          :taxon (:taxon panel-data)

@@ -164,6 +164,7 @@
                                                :taxon taxon
                                                :values values)
                         :panel-content (accession.panel/panel-content
+                                         :panel-data panel-data
                                          :accession (:accession panel-data)
                                          :taxon (:taxon panel-data)
                                          :supplier (:supplier panel-data)

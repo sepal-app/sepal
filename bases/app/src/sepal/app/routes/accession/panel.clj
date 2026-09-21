@@ -2,6 +2,7 @@
   "Resource panel content for accessions.
    Displays accession summary, statistics, linked resources, and activity."
   (:require [clojure.string :as str]
+            [sepal.accession.interface :as accession.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
@@ -10,8 +11,10 @@
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.shared :as propagation.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.notes :as ui.notes]
+            [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
@@ -19,6 +22,7 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as mat.i]
             [sepal.note.interface :as note.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -45,9 +49,12 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [accession taxon supplier intended-location stats notes note-count
-             activities activity-count timezone on-close actions]}]
-  (let [{:accession/keys [id code provenance-type received-type quantity-received
+  [& {:as opts}]
+  (let [{:keys [accession taxon supplier intended-location stats notes note-count
+                activities activity-count timezone on-close actions
+                propagations origin origin-parent type-labels status-labels]}
+        (merge (:panel-data opts) opts)
+        {:accession/keys [id code provenance-type received-type quantity-received
                           date-received date-accessioned]} accession
         {:keys [material-count]} stats
         sci-name (:taxon/name taxon)]
@@ -122,6 +129,16 @@
           :children
           (external-links/taxonomic-links-section :taxon-name sci-name))
 
+        ;; Propagations off this accession without a named plant, and the one
+        ;; that produced the accession itself.
+        (ui.propagations/panel-section
+          :propagations propagations
+          :origin origin
+          :origin-parent origin-parent
+          :type-labels type-labels
+          :status-labels status-labels
+          :empty-label "nothing grown from this accession")
+
         ;; Activity section
         (panel/collapsible-section
           :title "Activity"
@@ -157,7 +174,17 @@
                                                :limit 5)
         activity-count (activity.i/count-by-resource db
                                                      :resource-type :accession
-                                                     :resource-id accession-id)]
+                                                     :resource-id accession-id)
+        ;; Only the propagations that did not name a plant: one taken from an
+        ;; individual shows on that material's panel instead, so the same
+        ;; batch is not listed twice under one accession.
+        propagations (filter #(nil? (:propagation/parent-material-id %))
+                             (propagation.i/list-by-parent-accession-id db accession-id))
+        origin (some->> (:accession/propagation-id accession)
+                        (propagation.i/get-by-id db))
+        origin-parent (when origin
+                        (some->> (:propagation/parent-accession-id origin)
+                                 (accession.i/get-by-id db)))]
     {:accession accession
      :taxon taxon
      :supplier supplier
@@ -166,7 +193,12 @@
      :notes notes
      :note-count note-count
      :activities activities
-     :activity-count activity-count}))
+     :activity-count activity-count
+     :propagations propagations
+     :origin origin
+     :origin-parent origin-parent
+     :type-labels (propagation.shared/type-labels db)
+     :status-labels (propagation.shared/status-labels db)}))
 
 (defn handler
   "Handler for accession panel route. Returns HTML fragment for HTMX."
@@ -175,6 +207,7 @@
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
+        :panel-data panel-data
         :accession (:accession panel-data)
         :taxon (:taxon panel-data)
         :supplier (:supplier panel-data)

@@ -10,14 +10,17 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.shared :as propagation.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.observations :as ui.observations]
+            [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
@@ -97,9 +100,12 @@
    - :activity-count - Total activity count
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
-  [& {:keys [material accession taxon location history observations observation-count
-             activities activity-count timezone on-close actions]}]
-  (let [{:material/keys [code material-type quantity status]} material
+  [& {:as opts}]
+  (let [{:keys [material accession taxon location history observations observation-count
+                activities activity-count timezone on-close actions
+                propagations origin origin-parent type-labels status-labels]}
+        (merge (:panel-data opts) opts)
+        {:material/keys [code material-type quantity status]} material
         sci-name (:taxon/name taxon)]
     (panel/panel-container
       :children
@@ -158,6 +164,16 @@
           :children
           (external-links/taxonomic-links-section :taxon-name sci-name))
 
+        ;; What this plant has been used to grow, and the propagation that
+        ;; produced the plant itself.
+        (ui.propagations/panel-section
+          :propagations propagations
+          :origin origin
+          :origin-parent origin-parent
+          :type-labels type-labels
+          :status-labels status-labels
+          :empty-label "nothing grown from this plant")
+
         ;; Activity section
         (panel/collapsible-section
           :title "Activity"
@@ -204,7 +220,12 @@
                                                :limit 5)
         activity-count (activity.i/count-by-resource db
                                                      :resource-type :material
-                                                     :resource-id material-id)]
+                                                     :resource-id material-id)
+        propagations (propagation.i/list-by-parent-material-id db material-id)
+        origin (some->> (:material/propagation-id material)
+                        (propagation.i/get-by-id db))
+        origin-parent (when origin
+                        (acc.i/get-by-id db (:propagation/parent-accession-id origin)))]
     {:material material
      :accession accession
      :taxon taxon
@@ -213,7 +234,12 @@
      :observations observations
      :observation-count observation-count
      :activities activities
-     :activity-count activity-count}))
+     :activity-count activity-count
+     :propagations propagations
+     :origin origin
+     :origin-parent origin-parent
+     :type-labels (propagation.shared/type-labels db)
+     :status-labels (propagation.shared/status-labels db)}))
 
 (defn handler
   "Handler for material panel route. Returns HTML fragment for HTMX."
@@ -222,6 +248,7 @@
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
+        :panel-data panel-data
         :material (:material panel-data)
         :accession (:accession panel-data)
         :taxon (:taxon panel-data)

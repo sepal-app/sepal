@@ -15,6 +15,7 @@
                   (:material/code material)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (material.panel/panel-content
+                :panel-data panel-data
                 :material (:material panel-data)
                 :accession (:accession panel-data)
                 :taxon (:taxon panel-data)
