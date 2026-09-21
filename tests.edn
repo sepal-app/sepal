@@ -23,6 +23,7 @@
                         "components/media/test"
                         "components/note/test"
                         "components/observation/test"
+                        "components/propagation/test"
                         "components/scheduler/test"
                         "components/search/test"
                         "components/settings/test"
