@@ -26,6 +26,7 @@
             [sepal.media.interface :as media.i]
             [sepal.note.interface :as note.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -48,7 +49,12 @@
 ;;; accession
 
 (defmethod blockers :accession [_ db accession]
-  (->> [(counted :material (material.i/count-by-accession-id db (:accession/id accession)))]
+  (->> [(counted :material (material.i/count-by-accession-id db (:accession/id accession)))
+        ;; A propagation is history: the record of a genotype the garden grew.
+        ;; Deleting the accession it came off would leave that record naming
+        ;; nothing.
+        (counted :propagation-parent
+                 (propagation.i/count-by-parent-accession-id db (:accession/id accession)))]
        (filterv some?)))
 
 (defmethod delete!* :accession [_ tx accession deleted-by]
@@ -65,9 +71,13 @@
 ;;; ---------------------------------------------------------------------------
 ;;; material
 
-(defmethod blockers :material [_ _db _material]
-  ;; Nothing references material except material_change, which cascades.
-  [])
+(defmethod blockers :material [_ db material]
+  ;; material_change cascades. A propagation naming this plant does not: it is
+  ;; the record of what was grown from it, and removing the plant would leave
+  ;; the record naming nothing.
+  (->> [(counted :propagation-parent
+                 (propagation.i/count-by-parent-material-id db (:material/id material)))]
+       (filterv some?)))
 
 (defmethod delete!* :material [_ tx material deleted-by]
   (let [id (:material/id material)]
@@ -89,6 +99,10 @@
           ;; delete: removing it would quietly rewrite another taxon's
           ;; ancestry, so this refuses and says so.
           (counted :parentage (taxon.i/count-parentage-children db id))
+          ;; A graft's rootstock. The taxon is a service the scion sits on, and
+          ;; a propagation record that names it cannot outlive it.
+          (counted :propagation-rootstock
+                   (propagation.i/count-by-rootstock-taxon-id db id))
           ;; Reference data this garden received, not a record it authored.
           ;; Pressing delete on one is a mis-click.
           (when (:taxon/wfo-taxon-id taxon) {:reason :wfo :count 1})]
@@ -112,7 +126,11 @@
 (defmethod blockers :location [_ db location]
   (let [id (:location/id location)]
     (->> [(counted :material (material.i/count-by-location-id db id))
-          (counted :material-change (material.i/count-changes-by-location-id db id))]
+          (counted :material-change (material.i/count-changes-by-location-id db id))
+          ;; A bench with a batch running on it. Closing the batch out as
+          ;; complete or failed is the way to let the bench go.
+          (counted :propagation-location
+                   (propagation.i/count-by-location-id db id))]
          (filterv some?))))
 
 (defmethod delete!* :location [_ tx location deleted-by]
@@ -152,6 +170,9 @@
    :accession "%d accession(s) reference this"
    :child-taxon "%d taxa name this one as their parent"
    :parentage "%d cross(es) name this taxon as a parent"
+   :propagation-parent "%d propagation(s) name this as their parent"
+   :propagation-rootstock "%d propagation(s) use this taxon as a rootstock"
+   :propagation-location "%d propagation(s) are running at this location"
    :wfo "This name comes from the World Flora Online list"})
 
 (defn blocker-label [{:keys [reason count]}]

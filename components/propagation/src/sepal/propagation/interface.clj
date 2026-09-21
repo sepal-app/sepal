@@ -34,5 +34,17 @@
 (defn list-by-location-id [db location-id]
   (core/list-by-location-id db location-id))
 
+(defn count-by-parent-accession-id [db accession-id]
+  (core/count-by-parent-accession-id db accession-id))
+
+(defn count-by-parent-material-id [db material-id]
+  (core/count-by-parent-material-id db material-id))
+
+(defn count-by-rootstock-taxon-id [db taxon-id]
+  (core/count-by-rootstock-taxon-id db taxon-id))
+
+(defn count-by-location-id [db location-id]
+  (core/count-by-location-id db location-id))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

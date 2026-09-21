@@ -56,6 +56,30 @@
                      :where [:= :location_id location-id]
                      :order-by [[:propagated_on :desc] [:id :desc]]}))
 
+;; The counts the delete path asks for. A propagation is history like a
+;; material_change, so a parent, bench or rootstock it names cannot be deleted
+;; while it exists.
+
+(defn count-by-parent-accession-id [db accession-id]
+  (db.i/count db {:select [:id]
+                  :from [:propagation]
+                  :where [:= :parent_accession_id accession-id]}))
+
+(defn count-by-parent-material-id [db material-id]
+  (db.i/count db {:select [:id]
+                  :from [:propagation]
+                  :where [:= :parent_material_id material-id]}))
+
+(defn count-by-rootstock-taxon-id [db taxon-id]
+  (db.i/count db {:select [:id]
+                  :from [:propagation]
+                  :where [:= :rootstock_taxon_id taxon-id]}))
+
+(defn count-by-location-id [db location-id]
+  (db.i/count db {:select [:id]
+                  :from [:propagation]
+                  :where [:= :location_id location-id]}))
+
 (create-ns 'sepal.propagation.interface)
 (alias 'prop.i 'sepal.propagation.interface)
 
