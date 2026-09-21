@@ -109,12 +109,13 @@
     (let [scheduled (atom [])
           cancelled (atom [])
           logged (atom [])]
-      ;; sepal.app.instance-test boots instances with :log-level "WARN" at
-      ;; least six times; each boot reaches sepal.logging.interface's global
-      ;; (tel/set-min-level! nil "sepal.*" ...) through sepal.app.instance's
-      ;; instance-config, and it is never restored. Depending on test order,
-      ;; that can leave :info log/log* calls unsent here. Force it back so
-      ;; this assertion does not depend on what ran before it.
+      ;; sepal.app.instance-test calls start-process! with :log-level "WARN"
+      ;; at seven call sites; each one reaches sepal.logging.interface's
+      ;; global (tel/set-min-level! nil "sepal.*" ...) through
+      ;; sepal.app.instance's process-config, and it is never restored.
+      ;; Depending on test order, that can leave :info log/log* calls unsent
+      ;; here. Force it back so this assertion does not depend on what ran
+      ;; before it.
       (tel/set-min-level! nil "sepal.*" :info)
       (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))
                     scheduler.i/cancel! (fn [_ id] (swap! cancelled conj id))
