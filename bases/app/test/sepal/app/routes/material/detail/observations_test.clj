@@ -79,6 +79,23 @@
         (is (.contains (.text body) "Flowering"))
         (observation.i/delete! *db* (:observation/id observation))))))
 
+(deftest test-get-shows-the-creating-user-when-observed-by-is-empty
+  (tf/testing "GET /material/:id/observations/ falls back to the creating user"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))
+            row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
+        (is (some? (.selectFirst row "[data-observation-observer]")))
+        (is (.contains (.text row) (:user/email user)))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
 (deftest test-post-creates-an-observation-with-a-value
   (tf/testing "POST with a type and a value that belong together"
     (fixtures)

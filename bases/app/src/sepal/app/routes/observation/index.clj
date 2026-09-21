@@ -13,6 +13,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z])
@@ -75,7 +76,7 @@
    {:name "Observer"
     :type :text
     :priority 5
-    :cell :observation/observed-by}])
+    :cell observation.i/observer}])
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
@@ -177,6 +178,10 @@
   {:select [:o.*
             [:t.label :observation__type_label]
             [:v.label :observation__value_label]
+            ;; Aliased to :observation/author-email, not the bare :user/email
+            ;; a plain `:u.email` would give, so the Observer column can share
+            ;; observation.i/observer with the subject's own tab.
+            [:u.email :observation__author_email]
             :acc.code
             :m.code
             :l.code
@@ -185,6 +190,7 @@
    :join-by [:left [[:observation_type :t] [:= :t.code :o.type]]
              :left [[:observation_value :v]
                     [:and [:= :v.type :o.type] [:= :v.code :o.value]]]
+             :left [[:user :u] [:= :u.id :o.created_by]]
              :left [[:material :m]
                     [:and [:= :o.resource_type "material"] [:= :m.id :o.resource_id]]]
              :left [[:accession :acc] [:= :acc.id :m.accession_id]]

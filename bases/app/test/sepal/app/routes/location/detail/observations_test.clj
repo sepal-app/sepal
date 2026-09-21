@@ -66,6 +66,23 @@
         (is (.contains (.text body) "Flowering"))
         (observation.i/delete! *db* (:observation/id observation))))))
 
+(deftest test-get-shows-the-creating-user-when-observed-by-is-empty
+  (tf/testing "GET /location/:id/observations/ falls back to the creating user"
+    (fixtures)
+    (fn [{:keys [user location]}]
+      (let [observation (observation.i/create! *db* {:resource-type :location
+                                                     :resource-id (:location/id location)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url location))
+            body (Jsoup/parse ^String (:body response))
+            row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
+        (is (some? (.selectFirst row "[data-observation-observer]")))
+        (is (.contains (.text row) (:user/email user)))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
 (deftest test-post-creates-a-pest-observation-and-it-appears-on-the-page
   (tf/testing "a pest observation recorded against a glasshouse location appears on that location's page"
     (fixtures)

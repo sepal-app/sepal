@@ -51,7 +51,7 @@
                          {:label "Value" :value value-label}
                          {:label "Observed" :value (:observation/observed-on observation)}
                          {:label "Next check" :value (:observation/next-check-on observation)}
-                         {:label "Observed by" :value (:observation/observed-by observation)}
+                         {:label "Observed by" :value (:observation/observer observation)}
                          {:label "Note" :value (:observation/note observation)}])]))
 
 (defn handler [{:keys [::z/context]}]

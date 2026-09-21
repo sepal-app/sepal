@@ -2,16 +2,31 @@
   (:require [integrant.core :as ig]
             [sepal.observation.core :as core]))
 
-(defn get-by-id [db id]
+(defn get-by-id
+  "One observation, or nil when id doesn't match a row. Carries
+  :observation/observer, :observation/author-email, :observation/type-label
+  and :observation/value-label -- see `get-for-resource`."
+  [db id]
   (core/get-by-id db id))
 
 (defn get-for-resource
   "A resource's observations, newest observed first. Each carries
+  :observation/observer -- :observation/observed-by when it's set, else the
+  creating user's email, and nil when neither is present -- plus
   :observation/author-email, :observation/type-label and
-  :observation/value-label; the first is nil for a row with no author and the
-  last is nil for a general observation, which has no value."
+  :observation/value-label; author-email is nil for a row with no author and
+  value-label is nil for a general observation, which has no value."
   [db resource-type resource-id]
   (core/get-for-resource db resource-type resource-id))
+
+(defn observer
+  "The same fallback `get-for-resource` computes into
+  `:observation/observer`, for a caller with its own
+  `:observation/observed-by` and `:observation/author-email` columns rather
+  than a full observation map -- the observation index's own query, which
+  joins those in itself."
+  [observation]
+  (core/observer observation))
 
 (defn count-for-resource
   "How many observations a resource has."
@@ -20,7 +35,8 @@
 
 (defn due
   "Observations whose next_check_on is on or before `on-date`, oldest first.
-  `on-date` is an ISO-8601 string. Rows with no next_check_on never appear."
+  `on-date` is an ISO-8601 string. Rows with no next_check_on never appear.
+  Each carries :observation/observer -- see `get-for-resource`."
   [db on-date]
   (core/due db on-date))
 

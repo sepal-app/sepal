@@ -151,7 +151,7 @@
   fetching it saves a route and a handler on each of the resources this is
   used from."
   [& {:keys [observation observation-url-fn type-options value-options-by-type]}]
-  (let [{:observation/keys [id observed-on observed-by note author-email
+  (let [{:observation/keys [id observed-on observed-by note observer
                             type-label value-label type value
                             next-check-on]} observation
         url (observation-url-fn id)]
@@ -161,16 +161,15 @@
      [:div {:x-show "!editing"}
       [:div {:class "spl-note-meta text-xs text-text-soft flex items-center gap-2"}
        [:span observed-on]
-       (when observed-by
-         [:span {:data-observation-observed-by ""} observed-by])
-       ;; The 1,643 notes imported from Bauble have no author. The element is
-       ;; absent rather than empty, so nothing renders a stray separator.
-       (when author-email
-         [:span {:data-observation-author ""} author-email])]
+       ;; observer falls back from observed_by to the creating user, and an
+       ;; imported row has neither -- the element is absent rather than
+       ;; empty, the way ui/notes.clj handles the same gap.
+       (when observer
+         [:span {:data-observation-observer ""} observer])]
       [:div {:class "text-sm font-medium"}
        type-label
        ;; A general observation has no value-label. Absent rather than an
-       ;; empty span, the way the author-email line above works.
+       ;; empty span, the way the observer line above works.
        (when value-label
          [:span (str ": " value-label)])]
       (when note

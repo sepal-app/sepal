@@ -12,8 +12,12 @@
    :observation/observed-by :observation/next-check-on :observation/note
    :observation/created-by :observation/created-at])
 
-(defn get-by-id [db id]
-  (store.i/get-by-id db :observation id spec/Observation))
+(defn observer
+  "Who to credit for an observation: `:observation/observed-by` when it's
+  set, else the creating user's email, so a volunteer with no user account
+  still names someone and a row with neither renders nothing."
+  [observation]
+  (or (:observation/observed-by observation) (:observation/author-email observation)))
 
 (defn- row->observation
   "A joined row carries the author's email and the two lookup labels alongside
@@ -26,10 +30,11 @@
   the result-set builder's label-fn (sepal.database.core) already treats as a
   namespace separator, so that is the alias base-query actually uses."
   [row]
-  (-> (store.i/coerce spec/Observation (select-keys row own-keys))
-      (assoc :observation/author-email (:user/email row)
-             :observation/type-label (:observation-type/label row)
-             :observation/value-label (:observation-value/label row))))
+  (let [observation (-> (store.i/coerce spec/Observation (select-keys row own-keys))
+                        (assoc :observation/author-email (:user/email row)
+                               :observation/type-label (:observation-type/label row)
+                               :observation/value-label (:observation-value/label row)))]
+    (assoc observation :observation/observer (observer observation))))
 
 (def ^:private base-query
   "Every read joins the same three tables. `value` is nullable, so
@@ -44,6 +49,14 @@
                [:observation_value :v] [:and
                                         [:= :v.type :o.type]
                                         [:= :v.code :o.value]]]})
+
+(defn get-by-id
+  "One observation, joined the same way `get-for-resource` is so the fallback
+  in `:observation/observer` works from either. nil when id doesn't match a
+  row."
+  [db id]
+  (some-> (db.i/execute-one! db (assoc base-query :where [:= :o.id id]))
+          row->observation))
 
 (defn get-for-resource
   "A resource's observations, newest observed first.

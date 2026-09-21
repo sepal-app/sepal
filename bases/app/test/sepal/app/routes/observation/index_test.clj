@@ -208,6 +208,35 @@
         (is (some? (.selectFirst row (str "a[href='" href "']"))))
         (observation.i/delete! *db* (:observation/id observation))))))
 
+(deftest test-the-observer-column-falls-back-to-the-creating-user
+  (tf/testing "no observed_by set -- the Observer cell shows who logged it"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (create! :resource-type :material
+                                 :resource-id (:material/id material)
+                                 :user user
+                                 :type "general"
+                                 :observed-on "2026-01-01")
+            sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/")
+            row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
+        (is (.contains (.text row) (:user/email user)))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-the-detail-page-shows-the-creating-user-when-observed-by-is-empty
+  (tf/testing "GET /observation/:id/ falls back to the creating user for Observed by"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (create! :resource-type :material
+                                 :resource-id (:material/id material)
+                                 :user user
+                                 :type "general"
+                                 :observed-on "2026-01-01")
+            sess (app.test/login (:user/email user) password)
+            body (fetch sess (str "/observation/" (:observation/id observation) "/"))]
+        (is (.contains (.text body) (:user/email user)))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
 (deftest test-a-row-links-to-its-own-detail-page
   (tf/testing "GET /observation/:id/ shows the observation and its subject"
     (fixtures)

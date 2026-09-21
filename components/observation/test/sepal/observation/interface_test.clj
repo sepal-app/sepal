@@ -61,6 +61,49 @@
           (is (nil? (observation.i/get-by-id db 999999)))
           (observation.i/delete! db (:observation/id created)))))))
 
+(deftest test-observed-by-wins-over-the-creating-user
+  (let [db *db*]
+    (tf/testing "an explicit observed_by is the observer, not the creating user"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "general"
+                            :observed-on "2026-03-14"
+                            :observed-by "A volunteer"
+                            :created-by (:user/id user)})]
+          (is (= "A volunteer" (:observation/observer (observation.i/get-by-id db (:observation/id created)))))
+          (observation.i/delete! db (:observation/id created)))))))
+
+(deftest test-observer-falls-back-to-the-creating-user
+  (let [db *db*]
+    (tf/testing "an empty observed_by falls back to the creating user's email"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "general"
+                            :observed-on "2026-03-14"
+                            :created-by (:user/id user)})]
+          (is (nil? (:observation/observed-by created)))
+          (is (= (:user/email user) (:observation/observer (observation.i/get-by-id db (:observation/id created)))))
+          (observation.i/delete! db (:observation/id created)))))))
+
+(deftest test-observer-is-nil-with-neither-observed-by-nor-a-creating-user
+  (let [db *db*]
+    (tf/testing "an imported row with no author and no observed_by has no observer"
+      (material-fixtures db)
+      (fn [{:keys [material]}]
+        (let [created (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "general"
+                            :observed-on "2026-03-14"})]
+          (is (nil? (:observation/observer (observation.i/get-by-id db (:observation/id created)))))
+          (observation.i/delete! db (:observation/id created)))))))
+
 (deftest test-a-value-from-another-type-is-refused
   (let [db *db*]
     (tf/testing "the composite foreign key rejects a mismatched pair"
