@@ -55,6 +55,7 @@
             [sepal.note.interface.activity]
             [sepal.note.interface.spec :as note.spec]
             [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity]
             [sepal.observation.interface.spec :as observation.spec]
             [sepal.settings.interface :as settings.i]
             [sepal.synonym.interface :as synonym.i]
