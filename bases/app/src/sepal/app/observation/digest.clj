@@ -21,10 +21,9 @@
 (def ^:private default-send-at
   "07:00")
 
-;; Never used elsewhere; the invitation and password-reset emails already have
-;; a per-garden :from configured in the request context, but the digest has
-;; no request and no setting of its own for one.
-(def ^:private digest-email-from
+;; Falls back to this when the job's :from is unset -- the same default
+;; sepal.app.instance uses for invitation and password-reset mail.
+(def ^:private default-digest-email-from
   "noreply@sepal.app")
 
 (defn get-config
@@ -75,11 +74,12 @@
 
 (defn send-digest!
   "Email `recipients` a single message listing every observation due on or
-  before `on-date` (an ISO-8601 string). Returns how many were listed, or nil
-  and sends nothing when none are due."
-  [db mail recipients on-date]
+  before `on-date` (an ISO-8601 string), from `from` (or the default address
+  when nil). Returns how many were listed, or nil and sends nothing when none
+  are due."
+  [db mail recipients on-date from]
   (when-let [due (seq (observation.i/due db on-date))]
-    (mail.i/send-message mail {:from digest-email-from
+    (mail.i/send-message mail {:from (or from default-digest-email-from)
                                :to recipients
                                :subject (digest-subject (count due))
                                :body (digest-body due)})
@@ -104,10 +104,10 @@
          (iterate #(.plusDays ^ZonedDateTime % 1) next-at))))
 
 (defn- digest-task
-  [db mail recipient]
+  [db mail recipient from]
   (fn [_scheduled-time]
     (try
-      (send-digest! db mail recipient (str (LocalDate/now)))
+      (send-digest! db mail recipient (str (LocalDate/now)) from)
       (catch Exception e
         (log/error e "Scheduled observation digest failed")))))
 
@@ -118,22 +118,22 @@
   Guards on the mail client rather than on the config: with no client this
   logs once and registers nothing, rather than scheduling a job that would
   fail on every run."
-  [{:keys [db mail scheduler]}]
+  [{:keys [db mail scheduler from]}]
   (if-not mail
     (log/info "No mail client; observation digest not scheduled")
     (let [{:keys [enabled send-at recipient]} (get-config db)]
       (if (and enabled recipient)
         (scheduler.i/schedule! scheduler :observation-digest
                                (daily-at send-at)
-                               (digest-task db mail recipient))
+                               (digest-task db mail recipient from))
         (scheduler.i/cancel! scheduler :observation-digest)))))
 
 ;; -----------------------------------------------------------------------------
 ;; Integrant lifecycle
 
-(defmethod ig/init-key :sepal.app.observation/digest-job [_ {:keys [scheduler zodiac mail]}]
+(defmethod ig/init-key :sepal.app.observation/digest-job [_ {:keys [scheduler zodiac mail from]}]
   (let [db (get zodiac :zodiac.ext.sql/db)]
-    (schedule-digest! {:db db :mail mail :scheduler scheduler})
+    (schedule-digest! {:db db :mail mail :scheduler scheduler :from from})
     {:scheduler scheduler}))
 
 (defmethod ig/halt-key! :sepal.app.observation/digest-job [_ {:keys [scheduler]}]

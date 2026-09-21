@@ -52,7 +52,7 @@
   (testing "nothing due -> nil and no email"
     (clear-sent-messages!)
     (let [result (digest/send-digest! *db* *mail-client* "curator@test.com"
-                                      (str (LocalDate/now)))]
+                                      (str (LocalDate/now)) "garden@test.com")]
       (is (nil? result))
       (is (empty? (sent-messages))))))
 
@@ -67,7 +67,8 @@
                                      :note "Check the irrigation")
           not-due (create-observation! :next-check-on (str (.plusDays today 5)))]
       (try
-        (let [result (digest/send-digest! *db* *mail-client* "curator@test.com" on-date)
+        (let [result (digest/send-digest! *db* *mail-client* "curator@test.com" on-date
+                                          "garden@test.com")
               messages (sent-messages)]
           (is (= 2 result) "the count of due observations")
           (is (= 1 (count messages)) "one message, not one per observation")
@@ -78,15 +79,42 @@
           (doseq [o [due-1 due-2 not-due]]
             (observation.i/delete! *db* (:observation/id o))))))))
 
+(deftest test-send-digest-uses-the-configured-from-address-when-present
+  (testing "a configured from-address is used rather than the default"
+    (clear-sent-messages!)
+    (let [today (LocalDate/now)
+          on-date (str today)
+          due (create-observation! :next-check-on on-date)]
+      (try
+        (digest/send-digest! *db* *mail-client* "curator@test.com" on-date
+                             "curator-noreply@garden.org")
+        (is (= "curator-noreply@garden.org" (:from (first (sent-messages)))))
+        (finally
+          (observation.i/delete! *db* (:observation/id due)))))))
+
+(deftest test-send-digest-falls-back-to-the-default-from-address-when-absent
+  (testing "no from-address configured -> the default sender is used"
+    (clear-sent-messages!)
+    (let [today (LocalDate/now)
+          on-date (str today)
+          due (create-observation! :next-check-on on-date)]
+      (try
+        (digest/send-digest! *db* *mail-client* "curator@test.com" on-date nil)
+        (is (= "noreply@sepal.app" (:from (first (sent-messages)))))
+        (finally
+          (observation.i/delete! *db* (:observation/id due)))))))
+
 (deftest test-schedule-digest-does-nothing-when-mail-is-absent
   (testing "no mail client -> nothing scheduled or cancelled, logged once"
     (let [scheduled (atom [])
           cancelled (atom [])
           logged (atom [])]
-      ;; Other tests in this suite lower Telemere's min level for "sepal.*" to
-      ;; :warn and leave it there, so an :info log/log* call can otherwise go
-      ;; unsent depending on test order. Force it back so this assertion does
-      ;; not depend on what ran before it.
+      ;; sepal.app.instance-test boots instances with :log-level "WARN" at
+      ;; least six times; each boot reaches sepal.logging.interface's global
+      ;; (tel/set-min-level! nil "sepal.*" ...) through sepal.app.instance's
+      ;; instance-config, and it is never restored. Depending on test order,
+      ;; that can leave :info log/log* calls unsent here. Force it back so
+      ;; this assertion does not depend on what ran before it.
       (tel/set-min-level! nil "sepal.*" :info)
       (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))
                     scheduler.i/cancel! (fn [_ id] (swap! cancelled conj id))

@@ -451,7 +451,8 @@
      :sepal.app.observation/digest-job
      {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
       :zodiac (ig/ref :sepal.app.server/zodiac)
-      :mail (:mail process)}}
+      :mail (:mail process)
+      :from (or invitation-email-from default-invitation-email-from)}}
 
     hot-reload
     (assoc :sepal.app.server/zodiac-hot-reload hot-reload)))
