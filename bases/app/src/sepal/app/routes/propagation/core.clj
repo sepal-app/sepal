@@ -1,5 +1,6 @@
 (ns sepal.app.routes.propagation.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.propagation.create :as create]
             [sepal.app.routes.propagation.detail :as detail]
             [sepal.app.routes.propagation.export :as export]
             [sepal.app.routes.propagation.index :as index]
@@ -21,6 +22,11 @@
     {:name routes/export
      :conflicting true
      :handler #'export/handler}]
+   ["/new/"
+    {:name routes/new
+     :middleware [[middleware/require-editor-or-admin]]
+     :handler #'create/handler
+     :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader propagation-loader]]
             :conflicting true}
     ["/" {:name routes/detail

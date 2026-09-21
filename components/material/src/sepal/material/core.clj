@@ -77,6 +77,16 @@
                      :where [:= :propagation_id propagation-id]
                      :order-by [[:code :asc]]}))
 
+(defn list-by-accession-id
+  "Every material of one accession, by code. The propagation form offers these
+  when the parent accession is already known, which is the only time a parent
+  plant can be named."
+  [db accession-id]
+  (db.i/execute! db {:select [:*]
+                     :from [:material]
+                     :where [:= :accession_id accession-id]
+                     :order-by [[:code :asc]]}))
+
 (defn- move? [current new]
   (not= (:material/location-id current) (:material/location-id new)))
 

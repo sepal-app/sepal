@@ -5,6 +5,7 @@
   when the query says nothing about status, so the page opens as the worklist
   and the same URL with `status:*` answers the whole history."
   (:require [lambdaisland.uri :as uri]
+            [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -19,11 +20,15 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
+            [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.propagation.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z]))
 
 (def default-page-size 25)
+
+(defn create-button []
+  (pages.list/create-button :href (z/url-for propagation.routes/new)))
 
 (defn default-status-ast
   "Apply the nursery default: `status:active` unless the query says otherwise.
@@ -168,10 +173,11 @@
                  :empty-state (pages.list/empty-list
                                 :noun "propagations"
                                 :body "What the garden has grown itself, and what came out of it."
-                                :searching? (seq search-query)))))
+                                :searching? (seq search-query)
+                                :create-href (z/url-for propagation.routes/new)))))
 
 (defn render [& {:keys [field-options href page-num page-size rows search-query
-                        total type-labels status-labels]}]
+                        total type-labels status-labels viewer]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -197,7 +203,8 @@
                                 :total total
                                 :actions (ui.export/export-button)))
     :breadcrumbs ["Propagation"]
-    :page-title-buttons nil))
+    :page-title-buttons (when (authz/user-has-permission? viewer propagation.perm/create)
+                          (create-button))))
 
 (def Params
   [:map
@@ -205,7 +212,7 @@
    [:page-size {:default default-page-size} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context query-params uri]}]
+(defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -268,4 +275,5 @@
               :search-query q
               :total total
               :type-labels type-labels
-              :status-labels status-labels))))
+              :status-labels status-labels
+              :viewer viewer))))
