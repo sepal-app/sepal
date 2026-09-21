@@ -1,4 +1,5 @@
 (ns sepal.observation.interface.spec
+  (:refer-clojure :exclude [type])
   (:require [camel-snake-kebab.core :as csk]
             [malli.util :as mu]))
 
