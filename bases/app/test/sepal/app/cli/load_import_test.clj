@@ -514,3 +514,66 @@
             (jdbc.sql/delete! db :import_record {:source_table "contact"})
             (jdbc.sql/delete! db :contact {:name "Fairchild Tropical Garden"})
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-an-observation-imports-with-its-created-at-restored
+  ;; A location is the resource: it needs no accession/taxon chain to exist
+  ;; first, and observation.spec/resource-type accepts it directly.
+  (tf/testing "an import file carrying an observation creates the row"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-observation"})]
+        (try
+          (spit (fs/file (fs/path dir "location.json"))
+                (json/write-str
+                  [(rec "obsloc" {"code" "OBSLOC"
+                                  "name" "Observation testing block"})]))
+          (spit (fs/file (fs/path dir "observation.json"))
+                (json/write-str
+                  [(-> (rec "obs-1" {"resource_type" "location"
+                                     "type" "general"
+                                     "observed_on" "2020-05-01"
+                                     "note" "load-import-observation-fixture"}
+                            {"resource_id" (ref-to "location" "obsloc")})
+                       (assoc "created_at" "2019-01-01 08:00:00"))]))
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+          (let [row (db.i/execute-one!
+                      db {:select [:created_at]
+                          :from [:observation]
+                          :where [:= :note "load-import-observation-fixture"]})]
+            (is (= "2019-01-01 08:00:00" (:observation/created-at row))))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :observation
+                              {:note "load-import-observation-fixture"})
+            (jdbc.sql/delete! db :import_record {:source_table "location"
+                                                 :source_id "obsloc"})
+            (jdbc.sql/delete! db :location {:code "OBSLOC"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-a-note-on-material-is-refused
+  ;; note.spec/resource-type was narrowed to [:accession :taxon] -- material
+  ;; records observations instead. No new code makes this fail; the test pins
+  ;; the behaviour so `:material` being added back to the enum is caught.
+  (tf/testing "a note whose resource_type is material fails, naming the row"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-note-material"})]
+        (try
+          (write-fixture! dir :suffix "h")
+          (spit (fs/file (fs/path dir "note.json"))
+                (json/write-str
+                  [(rec "material_note:1" {"body" "a note on a plant"
+                                           "resource_type" "material"}
+                        {"resource_id" (ref-to "material" "40-h")})]))
+          (let [out (with-out-str
+                      (is (= 1 (li/load-import! db {:dir (str dir)
+                                                    :actor (:user/email user)
+                                                    :allow-nonempty true}))))]
+            (is (re-find #"note material_note:1" out)))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
