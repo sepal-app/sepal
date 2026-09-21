@@ -5,8 +5,10 @@
             [sepal.app.routes.propagation.export :as export]
             [sepal.app.routes.propagation.index :as index]
             [sepal.app.routes.propagation.panel :as panel]
+            [sepal.app.routes.propagation.product :as product]
             [sepal.app.routes.propagation.routes :as routes]
-            [sepal.propagation.interface :as propagation.i]))
+            [sepal.propagation.interface :as propagation.i]
+            [sepal.propagation.interface.permission :as propagation.perm]))
 
 (def propagation-loader
   (middleware/default-loader propagation.i/get-by-id
@@ -32,4 +34,8 @@
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/panel/" {:name routes/panel
-                :handler #'panel/handler}]]])
+                :handler #'panel/handler}]
+    ["/product/" {:name routes/product
+                  :middleware [[(middleware/require-permission-or-redirect
+                                  propagation.perm/edit (constantly routes/detail))]]
+                  :post #'product/handler}]]])

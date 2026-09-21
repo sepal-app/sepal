@@ -4,6 +4,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.propagation.panel :as propagation.panel]
+            [sepal.app.routes.propagation.product :as propagation.product]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.page :as page]
@@ -20,7 +21,7 @@
   [:map {:closed true}
    [:status [:enum :complete :failed]]])
 
-(defn render [& {:keys [panel-data viewer]}]
+(defn render [& {:keys [panel-data viewer product-kind]}]
   (page/page
     :content [:div {:class "max-w-2xl mx-auto"}
               (propagation.panel/panel-content
@@ -33,7 +34,10 @@
                 :status-label (:status-label panel-data)
                 :material-products (:material-products panel-data)
                 :accession-products (:accession-products panel-data)
-                :editable? (authz/user-has-permission? viewer propagation.perm/edit))]
+                :editable? (authz/user-has-permission? viewer propagation.perm/edit))
+              (when (authz/user-has-permission? viewer propagation.perm/edit)
+                (propagation.product/product-actions (:propagation panel-data)
+                                                     product-kind))]
     :breadcrumbs [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
                   (shared/parent-name (:parent panel-data) (:parent-material panel-data))]))
 
@@ -60,4 +64,5 @@
                               "Could not save the propagation")))
 
       (render :panel-data (propagation.panel/fetch-panel-data db resource)
-              :viewer viewer))))
+              :viewer viewer
+              :product-kind (propagation.product/default-kind-for db resource)))))
