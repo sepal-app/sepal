@@ -423,6 +423,11 @@
                         ;; process rather than from these instance opts.
                         :synonym-ref-path (:synonym-ref-path process)
                         :mail (:mail process)
+                        ;; So the observation digest settings screen can
+                        ;; reschedule the job itself when it saves a change,
+                        ;; rather than waiting for the next restart to pick it
+                        ;; up.
+                        :scheduler (ig/ref :sepal.scheduler.interface/scheduler)
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
                         :s3-presigner (:s3-presigner process)

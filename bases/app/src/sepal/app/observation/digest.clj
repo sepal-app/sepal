@@ -111,9 +111,11 @@
       (catch Exception e
         (log/error e "Scheduled observation digest failed")))))
 
-(defn- schedule-digest!
+(defn schedule-digest!
   "Register the digest job with the scheduler based on current config, or
-  cancel it. Called on app startup.
+  cancel it. Called on app startup, and again whenever the settings screen
+  saves a change -- a save the running job never picks up until the next
+  restart is a job that quietly fails every run in between.
 
   Guards on the mail client rather than on the config: with no client this
   logs once and registers nothing, rather than scheduling a job that would
