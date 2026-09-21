@@ -16,6 +16,7 @@
             [sepal.app.backup.core :as backup]
             [sepal.app.backup.local :as backup.local]
             [sepal.app.backup.protocols :as backup.p]
+            [sepal.app.observation.digest]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
@@ -445,7 +446,12 @@
       :mail (:mail process)
       :app-base-url (base-url opts)
       :backup-dir backup-dir
-      :backup-store (resolve-backup-store backup-store backup-dir)}}
+      :backup-store (resolve-backup-store backup-store backup-dir)}
+
+     :sepal.app.observation/digest-job
+     {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
+      :zodiac (ig/ref :sepal.app.server/zodiac)
+      :mail (:mail process)}}
 
     hot-reload
     (assoc :sepal.app.server/zodiac-hot-reload hot-reload)))
