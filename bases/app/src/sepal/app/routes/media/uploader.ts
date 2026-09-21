@@ -44,6 +44,9 @@ export default (el, directive, { cleanup, evaluate }) => {
             const formId = file?.id.replace(/\//g, "_")
             // trigger form that will post to /media/uploaded
             htmx.trigger(`form#${formId}`, "submit", {})
+            // The empty page's first upload: the new tile lands in the list,
+            // so the empty state has outlived its use until the next reload.
+            document.getElementById("media-empty")?.remove()
         })
 
     uppy.addPreProcessor(async (fileIds) => {
@@ -75,4 +78,46 @@ export default (el, directive, { cleanup, evaluate }) => {
             },
         })
     })
+
+    // The empty page's "Upload" button opens the same dashboard the title-bar
+    // button does; Uppy's Dashboard trigger takes one element, so the second
+    // trigger is bound by hand.
+    document
+        .getElementById("media-empty-upload")
+        ?.addEventListener("click", () => uppy.getPlugin("Dashboard").openModal())
+
+    // The empty state is also a drop target. Uppy's own dashboard has one, but
+    // dropping straight onto the page's empty state should behave the same way.
+    const dropTarget = document.querySelector(
+        "[data-media-drop-target]",
+    ) as HTMLElement | null
+    if (dropTarget) {
+        const addFiles = (files: FileList) =>
+            uppy.addFiles(
+                Array.from(files).map((f) => ({
+                    name: f.name,
+                    type: f.type,
+                    size: f.size,
+                    data: f,
+                })),
+            )
+        const onDragOver = (e: DragEvent) => {
+            e.preventDefault()
+            dropTarget.classList.add("spl-drop-active")
+        }
+        const onDragLeave = () => dropTarget.classList.remove("spl-drop-active")
+        const onDrop = (e: DragEvent) => {
+            e.preventDefault()
+            dropTarget.classList.remove("spl-drop-active")
+            if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files)
+        }
+        dropTarget.addEventListener("dragover", onDragOver)
+        dropTarget.addEventListener("dragleave", onDragLeave)
+        dropTarget.addEventListener("drop", onDrop)
+        cleanup(() => {
+            dropTarget.removeEventListener("dragover", onDragOver)
+            dropTarget.removeEventListener("dragleave", onDragLeave)
+            dropTarget.removeEventListener("drop", onDrop)
+        })
+    }
 }

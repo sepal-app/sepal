@@ -2,11 +2,13 @@
   "Route handler for serving transformed/cached images."
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
+            [failjure.core :as f]
+            [ring.util.http-response :as http]
             [ring.util.response :as response]
-            [sepal.app.http-response :as http]
             [sepal.app.routes.media.keys :as media.keys]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.media-transform.interface :as media-transform.i]
+            [sepal.validation.interface :as validation.i]
             [zodiac.core :as z])
   (:import [java.io File]
            [java.nio.file Files]
@@ -66,6 +68,19 @@
       (response/status 404)
       (response/content-type "text/plain")))
 
+(def Params
+  "Transform parameters, decoded from the string-keyed query map the way every
+  other list route decodes its params. This used to destructure keyword keys
+  straight off the raw query map, which never matched — so the transform branch
+  never ran and every thumbnail was the full-size original."
+  [:map {:closed true}
+   [:w {:optional true} [:int {:min 1}]]
+   [:h {:optional true} [:int {:min 1}]]
+   [:fit {:optional true} [:string {:min 1}]]
+   [:q {:optional true} [:int {:min 1 :max 100}]]
+   [:fmt {:optional true} [:string {:min 1}]]
+   [:dl {:optional true} [:string {:min 1}]]])
+
 (defn handler
   "Handle image transform requests.
    
@@ -76,59 +91,57 @@
    - q: quality 1-100 (default: 85)
    - fmt: 'jpg', 'png', or 'original' (default: original)
    - dl: filename to trigger download"
-  [{:keys [::z/context query-params]}]
-  (let [{:keys [s3-client media-upload-bucket media-transform-service resource]} context
-
-        {:keys [cache-ds cache-dir]} media-transform-service
-        {:keys [w h fit q fmt dl]} query-params
-        media resource
-        s3-key (:media/s3-key media)]
-
-    (cond
-      (not (media.keys/own-key? context media))
+  [& {:keys [::z/context query-params]}]
+  (let [{:keys [resource]} context]
+    (if-not (media.keys/own-key? context resource)
+      ;; Checked before the parameters, so a foreign key looks like no media at
+      ;; all whatever else the request asked for.
       (do (log/warn "Refusing media outside this instance's prefix"
-                    {:s3-key (:media/s3-key media)})
+                    {:s3-key (:media/s3-key resource)})
           (http/not-found))
+      (f/attempt-all
+        [data (validation.i/validate-form-values Params query-params)]
+        (let [{:keys [s3-client media-upload-bucket media-transform-service]} context
+              {:keys [cache-ds cache-dir]} media-transform-service
+              {:keys [w h fit q fmt dl]} data
+              s3-key (:media/s3-key resource)]
+          (if-not (media-transform.i/image-content-type? (:media/media-type resource))
+            ;; Non-image - serve icon placeholder
+            (serve-icon (:media/media-type resource))
+            (let [width w
+                  height h
+                  quality q
+                  fit-kw (when fit (keyword fit))
+                  format-kw (when fmt (keyword fmt))
 
-      (media-transform.i/image-content-type? (:media/media-type media))
-      ;; Image - transform and serve
-      (let [;; Parse params
-            width (some-> w parse-long)
-            height (some-> h parse-long)
-            quality (some-> q parse-long)
-            fit-kw (when fit (keyword fit))
-            format-kw (when fmt (keyword fmt))
+                  ;; Build transform opts (only include non-nil values)
+                  opts (cond-> {}
+                         width (assoc :width width)
+                         height (assoc :height height)
+                         fit-kw (assoc :fit fit-kw)
+                         quality (assoc :quality quality)
+                         format-kw (assoc :format format-kw))
 
-            ;; Build transform opts (only include non-nil values)
-            opts (cond-> {}
-                   width (assoc :width width)
-                   height (assoc :height height)
-                   fit-kw (assoc :fit fit-kw)
-                   quality (assoc :quality quality)
-                   format-kw (assoc :format format-kw))
+                  ;; Check if we need to transform or just serve original
+                  needs-transform? (or width height format-kw quality)]
+              (if needs-transform?
+                ;; Generate/fetch cached transform
+                (let [media-id (:media/id resource)
+                      ;; Download original from S3 to temp file
+                      temp-file (download-from-s3 s3-client media-upload-bucket s3-key)
+                      {:keys [path]} (try
+                                       (media-transform.i/get-or-transform cache-ds cache-dir
+                                                                           media-id temp-file opts)
+                                       (finally
+                                         ;; Clean up temp file
+                                         (.delete temp-file)))]
+                  (serve-file (io/file path) dl))
 
-            ;; Check if we need to transform or just serve original
-            needs-transform? (or width height format-kw quality)]
-
-        (if needs-transform?
-          ;; Generate/fetch cached transform
-          (let [media-id (:media/id media)
-                ;; Download original from S3 to temp file
-                temp-file (download-from-s3 s3-client media-upload-bucket s3-key)
-                {:keys [path]} (try
-                                 (media-transform.i/get-or-transform cache-ds cache-dir
-                                                                     media-id temp-file opts)
-                                 (finally
-                                   ;; Clean up temp file
-                                   (.delete temp-file)))]
-            (serve-file (io/file path) dl))
-
-          ;; No transform needed - serve original directly from S3
-          (let [temp-file (download-from-s3 s3-client media-upload-bucket s3-key)]
-            ;; Note: temp-file won't be deleted immediately, but that's ok for downloads
-            ;; TODO: Consider streaming directly from S3 for large files
-            (serve-file temp-file dl))))
-
-      :else
-      ;; Non-image - serve icon placeholder
-      (serve-icon (:media/media-type media)))))
+                ;; No transform needed - serve original directly from S3
+                (let [temp-file (download-from-s3 s3-client media-upload-bucket s3-key)]
+                  ;; Note: temp-file won't be deleted immediately, but that's ok for downloads
+                  ;; TODO: Consider streaming directly from S3 for large files
+                  (serve-file temp-file dl))))))
+        (f/when-failed [e]
+          (log/warn e "Rejecting a transform request with invalid parameters")
+          (http/bad-request "Invalid transform parameters"))))))

@@ -36,7 +36,7 @@
                             "focus-within:ring-offset-2")}
     [:a {:href (z/url-for media.routes/detail {:id (:media/id item)})
          :class "inset-0 focus:outline-none"}
-     [:img {:class "pointer-events-none object-cover group-hover:opacity-75"
+     [:img {:class "pointer-events-none h-full w-full object-cover group-hover:opacity-75"
             :src (:thumbnail-url item)}]]]])
 
 (defn media-list-items [& {:keys [media next-page-url]}]
@@ -66,22 +66,34 @@
    (media-list-items :media media
                      :next-page-url next-page-url)])
 
+(def empty-state-id
+  "The id of the page's empty state. The uploader removes it after the first
+  upload lands a tile in the list."
+  "media-empty")
+
 (defn media-list
-  "The grid plus its loading indicator. The indicator is a sibling, not a
-  member: the next page is appended into the <ul> with `beforeend`, so anything
-  inside it would be left stranded between pages."
+  "The empty state, the grid and its loading indicator. The indicator is a
+  sibling of the <ul>, not a member: the next page is appended into the <ul>
+  with `beforeend`, so anything inside it would be left stranded between
+  pages. The grid renders even when empty, because an upload prepends its new
+  tile into `#media-list` — a list that only appears once there is media has
+  nothing to prepend into."
   [& {:keys [media next-page-url]}]
-  (if (zero? (count media))
-    ;; Outside the <ul>: inside a grid it was laid out as one cell, which is
-    ;; why it rendered as a box half the width of the page.
-    (ui.empty/empty-state
-      :icon (heroicons/outline-photo :size 48)
-      :title "No media yet"
-      :body "Photographs of an accession, its material, or the plant in the
-             ground show up here.")
-    (list
-      (media-grid :media media :next-page-url next-page-url)
-      (loading-indicator))))
+  (list
+    (when (zero? (count media))
+      [:div {:id empty-state-id
+             :data-media-drop-target "true"}
+       (ui.empty/empty-state
+         :icon (heroicons/outline-photo :size 48)
+         :title "No media yet"
+         :body "Photographs of an accession, its material, or the plant in the
+                ground show up here. Drag images here, or upload them."
+         :actions [[:button {:id "media-empty-upload"
+                             :type "button"
+                             :class "spl-btn spl-btn--primary"}
+                    "Upload"]])])
+    (media-grid :media media :next-page-url next-page-url)
+    (loading-indicator)))
 
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,
