@@ -83,6 +83,33 @@
           (is (= :cutting (:propagation/type (propagation.i/get-by-id *db* id))))
           (finally (clean-up! user [id])))))))
 
+(deftest test-prefill-from-the-parent
+  (tf/testing "opening the form from a plant fills the parent in and locks it"
+    (fixtures)
+    (fn [{:keys [user acc-a mat]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            new-page (fn [query]
+                       (let [{:keys [response]} (-> sess
+                                                    (peri/request (str "/propagation/new/" query)))]
+                         (is (= 200 (:status response)))
+                         (Jsoup/parse ^String (:body response))))]
+        (testing "from a plant"
+          (let [body (new-page (str "?parent-material-id=" (:material/id mat)))]
+            (is (= (str (:accession/id acc-a))
+                   (.attr (.selectFirst body "input[name=parent-accession-id]") "value")))
+            (is (str/includes? (.text body) (:accession/code acc-a)))
+            (is (= (str (:material/id mat))
+                   (.attr (.selectFirst body "sepal-combobox[name=parent-material-id]")
+                          "data-value")))
+            (is (nil? (.selectFirst body "sepal-combobox[name=parent-accession-id]"))
+                "the accession is locked rather than offered")))
+
+        (testing "from the accession"
+          (let [body (new-page (str "?parent-accession-id=" (:accession/id acc-a)))]
+            (is (nil? (.selectFirst body "sepal-combobox[name=parent-accession-id]")))
+            (is (some? (.selectFirst body "sepal-combobox[name=parent-material-id]"))
+                "the plant picker offers this accession's material")))))))
+
 (deftest test-parent-material-must-belong-to-the-accession
   (tf/testing "a plant from another accession is refused with a flash, not a 500"
     (fixtures)
