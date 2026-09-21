@@ -40,6 +40,12 @@
   [db on-date]
   (core/due db on-date))
 
+(defn count-due
+  "How many observations are due, the same set `due` returns, without
+  materialising them."
+  [db on-date]
+  (core/count-due db on-date))
+
 (defn list-types
   "Every observation_type, ordered by code. Drives the Type field's options."
   [db]

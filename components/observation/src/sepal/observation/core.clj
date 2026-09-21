@@ -96,6 +96,15 @@
                                 :order-by [[:o.next_check_on :asc] [:o.id :asc]]))
        (mapv row->observation)))
 
+(defn count-due
+  "How many observations are due, without materialising them -- see `due`."
+  [db on-date]
+  (db.i/count db {:select [:id]
+                  :from [:observation]
+                  :where [:and
+                          [:not= :next_check_on nil]
+                          [:<= :next_check_on on-date]]}))
+
 (defn list-types
   "Every observation_type, ordered by code."
   [db]

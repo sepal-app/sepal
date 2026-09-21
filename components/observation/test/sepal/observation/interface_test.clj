@@ -249,6 +249,23 @@
           (doseq [o [overdue today later never]]
             (observation.i/delete! db (:observation/id o))))))))
 
+(deftest test-count-due-matches-the-number-of-due-rows
+  (let [db *db*]
+    (tf/testing "count-due"
+      (material-fixtures db)
+      (fn [{:keys [user material]}]
+        (let [overdue (observation.i/create!
+                        db {:resource-type :material
+                            :resource-id (:material/id material)
+                            :type "condition"
+                            :value "fair"
+                            :observed-on "2026-03-01"
+                            :next-check-on "2026-03-10"
+                            :created-by (:user/id user)})]
+          (is (= (count (observation.i/due db "2026-03-14"))
+                 (observation.i/count-due db "2026-03-14")))
+          (observation.i/delete! db (:observation/id overdue)))))))
+
 (deftest test-delete-for-resource-clears-only-that-resource
   (let [db *db*]
     (tf/testing "delete-for-resource!"

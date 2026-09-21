@@ -736,7 +736,7 @@
                       :timezone timezone
                       :viewer viewer)
       (render :activity activity
-              :overdue-count (count (observation.i/due db today))
+              :overdue-count (observation.i/count-due db today)
               :page page
               :page-size page-size
               :timezone timezone
