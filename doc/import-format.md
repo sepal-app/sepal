@@ -77,6 +77,7 @@ one before it.
 | `collection` | yes | yes | `accession_id` |
 | `material_change` | yes | — | `material_id`, `from_location_id`, `to_location_id` |
 | `note` | yes | yes | `resource_id` |
+| `observation` | yes | yes | `resource_id` |
 | `tag_link` | yes | yes | `tag_id`, `resource_id` |
 | `taxon_vernacular` | — | — | `taxon_id` |
 | `taxon_synonym` | yes | — | `taxon_id` |
@@ -100,8 +101,17 @@ has to exist before any event can point at one.
 only create that accepts a timestamp; everywhere else the create spec is closed
 against one, which is why the envelope carries it instead.
 
-`note` and `tag_link` are polymorphic: `refs.resource_id` is the record they
-hang on, and `data.resource_type` says which kind it is.
+`note`, `observation` and `tag_link` are polymorphic: `refs.resource_id` is the
+record they hang on, and `data.resource_type` says which kind it is —
+`accession` or `taxon` for `note`, `material` or `location` for `observation`.
+
+`observation`'s `data` needs `resource_type`, `type` and `observed_on`;
+`value`, `observed_by`, `next_check_on`, `note` and `created_by` are optional.
+`type` must name a row already seeded into `observation_type`, and a non-nil
+`value` must, together with `type`, name a row in `observation_value` — the
+database enforces both with foreign keys, so a bad pair is a reported failure
+rather than a silent drop. `general` is the one seeded type with no values, so
+its observations never set `value`.
 
 ## Running
 

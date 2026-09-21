@@ -540,16 +540,31 @@
                                           :actor (:user/email user)
                                           :allow-nonempty true})))
           (let [row (db.i/execute-one!
-                      db {:select [:created_at]
+                      db {:select [:id :created_at]
                           :from [:observation]
                           :where [:= :note "load-import-observation-fixture"]})]
-            (is (= "2019-01-01 08:00:00" (:observation/created-at row))))
+            (is (= "2019-01-01 08:00:00" (:observation/created-at row)))
+
+            (testing "and it records where the row came from"
+              ;; Mirrors "every loaded record says where it came from" in
+              ;; test-loading-a-fixture-garden, for the accession table.
+              (let [provenance
+                    (db.i/execute-one!
+                      db {:select [:resource_type :resource_id]
+                          :from [:import_record]
+                          :where [:and [:= :source_table "observation"]
+                                  [:= :source_id "obs-1"]]})]
+                (is (= "observation" (:import-record/resource-type provenance)))
+                (is (= (:observation/id row)
+                       (:import-record/resource-id provenance))))))
           (finally
             (fs/delete-tree dir)
             (jdbc.sql/delete! db :observation
                               {:note "load-import-observation-fixture"})
             (jdbc.sql/delete! db :import_record {:source_table "location"
                                                  :source_id "obsloc"})
+            (jdbc.sql/delete! db :import_record {:source_table "observation"
+                                                 :source_id "obs-1"})
             (jdbc.sql/delete! db :location {:code "OBSLOC"})
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
 

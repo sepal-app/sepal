@@ -438,6 +438,7 @@
    "collection" "collection"
    "material_change" "material_change"
    "note" "note"
+   "observation" "observation"
    "taxon_synonym" "synonym"})
 
 (defn- record-provenance!
