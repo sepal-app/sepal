@@ -67,6 +67,16 @@
                      :where [:= :mc.from_location_id location-id]
                      :order-by [[:mc.changed_at :desc] [:mc.id :desc]]}))
 
+(defn list-by-propagation-id
+  "Material this propagation produced, by code. A clone's plants are material
+  of the parent accession, so this is how the propagation record answers what
+  came out of it."
+  [db propagation-id]
+  (db.i/execute! db {:select [:*]
+                     :from [:material]
+                     :where [:= :propagation_id propagation-id]
+                     :order-by [[:code :asc]]}))
+
 (defn- move? [current new]
   (not= (:material/location-id current) (:material/location-id new)))
 

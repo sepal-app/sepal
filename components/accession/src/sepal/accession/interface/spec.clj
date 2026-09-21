@@ -112,7 +112,10 @@
    [:accession/received-type [:maybe received-type]]
    [:accession/quantity-received [:maybe quantity-received]]
    [:accession/date-received [:maybe :string]]
-   [:accession/date-accessioned [:maybe :string]]])
+   [:accession/date-accessioned [:maybe :string]]
+   ;; The propagation that produced this accession, for seed taken from a
+   ;; plant here. Null for an accession that arrived.
+   [:accession/propagation-id [:maybe id]]])
 
 (def CreateAccession
   [:map {:closed true}
@@ -130,7 +133,12 @@
    [:quantity-received {:optional true :decode/store validate.i/coerce-int}
     [:maybe quantity-received]]
    [:date-received {:optional true} [:maybe :string]]
-   [:date-accessioned {:optional true} [:maybe :string]]])
+   [:date-accessioned {:optional true} [:maybe :string]]
+   [:propagation-id {:optional true
+                     :decode/store validate.i/coerce-int}
+    ;; Generated data has no propagation to point at, and a random foreign key
+    ;; fails the insert.
+    [:maybe {:gen/return nil} id]]])
 
 (def UpdateAccession
   (mu/optional-keys
@@ -148,4 +156,7 @@
      [:quantity-received {:optional true :decode/store validate.i/coerce-int}
       [:maybe quantity-received]]
      [:date-received {:optional true} [:maybe :string]]
-     [:date-accessioned {:optional true} [:maybe :string]]]))
+     [:date-accessioned {:optional true} [:maybe :string]]
+     [:propagation-id {:optional true
+                       :decode/store validate.i/coerce-int}
+      [:maybe {:gen/return nil} id]]]))

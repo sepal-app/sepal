@@ -1,8 +1,16 @@
 (ns sepal.app.routes.propagation.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.propagation.detail :as detail]
             [sepal.app.routes.propagation.export :as export]
             [sepal.app.routes.propagation.index :as index]
-            [sepal.app.routes.propagation.routes :as routes]))
+            [sepal.app.routes.propagation.panel :as panel]
+            [sepal.app.routes.propagation.routes :as routes]
+            [sepal.propagation.interface :as propagation.i]))
+
+(def propagation-loader
+  (middleware/default-loader propagation.i/get-by-id
+                             :id
+                             parse-long))
 
 (defn routes []
   ["" {:middleware [[middleware/require-viewer]]}
@@ -12,4 +20,10 @@
    ["/export/"
     {:name routes/export
      :conflicting true
-     :handler #'export/handler}]])
+     :handler #'export/handler}]
+   ["/:id" {:middleware [[middleware/resource-loader propagation-loader]]
+            :conflicting true}
+    ["/" {:name routes/detail
+          :handler #'detail/handler}]
+    ["/panel/" {:name routes/panel
+                :handler #'panel/handler}]]])

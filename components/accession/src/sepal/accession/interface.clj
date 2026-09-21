@@ -45,5 +45,10 @@
   [db location-id]
   (core/awaiting-planting-by-location-id db location-id))
 
+(defn list-by-propagation-id
+  "Accessions this propagation produced, by code."
+  [db propagation-id]
+  (core/list-by-propagation-id db propagation-id))
+
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))

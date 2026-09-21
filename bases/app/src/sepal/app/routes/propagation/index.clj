@@ -11,6 +11,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
+            [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.page :as ui.page]
@@ -18,7 +19,6 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
-            [sepal.propagation.interface :as propagation.i]
             [sepal.propagation.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z]))
@@ -47,19 +47,17 @@
                                  :value "active"
                                  :negated false}))))
 
-(defn- label-map
-  "name -> label for a seeded vocabulary, so the table renders the label the
-  lookup table carries rather than the snake_case key."
-  [rows name-key label-key]
-  (into {} (map (juxt name-key label-key)) rows))
-
 (defn- parent-label
   "`2026.0042` when the parent is the accession alone, `2026.0042.1` when an
   individual plant narrows it."
   [row]
-  (str (:accession/code row)
-       (when-let [code (:material/code row)]
-         (str "." code))))
+  (shared/parent-name row
+                      (when (:material/code row) row)))
+
+(defn- row-attrs [row]
+  (let [id (:propagation/id row)]
+    (pages.list/row-attrs :id id
+                          :panel-url (z/url-for propagation.routes/panel {:id id}))))
 
 (defn- parent-href
   "The named plant is the more precise parent, so it is the link's target when
@@ -150,6 +148,7 @@
   (table/rows-only :columns (table-columns :type-labels type-labels
                                            :status-labels status-labels)
                    :rows rows
+                   :row-attrs row-attrs
                    :href href
                    :page page-num
                    :page-size page-size
@@ -161,6 +160,7 @@
     (table/table :columns (table-columns :type-labels type-labels
                                          :status-labels status-labels)
                  :rows rows
+                 :row-attrs row-attrs
                  :href href
                  :page page-num
                  :page-size page-size
@@ -241,12 +241,8 @@
                                               :order-by (concat (search.i/relevance-order :propagation ast)
                                                                 [[:p.propagated_on :desc]
                                                                  [:p.id :desc]])))
-        type-labels (label-map (propagation.i/list-types db)
-                               :propagation-type/name
-                               :propagation-type/label)
-        status-labels (label-map (propagation.i/list-statuses db)
-                                 :propagation-status/name
-                                 :propagation-status/label)]
+        type-labels (shared/type-labels db)
+        status-labels (shared/status-labels db)]
 
     (if (some? (get query-params "rows"))
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and

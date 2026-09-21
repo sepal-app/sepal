@@ -28,7 +28,10 @@
                       :encode/store csk/->kebab-case-string}
     status]
    [:material/memorial memorial]
-   [:material/quantity quantity]])
+   [:material/quantity quantity]
+   ;; The propagation that produced this material, for a clone. Null for
+   ;; material that arrived or was raised from seed.
+   [:material/propagation-id [:maybe id]]])
 
 (def CreateMaterial
   [:map {:closed true}
@@ -46,7 +49,12 @@
     status]
    [:memorial {:optional true} memorial]
    [:quantity {:decode/store validate.i/coerce-int}
-    quantity]])
+    quantity]
+   [:propagation-id {:optional true
+                     :decode/store validate.i/coerce-int}
+    ;; Generated data has no propagation to point at, and a random foreign key
+    ;; fails the insert.
+    [:maybe {:gen/return nil} id]]])
 
 (def UpdateMaterial
   (mu/optional-keys
@@ -64,7 +72,9 @@
       status]
      [:memorial memorial]
      [:quantity {:decode/store validate.i/coerce-int}
-      quantity]]))
+      quantity]
+     [:propagation-id {:decode/store validate.i/coerce-int}
+      [:maybe {:gen/return nil} id]]]))
 
 (def change-from-location-id [:maybe location-id])
 (def change-to-location-id [:maybe location-id])

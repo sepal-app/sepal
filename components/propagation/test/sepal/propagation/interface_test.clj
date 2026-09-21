@@ -141,6 +141,40 @@
             (finally
               (jdbc.sql/delete! db :propagation {:id (:propagation/id prop)}))))))))
 
+(deftest test-products-link-back
+  (let [db *db*]
+    (tf/testing "the products point back at the propagation"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::accession.i/factory :key/parent] {:db db
+                                            :taxon (ig/ref :key/taxon)}
+       [::accession.i/factory :key/product] {:db db
+                                             :taxon (ig/ref :key/taxon)}
+       [::location.i/factory :key/loc] {:db db}
+       [::material.i/factory :key/mat] {:db db
+                                        :accession (ig/ref :key/parent)
+                                        :location (ig/ref :key/loc)}}
+      (fn [{:keys [parent product mat]}]
+        (let [prop (propagation.i/create!
+                     db {:type :cutting
+                         :parent-accession-id (:accession/id parent)})]
+          (try
+            (material.i/update! db (:material/id mat)
+                                {:propagation-id (:propagation/id prop)})
+            (accession.i/update! db (:accession/id product)
+                                 {:propagation-id (:propagation/id prop)})
+            (is (= [(:material/id mat)]
+                   (map :material/id
+                        (material.i/list-by-propagation-id db (:propagation/id prop)))))
+            (is (= [(:accession/id product)]
+                   (map :accession/id
+                        (accession.i/list-by-propagation-id db (:propagation/id prop)))))
+            (finally
+              ;; The links are cleared before the propagation goes, or the
+              ;; foreign keys block the delete.
+              (material.i/update! db (:material/id mat) {:propagation-id nil})
+              (accession.i/update! db (:accession/id product) {:propagation-id nil})
+              (jdbc.sql/delete! db :propagation {:id (:propagation/id prop)}))))))))
+
 (deftest test-list-by-location
   (let [db *db*]
     (tf/testing "listing by location"
