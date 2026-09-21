@@ -113,7 +113,7 @@
             select (.selectFirst body "select#reason")
             options (.select select "option")]
         (is (some? select) "Form should have a reason select")
-        (is (= 16 (.size options)) "15 reasons plus the None option")
+        (is (= 17 (.size options)) "16 reasons plus the None option")
         (is (= "Dead" (.text (.select select "option[value=dead]"))))))))
 
 (deftest test-update-material-move-records-a-change-row

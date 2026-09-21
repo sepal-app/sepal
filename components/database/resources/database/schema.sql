@@ -65,7 +65,7 @@ CREATE TABLE accession (
   updated_at text not null default (datetime('now'))
 , intended_location_id integer references location(id), received_type text
   REFERENCES accession_received_type(name), quantity_received integer
-  CHECK(quantity_received >= 0)) strict;
+  CHECK(quantity_received >= 0), propagation_id integer references propagation(id)) strict;
 CREATE TABLE media (
   id integer primary key autoincrement,
   s3_bucket text not null,
@@ -214,7 +214,7 @@ CREATE TABLE "material" (
   memorial integer not null default 0 check(memorial in (0, 1)),
   quantity integer not null default 1 check(quantity >= 0),
   created_at text not null default (datetime('now')),
-  updated_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now')), propagation_id integer references propagation(id),
   -- A non-current lot cannot hold material: dead, transferred and other
   -- require quantity 0, while alive, dormant and unknown accept any count.
   check(status in ('alive', 'dormant', 'unknown') or quantity = 0)
@@ -447,6 +447,77 @@ CREATE TRIGGER trigger_observation_updated_at after update on observation
 begin
   update observation set updated_at = datetime('now') where id = NEW.id;
 end;
+CREATE TABLE propagation_type (
+  name text primary key,
+  label text not null,
+  -- 1 when the method yields the parent genotype, 0 when it does not, null
+  -- when the method does not decide.
+  clonal integer check(clonal in (0, 1))
+) strict;
+CREATE TABLE propagation_status (
+  name text primary key,
+  label text not null
+) strict;
+CREATE TABLE propagation (
+  id integer primary key autoincrement,
+  type text not null references propagation_type(name),
+  status text not null default 'active' references propagation_status(name),
+  parent_accession_id integer not null references accession(id),
+  parent_material_id integer references material(id),
+  rootstock_taxon_id integer references taxon(id),
+  -- Where the batch physically sits while it runs. A nursery bench is a
+  -- location like any other, and archiving handles one that goes away.
+  location_id integer references location(id),
+  propagated_on text,
+  succeeded_on text,
+  -- Propagules started, and how many came through: germinated for seed,
+  -- struck for cuttings, taken for grafts. Null means uncounted, which is the
+  -- normal case for a mass sowing -- and recording a mass sowing as null
+  -- rather than as an estimate is what makes the comparison below safe.
+  -- Either side being null passes it.
+  quantity_started integer check(quantity_started >= 0),
+  quantity_succeeded integer check(quantity_succeeded >= 0)
+    check(quantity_succeeded <= quantity_started),
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now'))
+) strict;
+CREATE INDEX propagation_parent_accession_id_idx
+  on propagation (parent_accession_id);
+CREATE INDEX propagation_parent_material_id_idx
+  on propagation (parent_material_id);
+CREATE INDEX propagation_rootstock_taxon_id_idx
+  on propagation (rootstock_taxon_id);
+CREATE INDEX propagation_location_id_idx on propagation (location_id);
+CREATE INDEX propagation_status_idx on propagation (status);
+CREATE TRIGGER trigger_propagation_updated_at after update on propagation
+begin
+  update propagation set updated_at = datetime('now') where id = NEW.id;
+end;
+CREATE TRIGGER trigger_propagation_parent_material_insert
+before insert on propagation
+when NEW.parent_material_id is not null
+begin
+  select raise(abort, 'parent_material_id must belong to parent_accession_id')
+  where not exists (
+    select 1 from material
+    where id = NEW.parent_material_id
+      and accession_id = NEW.parent_accession_id
+  );
+end;
+CREATE TRIGGER trigger_propagation_parent_material_update
+before update on propagation
+when NEW.parent_material_id is not null
+begin
+  select raise(abort, 'parent_material_id must belong to parent_accession_id')
+  where not exists (
+    select 1 from material
+    where id = NEW.parent_material_id
+      and accession_id = NEW.parent_accession_id
+  );
+end;
+CREATE INDEX material_propagation_id_idx on material (propagation_id);
+CREATE INDEX accession_propagation_id_idx on accession (propagation_id);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -505,6 +576,7 @@ INSERT INTO material_change_reason VALUES('discarded_seedling','Discarded seedli
 INSERT INTO material_change_reason VALUES('given_away','Given away');
 INSERT INTO material_change_reason VALUES('transferred','Transferred elsewhere');
 INSERT INTO material_change_reason VALUES('other','Other');
+INSERT INTO material_change_reason VALUES('divided','Divided');
 INSERT INTO material_status VALUES('alive');
 INSERT INTO material_status VALUES('dead');
 INSERT INTO material_status VALUES('dormant');
@@ -516,6 +588,16 @@ INSERT INTO observation_type VALUES('condition','Condition');
 INSERT INTO observation_type VALUES('pest','Pest');
 INSERT INTO observation_type VALUES('disease','Disease');
 INSERT INTO observation_type VALUES('general','General');
+INSERT INTO propagation_status VALUES('active','In progress');
+INSERT INTO propagation_status VALUES('complete','Complete');
+INSERT INTO propagation_status VALUES('failed','Failed');
+INSERT INTO propagation_type VALUES('seed','Seed',0);
+INSERT INTO propagation_type VALUES('cutting','Cutting',1);
+INSERT INTO propagation_type VALUES('division','Division',1);
+INSERT INTO propagation_type VALUES('graft','Graft',1);
+INSERT INTO propagation_type VALUES('layering','Layering',1);
+INSERT INTO propagation_type VALUES('tissue_culture','Tissue culture',1);
+INSERT INTO propagation_type VALUES('other','Other',NULL);
 INSERT INTO taxon_rank VALUES('aggregate');
 INSERT INTO taxon_rank VALUES('class');
 INSERT INTO taxon_rank VALUES('convariety');
@@ -574,3 +656,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917130000', '2026-09-17 15:34:45');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917140000', '2026-09-17 17:00:44');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920120000', '2026-09-20 19:46:19');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920130000', '2026-09-21 13:44:07');
