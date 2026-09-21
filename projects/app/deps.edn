@@ -20,6 +20,7 @@
         poly/media {:local/root "../../components/media"}
         poly/note {:local/root "../../components/note"}
         poly/observation {:local/root "../../components/observation"}
+        poly/propagation {:local/root "../../components/propagation"}
         poly/search {:local/root "../../components/search"}
         poly/settings {:local/root "../../components/settings"}
         poly/store {:local/root "../../components/store"}

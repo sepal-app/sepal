@@ -5,6 +5,7 @@
             [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
             [sepal.media.interface.permission :as media.perm]
+            [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.tag.interface.permission :as tag.perm]
             [sepal.taxon.interface.permission :as taxon.perm]))
 
@@ -35,6 +36,7 @@
             material.perm/view material.perm/create material.perm/edit material.perm/delete
             contact.perm/view contact.perm/create contact.perm/edit contact.perm/delete
             media.perm/view media.perm/create media.perm/edit media.perm/delete
+            propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
             tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
             profile-view profile-edit
             security-view security-edit
@@ -46,6 +48,7 @@
              material.perm/view material.perm/create material.perm/edit material.perm/delete
              contact.perm/view contact.perm/create contact.perm/edit contact.perm/delete
              media.perm/view media.perm/create media.perm/edit media.perm/delete
+             propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
              tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
              profile-view profile-edit
              security-view security-edit
@@ -57,6 +60,7 @@
              material.perm/view
              contact.perm/view
              media.perm/view
+             propagation.perm/view
              tag.perm/view
              profile-view profile-edit
              security-view security-edit
