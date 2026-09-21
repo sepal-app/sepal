@@ -32,7 +32,9 @@
    (:location/name location)])
 
 (defn actions
-  "The same actions on every one of a location's sections.
+  "The page-title actions for the location's General tab. `general.clj` is
+  the only caller, so Archive, Unarchive and Delete appear there and nowhere
+  else on the record -- the same as material's tags tab.
 
   A location that has ever held material cannot be deleted -- the move log
   names it -- so archiving is the only way it leaves the garden, and it
