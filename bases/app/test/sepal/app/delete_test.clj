@@ -291,16 +291,11 @@
 ;;; labels
 
 (deftest test-every-polymorphic-resource-cascades-its-links
-  ;; Replaces the guard in no-resource-delete-test, which asserted that no
-  ;; route deleted an accession, material or taxon at all -- true until this
-  ;; plan, and named 049 as the day it would stop being true.
-  ;;
-  ;; The invariant it protected still holds and still needs guarding: a note,
-  ;; an observation, a tag link and a media link all hang off a polymorphic
-  ;; resource_id with no foreign key behind it, so a delete path that forgets
-  ;; one strands rows that leak into the next record to reuse the id. The
-  ;; behavioural tests above prove it for the paths they exercise; this proves
-  ;; no method was added without it.
+  ;; A note, an observation, a tag link and a media link all hang off a
+  ;; polymorphic resource_id with no foreign key behind it, so a delete path
+  ;; that forgets one strands rows that leak into the next record to reuse the
+  ;; id. The behavioural tests above prove it for the paths they exercise;
+  ;; this proves no method was added without it.
   (let [source (slurp "bases/app/src/sepal/app/delete.clj")]
     (doseq [[resource cascades]
             [["accession" [["note" "note.i/delete-for-resource!"]
