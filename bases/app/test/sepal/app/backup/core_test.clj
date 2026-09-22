@@ -180,11 +180,12 @@
     (let [admin-email (create-admin-user! *db*)
           temp-dir (Files/createTempDirectory "backup-test" (into-array java.nio.file.attribute.FileAttribute []))
           backup-path (str temp-dir)
-          app-base-url "https://test.sepal.app"]
+          app-base-url "https://test.sepal.app"
+          email-from "backups@example.org"]
       (try
         (clear-sent-messages!)
         (let [result (backup/create-backup! *db* backup-path)]
-          (#'backup/send-backup-success-email! *mail-client* *db* app-base-url result)
+          (#'backup/send-backup-success-email! *mail-client* email-from *db* app-base-url result)
 
           ;; Verify emails were sent to admin users
           (let [messages (sent-messages)
@@ -194,6 +195,9 @@
             ;; Check content of one of the messages
             (let [msg (first (filter #(= admin-email (:to %)) messages))]
               (is (= "Sepal Backup Completed Successfully" (:subject msg)))
+              (is (= email-from (:from msg))
+                  "the message carries a real address, not a nil that would
+                   throw building it against a real SMTP client")
               (is (str/includes? (:body msg) (:filename result)))
               (is (str/includes? (:body msg) (str app-base-url "/settings/backups/")))
               (is (str/includes? (:body msg) "Download:")))))
@@ -205,9 +209,10 @@
 (deftest test-backup-failure-email
   (testing "sends failure email to admin users on backup error"
     (let [admin-email (create-admin-user! *db*)
-          error-message "Test backup failure"]
+          error-message "Test backup failure"
+          email-from "backups@example.org"]
       (clear-sent-messages!)
-      (#'backup/send-backup-failure-email! *mail-client* *db* error-message)
+      (#'backup/send-backup-failure-email! *mail-client* email-from *db* error-message)
 
       ;; Verify emails were sent
       (let [messages (sent-messages)
@@ -217,6 +222,7 @@
         ;; Check content
         (let [msg (first (filter #(= admin-email (:to %)) messages))]
           (is (= "Sepal Backup Failed" (:subject msg)))
+          (is (= email-from (:from msg)))
           (is (str/includes? (:body msg) error-message))
           (is (str/includes? (:body msg) "check the server logs")))))))
 
@@ -226,7 +232,7 @@
           admin2 (create-admin-user! *db*)
           error-message "Test error"]
       (clear-sent-messages!)
-      (#'backup/send-backup-failure-email! *mail-client* *db* error-message)
+      (#'backup/send-backup-failure-email! *mail-client* "backups@example.org" *db* error-message)
 
       ;; Should have sent to both new admins
       (let [messages (sent-messages)
@@ -256,7 +262,8 @@
     (let [dir (fs/create-temp-dir {:prefix "sepal-task"})]
       (try
         (let [store (local/->LocalBackupStore (str dir))
-              task (#'backup/backup-task *db* *mail-client* "https://test.sepal.app" store)]
+              task (#'backup/backup-task *db* *mail-client* "backups@example.org"
+                                         "https://test.sepal.app" store)]
           (task (java.time.Instant/now))
           (is (= 1 (count (backup/list-backups (str dir))))
               "one zip, in the store's directory"))
@@ -270,7 +277,7 @@
           cancelled (atom [])]
       (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))
                     scheduler.i/cancel! (fn [_ id] (swap! cancelled conj id))]
-        (backup/register-backup-job! ::scheduler *db* *mail-client*
+        (backup/register-backup-job! ::scheduler *db* *mail-client* "backups@example.org"
                                      "https://test.sepal.app"
                                      (fake-store/->FakeBackupStore [] true false))
         (is (empty? @scheduled) "nothing scheduled")
@@ -284,7 +291,7 @@
       (try
         (backup/set-config! *db* {:frequency :daily})
         (with-redefs [scheduler.i/schedule! (fn [_ id _ _] (swap! scheduled conj id))]
-          (backup/register-backup-job! ::scheduler *db* *mail-client*
+          (backup/register-backup-job! ::scheduler *db* *mail-client* "backups@example.org"
                                        "https://test.sepal.app"
                                        (local/->LocalBackupStore (str dir))))
         (is (= [:backup] @scheduled))

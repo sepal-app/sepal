@@ -71,20 +71,22 @@
                                              "FORGOT_PASSWORD_EMAIL_FROM" "reset@example.org"
                                              "FORGOT_PASSWORD_EMAIL_SUBJECT" "Reset it"
                                              "INVITATION_EMAIL_FROM" "invite@example.org"
-                                             "INVITATION_EMAIL_SUBJECT" "You're in"})]
+                                             "INVITATION_EMAIL_SUBJECT" "You're in"
+                                             "BACKUP_EMAIL_FROM" "backups@example.org"})]
       (is (= "127.0.0.1" (:jetty-host instance)))
       (is (= 250 (:media-cache-size-mb instance)))
       (is (= "reset@example.org" (:forgot-password-email-from instance)))
       (is (= "Reset it" (:forgot-password-email-subject instance)))
       (is (= "invite@example.org" (:invitation-email-from instance)))
-      (is (= "You're in" (:invitation-email-subject instance)))))
+      (is (= "You're in" (:invitation-email-subject instance)))
+      (is (= "backups@example.org" (:backup-email-from instance)))))
 
-  (testing "absent, none of the four are present at all (optional keys, not nil)"
+  (testing "absent, none of the five are present at all (optional keys, not nil)"
     (let [{:keys [instance]} (main/env-opts {"SEPAL_DATA_HOME" "/tmp/sepal-selfhosted"
                                              "SEPAL_SECRET" "1234567890123456"})]
       (doseq [k [:jetty-host :media-cache-size-mb :forgot-password-email-from
                  :forgot-password-email-subject :invitation-email-from
-                 :invitation-email-subject]]
+                 :invitation-email-subject :backup-email-from]]
         (is (not (contains? instance k)) (str k " should be absent, not nil"))))))
 
 (deftest test-self-hosted-serves-real-http-on-the-port-from-env

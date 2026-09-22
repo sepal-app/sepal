@@ -167,7 +167,7 @@
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db timezone backup-store scheduler mail app-base-url]} context
+  (let [{:keys [db timezone backup-store scheduler mail app-base-url backup-email-from]} context
         config (backup/get-config db)
         managed? (backup.p/manages-schedule? backup-store)]
     (case request-method
@@ -188,7 +188,8 @@
                                          ;; when it is registered, so a save that
                                          ;; only wrote the setting would not take
                                          ;; effect until the process restarted.
-                                         (backup/register-backup-job! scheduler db mail app-base-url backup-store)))]
+                                         (backup/register-backup-job! scheduler db mail backup-email-from
+                                                                      app-base-url backup-store)))]
           (-> (http/see-other settings.routes/backups)
               (flash/success "Backup settings updated successfully"))
           (f/when-failed [e]

@@ -122,6 +122,7 @@
    [:forgot-password-email-subject {:optional true} [:string {:min 1}]]
    [:invitation-email-from {:optional true} [:string {:min 1}]]
    [:invitation-email-subject {:optional true} [:string {:min 1}]]
+   [:backup-email-from {:optional true} [:string {:min 1}]]
    ;; The parent domain the login route sets the remembered-gardens cookie on —
    ;; sepal.app for a managed garden, so the marketing site can read it. Unset,
    ;; no cookie is written, which is what a self-hosted install wants: its
@@ -344,6 +345,10 @@
 (def ^:private default-invitation-email-from "noreply@sepal.app")
 (def ^:private default-invitation-email-subject "You've been invited to Sepal")
 
+;; Same reasoning as the invitation default above: one address for every
+;; garden's backup notifications, not one derived per garden.
+(def ^:private default-backup-email-from "noreply@sepal.app")
+
 (defn- base-url
   "Scheme, host and port for the links an instance sends out. See :app-base-url
   on InstanceOpts for why this is not derived from :app-domain alone."
@@ -365,6 +370,7 @@
                    vite hot-reload reload-per-request? cache-manifest?
                    forgot-password-email-from forgot-password-email-subject
                    invitation-email-from invitation-email-subject
+                   backup-email-from
                    remembered-gardens-cookie-domain]
             :or {cache-manifest? true}
             :as opts}]
@@ -431,6 +437,7 @@
                         :media-key-prefix media-key-prefix
                         :backup-dir backup-dir
                         :backup-store (resolve-backup-store backup-store backup-dir)
+                        :backup-email-from (or backup-email-from default-backup-email-from)
                         :scheduler (ig/ref :sepal.scheduler.interface/scheduler)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
@@ -444,6 +451,7 @@
      {:scheduler (ig/ref :sepal.scheduler.interface/scheduler)
       :zodiac (ig/ref :sepal.app.server/zodiac)
       :mail (:mail process)
+      :backup-email-from (or backup-email-from default-backup-email-from)
       :app-base-url (base-url opts)
       :backup-dir backup-dir
       :backup-store (resolve-backup-store backup-store backup-dir)}}

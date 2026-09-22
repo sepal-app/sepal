@@ -926,6 +926,28 @@
               "the default store reads the instance's own :backup-dir"))
         (finally (fs/delete-tree dir))))))
 
+(deftest test-backup-email-from-defaults-and-threads-through
+  ;; sepal.mail.core/create-mime-message calls (InternetAddress. from), which
+  ;; throws against a real SmtpClient when from is nil -- so both the request
+  ;; context (the settings save reads it from there) and the backup job's own
+  ;; Integrant entry (the scheduled task reads it from there) need a real
+  ;; address, configured or defaulted, never nil.
+  (testing "a configured address threads through as-is"
+    (let [config (#'instance/instance-config {:master-secret master}
+                                             (assoc valid-instance-opts
+                                                    :backup-email-from "ops@example.org"))]
+      (is (= "ops@example.org"
+             (get-in config [:sepal.app.server/zodiac :request-context :backup-email-from])))
+      (is (= "ops@example.org"
+             (get-in config [:sepal.app.backup/job :backup-email-from])))))
+
+  (testing "an omitted address falls back to the same default invitations use"
+    (let [config (#'instance/instance-config {:master-secret master} valid-instance-opts)]
+      (is (= "noreply@sepal.app"
+             (get-in config [:sepal.app.server/zodiac :request-context :backup-email-from])))
+      (is (= "noreply@sepal.app"
+             (get-in config [:sepal.app.backup/job :backup-email-from]))))))
+
 (deftest test-start-passes-the-current-schema-version-into-instance-config
   ;; The test above proves instance-config copies whatever :schema-version it's
   ;; given; it says nothing about provenance, and would pass unchanged against a
