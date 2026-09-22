@@ -428,6 +428,11 @@
                         ;; process rather than from these instance opts.
                         :synonym-ref-path (:synonym-ref-path process)
                         :mail (:mail process)
+                        ;; So a settings screen can reschedule the job it
+                        ;; configures when it saves a change, rather than
+                        ;; leaving the running job on its old cadence until
+                        ;; the next restart.
+                        :scheduler (ig/ref :sepal.scheduler.interface/scheduler)
                         :token-service (ig/ref :sepal.token.interface/service)
                         :s3-client (:s3-client process)
                         :s3-presigner (:s3-presigner process)
@@ -438,7 +443,6 @@
                         :backup-dir backup-dir
                         :backup-store (resolve-backup-store backup-store backup-dir)
                         :backup-email-from (or backup-email-from default-backup-email-from)
-                        :scheduler (ig/ref :sepal.scheduler.interface/scheduler)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
