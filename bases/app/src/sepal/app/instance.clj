@@ -431,6 +431,7 @@
                         :media-key-prefix media-key-prefix
                         :backup-dir backup-dir
                         :backup-store (resolve-backup-store backup-store backup-dir)
+                        :scheduler (ig/ref :sepal.scheduler.interface/scheduler)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
                         :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)

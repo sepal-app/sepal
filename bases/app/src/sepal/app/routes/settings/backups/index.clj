@@ -167,7 +167,7 @@
 ;; Handler
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db timezone backup-store]} context
+  (let [{:keys [db timezone backup-store scheduler mail app-base-url]} context
         config (backup/get-config db)
         managed? (backup.p/manages-schedule? backup-store)]
     (case request-method
@@ -183,7 +183,12 @@
                                          (settings.activity/create! db
                                                                     settings.activity/updated
                                                                     (:user/id viewer)
-                                                                    {:changes {"backup.frequency" (or (:frequency data) "disabled")}})))]
+                                                                    {:changes {"backup.frequency" (or (:frequency data) "disabled")}})
+                                         ;; The scheduled job's timing is fixed
+                                         ;; when it is registered, so a save that
+                                         ;; only wrote the setting would not take
+                                         ;; effect until the process restarted.
+                                         (backup/register-backup-job! scheduler db mail app-base-url backup-store)))]
           (-> (http/see-other settings.routes/backups)
               (flash/success "Backup settings updated successfully"))
           (f/when-failed [e]

@@ -3,7 +3,8 @@
             [peridot.core :as peri]
             [sepal.app.backup.core :as backup]
             [sepal.app.test :as app.test]
-            [sepal.app.test.system :refer [*backup-dir* *db* default-system-fixture]]
+            [sepal.app.test.system :refer [*backup-dir* *db* *garden* default-system-fixture]]
+            [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
@@ -74,6 +75,51 @@
 
       ;; Clean up
       (settings.i/set-values! *db* {"backup.frequency" nil}))))
+
+(deftest test-saving-frequency-reschedules-the-running-job
+  ;; The chime schedule is a fixed sequence of instants computed when the job
+  ;; is registered, so a save that only wrote the setting would leave the old
+  ;; cadence running until the process restarted. The handler has to register
+  ;; the job again with the new config for a save to take effect immediately.
+  (testing "a save replaces the scheduler's running job, not just the setting"
+    (let [scheduler (get-in *garden* [:system :sepal.scheduler.interface/scheduler])
+          password "testpassword123"
+          email (create-user! *db* :admin password)
+          sess (app.test/login email password)]
+      (try
+        (let [{:keys [response] :as sess} (peri/request sess "/settings/backups")
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (peri/request sess "/settings/backups"
+                                               :request-method :post
+                                               :params {:__anti-forgery-token token
+                                                        :frequency "daily"})
+              _ (is (= 303 (:status response)))
+              job-after-daily (get @scheduler :backup)
+              _ (is (some? job-after-daily) "daily registers a running job")
+
+              {:keys [response] :as sess} (peri/request sess "/settings/backups")
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (peri/request sess "/settings/backups"
+                                               :request-method :post
+                                               :params {:__anti-forgery-token token
+                                                        :frequency "weekly"})]
+          (is (= 303 (:status response)))
+          (is (not (identical? job-after-daily (get @scheduler :backup)))
+              "changing the frequency replaces the running job rather than leaving the old one"))
+
+        (let [{:keys [response] :as sess} (peri/request sess "/settings/backups")
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (peri/request sess "/settings/backups"
+                                               :request-method :post
+                                               :params {:__anti-forgery-token token
+                                                        :frequency ""})]
+          (is (= 303 (:status response)))
+          (is (nil? (get @scheduler :backup))
+              "disabling cancels the running job rather than leaving the old schedule active"))
+
+        (finally
+          (settings.i/set-values! *db* {"backup.frequency" nil})
+          (scheduler.i/cancel! scheduler :backup))))))
 
 (deftest test-update-backup-frequency-requires-admin
   (testing "POST /settings/backups returns 403 for non-admin users"
