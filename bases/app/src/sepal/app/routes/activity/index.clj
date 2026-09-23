@@ -598,8 +598,8 @@
 
 (defn- overdue-href
   "Where the overdue count links: the observation index, with the same
-  `due:<=<today>` term its own Overdue toggle applies -- built from that
-  toggle's own term so the two cannot name the filter differently."
+  `overdue:<today>` term its overdue checkbox applies -- built from that
+  checkbox's own term so the two cannot name the filter differently."
   [today]
   (str (z/url-for observation.routes/index)
        "?" (uri/map->query-string {:q (observation.index/overdue-term today)})))

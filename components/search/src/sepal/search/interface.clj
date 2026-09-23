@@ -37,6 +37,9 @@
    the word that returns a HoneySQL clause. That is for a match no single
    column can express, such as a code built from two columns.
 
+   `:filter-clause` does the same for a `field:value` filter: a function of the
+   parsed filter, with `:value` and `:op`, that returns the clause.
+
    ## Usage
 
      (require '[sepal.search.interface :as search.i])

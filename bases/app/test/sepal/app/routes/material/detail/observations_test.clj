@@ -374,6 +374,8 @@
                                                     :note ""})]
         (is (= garden-today (.attr (.selectFirst body "form#observation-form input#observed_on") "value"))
             "the default observed date")
+        (is (= garden-today (.attr (.selectFirst body "form#observation-form input#observed_on") "max"))
+            "and the latest date the picker offers")
         (is (= 200 (:status post)) "today in the garden is not a future date")
         (doseq [o (observation.i/get-for-resource *db* :material (:material/id material))]
           (observation.i/delete! *db* (:observation/id o)))
@@ -425,3 +427,26 @@
             panel (.getElementById body "detail-panel-content")]
         (is (.contains (.text panel) "Phenology \u00b7 Flowering"))
         (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-only-an-unsettled-check-shows-overdue
+  (tf/testing "the Overdue badge leaves out a check a later observation followed up"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [base {:resource-type :material
+                  :resource-id (:material/id material)
+                  :type "pest"
+                  :created-by (:user/id user)}
+            settled (observation.i/create! *db* (assoc base :value "moderate"
+                                                       :observed-on "2026-01-01"
+                                                       :next-check-on "2026-01-10"))
+            follow-up (observation.i/create! *db* (assoc base :value "light"
+                                                         :observed-on "2026-01-12"
+                                                         :next-check-on "2026-01-20"))
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))
+            badge? (fn [o] (some? (.selectFirst body (str "[data-observation-id=" (:observation/id o) "] .spl-badge--danger"))))]
+        (is (not (badge? settled)) "followed up, so not overdue")
+        (is (badge? follow-up) "the follow-up's own check is overdue")
+        (doseq [o [settled follow-up]]
+          (observation.i/delete! *db* (:observation/id o)))))))

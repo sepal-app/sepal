@@ -228,15 +228,17 @@
                     :value "fair"
                     :observed-on "2026-03-01"
                     :created-by (:user/id user)}
+              ;; A type each, so no row is a follow-up to another -- see
+              ;; test-a-later-observation-settles-an-earlier-check.
               overdue (observation.i/create!
                         db (assoc base :next-check-on "2026-03-10"))
               today (observation.i/create!
-                      db (assoc base :next-check-on "2026-03-14"))
+                      db (assoc base :type "pest" :value "light" :next-check-on "2026-03-14"))
               later (observation.i/create!
-                      db (assoc base :next-check-on "2026-04-01"))
+                      db (assoc base :type "disease" :value "light" :next-check-on "2026-04-01"))
               ;; No next-check-on at all. The row a `<=` with no null guard
               ;; would silently include or exclude depending on the dialect.
-              never (observation.i/create! db base)
+              never (observation.i/create! db (assoc base :type "general" :value nil))
               results (observation.i/due db "2026-03-14")
               ids (set (map :observation/id results))]
           (is (contains? ids (:observation/id overdue)))
@@ -247,6 +249,42 @@
                  (mapv :observation/id results))
               "oldest first")
           (doseq [o [overdue today later never]]
+            (observation.i/delete! db (:observation/id o))))))))
+
+(deftest test-a-later-observation-settles-an-earlier-check
+  (let [db *db*]
+    (tf/testing "due and count-due leave out a check someone came back for"
+      (material-fixtures db)
+      (fn [{:keys [user material location]}]
+        (let [base {:resource-type :material
+                    :resource-id (:material/id material)
+                    :type "pest"
+                    :value "light"
+                    :observed-on "2026-03-01"
+                    :next-check-on "2026-03-10"
+                    :created-by (:user/id user)}
+              settled (observation.i/create! db base)
+              follow-up (observation.i/create! db (assoc base :observed-on "2026-03-12" :value "none"
+                                                         :next-check-on nil))
+              other-type (observation.i/create! db (assoc base :type "condition" :value "fair"))
+              later-type (observation.i/create! db (assoc base :type "general" :value nil
+                                                          :observed-on "2026-03-12" :next-check-on nil))
+              other-subject (observation.i/create! db (assoc base :resource-type :location
+                                                             :resource-id (:location/id location)))
+              same-day (observation.i/create! db (assoc base :type "disease" :value "light"))
+              same-day-follow-up (observation.i/create! db (assoc base :type "disease" :value "none"
+                                                                  :next-check-on nil))
+              ids (set (map :observation/id (observation.i/due db "2026-03-14")))]
+          (is (not (contains? ids (:observation/id settled)))
+              "a later pest observation of the same plant settles it")
+          (is (contains? ids (:observation/id other-type))
+              "a later observation of another type does not -- general here")
+          (is (contains? ids (:observation/id other-subject))
+              "nor does one of another subject")
+          (is (not (contains? ids (:observation/id same-day)))
+              "a same-day observation entered after it does")
+          (is (= (count ids) (observation.i/count-due db "2026-03-14")))
+          (doseq [o [settled follow-up other-type later-type other-subject same-day same-day-follow-up]]
             (observation.i/delete! db (:observation/id o))))))))
 
 (deftest test-count-due-matches-the-number-of-due-rows

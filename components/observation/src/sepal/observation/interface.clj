@@ -34,8 +34,10 @@
   (core/count-for-resource db resource-type resource-id))
 
 (defn due
-  "Observations whose next_check_on is on or before `on-date`, oldest first.
-  `on-date` is an ISO-8601 string. Rows with no next_check_on never appear.
+  "Observations whose next_check_on is on or before `on-date`, oldest first,
+  leaving out any followed up by a later observation of the same subject and
+  type. `on-date` is an ISO-8601 string. Rows with no next_check_on never
+  appear.
   Each carries :observation/observer -- see `get-for-resource`."
   [db on-date]
   (core/due db on-date))

@@ -81,8 +81,34 @@
                           [:= :resource_type (csk/->kebab-case-string resource-type)]
                           [:= :resource_id resource-id]]}))
 
+(def followed-up
+  "True when a later observation of the same subject and type exists, so the
+  check this one scheduled was made. `later` means a later `observed_on`, or
+  the same day entered afterwards. Expects the observation aliased `o`."
+  [:exists {:select [1]
+            :from [[:observation :later]]
+            :where [:and
+                    [:= :later.resource_type :o.resource_type]
+                    [:= :later.resource_id :o.resource_id]
+                    [:= :later.type :o.type]
+                    [:or
+                     [:> :later.observed_on :o.observed_on]
+                     [:and
+                      [:= :later.observed_on :o.observed_on]
+                      [:> :later.id :o.id]]]]}])
+
+(defn overdue
+  "The clause for an observation overdue on `on-date`: its next check has
+  arrived and nothing later has followed it up. Expects the alias `o`."
+  [on-date]
+  [:and
+   [:not= :o.next_check_on nil]
+   [:<= :o.next_check_on on-date]
+   [:not followed-up]])
+
 (defn due
-  "Observations whose next check has arrived, oldest first.
+  "Observations whose next check has arrived and hasn't been followed up,
+  oldest first.
 
   The `not null` predicate is not redundant. A null next_check_on means nobody
   asked to be reminded, and SQLite's `<=` against null yields null rather than
@@ -90,20 +116,16 @@
   of three-valued logic. Saying it is what makes the intent readable."
   [db on-date]
   (->> (db.i/execute! db (assoc base-query
-                                :where [:and
-                                        [:not= :o.next_check_on nil]
-                                        [:<= :o.next_check_on on-date]]
+                                :where (overdue on-date)
                                 :order-by [[:o.next_check_on :asc] [:o.id :asc]]))
        (mapv row->observation)))
 
 (defn count-due
   "How many observations are due, without materialising them -- see `due`."
   [db on-date]
-  (db.i/count db {:select [:id]
-                  :from [:observation]
-                  :where [:and
-                          [:not= :next_check_on nil]
-                          [:<= :next_check_on on-date]]}))
+  (db.i/count db {:select [:o.id]
+                  :from [[:observation :o]]
+                  :where (overdue on-date)}))
 
 (defn list-types
   "Every observation_type, ordered by code."

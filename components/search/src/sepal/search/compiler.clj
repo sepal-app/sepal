@@ -83,8 +83,13 @@
    Arguments:
      filter    - Map with :field, :value/:values, :op, :negated
      field-def - Field definition from search-config with :column, :type, etc."
-  [{:keys [value values op negated]} {:keys [column type fts-table id-column]}]
+  [{:keys [value values op negated] :as parsed} {:keys [column type fts-table id-column filter-clause]}]
   (let [clause (cond
+                 ;; The field says what its filter means, for one no single
+                 ;; column comparison can express.
+                 filter-clause
+                 (filter-clause parsed)
+
                  ;; Multi-value → IN clause (no operator support)
                  ;; Enum values stored as strings in SQLite
                  values

@@ -94,7 +94,7 @@
           (observation.i/delete! *db* (:observation/id o)))))))
 
 (deftest test-the-overdue-filter-returns-only-rows-whose-due-date-has-passed
-  (tf/testing "the overdue affordance's due:<=<today> query"
+  (tf/testing "the overdue checkbox's overdue:<today> query"
     (fixtures)
     (fn [{:keys [user material]}]
       (let [today (LocalDate/now)
@@ -107,16 +107,18 @@
             not-yet-due (create! :resource-type :material
                                  :resource-id (:material/id material)
                                  :user user
-                                 :type "general"
+                                 :type "pest"
+                                 :value "light"
                                  :observed-on "2026-01-01"
                                  :next-check-on (str (.plusDays today 5)))
             never-due (create! :resource-type :material
                                :resource-id (:material/id material)
                                :user user
-                               :type "general"
+                               :type "disease"
+                               :value "light"
                                :observed-on "2026-01-01")
             sess (app.test/login (:user/email user) password)
-            body (fetch sess "/observation/" "q" (str "due:<=" today))]
+            body (fetch sess "/observation/" "q" (str "overdue:" today))]
         (is (= #{(str (:observation/id overdue))} (row-ids body))
             "only the row whose next_check_on is on or before today")
         (doseq [o [overdue not-yet-due never-due]]
@@ -133,7 +135,7 @@
             body (fetch sess "/observation/")
             checkbox (overdue-checkbox body)]
         (is (some? checkbox) "a checkbox applies the overdue filter without typing it")
-        (is (.contains (.attr checkbox "x-data") (str "'due:<=" (LocalDate/now) "'")))
+        (is (.contains (.attr checkbox "x-data") (str "'overdue:" (LocalDate/now) "'")))
         (is (.contains (.attr checkbox "x-data") ", false)") "unchecked with no overdue term")
         (is (.contains (.text checkbox) "Only overdue observations"))))))
 
@@ -147,11 +149,11 @@
             body (fetch sess "/observation/")
             garden-today (LocalDate/now (ZoneId/of zone))]
         (is (.contains (.attr (overdue-checkbox body) "x-data")
-                       (str "'due:<=" garden-today "'")))
+                       (str "'overdue:" garden-today "'")))
         (settings.i/set-value! *db* "organization.timezone" "UTC")))))
 
 (deftest test-a-combined-query-of-a-filter-and-overdue-narrows-and-shows-checked
-  (tf/testing "type:phenology plus due:<=<today> applies both filters"
+  (tf/testing "type:phenology plus overdue:<today> applies both filters"
     (fixtures)
     (fn [{:keys [user material]}]
       (let [today (LocalDate/now)
@@ -161,11 +163,12 @@
                               :type "phenology"
                               :observed-on "2026-01-01"
                               :next-check-on (str (.minusDays today 5)))
+            ;; Observed before `matching`, so it doesn't follow it up.
             right-type-not-overdue (create! :resource-type :material
                                             :resource-id (:material/id material)
                                             :user user
                                             :type "phenology"
-                                            :observed-on "2026-01-01"
+                                            :observed-on "2025-12-01"
                                             :next-check-on (str (.plusDays today 5)))
             overdue-but-wrong-type (create! :resource-type :material
                                             :resource-id (:material/id material)
@@ -174,7 +177,7 @@
                                             :observed-on "2026-01-01"
                                             :next-check-on (str (.minusDays today 5)))
             sess (app.test/login (:user/email user) password)
-            body (fetch sess "/observation/" "q" (str "type:phenology due:<=" today))]
+            body (fetch sess "/observation/" "q" (str "type:phenology overdue:" today))]
         (is (= #{(str (:observation/id matching))} (row-ids body))
             "both filters narrow together")
         (is (.contains (.attr (overdue-checkbox body) "x-data") ", true)")
@@ -288,3 +291,28 @@
         ;; A second q turns the parameter into a vector, which search.i/parse
         ;; can't read, so every search from this page would fail.
         (is (= 1 (count (.select search-form "[name=q]"))))))))
+
+(deftest test-a-followed-up-check-is-not-overdue
+  (tf/testing "overdue: leaves out a check a later observation settled; due: still matches it"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [today (LocalDate/now)
+            settled (create! :resource-type :material
+                             :resource-id (:material/id material)
+                             :user user
+                             :type "pest"
+                             :value "moderate"
+                             :observed-on (str (.minusDays today 20))
+                             :next-check-on (str (.minusDays today 10)))
+            follow-up (create! :resource-type :material
+                               :resource-id (:material/id material)
+                               :user user
+                               :type "pest"
+                               :value "none"
+                               :observed-on (str (.minusDays today 9)))
+            sess (app.test/login (:user/email user) password)
+            id (str (:observation/id settled))]
+        (is (not (contains? (row-ids (fetch sess "/observation/" "q" (str "overdue:" today))) id)))
+        (is (contains? (row-ids (fetch sess "/observation/" "q" (str "due:<=" today))) id))
+        (doseq [o [settled follow-up]]
+          (observation.i/delete! *db* (:observation/id o)))))))

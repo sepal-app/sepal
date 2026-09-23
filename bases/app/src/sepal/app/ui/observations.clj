@@ -86,6 +86,9 @@
                              :label "Observed on"
                              :type "date"
                              :value (or (:observed_on values) today)
+                             ;; The routes reject a future date too; max keeps
+                             ;; the picker from offering one.
+                             :input-attrs {:max today}
                              :errors (:observed_on errors))
         (ui.form/input-field :id (control-id "observed_by" id-suffix)
                              :name "observed_by"
@@ -113,12 +116,14 @@
   "One observation as a timeline entry, and an edit form for it hidden
   behind an Alpine flag. Carrying the form here rather than fetching it saves
   a route and a handler on each of the resources this is used from."
-  [& {:keys [observation observation-url-fn type-options value-options-by-type today]}]
+  [& {:keys [observation observation-url-fn type-options value-options-by-type today
+             followed-up?]}]
   (let [{:observation/keys [id observed-on observed-by note observer
                             type-label value-label type value
                             next-check-on]} observation
         url (observation-url-fn id)
-        overdue? (and next-check-on today (<= (compare next-check-on today) 0))]
+        overdue? (and next-check-on today (not followed-up?)
+                      (<= (compare next-check-on today) 0))]
     [:div {:class "spl-changelog-entry"
            :data-observation-id id
            :x-data (json/js {:editing false})}
@@ -183,28 +188,42 @@
             "Cancel"]
            (ui.form/submit-button {:class "spl-btn spl-btn--primary spl-btn--sm"} "Save")]])]]]))
 
+(defn- latest-by-type
+  "The ids of the newest observation of each type in `observations`, which
+  arrive newest first. Any other observation has been followed up, so its
+  check is settled -- the rule `observation.i/due` applies."
+  [observations]
+  (->> observations
+       (reduce (fn [seen {:observation/keys [id type]}]
+                 (cond-> seen (not (contains? seen type)) (assoc type id)))
+               {})
+       vals
+       set))
+
 (defn observation-list
   "The list of observations as a timeline, newest observed first and grouped
   under a heading per observed day. Carries the id every swap targets."
   [& {:keys [observations observation-url-fn type-options value-options-by-type today]}]
-  [:div {:id "observations-list"}
-   (if (seq observations)
-     [:div {:class "spl-changelog px-0"}
-      (for [day-observations (partition-by :observation/observed-on observations)
-            :let [day (:observation/observed-on (first day-observations))]]
-        (list
-          [:h2 {:class "spl-changelog-day"}
-           (datetime/day-label (LocalDate/parse day) (LocalDate/parse today))]
-          (for [observation day-observations]
-            ^{:key (:observation/id observation)}
-            (observation-item :observation observation
-                              :observation-url-fn observation-url-fn
-                              :type-options type-options
-                              :value-options-by-type value-options-by-type
-                              :today today))))]
-     [:p {:data-observations-empty ""
-          :class "text-text-soft text-sm"}
-      "No observations yet."])])
+  (let [latest (latest-by-type observations)]
+    [:div {:id "observations-list"}
+     (if (seq observations)
+       [:div {:class "spl-changelog px-0"}
+        (for [day-observations (partition-by :observation/observed-on observations)
+              :let [day (:observation/observed-on (first day-observations))]]
+          (list
+            [:h2 {:class "spl-changelog-day"}
+             (datetime/day-label (LocalDate/parse day) (LocalDate/parse today))]
+            (for [observation day-observations]
+              ^{:key (:observation/id observation)}
+              (observation-item :observation observation
+                                :observation-url-fn observation-url-fn
+                                :type-options type-options
+                                :value-options-by-type value-options-by-type
+                                :today today
+                                :followed-up? (not (contains? latest (:observation/id observation)))))))]
+       [:p {:data-observations-empty ""
+            :class "text-text-soft text-sm"}
+        "No observations yet."])]))
 
 (defn observation-form
   "The new-observation form. Posts to the tab's own URL and replaces the

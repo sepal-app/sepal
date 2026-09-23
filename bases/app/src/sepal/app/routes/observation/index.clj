@@ -110,15 +110,16 @@
                                 :searching? (seq search-query)))))
 
 (defn overdue-term
-  "The overdue filter term the index's own checkbox applies: `due:<=<today>`.
-  Public so another page linking in to the overdue filter builds the
-  identical term rather than risking drift."
+  "The overdue filter term the index's own checkbox applies: `overdue:<today>`,
+  due by today and not followed up by a later observation. Public so another
+  page linking in to the overdue filter builds the identical term rather than
+  risking drift."
   [today]
-  (str "due:<=" today))
+  (str "overdue:" today))
 
 (defn- overdue-only-checkbox
   "Checkbox that adds or removes the overdue term in the search query, so a
-  curator doesn't have to know the `due:<=<today>` syntax. Works like the
+  curator doesn't have to know the `overdue:<today>` syntax. Works like the
   taxa list's accessions-only checkbox."
   [search-query today]
   (let [term (overdue-term today)

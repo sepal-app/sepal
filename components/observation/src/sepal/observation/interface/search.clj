@@ -1,6 +1,7 @@
 (ns sepal.observation.interface.search
   "Search field definitions for observations."
-  (:require [sepal.search.interface :as search.i]))
+  (:require [sepal.observation.core :as core]
+            [sepal.search.interface :as search.i]))
 
 (defn- material-code-clause
   "A bare word matches a material subject on its accession code, or on the
@@ -55,6 +56,13 @@
     :observer {:column :o.observed_by
                :type :text
                :label "Observed by"}
+
+    ;; overdue:<date> is what the index's checkbox applies: due by that date
+    ;; and not followed up. due: compares the date alone.
+    :overdue {:column :o.next_check_on
+              :type :date
+              :filter-clause (fn [{:keys [value]}] (core/overdue value))
+              :label "Overdue on"}
 
     :due {:column :o.next_check_on
           :type :date
