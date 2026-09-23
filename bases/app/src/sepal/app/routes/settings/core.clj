@@ -4,7 +4,6 @@
             [sepal.app.routes.settings.backups.download :as backups.download]
             [sepal.app.routes.settings.backups.index :as backups.index]
             [sepal.app.routes.settings.codes :as codes]
-            [sepal.app.routes.settings.observation-digest :as observation-digest]
             [sepal.app.routes.settings.organization :as organization]
             [sepal.app.routes.settings.profile :as profile]
             [sepal.app.routes.settings.routes :as settings.routes]
@@ -39,11 +38,6 @@
          :post #'backups.index/handler}]
     ["/:filename/download" {:name settings.routes/backup-download
                             :get #'backups.download/handler}]]
-   ;; Observation digest (admin only)
-   ["/observation-digest" {:name settings.routes/observation-digest
-                           :middleware [[middleware/require-admin]]
-                           :get #'observation-digest/handler
-                           :post #'observation-digest/handler}]
    ;; User management (admin only)
    ["/users" {:middleware [[middleware/require-admin]]}
     ["" {:name settings.routes/users
