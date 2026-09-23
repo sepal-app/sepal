@@ -37,10 +37,15 @@
 
    Also raises a banner. The per-field message can be below the fold on a long
    form, so a rejected save otherwise looked like nothing happened —
-   `wrap-flash-messages` swaps this in alongside the field errors."
-  [errors]
+   `wrap-flash-messages` swaps this in alongside the field errors.
+
+   `id-suffix` is for a form whose control ids carry one, such as an inline
+   edit form repeated per item: each error list id becomes `<field>-<suffix>`,
+   matching what `ui.form/input-field` renders for that `:id`."
+  [errors & {:keys [id-suffix]}]
   (let [oob-elements (for [[field-name messages] errors]
-                       (ui.form/error-list (name field-name)
+                       (ui.form/error-list (cond-> (name field-name)
+                                             id-suffix (str "-" id-suffix))
                                            messages
                                            :hx-swap-oob? true))]
     (-> {:status 422
@@ -56,19 +61,21 @@
 
    The discriminator is whether the failure has an explain, not where it came
    from: a store-level coerce failure carries one too, and has to reach the
-   user as a field error rather than as a 500."
-  [e fallback]
+   user as a field error rather than as a 500. `id-suffix` is passed to
+   `validation-errors`."
+  [e fallback & {:keys [id-suffix]}]
   (let [err (if (instance? Exception e) (error.i/ex->error e) e)]
     (if-let [errors (error.i/humanize err)]
-      (validation-errors errors)
+      (validation-errors errors :id-suffix id-suffix)
       (do (log/error e "form post failed")
           fallback))))
 
 (defn failure-partial
   "Fallback for a handler that answers with an HTML partial. A redirect would
    be wrong for a partial swap, so the message goes back as a 422."
-  [e message]
-  (failure-response e (unprocessable-entity [:div {:class "spl-error"} message])))
+  [e message & {:keys [id-suffix]}]
+  (failure-response e (unprocessable-entity [:div {:class "spl-error"} message])
+                    :id-suffix id-suffix))
 
 (defn failure-flash
   "Fallback for a handler that answers with a redirect: `response` carrying

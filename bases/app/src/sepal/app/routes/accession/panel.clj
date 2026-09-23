@@ -113,6 +113,7 @@
           (ui.notes/panel-section
             :notes notes
             :note-count note-count
+            :timezone timezone
             :more-url (z/url-for accession.routes/detail-notes {:id id})))
 
         ;; External links section

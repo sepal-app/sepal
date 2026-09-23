@@ -51,10 +51,10 @@
                                        :resource-type :accession
                                        :resource-id (:accession/id accession)
                                        :created-by (:user/id user)})
-              ;; Same id, different type. The row that catches a query missing
-              ;; its resource_type predicate.
-              same-id-other-type (note.i/create! db {:body "on the material"
-                                                     :resource-type :material
+              ;; Same id as the accession, but typed as a taxon. The row that
+              ;; catches a query missing its resource_type predicate.
+              same-id-other-type (note.i/create! db {:body "on a taxon with the accession's id"
+                                                     :resource-type :taxon
                                                      :resource-id (:accession/id accession)
                                                      :created-by (:user/id user)})
               other-resource (note.i/create! db {:body "on the taxon"

@@ -34,7 +34,7 @@
     (fn [{:keys [user]}]
       (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
-            detail-url (str "/location/" (:location/id location) "/")
+            detail-url (str "/location/" (:location/id location) "/general/")
             {:keys [response] :as sess} (-> sess
                                             (peri/request detail-url))
             token (test.i/response-anti-forgery-token response)
@@ -70,7 +70,7 @@
       (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess
-                                   (peri/request (str "/location/" (:location/id location) "/")))
+                                   (peri/request (str "/location/" (:location/id location) "/general/")))
             body (Jsoup/parse ^String (:body response))
             form (.selectFirst body "form#location-form")]
         (is (some? (.attr form "hx-post"))
@@ -88,10 +88,35 @@
       (let [location (location.i/create! *db* (test-location-data))
             sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess
-                                   (peri/request (str "/location/" (:location/id location) "/")))
+                                   (peri/request (str "/location/" (:location/id location) "/general/")))
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "#name-errors"))
             "Name field should have error container with id name-errors")))))
+
+(deftest test-a-reader-sees-the-panel-page-not-a-tab
+  (tf/testing "a reader hitting the plain detail route gets the read-only panel
+               as a full page, not the tabbed editor a permission check would
+               otherwise redirect them into"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :reader}}
+    (fn [{:keys [user]}]
+      (let [location (location.i/create! *db* (test-location-data))
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess
+                                   (peri/request (str "/location/" (:location/id location) "/")))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (nil? (.selectFirst body "form#location-form"))
+            "a reader should see the read-only panel, not the edit form")
+        (is (nil? (.selectFirst body "nav.spl-tabs"))
+            "the panel page has no section tabs")
+        (is (.contains (.text body) (:location/name location)))
+
+        (let [{:keys [response]} (-> sess
+                                     (peri/request (str "/location/" (:location/id location) "/general/")))]
+          (is (= 302 (:status response))
+              "the general tab still redirects a reader away"))))))
 
 (deftest test-location-detail-shows-moved-material
   (tf/testing "material that moved away appears in the location's Moved section"
@@ -115,7 +140,7 @@
                            :reason "transferred"})
       (let [sess (app.test/login (:user/email user) "testpassword123")
             {:keys [response]} (-> sess
-                                   (peri/request (str "/location/" (:location/id loc1) "/")))
+                                   (peri/request (str "/location/" (:location/id loc1) "/general/")))
             body (Jsoup/parse ^String (:body response))]
         (is (= 200 (:status response)))
         (is (some? (.selectFirst body ":containsOwn(Moved)"))

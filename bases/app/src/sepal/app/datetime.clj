@@ -63,6 +63,35 @@
   (-> (DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a z")
       (.withLocale Locale/ENGLISH)))
 
+(def ^:private date-formatter
+  (-> (DateTimeFormatter/ofPattern "MMM d, yyyy")
+      (.withLocale Locale/ENGLISH)))
+
+(defn format-date
+  "Format an ISO date string, '2026-03-14', as 'Mar 14, 2026'. A date carries
+  no time, so it takes no timezone."
+  [iso-date]
+  (when iso-date
+    (.format (LocalDate/parse iso-date) date-formatter)))
+
+(def ^:private day-formatter
+  (-> (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy")
+      (.withLocale Locale/ENGLISH)))
+
+(defn day-label
+  "A day heading: 'Today', 'Yesterday', or 'Monday, March 14, 2026'. `today`
+  is the garden's date, from `today`, not the server's."
+  [^LocalDate day ^LocalDate today]
+  (cond
+    (= day today) "Today"
+    (= day (.minusDays today 1)) "Yesterday"
+    :else (.format day day-formatter)))
+
+(defn local-date
+  "The garden's date at `instant`."
+  [^Instant instant timezone]
+  (.toLocalDate (.atZone instant (->zone-id timezone))))
+
 (defn format-datetime
   "Format an Instant as a localized datetime string.
    Example: 'Jan 18, 2025, 2:30 PM'"
@@ -78,6 +107,20 @@
   (when instant
     (let [zdt (.atZone instant (->zone-id timezone))]
       (.format datetime-full-formatter zdt))))
+
+(def ^:private time-formatter
+  (-> (DateTimeFormatter/ofPattern "h:mm a")
+      (.withLocale Locale/ENGLISH)))
+
+(defn clock-time
+  "Render a <time> element with the time of day, '2:45 PM', and the full
+  datetime as a tooltip. For a row under a heading that already names the day."
+  [^Instant instant timezone & {:keys [class]}]
+  (when instant
+    [:time (cond-> {:datetime (str instant)
+                    :title (format-datetime-full instant timezone)}
+             class (assoc :class class))
+     (.format time-formatter (.atZone instant (->zone-id timezone)))]))
 
 (defn format-relative
   "Format an Instant as a relative time string (e.g., '2 hours ago', 'yesterday')."

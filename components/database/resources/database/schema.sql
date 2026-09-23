@@ -392,6 +392,61 @@ CREATE INDEX taxon_parentage_parent_taxon_id_idx
   on taxon_parentage (parent_taxon_id);
 CREATE UNIQUE INDEX taxon_parentage_position_idx
   on taxon_parentage (taxon_id, position);
+CREATE TABLE observation_type (
+  code text primary key,
+  label text not null
+) strict;
+CREATE TABLE observation_value (
+  type text not null references observation_type(code),
+  code text not null,
+  label text not null,
+  primary key (type, code)
+) strict;
+INSERT INTO observation_value (type, code, label) VALUES
+  ('phenology', 'vegetative', 'Vegetative'),
+  ('phenology', 'budding', 'Budding'),
+  ('phenology', 'flowering', 'Flowering'),
+  ('phenology', 'fruiting', 'Fruiting'),
+  ('phenology', 'seed_dispersal', 'Seed dispersal'),
+  ('phenology', 'senescing', 'Senescing'),
+  ('phenology', 'dormant', 'Dormant'),
+  ('condition', 'excellent', 'Excellent'),
+  ('condition', 'good', 'Good'),
+  ('condition', 'fair', 'Fair'),
+  ('condition', 'poor', 'Poor'),
+  ('condition', 'dying', 'Dying'),
+  ('condition', 'dead', 'Dead'),
+  ('pest', 'none', 'None'),
+  ('pest', 'light', 'Light'),
+  ('pest', 'moderate', 'Moderate'),
+  ('pest', 'severe', 'Severe'),
+  ('disease', 'none', 'None'),
+  ('disease', 'light', 'Light'),
+  ('disease', 'moderate', 'Moderate'),
+  ('disease', 'severe', 'Severe');
+CREATE TABLE observation (
+  id integer primary key autoincrement,
+  resource_id integer not null,
+  resource_type text not null,
+  type text not null references observation_type(code),
+  value text,
+  observed_on text not null,
+  observed_by text,
+  next_check_on text,
+  note text,
+  created_by integer references "user"(id),
+  created_at text not null default (datetime('now')),
+  updated_at text not null default (datetime('now')),
+  foreign key (type, value) references observation_value(type, code)
+) strict;
+CREATE INDEX observation_resource_id_resource_type_idx
+  on observation (resource_id, resource_type);
+CREATE INDEX observation_type_observed_on_idx on observation (type, observed_on);
+CREATE INDEX observation_next_check_on_idx on observation (next_check_on);
+CREATE TRIGGER trigger_observation_updated_at after update on observation
+begin
+  update observation set updated_at = datetime('now') where id = NEW.id;
+end;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -456,6 +511,11 @@ INSERT INTO material_status VALUES('dormant');
 INSERT INTO material_status VALUES('transferred');
 INSERT INTO material_status VALUES('other');
 INSERT INTO material_status VALUES('unknown');
+INSERT INTO observation_type VALUES('phenology','Phenology');
+INSERT INTO observation_type VALUES('condition','Condition');
+INSERT INTO observation_type VALUES('pest','Pest');
+INSERT INTO observation_type VALUES('disease','Disease');
+INSERT INTO observation_type VALUES('general','General');
 INSERT INTO taxon_rank VALUES('aggregate');
 INSERT INTO taxon_rank VALUES('class');
 INSERT INTO taxon_rank VALUES('convariety');
@@ -513,3 +573,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260916150000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917120000', '2026-09-17 15:05:28');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917130000', '2026-09-17 15:34:45');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917140000', '2026-09-17 17:00:44');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920120000', '2026-09-20 19:46:19');

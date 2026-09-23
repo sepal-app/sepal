@@ -10,8 +10,10 @@
             [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
+            [sepal.observation.interface :as observation.i]
             [sepal.settings.interface.activity :as settings.activity]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [java.time LocalDate]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -251,3 +253,76 @@
                another")
           (is (some? (.selectFirst (body "page=2") "#activity-days"))
               "but a browser loading page 2 directly still gets a container"))))))
+
+(defn- create-overdue-fixture-observation! [& {:keys [user location next-check-on]}]
+  (observation.i/create! *db* {:resource-type :location
+                               :resource-id (:location/id location)
+                               :created-by (:user/id user)
+                               :type "general"
+                               :observed-on "2026-01-01"
+                               :next-check-on next-check-on}))
+
+(deftest test-the-overdue-observation-count-appears-when-something-is-overdue
+  (tf/testing "The dashboard counts observations whose due date has passed"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (let [today (LocalDate/now)
+            observation (create-overdue-fixture-observation!
+                          :user user
+                          :location location
+                          :next-check-on (str (.minusDays today 1)))]
+        (try
+          (is (app.test/body-contains? (get-activity-page user) "1 overdue observation")
+              "One overdue observation is counted on the dashboard")
+          (finally
+            (observation.i/delete! *db* (:observation/id observation))))))))
+
+(deftest test-the-overdue-observation-count-is-absent-when-nothing-is-overdue
+  (tf/testing "No count at all, not a zero, when nothing is due yet"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (let [today (LocalDate/now)
+            observation (create-overdue-fixture-observation!
+                          :user user
+                          :location location
+                          :next-check-on (str (.plusDays today 5)))]
+        (try
+          (is (nil? (.selectFirst (app.test/parse-body (get-activity-page user))
+                                  "[data-overdue-count]"))
+              "A dashboard with nothing overdue shows no overdue element, not a zero")
+          (finally
+            (observation.i/delete! *db* (:observation/id observation))))))))
+
+(deftest test-the-overdue-observation-count-links-to-the-overdue-filter
+  (tf/testing "The count links to the observation index, filtered to the same rows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::location.i/factory :key/location] {:db *db*}}
+    (fn [{:keys [user location]}]
+      (let [today (LocalDate/now)
+            observation (create-overdue-fixture-observation!
+                          :user user
+                          :location location
+                          :next-check-on (str (.minusDays today 1)))]
+        (try
+          (let [session (app.test/login (:user/email user) password)
+                body (app.test/parse-body (get-activity-page user))
+                link (.selectFirst body "[data-overdue-count]")
+                href (some-> link (.attr "href"))
+                response (:response (peri/request session href))]
+            (is (some? href) "the count is a link")
+            (is (= 200 (:status response)) "the link resolves")
+            (is (some-> (app.test/parse-body response)
+                        (.selectFirst "label[x-data^=overdueOnlyFilter]")
+                        (.attr "x-data")
+                        (.endsWith ", true)"))
+                "the index's overdue checkbox is checked, because the link applies the very same term it uses"))
+          (finally
+            (observation.i/delete! *db* (:observation/id observation))))))))

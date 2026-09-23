@@ -5,7 +5,7 @@
             [sepal.app.routes.material.detail :as detail]
             [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.routes.material.detail.media :as detail-media]
-            [sepal.app.routes.material.detail.notes :as detail-notes]
+            [sepal.app.routes.material.detail.observations :as detail-observations]
             [sepal.app.routes.material.detail.tags :as detail-tags]
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.index :as index]
@@ -51,14 +51,14 @@
                 :middleware [[(middleware/require-permission-or-redirect
                                 material.perm/edit (constantly routes/detail))]]
                 :handler #'detail-media/handler}]
-    ["/notes/" {:name routes/detail-notes
-                :middleware [[(middleware/require-permission-or-redirect
-                                material.perm/edit (constantly routes/detail))]]
-                :handler #'detail-notes/handler}]
-    ["/notes/:note-id/" {:name routes/detail-note
-                         :middleware [[(middleware/require-permission-or-redirect
-                                         material.perm/edit (constantly routes/detail))]]
-                         :handler #'detail-notes/note-handler}]
+    ["/observations/" {:name routes/detail-observations
+                       :middleware [[(middleware/require-permission-or-redirect
+                                       material.perm/edit (constantly routes/detail))]]
+                       :handler #'detail-observations/handler}]
+    ["/observations/:observation-id/" {:name routes/detail-observation
+                                       :middleware [[(middleware/require-permission-or-redirect
+                                                       material.perm/edit (constantly routes/detail))]]
+                                       :handler #'detail-observations/observation-handler}]
     ["/tags/" {:name routes/detail-tags
                :middleware [[(middleware/require-permission-or-redirect
                                material.perm/edit (constantly routes/detail))]]

@@ -9,6 +9,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
+            [sepal.app.routes.observation.routes :as observation.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -139,6 +140,8 @@
     :icon (lucide/sprout)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
+   {:label "Observations" :href (z/url-for observation.routes/index)
+    :icon (lucide/eye)}
    {:label "Tags" :href (z/url-for tag.routes/index)
     :icon (lucide/tag)}
    {:label "Media" :href (z/url-for media.routes/index)

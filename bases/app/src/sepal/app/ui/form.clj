@@ -116,11 +116,15 @@
           include (assoc :hx-include include)
           params (assoc :hx-params params))])
 
-(defn input-field [& {:keys [id label name read-only required type value errors
-                             help minlength maxlength input-attrs]}]
+(defn input-field
+  "A labelled input. The label, help, and error-list ids derive from `:id`
+  when it is given, not `:name`, so a field that appears in more than one form
+  on a page gets its errors on the right one."
+  [& {:keys [id label name read-only required type value errors
+             help minlength maxlength input-attrs]}]
   (let [control-id (or id name)]
     (field :errors errors
-           :name name
+           :name control-id
            :label label
            :help help
            :required required
@@ -136,9 +140,9 @@
                                           :type (or type "text")
                                           :value value}
                                    (seq errors) (assoc :aria-invalid "true")
-                                   (describedby name {:help help :errors errors})
+                                   (describedby control-id {:help help :errors errors})
                                    (assoc :aria-describedby
-                                          (describedby name {:help help :errors errors})))
+                                          (describedby control-id {:help help :errors errors})))
                                  input-attrs)])))
 
 (defn section
@@ -160,7 +164,7 @@
 (defn textarea-field [& {:keys [errors id label name required value help]}]
   (let [control-id (or id name)]
     (field :errors errors
-           :name name
+           :name control-id
            :label label
            :help help
            :required required
@@ -171,9 +175,9 @@
                                       :required (or required false)
                                       :class "spl-input spl-textarea"}
                                (seq errors) (assoc :aria-invalid "true")
-                               (describedby name {:help help :errors errors})
+                               (describedby control-id {:help help :errors errors})
                                (assoc :aria-describedby
-                                      (describedby name {:help help :errors errors})))
+                                      (describedby control-id {:help help :errors errors})))
                    value])))
 
 (defn footer-buttons

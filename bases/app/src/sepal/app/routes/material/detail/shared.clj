@@ -10,7 +10,7 @@
 
 (def general-tab ::general)
 (def media-tab ::media)
-(def notes-tab ::notes)
+(def observations-tab ::observations)
 (def tags-tab ::tags)
 
 (defn- tab-items [& {:keys [active material]}]
@@ -20,9 +20,9 @@
    (ui.tabs/item "Media"
                  {:href (z/url-for material.routes/detail-media {:id (:material/id material)})
                   :active (= active media-tab)})
-   (ui.tabs/item "Notes"
-                 {:href (z/url-for material.routes/detail-notes {:id (:material/id material)})
-                  :active (= active notes-tab)})
+   (ui.tabs/item "Observations"
+                 {:href (z/url-for material.routes/detail-observations {:id (:material/id material)})
+                  :active (= active observations-tab)})
    (ui.tabs/item "Tags"
                  {:href (z/url-for material.routes/detail-tags {:id (:material/id material)})
                   :active (= active tags-tab)})])

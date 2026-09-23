@@ -62,8 +62,8 @@
                                 :accession (:accession panel-data)
                                 :taxon (:taxon panel-data)
                                 :location (:location panel-data)
-                                :notes (:notes panel-data)
-                                :note-count (:note-count panel-data)
+                                :observations (:observations panel-data)
+                                :observation-count (:observation-count panel-data)
                                 :activities (:activities panel-data)
                                 :activity-count (:activity-count panel-data)))
     :breadcrumbs (material.shared/breadcrumbs :accession accession

@@ -19,7 +19,7 @@
 (def ^:private password "testpassword123")
 
 (defn- post-archive [sess id path]
-  (let [{:keys [response] :as sess} (peri/request sess (str "/location/" id "/"))
+  (let [{:keys [response] :as sess} (peri/request sess (str "/location/" id "/general/"))
         token (test.i/response-anti-forgery-token response)]
     (-> sess
         (peri/request (str "/location/" id path)

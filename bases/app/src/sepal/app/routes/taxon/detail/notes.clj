@@ -31,13 +31,14 @@
   (db.i/with-transaction [tx db]
     (f tx created-by)))
 
-(defn render-list [db taxon]
+(defn render-list [db taxon timezone]
   (let [id (:taxon/id taxon)]
     (html/render-partial
       (ui.notes/note-list :notes (note.i/get-for-resource db resource-type id)
-                          :note-url-fn (note-url-fn id)))))
+                          :note-url-fn (note-url-fn id)
+                          :timezone timezone))))
 
-(defn page-content [& {:keys [taxon notes errors values]}]
+(defn page-content [& {:keys [taxon notes errors values timezone]}]
   (let [id (:taxon/id taxon)]
     (taxon.shared/page
       :taxon taxon
@@ -46,12 +47,13 @@
                                  :create-url (create-url id)
                                  :note-url-fn (note-url-fn id)
                                  :errors errors
-                                 :values values))))
+                                 :values values
+                                 :timezone timezone))))
 
 (defn render [& {:keys [taxon notes panel-data timezone]}]
   (ui.page/page
     :content (pages.detail/page-content-with-panel
-               :content (page-content :taxon taxon :notes notes)
+               :content (page-content :taxon taxon :notes notes :timezone timezone)
                :panel-content (taxon.panel/panel-content
                                 :taxon (:taxon panel-data)
                                 :parent (:parent panel-data)
@@ -79,7 +81,7 @@
                                                                               :created-by created-by})]
                                                  (note.activity/create! tx note.activity/created created-by note)
                                                  note))))]
-        (render-list db resource)
+        (render-list db resource timezone)
         (f/when-failed [e]
           (http/failure-partial e "The note could not be saved.")))
 
@@ -91,7 +93,7 @@
 
 (defn note-handler
   [{:keys [::z/context form-params path-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         note-id (parse-long (str (:note-id path-params)))
         note (when note-id (note.i/get-by-id db note-id))]
     (if-not (and note
@@ -106,7 +108,7 @@
                                                  (let [updated (note.i/update! tx note-id {:body (:body data)})]
                                                    (note.activity/create! tx note.activity/updated created-by updated)
                                                    updated))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (http/failure-partial e "The note could not be saved.")))
 
@@ -115,7 +117,7 @@
                                                  (fn [tx created-by]
                                                    (note.activity/create! tx note.activity/deleted created-by note)
                                                    (note.i/delete! tx note-id))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (http/failure-partial e "The note could not be deleted.")))
 

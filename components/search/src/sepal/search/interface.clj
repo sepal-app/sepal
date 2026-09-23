@@ -30,6 +30,16 @@
    - :date     - Exact match, or a comparison when the query carries an
                  operator: created:>=2024-01-01 / created:<2024-01-01
 
+   ## Bare words
+
+   A field marked `:search? true` is searched by a bare word. It matches the
+   way its type does, unless the field gives `:search-clause`, a function of
+   the word that returns a HoneySQL clause. That is for a match no single
+   column can express, such as a code built from two columns.
+
+   `:filter-clause` does the same for a `field:value` filter: a function of the
+   parsed filter, with `:value` and `:op`, that returns the clause.
+
    ## Usage
 
      (require '[sepal.search.interface :as search.i])

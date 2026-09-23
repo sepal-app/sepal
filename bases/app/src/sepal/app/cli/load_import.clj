@@ -54,6 +54,9 @@
             [sepal.note.interface :as note.i]
             [sepal.note.interface.activity]
             [sepal.note.interface.spec :as note.spec]
+            [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity]
+            [sepal.observation.interface.spec :as observation.spec]
             [sepal.settings.interface :as settings.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.synonym.interface.activity]
@@ -78,8 +81,8 @@
   The order is the reference graph: a file may only point at one before it. It
   is the one thing here that the input does not say."
   ["user" "taxon" "location" "contact" "tag" "settings" "accession" "material"
-   "collection" "material_change" "note" "tag_link" "taxon_vernacular"
-   "taxon_synonym" "taxon_distribution" "activity"])
+   "collection" "material_change" "note" "observation" "tag_link"
+   "taxon_vernacular" "taxon_synonym" "taxon_distribution" "activity"])
 
 (defn- kebab-key
   "`quantity_received` -> `:quantity-received`. The files are snake_case;
@@ -243,7 +246,8 @@
   (when (map? result)
     (some result [:id :taxon/id :accession/id :material/id :location/id
                   :contact/id :collection/id :note/id :tag/id :synonym/id
-                  :material-change/id :tag-link/id :user/id :activity/id])))
+                  :material-change/id :tag-link/id :user/id :activity/id
+                  :observation/id])))
 
 (defn- write!
   "Call `f`, record the outcome, and keep going.
@@ -385,7 +389,8 @@
    "accession" :accession
    "material" :material
    "collection" :collection
-   "note" :note})
+   "note" :note
+   "observation" :observation})
 
 (defn- restore-created-at!
   "Put the source's `created_at` back on the rows this run wrote.
@@ -434,6 +439,7 @@
    "collection" "collection"
    "material_change" "material_change"
    "note" "note"
+   "observation" "observation"
    "taxon_synonym" "synonym"})
 
 (defn- record-provenance!
@@ -499,6 +505,8 @@
                        material.spec/CreateMaterialChange))
         (as-> st (pass db st "note" (t "note") note.i/create!
                        note.spec/CreateNote))
+        (as-> st (pass db st "observation" (t "observation")
+                       observation.i/create! observation.spec/CreateObservation))
         (as-> st (pass-tag-link db st (t "tag_link")))
         (as-> st (pass-taxon-update db st "taxon_vernacular"
                                     (t "taxon_vernacular") :vernacular-names))

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.activity.index
   (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [malli.core :as m]
             [malli.util :as mu]
             [sepal.accession.interface.activity :as accession.activity]
@@ -13,6 +14,8 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.observation.index :as observation.index]
+            [sepal.app.routes.observation.routes :as observation.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.setup.activity :as setup.activity]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -20,12 +23,14 @@
             [sepal.app.ui.avatar :as ui.avatar]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
+            [sepal.observation.interface :as observation.i]
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
@@ -591,12 +596,35 @@
                        :viewer viewer)]
     (loading-indicator)))
 
-(defn render [& {:keys [activity page page-size timezone viewer]}]
-  (ui.page/page :content (timeline :activity activity
-                                   :page page
-                                   :page-size page-size
-                                   :timezone timezone
-                                   :viewer viewer)
+(defn- overdue-href
+  "Where the overdue count links: the observation index, with the same
+  `overdue:<today>` term its overdue checkbox applies -- built from that
+  checkbox's own term so the two cannot name the filter differently."
+  [today]
+  (str (z/url-for observation.routes/index)
+       "?" (uri/map->query-string {:q (observation.index/overdue-term today)})))
+
+(defn overdue-observations
+  "A count of overdue observations, linking to the observation index filtered
+  to them. Absent rather than a zero when nothing is overdue -- a dashboard
+  that always reads \"0 overdue\" trains people to stop checking it."
+  [count today]
+  (when (pos? count)
+    [:div {:class "spl-alert spl-alert--warning"}
+     (lucide/triangle-alert :class "size-4")
+     [:a {:class "spl-link"
+          :data-overdue-count count
+          :href (overdue-href today)}
+      (format "%d overdue observation%s" count (if (= count 1) "" "s"))]]))
+
+(defn render [& {:keys [activity overdue-count page page-size timezone today viewer]}]
+  (ui.page/page :content (list
+                           (overdue-observations overdue-count today)
+                           (timeline :activity activity
+                                     :page page
+                                     :page-size page-size
+                                     :timezone timezone
+                                     :viewer viewer))
                 :breadcrumbs ["Activity"]))
 
 (defn render-partial
@@ -698,7 +726,8 @@
   (let [{:keys [db timezone]} context
         {:keys [last-day page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)
-        htmx-request? (get headers "hx-request")]
+        htmx-request? (get headers "hx-request")
+        today (str (datetime/today timezone))]
     (if htmx-request?
       (render-partial :activity activity
                       :last-day (parse-day last-day)
@@ -707,7 +736,9 @@
                       :timezone timezone
                       :viewer viewer)
       (render :activity activity
+              :overdue-count (observation.i/count-due db today)
               :page page
               :page-size page-size
               :timezone timezone
+              :today today
               :viewer viewer))))

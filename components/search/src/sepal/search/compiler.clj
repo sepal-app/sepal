@@ -83,8 +83,13 @@
    Arguments:
      filter    - Map with :field, :value/:values, :op, :negated
      field-def - Field definition from search-config with :column, :type, etc."
-  [{:keys [value values op negated]} {:keys [column type fts-table id-column]}]
+  [{:keys [value values op negated] :as parsed} {:keys [column type fts-table id-column filter-clause]}]
   (let [clause (cond
+                 ;; The field says what its filter means, for one no single
+                 ;; column comparison can express.
+                 filter-clause
+                 (filter-clause parsed)
+
                  ;; Multi-value → IN clause (no operator support)
                  ;; Enum values stored as strings in SQLite
                  values
@@ -278,12 +283,21 @@
   [terms fields]
   (when-let [match (terms->match terms)]
     (let [clauses (->> (searchable-fields fields)
-                       (keep (fn [[_ {:keys [type] :as field}]]
-                               (if (= :fts type)
+                       (keep (fn [[_ {:keys [type search-clause] :as field}]]
+                               (cond
+                                 ;; The field says how a bare word matches it,
+                                 ;; for a match one column can't express.
+                                 search-clause
+                                 (when-let [value (first terms)]
+                                   (search-clause value))
+
+                                 (= :fts type)
                                  (fts-in-clause field match)
+
                                  ;; A plain column has no index behind it, so
                                  ;; this is the ordinary contains match the
                                  ;; same field gives as a filter.
+                                 :else
                                  (when-let [value (first terms)]
                                    [:like (:column field) (str "%" value "%")]))))
                        (vec))]

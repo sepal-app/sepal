@@ -8,10 +8,14 @@
 ;; A closed enum, not the open :string media_link uses. media_link predates any
 ;; need to constrain the type; an open type here would let a typo write a note
 ;; nothing can ever read back.
+;;
+;; Material is absent: it records observations instead, which carry a date, an
+;; observer and a coded value. A plain remark about a plant is a `general`
+;; observation.
 (def resource-type
   [:enum {:decode/store csk/->kebab-case-keyword
           :encode/store csk/->kebab-case-string}
-   :accession :material :taxon])
+   :accession :taxon])
 
 (def Note
   [:map {:closed true}

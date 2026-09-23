@@ -187,10 +187,13 @@
                           {"body" "an imported note"
                            "resource_type" "accession"}
                           {"resource_id" (ref-to "accession" accession)})
-                     (rec (str "plant_note:50-" suffix)
-                          {"body" "same id, other table"
-                           "resource_type" "material"}
-                          {"resource_id" (ref-to "material" material)})
+                     ;; Same numeric id as the note above, and the same
+                     ;; accession -- the id prefix is the only thing telling
+                     ;; the loader these are two different rows.
+                     (rec (str "second_accession_note:50-" suffix)
+                          {"body" "same id, other prefix"
+                           "resource_type" "accession"}
+                          {"resource_id" (ref-to "accession" accession)})
                      ;; A note on the taxon this run created. The converter
                      ;; used to hang this on the taxon record as a field, and
                      ;; the loader dropped it.
@@ -254,7 +257,7 @@
             (let [m (json/read-str (slurp (fs/file (fs/path dir
                                                             "loaded.json"))))]
               (is (not= (get-in m ["note" "accession_note:50-a"])
-                        (get-in m ["note" "plant_note:50-a"])))))
+                        (get-in m ["note" "second_accession_note:50-a"])))))
 
           (testing "every file that creates rows records where they came from"
             ;; A create whose id key `landed-id` does not know records nothing,
@@ -513,6 +516,84 @@
             ;; there, so this clears its own rows.
             (jdbc.sql/delete! db :import_record {:source_table "contact"})
             (jdbc.sql/delete! db :contact {:name "Fairchild Tropical Garden"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-an-observation-imports-with-its-created-at-restored
+  ;; A location is the resource: it needs no accession/taxon chain to exist
+  ;; first, and observation.spec/resource-type accepts it directly.
+  (tf/testing "an import file carrying an observation creates the row"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-observation"})]
+        (try
+          (spit (fs/file (fs/path dir "location.json"))
+                (json/write-str
+                  [(rec "obsloc" {"code" "OBSLOC"
+                                  "name" "Observation testing block"})]))
+          (spit (fs/file (fs/path dir "observation.json"))
+                (json/write-str
+                  [(-> (rec "obs-1" {"resource_type" "location"
+                                     "type" "general"
+                                     "observed_on" "2020-05-01"
+                                     "note" "load-import-observation-fixture"}
+                            {"resource_id" (ref-to "location" "obsloc")})
+                       (assoc "created_at" "2019-01-01 08:00:00"))]))
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+          (let [row (db.i/execute-one!
+                      db {:select [:id :created_at]
+                          :from [:observation]
+                          :where [:= :note "load-import-observation-fixture"]})]
+            (is (= "2019-01-01 08:00:00" (:observation/created-at row)))
+
+            (testing "and it records where the row came from"
+              ;; Mirrors "every loaded record says where it came from" in
+              ;; test-loading-a-fixture-garden, for the accession table.
+              (let [provenance
+                    (db.i/execute-one!
+                      db {:select [:resource_type :resource_id]
+                          :from [:import_record]
+                          :where [:and [:= :source_table "observation"]
+                                  [:= :source_id "obs-1"]]})]
+                (is (= "observation" (:import-record/resource-type provenance)))
+                (is (= (:observation/id row)
+                       (:import-record/resource-id provenance))))))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :observation
+                              {:note "load-import-observation-fixture"})
+            (jdbc.sql/delete! db :import_record {:source_table "location"
+                                                 :source_id "obsloc"})
+            (jdbc.sql/delete! db :import_record {:source_table "observation"
+                                                 :source_id "obs-1"})
+            (jdbc.sql/delete! db :location {:code "OBSLOC"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-a-note-on-material-is-refused
+  ;; note.spec/resource-type was narrowed to [:accession :taxon] -- material
+  ;; records observations instead. No new code makes this fail; the test pins
+  ;; the behaviour so `:material` being added back to the enum is caught.
+  (tf/testing "a note whose resource_type is material fails, naming the row"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-note-material"})]
+        (try
+          (write-fixture! dir :suffix "h")
+          (spit (fs/file (fs/path dir "note.json"))
+                (json/write-str
+                  [(rec "material_note:1" {"body" "a note on a plant"
+                                           "resource_type" "material"}
+                        {"resource_id" (ref-to "material" "40-h")})]))
+          (let [out (with-out-str
+                      (is (= 1 (li/load-import! db {:dir (str dir)
+                                                    :actor (:user/email user)
+                                                    :allow-nonempty true}))))]
+            (is (re-find #"note material_note:1" out)))
+          (finally
+            (fs/delete-tree dir)
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
 
 (deftest test-pass-activity
