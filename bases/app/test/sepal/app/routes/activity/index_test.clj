@@ -1,7 +1,9 @@
 (ns sepal.app.routes.activity.index-test
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [peridot.core :as peri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.cli.activity :as import.activity]
             [sepal.app.routes.activity.index :as activity.index]
             [sepal.app.test :as app.test]
@@ -11,7 +13,11 @@
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
+            [sepal.propagation.interface :as propagation.i]
+            [sepal.propagation.interface.activity :as propagation.activity]
             [sepal.settings.interface.activity :as settings.activity]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
   (:import [java.time LocalDate]))
 
@@ -326,3 +332,41 @@
                 "the index's overdue checkbox is checked, because the link applies the very same term it uses"))
           (finally
             (observation.i/delete! *db* (:observation/id observation))))))))
+
+(deftest test-propagation-and-observation-events-are-rendered
+  (tf/testing "propagation and observation events appear in the feed"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db*
+                                       :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/loc] {:db *db*}}
+    (fn [{:keys [user acc loc]}]
+      (with-cleared-activity
+        (let [prop (propagation.i/create! *db* {:type :tissue_culture
+                                                :parent-accession-id (:accession/id acc)})
+              obs (observation.i/create! *db* {:resource-type :location
+                                               :resource-id (:location/id loc)
+                                               :created-by (:user/id user)
+                                               :type "general"
+                                               :observed-on "2026-01-01"})]
+          (try
+            (propagation.activity/create! *db* propagation.activity/created (:user/id user) prop)
+            (observation.activity/create! *db* observation.activity/created (:user/id user) obs)
+            (let [response (get-activity-page user)]
+              (is (app.test/body-contains? response
+                                           (str "Tissue culture from " (:accession/code acc))))
+              (is (str/includes? (:body response)
+                                 (str "/propagation/" (:propagation/id prop) "/")))
+              (is (str/includes? (:body response)
+                                 (str "/location/" (:location/id loc) "/observations/")))
+              (is (app.test/body-contains? response "a propagation")
+                  "the summary names the resource")
+              (is (app.test/body-contains? response "an observation")))
+            (finally
+              (clear-activity!)
+              (db.i/execute! *db* {:delete-from :observation
+                                   :where [:= :id (:observation/id obs)]})
+              (db.i/execute! *db* {:delete-from :propagation
+                                   :where [:= :id (:propagation/id prop)]}))))))))

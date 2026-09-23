@@ -16,6 +16,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.observation.index :as observation.index]
             [sepal.app.routes.observation.routes :as observation.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.setup.activity :as setup.activity]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -31,6 +32,9 @@
             [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
             [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
+            [sepal.propagation.interface.activity :as propagation.activity]
+            [sepal.propagation.interface.spec :as propagation.spec]
             [sepal.store.interface :as store.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.taxon.interface.spec :as taxon.spec]
@@ -264,6 +268,49 @@
                    (map (fn [[table n]] (format "%s %d" (name table) n)))
                    (str/join ", "))}))
 
+(defn- propagation-data [activity]
+  (let [{:keys [accession propagation taxon]} activity
+        method (some-> (:propagation/type propagation) name (str/replace "_" " ") str/capitalize)]
+    {:resource-type :propagation
+     :resource-name (str method " from " (:accession/code accession))
+     :resource-url (z/url-for propagation.routes/detail {:id (:propagation/id propagation)})
+     :context (str "Propagation" (when taxon (str " • " (:taxon/name taxon))))}))
+
+(defmethod activity-data propagation.activity/created [activity]
+  (propagation-data activity))
+
+(defmethod activity-data propagation.activity/updated [activity]
+  (propagation-data activity))
+
+(defn- observation-data
+  "An observation event is filed against the material or location it was made
+  on, so the chip names that record and links to its observations."
+  [activity]
+  (let [{:keys [accession location material]} activity]
+    (cond
+      material
+      {:resource-type :observation
+       :resource-name (format "%s.%s" (:accession/code accession) (:material/code material))
+       :resource-url (z/url-for material.routes/detail-observations
+                                {:id (:material/id material)})
+       :context "Observation on material"}
+
+      location
+      {:resource-type :observation
+       :resource-name (:location/name location)
+       :resource-url (z/url-for location.routes/detail-observations
+                                {:id (:location/id location)})
+       :context "Observation on location"})))
+
+(defmethod activity-data observation.activity/created [activity]
+  (observation-data activity))
+
+(defmethod activity-data observation.activity/updated [activity]
+  (observation-data activity))
+
+(defmethod activity-data observation.activity/deleted [activity]
+  (observation-data activity))
+
 ;;; Grouping logic
 
 (defn group-consecutive-by-user
@@ -299,6 +346,8 @@
    "location" ["a location" "locations"]
    "contact" ["a contact" "contacts"]
    "media" ["a media item" "media items"]
+   "observation" ["an observation" "observations"]
+   "propagation" ["a propagation" "propagations"]
    "setup" ["setup" "setup"]
    "settings" ["settings" "settings"]
    "import" ["an import" "imports"]})
@@ -651,6 +700,7 @@
       (mu/assoc :accession [:maybe accession.spec/Accession])
       (mu/assoc :location [:maybe location.spec/Location])
       (mu/assoc :material [:maybe material.spec/Material])
+      (mu/assoc :propagation [:maybe propagation.spec/Propagation])
       (mu/assoc :user [:maybe user.spec/User])))
 
 (defn get-activity [db page page-size]
@@ -660,6 +710,7 @@
                                      :acc.*
                                      :loc.*
                                      :mat.*
+                                     :prop.*
                                      :u.id
                                      :u.email
                                      [:parent.id :parent__id]
@@ -669,20 +720,26 @@
                             ;; indexed resource columns. The extra arms walk the
                             ;; domain rather than the payload: a material event
                             ;; reaches its accession through material.accession_id
-                            ;; and its taxon through accession.taxon_id. That is
-                            ;; why material is joined before accession, and
-                            ;; accession before taxon -- each one references the
-                            ;; table above it.
+                            ;; and its taxon through accession.taxon_id, and a
+                            ;; propagation event reaches its accession through
+                            ;; propagation.parent_accession_id. That is why
+                            ;; material and propagation are joined before
+                            ;; accession, and accession before taxon -- each one
+                            ;; references the table above it.
                             :join-by [:inner [[:user :u]
                                               [:= :u.id :a.created_by]]
                                       :left [[:material :mat]
                                              [:and [:= :a.resource_type "material"]
                                               [:= :mat.id :a.resource_id]]]
+                                      :left [[:propagation :prop]
+                                             [:and [:= :a.resource_type "propagation"]
+                                              [:= :prop.id :a.resource_id]]]
                                       :left [[:accession :acc]
                                              [:or
                                               [:and [:= :a.resource_type "accession"]
                                                [:= :acc.id :a.resource_id]]
-                                              [:= :acc.id :mat.accession_id]]]
+                                              [:= :acc.id :mat.accession_id]
+                                              [:= :acc.id :prop.parent_accession_id]]]
                                       :left [[:location :loc]
                                              [:and [:= :a.resource_type "location"]
                                               [:= :loc.id :a.resource_id]]]
