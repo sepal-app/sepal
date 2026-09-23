@@ -7,7 +7,7 @@
             [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i]
             [taoensso.telemere :as tel])
-  (:import [java.time LocalDate]))
+  (:import [java.time Instant LocalDate LocalTime ZoneId]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -142,3 +142,13 @@
       (with-redefs [scheduler.i/cancel! (fn [_ id] (swap! cancelled conj id))]
         (#'digest/schedule-digest! {:db *db* :mail *mail-client* :scheduler ::scheduler}))
       (is (= [:observation-digest] @cancelled)))))
+
+(deftest test-the-schedule-fires-at-the-send-time-in-the-gardens-zone
+  (let [zone (ZoneId/of "Pacific/Auckland")
+        [first-run second-run] (take 2 (#'digest/daily-at "07:00" zone))
+        local (.atZone ^Instant first-run zone)]
+    (is (= (LocalTime/of 7 0) (.toLocalTime local))
+        "07:00 on the garden's clock, not the server's")
+    (is (= (.plusDays (.toLocalDate local) 1)
+           (.toLocalDate (.atZone ^Instant second-run zone)))
+        "and once a day after that")))

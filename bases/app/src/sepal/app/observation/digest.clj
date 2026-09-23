@@ -3,11 +3,12 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [integrant.core :as ig]
+            [sepal.app.datetime :as datetime]
             [sepal.mail.interface :as mail.i]
             [sepal.observation.interface :as observation.i]
             [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i])
-  (:import [java.time LocalDate LocalTime ZonedDateTime]
+  (:import [java.time LocalTime ZoneId ZonedDateTime]
            [java.time.temporal ChronoUnit]))
 
 ;; -----------------------------------------------------------------------------
@@ -90,10 +91,11 @@
 
 (defn- daily-at
   "An infinite Chime schedule of Instants, one per day at `send-at` (an
-  HH:mm local time), starting with the next occurrence from now. Mirrors
-  sepal.app.backup.core's chime sequence construction."
-  [send-at]
-  (let [now (ZonedDateTime/now)
+  HH:mm time in `zone`, the garden's timezone), starting with the next
+  occurrence from now. Mirrors sepal.app.backup.core's chime sequence
+  construction."
+  [send-at ^ZoneId zone]
+  (let [now (ZonedDateTime/now zone)
         today-at (-> now
                      (.with (LocalTime/parse send-at))
                      (.truncatedTo ChronoUnit/MINUTES))
@@ -107,15 +109,18 @@
   [db mail recipient from]
   (fn [_scheduled-time]
     (try
-      (send-digest! db mail recipient (str (LocalDate/now)) from)
+      (send-digest! db mail recipient
+                    (str (datetime/today (datetime/get-timezone db)))
+                    from)
       (catch Exception e
         (log/error e "Scheduled observation digest failed")))))
 
 (defn schedule-digest!
   "Register the digest job with the scheduler based on current config, or
   cancel it. Called on app startup, and again whenever the settings screen
-  saves a change -- a save the running job never picks up until the next
-  restart is a job that quietly fails every run in between.
+  saves a change, including a change to the organization's timezone -- a
+  save the running job never picks up until the next restart is a job that
+  quietly fails every run in between.
 
   Guards on the mail client rather than on the config: with no client this
   logs once and registers nothing, rather than scheduling a job that would
@@ -126,7 +131,7 @@
     (let [{:keys [enabled send-at recipient]} (get-config db)]
       (if (and enabled recipient)
         (scheduler.i/schedule! scheduler :observation-digest
-                               (daily-at send-at)
+                               (daily-at send-at (ZoneId/of (datetime/get-timezone db)))
                                (digest-task db mail recipient from))
         (scheduler.i/cancel! scheduler :observation-digest)))))
 

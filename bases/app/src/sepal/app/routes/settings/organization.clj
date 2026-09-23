@@ -3,6 +3,7 @@
             [failjure.core :as f]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
+            [sepal.app.observation.digest :as digest]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.combobox :as combobox]
@@ -160,7 +161,7 @@
                 form-key->setting-key)))
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db mail scheduler invitation-email-from]} context
         current-settings (settings.i/get-values db "organization")
         values (settings->form-values current-settings)]
     (case request-method
@@ -170,6 +171,12 @@
         (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                         _saved (f/try* (let [new-settings (form-values->settings data)]
                                          (settings.i/set-values! db new-settings)
+                                         ;; The digest sends at a time in the
+                                         ;; garden's timezone.
+                                         (digest/schedule-digest! {:db db
+                                                                   :mail mail
+                                                                   :scheduler scheduler
+                                                                   :from invitation-email-from})
                                          (settings.activity/create! db
                                                                     settings.activity/updated
                                                                     (:user/id viewer)
