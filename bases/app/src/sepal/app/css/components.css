@@ -1506,6 +1506,18 @@
   margin-top: 8px;
 }
 
+/* A drag hovering over the media empty state, which doubles as the drop
+ * target. Same brand ring as focus, so "drop here" reads as the page's one
+ * live affordance. */
+.spl-drop-active {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+.spl-drop-active .spl-empty {
+  background: var(--color-brand-tint);
+  border-color: var(--color-brand);
+}
+
 /* ── Flash banner ──────────────────────────────────────────────────────────
  * The transient message that slides up from the bottom. Same four categories
  * as the alert, but reversed out: it sits over the page rather than in it, so

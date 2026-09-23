@@ -69,7 +69,7 @@
                   :selected (when material-id
                               {:id material-id :text material-name})))
 
-(defn media-link-form [& {:keys [media]}]
+(defn media-link-form [& {:keys [media link link-text]}]
   (form/form
     {:class "flex flex-row gap-2 items-center"
      :hx-post (z/url-for media.routes/detail-link {:id (:media/id media)})
@@ -97,13 +97,29 @@
                   ;; that rendered a literal <<>> around these templates.
                   :input (list
                            [:template {:x-if "resourceType === 'accession'"}
-                            (accession-field :name "resource-id")]
+                            (accession-field :name "resource-id"
+                                             :accession-id (when (and link (= "accession" (:media-link/resource-type link)))
+                                                             (:media-link/resource-id link))
+                                             :accession-name (when (and link (= "accession" (:media-link/resource-type link)))
+                                                               link-text))]
                            [:template {:x-if "resourceType === 'location'"}
-                            (location-field :name "resource-id")]
+                            (location-field :name "resource-id"
+                                            :location-id (when (and link (= "location" (:media-link/resource-type link)))
+                                                           (:media-link/resource-id link))
+                                            :location-name (when (and link (= "location" (:media-link/resource-type link)))
+                                                             link-text))]
                            [:template {:x-if "resourceType === 'material'"}
-                            (material-field :name "resource-id")]
+                            (material-field :name "resource-id"
+                                            :material-id (when (and link (= "material" (:media-link/resource-type link)))
+                                                           (:media-link/resource-id link))
+                                            :material-name (when (and link (= "material" (:media-link/resource-type link)))
+                                                             link-text))]
                            [:template {:x-if "resourceType === 'taxon'"}
-                            (taxon-field :name "resource-id")]))
+                            (taxon-field :name "resource-id"
+                                         :taxon-id (when (and link (= "taxon" (:media-link/resource-type link)))
+                                                     (:media-link/resource-id link))
+                                         :taxon-name (when (and link (= "taxon" (:media-link/resource-type link)))
+                                                       link-text))]))
 
       ;; Cancel then Save, the order every other form in the app uses.
       [:button {:type "button"
@@ -112,11 +128,16 @@
        "Cancel"]
       (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"} "Save")]]))
 
-;; (ns-unmap *ns* 'link-text)
-
 (defmulti link-text
   (fn [_db link]
     (:media-link/resource-type link)))
+
+;; A `media_link` row carrying a resource type nothing here recognises should
+;; degrade to showing what is stored, not throw. Nothing the UI can write today
+;; produces one — `resource-types` is a fixed list — but the database is not.
+(defmethod link-text :default
+  [_db link]
+  (:media-link/resource-type link))
 
 (defmethod link-text "accession"
   [db link]
@@ -164,40 +185,63 @@
        (db.i/execute-one! db)
        :text))
 
-(defn link-anchor [& {:keys [db link]}]
-  (let [text (link-text db link)
-        url (case (:media-link/resource-type link)
+(defn link-info
+  "The display text and destination for a link, as data rather than markup. An
+  unrecognised resource type yields no URL — the chip renders as text."
+  [& {:keys [db link]}]
+  (let [url (case (:media-link/resource-type link)
               "accession" (z/url-for accession.routes/detail {:id (:media-link/resource-id link)})
               "location" (z/url-for location.routes/detail {:id (:media-link/resource-id link)})
               "material" (z/url-for material.routes/detail {:id (:media-link/resource-id link)})
-              "taxon" (z/url-for taxon.routes/detail {:id (:media-link/resource-id link)}))]
-    [:a {:href url} text]))
+              "taxon" (z/url-for taxon.routes/detail {:id (:media-link/resource-id link)})
+              nil)]
+    {:text (link-text db link)
+     :url url}))
 
-(defn delete-button [& {:keys [media]}]
-  [:btn {:href "#"
-         :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger *:hover:text-white"
-         :hx-confirm "Are you sure you want to remove this link?"
-         :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-         :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})
-         :hx-target "#media-link-root"
-         :alt "Delete"}
-   (heroicons/outline-trash :class "size-4")])
+(defn link-chip
+  "The link rendered as one removable chip. A chip with an x, not a tag row: a
+  media item has at most one link, so the control states one thing that can be
+  removed, never a list of things to add to.
 
-(defn render [& {:keys [anchor link media]}]
+  The trash icon stays reserved for deleting the media itself — the row and the
+  object — which is a different act with different consequences."
+  [& {:keys [media text url]}]
+  [:div {:class "flex items-center gap-3 my-2"}
+   [:span {:class "spl-chip"}
+    (if url
+      [:a {:href url :class "hover:underline"} text]
+      [:span text])
+    [:button {:type "button"
+              :class "spl-chip-icon cursor-pointer"
+              :aria-label "Remove link"
+              :hx-confirm "Remove this link?"
+              :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+              :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})
+              :hx-target "#media-link-root"}
+     (heroicons/outline-x)]]
+   [:button {:type "button"
+             :class "spl-btn spl-btn--sm spl-btn--icon"
+             :aria-label "Change link"
+             :x-on:click "editLink=true"}
+    (heroicons/outline-pencil-square :size 16)]])
+
+(defn render [& {:keys [link-info link media]}]
   (-> [:div#media-link-root {:x-data (json/js {:editLink false
                                                :resourceType (:media-link/resource-type link)})}
        [:template {:x-if "!editLink"}
         (if link
-          [:div {:class "flex flex-row items-center gap-4 my-2"}
-           anchor
-           (delete-button :media media)]
-          [:btn {:href "#"
-                 :class "spl-btn spl-btn--sm spl-btn--icon my-2"
-                 :x-on:click "editLink=true"
-                 :alt "Link"}
-           (heroicons/outline-link)])]
+          (link-chip :media media
+                     :text (:text link-info)
+                     :url (:url link-info))
+          [:div {:class "my-2"}
+           [:button {:type "button"
+                     :class "spl-btn spl-btn--sm spl-btn--ghost"
+                     :x-on:click "editLink=true"}
+            (heroicons/outline-link)
+            " Link"]])]
        [:div {:x-show "editLink"} ;;:template {:x-if "editLink"}
         (media-link-form :link link
+                         :link-text (:text link-info)
                          :media media)]]
       (html/render-partial)))
 
@@ -210,6 +254,7 @@
             result (media.i/link! db (:media/id resource) resource-id resource-type)]
         (if-not (error.i/error? result)
           (render :link result
+                  :link-info (link-info :db db :link result)
                   :media resource)
           ;; TODO: render an error
           (flash/error {} "Error: Could not link resource")))
@@ -221,13 +266,11 @@
           (flash/error {} "Error: Could not unlink resource")))
 
       :get
-      ;; Only when there is a link: link-anchor dispatches link-text on the
-      ;; resource type and runs a case over it, and neither has a default, so a
-      ;; media item with no link throws rather than rendering. render already
-      ;; handles nil by offering the link control instead.
+      ;; The widget renders for media with or without a link. link-info runs a
+      ;; query per link type, so it is only computed when there is one.
       (let [link (media.i/get-link db (:media/id resource))
-            anchor (when link
-                     (link-anchor :db db :link link))]
-        (render :anchor anchor
+            link-info (when link
+                        (link-info :db db :link link))]
+        (render :link-info link-info
                 :link link
                 :media resource)))))
