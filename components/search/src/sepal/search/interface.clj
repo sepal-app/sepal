@@ -27,6 +27,8 @@
    - :enum     - Exact match with keyword coercion
    - :id       - Exact match with integer coercion
    - :boolean  - Boolean, asked for by value: private:true / private:false
+   - :date     - Exact match, or a comparison when the query carries an
+                 operator: created:>=2024-01-01 / created:<2024-01-01
 
    ## Usage
 

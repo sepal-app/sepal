@@ -37,6 +37,7 @@
         forgot-password-email-subject (get env "FORGOT_PASSWORD_EMAIL_SUBJECT")
         invitation-email-from (get env "INVITATION_EMAIL_FROM")
         invitation-email-subject (get env "INVITATION_EMAIL_SUBJECT")
+        backup-email-from (get env "BACKUP_EMAIL_FROM")
         ;; Configured, never inferred. An install reached over plain HTTP is a
         ;; deployment decision, and a rule like "localhost means http" would be
         ;; wrong for a garden on a private hostname behind TLS, and for one on
@@ -93,6 +94,7 @@
                  forgot-password-email-subject (assoc :forgot-password-email-subject forgot-password-email-subject)
                  invitation-email-from (assoc :invitation-email-from invitation-email-from)
                  invitation-email-subject (assoc :invitation-email-subject invitation-email-subject)
+                 backup-email-from (assoc :backup-email-from backup-email-from)
                  ;; APP_DOMAIN may carry a port here, unlike under the dispatcher,
                  ;; because nothing routes on it in a self-hosted install.
                  app-url-scheme (assoc :app-base-url (str app-url-scheme "://" app-domain)))}))
