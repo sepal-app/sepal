@@ -61,11 +61,16 @@
     (clear-sent-messages!)
     (let [today (LocalDate/now)
           on-date (str today)
-          due-1 (create-observation! :next-check-on (str (.minusDays today 5))
+          ;; A subject each: rows sharing a subject and type follow each
+          ;; other up, and a followed-up check isn't due.
+          due-1 (create-observation! :resource-id 1
+                                     :next-check-on (str (.minusDays today 5))
                                      :note "Wilting badly")
-          due-2 (create-observation! :next-check-on on-date
+          due-2 (create-observation! :resource-id 2
+                                     :next-check-on on-date
                                      :note "Check the irrigation")
-          not-due (create-observation! :next-check-on (str (.plusDays today 5)))]
+          not-due (create-observation! :resource-id 3
+                                       :next-check-on (str (.plusDays today 5)))]
       (try
         (let [result (digest/send-digest! *db* *mail-client* "curator@test.com" on-date
                                           "garden@test.com")
