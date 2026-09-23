@@ -7,6 +7,7 @@
 (def codes :settings/codes)
 (def backups :settings/backups)
 (def backup-download :settings/backup-download)
+(def observation-digest :settings/observation-digest)
 
 ;; User management routes
 (def users :settings.users/index)

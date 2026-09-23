@@ -49,7 +49,10 @@
                        :current? (= current-route settings.routes/users))
          (sidebar-item :href (z/url-for settings.routes/backups)
                        :label "Backups"
-                       :current? (= current-route settings.routes/backups)))))])
+                       :current? (= current-route settings.routes/backups))
+         (sidebar-item :href (z/url-for settings.routes/observation-digest)
+                       :label "Observation Digest"
+                       :current? (= current-route settings.routes/observation-digest)))))])
 
 (defn layout [& {:keys [viewer current-route category title content flash content-class]}]
   (page/page
