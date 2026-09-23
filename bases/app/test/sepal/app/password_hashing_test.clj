@@ -3,8 +3,9 @@
 
   The test suite does not hash at this strength. One scrypt hash at these
   parameters costs 323 ms, and the suite hashes 529 times, which was 217 seconds
-  of a 364-second run. The :test alias points password4j at a weak configuration
-  through -Dpsw4j.configuration, so nothing in the suite measures the real cost.
+  of a 364-second run. The :test-runner alias points password4j at a weak
+  configuration through -Dpsw4j.configuration, so nothing in the suite measures
+  the real cost.
 
   That override is exactly why this test exists. It reads the resource
   password4j loads when no override is set — which is every caller that is not

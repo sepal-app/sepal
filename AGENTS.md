@@ -330,10 +330,13 @@ Components provide `::interface/factory` Integrant keys for test data generation
 
 Two things the fixture does for speed, both of which change what a test sees:
 
-- **Passwords hash weakly.** The `:test` alias sets
+- **Passwords hash weakly.** The `:test-runner` alias sets
   `-Dpsw4j.configuration=test/psw4j-fast.properties`, so a scrypt hash costs 2 ms
   instead of 323 ms. The suite hashes 529 times, which was 217 seconds of a
-  364-second run. Nothing outside the suite sets that property, so a real install
+  364-second run. The property is on `:test-runner` rather than `:test` so a
+  REPL started with `:dev:test` verifies production-strength hashes, such as the
+  ones the CLI writes. Tests run from that REPL hash at full cost.
+  Nothing outside Kaocha sets that property, so a real install
   still reads `bases/app/resources/psw4j.properties` —
   `sepal.app.password-hashing-test` asserts those parameters are still strong,
   because no test would notice if they were weakened. Never assert on hashing
