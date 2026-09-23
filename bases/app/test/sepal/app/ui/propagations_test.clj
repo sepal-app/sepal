@@ -56,7 +56,9 @@
             (is (str/includes? (.text body) "Cutting")
                 "the propagation taken from this plant is listed")
             (is (str/includes? (.text body) "Grown from")
-                "and the propagation that produced the plant is named"))
+                "and the propagation that produced the plant is named")
+            (is (str/includes? (.text body) "by seed")
+                "the origin names its method by label"))
           (finally
             (material.i/update! *db* (:material/id mat) {:propagation-id nil})
             (clean-up! user [(:propagation/id prop) (:propagation/id origin)])))))))
@@ -87,7 +89,7 @@
                                               :location-id (:location/id loc)
                                               :status :complete})]
         (try
-          (let [body (page user (str "/location/" (:location/id loc) "/"))]
+          (let [body (page user (str "/location/" (:location/id loc) "/general/"))]
             (is (str/includes? (.text body) "Cutting")
                 "the running batch is on the bench")
             (is (not (str/includes? (.text body) "Seed · Complete"))

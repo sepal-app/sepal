@@ -29,12 +29,21 @@
      :middleware [[middleware/require-editor-or-admin]]
      :handler #'create/handler
      :conflicting true}]
+   ["/parent-plant/"
+    {:name routes/parent-plant
+     :middleware [[middleware/require-editor-or-admin]]
+     :handler #'create/parent-plant-handler
+     :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader propagation-loader]]
             :conflicting true}
     ["/" {:name routes/detail
           :handler #'detail/handler}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]
+    ["/status/" {:name routes/status
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 propagation.perm/edit (constantly routes/detail))]]
+                 :post #'detail/status-handler}]
     ["/product/" {:name routes/product
                   :middleware [[(middleware/require-permission-or-redirect
                                   propagation.perm/edit (constantly routes/detail))]]

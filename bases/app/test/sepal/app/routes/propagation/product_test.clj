@@ -204,3 +204,19 @@
           (is (str/includes? (.text body) "nothing recorded"))
           (finally
             (clean-up! user {:propagations [(:propagation/id prop)]})))))))
+
+(deftest test-material-without-a-location
+  (tf/testing "a batch with no bench, off an accession with no intended location"
+    (fixtures)
+    (fn [{:keys [user acc]}]
+      (let [prop (propagation.i/create! *db* {:type :cutting
+                                              :parent-accession-id (:accession/id acc)})
+            [sess token] (session-and-token user (:propagation/id prop))
+            response (post-product sess token (:propagation/id prop) :material)]
+        (try
+          (is (= 200 (:status response)) "the user gets a message, not a 500")
+          (is (str/includes? (get-in response [:headers "HX-Redirect"])
+                             (str "/propagation/" (:propagation/id prop) "/")))
+          (is (empty? (material.i/list-by-propagation-id *db* (:propagation/id prop))))
+          (finally
+            (clean-up! user {:propagations [(:propagation/id prop)]})))))))

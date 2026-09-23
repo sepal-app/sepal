@@ -101,3 +101,16 @@
           (finally
             (doseq [p [p1 p2 p3]]
               (jdbc.sql/delete! db :propagation {:id (:propagation/id p)}))))))))
+
+(deftest test-a-row-links-to-its-propagation
+  (tf/testing "the first column opens the record, not the parent"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (let [prop (propagation.i/create! *db* {:type :cutting
+                                              :parent-accession-id (:accession/id acc-a)})]
+        (try
+          (is (some? (.selectFirst (list-page user nil)
+                                   (str "tbody td.spl-col--identifier a[href='/propagation/"
+                                        (:propagation/id prop) "/']"))))
+          (finally
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id prop)})))))))

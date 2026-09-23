@@ -8,3 +8,5 @@
 (def panel ::panel)
 (def delete ::delete)
 (def product ::product)
+(def status ::status)
+(def parent-plant ::parent-plant)

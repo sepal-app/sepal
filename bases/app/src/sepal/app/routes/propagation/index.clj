@@ -8,9 +8,7 @@
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
-            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
-            [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.export :as ui.export]
@@ -64,14 +62,6 @@
     (pages.list/row-attrs :id id
                           :panel-url (z/url-for propagation.routes/panel {:id id}))))
 
-(defn- parent-href
-  "The named plant is the more precise parent, so it is the link's target when
-  there is one."
-  [row]
-  (if-let [material-id (:propagation/parent-material-id row)]
-    (z/url-for material.routes/detail {:id material-id})
-    (z/url-for accession.routes/detail {:id (:propagation/parent-accession-id row)})))
-
 (defn- has-product?
   "The EXISTS probe rides along in the row as `:propagation/has-product`."
   [row]
@@ -82,9 +72,9 @@
       :else (not (zero? v)))))
 
 (defn- status-badge [status label]
-  (let [colors {:active "spl-badge--info"
-                :complete "spl-badge--ok"
-                :failed "spl-badge--danger"}]
+  (let [colors {"active" "spl-badge--info"
+                "complete" "spl-badge--ok"
+                "failed" "spl-badge--danger"}]
     [:span {:class (html/attr "spl-badge" (get colors status "spl-badge--neutral"))}
      label]))
 
@@ -97,7 +87,7 @@
                               (get type-labels (:propagation/type row))
                               (get status-labels (:propagation/status row))))
     :cell (fn [row]
-            [:a {:href (parent-href row)
+            [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id row)})
                  :class "spl-link"
                  :x-on:click.stop ""}
              (parent-label row)])}

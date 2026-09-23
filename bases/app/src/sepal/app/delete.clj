@@ -127,8 +127,8 @@
   (let [id (:location/id location)]
     (->> [(counted :material (material.i/count-by-location-id db id))
           (counted :material-change (material.i/count-changes-by-location-id db id))
-          ;; A bench with a batch running on it. Closing the batch out as
-          ;; complete or failed is the way to let the bench go.
+          ;; A batch is history, so a finished one holds the bench as firmly
+          ;; as a running one.
           (counted :propagation-location
                    (propagation.i/count-by-location-id db id))]
          (filterv some?))))
@@ -172,7 +172,7 @@
    :parentage "%d cross(es) name this taxon as a parent"
    :propagation-parent "%d propagation(s) name this as their parent"
    :propagation-rootstock "%d propagation(s) use this taxon as a rootstock"
-   :propagation-location "%d propagation(s) are running at this location"
+   :propagation-location "%d propagation(s) name this location"
    :wfo "This name comes from the World Flora Online list"})
 
 (defn blocker-label [{:keys [reason count]}]

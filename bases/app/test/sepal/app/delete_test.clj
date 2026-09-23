@@ -420,7 +420,7 @@
          (app.delete/blocker-label {:reason :material :count 12})))
   (is (= "2 propagation(s) name this as their parent"
          (app.delete/blocker-label {:reason :propagation-parent :count 2})))
-  (is (= "1 propagation(s) are running at this location"
+  (is (= "1 propagation(s) name this location"
          (app.delete/blocker-label {:reason :propagation-location :count 1})))
   (is (= "This name comes from the World Flora Online list"
          (app.delete/blocker-label {:reason :wfo :count 1}))

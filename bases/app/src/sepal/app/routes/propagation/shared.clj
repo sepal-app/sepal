@@ -3,6 +3,8 @@
   and the names of what a batch produced."
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
 
@@ -22,8 +24,12 @@
              :propagation-status/name
              :propagation-status/label))
 
-(defn label [labels value]
-  (or (get labels value) value))
+(defn label
+  "The label for `value`, which is a keyword on a coerced row and a string on a
+  raw one."
+  [labels value]
+  (let [k (some-> value name)]
+    (or (get labels k) k)))
 
 (defn parent-name
   "`2026.0042` when the parent is the accession alone, `2026.0042.1` when an
@@ -46,3 +52,42 @@
     (for [accession accession-products]
       {:label (:accession/code accession)
        :href (z/url-for accession.routes/detail {:id (:accession/id accession)})})))
+
+(defn products?
+  "Whether anything has been recorded as coming out of the batch, from the
+  panel data that lists them."
+  [panel-data]
+  (boolean (or (seq (:material-products panel-data))
+               (seq (:accession-products panel-data)))))
+
+(defn actions
+  "The actions menu for a propagation.
+
+  The default product comes first. Reaccessioning a clone is deliberate and
+  rare -- a research project, signed off by whoever keeps the records -- so it
+  sits second rather than with equal weight: fragmenting one genotype across
+  accession numbers by accident is the corruption this model exists to
+  prevent."
+  [propagation default-kind]
+  (let [id (:propagation/id propagation)
+        product-url (z/url-for propagation.routes/product {:id id})
+        status-url (z/url-for propagation.routes/status {:id id})
+        other (if (= default-kind :material) :accession :material)
+        label {:material "Create material"
+               :accession "Create accession"}]
+    (ui.actions/menu
+      :items (cond-> [{:label (label default-kind)
+                       :post-url product-url
+                       :params {:kind (name default-kind)}}
+                      {:label (if (= other :accession)
+                                "Reaccession as a new accession"
+                                "Create material under the parent accession")
+                       :post-url product-url
+                       :params {:kind (name other)}}]
+               (= :active (:propagation/status propagation))
+               (into [{:label "Mark complete"
+                       :post-url status-url
+                       :params {:status "complete"}}
+                      {:label "Mark failed"
+                       :post-url status-url
+                       :params {:status "failed"}}])))))

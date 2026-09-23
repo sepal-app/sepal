@@ -174,3 +174,27 @@
           (is (= (:taxon/id taxon)
                  (:propagation/rootstock-taxon-id (propagation.i/get-by-id *db* id))))
           (finally (clean-up! user [id])))))))
+
+(deftest test-the-parent-plant-picker-follows-the-accession
+  (tf/testing "choosing an accession offers its plants"
+    (fixtures)
+    (fn [{:keys [user acc-a mat mat-b]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            fragment (fn [q]
+                       (Jsoup/parse ^String (:body (:response (peri/request sess (str "/propagation/parent-plant/" q))))))
+            body (fragment (str "?parent-accession-id=" (:accession/id acc-a)))]
+        (is (some? (.selectFirst body (str "[data-value='" (:material/id mat) "']")))
+            "the accession's plant is offered")
+        (is (nil? (.selectFirst body (str "[data-value='" (:material/id mat-b) "']")))
+            "another accession's is not")
+        (is (some? (.selectFirst (fragment "?parent-accession-id=") "#parent-material-field"))
+            "a cleared accession still answers with the empty field")))))
+
+(deftest test-the-bare-form-reloads-the-parent-plant
+  (tf/testing "the list's New form wires the accession to the plant picker"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (Jsoup/parse ^String (:body (:response (peri/request sess "/propagation/new/"))))]
+        (is (some? (.selectFirst body "[hx-get='/propagation/parent-plant/'][hx-include='#parent-accession-id']")))
+        (is (some? (.selectFirst body "#parent-material-field")))))))

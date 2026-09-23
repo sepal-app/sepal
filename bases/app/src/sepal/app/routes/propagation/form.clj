@@ -1,6 +1,7 @@
 (ns sepal.app.routes.propagation.form
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
@@ -44,38 +45,70 @@
                  :text (:taxon-name values)})
     :help "A graft's other parent. Commercial rootstock is bought by the bundle, so this names the cultivar rather than a plant here."))
 
-(defn- parent-field
-  "The parent accession: a picker when it is not yet decided, a locked line
-  when the form was opened from the parent's own screen. The material picker
-  appears only then, because a plant can only be named once the accession is."
+(defn parent-material-field
+  "The parent plant picker, offering the chosen accession's material. Rendered
+  by the form and by the endpoint that swaps it in when the accession changes,
+  so it has one id to be replaced by."
   [& {:keys [values errors material-items]}]
+  [:div {:id "parent-material-field"}
+   (when (seq material-items)
+     (combobox/combobox
+       :name "parent-material-id"
+       :label "Parent plant"
+       :items material-items
+       :errors errors
+       :selected (when (:parent-material-id values)
+                   {:id (:parent-material-id values)
+                    :text (str (:accession-code values)
+                               "." (:material-code values))})
+       :help "Optional. Leave it out when the cuttings came off the accession without a particular plant being recorded."))])
+
+(defn- parent-field
+  "The parent accession and, once it is known, the plant.
+
+  Locked when the form was opened from the parent's own screen, and when the
+  batch has products: those are material or accessions of this lineage, and
+  moving the parent would rewrite where they came from."
+  [& {:keys [values errors material-items locked?]}]
   (let [accession-id (:parent-accession-id values)]
-    (if accession-id
+    (if locked?
       (list
         (form/hidden-field :name "parent-accession-id" :value accession-id)
         (form/input-field :label "Parent accession"
                           :name "parent-accession-display"
                           :read-only true
                           :value (:accession-code values))
-        (when (seq material-items)
-          (combobox/combobox
-            :name "parent-material-id"
-            :label "Parent plant"
-            :items material-items
-            :selected (when (:parent-material-id values)
-                        {:id (:parent-material-id values)
-                         :text (str (:accession-code values)
-                                    "." (:material-code values))})
-            :help "Optional. Leave it out when the cuttings came off the accession without a particular plant being recorded.")))
-      (combobox/combobox
-        :name "parent-accession-id"
-        :label "Parent accession"
-        :url (z/url-for accession.routes/index)
-        :required true
-        :errors errors
-        :selected (when accession-id
-                    {:id accession-id
-                     :text (:accession-code values)})))))
+        (if (:products? values)
+          (list
+            (form/hidden-field :name "parent-material-id"
+                               :value (:parent-material-id values))
+            (when (:parent-material-id values)
+              (form/input-field :label "Parent plant"
+                                :name "parent-material-display"
+                                :read-only true
+                                :value (str (:accession-code values)
+                                            "." (:material-code values)))))
+          (parent-material-field :values values
+                                 :errors (:parent-material-id errors)
+                                 :material-items material-items)))
+      (list
+        [:div {:hx-get (z/url-for propagation.routes/parent-plant)
+               :hx-trigger "change from:#parent-accession-id"
+               :hx-include "#parent-accession-id"
+               :hx-target "#parent-material-field"
+               :hx-swap "outerHTML"}
+         (combobox/combobox
+           :name "parent-accession-id"
+           :label "Parent accession"
+           :url (z/url-for accession.routes/index)
+           :required true
+           :errors (:parent-accession-id errors)
+           :selected (when accession-id
+                       {:id accession-id
+                        :text (:accession-code values)}))]
+        (parent-material-field :values values
+                               :errors (:parent-material-id errors)
+                               :material-items material-items)))))
 
 (defn- location-field [& {:keys [values errors]}]
   (combobox/combobox
@@ -90,10 +123,26 @@
                                (:location-name values))})
     :help "Where the batch sits while it runs. A nursery bench is a location."))
 
-(defn form [& {:keys [action errors values types material-items]}]
+(defn- status-field [& {:keys [statuses value errors]}]
+  (form/field
+    :label "Status"
+    :name "status"
+    :errors errors
+    :input
+    [:select {:name "status" :id "status" :class "spl-input spl-select"}
+     (for [{:propagation-status/keys [name label]} statuses]
+       [:option {:value name
+                 :selected (when (= name value) "selected")}
+        label])]))
+
+(defn form
+  "The create form, and with :statuses the edit form. An edit has a status and
+  no parent quantity: that field records a division, which happens once."
+  [& {:keys [action errors values types statuses material-items parent-locked?]}]
   (let [type (or (:type values) "seed")
         graft? (= "graft" (name type))
-        material? (:parent-material-id values)]
+        edit? (some? statuses)
+        material? (and (not edit?) (:parent-material-id values))]
     [:div {:x-data (str "{ type: '" (name type) "' }")}
      (form/form
        {:id "propagation-form"
@@ -117,14 +166,19 @@
            :hint "The accession this came off, and the plant when it is known."
            :children
            (parent-field :values values
-                         :errors (:parent-accession-id errors)
-                         :material-items material-items))
+                         :errors errors
+                         :material-items material-items
+                         :locked? parent-locked?))
 
          (form/section
            :title "Batch"
            :hint "Where it sits and how many came through."
            :children
-           [(location-field :values values :errors (:location-id errors))
+           [(when edit?
+              (status-field :statuses statuses
+                            :value (some-> (:status values) name)
+                            :errors (:status errors)))
+            (location-field :values values :errors (:location-id errors))
             [:div {:class "spl-form-pair"}
              (form/input-field :label "Propagated"
                                :name "propagated-on"

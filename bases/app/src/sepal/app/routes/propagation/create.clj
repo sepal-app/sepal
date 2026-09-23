@@ -2,6 +2,7 @@
   (:require [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
             [sepal.app.flash :as flash]
+            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.params :as params]
             [sepal.app.routes.propagation.form :as propagation.form]
@@ -21,7 +22,8 @@
                          :errors errors
                          :values values
                          :types types
-                         :material-items material-items))
+                         :material-items material-items
+                         :parent-locked? (some? (:parent-accession-id values))))
 
 (defn render [& {:keys [errors values types material-items]}]
   (page/page
@@ -34,12 +36,12 @@
     :breadcrumbs [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
                   "New propagation"]))
 
-(defn- counts-message
+(defn counts-message
   "The spec's own message, so the rule and its wording have one definition."
   []
   (:error/message (second propagation.spec/counts-consistent)))
 
-(defn- counts-invalid? [{:keys [quantity-started quantity-succeeded]}]
+(defn counts-invalid? [{:keys [quantity-started quantity-succeeded]}]
   (and (some? quantity-started)
        (some? quantity-succeeded)
        (> quantity-succeeded quantity-started)))
@@ -100,7 +102,15 @@
    [:parent-accession-id {:optional true} :int]
    [:parent-material-id {:optional true} :int]])
 
-(defn- form-values
+(defn material-items
+  "The parent plant picker's rows: the accession's material."
+  [db accession]
+  (when accession
+    (for [m (material.i/list-by-accession-id db (:accession/id accession))]
+      {:id (:material/id m)
+       :text (str (:accession/code accession) "." (:material/code m))})))
+
+(defn form-values
   "The values the form renders, including the display fields the pickers need
   for what is already chosen."
   [db {:keys [parent-accession-id parent-material-id] :as decoded}]
@@ -108,10 +118,7 @@
                    (material.i/get-by-id db parent-material-id))
         accession-id (or parent-accession-id (:material/accession-id material))
         accession (when accession-id (accession.i/get-by-id db accession-id))
-        material-items (when accession
-                         (for [m (material.i/list-by-accession-id db (:accession/id accession))]
-                           {:id (:material/id m)
-                            :text (str (:accession/code accession) "." (:material/code m))}))]
+        material-items (material-items db accession)]
     (merge decoded
            {:parent-accession-id accession-id
             :parent-material-id (or (:material/id material) parent-material-id)
@@ -145,3 +152,20 @@
         (render :values values
                 :types types
                 :material-items (:material-items values))))))
+
+(def ^:private ParentPlantParams
+  "A string, because a cleared picker submits an empty one."
+  [:map [:parent-accession-id {:optional true} [:maybe :string]]])
+
+(defn parent-plant-handler
+  "The parent plant picker for the accession just chosen, swapped in by the
+  form."
+  [{:keys [::z/context query-params]}]
+  (let [{:keys [db]} context
+        {:keys [parent-accession-id]} (params/decode ParentPlantParams query-params)
+        accession (some->> (some-> parent-accession-id parse-long)
+                           (accession.i/get-by-id db))]
+    (html/render-partial
+      (propagation.form/parent-material-field
+        :values {:accession-code (:accession/code accession)}
+        :material-items (material-items db accession)))))

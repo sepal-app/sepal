@@ -13,10 +13,20 @@
   argument to pass now, so there is nothing to pass twice."
   (:require [sepal.app.ui.archive :as ui.archive]
             [sepal.app.ui.delete :as ui.delete]
+            [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.heroicons :as heroicons]))
 
-(defn- menu-link [{:keys [label href]}]
-  [:li [:a {:class "spl-menu-item" :href href :role "menuitem"} label]])
+(defn- menu-link [{:keys [label href post-url params]}]
+  (if post-url
+    ;; An action that writes. Posted through htmx, so a handler answering with
+    ;; HX-Redirect lands the page where it says.
+    [:li
+     [:form {:hx-post post-url :hx-swap "none" :role "none"}
+      (ui.form/anti-forgery-field)
+      (for [[k v] params]
+        [:input {:type "hidden" :name (name k) :value (str v)}])
+      [:button {:type "submit" :class "spl-menu-item" :role "menuitem"} label]]]
+    [:li [:a {:class "spl-menu-item" :href href :role "menuitem"} label]]))
 
 (defn menu
   "The action bar.
@@ -24,7 +34,8 @@
   :primary    optional hiccup for a button that stays outside the menu, for a
               page whose main action should be one click away — Upload, on the
               media tabs.
-  :items      maps of {:label :href}, in the order they should appear.
+  :items      maps of {:label :href}, in the order they should appear. An item
+              with :post-url, and optional :params, posts instead of linking.
   :delete-url renders Delete as the last item, separated by a rule, along with
               the container its confirmation dialog swaps into. Passing this
               rather than an item is what keeps `ui.delete` the only place that
