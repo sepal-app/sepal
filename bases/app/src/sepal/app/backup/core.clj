@@ -237,7 +237,7 @@
 
 (defn- send-backup-success-email!
   "Send backup success notification to all admin users."
-  [mail db app-base-url backup-result]
+  [mail email-from db app-base-url backup-result]
   (let [admin-emails (get-admin-emails db)
         download-url (str app-base-url "/settings/backups/"
                           (:filename backup-result) "/download")
@@ -249,7 +249,8 @@
                   "Download: " download-url "\n")]
     (doseq [email admin-emails]
       (try
-        (mail.i/send-message mail {:to email
+        (mail.i/send-message mail {:from email-from
+                                   :to email
                                    :subject subject
                                    :body body})
         (catch Exception e
@@ -257,7 +258,7 @@
 
 (defn- send-backup-failure-email!
   "Send backup failure notification to all admin users."
-  [mail db error-message]
+  [mail email-from db error-message]
   (let [admin-emails (get-admin-emails db)
         subject "Sepal Backup Failed"
         body (str "A scheduled database backup has failed.\n\n"
@@ -265,7 +266,8 @@
                   "Please check the server logs for more details.")]
     (doseq [email admin-emails]
       (try
-        (mail.i/send-message mail {:to email
+        (mail.i/send-message mail {:from email-from
+                                   :to email
                                    :subject subject
                                    :body body})
         (catch Exception e
@@ -311,15 +313,15 @@
 
 (defn- backup-task
   "Create a backup task function for the scheduler."
-  [db mail app-base-url store]
+  [db mail email-from app-base-url store]
   (fn [_scheduled-time]
     (try
       (let [result (backup.p/put-backup store #(create-backup! db %))]
         (set-config! db {:last-run-at (Instant/now)})
-        (send-backup-success-email! mail db app-base-url result))
+        (send-backup-success-email! mail email-from db app-base-url result))
       (catch Exception e
         (log/error e "Scheduled backup failed")
-        (send-backup-failure-email! mail db (.getMessage e))))))
+        (send-backup-failure-email! mail email-from db (.getMessage e))))))
 
 (defn register-backup-job!
   "Register the backup job with the scheduler based on current config.
@@ -328,7 +330,7 @@
    Frequency of nil means backups are disabled. A store that manages the
    schedule means this garden has no schedule of its own: nothing is registered
    and nothing is cancelled, because there was never a job here to cancel."
-  [scheduler db mail app-base-url store]
+  [scheduler db mail email-from app-base-url store]
   (if (backup.p/manages-schedule? store)
     (log/info "Backups are operated outside this instance; registering no job")
     (let [config (get-config db)
@@ -340,7 +342,7 @@
                                  :backup
                                  (map #(.toInstant ^ZonedDateTime %)
                                       (backup-schedule frequency))
-                                 (backup-task db mail app-base-url store)))
+                                 (backup-task db mail email-from app-base-url store)))
         (do
           (log/info "Backup not configured, cancelling any existing job")
           (scheduler.i/cancel! scheduler :backup))))))
@@ -348,11 +350,12 @@
 ;; -----------------------------------------------------------------------------
 ;; Integrant lifecycle
 
-(defmethod ig/init-key :sepal.app.backup/job [_ {:keys [scheduler zodiac mail app-base-url backup-dir backup-store]}]
+(defmethod ig/init-key :sepal.app.backup/job
+  [_ {:keys [scheduler zodiac mail backup-email-from app-base-url backup-dir backup-store]}]
   (let [db (get zodiac :zodiac.ext.sql/db)]
-    (register-backup-job! scheduler db mail app-base-url backup-store)
-    {:scheduler scheduler :db db :mail mail :app-base-url app-base-url
-     :backup-dir backup-dir :backup-store backup-store}))
+    (register-backup-job! scheduler db mail backup-email-from app-base-url backup-store)
+    {:scheduler scheduler :db db :mail mail :backup-email-from backup-email-from
+     :app-base-url app-base-url :backup-dir backup-dir :backup-store backup-store}))
 
 (defmethod ig/halt-key! :sepal.app.backup/job [_ {:keys [scheduler]}]
   (scheduler.i/cancel! scheduler :backup))

@@ -7,14 +7,17 @@
   than of this code."
   (:require [babashka.fs :as fs]
             [clojure.data.json :as json]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [next.jdbc.sql :as jdbc.sql]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.cli.load-import :as li]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
             [sepal.taxon.interface :as taxon.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [java.time Instant]))
 
 (clojure.test/use-fixtures :once default-system-fixture)
 
@@ -591,4 +594,83 @@
             (is (re-find #"note material_note:1" out)))
           (finally
             (fs/delete-tree dir)
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-pass-activity
+  ;; No test loaded an activity.json before this one -- the only activity
+  ;; assertion elsewhere is `import/completed`, which is dispatched by
+  ;; `load-import!` itself rather than through the activity pass.
+  (tf/testing "an activity record loads and dispatches to the right schema"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-activity"})]
+        (try
+          (write-fixture! dir :suffix "h")
+          (spit (fs/file (fs/path dir "activity.json"))
+                (json/write-str
+                  [(rec "activity:1"
+                        {"type" "accession/created"
+                         "created_at" "2020-06-15T12:00:00Z"
+                         "resource_type" "accession"
+                         "data" {"accession_code" "2024.000h"
+                                 "taxon_id" 0}}
+                        {"resource_id" (ref-to "accession" "30-h")
+                         "created_by" {"user_email" (:user/email user)}
+                         "data.taxon_id" (ref-to "taxon" "900-h")})]))
+
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+
+          (let [taxon-id (-> (db.i/execute-one!
+                               db {:select [:id] :from [:taxon]
+                                   :where [:= :name "Cattleya h"]})
+                             :taxon/id)
+                row (db.i/execute-one!
+                      db {:select [:type :resource_type :created_by :data]
+                          :from [:activity]
+                          :where [:= :type "accession/created"]})]
+            (is (= "accession/created" (:activity/type row)))
+            (is (= "accession" (:activity/resource-type row)))
+            (is (= (:user/id user) (:activity/created-by row)))
+            (is (= {:accession-code "2024.000h" :taxon-id taxon-id}
+                   (-> row :activity/data
+                       (json/read-str :key-fn #(keyword (str/replace % "_" "-")))))))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :import_record {:source_table "activity"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-activity-dispatch-needs-a-keyword-type
+  ;; Pins the reason `pass-activity` converts `:type` to a keyword before
+  ;; calling `activity.i/create!`: the multi-schema dispatches on `:type`
+  ;; before decoding, so a string value matches no registered branch and a
+  ;; keyword is the only value that reaches the right schema.
+  (tf/testing "a string :type fails to dispatch; a keyword succeeds"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            data {:accession-code "2024.0keyword" :taxon-id 1}]
+        (try
+          (testing "a string :type matches no branch of the multi-schema"
+            (is (thrown? Exception
+                         (activity.i/create!
+                           db {:type "accession/created"
+                               :created-at (Instant/now)
+                               :created-by (:user/id user)
+                               :resource-type :accession
+                               :resource-id 1
+                               :data data}))))
+
+          (testing "a keyword :type dispatches to AccessionActivityData"
+            (let [created (activity.i/create!
+                            db {:type :accession/created
+                                :created-at (Instant/now)
+                                :created-by (:user/id user)
+                                :resource-type :accession
+                                :resource-id 1
+                                :data data})]
+              (is (= :accession/created (:activity/type created)))))
+          (finally
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
