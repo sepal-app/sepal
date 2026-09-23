@@ -13,10 +13,12 @@
             [sepal.material.interface :as material.i]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
+            [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
-  (:import [org.jsoup Jsoup]))
+  (:import [java.time LocalDate ZoneId]
+           [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -332,3 +334,94 @@
             tab-text (.text (.selectFirst body ".spl-tabs"))]
         (is (.contains tab-text "Observations"))
         (is (not (.contains tab-text "Notes")))))))
+
+(deftest test-the-create-form-starts-type-and-value-in-step
+  (tf/testing "the Type select and Alpine's type agree on first load"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))
+            form (.selectFirst body "form#observation-form")
+            selected (.selectFirst form "select#type option[selected]")
+            first-type (:observation-type/code (first (observation.i/list-types *db*)))]
+        (is (some? selected) "an option is selected, so the browser shows what Alpine holds")
+        (is (= first-type (.attr selected "value")))
+        (is (.contains (.attr (.parent (.parent (.selectFirst form "select#type"))) "x-data")
+                       (str "\"type\":\"" first-type "\""))
+            "Alpine's type is the selected option, so Value lists its values")))))
+
+(deftest test-dates-use-the-gardens-today
+  (tf/testing "a garden far ahead of the server records and defaults to its own today"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [zone "Pacific/Kiritimati"
+            _ (settings.i/set-value! *db* "organization.timezone" zone)
+            garden-today (str (LocalDate/now (ZoneId/of zone)))
+            url (observations-url material)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess url)
+            body (Jsoup/parse ^String (:body response))
+            token (test.i/response-anti-forgery-token response)
+            {post :response} (peri/request sess url
+                                           :request-method :post
+                                           :params {:__anti-forgery-token token
+                                                    :type "general"
+                                                    :value ""
+                                                    :observed_on garden-today
+                                                    :observed_by ""
+                                                    :next_check_on ""
+                                                    :note ""})]
+        (is (= garden-today (.attr (.selectFirst body "form#observation-form input#observed_on") "value"))
+            "the default observed date")
+        (is (= 200 (:status post)) "today in the garden is not a future date")
+        (doseq [o (observation.i/get-for-resource *db* :material (:material/id material))]
+          (observation.i/delete! *db* (:observation/id o)))
+        (cleanup-activity! user)
+        (settings.i/set-value! *db* "organization.timezone" "UTC")))))
+
+(deftest test-editing-with-a-blank-date-targets-that-items-own-error-id
+  (tf/testing "a malli field error from an edit form lands on that form"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "general"
+                                                     :observed-on "2026-03-14"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess (observation-url material observation)
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token
+                                                      :type "general"
+                                                      :value ""
+                                                      :observed_on ""
+                                                      :observed_by ""
+                                                      :next_check_on ""
+                                                      :note ""})
+            error-id (str "observed_on-" (:observation/id observation) "-errors")]
+        (is (= 422 (:status response)))
+        (is (some? (.getElementById body error-id)) "the edit form renders that error list")
+        (is (.contains (:body response) (str "id=\"" error-id "\"")))
+        (is (not (.contains (:body response) "id=\"observed_on-errors\"")))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-the-panel-shows-type-and-value
+  (tf/testing "the panel names what was observed, not only when"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id material)
+                                                     :type "phenology"
+                                                     :value "flowering"
+                                                     :observed-on "2026-03-14"
+                                                     :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (observations-url material))
+            body (Jsoup/parse ^String (:body response))
+            panel (.getElementById body "detail-panel-content")]
+        (is (.contains (.text panel) "Phenology \u00b7 Flowering"))
+        (observation.i/delete! *db* (:observation/id observation))))))

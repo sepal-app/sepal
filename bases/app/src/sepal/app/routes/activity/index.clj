@@ -727,7 +727,7 @@
         {:keys [last-day page page-size _q]} (params/decode Params query-params)
         activity (get-activity db page page-size)
         htmx-request? (get headers "hx-request")
-        today (str (LocalDate/now))]
+        today (str (datetime/today timezone))]
     (if htmx-request?
       (render-partial :activity activity
                       :last-day (parse-day last-day)

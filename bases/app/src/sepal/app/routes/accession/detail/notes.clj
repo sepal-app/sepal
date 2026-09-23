@@ -37,13 +37,14 @@
 
 (defn render-list
   "The HTMX response every write returns: the list, swapped in place."
-  [db accession]
+  [db accession timezone]
   (let [id (:accession/id accession)]
     (html/render-partial
       (ui.notes/note-list :notes (note.i/get-for-resource db resource-type id)
-                          :note-url-fn (note-url-fn id)))))
+                          :note-url-fn (note-url-fn id)
+                          :timezone timezone))))
 
-(defn page-content [& {:keys [accession taxon notes errors values]}]
+(defn page-content [& {:keys [accession taxon notes errors values timezone]}]
   (let [id (:accession/id accession)]
     (accession.shared/page
       :accession accession
@@ -53,14 +54,16 @@
                                  :create-url (create-url id)
                                  :note-url-fn (note-url-fn id)
                                  :errors errors
-                                 :values values))))
+                                 :values values
+                                 :timezone timezone))))
 
 (defn render [& {:keys [accession taxon notes panel-data timezone]}]
   (ui.page/page
     :content (pages.detail/page-content-with-panel
                :content (page-content :accession accession
                                       :taxon taxon
-                                      :notes notes)
+                                      :notes notes
+                                      :timezone timezone)
                :panel-content (accession.panel/panel-content
                                 :accession (:accession panel-data)
                                 :taxon (:taxon panel-data)
@@ -90,7 +93,7 @@
                                                                               :created-by created-by})]
                                                  (note.activity/create! tx note.activity/created created-by note)
                                                  note))))]
-        (render-list db resource)
+        (render-list db resource timezone)
         (f/when-failed [e]
           (http/failure-partial e "The note could not be saved.")))
 
@@ -106,7 +109,7 @@
   "POST updates one note, DELETE removes it. Both answer with the swapped list."
   [{:keys [::z/context form-params path-params request-method viewer]
     :as _request}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         note-id (parse-long (str (:note-id path-params)))
         note (when note-id (note.i/get-by-id db note-id))]
     ;; A note reached through the wrong resource's URL does not exist as far as
@@ -124,7 +127,7 @@
                                                  (let [updated (note.i/update! tx note-id {:body (:body data)})]
                                                    (note.activity/create! tx note.activity/updated created-by updated)
                                                    updated))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (http/failure-partial e "The note could not be saved.")))
 
@@ -133,7 +136,7 @@
                                                  (fn [tx created-by]
                                                    (note.activity/create! tx note.activity/deleted created-by note)
                                                    (note.i/delete! tx note-id))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (http/failure-partial e "The note could not be deleted.")))
 

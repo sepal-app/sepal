@@ -9,9 +9,10 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
-  (:import [java.time LocalDate]
+  (:import [java.time LocalDate ZoneId]
            [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
@@ -121,28 +122,35 @@
         (doseq [o [overdue not-yet-due never-due]]
           (observation.i/delete! *db* (:observation/id o)))))))
 
-(deftest test-the-overdue-toggle-is-a-one-click-affordance
-  (tf/testing "an overdue link on the page, not only the query syntax"
+(defn- overdue-checkbox [body]
+  (.selectFirst body "label[x-data^=overdueOnlyFilter]"))
+
+(deftest test-the-overdue-checkbox-carries-the-overdue-term
+  (tf/testing "an overdue checkbox on the page, not only the query syntax"
     (fixtures)
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) password)
             body (fetch sess "/observation/")
-            link (.selectFirst body "a[href*=due]")]
-        (is (some? link) "a link applies the overdue filter without typing it")))))
+            checkbox (overdue-checkbox body)]
+        (is (some? checkbox) "a checkbox applies the overdue filter without typing it")
+        (is (.contains (.attr checkbox "x-data") (str "'due:<=" (LocalDate/now) "'")))
+        (is (.contains (.attr checkbox "x-data") ", false)") "unchecked with no overdue term")
+        (is (.contains (.text checkbox) "Only overdue observations"))))))
 
-(deftest test-the-overdue-toggle-adds-to-an-existing-query-rather-than-replacing-it
-  (tf/testing "clicking Overdue with a filter already typed"
+(deftest test-the-overdue-term-is-the-gardens-date
+  (tf/testing "a garden far ahead of the server gets its own today"
     (fixtures)
     (fn [{:keys [user]}]
-      (let [sess (app.test/login (:user/email user) password)
-            body (fetch sess "/observation/" "q" "type:phenology")
-            link (.selectFirst body "a[href*=due]")
-            href (.attr link "href")]
-        (is (some? link))
-        (is (.contains href "type") "the existing filter is still in the toggle's href")
-        (is (.contains href "due") "the overdue term is added to it")))))
+      (let [zone "Pacific/Kiritimati"
+            _ (settings.i/set-value! *db* "organization.timezone" zone)
+            sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/")
+            garden-today (LocalDate/now (ZoneId/of zone))]
+        (is (.contains (.attr (overdue-checkbox body) "x-data")
+                       (str "'due:<=" garden-today "'")))
+        (settings.i/set-value! *db* "organization.timezone" "UTC")))))
 
-(deftest test-a-combined-query-of-a-filter-and-overdue-narrows-and-shows-active
+(deftest test-a-combined-query-of-a-filter-and-overdue-narrows-and-shows-checked
   (tf/testing "type:phenology plus due:<=<today> applies both filters"
     (fixtures)
     (fn [{:keys [user material]}]
@@ -169,13 +177,13 @@
             body (fetch sess "/observation/" "q" (str "type:phenology due:<=" today))]
         (is (= #{(str (:observation/id matching))} (row-ids body))
             "both filters narrow together")
-        (is (some? (.selectFirst body "a:contains(Showing overdue)"))
-            "the toggle reflects that the overdue term is already in the query")
+        (is (.contains (.attr (overdue-checkbox body) "x-data") ", true)")
+            "the checkbox reflects that the overdue term is already in the query")
         (doseq [o [matching right-type-not-overdue overdue-but-wrong-type]]
           (observation.i/delete! *db* (:observation/id o)))))))
 
-(deftest test-a-material-observations-row-links-to-the-material
-  (tf/testing "a material observation's Subject cell links to the material"
+(deftest test-a-material-observations-subject-links-to-its-observations-tab
+  (tf/testing "a material observation's Subject cell opens the material's Observations tab"
     (fixtures)
     (fn [{:keys [user material]}]
       (let [observation (create! :resource-type :material
@@ -185,14 +193,14 @@
                                  :observed-on "2026-01-01")
             sess (app.test/login (:user/email user) password)
             body (fetch sess "/observation/")
-            href (str "/material/" (:material/id material) "/")
+            href (str "/material/" (:material/id material) "/observations/")
             row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
         (is (some? row))
-        (is (some? (.selectFirst row (str "a[href='" href "']"))))
+        (is (some? (.selectFirst row (str "td:first-child a[href='" href "']"))))
         (observation.i/delete! *db* (:observation/id observation))))))
 
-(deftest test-a-location-observations-row-links-to-the-location
-  (tf/testing "a location observation's Subject cell links to the location"
+(deftest test-a-location-observations-subject-links-to-its-observations-tab
+  (tf/testing "a location observation's Subject cell opens the location's Observations tab"
     (fixtures)
     (fn [{:keys [user location]}]
       (let [observation (create! :resource-type :location
@@ -202,11 +210,58 @@
                                  :observed-on "2026-01-01")
             sess (app.test/login (:user/email user) password)
             body (fetch sess "/observation/")
-            href (str "/location/" (:location/id location) "/")
+            href (str "/location/" (:location/id location) "/observations/")
             row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
         (is (some? row))
         (is (some? (.selectFirst row (str "a[href='" href "']"))))
         (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-a-readers-subject-link-goes-to-the-subjects-page
+  (tf/testing "a reader can't open the Observations tab, so the link goes to the material"
+    (assoc-in (fixtures) [[::user.i/factory :key/user] :role] :reader)
+    (fn [{:keys [user material]}]
+      (let [observation (create! :resource-type :material
+                                 :resource-id (:material/id material)
+                                 :user user
+                                 :type "general"
+                                 :observed-on "2026-01-01")
+            sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/")
+            row (.selectFirst body (str "[data-observation-id=" (:observation/id observation) "]"))]
+        (is (some? (.selectFirst row (str "a[href='/material/" (:material/id material) "/']"))))
+        (observation.i/delete! *db* (:observation/id observation))))))
+
+(deftest test-a-bare-word-searches-the-subjects-codes
+  (tf/testing "free text matches accession codes, full material codes and locations"
+    (fixtures)
+    (fn [{:keys [user material accession location]}]
+      (let [on-material (create! :resource-type :material
+                                 :resource-id (:material/id material)
+                                 :user user
+                                 :type "general"
+                                 :observed-on "2026-01-01"
+                                 :note "unmistakablenoteword")
+            on-location (create! :resource-type :location
+                                 :resource-id (:location/id location)
+                                 :user user
+                                 :type "general"
+                                 :observed-on "2026-01-01")
+            material-id (str (:observation/id on-material))
+            location-id (str (:observation/id on-location))
+            sess (app.test/login (:user/email user) password)
+            ids (fn [q] (row-ids (fetch sess "/observation/" "q" q)))
+            acc-code (:accession/code accession)
+            mat-code (:material/code material)]
+        (is (contains? (ids acc-code) material-id) "the accession code")
+        (is (contains? (ids (str acc-code "." (subs mat-code 0 1))) material-id)
+            "the start of the full code")
+        (is (not (contains? (ids mat-code) material-id))
+            "the material's own code alone")
+        (is (contains? (ids (:location/name location)) location-id) "the location name")
+        (is (contains? (ids (:location/code location)) location-id) "the location code")
+        (is (empty? (ids "unmistakablenoteword")) "not the note")
+        (doseq [o [on-material on-location]]
+          (observation.i/delete! *db* (:observation/id o)))))))
 
 (deftest test-the-observer-column-falls-back-to-the-creating-user
   (tf/testing "no observed_by set -- the Observer cell shows who logged it"
@@ -223,33 +278,13 @@
         (is (.contains (.text row) (:user/email user)))
         (observation.i/delete! *db* (:observation/id observation))))))
 
-(deftest test-the-detail-page-shows-the-creating-user-when-observed-by-is-empty
-  (tf/testing "GET /observation/:id/ falls back to the creating user for Observed by"
+(deftest test-the-search-form-submits-one-q
+  (tf/testing "the export form's hidden q is not inside the search form"
     (fixtures)
-    (fn [{:keys [user material]}]
-      (let [observation (create! :resource-type :material
-                                 :resource-id (:material/id material)
-                                 :user user
-                                 :type "general"
-                                 :observed-on "2026-01-01")
-            sess (app.test/login (:user/email user) password)
-            body (fetch sess (str "/observation/" (:observation/id observation) "/"))]
-        (is (.contains (.text body) (:user/email user)))
-        (observation.i/delete! *db* (:observation/id observation))))))
-
-(deftest test-a-row-links-to-its-own-detail-page
-  (tf/testing "GET /observation/:id/ shows the observation and its subject"
-    (fixtures)
-    (fn [{:keys [user material]}]
-      (let [observation (create! :resource-type :material
-                                 :resource-id (:material/id material)
-                                 :user user
-                                 :type "phenology"
-                                 :value "flowering"
-                                 :observed-on "2026-01-01")
-            sess (app.test/login (:user/email user) password)
-            body (fetch sess (str "/observation/" (:observation/id observation) "/"))
-            href (str "/material/" (:material/id material) "/")]
-        (is (some? (.selectFirst body (str "a[href='" href "']"))))
-        (is (.contains (.text body) "Flowering"))
-        (observation.i/delete! *db* (:observation/id observation))))))
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (fetch sess "/observation/" "q" "type:general")
+            search-form (.selectFirst body "form[hx-get]")]
+        ;; A second q turns the parameter into a vector, which search.i/parse
+        ;; can't read, so every search from this page would fail.
+        (is (= 1 (count (.select search-form "[name=q]"))))))))

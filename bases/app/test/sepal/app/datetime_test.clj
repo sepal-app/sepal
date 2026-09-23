@@ -135,3 +135,9 @@
 
   (testing "returns nil for nil instant"
     (is (nil? (datetime/format-for-email nil "UTC")))))
+
+(deftest format-date-test
+  (testing "an ISO date reads as a short month, day and year"
+    (is (= "Mar 14, 2026" (datetime/format-date "2026-03-14"))))
+  (testing "nil stays nil"
+    (is (nil? (datetime/format-date nil)))))

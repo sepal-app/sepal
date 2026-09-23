@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.observations
   (:require [failjure.core :as f]
+            [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
@@ -13,8 +14,7 @@
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.validation.interface :as validation.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDate]))
+            [zodiac.core :as z]))
 
 (def resource-type :material)
 
@@ -31,9 +31,10 @@
 
 (defn- not-in-the-future
   "An observation records what you saw, so it cannot be dated ahead. A
-  next_check_on in the past is fine -- that is how you backfill."
-  [observed-on]
-  (when (pos? (compare observed-on (str (LocalDate/now))))
+  next_check_on in the past is fine -- that is how you backfill. `today` is
+  the garden's date, so a garden ahead of the server can record today."
+  [observed-on today]
+  (when (pos? (compare observed-on today))
     (error.i/error ::future-observed-on future-date-message)))
 
 (defn- future-date-error
@@ -74,15 +75,16 @@
   (db.i/with-transaction [tx db]
     (f tx created-by)))
 
-(defn render-list [db material]
+(defn render-list [db material timezone]
   (let [id (:material/id material)]
     (html/render-partial
       (ui.observations/observation-list :observations (observation.i/get-for-resource db resource-type id)
                                         :observation-url-fn (observation-url-fn id)
                                         :type-options (observation.i/list-types db)
-                                        :value-options-by-type (value-options-by-type db)))))
+                                        :value-options-by-type (value-options-by-type db)
+                                        :today (str (datetime/today timezone))))))
 
-(defn page-content [& {:keys [material accession taxon observations errors values db]}]
+(defn page-content [& {:keys [material accession taxon observations errors values db timezone]}]
   (let [id (:material/id material)]
     (material.shared/page
       :material material
@@ -95,7 +97,8 @@
                                                :errors errors
                                                :values values
                                                :type-options (observation.i/list-types db)
-                                               :value-options-by-type (value-options-by-type db)))))
+                                               :value-options-by-type (value-options-by-type db)
+                                               :today (str (datetime/today timezone))))))
 
 (defn render [& {:keys [db material accession taxon observations panel-data timezone]}]
   (ui.page/page
@@ -104,7 +107,8 @@
                                       :material material
                                       :accession accession
                                       :taxon taxon
-                                      :observations observations)
+                                      :observations observations
+                                      :timezone timezone)
                :panel-content (material.panel/panel-content
                                 :material (:material panel-data)
                                 :accession (:accession panel-data)
@@ -138,13 +142,13 @@
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _future-check (not-in-the-future (:observed_on data))
+                      _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
                       _saved (f/try* (write! db (:user/id viewer)
                                              (fn [tx created-by]
                                                (let [observation (observation.i/create! tx (observation-data id data created-by))]
                                                  (observation.activity/create! tx observation.activity/created created-by observation)
                                                  observation))))]
-        (render-list db resource)
+        (render-list db resource timezone)
         (f/when-failed [e]
           ;; The one failure this route classifies itself: a future date is a
           ;; field error, not a generic save failure.
@@ -163,7 +167,7 @@
 
 (defn observation-handler
   [{:keys [::z/context form-params path-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         observation-id (parse-long (str (:observation-id path-params)))
         observation (when observation-id (observation.i/get-by-id db observation-id))]
     (if-not (and observation
@@ -173,7 +177,7 @@
       (case request-method
         :post
         (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                        _future-check (not-in-the-future (:observed_on data))
+                        _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
                         _saved (f/try* (write! db (:user/id viewer)
                                                (fn [tx created-by]
                                                  (let [updated (observation.i/update! tx observation-id
@@ -185,18 +189,19 @@
                                                                                        :note (:note data)})]
                                                    (observation.activity/create! tx observation.activity/updated created-by updated)
                                                    updated))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (if (error.i/error? e ::future-observed-on)
               (future-date-error observation-id)
-              (http/failure-partial e "The observation could not be saved."))))
+              (http/failure-partial e "The observation could not be saved."
+                                    :id-suffix observation-id))))
 
         :delete
         (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
                                                  (fn [tx created-by]
                                                    (observation.activity/create! tx observation.activity/deleted created-by observation)
                                                    (observation.i/delete! tx observation-id))))]
-          (render-list db resource)
+          (render-list db resource timezone)
           (f/when-failed [e]
             (http/failure-partial e "The observation could not be deleted.")))
 

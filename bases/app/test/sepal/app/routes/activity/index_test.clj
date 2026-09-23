@@ -319,7 +319,10 @@
                 response (:response (peri/request session href))]
             (is (some? href) "the count is a link")
             (is (= 200 (:status response)) "the link resolves")
-            (is (app.test/body-contains? response "Showing overdue")
-                "and the index applies the very same overdue term its own toggle uses"))
+            (is (some-> (app.test/parse-body response)
+                        (.selectFirst "label[x-data^=overdueOnlyFilter]")
+                        (.attr "x-data")
+                        (.endsWith ", true)"))
+                "the index's overdue checkbox is checked, because the link applies the very same term it uses"))
           (finally
             (observation.i/delete! *db* (:observation/id observation))))))))

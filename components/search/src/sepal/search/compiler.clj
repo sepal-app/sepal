@@ -278,12 +278,21 @@
   [terms fields]
   (when-let [match (terms->match terms)]
     (let [clauses (->> (searchable-fields fields)
-                       (keep (fn [[_ {:keys [type] :as field}]]
-                               (if (= :fts type)
+                       (keep (fn [[_ {:keys [type search-clause] :as field}]]
+                               (cond
+                                 ;; The field says how a bare word matches it,
+                                 ;; for a match one column can't express.
+                                 search-clause
+                                 (when-let [value (first terms)]
+                                   (search-clause value))
+
+                                 (= :fts type)
                                  (fts-in-clause field match)
+
                                  ;; A plain column has no index behind it, so
                                  ;; this is the ordinary contains match the
                                  ;; same field gives as a filter.
+                                 :else
                                  (when-let [value (first terms)]
                                    [:like (:column field) (str "%" value "%")]))))
                        (vec))]

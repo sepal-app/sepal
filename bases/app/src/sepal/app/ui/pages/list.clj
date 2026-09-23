@@ -129,19 +129,28 @@
   [:div {:class "spl-table-card"}
    [:div {:class "spl-table-scroll"} content]])
 
-(defn page-content [& {:keys [table-actions content]}]
-  [:form {:method "get"
-          :hx-get " "
-          :hx-trigger "keyup delay:200ms,change"
-          :hx-select (str "#" list-container-id)
-          :hx-target (str "#" list-container-id)
-          :hx-push-url "true"
-          :hx-swap "outerHTML"}
-   [:div {:class "spl-toolbar"}
-    table-actions]
-   [:div {:id list-container-id
-          :class "spl-list"}
-    content]])
+(defn page-content
+  "List page content with no preview panel: the search toolbar above the list.
+
+  The form wraps the toolbar only. `content` can carry forms of its own, such
+  as the export modal's, and a form nested in this one would have its fields
+  submitted with every search. The wrappers keep the flex chain from the
+  viewport to the scrolling rows unbroken, as `page-content-with-panel` does."
+  [& {:keys [table-actions content]}]
+  [:div {:class "spl-list-page"}
+   [:div {:class "spl-list-body"}
+    [:form {:class "spl-toolbar"
+            :method "get"
+            :hx-get " "
+            :hx-trigger "keyup delay:200ms,change"
+            :hx-select (str "#" list-container-id)
+            :hx-target (str "#" list-container-id)
+            :hx-push-url "true"
+            :hx-swap "outerHTML"}
+     table-actions]
+    [:div {:id list-container-id
+           :class "spl-list"}
+     content]]])
 
 (def panel-container-id "preview-panel-content")
 
