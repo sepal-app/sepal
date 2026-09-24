@@ -47,6 +47,16 @@
   [db location-id]
   (core/moved-out-by-location-id db location-id))
 
+(defn list-by-propagation-id
+  "Material this propagation produced, by code."
+  [db propagation-id]
+  (core/list-by-propagation-id db propagation-id))
+
+(defn list-by-accession-id
+  "Every material of one accession, by code."
+  [db accession-id]
+  (core/list-by-accession-id db accession-id))
+
 (defn next-code
   "The next material code within this accession, or nil when the template is
   unusable."

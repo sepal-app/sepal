@@ -15,6 +15,7 @@
             [sepal.media.interface :as media.i]
             [sepal.note.interface :as note.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -116,7 +117,7 @@
 ;;; ---------------------------------------------------------------------------
 ;;; material
 
-(deftest test-material-is-never-blocked-and-owns-its-history
+(deftest test-material-owns-its-history
   (tf/testing "delete! :material"
     (assoc (accession-fixtures)
            [::material.i/factory :key/material] {:db *db*
@@ -132,12 +133,70 @@
                                                      :created-by (:user/id user)})]
         (try
           (is (empty? (app.delete/blockers :material *db* material))
-              "nothing references material except material_change, which cascades")
+              "nothing names this plant, so material_change is all it owns")
           (is (nil? (app.delete/delete! :material *db* material (:user/id user))))
           (is (nil? (material.i/get-by-id *db* id)))
           (is (nil? (observation.i/get-by-id *db* (:observation/id observation))))
           (finally
             (clear-activity! user)))))))
+
+;;; ---------------------------------------------------------------------------
+;;; propagation
+
+(deftest test-a-propagation-blocks-its-parent-and-bench
+  ;; A propagation is history: the record of a genotype the garden grew, like a
+  ;; material_change. A parent, bench or rootstock it names cannot be deleted
+  ;; while it exists, the way a location material moved through cannot.
+  (tf/testing "blockers :propagation"
+    (assoc (accession-fixtures)
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [user accession material location taxon]}]
+      (let [propagation (propagation.i/create! *db* {:type :cutting
+                                                     :parent-accession-id (:accession/id accession)
+                                                     :parent-material-id (:material/id material)
+                                                     :location-id (:location/id location)
+                                                     :rootstock-taxon-id (:taxon/id taxon)})]
+        (try
+          (is (= [{:reason :propagation-parent :count 1}]
+                 (app.delete/blockers :material *db* material))
+              "the plant the cuttings came off")
+          (is (some #(= :propagation-parent (:reason %))
+                    (app.delete/blockers :accession *db* accession))
+              "the accession the batch came off")
+          (is (some #(= :propagation-location (:reason %))
+                    (app.delete/blockers :location *db* location))
+              "the bench the batch is on")
+          (is (some #(= :propagation-rootstock (:reason %))
+                    (app.delete/blockers :taxon *db* taxon))
+              "the taxon a graft sits on")
+          (is (error.i/error?
+                (app.delete/delete! :material *db* material (:user/id user))))
+          (is (some? (material.i/get-by-id *db* (:material/id material)))
+              "a refused delete writes nothing")
+          (finally
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id propagation)})))))))
+
+(deftest test-a-product-does-not-block-its-own-deletion
+  ;; The product carries the link, so removing it breaks no reference. Only the
+  ;; parent side is history that has to outlive the record it names.
+  (tf/testing "blockers :material with a product link"
+    (assoc (accession-fixtures)
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [user accession material]}]
+      (let [propagation (propagation.i/create! *db* {:type :cutting
+                                                     :parent-accession-id (:accession/id accession)})]
+        (try
+          (material.i/update! *db* (:material/id material)
+                              {:propagation-id (:propagation/id propagation)})
+          (is (empty? (app.delete/blockers :material *db* material)))
+          (is (nil? (app.delete/delete! :material *db* material (:user/id user))))
+          (finally
+            (clear-activity! user)
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id propagation)})))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; taxon
@@ -359,6 +418,10 @@
 (deftest test-blocker-labels-read-as-sentences
   (is (= "12 material record(s) reference this"
          (app.delete/blocker-label {:reason :material :count 12})))
+  (is (= "2 propagation(s) name this as their parent"
+         (app.delete/blocker-label {:reason :propagation-parent :count 2})))
+  (is (= "1 propagation(s) name this location"
+         (app.delete/blocker-label {:reason :propagation-location :count 1})))
   (is (= "This name comes from the World Flora Online list"
          (app.delete/blocker-label {:reason :wfo :count 1}))
       "a reason with nothing to count renders without a number"))

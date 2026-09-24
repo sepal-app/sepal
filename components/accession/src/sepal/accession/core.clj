@@ -55,6 +55,15 @@
                                                      [:= :m.location_id :a.intended_location_id]]}]]]
                      :order-by [[:a.date_received :asc] [:a.code :asc]]}))
 
+(defn list-by-propagation-id
+  "Accessions this propagation produced -- seed taken from a growing plant,
+  which is a new genotype. Ordered by code, the order the garden issued them."
+  [db propagation-id]
+  (db.i/execute! db {:select [:*]
+                     :from [:accession]
+                     :where [:= :propagation_id propagation-id]
+                     :order-by [[:code :asc]]}))
+
 (defn count-all
   "Count every accession in the garden."
   [db]

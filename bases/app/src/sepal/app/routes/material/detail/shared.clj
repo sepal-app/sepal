@@ -1,6 +1,7 @@
 (ns sepal.app.routes.material.detail.shared
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
@@ -65,4 +66,7 @@
   [& {:keys [material primary]}]
   (ui.actions/menu
     :primary primary
+    :items [{:label "Record a propagation"
+             :href (z/url-for propagation.routes/new nil
+                              {:parent-material-id (:material/id material)})}]
     :delete-url (z/url-for material.routes/delete {:id (:material/id material)})))

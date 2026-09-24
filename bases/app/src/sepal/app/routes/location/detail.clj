@@ -15,6 +15,7 @@
                   (:location/name location)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (location.panel/panel-content
+                :panel-data panel-data
                 :location (:location panel-data)
                 :stats (:stats panel-data)
                 :awaiting (:awaiting panel-data)

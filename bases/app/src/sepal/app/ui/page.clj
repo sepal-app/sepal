@@ -10,6 +10,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.observation.routes :as observation.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -120,15 +121,17 @@
 (defn- sections
   "The section rail's entries.
 
-   The three record sections run in the order a garden has to create them: a
-   taxon before an accession of it, an accession before material from it. That
-   is general above specific, which is also how every other hierarchy here
-   reads, down to the Taxa list putting a parent above its children.
+   The record sections run in the order a garden has to create them: a taxon
+   before an accession of it, an accession before material from it, and a
+   plant before a propagation off it. That is general above specific, which is
+   also how every other hierarchy here reads, down to the Taxa list putting a
+   parent above its children.
 
-   Every icon is Lucide, one 24 grid at stroke 2. Taxa and Material both draw
-   plants, which Accessions between them keeps apart — trees are two trunks
-   filling the box, a sprout is low and wide with a ground line. The flower
-   Taxa used to draw sat next to the sprout and read as the same shape at 20px."
+   Every icon is Lucide, one 24 grid at stroke 2. Taxa, Material and
+   Propagation all draw plants, which Accessions between them keeps apart --
+   trees are two trunks filling the box, a sprout is low and wide with a
+   ground line, and a bean is one compact diagonal body. The flower Taxa used
+   to draw sat next to the sprout and read as the same shape at 20px."
   []
   [{:label "Activity" :href (z/url-for activity.routes/index)
     :icon (lucide/history)}
@@ -138,6 +141,8 @@
     :icon (lucide/clipboard-list)}
    {:label "Material" :href (z/url-for material.routes/index)
     :icon (lucide/sprout)}
+   {:label "Propagation" :href (z/url-for propagation.routes/index)
+    :icon (lucide/bean)}
    {:label "Locations" :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
    {:label "Observations" :href (z/url-for observation.routes/index)

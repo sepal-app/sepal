@@ -1,6 +1,7 @@
 (ns sepal.app.routes.accession.detail.shared
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
@@ -91,5 +92,7 @@
     (ui.actions/menu
       :primary primary
       :items [{:label "Add material"
-               :href (z/url-for material.routes/new nil {:accession-id id})}]
+               :href (z/url-for material.routes/new nil {:accession-id id})}
+              {:label "Record a propagation"
+               :href (z/url-for propagation.routes/new nil {:parent-accession-id id})}]
       :delete-url (z/url-for accession.routes/delete {:id id}))))

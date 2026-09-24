@@ -295,12 +295,13 @@
 
 (deftest test-list-reasons
   (let [reasons (mat.i/list-reasons *db*)]
-    (is (= 15 (count reasons)))
+    (is (= 16 (count reasons)))
     (is (= (set (map :material-change-reason/code reasons))
            #{"dead" "discarded" "discarded_weedy" "lost" "stolen"
              "winter_kill" "summer_kill" "error_correction"
              "distributed" "deleted" "did_not_germinate"
-             "discarded_seedling" "given_away" "transferred" "other"}))
+             "discarded_seedling" "given_away" "transferred" "other"
+             "divided"}))
     (is (contains? (set (map :material-change-reason/label reasons))
                    "Winter kill"))))
 

@@ -16,6 +16,8 @@
     :taxon (lucide/trees :size size)
     :location (lucide/map-pin :size size)
     :media (lucide/image :size size)
+    :observation (lucide/eye :size size)
+    :propagation (lucide/bean :size size)
     :contact (lucide/contact-round)
     :setup (lucide/circle-check :size size)
     :import (lucide/download :size size)
