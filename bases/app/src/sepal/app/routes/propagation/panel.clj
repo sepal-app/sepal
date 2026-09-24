@@ -86,6 +86,12 @@
                      {:label "Succeeded on" :value succeeded-on}
                      {:label "Succeeded" :value (some-> quantity-succeeded str)}]))
 
+        (let [notes (:propagation/notes propagation)]
+          (panel/collapsible-section
+            :title "Notes"
+            :disabled? (nil? notes)
+            :children [:p {:class "px-4 py-2 text-sm whitespace-pre-line"} notes]))
+
         (panel/collapsible-section
           :title "Products"
           :count (count products)

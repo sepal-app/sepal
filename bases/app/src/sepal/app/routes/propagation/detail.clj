@@ -66,6 +66,7 @@
        :succeeded-on (:propagation/succeeded-on propagation)
        :quantity-started (:propagation/quantity-started propagation)
        :quantity-succeeded (:propagation/quantity-succeeded propagation)
+       :notes (:propagation/notes propagation)
        :products? (shared/products? panel-data)})))
 
 (defn- render-edit-page [db propagation panel-data]
@@ -115,7 +116,10 @@
     [:maybe :int]]
    [:quantity-succeeded {:optional true
                          :decode/form validation.i/empty->nil}
-    [:maybe :int]]])
+    [:maybe :int]]
+   [:notes {:optional true
+            :decode/form validation.i/empty->nil}
+    [:maybe :string]]])
 
 (defn update!
   "Save the batch, and record the activity in the same transaction."

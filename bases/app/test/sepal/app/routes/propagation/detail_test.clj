@@ -69,12 +69,17 @@
                                              :parent-accession-id (str (:accession/id acc))
                                              :quantity-started "20"
                                              :quantity-succeeded "12"
-                                             :succeeded-on "2026-05-01"})
+                                             :succeeded-on "2026-05-01"
+                                             :notes "Half in perlite"})
               saved (propagation.i/get-by-id *db* (:propagation/id prop))]
           (is (= 200 (:status response)))
           (is (= 20 (:propagation/quantity-started saved)))
           (is (= 12 (:propagation/quantity-succeeded saved)))
-          (is (= "2026-05-01" (:propagation/succeeded-on saved))))
+          (is (= "2026-05-01" (:propagation/succeeded-on saved)))
+          (is (= "Half in perlite" (:propagation/notes saved)))
+          (is (.contains (.text (page user (str "/propagation/" (:propagation/id prop) "/")))
+                         "Half in perlite")
+              "the panel shows the notes"))
         (finally
           (clear-activity! user))))))
 

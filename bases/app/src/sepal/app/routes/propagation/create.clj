@@ -93,7 +93,10 @@
     [:maybe :int]]
    [:parent-quantity {:optional true
                       :decode/form validation.i/empty->nil}
-    [:maybe :int]]])
+    [:maybe :int]]
+   [:notes {:optional true
+            :decode/form validation.i/empty->nil}
+    [:maybe :string]]])
 
 (def ^:private PrefillParams
   "The parent can arrive in the query string, so a create started from a

@@ -10,6 +10,7 @@
 (def created-by pos-int?)
 (def propagated-on :string)
 (def succeeded-on :string)
+(def notes :string)
 (def quantity [:int {:min 0}])
 
 (defn- name-encoder [v]
@@ -67,6 +68,7 @@
    [:propagation/succeeded-on [:maybe succeeded-on]]
    [:propagation/quantity-started [:maybe quantity]]
    [:propagation/quantity-succeeded [:maybe quantity]]
+   [:propagation/notes [:maybe notes]]
    [:propagation/created-by [:maybe created-by]]])
 
 (def CreatePropagation
@@ -82,6 +84,7 @@
     [:succeeded-on {:optional true} [:maybe succeeded-on]]
     [:quantity-started {:optional true} [:maybe quantity]]
     [:quantity-succeeded {:optional true} [:maybe quantity]]
+    [:notes {:optional true} [:maybe notes]]
     [:created-by {:optional true} [:maybe created-by]]]
    counts-consistent])
 
@@ -98,5 +101,6 @@
       [:propagated-on [:maybe propagated-on]]
       [:succeeded-on [:maybe succeeded-on]]
       [:quantity-started [:maybe quantity]]
-      [:quantity-succeeded [:maybe quantity]]])
+      [:quantity-succeeded [:maybe quantity]]
+      [:notes [:maybe notes]]])
    counts-consistent])

@@ -18,6 +18,7 @@
     :label "Method"
     :name "type"
     :required true
+    :help "How the material was produced."
     :errors errors
     :input
     [:select {:name "type"
@@ -152,9 +153,9 @@
         :x-on:propagation-form:reset.window "$el.reset()"}
        [(form/anti-forgery-field)
         [:div {:class "spl-form"}
+         ;; Untitled: the method is one field, and a heading would repeat its
+         ;; label. Rootstock joins it only for a graft.
          (form/section
-           :title "Method"
-           :hint "How the material was produced."
            :children
            [(type-field :types types :value (name type) :errors (:type errors))
             [:div (cond-> {:x-show "type === 'graft'"}
@@ -196,7 +197,7 @@
                                :type "number"
                                :value (:quantity-started values)
                                :errors (:quantity-started errors)
-                               :help "Leave blank for a mass sowing, where nobody counted.")
+                               :help "Leave blank for a mass sowing.")
              (form/input-field :label "Succeeded"
                                :name "quantity-succeeded"
                                :type "number"
@@ -209,4 +210,12 @@
                 :type "number"
                 :value (:parent-quantity values)
                 :errors (:parent-quantity errors)
-                :help "Optional. Filling this reduces the parent lot and records the change as a division. Leave blank when taking cuttings or seed, which removes nothing."))])]])]))
+                :help "Optional. Filling this reduces the parent lot and records the change as a division. Leave blank when taking cuttings or seed, which removes nothing."))])
+
+         (form/section
+           :children
+           (form/textarea-field :label "Notes"
+                                :name "notes"
+                                :value (:notes values)
+                                :errors (:notes errors)
+                                :help "Anything the fields above do not hold, such as a medium or treatment tried, or why the batch failed."))]])]))

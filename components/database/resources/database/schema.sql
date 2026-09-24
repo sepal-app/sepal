@@ -481,7 +481,7 @@ CREATE TABLE propagation (
   created_by integer references "user"(id),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, notes text) strict;
 CREATE INDEX propagation_parent_accession_id_idx
   on propagation (parent_accession_id);
 CREATE INDEX propagation_parent_material_id_idx
@@ -657,3 +657,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917130000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917140000', '2026-09-17 17:00:44');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920120000', '2026-09-20 19:46:19');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920130000', '2026-09-21 13:44:07');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924120000', '2026-09-24 12:00:00');

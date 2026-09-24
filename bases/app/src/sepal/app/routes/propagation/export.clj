@@ -20,6 +20,7 @@
    {:key :propagation/succeeded-on :header "succeeded_on" :column :p.succeeded_on}
    {:key :propagation/quantity-started :header "quantity_started" :column :p.quantity_started}
    {:key :propagation/quantity-succeeded :header "quantity_succeeded" :column :p.quantity_succeeded}
+   {:key :propagation/notes :header "notes" :column :p.notes}
    {:key :accession/code :header "parent_accession_code" :column :a.code}
    {:key :material/code :header "parent_material_code" :column :m.code}
    {:key :location/code :header "location_code" :column :l.code}
