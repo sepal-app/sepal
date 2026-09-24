@@ -35,7 +35,8 @@
                                                          :tag-id (:tag/id tag)})))))
 
 (defn render [& {:keys [material accession taxon tags all-tags panel-data timezone]}]
-  (ui.page/page :content (pages.detail/page-content-with-panel
+  (ui.page/page :page-title-buttons (material.shared/actions :material material)
+                :content (pages.detail/page-content-with-panel
                            :content (page-content :material material :accession accession
                                                   :taxon taxon :tags tags :all-tags all-tags)
                            :panel-content (material.panel/panel-content

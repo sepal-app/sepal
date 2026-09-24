@@ -100,6 +100,7 @@
 
 (defn render [& {:keys [db material accession taxon observations panel-data timezone]}]
   (ui.page/page
+    :page-title-buttons (material.shared/actions :material material)
     :content (pages.detail/page-content-with-panel
                :content (page-content :db db
                                       :material material

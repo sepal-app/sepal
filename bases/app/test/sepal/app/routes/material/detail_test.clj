@@ -202,3 +202,23 @@
             (is (some? (.selectFirst all-body ":containsOwn(Stolen)"))
                 "older cards are present in the full fragment")))
         (jdbc.sql/delete! *db* :material {:id id})))))
+
+(deftest test-every-tab-carries-the-actions-menu
+  (tf/testing "each of a material's tabs offers the same actions"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [user material]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")]
+        (doseq [tab ["general" "media" "observations" "tags"]]
+          (let [body (Jsoup/parse ^String (:body (:response (peri/request sess (str "/material/" (:material/id material) "/" tab "/")))))]
+            (is (some? (.selectFirst body ".spl-actions-menu"))
+                (str "the " tab " tab has the actions menu"))
+            (is (.contains (.text body) "Add a propagation")
+                (str "the " tab " tab offers Add a propagation"))))))))
