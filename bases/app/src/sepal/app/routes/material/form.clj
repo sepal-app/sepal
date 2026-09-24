@@ -1,8 +1,8 @@
 (ns sepal.app.routes.material.form
   (:require [sepal.app.codes :as codes]
-            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.ui.accession-combobox :as accession-combobox]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
@@ -82,15 +82,12 @@
            ;; Accession first: the code is numbered within its accession, so
            ;; asking for the code above the field it depends on asks you to
            ;; look up an answer the form has not been told yet.
-           [(combobox/combobox
+           [(accession-combobox/accession-combobox
               :name "accession-id"
-              :label "Accession"
-              :url (z/url-for accession.routes/index)
               :required true
               :errors (:accession-id errors)
-              :selected (when (:accession-id values)
-                          {:id (:accession-id values)
-                           :text (:accession-code values)}))
+              :accession-id (:accession-id values)
+              :accession-text (:accession-code values))
             (form/field :label "Code"
                         :name "code"
                         :errors (:code errors)

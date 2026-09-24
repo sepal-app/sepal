@@ -1,8 +1,8 @@
 (ns sepal.app.routes.propagation.form
-  (:require [sepal.app.routes.accession.routes :as accession.routes]
-            [sepal.app.routes.location.routes :as location.routes]
+  (:require [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.accession-combobox :as accession-combobox]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [zodiac.core :as z]))
@@ -99,15 +99,13 @@
                :hx-include "#parent-accession-id"
                :hx-target "#parent-material-field"
                :hx-swap "outerHTML"}
-         (combobox/combobox
+         (accession-combobox/accession-combobox
            :name "parent-accession-id"
            :label "Parent accession"
-           :url (z/url-for accession.routes/index)
            :required true
            :errors (:parent-accession-id errors)
-           :selected (when accession-id
-                       {:id accession-id
-                        :text (:accession-code values)}))]
+           :accession-id accession-id
+           :accession-text (:accession-code values))]
         (parent-material-field :values values
                                :errors (:parent-material-id errors)
                                :material-items material-items)))))

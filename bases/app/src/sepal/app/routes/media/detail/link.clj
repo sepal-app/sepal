@@ -8,6 +8,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.accession-combobox :as accession-combobox]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
@@ -45,15 +46,16 @@
                   :url (z/url-for taxon.routes/index)
                   :selected (when taxon-id {:id taxon-id :text taxon-name})))
 
-(defn accession-field [& {:keys [accession-name name accession-id]}]
-  (resource-field :label "Accession"
-                  :name name
-                  ;; accession.routes, not taxon.routes. Both this and the
-                  ;; location field below searched the taxonomy, so neither
-                  ;; could find what it was for.
-                  :url (z/url-for accession.routes/index)
-                  :selected (when accession-id
-                              {:id accession-id :text accession-name})))
+(defn accession-field
+  "Not a `resource-field`: accessions have their own picker. It keeps the
+  same hidden label and required flag as the other three."
+  [& {:keys [accession-name name accession-id]}]
+  (accession-combobox/accession-combobox
+    :name name
+    :label-hidden? true
+    :required true
+    :accession-id accession-id
+    :accession-text accession-name))
 
 (defn location-field [& {:keys [location-name name location-id]}]
   (resource-field :label "Location"
