@@ -93,6 +93,6 @@
       :primary primary
       :items [{:label "Add material"
                :href (z/url-for material.routes/new nil {:accession-id id})}
-              {:label "Record a propagation"
+              {:label "Add a propagation"
                :href (z/url-for propagation.routes/new nil {:parent-accession-id id})}]
       :delete-url (z/url-for accession.routes/delete {:id id}))))

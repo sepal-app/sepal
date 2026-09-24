@@ -66,7 +66,7 @@
   [& {:keys [material primary]}]
   (ui.actions/menu
     :primary primary
-    :items [{:label "Record a propagation"
+    :items [{:label "Add a propagation"
              :href (z/url-for propagation.routes/new nil
                               {:parent-material-id (:material/id material)})}]
     :delete-url (z/url-for material.routes/delete {:id (:material/id material)})))
