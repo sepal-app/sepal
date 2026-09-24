@@ -197,4 +197,5 @@
       (let [sess (app.test/login (:user/email user) "testpassword123")
             body (Jsoup/parse ^String (:body (:response (peri/request sess "/propagation/new/"))))]
         (is (some? (.selectFirst body "[hx-get='/propagation/parent-plant/'][hx-include='#parent-accession-id']")))
-        (is (some? (.selectFirst body "#parent-material-field")))))))
+        (is (some? (.selectFirst body "#parent-material-field sepal-combobox[name=parent-material-id]"))
+            "the plant picker is there before an accession is chosen")))))

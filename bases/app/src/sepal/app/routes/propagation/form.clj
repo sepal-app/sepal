@@ -47,22 +47,23 @@
     :help "A graft's other parent. Commercial rootstock is bought by the bundle, so this names the cultivar rather than a plant here."))
 
 (defn parent-material-field
-  "The parent plant picker, offering the chosen accession's material. Rendered
-  by the form and by the endpoint that swaps it in when the accession changes,
-  so it has one id to be replaced by."
+  "The parent plant picker, offering the chosen accession's material and
+  empty until one is chosen. Rendered by the form and by the endpoint that
+  swaps it in when the accession changes, so it has one id to be replaced by."
   [& {:keys [values errors material-items]}]
   [:div {:id "parent-material-field"}
-   (when (seq material-items)
-     (combobox/combobox
-       :name "parent-material-id"
-       :label "Parent plant"
-       :items material-items
-       :errors errors
-       :selected (when (:parent-material-id values)
-                   {:id (:parent-material-id values)
-                    :text (str (:accession-code values)
-                               "." (:material-code values))})
-       :help "Optional. Leave it out when the cuttings came off the accession without a particular plant being recorded."))])
+   (combobox/combobox
+     :name "parent-material-id"
+     :label "Parent plant"
+     :items material-items
+     :errors errors
+     :selected (when (:parent-material-id values)
+                 {:id (:parent-material-id values)
+                  :text (str (:accession-code values)
+                             "." (:material-code values))})
+     :help (if (:accession-code values)
+             "Optional. Leave it out when the cuttings came off the accession without a particular plant being recorded."
+             "Optional. Choose a parent accession to pick from its plants."))])
 
 (defn- parent-field
   "The parent accession and, once it is known, the plant.
