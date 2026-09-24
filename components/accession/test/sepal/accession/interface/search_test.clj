@@ -23,3 +23,16 @@
               rows (db.i/execute! *db* stmt)]
           (is (some #(= (:accession/id accession) (:accession/id %)) rows)))
         (tag.i/delete! *db* (:tag/id tag))))))
+
+(deftest test-a-bare-word-searches-code-and-taxon
+  (tf/testing "a bare word finds an accession by its code or its taxon's name"
+    {[::taxon.i/factory :key/taxon] {:db *db* :name "Sepaltestia serrata"}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [accession]}]
+      (let [found? (fn [q]
+                     (let [stmt (search.i/compile-query :accession (search.i/parse q)
+                                                        {:select [:a.*] :from [[:accession :a]]})]
+                       (some #(= (:accession/id accession) (:accession/id %))
+                             (db.i/execute! *db* stmt))))]
+        (is (found? "sepaltestia") "by the taxon name")
+        (is (found? (:accession/code accession)) "by the code")))))

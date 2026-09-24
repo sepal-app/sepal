@@ -6,9 +6,12 @@
   {:table [:accession :a]
    :fields
    {;; Direct fields
+    ;; A bare word searches the code and the taxon name, so an accession
+    ;; picker finds "quercus" without the taxon: prefix.
     :code   {:column :a.code
              :type :fts
              :fts-table :accession_fts
+             :search? true
              :label "Code"}
 
     :id     {:column :a.id
@@ -28,6 +31,7 @@
     :taxon    {:column :t.name
                :type :fts
                :fts-table :taxon_fts
+               :search? true
                :label "Taxon"
                :joins [[:taxon :t] [:= :t.id :a.taxon_id]]}
 
