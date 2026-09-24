@@ -90,4 +90,5 @@
                        :params {:status "complete"}}
                       {:label "Mark failed"
                        :post-url status-url
-                       :params {:status "failed"}}])))))
+                       :params {:status "failed"}}]))
+      :delete-url (z/url-for propagation.routes/delete {:id id}))))

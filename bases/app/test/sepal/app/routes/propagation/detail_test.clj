@@ -240,3 +240,26 @@
         (is (= 422 (:status response)))
         (is (nil? (:propagation/succeeded-on
                     (propagation.i/get-by-id *db* (:propagation/id prop)))))))))
+
+(deftest test-deleting-a-propagation
+  (tf/testing "the actions menu deletes a batch with nothing produced"
+    (fixtures)
+    (fn [{:keys [user acc]}]
+      (let [prop (propagation.i/create! *db* {:type :seed
+                                              :parent-accession-id (:accession/id acc)})
+            path (str "/propagation/" (:propagation/id prop) "/")
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess path)
+            body (Jsoup/parse ^String (:body response))
+            token (test.i/response-anti-forgery-token response)]
+        (try
+          (is (some? (.selectFirst body (str "[hx-get='" path "delete/']")))
+              "the menu offers Delete")
+          (let [{:keys [response]} (peri/request sess (str path "delete/")
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token token})]
+            (is (= 303 (:status response)))
+            (is (nil? (propagation.i/get-by-id *db* (:propagation/id prop)))))
+          (finally
+            (clear-activity! user)
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id prop)})))))))

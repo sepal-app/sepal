@@ -27,6 +27,7 @@
             [sepal.note.interface :as note.i]
             [sepal.observation.interface :as observation.i]
             [sepal.propagation.interface :as propagation.i]
+            [sepal.propagation.interface.activity :as propagation.activity]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -140,6 +141,22 @@
     (location.i/delete! tx id)))
 
 ;;; ---------------------------------------------------------------------------
+;;; propagation
+
+(defmethod blockers :propagation [_ db propagation]
+  ;; A product is a plant or accession that says it came from here. Deleting
+  ;; the propagation would erase where it came from, so the products block it.
+  (let [id (:propagation/id propagation)]
+    (->> [(counted :propagation-product
+                   (+ (count (material.i/list-by-propagation-id db id))
+                      (count (accession.i/list-by-propagation-id db id))))]
+         (filterv some?))))
+
+(defmethod delete!* :propagation [_ tx propagation deleted-by]
+  (propagation.activity/create! tx propagation.activity/deleted deleted-by propagation)
+  (propagation.i/delete! tx (:propagation/id propagation)))
+
+;;; ---------------------------------------------------------------------------
 ;;; contact
 
 (defmethod blockers :contact [_ db contact]
@@ -173,6 +190,7 @@
    :propagation-parent "%d propagation(s) name this as their parent"
    :propagation-rootstock "%d propagation(s) use this taxon as a rootstock"
    :propagation-location "%d propagation(s) name this location"
+   :propagation-product "%d record(s) came from this propagation"
    :wfo "This name comes from the World Flora Online list"})
 
 (defn blocker-label [{:keys [reason count]}]

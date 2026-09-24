@@ -1,6 +1,7 @@
 (ns sepal.app.routes.propagation.core
   (:require [sepal.app.middleware :as middleware]
             [sepal.app.routes.propagation.create :as create]
+            [sepal.app.routes.propagation.delete :as delete]
             [sepal.app.routes.propagation.detail :as detail]
             [sepal.app.routes.propagation.export :as export]
             [sepal.app.routes.propagation.index :as index]
@@ -44,6 +45,11 @@
                  :middleware [[(middleware/require-permission-or-redirect
                                  propagation.perm/edit (constantly routes/detail))]]
                  :post #'detail/status-handler}]
+    ["/delete/" {:name routes/delete
+                 :middleware [[(middleware/require-permission-or-redirect
+                                 propagation.perm/delete (constantly routes/detail))]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/product/" {:name routes/product
                   :middleware [[(middleware/require-permission-or-redirect
                                   propagation.perm/edit (constantly routes/detail))]]

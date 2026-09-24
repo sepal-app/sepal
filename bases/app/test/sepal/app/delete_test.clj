@@ -198,6 +198,44 @@
             (clear-activity! user)
             (jdbc.sql/delete! *db* :propagation {:id (:propagation/id propagation)})))))))
 
+(deftest test-a-propagation-with-products-is-blocked
+  (tf/testing "blockers :propagation"
+    (assoc (accession-fixtures)
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)})
+    (fn [{:keys [user accession material]}]
+      (let [propagation (propagation.i/create! *db* {:type :cutting
+                                                     :parent-accession-id (:accession/id accession)})]
+        (try
+          (material.i/update! *db* (:material/id material)
+                              {:propagation-id (:propagation/id propagation)})
+          (is (= [{:reason :propagation-product :count 1}]
+                 (app.delete/blockers :propagation *db* propagation)))
+          (is (some? (propagation.i/get-by-id *db* (:propagation/id propagation)))
+              "still there")
+          (finally
+            (material.i/update! *db* (:material/id material) {:propagation-id nil})
+            (clear-activity! user)
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id propagation)})))))))
+
+(deftest test-a-propagation-without-products-deletes
+  (tf/testing "delete! :propagation"
+    (accession-fixtures)
+    (fn [{:keys [user accession]}]
+      (let [propagation (propagation.i/create! *db* {:type :seed
+                                                     :parent-accession-id (:accession/id accession)})
+            id (:propagation/id propagation)]
+        (try
+          (is (nil? (app.delete/delete! :propagation *db* propagation (:user/id user))))
+          (is (nil? (propagation.i/get-by-id *db* id)))
+          (is (seq (jdbc.sql/find-by-keys *db* :activity {:resource_type "propagation"
+                                                          :resource_id id
+                                                          :type "propagation/deleted"}))
+              "the delete is in the activity log")
+          (finally
+            (clear-activity! user)))))))
+
 ;;; ---------------------------------------------------------------------------
 ;;; taxon
 
