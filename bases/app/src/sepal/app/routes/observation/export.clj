@@ -38,7 +38,7 @@
 (defn handler
   "Export observations as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db material-separator]} context
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
@@ -50,7 +50,8 @@
                              :left [[:location :l]
                                     [:and [:= :o.resource_type "location"] [:= :l.id :o.resource_id]]]]}
 
-        stmt (-> (search.i/compile-query :observation ast base-stmt)
+        stmt (-> (search.i/compile-query :observation ast base-stmt
+                                         {:material-separator material-separator})
                  (assoc :order-by [[:o.observed_on :desc] [:o.id :desc]]))
         rows (db.i/execute! db stmt)
 

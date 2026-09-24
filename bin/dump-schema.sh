@@ -64,6 +64,13 @@ for table in $SEED_TABLES; do
   sqlite3 "$RO" ".mode insert \"$table\"" "select * from \"$table\";"
 done
 
+# The seeded settings rows. settings has no text primary key, so the shape rule
+# above does not find it, and most of its rows are a garden's own. Only the
+# codes. rows are seeded, which is why this must run against a freshly migrated
+# database rather than one whose Codes page has been saved.
+sqlite3 "$RO" ".mode insert settings" \
+  "select * from settings where key like 'codes.%' order by key;"
+
 # Last, so the version rows sit at the end of the file the way they always have.
 sqlite3 "$RO" \
   "select 'INSERT INTO \"schema_version\" (version, applied_at) VALUES ('''||version||''', '''||applied_at||''');' from (select version, min(applied_at) as applied_at from schema_version group by version) order by version;"

@@ -16,6 +16,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.search]
@@ -44,7 +45,7 @@
         (when-let [loc (:location/code row)]
           (str " \u00b7 " loc))))
 
-(defn table-columns []
+(defn table-columns [& {:keys [separator]}]
   ;; One identifier, not two. A material's code is issued within its accession,
   ;; so `2026.0001.01` is how a garden writes the whole thing down — and a
   ;; separate Accession column only repeated the prefix. The accession stays one
@@ -60,7 +61,7 @@
                                           {:id (:material/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:accession/code row) "." (:material/code row)])}
+                     (ct.i/full-code separator (:accession/code row) (:material/code row))])}
    {:name "Taxon"
     :type :name
     :priority 2
@@ -81,8 +82,8 @@
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page page-size href total]}]
-  (table/rows-only :columns (table-columns)
+  [& {:keys [rows page page-size href separator total]}]
+  (table/rows-only :columns (table-columns :separator separator)
                    :rows rows
                    :row-attrs row-attrs
                    :href href
@@ -90,9 +91,9 @@
                    :page-size page-size
                    :total total))
 
-(defn table [& {:keys [rows page href page-size total search-query]}]
+(defn table [& {:keys [rows page href page-size separator total search-query]}]
   (pages.list/card-table
-    (table/table :columns (table-columns)
+    (table/table :columns (table-columns :separator separator)
                  :rows rows
                  :row-attrs row-attrs
                  :href href
@@ -106,7 +107,7 @@
                                 :searching? (seq search-query)
                                 :create-href (z/url-for material.routes/new)))))
 
-(defn render [& {:keys [accession field-options viewer href page page-size rows search-query taxon total]}]
+(defn render [& {:keys [accession field-options viewer href page page-size rows search-query separator taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -114,6 +115,7 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
+                                :separator separator
                                 :total total
                                 :search-query search-query)
                          (ui.export/export-modal
@@ -169,7 +171,7 @@
        :value))
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db material-separator]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -216,15 +218,16 @@
           :total total
           :items (for [material rows]
                    {:id (:material/id material)
-                    :text (format "%s.%s (%s)"
-                                  (:accession/code material)
-                                  (:material/code material)
+                    :text (format "%s (%s)"
+                                  (ct.i/full-code material-separator
+                                                  (:accession/code material)
+                                                  (:material/code material))
                                   (:taxon/name material))
                     :content (ui.combobox/option-content
                                :icon (lucide/sprout)
-                               :title (format "%s.%s"
-                                              (:accession/code material)
-                                              (:material/code material))
+                               :title (ct.i/full-code material-separator
+                                                      (:accession/code material)
+                                                      (:material/code material))
                                :meta (taxon-name/render (:taxon/name material)))})))
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.
@@ -233,6 +236,7 @@
         (index-rows :rows rows
                     :page page
                     :page-size page-size
+                    :separator material-separator
                     :total total
                     :href (uri/uri-str {:path uri
                                         :query (uri/map->query-string
@@ -250,5 +254,6 @@
               :page page
               :page-size page-size
               :search-query q
+              :separator material-separator
               :taxon taxon
               :total total))))

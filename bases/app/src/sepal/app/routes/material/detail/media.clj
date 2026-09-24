@@ -20,10 +20,11 @@
              {:id (:material/id material)}
              {:page (+ 1 current-page)}))
 
-(defn page-content [& {:keys [media page page-size material accession taxon]}]
+(defn page-content [& {:keys [media page page-size material accession taxon separator]}]
   (material.shared/page
     :material material
     :accession accession
+    :separator separator
     :taxon taxon
     :active material.shared/media-tab
     :body
@@ -48,7 +49,7 @@
      [:script {:type "module"
                :src (html/static-url "app/routes/media/media.ts")}]]))
 
-(defn render [& {:keys [accession page page-size media material taxon panel-data]}]
+(defn render [& {:keys [accession page page-size media material taxon panel-data separator]}]
   (ui.page/page
     :content (pages.detail/page-content-with-panel
                :content (page-content :page page
@@ -56,6 +57,7 @@
                                       :media media
                                       :material material
                                       :accession accession
+                                      :separator separator
                                       :taxon taxon)
                :panel-content (material.panel/panel-content
                                 :panel-data panel-data
@@ -69,6 +71,7 @@
                                 :activity-count (:activity-count panel-data)))
     :breadcrumbs (material.shared/breadcrumbs :accession accession
                                               :material material
+                                              :separator separator
                                               :taxon taxon)
     :page-title-buttons (material.shared/actions
                           :material material
@@ -80,7 +83,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db material-separator resource]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -109,5 +112,6 @@
                 :page 1
                 :page-size page-size
                 :material resource
+                :separator material-separator
                 :taxon taxon
                 :panel-data panel-data)))))

@@ -280,7 +280,7 @@
    ORed, because they are alternatives: a material is identified by its own
    code, by the code of the accession it came from and by the plant it is, and
    which of those someone types is not something the search gets to choose."
-  [terms fields]
+  [terms fields opts]
   (when-let [match (terms->match terms)]
     (let [clauses (->> (searchable-fields fields)
                        (keep (fn [[_ {:keys [type search-clause] :as field}]]
@@ -289,7 +289,7 @@
                                  ;; for a match one column can't express.
                                  search-clause
                                  (when-let [value (first terms)]
-                                   (search-clause value))
+                                   (search-clause value opts))
 
                                  (= :fts type)
                                  (fts-in-clause field match)
@@ -351,6 +351,9 @@
 
    When joins are present, uses :select-distinct to avoid duplicate rows.
 
+   `opts` is passed to every field's `:search-clause`, for a clause that needs
+   a value only the caller has, such as a garden setting.
+
    Example:
      (compile-query
        {:code {:column :m.code :type :text}
@@ -364,7 +367,7 @@
      ;;     :join [[:accession :a] [:= :a.id :m.accession_id]
      ;;            [:taxon :t] [:= :t.id :a.taxon_id]]
      ;;     :where [:match :taxon_fts \"Quercus*\"]}"
-  [fields {:keys [terms filters excluded-terms]} base-stmt]
+  [fields {:keys [terms filters excluded-terms]} base-stmt & [opts]]
   (let [;; Build WHERE clauses from filters
         filter-clauses (for [f filters
                              :let [field-def (get fields (keyword (:field f)))]
@@ -372,7 +375,7 @@
                          (field->clause f field-def))
 
         ;; Build FTS clause from terms
-        term-clause (terms->clause terms fields)
+        term-clause (terms->clause terms fields opts)
 
         ;; Each excluded term is the negation of the clause the same term
         ;; would have compiled to on its own, so `quercus` and `-quercus`
@@ -390,7 +393,7 @@
         ;; is never NULL itself -- an FTS5 rowid cannot be, and every FTS field
         ;; is reached by an inner join.
         excluded-clauses (for [term excluded-terms
-                               :let [clause (terms->clause [term] fields)]
+                               :let [clause (terms->clause [term] fields opts)]
                                :when clause]
                            [:not clause])
 

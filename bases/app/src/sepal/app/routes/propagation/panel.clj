@@ -44,10 +44,11 @@
   - :on-close            the list panel's close handler"
   [& {:keys [propagation parent parent-material location rootstock
              type-label status-label material-products accession-products
-             actions on-close]}]
+             actions on-close separator]}]
   (let [{:propagation/keys [propagated-on succeeded-on quantity-started quantity-succeeded]} propagation
-        parent-name (shared/parent-name parent parent-material)
+        parent-name (shared/parent-name parent parent-material separator)
         products (shared/product-links (:accession/code parent)
+                                       separator
                                        material-products
                                        accession-products)]
     (panel/panel-container
@@ -128,7 +129,7 @@
 (defn handler
   "The list's slide-in: the same content the detail page shows."
   [{:keys [::z/context viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db material-separator resource]} context
         data (fetch-panel-data db resource)]
     (html/render-partial
       (panel-content
@@ -141,6 +142,7 @@
         :status-label (:status-label data)
         :material-products (:material-products data)
         :accession-products (:accession-products data)
+        :separator material-separator
         ;; Only here, not on the record page: that page carries the same menu
         ;; in its title bar.
         :actions (when (authz/user-has-permission? viewer propagation.perm/edit)

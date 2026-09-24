@@ -20,10 +20,11 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors org material accession taxon values reasons footer]}]
+(defn page-content [& {:keys [errors org material accession taxon values reasons footer separator]}]
   (material.shared/page
     :material material
     :accession accession
+    :separator separator
     :taxon taxon
     :active material.shared/general-tab
     :footer footer
@@ -37,7 +38,7 @@
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "material-form" :on-cancel :reload))
 
-(defn render [& {:keys [errors org material accession taxon values reasons timezone panel-data]}]
+(defn render [& {:keys [errors org material accession taxon values reasons timezone panel-data separator]}]
   (page/page :page-title-buttons (material.shared/actions :material material)
              :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (footer-buttons))
@@ -47,6 +48,7 @@
                                                :accession accession
                                                :values values
                                                :reasons reasons
+                                               :separator separator
                                                :taxon taxon)
                         :panel-content (material.panel/panel-content
                                          :panel-data panel-data
@@ -62,6 +64,7 @@
                                          :timezone timezone))
              :breadcrumbs (material.shared/breadcrumbs :accession accession
                                                        :material material
+                                                       :separator separator
                                                        :taxon taxon)))
 
 (defn save! [db material-id updated-by data]
@@ -83,7 +86,7 @@
    [:reason [:string {:min 0}]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db organization resource timezone]} context
+  (let [{:keys [db material-separator organization resource timezone]} context
         config (codes/material db)
         accession (accession.i/get-by-id db (:material/accession-id resource))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -128,5 +131,6 @@
                 :taxon taxon
                 :values values
                 :reasons reasons
+                :separator material-separator
                 :timezone timezone
                 :panel-data panel-data)))))

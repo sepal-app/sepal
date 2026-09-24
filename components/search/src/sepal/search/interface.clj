@@ -34,8 +34,9 @@
 
    A field marked `:search? true` is searched by a bare word. It matches the
    way its type does, unless the field gives `:search-clause`, a function of
-   the word that returns a HoneySQL clause. That is for a match no single
-   column can express, such as a code built from two columns.
+   the word and the options `compile-query` was given that returns a HoneySQL
+   clause. That is for a match no single column can express, such as a code
+   built from two columns.
 
    `:filter-clause` does the same for a `field:value` filter: a function of the
    parsed filter, with `:value` and `:op`, that returns the clause.
@@ -178,6 +179,7 @@
      resource-type - The resource being queried (:taxon, :material, etc.)
      ast           - Parsed query AST from `parse`
      base-stmt     - Base HoneySQL statement {:select [...] :from [...]}
+     opts          - Optional map passed to each field's :search-clause
 
    Returns: HoneySQL map with :where and :join clauses added
 
@@ -190,9 +192,9 @@
      ;;     :from [[:material :m]]
      ;;     :join [...]
      ;;     :where [:and ...]}"
-  [resource-type ast base-stmt]
+  [resource-type ast base-stmt & [opts]]
   (let [fields (get-fields resource-type)]
-    (compiler/compile-query fields ast base-stmt)))
+    (compiler/compile-query fields ast base-stmt opts)))
 
 (defn relevance-order
   "Order-by terms putting the closest matches for the query's free-text part

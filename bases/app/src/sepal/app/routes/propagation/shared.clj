@@ -5,6 +5,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.ui.actions :as ui.actions]
+            [sepal.code-template.interface :as ct.i]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
 
@@ -34,20 +35,20 @@
 (defn parent-name
   "`2026.0042` when the parent is the accession alone, `2026.0042.1` when an
   individual plant narrows it."
-  [parent parent-material]
-  (str (:accession/code parent)
-       (when parent-material
-         (str "." (:material/code parent-material)))))
+  [parent parent-material separator]
+  (if parent-material
+    (ct.i/full-code separator (:accession/code parent) (:material/code parent-material))
+    (:accession/code parent)))
 
 (defn product-links
   "What exists now: the material and accessions a propagation produced.
 
   A material product is material of the parent accession -- the clone case --
   so it is named with the parent's code. An accession product carries its own."
-  [parent-code material-products accession-products]
+  [parent-code separator material-products accession-products]
   (concat
     (for [material material-products]
-      {:label (str parent-code "." (:material/code material))
+      {:label (ct.i/full-code separator parent-code (:material/code material))
        :href (z/url-for material.routes/detail {:id (:material/id material)})})
     (for [accession accession-products]
       {:label (:accession/code accession)

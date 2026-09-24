@@ -35,7 +35,10 @@
     "{seq}-{seq:0000}"     ; two seq tokens, differently spelled
     "{nope}-{seq}"         ; unknown token name
     "{seq"                 ; unclosed brace
-    "N{seq:0000"))         ; unclosed brace with a width
+    "N{seq:0000"           ; unclosed brace with a width
+    "{seq}{letter}"        ; two sequence tokens of different kinds
+    "{letter}-{letter}"    ; two letter tokens
+    "{letter:00}"))        ; a letter token takes no width
 
 (deftest test-parse-accepts
   (are [template] (not (error.i/error? (ct.i/parse template)))
@@ -43,7 +46,9 @@
     "{year}.{seq:0000}"
     "N{seq:0000}"
     "{year2}-{seq:000}"
-    "{year}{month}{day}-{seq}"))
+    "{year}{month}{day}-{seq}"
+    "{letter}"
+    "{year}.{letter}"))
 
 (deftest test-matches?
   (let [parts (ct.i/parse "{year}.{seq:0000}")]
@@ -97,15 +102,72 @@
     (is (nil? (ct.i/scan-prefix nil today)))
     (is (nil? (ct.i/scan-prefix "{nope}{seq}" today)))))
 
-(deftest test-config
-  (testing "defaults live in code, so every garden gets the suggestion"
-    (is (= {:accession {:template "{year}.{seq:0000}" :strict? false}
-            :material {:template "{seq}" :strict? false}}
-           (ct.i/config {}))))
+(deftest test-letter-renders-like-spreadsheet-columns
+  (are [n code] (= code (render "{letter}" n))
+    1 "A"
+    2 "B"
+    26 "Z"
+    27 "AA"
+    28 "AB"
+    52 "AZ"
+    53 "BA"
+    702 "ZZ"
+    703 "AAA"))
 
-  (testing "stored values win, and \"1\" reads as strict"
+(deftest test-letter-matches?
+  (let [parts (ct.i/parse "{letter}")]
+    (is (ct.i/matches? parts "A"))
+    (is (ct.i/matches? parts "AB"))
+    (is (not (ct.i/matches? parts "a")))
+    (is (not (ct.i/matches? parts "1")))
+    (is (not (ct.i/matches? parts "")))))
+
+(deftest test-letter-next-code
+  (is (= "A" (ct.i/next-code "{letter}" [] today)))
+  (is (= "D" (ct.i/next-code "{letter}" ["A" "B" "C"] today)))
+  (is (= "AA" (ct.i/next-code "{letter}" ["Z"] today)))
+  (testing "codes of another shape are ignored"
+    (is (= "C" (ct.i/next-code "{letter}" ["B" "1" "a"] today)))))
+
+(deftest test-full-code
+  (is (= "2026.0001.1" (ct.i/full-code "." "2026.0001" "1")))
+  (is (= "2026.0001-1" (ct.i/full-code "-" "2026.0001" "1")))
+  (testing "an empty or nil separator joins the codes directly"
+    (is (= "2026.0001A" (ct.i/full-code "" "2026.0001" "A")))
+    (is (= "2026.0001A" (ct.i/full-code nil "2026.0001" "A")))))
+
+(deftest test-runs-together?
+  (testing "no separator between a trailing and a leading digit"
+    (is (ct.i/runs-together? "{year}.{seq:0000}" "" "{seq}"))
+    (is (ct.i/runs-together? "{year}.{seq:0000}" nil "{seq}"))
+    (is (ct.i/runs-together? "N{seq}-{year}" "" "{seq}"))
+    (is (ct.i/runs-together? "X{seq}-7" "" "1{letter}"))
+    (is (ct.i/runs-together? "{seq}" "" "{day}{letter}")))
+
+  (testing "any one condition failing is enough"
+    (is (not (ct.i/runs-together? "{year}.{seq:0000}" "." "{seq}")))
+    (is (not (ct.i/runs-together? "{year}.{seq:0000}" "" "{letter}")))
+    (is (not (ct.i/runs-together? "{year}.{seq:0000}" "" "-{seq}")))
+    (is (not (ct.i/runs-together? "N{seq:0000}X" "" "{seq}"))))
+
+  (testing "a blank or unparseable template gives no warning"
+    (is (not (ct.i/runs-together? "" "" "{seq}")))
+    (is (not (ct.i/runs-together? "{year}.{seq:0000}" "" "")))
+    (is (not (ct.i/runs-together? "{nope}" "" "{seq}")))))
+
+(deftest test-config
+  (testing "each setting is read as stored, and \"1\" reads as strict"
     (is (= {:accession {:template "N{seq:0000}" :strict? true}
-            :material {:template "{seq}" :strict? false}}
+            :material {:template "{letter}" :strict? false}
+            :separator ""}
            (ct.i/config {"codes.accession_template" "N{seq:0000}"
                          "codes.accession_strict" "1"
-                         "codes.material_strict" "0"})))))
+                         "codes.material_template" "{letter}"
+                         "codes.material_strict" "0"
+                         "codes.material_separator" ""}))))
+
+  (testing "an absent row means off, not a default"
+    (is (= {:accession {:template nil :strict? false}
+            :material {:template nil :strict? false}
+            :separator nil}
+           (ct.i/config {})))))

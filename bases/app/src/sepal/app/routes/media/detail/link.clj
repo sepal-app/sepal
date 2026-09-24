@@ -131,18 +131,18 @@
       (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"} "Save")]]))
 
 (defmulti link-text
-  (fn [_db link]
+  (fn [_db link _separator]
     (:media-link/resource-type link)))
 
 ;; A `media_link` row carrying a resource type nothing here recognises should
 ;; degrade to showing what is stored, not throw. Nothing the UI can write today
 ;; produces one — `resource-types` is a fixed list — but the database is not.
 (defmethod link-text :default
-  [_db link]
+  [_db link _separator]
   (:media-link/resource-type link))
 
 (defmethod link-text "accession"
-  [db link]
+  [db link _separator]
   (->> {:select [[[:concat :a.code " (" :t.name ")"] :text]]
         :from [[:media-link :ml]]
         :join [[:accession :a]
@@ -154,7 +154,7 @@
        :text))
 
 (defmethod link-text "location"
-  [db link]
+  [db link _separator]
   (->> {:select [[[:concat :l.name " (" :l.code ")"] :text]]
         :from [[:media-link :ml]]
         :join [[:location :l]
@@ -164,8 +164,8 @@
        :text))
 
 (defmethod link-text "material"
-  [db link]
-  (->> {:select [[[:concat :a.code "." :m.code " (" :t.name ")"] :text]]
+  [db link separator]
+  (->> {:select [[[:concat :a.code (str separator) :m.code " (" :t.name ")"] :text]]
         :from [[:media-link :ml]]
         :join [[:material :m]
                [:= :m.id (:media-link/resource-id link)]
@@ -178,7 +178,7 @@
        :text))
 
 (defmethod link-text "taxon"
-  [db link]
+  [db link _separator]
   (->> {:select [[[:concat  :t.name] :text]]
         :from [[:media-link :ml]]
         :join [[:taxon :t]
@@ -190,14 +190,14 @@
 (defn link-info
   "The display text and destination for a link, as data rather than markup. An
   unrecognised resource type yields no URL — the chip renders as text."
-  [& {:keys [db link]}]
+  [& {:keys [db link separator]}]
   (let [url (case (:media-link/resource-type link)
               "accession" (z/url-for accession.routes/detail {:id (:media-link/resource-id link)})
               "location" (z/url-for location.routes/detail {:id (:media-link/resource-id link)})
               "material" (z/url-for material.routes/detail {:id (:media-link/resource-id link)})
               "taxon" (z/url-for taxon.routes/detail {:id (:media-link/resource-id link)})
               nil)]
-    {:text (link-text db link)
+    {:text (link-text db link separator)
      :url url}))
 
 (defn link-chip
@@ -249,14 +249,14 @@
 
 (defn handler [& {:keys [::z/context params request-method] :as _request}]
   ;; TODO: create an activity
-  (let [{:keys [db resource]} context]
+  (let [{:keys [db material-separator resource]} context]
     (case request-method
       :post
       (let [{:keys [resource-id resource-type]} params
             result (media.i/link! db (:media/id resource) resource-id resource-type)]
         (if-not (error.i/error? result)
           (render :link result
-                  :link-info (link-info :db db :link result)
+                  :link-info (link-info :db db :link result :separator material-separator)
                   :media resource)
           ;; TODO: render an error
           (flash/error {} "Error: Could not link resource")))
@@ -272,7 +272,7 @@
       ;; query per link type, so it is only computed when there is one.
       (let [link (media.i/get-link db (:media/id resource))
             link-info (when link
-                        (link-info :db db :link link))]
+                        (link-info :db db :link link :separator material-separator))]
         (render :link-info link-info
                 :link link
                 :media resource)))))

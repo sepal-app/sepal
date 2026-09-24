@@ -16,6 +16,7 @@
   (str "propagation from "
        (shared/parent-name (accession.i/get-by-id
                              db (:propagation/parent-accession-id propagation))
+                           nil
                            nil)))
 
 (defn- render-dialog [db propagation]
