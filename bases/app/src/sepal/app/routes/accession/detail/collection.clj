@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail.collection
   (:require [failjure.core :as f]
+            [sepal.app.datetime :as datetime]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
@@ -16,7 +17,7 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn form [& {:keys [action errors values]}]
+(defn form [& {:keys [action errors values today]}]
   (ui.form/form
     {:id "collection-form"
      :hx-post action
@@ -43,6 +44,9 @@
                               :name "collected-date"
                               :type "date"
                               :value (:collected-date values)
+                              ;; The route refuses a future date too; max
+                              ;; keeps the picker from offering one.
+                              :input-attrs {:max today}
                               :errors (:collected-date errors))]
         (ui.form/textarea-field :label "Habitat"
                                 :name "habitat"
@@ -129,7 +133,7 @@
                               :errors (:elevation-accuracy errors)
                               :input-attrs {:min "1"})]])]))
 
-(defn page-content [& {:keys [errors accession taxon values footer]}]
+(defn page-content [& {:keys [errors accession taxon values footer today]}]
   ;; Reachable only when the tab is available, so it is always enabled here.
   (accession.shared/page
     :accession accession
@@ -139,6 +143,7 @@
     :body (form :action (z/url-for accession.routes/detail-collection
                                    {:id (:accession/id accession)})
                 :errors errors
+                :today today
                 :values values)))
 
 (defn footer-buttons
@@ -161,6 +166,7 @@
                                                                     :collection? collection?))
                                                :errors errors
                                                :accession accession
+                                               :today (str (datetime/today timezone))
                                                :taxon taxon
                                                :values values)
                         :panel-content (accession.panel/panel-content
@@ -254,13 +260,18 @@
       (http/not-found)
       (case request-method
         :post
-        (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                        _saved (f/try* (save! db (:accession/id accession) (:user/id viewer)
-                                              (form-params->collection-data data)))]
-          (http/hx-redirect (z/url-for accession.routes/detail-collection
-                                       {:id (:accession/id accession)}))
-          (f/when-failed [e]
-            (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})) "Could not save the collection data")))
+        (let [redirect (http/hx-redirect (z/url-for accession.routes/detail-collection
+                                                    {:id (:accession/id accession)}))
+              failed #(http/failure-flash % redirect "Could not save the collection data")]
+          (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
+            (if-let [date-errors (validation.i/future-date-errors
+                                   data [:collected-date] (str (datetime/today timezone)))]
+              (http/validation-errors date-errors)
+              (f/attempt-all [_saved (f/try* (save! db (:accession/id accession) (:user/id viewer)
+                                                    (form-params->collection-data data)))]
+                redirect
+                (f/when-failed [e] (failed e))))
+            (f/when-failed [e] (failed e))))
 
         (let [panel-data (accession.panel/fetch-panel-data db accession)]
           (render :accession accession

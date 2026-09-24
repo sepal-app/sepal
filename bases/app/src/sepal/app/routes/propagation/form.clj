@@ -140,7 +140,7 @@
 (defn form
   "The create form, and with :statuses the edit form. An edit has a status and
   no parent quantity: that field records a division, which happens once."
-  [& {:keys [action errors values types statuses material-items parent-locked?]}]
+  [& {:keys [action errors values types statuses material-items parent-locked? today]}]
   (let [type (or (:type values) "seed")
         graft? (= "graft" (name type))
         edit? (some? statuses)
@@ -186,11 +186,15 @@
                                :name "propagated-on"
                                :type "date"
                                :value (:propagated-on values)
+                               ;; The route refuses a future date too; max
+                               ;; keeps the picker from offering one.
+                               :input-attrs {:max today}
                                :errors (:propagated-on errors))
              (form/input-field :label "Succeeded on"
                                :name "succeeded-on"
                                :type "date"
                                :value (:succeeded-on values)
+                               :input-attrs {:max today}
                                :errors (:succeeded-on errors))]
             [:div {:class "spl-form-pair"}
              (form/input-field :label "Started"

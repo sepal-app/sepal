@@ -66,3 +66,24 @@
         (and (string? %)
              (not= % ::invalid-date)
              (re-matches #"^\d{4}-\d{2}-\d{2}$" %)))])
+
+(def future-date-message "Cannot be a future date")
+
+(defn future-date?
+  "Whether an ISO date string falls after `today`, also an ISO date string.
+  Compared as strings, which orders YYYY-MM-DD correctly."
+  [date today]
+  (and (string? date) (pos? (compare date today))))
+
+(defn future-date-errors
+  "Field errors, keyed like `http/validation-errors` takes them, for each of
+  `fields` in `values` dated after `today`. Nil when there are none.
+
+  `today` is the garden's date, not the server's, so a garden ahead of the
+  server can record its own today."
+  [values fields today]
+  (not-empty
+    (into {}
+          (for [field fields
+                :when (future-date? (get values field) today)]
+            [field [future-date-message]]))))

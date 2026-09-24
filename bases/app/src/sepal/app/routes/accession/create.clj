@@ -16,7 +16,7 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors taxon values]}]
+(defn page-content [& {:keys [errors taxon values today]}]
   (accession.form/form :action (z/url-for accession.routes/new)
                        :errors errors
                        :next-code-url (z/url-for accession.routes/next-code)
@@ -24,16 +24,18 @@
                        ;; accession you are only correcting.
                        :provenance-suggestion-url (z/url-for accession.routes/provenance-suggestion)
                        :taxon taxon
+                       :today today
                        :values values))
 
 (defn footer-buttons []
   (ui.form/footer-buttons :form-event "accession-form" :on-cancel :back))
 
-(defn render [& {:keys [errors taxon values]}]
+(defn render [& {:keys [errors taxon values today]}]
   ;; Breadcrumbs rather than a page title: the top bar already answers "where
   ;; am I", and a heading repeating it pushed the first field down the page.
   (ui.page/page :content (page-content :errors errors
                                        :taxon taxon
+                                       :today today
                                        :values values)
                 :footer (ui.form/footer :buttons (footer-buttons))
                 :breadcrumbs [[:a {:href (z/url-for accession.routes/index)}
@@ -72,22 +74,25 @@
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-        ;; Create is a wall: new data stays clean, and there is no override.
-        (if (codes/rejects? config (:code data))
-          (http/validation-errors
-            (codes/shape-error (accession.i/next-code db (:template config) today)))
-          (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
-            (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
-                (flash/success "Accession created successfully"))
-            (f/when-failed [e]
-              (if (codes/unique-violation? e)
-                (codes/taken-response
-                  (:code data)
-                  #(accession.form/code-input :value (:code data)
-                                              :errors %
-                                              :help accession.form/code-help))
-                (http/failure-flash e (http/hx-redirect accession.routes/new)
-                                    "Could not create the accession")))))
+        (if-let [date-errors (validation.i/future-date-errors
+                               data [:date-received :date-accessioned] (str today))]
+          (http/validation-errors date-errors)
+          ;; Create is a wall: new data stays clean, and there is no override.
+          (if (codes/rejects? config (:code data))
+            (http/validation-errors
+              (codes/shape-error (accession.i/next-code db (:template config) today)))
+            (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
+              (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
+                  (flash/success "Accession created successfully"))
+              (f/when-failed [e]
+                (if (codes/unique-violation? e)
+                  (codes/taken-response
+                    (:code data)
+                    #(accession.form/code-input :value (:code data)
+                                                :errors %
+                                                :help accession.form/code-help))
+                  (http/failure-flash e (http/hx-redirect accession.routes/new)
+                                      "Could not create the accession"))))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect accession.routes/new)
                               "Could not create the accession")))
@@ -102,6 +107,7 @@
                            (parse-long)
                            (taxon.i/get-by-id db))]
         (render :taxon taxon
+                :today (str today)
                 :values (cond-> (merge {:code (accession.i/next-code db (:template config) today)}
                                        form-params)
                           taxon (assoc :taxon-id (:taxon/id taxon))))))))

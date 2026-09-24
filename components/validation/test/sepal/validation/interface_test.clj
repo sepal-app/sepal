@@ -94,3 +94,14 @@
           (format "%d of 200 generated addresses would not submit, e.g. %s"
                   (count rejected)
                   (pr-str (vec (take 5 rejected))))))))
+
+(deftest future-date-errors-test
+  (testing "a date after today is an error on its field"
+    (is (= {:a [validation.i/future-date-message]}
+           (validation.i/future-date-errors {:a "2026-09-25" :b "2026-09-24"}
+                                            [:a :b] "2026-09-24"))))
+  (testing "today, the past and a blank are fine"
+    (is (nil? (validation.i/future-date-errors {:a "2026-09-24" :b "2020-01-01" :c nil}
+                                               [:a :b :c] "2026-09-24"))))
+  (testing "only the named fields are checked"
+    (is (nil? (validation.i/future-date-errors {:next "2999-01-01"} [:observed] "2026-09-24")))))

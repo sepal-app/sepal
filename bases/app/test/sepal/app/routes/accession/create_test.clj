@@ -548,3 +548,31 @@
         (finally
           (jdbc.sql/delete! *db* :accession {:code "ALLFIELDS-1"})
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-create-accession-rejects-a-future-date
+  (tf/testing "a future received date is a field error and nothing is created"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (-> sess (peri/request "/accession/new/"))
+              body (Jsoup/parse ^String (:body response))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/request "/accession/new/"
+                                                   :request-method :post
+                                                   :params (receipt-params
+                                                             taxon
+                                                             :__anti-forgery-token token
+                                                             :date-received "2999-01-01")))]
+          (is (some? (.selectFirst body "input[name=date-received][max]"))
+              "the picker is capped at today")
+          (is (= 422 (:status response)))
+          (is (some? (.selectFirst (Jsoup/parse ^String (:body response)) "#date-received-errors")))
+          (is (empty? (jdbc.sql/find-by-keys *db* :accession {:code "RCPT-1"}))))
+        (finally
+          (jdbc.sql/delete! *db* :accession {:code "RCPT-1"})
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))

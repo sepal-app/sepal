@@ -199,3 +199,26 @@
         (is (some? (.selectFirst body "[hx-get='/propagation/parent-plant/'][hx-include='#parent-accession-id']")))
         (is (some? (.selectFirst body "#parent-material-field sepal-combobox[name=parent-material-id]"))
             "the plant picker is there before an accession is chosen")))))
+
+(deftest test-dates-are-checked
+  (tf/testing "a future date, or success before the sowing, is answered on the field"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (let [[sess token] (new-form user)
+            post-dates (fn [dates]
+                         (post! sess token (merge {:type "seed"
+                                                   :parent-accession-id (str (:accession/id acc-a))}
+                                                  dates)))
+            errors-text (fn [response field]
+                          (some-> (Jsoup/parse ^String (:body response))
+                                  (.selectFirst (str "#" field "-errors"))
+                                  (.text)))
+            future (post-dates {:propagated-on "2999-01-01"})
+            backwards (post-dates {:propagated-on "2026-03-01" :succeeded-on "2026-02-01"})]
+        (is (= 422 (:status future)))
+        (is (re-find #"future" (errors-text future "propagated-on")))
+        (is (= 422 (:status backwards)))
+        (is (re-find #"before the propagated date" (errors-text backwards "succeeded-on")))
+        (is (empty? (jdbc.sql/find-by-keys *db* :propagation
+                                           {:parent_accession_id (:accession/id acc-a)}))
+            "nothing was created")))))

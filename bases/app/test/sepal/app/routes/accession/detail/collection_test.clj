@@ -350,3 +350,27 @@
               "elevation accuracy should have a field error"))
         (is (nil? (coll.i/get-by-accession-id *db* (:accession/id accession)))
             "nothing should have been saved")))))
+
+(deftest test-collection-form-rejects-a-future-date
+  (tf/testing "a future collection date is a field error and nothing is saved"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)
+                                             :data {:provenance-type :wild}}}
+    (fn [{:keys [user accession]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            collection-url (str "/accession/" (:accession/id accession) "/collection/")
+            {:keys [response] :as sess} (-> sess (peri/request collection-url))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request collection-url
+                                                 :request-method :post
+                                                 :params (merge empty-form-params
+                                                                {:__anti-forgery-token token
+                                                                 :collected-date "2999-01-01"})))]
+        (is (= 422 (:status response)))
+        (is (some? (.selectFirst (Jsoup/parse ^String (:body response)) "#collected-date-errors")))
+        (is (nil? (coll.i/get-by-accession-id *db* (:accession/id accession))))))))
+

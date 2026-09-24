@@ -1,6 +1,7 @@
 (ns sepal.app.routes.propagation.create
   (:require [failjure.core :as f]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
@@ -17,17 +18,19 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
-(defn page-content [& {:keys [errors values types material-items]}]
+(defn page-content [& {:keys [errors values types material-items today]}]
   (propagation.form/form :action (z/url-for propagation.routes/new)
                          :errors errors
                          :values values
                          :types types
                          :material-items material-items
+                         :today today
                          :parent-locked? (some? (:parent-accession-id values))))
 
-(defn render [& {:keys [errors values types material-items]}]
+(defn render [& {:keys [errors values types material-items today]}]
   (page/page
     :content (page-content :errors errors
+                           :today today
                            :values values
                            :types types
                            :material-items material-items)
@@ -36,15 +39,30 @@
     :breadcrumbs [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
                   "New propagation"]))
 
-(defn counts-message
+(defn- counts-message
   "The spec's own message, so the rule and its wording have one definition."
   []
   (:error/message (second propagation.spec/counts-consistent)))
 
-(defn counts-invalid? [{:keys [quantity-started quantity-succeeded]}]
+(defn- counts-invalid? [{:keys [quantity-started quantity-succeeded]}]
   (and (some? quantity-started)
        (some? quantity-succeeded)
        (> quantity-succeeded quantity-started)))
+
+(defn form-errors
+  "The field errors the form's own rules raise, or nil. Checked here rather
+  than left to the database so a propagator entering a germination count in
+  May gets a message on the field, not a constraint violation. `today` is the
+  garden's date."
+  [{:keys [propagated-on succeeded-on] :as data} today]
+  (not-empty
+    (merge
+      (when (counts-invalid? data)
+        {:quantity-succeeded [(counts-message)]})
+      (when (and propagated-on succeeded-on
+                 (neg? (compare succeeded-on propagated-on)))
+        {:succeeded-on ["Cannot be before the propagated date"]})
+      (validation.i/future-date-errors data [:propagated-on :succeeded-on] today))))
 
 (defn create!
   "The propagation, its activity event and any parent-quantity change are one
@@ -130,16 +148,13 @@
            (when material-items {:material-items material-items}))))
 
 (defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         types (propagation.i/list-types db)]
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-        (if (counts-invalid? data)
-          ;; A propagator entering a germination count in May should not get a
-          ;; database constraint violation naming a field they filled in two
-          ;; months ago. The message names the resolution.
-          (http/validation-errors {:quantity-succeeded [(counts-message)]})
+        (if-let [errors (form-errors data (str (datetime/today timezone)))]
+          (http/validation-errors errors)
           (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
             (-> (http/hx-redirect propagation.routes/detail {:id (:propagation/id saved)})
                 (flash/success "Propagation created"))
@@ -153,6 +168,7 @@
             (http/hx-redirect propagation.routes/new))))
       (let [values (form-values db (params/decode PrefillParams query-params))]
         (render :values values
+                :today (str (datetime/today timezone))
                 :types types
                 :material-items (:material-items values))))))
 

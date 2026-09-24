@@ -227,3 +227,16 @@
             "the POST gets past the anti-forgery check")
         (is (= :active (:propagation/status
                          (propagation.i/get-by-id *db* (:propagation/id prop)))))))))
+
+(deftest test-editing-rejects-success-before-the-sowing
+  (tf/testing "the edit form refuses a succeeded date before the propagated one"
+    (fixtures)
+    (fn [{:keys [user acc prop]}]
+      (let [response (post-edit user prop {:type "cutting"
+                                           :status "active"
+                                           :parent-accession-id (str (:accession/id acc))
+                                           :propagated-on "2026-03-01"
+                                           :succeeded-on "2026-02-01"})]
+        (is (= 422 (:status response)))
+        (is (nil? (:propagation/succeeded-on
+                    (propagation.i/get-by-id *db* (:propagation/id prop)))))))))

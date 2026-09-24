@@ -288,3 +288,35 @@
                 "the banner has to survive the hop and reach a rendered page")))
         (finally
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-update-accession-general-rejects-a-future-date
+  (tf/testing "a future accessioned date is a field error and nothing is saved"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user accession taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            detail-url (str "/accession/" (:accession/id accession) "/general/")
+            {:keys [response] :as sess} (-> sess (peri/request detail-url))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request detail-url
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token token
+                                                          :code (:accession/code accession)
+                                                          :taxon-id (str (:taxon/id taxon))
+                                                          :id-qualifier ""
+                                                          :id-qualifier-rank ""
+                                                          :provenance-type ""
+                                                          :wild-provenance-status ""
+                                                          :supplier-contact-id ""
+                                                          :intended-location-id ""
+                                                          :date-received ""
+                                                          :date-accessioned "2999-01-01"
+                                                          :received-type ""
+                                                          :quantity-received ""}))]
+        (is (= 422 (:status response)))
+        (is (nil? (:accession/date-accessioned
+                    (accession.i/get-by-id *db* (:accession/id accession)))))))))

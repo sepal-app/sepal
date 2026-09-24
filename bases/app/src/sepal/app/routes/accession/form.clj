@@ -66,7 +66,7 @@
   Provenance Type in — until you set it yourself. The edit form never passes
   it, so nothing can quietly reclassify an accession you are only correcting."
   [& {:keys [action errors location supplier taxon next-code-url values
-             provenance-suggestion-url]}]
+             provenance-suggestion-url today]}]
   [:div
    (ui.form/form
      {:id "accession-form"
@@ -194,11 +194,15 @@
                                :name "date-received"
                                :type "date"
                                :value (:date-received values)
+                               ;; The route refuses a future date too; max
+                               ;; keeps the picker from offering one.
+                               :input-attrs {:max today}
                                :errors (:date-received errors))
           (ui.form/input-field :label "Date Accessioned"
                                :name "date-accessioned"
                                :type "date"
                                :value (:date-accessioned values)
+                               :input-attrs {:max today}
                                :errors (:date-accessioned errors))]
          [:div {:class "spl-form-pair"}
           (ui.form/field :label "Received as"

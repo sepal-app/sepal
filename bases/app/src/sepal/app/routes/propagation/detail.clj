@@ -1,6 +1,7 @@
 (ns sepal.app.routes.propagation.detail
   (:require [failjure.core :as f]
             [sepal.app.authorization :as authz]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.propagation.create :as propagation.create]
@@ -69,7 +70,7 @@
        :notes (:propagation/notes propagation)
        :products? (shared/products? panel-data)})))
 
-(defn- render-edit-page [db propagation panel-data]
+(defn- render-edit-page [db propagation panel-data today]
   (let [values (form-values db propagation panel-data)]
     (page/page
       :page-title-buttons (shared/actions propagation
@@ -85,7 +86,8 @@
                                     :types (propagation.i/list-types db)
                                     :statuses (propagation.i/list-statuses db)
                                     :material-items (:material-items values)
-                                    :parent-locked? (:products? values))
+                                    :parent-locked? (:products? values)
+                                    :today today)
                             :footer (ui.form/footer
                                       :buttons (propagation.form/footer-buttons)))
                  :panel-content (panel panel-data))
@@ -129,12 +131,12 @@
       (propagation.activity/create! tx propagation.activity/updated updated-by propagation)
       propagation)))
 
-(defn- save! [db propagation viewer form-params]
+(defn- save! [db propagation viewer form-params today]
   (let [id (:propagation/id propagation)
         redirect (http/hx-redirect propagation.routes/detail {:id id})]
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-      (if (propagation.create/counts-invalid? data)
-        (http/validation-errors {:quantity-succeeded [(propagation.create/counts-message)]})
+      (if-let [errors (propagation.create/form-errors data today)]
+        (http/validation-errors errors)
         (let [;; A batch with products keeps its parent, whatever the form sent.
               data (cond-> data
                      (shared/products? (propagation.panel/fetch-panel-data db propagation))
@@ -147,7 +149,7 @@
         (http/failure-response e redirect)))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         editor? (authz/user-has-permission? viewer propagation.perm/edit)]
     (cond
       (and (= :post request-method) (not editor?))
@@ -155,12 +157,12 @@
           (flash/error "You don't have permission to edit this propagation"))
 
       (= :post request-method)
-      (save! db resource viewer form-params)
+      (save! db resource viewer form-params (str (datetime/today timezone)))
 
       :else
       (let [panel-data (propagation.panel/fetch-panel-data db resource)]
         (if editor?
-          (render-edit-page db resource panel-data)
+          (render-edit-page db resource panel-data (str (datetime/today timezone)))
           (render-panel-page panel-data))))))
 
 (def StatusParams

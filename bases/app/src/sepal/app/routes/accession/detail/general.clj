@@ -23,7 +23,7 @@
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [errors org accession location supplier taxon values
-                              collection-available? footer]}]
+                              collection-available? footer today]}]
   (accession.shared/page
     :accession accession
     :taxon taxon
@@ -37,6 +37,7 @@
                                :supplier supplier
                                :taxon taxon
                                :org org
+                               :today today
                                :values values)))
 
 (defn footer-buttons []
@@ -54,6 +55,7 @@
                                                :location location
                                                :supplier supplier
                                                :taxon taxon
+                                               :today (str (datetime/today timezone))
                                                :values values)
                         :panel-content (accession.panel/panel-content
                                          :panel-data panel-data
@@ -117,20 +119,23 @@
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-        (if (and (codes/rejects? config (:code data))
+        (if-let [date-errors (validation.i/future-date-errors
+                               data [:date-received :date-accessioned] (str (datetime/today timezone)))]
+          (http/validation-errors date-errors)
+          (if (and (codes/rejects? config (:code data))
                  ;; Skipped when the code is untouched. Moving an accession to
                  ;; a new location must not make you confirm a code you never
                  ;; edited, or every save on every legacy record grows a step.
-                 (not= (:code data) (:accession/code resource))
-                 (not= "1" (:code-override data)))
-          (http/unprocessable-entity
-            (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
-          (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
-            (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                (flash/success "Accession updated successfully"))
-            (f/when-failed [e]
-              (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                                  "Could not save the accession"))))
+                   (not= (:code data) (:accession/code resource))
+                   (not= "1" (:code-override data)))
+            (http/unprocessable-entity
+              (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
+            (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
+              (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                  (flash/success "Accession updated successfully"))
+              (f/when-failed [e]
+                (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
+                                    "Could not save the accession")))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
                               "Could not save the accession")))
