@@ -401,6 +401,14 @@
               (is (app.test/body-contains? response "feed-test.jpg"))
               (is (app.test/body-contains? response "a note"))
               (is (app.test/body-contains? response "a media item")))
+            (db.i/execute! *db* {:delete-from :media :where [:= :id (:media/id media)]})
+            (media.activity/create! *db* media.activity/deleted (:user/id user) media)
+            (let [response (get-activity-page user)]
+              (is (app.test/body-contains? response "deleted a media item")
+                  "a deleted item still shows, named from the event")
+              (is (not (str/includes? (:body response)
+                                      (str "/media/" (:media/id media) "/")))
+                  "and it links nowhere, since the media is gone"))
             (finally
               (clear-activity!)
               (db.i/execute! *db* {:delete-from :note :where [:= :id (:note/id note)]})

@@ -12,8 +12,10 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.aws-s3.interface :as s3.i]
+            [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
+            [sepal.media.interface.activity :as media.activity]
             [zodiac.core :as z]))
 
 (defn- transform-url
@@ -92,7 +94,21 @@
                                                                             {:id (:media/id media)})
                                                      :dl-url dl-url)))
 
-(defn handler [& {:keys [::z/context request-method] :as _request}]
+(defn delete!
+  "Delete the media row, recording the event in the same transaction while the
+  row still names its file, then remove the stored object. The object goes
+  last: a row left pointing at nothing is worse than an orphaned object."
+  [db s3-client media deleted-by]
+  (db.i/with-transaction [tx db]
+    (media.activity/create! tx media.activity/deleted deleted-by media)
+    (media.i/delete! tx (:media/id media)))
+  (try
+    (s3.i/delete-object s3-client (:media/s3-bucket media) (:media/s3-key media))
+    (catch Exception ex
+      ;; TODO: handle errors
+      (error.i/ex->error ex))))
+
+(defn handler [& {:keys [::z/context request-method viewer] :as _request}]
   (let [{:keys [db resource s3-client]} context
         media-id (:media/id resource)
         ;; Generate srcset URLs with different sizes for responsive images
@@ -113,12 +129,8 @@
         (do (log/warn "Refusing to delete media outside this instance's prefix"
                       {:s3-key (:media/s3-key resource)})
             (http/not-found))
-        (let [_ (media.i/delete! db (:media/id resource))
-              _ (try
-                  (s3.i/delete-object s3-client (:media/s3-bucket resource) (:media/s3-key resource))
-                  (catch Exception ex
-                    (error.i/ex->error ex)))]
-          ;; TODO: handle errors
+        (do
+          (delete! db s3-client resource (:user/id viewer))
           (-> {:status 204
                :headers {"HX-Redirect" (z/url-for media.routes/index)}}
               (flash/add-message "Deleted media."))))
