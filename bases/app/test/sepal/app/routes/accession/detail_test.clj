@@ -318,5 +318,8 @@
                                                           :received-type ""
                                                           :quantity-received ""}))]
         (is (= 422 (:status response)))
-        (is (nil? (:accession/date-accessioned
-                    (accession.i/get-by-id *db* (:accession/id accession)))))))))
+        ;; The factory generates the date, so compare with what it made.
+        (is (= (:accession/date-accessioned accession)
+               (:accession/date-accessioned
+                 (accession.i/get-by-id *db* (:accession/id accession))))
+            "the saved date is unchanged")))))
