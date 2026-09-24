@@ -37,7 +37,7 @@ in
     sqlfluff
     sqlite
   ] ++ [ sqlite-migrate ]
-  ++ lib.optionals pkgs.stdenv.isLinux [ pkgs.glibcLocales ];
+  ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.glibcLocales ];
 
   languages.clojure.enable = true;
   # sepal.app.instance derives per-instance secrets with javax.crypto.KDF,
