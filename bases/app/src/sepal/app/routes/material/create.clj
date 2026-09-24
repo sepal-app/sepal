@@ -70,6 +70,7 @@
                   (:code data)
                   #(material.form/code-input :value (:code data)
                                              :accession-id (:accession-id data)
+                                             :suggest? true
                                              :errors %))
                 (http/failure-flash e (http/hx-redirect material.routes/new)
                                     "Could not create the material")))))

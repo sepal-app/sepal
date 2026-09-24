@@ -25,8 +25,11 @@
   Two of the three ways into this form do not know an accession -- the list
   create button and its empty state both link to a bare /material/new -- so
   the suggestion arrives from the endpoint rather than from the first render.
-  It swaps this element for itself."
-  [& {:keys [value accession-id errors]}]
+  It swaps this element for itself.
+
+  `suggest?` is for the create form only: on an edit, a new suggestion would
+  overwrite the record's existing code."
+  [& {:keys [value accession-id errors suggest?]}]
   [:input (cond-> {:autocomplete "off"
                    :class "spl-input w-full"
                    :placeholder (if accession-id "Required" "Choose an accession first")
@@ -34,12 +37,12 @@
                    :id "code"
                    :name "code"
                    :type "text"
-                   :hx-get (z/url-for material.routes/next-code)
-                   :hx-trigger "material:accession-changed from:body"
-                   :hx-include "#accession-id"
-                   :hx-swap "outerHTML"
                    :value value
                    :aria-describedby (form/describedby "code" {:errors errors})}
+            suggest? (assoc :hx-get (z/url-for material.routes/next-code)
+                            :hx-trigger "change from:#accession-id"
+                            :hx-include "#accession-id"
+                            :hx-swap "outerHTML")
             (seq errors) (assoc :aria-invalid "true"))])
 
 (defn- next-code-button
@@ -94,6 +97,7 @@
                         :input [:div {:class "flex items-center gap-2"}
                                 (code-input :value (:code values)
                                             :accession-id (:accession-id values)
+                                            :suggest? (some? next-code-url)
                                             :errors (:code errors))
                                 (when next-code-url
                                   (next-code-button :url next-code-url

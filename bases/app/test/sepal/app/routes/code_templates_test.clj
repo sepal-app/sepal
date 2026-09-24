@@ -109,6 +109,23 @@
         (is (= 200 (:status response)))
         (is (= "2" (attr-value body "#code")))))))
 
+(deftest test-the-code-follows-the-accession-picker
+  (tf/testing "the create form refetches the code when the accession changes; the edit form does not"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::location.i/factory :key/location] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::material.i/factory :key/m1] {:db *db*
+                                     :accession (ig/ref :key/acc)
+                                     :location (ig/ref :key/location)}}
+    (fn [{:keys [m1]}]
+      (let [sess (editor-session)
+            page (fn [path] (Jsoup/parse ^String (:body (:response (peri/request sess path)))))
+            trigger "input#code[hx-trigger='change from:#accession-id'][hx-include='#accession-id']"]
+        (is (some? (.selectFirst (page "/material/new/") trigger)))
+        (is (nil? (.selectFirst (page (str "/material/" (:material/id m1) "/general/"))
+                                "input#code[hx-get]"))
+            "an edit keeps the code it has")))))
+
 (deftest test-the-next-code-button
   (tf/testing "a create form can ask for the current next code"
     {[::taxon.i/factory :key/taxon] {:db *db*}}
