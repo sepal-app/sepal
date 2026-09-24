@@ -1,5 +1,5 @@
 (ns sepal.app.routes.propagation.detail-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
