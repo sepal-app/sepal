@@ -12,6 +12,10 @@
             [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
+            [sepal.media.interface :as media.i]
+            [sepal.media.interface.activity :as media.activity]
+            [sepal.note.interface :as note.i]
+            [sepal.note.interface.activity :as note.activity]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.propagation.interface :as propagation.i]
@@ -370,3 +374,35 @@
                                    :where [:= :id (:observation/id obs)]})
               (db.i/execute! *db* {:delete-from :propagation
                                    :where [:= :id (:propagation/id prop)]}))))))))
+
+(deftest test-note-and-media-events-are-rendered
+  (tf/testing "note and media events appear in the feed"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db*
+                                       :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user acc]}]
+      (with-cleared-activity
+        (let [note (note.i/create! *db* {:body "a note"
+                                         :resource-type :accession
+                                         :resource-id (:accession/id acc)
+                                         :created-by (:user/id user)})
+              media (media.i/create! *db* {:s3-bucket "b" :s3-key "media/feed-test.jpg"
+                                           :size-in-bytes 1 :media-type "image/jpeg"
+                                           :created-by (:user/id user)})]
+          (try
+            (note.activity/create! *db* note.activity/created (:user/id user) note)
+            (media.activity/create! *db* media.activity/created (:user/id user) media)
+            (let [response (get-activity-page user)]
+              (is (str/includes? (:body response)
+                                 (str "/accession/" (:accession/id acc) "/notes/")))
+              (is (app.test/body-contains? response "feed-test.jpg"))
+              (is (app.test/body-contains? response "a note"))
+              (is (app.test/body-contains? response "a media item")))
+            (finally
+              (clear-activity!)
+              (db.i/execute! *db* {:delete-from :note :where [:= :id (:note/id note)]})
+              (db.i/execute! *db* {:delete-from :media :where [:= :id (:media/id media)]}))))))))
+

@@ -14,6 +14,7 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.observation.index :as observation.index]
             [sepal.app.routes.observation.routes :as observation.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
@@ -31,6 +32,9 @@
             [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
+            [sepal.media.interface.activity :as media.activity]
+            [sepal.media.interface.spec :as media.spec]
+            [sepal.note.interface.activity :as note.activity]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.propagation.interface.activity :as propagation.activity]
@@ -311,6 +315,56 @@
 (defmethod activity-data observation.activity/deleted [activity]
   (observation-data activity))
 
+(defn- note-data
+  "A note event is filed against the accession or taxon it was written on, so
+  the chip names that record and links to its notes."
+  [activity]
+  (let [{:keys [accession taxon]} activity]
+    (cond
+      accession
+      {:resource-type :note
+       :resource-name (:accession/code accession)
+       :resource-url (z/url-for accession.routes/detail-notes
+                                {:id (:accession/id accession)})
+       :context "Note on accession"}
+
+      taxon
+      {:resource-type :note
+       :resource-name (:taxon/name taxon)
+       :resource-url (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
+       :context "Note on taxon"})))
+
+(defmethod activity-data note.activity/created [activity]
+  (note-data activity))
+
+(defmethod activity-data note.activity/updated [activity]
+  (note-data activity))
+
+(defmethod activity-data note.activity/deleted [activity]
+  (note-data activity))
+
+(defn- file-name [s3-key]
+  (some-> s3-key (str/split #"/") last))
+
+(defn- media-data
+  "Named by its title, or its file when it has none. Once the media row is
+  gone the name comes off the event's own payload, with nothing to link to."
+  [activity]
+  (let [media (:media activity)]
+    {:resource-type :media
+     :resource-name (or (:media/title media)
+                        (file-name (or (:media/s3-key media)
+                                       (get-in activity [:activity/data :s3-key]))))
+     :resource-url (when media
+                     (z/url-for media.routes/detail {:id (:media/id media)}))
+     :context "Media"}))
+
+(defmethod activity-data media.activity/created [activity]
+  (media-data activity))
+
+(defmethod activity-data media.activity/deleted [activity]
+  (media-data activity))
+
 ;;; Grouping logic
 
 (defn group-consecutive-by-user
@@ -346,6 +400,7 @@
    "location" ["a location" "locations"]
    "contact" ["a contact" "contacts"]
    "media" ["a media item" "media items"]
+   "note" ["a note" "notes"]
    "observation" ["an observation" "observations"]
    "propagation" ["a propagation" "propagations"]
    "setup" ["setup" "setup"]
@@ -700,6 +755,7 @@
       (mu/assoc :accession [:maybe accession.spec/Accession])
       (mu/assoc :location [:maybe location.spec/Location])
       (mu/assoc :material [:maybe material.spec/Material])
+      (mu/assoc :media [:maybe media.spec/Media])
       (mu/assoc :propagation [:maybe propagation.spec/Propagation])
       (mu/assoc :user [:maybe user.spec/User])))
 
@@ -711,6 +767,7 @@
                                      :loc.*
                                      :mat.*
                                      :prop.*
+                                     :med.*
                                      :u.id
                                      :u.email
                                      [:parent.id :parent__id]
@@ -740,6 +797,9 @@
                                                [:= :acc.id :a.resource_id]]
                                               [:= :acc.id :mat.accession_id]
                                               [:= :acc.id :prop.parent_accession_id]]]
+                                      :left [[:media :med]
+                                             [:and [:= :a.resource_type "media"]
+                                              [:= :med.id :a.resource_id]]]
                                       :left [[:location :loc]
                                              [:and [:= :a.resource_type "location"]
                                               [:= :loc.id :a.resource_id]]]

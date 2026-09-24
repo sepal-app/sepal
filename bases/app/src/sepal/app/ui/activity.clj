@@ -16,6 +16,7 @@
     :taxon (lucide/trees :size size)
     :location (lucide/map-pin :size size)
     :media (lucide/image :size size)
+    :note (lucide/pencil :size size)
     :observation (lucide/eye :size size)
     :propagation (lucide/bean :size size)
     :contact (lucide/contact-round)
