@@ -41,9 +41,8 @@
 ;; UI Components
 
 (defn- alert-note []
-  ;; Informational, not a warning. --warning and --danger resolve to the same
-  ;; red tokens on purpose — one attention colour, not two — so a note that is
-  ;; merely telling you where your media lives reads as something broken.
+  ;; Informational, not a warning: it tells you where your media lives, and
+  ;; nothing needs checking.
   [:div {:class "spl-alert spl-alert--info mb-6"}
    (lucide/info :class "size-5 shrink-0")
    [:span "Backups include the database only. Media files are stored separately and must be backed up manually."]])
