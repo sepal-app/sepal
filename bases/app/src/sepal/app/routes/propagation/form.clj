@@ -59,8 +59,7 @@
      :errors errors
      :selected (when (:parent-material-id values)
                  {:id (:parent-material-id values)
-                  :text (str (:accession-code values)
-                             "." (:material-code values))})
+                  :text (:material-text values)})
      :help (if (:accession-code values)
              "Optional. Leave it out when the cuttings came off the accession without a particular plant being recorded."
              "Optional. Choose a parent accession to pick from its plants."))])
@@ -88,8 +87,7 @@
               (form/input-field :label "Parent plant"
                                 :name "parent-material-display"
                                 :read-only true
-                                :value (str (:accession-code values)
-                                            "." (:material-code values)))))
+                                :value (:material-text values))))
           (parent-material-field :values values
                                  :errors (:parent-material-id errors)
                                  :material-items material-items)))

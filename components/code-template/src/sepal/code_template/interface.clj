@@ -18,18 +18,25 @@
 
 (def ^:private seq-pattern #"^seq(?::(0+))?$")
 
+(defn- sequence-part?
+  "Is this the part the number goes in? `{seq}` renders it as digits,
+  `{letter}` as letters."
+  [{:keys [kind]}]
+  (contains? #{:seq :letter} kind))
+
 (defn- token->part [body]
   (if-let [[_ zeros] (re-matches seq-pattern body)]
     {:kind :seq :width (count zeros)}
     (or (get date-tokens body)
+        (when (= "letter" body) {:kind :letter})
         (error.i/error ::unknown-token (str "Unknown token {" body "}")))))
 
 (defn parse
   "A template string to its parts, or an error naming what is wrong.
 
-  A template needs exactly one `seq` token. There is no escape for a literal
-  brace: no code convention contains one, and leaving escaping out keeps this
-  to a single pass."
+  A template needs exactly one sequence token, `{seq}` or `{letter}`. There is
+  no escape for a literal brace: no code convention contains one, and leaving
+  escaping out keeps this to a single pass."
   [template]
   (if (str/blank? template)
     (error.i/error ::empty-template "A template cannot be empty")
@@ -41,12 +48,12 @@
           (let [parts (cond-> parts
                         (< i (count template))
                         (conj {:kind :literal :text (subs template i)}))
-                seqs (count (filter #(= :seq (:kind %)) parts))]
+                seqs (count (filter sequence-part? parts))]
             (cond
               (zero? seqs) (error.i/error ::no-seq-token
-                                          "A template needs a {seq} token")
+                                          "A template needs a {seq} or {letter} token")
               (> seqs 1) (error.i/error ::many-seq-tokens
-                                        "A template needs exactly one {seq} token")
+                                        "A template needs exactly one {seq} or {letter} token")
               :else parts))
 
           :else
@@ -69,6 +76,19 @@
       (str (str/join (repeat (- width (count s)) \0)) s)
       s)))
 
+(defn- ->letters
+  "1 is A, 26 is Z, 27 is AA: the way spreadsheet columns are numbered."
+  [n]
+  (loop [n n
+         letters ()]
+    (if (pos? n)
+      (let [n (dec n)]
+        (recur (quot n 26) (conj letters (char (+ (int \A) (mod n 26))))))
+      (apply str letters))))
+
+(defn- letters->n [letters]
+  (reduce (fn [n c] (+ (* n 26) (inc (- (int c) (int \A))))) 0 letters))
+
 (defn- render-part [{:keys [kind text width]} ^LocalDate date n]
   (case kind
     :literal text
@@ -76,7 +96,8 @@
     :year2 (pad (mod (.getYear date) 100) 2)
     :month (pad (.getMonthValue date) 2)
     :day (pad (.getDayOfMonth date) 2)
-    :seq (pad n width)))
+    :seq (pad n width)
+    :letter (->letters n)))
 
 (defn render
   "Parts, a date and a number to a code string."
@@ -94,8 +115,10 @@
       (for [{:keys [kind width] :as part} parts]
         (case kind
           :literal (Pattern/quote (:text part))
-          :seq (let [body (str "\\d{" (max 1 width) ",}")]
-                 (if capture-seq? (str "(" body ")") body))
+          (:seq :letter) (let [body (if (= :letter kind)
+                                      "[A-Z]+"
+                                      (str "\\d{" (max 1 width) ",}"))]
+                           (if capture-seq? (str "(" body ")") body))
           (if date
             (Pattern/quote (render-part part date 0))
             (str "\\d{" width "}")))))))
@@ -109,13 +132,13 @@
 
 (defn scan-prefix
   "The leading literal with date tokens expanded, for a SQL `like`. Empty when
-  the template opens with its seq token, which means the scan reads the whole
-  column."
+  the template opens with its sequence token, which means the scan reads the
+  whole column."
   [template ^LocalDate date]
   (let [parts (parse template)]
     (when-not (error.i/error? parts)
       (->> parts
-           (take-while #(not= :seq (:kind %)))
+           (take-while (complement sequence-part?))
            (map #(render-part % date 0))
            (str/join)))))
 
@@ -131,24 +154,50 @@
   (let [parts (parse template)]
     (when-not (error.i/error? parts)
       (let [rx (->pattern parts date true)
+            ->n (if (some #(= :letter (:kind %)) parts) letters->n parse-long)
             numbers (keep (fn [code]
                             (when-let [[_ n] (re-matches rx (str code))]
-                              (parse-long n)))
+                              (->n n)))
                           codes)]
         (render parts date (inc (reduce max 0 numbers)))))))
 
 (defn config
   "A `settings.i/get-values db \"codes\"` map to the per-resource config.
 
-  The defaults live here rather than in a migration, so every garden gets the
-  suggestion without configuring anything and there is nothing to seed."
+  Every `codes.` setting is a seeded row, so there are no defaults here: an
+  absent row means off, or no separator."
   [settings]
-  (letfn [(for-resource [resource default-template]
-            ;; `get` with a default, not `or`: a stored "" is a garden that
-            ;; turned the suggestion off, and must not fall back to the
-            ;; default the way an absent row does.
-            {:template (get settings (str "codes." resource "_template")
-                            default-template)
+  (letfn [(for-resource [resource]
+            {:template (get settings (str "codes." resource "_template"))
              :strict? (= "1" (get settings (str "codes." resource "_strict")))})]
-    {:accession (for-resource "accession" "{year}.{seq:0000}")
-     :material (for-resource "material" "{seq}")}))
+    {:accession (for-resource "accession")
+     :material (for-resource "material")
+     :separator (get settings "codes.material_separator")}))
+
+(defn full-code
+  "A material's full code: its accession's code, the separator and its own
+  code. A nil separator is the same as an empty one."
+  [separator accession-code material-code]
+  (str accession-code separator material-code))
+
+(defn- digit-at-edge?
+  "Does what `part` renders start (or end, with `end?`) with a digit?"
+  [{:keys [kind text]} end?]
+  (case kind
+    :literal (some-> (if end? (last text) (first text)) Character/isDigit)
+    :letter false
+    true))
+
+(defn runs-together?
+  "Would a full code built from these templates put a digit either side of an
+  empty separator, as `2026.0001` and `1` make `2026.00011`? False when either
+  template is blank or unparseable, because then there is nothing to judge."
+  [accession-template separator material-template]
+  (let [accession (parse accession-template)
+        material (parse material-template)]
+    (boolean
+      (and (empty? separator)
+           (not (error.i/error? accession))
+           (not (error.i/error? material))
+           (digit-at-edge? (last accession) true)
+           (digit-at-edge? (first material) false)))))

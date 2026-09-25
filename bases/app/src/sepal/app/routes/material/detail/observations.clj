@@ -82,11 +82,12 @@
                                         :value-options-by-type (value-options-by-type db)
                                         :today (str (datetime/today timezone))))))
 
-(defn page-content [& {:keys [material accession taxon observations errors values db timezone]}]
+(defn page-content [& {:keys [material accession taxon observations errors values db separator timezone]}]
   (let [id (:material/id material)]
     (material.shared/page
       :material material
       :accession accession
+      :separator separator
       :taxon taxon
       :active material.shared/observations-tab
       :body (ui.observations/observations-body :observations observations
@@ -98,7 +99,7 @@
                                                :value-options-by-type (value-options-by-type db)
                                                :today (str (datetime/today timezone))))))
 
-(defn render [& {:keys [db material accession taxon observations panel-data timezone]}]
+(defn render [& {:keys [db material accession taxon observations panel-data separator timezone]}]
   (ui.page/page
     :page-title-buttons (material.shared/actions :material material)
     :content (pages.detail/page-content-with-panel
@@ -107,6 +108,7 @@
                                       :accession accession
                                       :taxon taxon
                                       :observations observations
+                                      :separator separator
                                       :timezone timezone)
                :panel-content (material.panel/panel-content
                                 :panel-data panel-data
@@ -122,6 +124,7 @@
                                 :timezone timezone))
     :breadcrumbs (material.shared/breadcrumbs :accession accession
                                               :material material
+                                              :separator separator
                                               :taxon taxon)))
 
 (defn- observation-data [id data created-by]
@@ -137,7 +140,7 @@
 
 (defn handler
   [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
+  (let [{:keys [db material-separator resource timezone]} context
         id (:material/id resource)]
     (case request-method
       :post
@@ -163,6 +166,7 @@
                 :taxon (:taxon panel-data)
                 :observations (observation.i/get-for-resource db resource-type id)
                 :panel-data panel-data
+                :separator material-separator
                 :timezone timezone)))))
 
 (defn observation-handler

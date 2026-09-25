@@ -18,15 +18,10 @@
 
 (use-fixtures :once default-system-fixture)
 
-(defn- clear-codes! []
-  (doseq [k ["codes.accession_template" "codes.material_template"
-             "codes.accession_strict" "codes.material_strict"]]
-    (settings.i/delete! *db* k)))
-
 ;; Settings rows outlive a test and the suite shares one database, so a strict
 ;; flag left behind here would start enforcing templates in every other
 ;; namespace's accession and material tests.
-(use-fixtures :each (fn [t] (try (t) (finally (clear-codes!)))))
+(use-fixtures :each (fn [t] (try (t) (finally (app.test/reset-codes! *db*)))))
 
 (def ^:private accession-template "ZT{year}-{seq:0000}")
 

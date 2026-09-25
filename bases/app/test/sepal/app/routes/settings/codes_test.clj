@@ -31,24 +31,25 @@
                   :request-method :post
                   :params (merge {:__anti-forgery-token token} params))))
 
-(defn- clear-codes! []
-  ;; Tests share one database and run in random order, so the absent-rows path
-  ;; only exists if this test makes it.
-  (doseq [k ["codes.accession_template" "codes.material_template"
-             "codes.accession_strict" "codes.material_strict"]]
-    (settings.i/delete! *db* k)))
+(defn- get-page []
+  (let [sess (admin-session)
+        {:keys [response]} (peri/request sess "/settings/codes")]
+    (Jsoup/parse ^String (:body response))))
 
-(deftest test-the-page-renders-with-the-defaults
-  (testing "GET /settings/codes shows the default templates and the next code"
-    (clear-codes!)
+;; Tests share one database and run in random order, so each starts from the
+;; rows a new garden is provisioned with.
+(use-fixtures :each (fn [t] (app.test/reset-codes! *db*) (t)))
+
+(deftest test-the-page-renders-with-the-seeded-rows
+  (testing "GET /settings/codes shows the seeded templates and the next code"
     (let [sess (admin-session)
           {:keys [response]} (peri/request sess "/settings/codes")]
       (is (= 200 (:status response)))
       (let [body (Jsoup/parse ^String (:body response))
             template (.selectFirst body "#accession_template")]
         (is (some? template) "the accession template field is on the page")
-        (is (= "{year}.{seq:0000}" (.attr template "value"))
-            "the default comes from code, not from a seeded settings row")
+        (is (= "{year}.{seq:0000}" (.attr template "value")))
+        (is (= "." (.attr (.selectFirst body "#material_separator") "value")))
         (is (re-find #"Next: \d{4}\.\d{4}"
                      (.text (.selectFirst body ".spl-settings-content")))
             "the field says what it would generate right now")
@@ -65,6 +66,7 @@
   (testing "POST /settings/codes stores the four rows"
     (let [{:keys [response] :as sess} (post-codes {:accession_template "ZZ{year}-{seq:0000}"
                                                    :material_template "{seq}"
+                                                   :material_separator "-"
                                                    :accession_strict "1"})]
       (is (= 303 (:status response)))
       (let [{:keys [response]} (peri/follow-redirect sess)
@@ -76,7 +78,40 @@
         (is (= "{seq}" (get stored "codes.material_template")))
         (is (= "1" (get stored "codes.accession_strict")))
         (is (= "0" (get stored "codes.material_strict"))
-            "an unticked checkbox posts nothing and is stored as off")))))
+            "an unticked checkbox posts nothing and is stored as off")
+        (is (= "-" (get stored "codes.material_separator")))))))
+
+(deftest test-an-empty-separator-is-saved-and-sticks
+  (testing "a blank separator means none, stored as an empty row"
+    (let [{:keys [response]} (post-codes {:accession_template "{year}.{seq:0000}"
+                                          :material_template "{letter}"
+                                          :material_separator ""})]
+      (is (= 303 (:status response))))
+    (is (= "" (get (settings.i/get-values *db* "codes") "codes.material_separator")))
+    (let [body (get-page)]
+      (is (= "" (.attr (.selectFirst body "#material_separator") "value")))
+      (is (re-find #"For example: \d{4}\.\d{4}A\b"
+                   (.text (.selectFirst body ".spl-settings-content")))
+          "the material preview is the full code, with no separator"))))
+
+(deftest test-the-run-together-warning
+  (let [warning? (fn [body]
+                   (some? (some #(re-find #"2026\.00011" (.text %))
+                                (.select body ".spl-alert--warning"))))]
+    (testing "no separator between a trailing and a leading digit warns"
+      (settings.i/set-values! *db* {"codes.material_separator" ""
+                                    "codes.material_template" "{seq}"})
+      (is (warning? (get-page))))
+
+    (testing "a letter template reads fine without a separator"
+      (settings.i/set-values! *db* {"codes.material_separator" ""
+                                    "codes.material_template" "{letter}"})
+      (is (not (warning? (get-page)))))
+
+    (testing "a separator reads fine whatever the templates"
+      (settings.i/set-values! *db* {"codes.material_separator" "."
+                                    "codes.material_template" "{seq}"})
+      (is (not (warning? (get-page)))))))
 
 (deftest test-the-enforcement-checkbox-has-one-label
   (testing "not form/field's label as well as its own"
@@ -97,7 +132,7 @@
 
     (let [stored (settings.i/get-values *db* "codes")]
       (is (= "" (get stored "codes.accession_template"))
-          "stored as empty, not absent -- an absent row would take the default"))
+          "stored as an empty row"))
 
     (testing "and the page comes back blank rather than showing the default"
       (let [sess (admin-session)

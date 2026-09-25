@@ -7,6 +7,7 @@
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.code-template.interface :as ct.i]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -35,17 +36,17 @@
 (defn page
   "A material's record page. Its identifier is the accession code and the
   material code together, which is how a curator refers to it."
-  [& {:keys [material accession taxon active body footer]}]
+  [& {:keys [material accession taxon active body footer separator]}]
   (pages.record/page
     :code (when (and accession material)
-            (str (:accession/code accession) "." (:material/code material)))
+            (ct.i/full-code separator (:accession/code accession) (:material/code material)))
     :name (when (:taxon/name taxon)
             (taxon-name/render (:taxon/name taxon) :author (:taxon/author taxon)))
     :tabs (tabs material active)
     :body body
     :footer footer))
 
-(defn breadcrumbs [& {:keys [accession material taxon]}]
+(defn breadcrumbs [& {:keys [accession material taxon separator]}]
   [[:a {:href (z/url-for taxon.routes/index)}
     "Taxa"]
    [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
@@ -56,7 +57,7 @@
     (:accession/code accession)]
    [:a {:href (z/url-for material.routes/index {} {:accession-id (:accession/id accession)})}
     "Material"]
-   (str (:accession/code accession) "." (:material/code material))])
+   (ct.i/full-code separator (:accession/code accession) (:material/code material))])
 
 (defn actions
   "The same actions on every one of a material's sections. Defined here rather

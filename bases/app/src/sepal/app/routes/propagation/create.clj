@@ -10,6 +10,7 @@
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.material.interface :as material.i]
             [sepal.propagation.interface :as propagation.i]
@@ -125,30 +126,31 @@
 
 (defn material-items
   "The parent plant picker's rows: the accession's material."
-  [db accession]
+  [db separator accession]
   (when accession
     (for [m (material.i/list-by-accession-id db (:accession/id accession))]
       {:id (:material/id m)
-       :text (str (:accession/code accession) "." (:material/code m))})))
+       :text (ct.i/full-code separator (:accession/code accession) (:material/code m))})))
 
 (defn form-values
   "The values the form renders, including the display fields the pickers need
   for what is already chosen."
-  [db {:keys [parent-accession-id parent-material-id] :as decoded}]
+  [db separator {:keys [parent-accession-id parent-material-id] :as decoded}]
   (let [material (when parent-material-id
                    (material.i/get-by-id db parent-material-id))
         accession-id (or parent-accession-id (:material/accession-id material))
         accession (when accession-id (accession.i/get-by-id db accession-id))
-        material-items (material-items db accession)]
+        material-items (material-items db separator accession)]
     (merge decoded
            {:parent-accession-id accession-id
             :parent-material-id (or (:material/id material) parent-material-id)
             :accession-code (:accession/code accession)
-            :material-code (:material/code material)}
+            :material-text (when material
+                             (ct.i/full-code separator (:accession/code accession) (:material/code material)))}
            (when material-items {:material-items material-items}))))
 
 (defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
-  (let [{:keys [db timezone]} context
+  (let [{:keys [db material-separator timezone]} context
         types (propagation.i/list-types db)]
     (case request-method
       :post
@@ -166,7 +168,7 @@
           (http/failure-response
             e
             (http/hx-redirect propagation.routes/new))))
-      (let [values (form-values db (params/decode PrefillParams query-params))]
+      (let [values (form-values db material-separator (params/decode PrefillParams query-params))]
         (render :values values
                 :today (str (datetime/today timezone))
                 :types types
@@ -180,11 +182,11 @@
   "The parent plant picker for the accession just chosen, swapped in by the
   form."
   [{:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db material-separator]} context
         {:keys [parent-accession-id]} (params/decode ParentPlantParams query-params)
         accession (some->> (some-> parent-accession-id parse-long)
                            (accession.i/get-by-id db))]
     (html/render-partial
       (propagation.form/parent-material-field
         :values {:accession-code (:accession/code accession)}
-        :material-items (material-items db accession)))))
+        :material-items (material-items db material-separator accession)))))

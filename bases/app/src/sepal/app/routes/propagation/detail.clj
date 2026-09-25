@@ -24,7 +24,7 @@
 
 (defn- breadcrumbs [panel-data]
   [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
-   (shared/parent-name (:parent panel-data) (:parent-material panel-data))])
+   (shared/parent-name (:parent panel-data) (:parent-material panel-data) (:separator panel-data))])
 
 (defn- panel [panel-data & {:keys [actions]}]
   (propagation.panel/panel-content
@@ -37,6 +37,7 @@
     :status-label (:status-label panel-data)
     :material-products (:material-products panel-data)
     :accession-products (:accession-products panel-data)
+    :separator (:separator panel-data)
     :actions actions))
 
 (defn- render-panel-page
@@ -49,15 +50,14 @@
 (defn- form-values
   "The edit form's values, with the display text its pickers need."
   [db propagation panel-data]
-  (let [{:keys [parent parent-material location rootstock]} panel-data]
+  (let [{:keys [parent location rootstock]} panel-data]
     (merge
       (propagation.create/form-values
-        db {:parent-accession-id (:propagation/parent-accession-id propagation)
-            :parent-material-id (:propagation/parent-material-id propagation)})
+        db (:separator panel-data) {:parent-accession-id (:propagation/parent-accession-id propagation)
+                                    :parent-material-id (:propagation/parent-material-id propagation)})
       {:type (:propagation/type propagation)
        :status (:propagation/status propagation)
        :accession-code (:accession/code parent)
-       :material-code (:material/code parent-material)
        :rootstock-taxon-id (:propagation/rootstock-taxon-id propagation)
        :taxon-name (:taxon/name rootstock)
        :location-id (:location/id location)
@@ -78,7 +78,8 @@
       :content (pages.detail/page-content-with-panel
                  :content (pages.record/page
                             :name (shared/parent-name (:parent panel-data)
-                                                      (:parent-material panel-data))
+                                                      (:parent-material panel-data)
+                                                      (:separator panel-data))
                             :body (propagation.form/form
                                     :action (z/url-for propagation.routes/detail
                                                        {:id (:propagation/id propagation)})
@@ -149,7 +150,7 @@
         (http/failure-response e redirect)))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
+  (let [{:keys [db material-separator resource timezone]} context
         editor? (authz/user-has-permission? viewer propagation.perm/edit)]
     (cond
       (and (= :post request-method) (not editor?))
@@ -160,7 +161,10 @@
       (save! db resource viewer form-params (str (datetime/today timezone)))
 
       :else
-      (let [panel-data (propagation.panel/fetch-panel-data db resource)]
+      ;; The separator rides in panel-data, which every renderer here already
+      ;; takes.
+      (let [panel-data (-> (propagation.panel/fetch-panel-data db resource)
+                           (assoc :separator material-separator))]
         (if editor?
           (render-edit-page db resource panel-data (str (datetime/today timezone)))
           (render-panel-page panel-data))))))

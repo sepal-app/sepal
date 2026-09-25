@@ -12,6 +12,7 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.search]
@@ -33,9 +34,9 @@
   is no join for this in the search component -- resource_id carries no
   foreign key -- so the index's own base statement joins both the material
   and location tables, one of which is always null per row."
-  [row]
+  [row separator]
   (case (:observation/resource-type row)
-    "material" (str (:accession/code row) "." (:material/code row))
+    "material" (ct.i/full-code separator (:accession/code row) (:material/code row))
     "location" (cond-> (:location/name row)
                  (:location/code row) (str (format " (%s)" (:location/code row))))
     nil))
@@ -56,15 +57,15 @@
        (when-let [value-label (:observation/value-label row)]
          (str ": " value-label))))
 
-(defn table-columns [viewer]
+(defn table-columns [viewer separator]
   [{:name "Subject"
     :type :text
     :priority 1
-    :stacked (fn [row] (table/summary (subject-label row) (type-summary row)))
+    :stacked (fn [row] (table/summary (subject-label row separator) (type-summary row)))
     :cell (fn [row]
             [:a {:href (subject-href row viewer)
                  :class "spl-link"}
-             (subject-label row)])}
+             (subject-label row separator)])}
    {:name "Type"
     :type :text
     :priority 2
@@ -85,8 +86,8 @@
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page page-size href total viewer]}]
-  (table/rows-only :columns (table-columns viewer)
+  [& {:keys [rows page page-size href separator total viewer]}]
+  (table/rows-only :columns (table-columns viewer separator)
                    :rows rows
                    :row-attrs row-attrs
                    :href href
@@ -94,9 +95,9 @@
                    :page-size page-size
                    :total total))
 
-(defn table [& {:keys [rows page href page-size total search-query viewer]}]
+(defn table [& {:keys [rows page href page-size separator total search-query viewer]}]
   (pages.list/card-table
-    (table/table :columns (table-columns viewer)
+    (table/table :columns (table-columns viewer separator)
                  :rows rows
                  :row-attrs row-attrs
                  :href href
@@ -132,7 +133,7 @@
               :x-on:click.prevent "toggle()"}]
      [:span "Only overdue observations"]]))
 
-(defn render [& {:keys [href page page-size rows search-query total today viewer]}]
+(defn render [& {:keys [href page page-size rows search-query separator total today viewer]}]
   (ui.page/page
     :content (pages.list/page-content
                :content [:div
@@ -142,6 +143,7 @@
                                 :rows rows
                                 :total total
                                 :search-query search-query
+                                :separator separator
                                 :viewer viewer)
                          (ui.export/export-modal
                            :total total
@@ -189,12 +191,13 @@
                     [:and [:= :o.resource_type "location"] [:= :l.id :o.resource_id]]]]})
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db timezone]} context
+  (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
         ast (search.i/parse q)
-        stmt (search.i/compile-query :observation ast (base-stmt))
+        stmt (search.i/compile-query :observation ast (base-stmt)
+                                     {:material-separator material-separator})
 
         total (db.i/count-bounded db stmt)
         ;; Newest observed first, the same order the subject's own Observations
@@ -215,6 +218,7 @@
         (index-rows :rows rows
                     :page page
                     :page-size page-size
+                    :separator material-separator
                     :total total
                     :viewer viewer
                     :href (uri/uri-str {:path uri
@@ -230,6 +234,7 @@
               :page page
               :page-size page-size
               :search-query q
+              :separator material-separator
               :total total
               :today today
               :viewer viewer))))

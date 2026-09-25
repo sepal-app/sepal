@@ -1454,7 +1454,7 @@
 }
 .spl-alert--info { background: var(--color-info-bg); color: var(--color-info); }
 .spl-alert--ok { background: var(--color-ok-bg); color: var(--color-ok); }
-.spl-alert--warning,
+.spl-alert--warning { background: var(--color-warning-bg); color: var(--color-warning); }
 .spl-alert--danger { background: var(--color-danger-bg); color: var(--color-danger); }
 
 /* ── Auth ──────────────────────────────────────────────────────────────────
@@ -1540,9 +1540,7 @@
 
 .spl-banner--info { background: var(--color-info); }
 .spl-banner--ok { background: var(--color-ok); }
-/* The palette has no amber. A warning reads as the danger colour here for the
- * same reason `.spl-alert--warning` does — one attention colour, not two. */
-.spl-banner--warning,
+.spl-banner--warning { background: var(--color-warning); }
 .spl-banner--danger { background: var(--color-danger); }
 
 .spl-banner-text { font: 600 13px/1.45 var(--font-sans); }

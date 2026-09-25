@@ -24,7 +24,7 @@
 
 (defn- link-text-query
   "Generate SQL query for link text based on resource type."
-  [link]
+  [link separator]
   (case (:media-link/resource-type link)
     "accession" {:select [[[:concat :a.code " (" :t.name ")"] :text]]
                  :from [[:accession :a]]
@@ -33,7 +33,7 @@
     "location" {:select [[[:concat :l.name " (" :l.code ")"] :text]]
                 :from [[:location :l]]
                 :where [:= :l.id (:media-link/resource-id link)]}
-    "material" {:select [[[:concat :a.code "." :m.code " (" :t.name ")"] :text]]
+    "material" {:select [[[:concat :a.code (str separator) :m.code " (" :t.name ")"] :text]]
                 :from [[:material :m]]
                 :join [[:accession :a] [:= :a.id :m.accession_id]
                        [:taxon :t] [:= :t.id :a.taxon-id]]
@@ -45,9 +45,9 @@
 
 (defn- get-link-info
   "Get display info for a media link."
-  [db link]
+  [db link separator]
   (when link
-    (let [query (link-text-query link)
+    (let [query (link-text-query link separator)
           result (when query (db.i/execute-one! db query))
           text (or (:text result) (:name result))]
       {:text text
@@ -99,9 +99,9 @@
 (defn fetch-panel-data
   "Fetch all data needed for the media panel.
    Returns a map with :media, :thumbnail-url, :link-info."
-  [db media]
+  [db media separator]
   (let [link (media.i/get-link db (:media/id media))
-        link-info (get-link-info db link)]
+        link-info (get-link-info db link separator)]
     {:media media
      :thumbnail-url (media.ui/thumbnail-url (:media/id media) :w 200 :h 200)
      :link-info link-info}))
@@ -109,8 +109,8 @@
 (defn handler
   "Handler for media panel route. Returns HTML fragment for HTMX."
   [{:keys [::z/context]}]
-  (let [{:keys [db resource]} context
-        panel-data (fetch-panel-data db resource)]
+  (let [{:keys [db material-separator resource]} context
+        panel-data (fetch-panel-data db resource material-separator)]
     (html/render-partial
       (panel-content
         :media (:media panel-data)

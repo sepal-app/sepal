@@ -82,6 +82,7 @@
     (let [t (tokens)]
       (doseq [[fg bg] [["color-ok" "color-ok-bg"]
                        ["color-info" "color-info-bg"]
+                       ["color-warning" "color-warning-bg"]
                        ["color-danger" "color-danger-bg"]
                        ["color-neutral" "color-neutral-bg"]]]
         (let [f (get t fg)

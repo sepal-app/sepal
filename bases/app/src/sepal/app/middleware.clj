@@ -191,6 +191,8 @@
    Currently loads:
    - :timezone - Organization timezone string (defaults to 'UTC')
    - :organization-name - What the garden calls itself, or nil
+   - :material-separator - What joins an accession and material code in a
+     material's full code. Nil or \"\" is none
 
    The short name first: it is what a garden picks to be called in passing,
    which is what a browser tab and an email subject want. Nil rather than a
@@ -203,13 +205,15 @@
           organization-name (->> ["organization.short_name" "organization.long_name"]
                                  (keep #(settings.i/get-value db %))
                                  (remove str/blank?)
-                                 (first))]
+                                 (first))
+          material-separator (settings.i/get-value db "codes.material_separator")]
       ;; Bound as well as assoc'd: z/*request* is bound before this runs, so a
       ;; renderer reading the context there would not see either of these.
       (binding [g/*organization-name* organization-name]
         (-> request
             (assoc-in [::z/context :timezone] timezone)
             (assoc-in [::z/context :organization-name] organization-name)
+            (assoc-in [::z/context :material-separator] material-separator)
             handler)))))
 
 (defn- setup-excluded-path?

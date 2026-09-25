@@ -5,17 +5,20 @@
 
 (defn- material-code-clause
   "A bare word matches a material subject on its accession code, or on the
-  start of its full code, `<accession code>.<material code>`. So `01` doesn't
-  match every material whose own code contains `01`, but `2026.0001.01` finds
-  material `0122` of accession `2026.0001`."
-  [word]
+  start of its full code, the accession code, the garden's separator and the
+  material code. So `01` doesn't match every material whose own code contains
+  `01`, but `2026.0001.01` finds material `0122` of accession `2026.0001`.
+
+  `str` because a nil separator is none, and a NULL in `||` would make the
+  whole full code NULL."
+  [word {:keys [material-separator]}]
   [:or
    [:like :acc.code (str "%" word "%")]
-   [:like [:|| :acc.code "." :m.code] (str word "%")]])
+   [:like [:|| :acc.code (str material-separator) :m.code] (str word "%")]])
 
 (defn- location-clause
   "A bare word matches a location subject on its code or its name."
-  [word]
+  [word _opts]
   [:or
    [:like :l.code (str "%" word "%")]
    [:like :l.name (str "%" word "%")]])

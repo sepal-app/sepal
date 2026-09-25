@@ -53,9 +53,10 @@
 (defn- parent-label
   "`2026.0042` when the parent is the accession alone, `2026.0042.1` when an
   individual plant narrows it."
-  [row]
+  [row separator]
   (shared/parent-name row
-                      (when (:material/code row) row)))
+                      (when (:material/code row) row)
+                      separator))
 
 (defn- row-attrs [row]
   (let [id (:propagation/id row)]
@@ -78,19 +79,19 @@
     [:span {:class (html/attr "spl-badge" (get colors status "spl-badge--neutral"))}
      label]))
 
-(defn table-columns [& {:keys [type-labels status-labels]}]
+(defn table-columns [& {:keys [type-labels status-labels separator]}]
   [{:name "Parent"
     :type :identifier
     :priority 1
     :stacked (fn [row]
-               (table/summary (parent-label row)
+               (table/summary (parent-label row separator)
                               (get type-labels (:propagation/type row))
                               (get status-labels (:propagation/status row))))
     :cell (fn [row]
             [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id row)})
                  :class "spl-link"
                  :x-on:click.stop ""}
-             (parent-label row)])}
+             (parent-label row separator)])}
    {:name "Type"
     :type :text
     :priority 2
@@ -139,9 +140,10 @@
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page-num page-size href total type-labels status-labels]}]
+  [& {:keys [rows page-num page-size href total type-labels status-labels separator]}]
   (table/rows-only :columns (table-columns :type-labels type-labels
-                                           :status-labels status-labels)
+                                           :status-labels status-labels
+                                           :separator separator)
                    :rows rows
                    :row-attrs row-attrs
                    :href href
@@ -150,10 +152,11 @@
                    :total total))
 
 (defn table [& {:keys [rows page-num href page-size total search-query
-                       type-labels status-labels]}]
+                       type-labels status-labels separator]}]
   (pages.list/card-table
     (table/table :columns (table-columns :type-labels type-labels
-                                         :status-labels status-labels)
+                                         :status-labels status-labels
+                                         :separator separator)
                  :rows rows
                  :row-attrs row-attrs
                  :href href
@@ -167,7 +170,7 @@
                                 :create-href (z/url-for propagation.routes/new)))))
 
 (defn render [& {:keys [field-options href page-num page-size rows search-query
-                        total type-labels status-labels viewer]}]
+                        total type-labels status-labels separator viewer]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -178,7 +181,8 @@
                                 :total total
                                 :search-query search-query
                                 :type-labels type-labels
-                                :status-labels status-labels)
+                                :status-labels status-labels
+                                :separator separator)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -203,7 +207,7 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db material-separator]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -251,6 +255,7 @@
                     :total total
                     :type-labels type-labels
                     :status-labels status-labels
+                    :separator material-separator
                     :href (uri/uri-str {:path uri
                                         :query (uri/map->query-string
                                                  (cond-> {} (seq q) (assoc :q q)))})))
@@ -266,4 +271,5 @@
               :total total
               :type-labels type-labels
               :status-labels status-labels
+              :separator material-separator
               :viewer viewer))))

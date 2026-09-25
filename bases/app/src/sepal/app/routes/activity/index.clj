@@ -27,6 +27,7 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.page :as ui.page]
+            [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.spec :as location.spec]
@@ -234,9 +235,9 @@
                                 (str " • " (:location/code location))))}))
 
 (defmethod activity-data material.activity/created [activity]
-  (let [{:keys [accession material taxon]} activity]
+  (let [{:keys [accession material material-separator taxon]} activity]
     {:resource-type :material
-     :resource-name (format "%s.%s" (:accession/code accession) (:material/code material))
+     :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
      :resource-url (z/url-for material.routes/detail {:id (:material/id material)})
      :context (str "Material" (when taxon (str " • " (:taxon/name taxon))))}))
 
@@ -290,11 +291,11 @@
   "An observation event is filed against the material or location it was made
   on, so the chip names that record and links to its observations."
   [activity]
-  (let [{:keys [accession location material]} activity]
+  (let [{:keys [accession location material material-separator]} activity]
     (cond
       material
       {:resource-type :observation
-       :resource-name (format "%s.%s" (:accession/code accession) (:material/code material))
+       :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
        :resource-url (z/url-for material.routes/detail-observations
                                 {:id (:material/id material)})
        :context "Observation on material"}
@@ -714,7 +715,7 @@
   that always reads \"0 overdue\" trains people to stop checking it."
   [count today]
   (when (pos? count)
-    [:div {:class "spl-alert spl-alert--warning"}
+    [:div {:class "spl-alert spl-alert--warning rounded-none"}
      (lucide/triangle-alert :class "size-4")
      [:a {:class "spl-link"
           :data-overdue-count count
@@ -840,9 +841,12 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context headers query-params viewer]}]
-  (let [{:keys [db timezone]} context
+  (let [{:keys [db material-separator timezone]} context
         {:keys [last-day page page-size _q]} (params/decode Params query-params)
-        activity (get-activity db page page-size)
+        ;; On each activity rather than an argument, so activity-data keeps
+        ;; dispatching on the activity alone.
+        activity (mapv #(assoc % :material-separator material-separator)
+                       (get-activity db page page-size))
         htmx-request? (get headers "hx-request")
         today (str (datetime/today timezone))]
     (if htmx-request?

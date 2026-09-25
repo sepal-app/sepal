@@ -1,6 +1,7 @@
 (ns sepal.app.test
   (:require [peridot.core :as peri]
             [sepal.app.test.system :refer [*app*]]
+            [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i])
   (:import [org.jsoup Jsoup]))
 
@@ -45,3 +46,18 @@
   [response text]
   (let [body-text (-> (parse-body response) (.text))]
     (.contains body-text text)))
+
+(def seeded-codes
+  "The codes. rows every database is provisioned with."
+  {"codes.accession_template" "{year}.{seq:0000}"
+   "codes.accession_strict" "0"
+   "codes.material_template" "{seq}"
+   "codes.material_strict" "0"
+   "codes.material_separator" "."})
+
+(defn reset-codes!
+  "Put the codes. rows back to what a new garden has. Settings outlive a test
+  and a namespace shares one database, so a test that changes them resets
+  them."
+  [db]
+  (settings.i/set-values! db seeded-codes))

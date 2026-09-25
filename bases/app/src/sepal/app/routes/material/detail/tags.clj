@@ -20,10 +20,11 @@
   [:map {:closed true}
    [:tag-name [:string {:min 1}]]])
 
-(defn page-content [& {:keys [material accession taxon tags all-tags]}]
+(defn page-content [& {:keys [material accession taxon tags all-tags separator]}]
   (material.shared/page
     :material material
     :accession accession
+    :separator separator
     :taxon taxon
     :active material.shared/tags-tab
     :body
@@ -34,11 +35,12 @@
                                                         {:id (:material/id material)
                                                          :tag-id (:tag/id tag)})))))
 
-(defn render [& {:keys [material accession taxon tags all-tags panel-data timezone]}]
+(defn render [& {:keys [material accession taxon tags all-tags panel-data separator timezone]}]
   (ui.page/page :page-title-buttons (material.shared/actions :material material)
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :material material :accession accession
-                                                  :taxon taxon :tags tags :all-tags all-tags)
+                                                  :taxon taxon :tags tags :all-tags all-tags
+                                                  :separator separator)
                            :panel-content (material.panel/panel-content
                                             :panel-data panel-data
                                             :material (:material panel-data)
@@ -53,6 +55,7 @@
                                             :timezone timezone))
                 :breadcrumbs (material.shared/breadcrumbs :accession accession
                                                           :material material
+                                                          :separator separator
                                                           :taxon taxon)))
 
 (defn resolve-or-create-tag!
@@ -95,7 +98,7 @@
       (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :material material-id))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
+  (let [{:keys [db material-separator resource timezone]} context
         id (:material/id resource)]
     (case request-method
       :post
@@ -111,7 +114,8 @@
             all-tags (tag.i/list-all db)
             panel-data (material.panel/fetch-panel-data db resource)]
         (render :material resource :accession accession :taxon taxon :tags tags :all-tags all-tags
-                :panel-data panel-data :timezone timezone)))))
+                :panel-data panel-data :timezone timezone
+                :separator material-separator)))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context

@@ -634,6 +634,11 @@ INSERT INTO taxon_rank VALUES('supertribe');
 INSERT INTO taxon_rank VALUES('tribe');
 INSERT INTO taxon_rank VALUES('unranked');
 INSERT INTO taxon_rank VALUES('variety');
+INSERT INTO settings VALUES('codes.accession_strict','0');
+INSERT INTO settings VALUES('codes.accession_template','{year}.{seq:0000}');
+INSERT INTO settings VALUES('codes.material_separator','.');
+INSERT INTO settings VALUES('codes.material_strict','0');
+INSERT INTO settings VALUES('codes.material_template','{seq}');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20251213120000', '2025-12-13 13:29:08');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260113120000', '2026-01-13 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260831120000', '2026-08-31 12:00:00');
@@ -658,3 +663,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260917140000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920120000', '2026-09-20 19:46:19');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920130000', '2026-09-21 13:44:07');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924120000', '2026-09-24 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924130000', '2026-09-24 13:00:00');

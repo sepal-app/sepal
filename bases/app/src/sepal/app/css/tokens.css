@@ -46,12 +46,15 @@
   --color-control: #7F9A91;
   --color-field: #679F92;
 
-  /* The four semantic colours. Never the sole carrier of meaning — the word is
-   * always present too. */
+  /* The five semantic colours. Never the sole carrier of meaning — the word is
+   * always present too. Warning is for something to check, danger for
+   * something that failed or cannot be undone. */
   --color-ok: #1D6B45;
   --color-ok-bg: #E3F1E9;
   --color-info: #1B5A78;
   --color-info-bg: #E2EEF4;
+  --color-warning: #7A4B0E;
+  --color-warning-bg: #FBF1DE;
   --color-danger: #8C2F26;
   --color-danger-bg: #F6E7E5;
   --color-neutral: #4A5C57;

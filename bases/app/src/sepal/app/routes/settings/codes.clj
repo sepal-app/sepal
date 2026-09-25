@@ -18,8 +18,9 @@
             [zodiac.core :as z]))
 
 (def token-legend
-  "Tokens: {year} {year2} {month} {day}, and exactly one {seq}. Zeros after a
-  colon set the width, so {seq:0000} counts 0001, 0002.")
+  "Tokens: {year} {year2} {month} {day}, and exactly one {seq} or {letter}.
+  Zeros after a colon set the width, so {seq:0000} counts 0001, 0002. {letter}
+  counts A, B … Z, AA, AB.")
 
 (defn- strict-checkbox
   "A bare wrapping label, like every other checkbox in the app.
@@ -87,7 +88,19 @@
                                    (str "For example: " example)))
          (strict-checkbox :name "material_strict"
                           :checked? (:material_strict values)
-                          :errors (:material_strict errors))])]]
+                          :errors (:material_strict errors))
+         (form/input-field :label "Separator"
+                           :name "material_separator"
+                           :value (:material_separator values)
+                           :errors (:material_separator errors)
+                           :help "Between the accession code and the material code. Leave it blank for none.")
+         (when (ct.i/runs-together? (:accession_template values)
+                                    (:material_separator values)
+                                    (:material_template values))
+           [:div {:class "spl-alert spl-alert--warning"}
+            [:p (str "With no separator, a material code that starts with a digit "
+                     "runs into an accession code that ends with one, and "
+                     "2026.0001 and 1 read as 2026.00011.")]])])]]
 
     [:div {:class "mt-4"}
      (layout/save-button "Save changes")]))
@@ -106,6 +119,9 @@
    form/AntiForgeryField
    [:accession_template {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:material_template {:decode/form validation.i/empty->nil} [:maybe :string]]
+   ;; No empty->nil: an empty separator is a garden's choice of none, and is
+   ;; saved as "".
+   [:material_separator {:optional true} [:maybe :string]]
    ;; A cleared checkbox posts nothing at all, so both flags are optional and
    ;; absence means off.
    [:accession_strict {:optional true} [:maybe :string]]
@@ -114,19 +130,22 @@
 (defn- settings->values [config]
   {:accession_template (-> config :accession :template)
    :material_template (-> config :material :template)
+   :material_separator (:separator config)
    :accession_strict (-> config :accession :strict?)
    :material_strict (-> config :material :strict?)})
 
 (defn- previews
   "What each template would produce right now. The accession preview is the
   real next code; material's is an illustration, because its real answer
-  depends on which accession you are adding to."
+  depends on which accession you are adding to. It shows the full code, so
+  the separator is visible too."
   [db config timezone]
-  (let [today (datetime/today timezone)]
-    {:accession (accession.i/next-code db (-> config :accession :template) today)
+  (let [today (datetime/today timezone)
+        accession (accession.i/next-code db (-> config :accession :template) today)]
+    {:accession accession
      :material (let [parts (ct.i/parse (-> config :material :template))]
                  (when-not (f/failed? parts)
-                   (ct.i/render parts today 1)))}))
+                   (ct.i/full-code (:separator config) accession (ct.i/render parts today 1))))}))
 
 (defn- check-templates
   "The two rules malli cannot express. Returns humanized field errors, or nil."
@@ -153,11 +172,11 @@
         (assoc :material_template strict-blank)))))
 
 (defn- ->settings [data]
-  ;; "" rather than nil for a cleared template. An absent row means "never
-  ;; configured" and takes the default; a present empty one means the garden
-  ;; turned the suggestion off, and must survive a page reload.
+  ;; "" rather than nil, so a cleared field is saved as a row rather than
+  ;; skipped. Every codes. setting is a seeded row.
   {"codes.accession_template" (or (:accession_template data) "")
    "codes.material_template" (or (:material_template data) "")
+   "codes.material_separator" (or (:material_separator data) "")
    "codes.accession_strict" (if (= "1" (:accession_strict data)) "1" "0")
    "codes.material_strict" (if (= "1" (:material_strict data)) "1" "0")})
 
@@ -171,6 +190,7 @@
           (render :viewer viewer
                   :values {:accession_template (:accession_template data)
                            :material_template (:material_template data)
+                           :material_separator (:material_separator data)
                            :accession_strict (= "1" (:accession_strict data))
                            :material_strict (= "1" (:material_strict data))}
                   :errors errors

@@ -170,9 +170,6 @@
               (pw/navigate (str base-url "/material/new/"))
               (pw/wait-for-selector "input[name=\"code\"]")
 
-              ;; Fill material form
-              (pw/fill "input[name=\"code\"]" "MAT-001")
-
               ;; A <sepal-combobox>: type in the field itself.
               (pw/click "#accession-id-input")
               (pw/fill "#accession-id-input" "ACC")
@@ -180,6 +177,11 @@
               (pw/press "ArrowDown")
               (pw/press "Enter")
               (pw/wait-for-hidden "#accession-id-listbox")
+
+              ;; Choosing the accession swaps in the suggested code, so the
+              ;; code is typed after that swap lands, not before it.
+              (pw/wait-for-selector "input[name=\"code\"][value=\"1\"]")
+              (pw/fill "input[name=\"code\"]" "MAT-001")
               ;; location-id is a <sepal-combobox>: type in the field itself.
               (pw/click "#location-id-input")
               (pw/fill "#location-id-input" "Gre")
