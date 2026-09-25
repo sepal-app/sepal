@@ -715,7 +715,7 @@
   that always reads \"0 overdue\" trains people to stop checking it."
   [count today]
   (when (pos? count)
-    [:div {:class "spl-alert spl-alert--warning"}
+    [:div {:class "spl-alert spl-alert--warning rounded-none"}
      (lucide/triangle-alert :class "size-4")
      [:a {:class "spl-link"
           :data-overdue-count count
