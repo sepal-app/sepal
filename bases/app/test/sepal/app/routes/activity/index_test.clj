@@ -4,6 +4,7 @@
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.activity :as accession.activity]
             [sepal.activity.interface :as activity.i]
             [sepal.app.cli.activity :as import.activity]
             [sepal.app.routes.activity.index :as activity.index]
@@ -418,7 +419,6 @@
               (db.i/execute! *db* {:delete-from :note :where [:= :id (:note/id note)]})
               (db.i/execute! *db* {:delete-from :media :where [:= :id (:media/id media)]}))))))))
 
-
 (deftest test-a-material-update-is-named-by-its-full-code
   (tf/testing "an updated material's chip carries its accession code, not the
   material code alone"
@@ -460,3 +460,57 @@
                        (.selectFirst ".spl-chip"))]
           (is (str/includes? (.text chip) "Acalypha"))
           (is (nil? (.selectFirst chip "a"))))))))
+
+(deftest test-a-material-event-with-no-subject-is-named-from-its-payload
+  (tf/testing "an imported material event with no material row still shows its
+  full code, through the accession its payload names, and links nowhere"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db*
+                                       :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/loc] {:db *db*}}
+    (fn [{:keys [user acc loc]}]
+      (with-cleared-activity
+        (activity.i/create! *db* {:type material.activity/created
+                                  :created-at (Instant/now)
+                                  :created-by (:user/id user)
+                                  :data {:material-code "7"
+                                         :accession-id (:accession/id acc)
+                                         :location-id (:location/id loc)}})
+        (let [chip (-> (get-activity-page user)
+                       (app.test/parse-body)
+                       (.selectFirst ".spl-chip"))]
+          (is (str/includes? (.text chip) (:accession/code acc)))
+          (is (str/includes? (.text chip) "7"))
+          (is (nil? (.selectFirst chip "a"))))))))
+
+(deftest test-accession-location-and-propagation-events-with-no-subject-are-named-from-their-payload
+  (tf/testing "each chip names its record from the event payload, and links nowhere"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db*
+                                       :taxon (ig/ref :key/taxon)}}
+    (fn [{:keys [user acc]}]
+      (with-cleared-activity
+        (doseq [[type data] [[accession.activity/updated {:accession-code "1999.0042"
+                                                          :taxon-id (:accession/taxon-id acc)}]
+                             [location.activity/updated {:location-name "Old Glasshouse"
+                                                         :location-code "OG"}]
+                             [propagation.activity/created {:propagation-type :tissue_culture
+                                                            :parent-accession-id (:accession/id acc)}]]]
+          (activity.i/create! *db* {:type type
+                                    :created-at (Instant/now)
+                                    :created-by (:user/id user)
+                                    :data data}))
+        (let [chips (-> (get-activity-page user)
+                        (app.test/parse-body)
+                        (.select ".spl-chip"))
+              texts (set (map #(.text %) chips))]
+          (is (some #(str/includes? % "1999.0042") texts))
+          (is (some #(str/includes? % "Old Glasshouse") texts))
+          (is (some #(str/includes? % (str "Tissue culture from " (:accession/code acc))) texts))
+          (is (every? #(nil? (.selectFirst % "a")) chips)))))))

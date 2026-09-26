@@ -190,19 +190,23 @@
 (defmethod activity-data :default [_activity]
   nil)
 
-(defmethod activity-data accession.activity/created [activity]
+(defn- accession-data
+  "An event with no accession row is named from its payload, with nothing to
+  link to."
+  [activity]
   (let [{:keys [accession taxon]} activity]
     {:resource-type :accession
-     :resource-name (:accession/code accession)
-     :resource-url (z/url-for accession.routes/detail {:id (:accession/id accession)})
+     :resource-name (or (:accession/code accession)
+                        (get-in activity [:activity/data :accession-code]))
+     :resource-url (when accession
+                     (z/url-for accession.routes/detail {:id (:accession/id accession)}))
      :context (str "Accession" (when taxon (str " • " (:taxon/name taxon))))}))
 
+(defmethod activity-data accession.activity/created [activity]
+  (accession-data activity))
+
 (defmethod activity-data accession.activity/updated [activity]
-  (let [{:keys [accession taxon]} activity]
-    {:resource-type :accession
-     :resource-name (:accession/code accession)
-     :resource-url (z/url-for accession.routes/detail {:id (:accession/id accession)})
-     :context (str "Accession" (when taxon (str " • " (:taxon/name taxon))))}))
+  (accession-data activity))
 
 (defn- taxon-data
   "An event with no taxon row -- deleted, or imported with no subject -- is
@@ -222,27 +226,37 @@
 (defmethod activity-data taxon.activity/updated [activity]
   (taxon-data activity))
 
-(defmethod activity-data location.activity/created [activity]
-  (let [{:keys [location]} activity]
+(defn- location-data
+  "An event with no location row is named from its payload, with nothing to
+  link to."
+  [activity]
+  (let [{:keys [location]} activity
+        data (:activity/data activity)
+        code (or (:location/code location) (:location-code data))]
     {:resource-type :location
-     :resource-name (:location/name location)
-     :resource-url (z/url-for location.routes/detail {:id (:location/id location)})
-     :context (str "Location" (when (:location/code location)
-                                (str " • " (:location/code location))))}))
+     :resource-name (or (:location/name location) (:location-name data))
+     :resource-url (when location
+                     (z/url-for location.routes/detail {:id (:location/id location)}))
+     :context (str "Location" (when code (str " • " code)))}))
+
+(defmethod activity-data location.activity/created [activity]
+  (location-data activity))
 
 (defmethod activity-data location.activity/updated [activity]
-  (let [{:keys [location]} activity]
-    {:resource-type :location
-     :resource-name (:location/name location)
-     :resource-url (z/url-for location.routes/detail {:id (:location/id location)})
-     :context (str "Location" (when (:location/code location)
-                                (str " • " (:location/code location))))}))
+  (location-data activity))
 
-(defn- material-data [activity]
+(defn- material-data
+  "An event with no material row -- deleted, or imported with no subject -- is
+  named from its payload, with nothing to link to."
+  [activity]
   (let [{:keys [accession material material-separator taxon]} activity]
     {:resource-type :material
-     :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
-     :resource-url (z/url-for material.routes/detail {:id (:material/id material)})
+     :resource-name (ct.i/full-code material-separator
+                                    (:accession/code accession)
+                                    (or (:material/code material)
+                                        (get-in activity [:activity/data :material-code])))
+     :resource-url (when material
+                     (z/url-for material.routes/detail {:id (:material/id material)}))
      :context (str "Material" (when taxon (str " • " (:taxon/name taxon))))}))
 
 (defmethod activity-data material.activity/created [activity]
@@ -278,10 +292,13 @@
 
 (defn- propagation-data [activity]
   (let [{:keys [accession propagation taxon]} activity
-        method (some-> (:propagation/type propagation) name (str/replace "_" " ") str/capitalize)]
+        method (some-> (or (:propagation/type propagation)
+                           (get-in activity [:activity/data :propagation-type]))
+                       name (str/replace "_" " ") str/capitalize)]
     {:resource-type :propagation
      :resource-name (str method " from " (:accession/code accession))
-     :resource-url (z/url-for propagation.routes/detail {:id (:propagation/id propagation)})
+     :resource-url (when propagation
+                     (z/url-for propagation.routes/detail {:id (:propagation/id propagation)}))
      :context (str "Propagation" (when taxon (str " • " (:taxon/name taxon))))}))
 
 (defmethod activity-data propagation.activity/created [activity]
@@ -800,7 +817,16 @@
                                               [:and [:= :a.resource_type "accession"]
                                                [:= :acc.id :a.resource_id]]
                                               [:= :acc.id :mat.accession_id]
-                                              [:= :acc.id :prop.parent_accession_id]]]
+                                              [:= :acc.id :prop.parent_accession_id]
+                                              ;; A material or propagation event
+                                              ;; whose subject is gone still names
+                                              ;; its accession in the payload.
+                                              [:and [:like :a.type "material/%"]
+                                               [:= :mat.id nil]
+                                               [:= :acc.id [:json_extract :a.data "$.\"accession-id\""]]]
+                                              [:and [:like :a.type "propagation/%"]
+                                               [:= :prop.id nil]
+                                               [:= :acc.id [:json_extract :a.data "$.\"parent-accession-id\""]]]]]
                                       :left [[:media :med]
                                              [:and [:= :a.resource_type "media"]
                                               [:= :med.id :a.resource_id]]]
