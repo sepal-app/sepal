@@ -125,7 +125,7 @@
           (observation.i/delete! *db* (:observation/id o)))))))
 
 (defn- overdue-checkbox [body]
-  (.selectFirst body "label[x-data^=overdueOnlyFilter]"))
+  (.selectFirst body "label[x-data^=termFilter]"))
 
 (deftest test-the-overdue-checkbox-carries-the-overdue-term
   (tf/testing "an overdue checkbox on the page, not only the query syntax"

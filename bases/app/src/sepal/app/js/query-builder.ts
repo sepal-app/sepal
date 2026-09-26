@@ -170,11 +170,10 @@ export function accessionsOnlyFilter(inputId: string, initialChecked: boolean) {
 }
 
 /**
- * Alpine component for the observation list's "Only overdue observations"
- * checkbox. Adds or removes `term`, the server's `overdue:<today>` in the
- * garden's timezone, in the search query.
+ * Alpine component for a list checkbox that adds or removes one search term,
+ * such as `status:alive` or the observation list's `overdue:<today>`.
  */
-export function overdueOnlyFilter(inputId: string, term: string, initialChecked: boolean) {
+export function termFilter(inputId: string, term: string, initialChecked: boolean) {
     return {
         checked: initialChecked,
 

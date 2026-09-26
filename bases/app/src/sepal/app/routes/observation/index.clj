@@ -126,7 +126,7 @@
   (let [term (overdue-term today)
         checked? (boolean (some #{term} (re-seq #"\S+" (or search-query ""))))]
     [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
-             :x-data (str "overdueOnlyFilter('q', '" term "', " checked? ")")}
+             :x-data (str "termFilter('q', '" term "', " checked? ")")}
      [:input {:type "checkbox"
               :class "spl-checkbox"
               :x-bind:checked "checked"

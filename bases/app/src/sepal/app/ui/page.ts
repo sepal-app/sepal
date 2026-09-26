@@ -9,7 +9,7 @@ import "htmx-ext-alpine-morph"
 window.htmx = htmx
 
 import FormState from "~/js/form-state"
-import { queryBuilder, accessionsOnlyFilter, overdueOnlyFilter } from "~/js/query-builder"
+import { queryBuilder, accessionsOnlyFilter, termFilter } from "~/js/query-builder"
 import { defineCombobox } from "~/js/record-combobox-element"
 
 window.Alpine = Alpine
@@ -30,7 +30,7 @@ document.addEventListener("alpine:init", () => {
     // setup global data components
     Alpine.data("queryBuilder", queryBuilder)
     Alpine.data("accessionsOnlyFilter", accessionsOnlyFilter)
-    Alpine.data("overdueOnlyFilter", overdueOnlyFilter)
+    Alpine.data("termFilter", termFilter)
 })
 
 // A rejected save swaps each field's error list in, but not the control — it

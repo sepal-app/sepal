@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
@@ -77,7 +78,26 @@
                                           {:id (:location/id row)})
                          :class "spl-link"
                          :x-on:click.stop ""}
-                     (:location/code row)])}])
+                     (:location/code row)])}
+   {:name "Status"
+    :type :text
+    :priority 4
+    :cell (fn [row] (some-> (:material/status row) name str/capitalize))}])
+
+(def living-term "status:alive")
+
+(defn- living-only-checkbox
+  "Checkbox that adds or removes `status:alive` in the search query. Works like
+  the taxa list's accessions-only checkbox."
+  [search-query]
+  (let [checked? (boolean (some #{living-term} (re-seq #"\S+" (or search-query ""))))]
+    [:label {:class "ml-4 flex items-center gap-2 text-sm cursor-pointer"
+             :x-data (str "termFilter('q', '" living-term "', " checked? ")")}
+     [:input {:type "checkbox"
+              :class "spl-checkbox"
+              :x-bind:checked "checked"
+              :x-on:click.prevent "toggle()"}]
+     [:span "Only living material"]]))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
@@ -127,6 +147,7 @@
                                 :q search-query
                                 :fields field-options
                                 :placeholder "Search... (e.g., type:seed status:alive)"
+                                :filters (living-only-checkbox search-query)
                                 :page page
                                 :page-size page-size
                                 :total total

@@ -22,7 +22,7 @@
 
     :status {:column :m.status
              :type :enum
-             :values [:alive :dead]
+             :values [:alive :dead :dormant :transferred :other :unknown]
              :label "Status"}
 
     :id     {:column :m.id
