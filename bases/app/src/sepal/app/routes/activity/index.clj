@@ -29,6 +29,7 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :as i18n :refer [tr trc trn]]
             [sepal.location.interface.activity :as location.activity]
             [sepal.location.interface.spec :as location.spec]
             [sepal.material.interface.activity :as material.activity]
@@ -189,6 +190,12 @@
 (defmethod activity-data :default [_activity]
   nil)
 
+(defn- context
+  "A chip's context line: what kind of record, then the detail that places it,
+  as in \"Accession • Quercus alba\"."
+  [kind detail]
+  (if detail (str kind " • " detail) kind))
+
 (defn- accession-data
   "An event with no accession row is named from its payload, with nothing to
   link to."
@@ -199,7 +206,7 @@
                         (get-in activity [:activity/data :accession-code]))
      :resource-url (when accession
                      (z/url-for accession.routes/detail {:id (:accession/id accession)}))
-     :context (str "Accession" (when taxon (str " • " (:taxon/name taxon))))}))
+     :context (context (tr "Accession") (:taxon/name taxon))}))
 
 (defmethod activity-data accession.activity/created [activity]
   (accession-data activity))
@@ -217,7 +224,7 @@
                         (get-in activity [:activity/data :taxon-name]))
      :resource-url (when taxon
                      (z/url-for taxon.routes/detail {:id (:taxon/id taxon)}))
-     :context (str "Taxon" (when parent (str " • " (:taxon/name parent))))}))
+     :context (context (tr "Taxon") (:taxon/name parent))}))
 
 (defmethod activity-data taxon.activity/created [activity]
   (taxon-data activity))
@@ -236,7 +243,7 @@
      :resource-name (or (:location/name location) (:location-name data))
      :resource-url (when location
                      (z/url-for location.routes/detail {:id (:location/id location)}))
-     :context (str "Location" (when code (str " • " code)))}))
+     :context (context (tr "Location") code)}))
 
 (defmethod activity-data location.activity/created [activity]
   (location-data activity))
@@ -256,7 +263,7 @@
                                         (get-in activity [:activity/data :material-code])))
      :resource-url (when material
                      (z/url-for material.routes/detail {:id (:material/id material)}))
-     :context (str "Material" (when taxon (str " • " (:taxon/name taxon))))}))
+     :context (context (tr "Material") (:taxon/name taxon))}))
 
 (defmethod activity-data material.activity/created [activity]
   (material-data activity))
@@ -266,9 +273,9 @@
 
 (defmethod activity-data setup.activity/completed [_activity]
   {:resource-type :setup
-   :resource-name "Setup wizard"
+   :resource-name (tr "Setup wizard")
    :resource-url nil
-   :context "Initial setup completed"})
+   :context (tr "Initial setup completed")})
 
 ;; Without this the row is filtered out of the feed entirely -- `renderable`
 ;; keeps only what `activity-data` answers for -- so the event was written and
@@ -277,7 +284,7 @@
   (let [counts (get-in activity [:activity/data :counts])
         total (reduce + 0 (vals counts))]
     {:resource-type :import
-     :resource-name (format "%,d records" total)
+     :resource-name (trn "%1 record" "%1 records" total (i18n/format-number total))
      :resource-url nil
      ;; The per-table counts are the whole payload, and the chip's title is
      ;; the only place they can be read without querying.
@@ -295,10 +302,12 @@
                            (get-in activity [:activity/data :propagation-type]))
                        name (str/replace "_" " ") str/capitalize)]
     {:resource-type :propagation
-     :resource-name (str method " from " (:accession/code accession))
+     ;; The method is the lookup table's English label, so its translation
+     ;; is the one the propagation screens use.
+     :resource-name (tr "%1 from %2" (some->> method (trc "propagation_type")) (:accession/code accession))
      :resource-url (when propagation
                      (z/url-for propagation.routes/detail {:id (:propagation/id propagation)}))
-     :context (str "Propagation" (when taxon (str " • " (:taxon/name taxon))))}))
+     :context (context (trc "navigation" "Propagation") (:taxon/name taxon))}))
 
 (defmethod activity-data propagation.activity/created [activity]
   (propagation-data activity))
@@ -317,14 +326,14 @@
        :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
        :resource-url (z/url-for material.routes/detail-observations
                                 {:id (:material/id material)})
-       :context "Observation on material"}
+       :context (tr "Observation on material")}
 
       location
       {:resource-type :observation
        :resource-name (:location/name location)
        :resource-url (z/url-for location.routes/detail-observations
                                 {:id (:location/id location)})
-       :context "Observation on location"})))
+       :context (tr "Observation on location")})))
 
 (defmethod activity-data observation.activity/created [activity]
   (observation-data activity))
@@ -346,13 +355,13 @@
        :resource-name (:accession/code accession)
        :resource-url (z/url-for accession.routes/detail-notes
                                 {:id (:accession/id accession)})
-       :context "Note on accession"}
+       :context (tr "Note on accession")}
 
       taxon
       {:resource-type :note
        :resource-name (:taxon/name taxon)
        :resource-url (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
-       :context "Note on taxon"})))
+       :context (tr "Note on taxon")})))
 
 (defmethod activity-data note.activity/created [activity]
   (note-data activity))
@@ -377,7 +386,7 @@
                                        (get-in activity [:activity/data :s3-key]))))
      :resource-url (when media
                      (z/url-for media.routes/detail {:id (:media/id media)}))
-     :context "Media"}))
+     :context (trc "navigation" "Media")}))
 
 (defmethod activity-data media.activity/deleted [activity]
   (media-data activity))
@@ -388,19 +397,21 @@
 (defn- media-link-data
   "Named like any media event, with the linked record in its context. The
   record's name comes off the payload, so it reads the same once it is gone."
-  [activity preposition]
+  [activity linked?]
   (let [text (get-in activity [:activity/data :link-text])]
     (cond-> (media-data activity)
-      text (assoc :context (str "Media • " preposition " " text)))))
+      text (assoc :context (if linked?
+                             (tr "Media • linked to %1" text)
+                             (tr "Media • unlinked from %1" text))))))
 
 (defmethod activity-data media.activity/created [activity]
-  (media-link-data activity "linked to"))
+  (media-link-data activity true))
 
 (defmethod activity-data media.activity/linked [activity]
-  (media-link-data activity "linked to"))
+  (media-link-data activity true))
 
 (defmethod activity-data media.activity/unlinked [activity]
-  (media-link-data activity "unlinked from"))
+  (media-link-data activity false))
 
 ;;; Grouping logic
 
@@ -428,33 +439,68 @@
 ;; activity into "updated 3 accessions" is what makes the feed readable, and is
 ;; the whole reason the changelog view was chosen over a raw stream.
 
-(def ^:private resource-nouns
-  "Singular and plural for each resource. Taxa, not taxons — a botanist
-  notices, and principle 2 says the domain's conventions are correctness."
-  {"accession" ["an accession" "accessions"]
-   "taxon" ["a taxon" "taxa"]
-   "material" ["a material" "materials"]
-   "location" ["a location" "locations"]
-   "contact" ["a contact" "contacts"]
-   "media" ["a media item" "media items"]
-   "note" ["a note" "notes"]
-   "observation" ["an observation" "observations"]
-   "propagation" ["a propagation" "propagations"]
-   "setup" ["setup" "setup"]
-   "settings" ["settings" "settings"]
-   "import" ["an import" "imports"]})
-
-(defn- noun [resource n]
-  (let [[singular plural] (get resource-nouns resource [(str "a " resource)
-                                                        (str resource "s")])]
-    (if (= 1 n) singular (str n " " plural))))
+(defn- clause
+  "One action on one kind of record, counted: \"updated 2 taxa\". A whole
+  message per pair rather than a verb and a noun joined, so a translation can
+  make them agree."
+  [activity-type n]
+  (case activity-type
+    :accession/created (trn "created an accession" "created %1 accessions" n)
+    :accession/deleted (trn "deleted an accession" "deleted %1 accessions" n)
+    :accession/updated (trn "updated an accession" "updated %1 accessions" n)
+    :collection/created (trn "created collection data" "created collection data" n)
+    :collection/updated (trn "updated collection data" "updated collection data" n)
+    :contact/created (trn "created a contact" "created %1 contacts" n)
+    :contact/deleted (trn "deleted a contact" "deleted %1 contacts" n)
+    :contact/updated (trn "updated a contact" "updated %1 contacts" n)
+    :import/completed (trn "completed an import" "completed %1 imports" n)
+    :location/archived (trn "archived a location" "archived %1 locations" n)
+    :location/created (trn "created a location" "created %1 locations" n)
+    :location/deleted (trn "deleted a location" "deleted %1 locations" n)
+    :location/unarchived (trn "unarchived a location" "unarchived %1 locations" n)
+    :location/updated (trn "updated a location" "updated %1 locations" n)
+    :material/created (trn "created a material" "created %1 materials" n)
+    :material/deleted (trn "deleted a material" "deleted %1 materials" n)
+    :material/updated (trn "updated a material" "updated %1 materials" n)
+    :media/created (trn "uploaded a media item" "uploaded %1 media items" n)
+    :media/deleted (trn "deleted a media item" "deleted %1 media items" n)
+    :media/linked (trn "linked a media item" "linked %1 media items" n)
+    :media/unlinked (trn "unlinked a media item" "unlinked %1 media items" n)
+    :media/updated (trn "updated a media item" "updated %1 media items" n)
+    :note/created (trn "created a note" "created %1 notes" n)
+    :note/deleted (trn "deleted a note" "deleted %1 notes" n)
+    :note/updated (trn "updated a note" "updated %1 notes" n)
+    :observation/created (trn "created an observation" "created %1 observations" n)
+    :observation/deleted (trn "deleted an observation" "deleted %1 observations" n)
+    :observation/updated (trn "updated an observation" "updated %1 observations" n)
+    :propagation/created (trn "created a propagation" "created %1 propagations" n)
+    :propagation/deleted (trn "deleted a propagation" "deleted %1 propagations" n)
+    :propagation/updated (trn "updated a propagation" "updated %1 propagations" n)
+    :settings/updated (trn "updated settings" "updated settings" n)
+    :setup/completed (trn "completed setup" "completed setup" n)
+    :synonym/created (trn "created a synonym" "created %1 synonyms" n)
+    :synonym/deleted (trn "deleted a synonym" "deleted %1 synonyms" n)
+    :tag/created (trn "created a tag" "created %1 tags" n)
+    :tag/deleted (trn "deleted a tag" "deleted %1 tags" n)
+    :tag/linked (trn "linked a tag" "linked %1 tags" n)
+    :tag/unlinked (trn "unlinked a tag" "unlinked %1 tags" n)
+    :tag/updated (trn "updated a tag" "updated %1 tags" n)
+    :taxon/created (trn "created a taxon" "created %1 taxa" n)
+    :taxon/deleted (trn "deleted a taxon" "deleted %1 taxa" n)
+    :taxon/updated (trn "updated a taxon" "updated %1 taxa" n)
+    :user/created (trn "created a user" "created %1 users" n)
+    :user/updated (trn "updated a user" "updated %1 users" n)
+    (str (ui.activity/action-label activity-type) " " n " " (namespace activity-type))))
 
 (defn- join-clauses [clauses]
   (case (count clauses)
     0 ""
     1 (first clauses)
-    2 (str (first clauses) " and " (second clauses))
-    (str (str/join ", " (butlast clauses)) " and " (last clauses))))
+    ;; i18n: Joins the last two actions of a summary, as in "created a taxon and updated 2 accessions"
+    (tr "%1 and %2"
+        ;; i18n: Joins the earlier actions of a summary, as in "created a taxon, updated a note"
+        (reduce #(tr "%1, %2" %1 %2) (butlast clauses))
+        (last clauses))))
 
 (defn summarise
   "One sentence for a run of activities by the same person.
@@ -464,20 +510,18 @@
   accession\"."
   [activities]
   (->> activities
-       (map (fn [a]
-              (let [t (:activity/type a)]
-                [(ui.activity/action-label t) (namespace t)])))
-       (reduce (fn [acc pair]
-                 (if (contains? (:seen acc) pair)
-                   (update-in acc [:counts pair] inc)
+       (map :activity/type)
+       (reduce (fn [acc activity-type]
+                 (if (contains? (:seen acc) activity-type)
+                   (update-in acc [:counts activity-type] inc)
                    (-> acc
-                       (update :order conj pair)
-                       (update :seen conj pair)
-                       (assoc-in [:counts pair] 1))))
+                       (update :order conj activity-type)
+                       (update :seen conj activity-type)
+                       (assoc-in [:counts activity-type] 1))))
                {:order [] :seen #{} :counts {}})
        ((fn [{:keys [order counts]}]
-          (for [[action resource :as pair] order]
-            (str action " " (noun resource (get counts pair))))))
+          (for [activity-type order]
+            (clause activity-type (get counts activity-type)))))
        (join-clauses)))
 
 ;;; New activity components
@@ -537,23 +581,22 @@
   [viewer]
   (ui.empty/empty-state
     :icon (heroicons/outline-clock :size 48)
-    :title "No activity yet"
-    :body "Records created, edited and uploaded by you and your collaborators
-           show up here."
+    :title (tr "No activity yet")
+    :body (tr "Records created, edited and uploaded by you and your collaborators show up here.")
     :actions
     (list
       (when (authz/can-edit? viewer)
         (list
           [:a {:class "spl-btn spl-btn--primary"
                :href (z/url-for location.routes/new)}
-           "Add a location"]
+           (tr "Add a location")]
           [:a {:class "spl-btn spl-btn--ghost"
                :href (z/url-for accession.routes/new)}
-           "Add an accession"]))
+           (tr "Add an accession")]))
       (when (authz/user-has-permission? viewer authz/users-create)
         [:a {:class "spl-link self-center text-sm"
              :href (z/url-for settings.routes/users-invite)}
-         "Invite someone to your organization"]))))
+         (tr "Invite someone to your organization")]))))
 
 ;;; Legacy timeline-section (kept for reference during migration)
 
@@ -658,7 +701,7 @@
          :class "spl-grid-sentinel"}
    [:span {:class "spl-sentinel-spinner" :aria-hidden "true"}]
    [:span {:class "spl-sentinel-status" :role "status"}
-    [:span {:class "spl-sentinel-loading sr-only"} "Loading more activity"]]])
+    [:span {:class "spl-sentinel-loading sr-only"} (tr "Loading more activity")]]])
 
 (defn timeline-content
   "Render just the activity content (day sections with cards) without page wrapper.
@@ -749,7 +792,7 @@
      [:a {:class "spl-link"
           :data-overdue-count count
           :href (overdue-href today)}
-      (format "%d overdue observation%s" count (if (= count 1) "" "s"))]]))
+      (trn "%1 overdue observation" "%1 overdue observations" count)]]))
 
 (defn render [& {:keys [activity overdue-count page page-size timezone today viewer]}]
   (ui.page/page :content (list
@@ -759,7 +802,7 @@
                                      :page-size page-size
                                      :timezone timezone
                                      :viewer viewer))
-                :breadcrumbs ["Activity"]))
+                :breadcrumbs [(tr "Activity")]))
 
 (defn render-partial
   "Render the activity content for the infinite-scroll sentinel, which appends

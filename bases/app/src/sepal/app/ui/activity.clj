@@ -1,6 +1,7 @@
 (ns sepal.app.ui.activity
   (:require [sepal.app.html :as html]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :refer [trc]]))
 
 (defn resource-icon
   "Return the appropriate icon for a resource type.
@@ -25,25 +26,37 @@
     ;; Default fallback
     nil))
 
-(def ^:private action-labels
-  "Where the word a person would use differs from the event's name. A media
-  item is created by uploading it."
-  {:media/created "uploaded"})
+(defn- action
+  "The action an activity type records, by the name a person would use: a
+  media item is created by uploading it."
+  [activity-type]
+  (if (= :media/created activity-type) "uploaded" (name activity-type)))
 
 (defn action-label
-  "The verb shown for an activity type."
+  "The verb shown for an activity type, translated."
   [activity-type]
-  (get action-labels activity-type (name activity-type)))
+  (let [a (action activity-type)]
+    (case a
+      "created" (trc "activity" "created")
+      "uploaded" (trc "activity" "uploaded")
+      "updated" (trc "activity" "updated")
+      "deleted" (trc "activity" "deleted")
+      "completed" (trc "activity" "completed")
+      "linked" (trc "activity" "linked")
+      "unlinked" (trc "activity" "unlinked")
+      "archived" (trc "activity" "archived")
+      "unarchived" (trc "activity" "unarchived")
+      a)))
 
 (defn action-badge
   "A badge for an activity action — created, updated, deleted, completed.
 
   Uses the four semantic colours principle 1 permits beyond the accent, and
   always carries the action word as its own text, so the colour is never the
-  only carrier of the meaning."
+  only carrier of the meaning. The colour follows the activity type rather
+  than the word, which changes with the language."
   [activity-type]
-  (let [action (action-label activity-type)
-        badge-class (case action
+  (let [badge-class (case (action activity-type)
                       "created" "spl-badge--ok"
                       "uploaded" "spl-badge--ok"
                       "completed" "spl-badge--ok"
@@ -52,4 +65,4 @@
                       "linked" "spl-badge--info"
                       "spl-badge--neutral")]
     [:span {:class (html/attr "spl-badge" badge-class)}
-     action]))
+     (action-label activity-type)]))

@@ -3,7 +3,8 @@
             [clojure.test :refer [deftest is testing]]
             [dev.onionpancakes.chassis.core :as chassis]
             [sepal.app.routes.activity.index :as activity.index]
-            [sepal.app.ui.activity :as ui.activity])
+            [sepal.app.ui.activity :as ui.activity]
+            [sepal.i18n.interface :as i18n])
   (:import [org.jsoup Jsoup]))
 
 (defn- parse [hiccup] (Jsoup/parseBodyFragment (chassis/html hiccup)))
@@ -59,3 +60,39 @@
 
 (deftest test-summarise-handles-an-empty-run
   (is (= "" (activity.index/summarise []))))
+
+(deftest test-summary-and-badge-translate
+  (i18n/load-catalogs!
+    {"es" (i18n/parse-catalog "es" "msgid \"\"
+msgstr \"\"
+\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"
+
+msgid \"updated a taxon\"
+msgid_plural \"updated %1 taxa\"
+msgstr[0] \"actualizó un taxón\"
+msgstr[1] \"actualizó %1 taxones\"
+
+msgid \"deleted an accession\"
+msgid_plural \"deleted %1 accessions\"
+msgstr[0] \"eliminó una accesión\"
+msgstr[1] \"eliminó %1 accesiones\"
+
+msgid \"%1 and %2\"
+msgstr \"%1 y %2\"
+
+msgctxt \"activity\"
+msgid \"deleted\"
+msgstr \"eliminado\"
+")})
+  (try
+    (i18n/with-locale "es"
+      (is (= "actualizó 2 taxones y eliminó una accesión"
+             (activity.index/summarise [{:activity/type :taxon/updated}
+                                        {:activity/type :taxon/updated}
+                                        {:activity/type :accession/deleted}])))
+      (let [badge (ui.activity/action-badge :accession/deleted)]
+        (is (= "eliminado" (last badge)))
+        (is (re-find #"spl-badge--danger" (get-in badge [1 :class]))
+            "the colour follows the type, not the translated word")))
+    (finally
+      (i18n/load-catalogs! {}))))
