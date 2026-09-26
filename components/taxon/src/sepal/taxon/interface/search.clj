@@ -43,10 +43,10 @@
                 :id-column :t.parent_id
                 :label "Parent"}
 
-    :parent.id {:column :p.id
+    ;; On t.parent_id for the same reason, which taxon_parent_id_idx serves.
+    :parent.id {:column :t.parent_id
                 :type :id
-                :label "Parent"
-                :joins [[:taxon :p] [:= :p.id :t.parent_id]]}
+                :label "Parent"}
 
     ;; Related: what a hybrid was crossed from, which is not its parent.
     ;;

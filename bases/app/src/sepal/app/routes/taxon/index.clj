@@ -15,6 +15,7 @@
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
             [sepal.synonym.interface :as synonym.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.permission :as taxon.perm]
             [sepal.taxon.interface.search]
             [zodiac.core :as z]))
@@ -150,7 +151,7 @@
                  synonym.i/max-synonym-taxon-ids
                  synonym.i/max-synonym-taxon-ids)]]))
 
-(defn render [& {:keys [field-options viewer href page page-size rows search-query total synonym-matches synonym-notice]}]
+(defn render [& {:keys [field-options viewer href page page-size parent rows search-query total synonym-matches synonym-notice]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -177,7 +178,13 @@
                                 :total total
                                 :actions (ui.export/export-button)))
 
-    :breadcrumbs ["Taxa"]
+    :breadcrumbs (if parent
+                   [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+                    [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id parent)})
+                         :class "italic"}
+                     (:taxon/name parent)]
+                    "Children"]
+                   ["Taxa"])
     :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
                           (create-button))))
 
@@ -364,6 +371,12 @@
                                     :query (uri/map->query-string
                                              (cond-> {:page page}
                                                (seq q) (assoc :q q)))})
+                :parent (some->> (:filters ast)
+                                 (filter #(= "parent.id" (:field %)))
+                                 first
+                                 :value
+                                 parse-long
+                                 (taxon.i/get-by-id db))
                 :rows rows
                 :page page
                 :page-size page-size

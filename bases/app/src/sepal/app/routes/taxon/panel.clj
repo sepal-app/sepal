@@ -87,7 +87,7 @@
    Options:
    - :taxon          - The taxon map
    - :parent         - Optional parent taxon map
-   - :stats          - Map with :accession-count, :material-count
+   - :stats          - Map with :child-count, :accession-count, :material-count
    - :synonyms       - The taxon's synonyms, garden rows and WFO rows merged
    - :notes          - Recent notes for this taxon
    - :note-count     - Total note count
@@ -98,7 +98,7 @@
   [& {:keys [taxon parent stats synonyms parentage notes note-count activities activity-count timezone on-close actions]}]
   (let [{:taxon/keys [id name author rank wfo-taxon-id distribution
                       vernacular-names]} taxon
-        {:keys [accession-count material-count]} stats]
+        {:keys [child-count accession-count material-count]} stats]
     (panel/panel-container
       :children
       (list
@@ -151,10 +151,13 @@
         ;; Statistics section
         (panel/collapsible-section
           :title "Statistics"
-          :count (+ (or accession-count 0) (or material-count 0))
+          :count (+ (or child-count 0) (or accession-count 0) (or material-count 0))
           :children
           (panel/statistics-section
-            :stats [{:label "Accessions"
+            :stats [{:label "Children"
+                     :value child-count
+                     :href (z/url-for taxon.routes/index nil {:q (str "parent.id:" id)})}
+                    {:label "Accessions"
                      :value accession-count
                      :href (z/url-for accession.routes/index nil {:taxon-id id})}
                     {:label "Material"
@@ -223,6 +226,7 @@
   (let [taxon-id (:taxon/id taxon)
         parent (when-let [parent-id (:taxon/parent-id taxon)]
                  (taxon.i/get-by-id db parent-id))
+        child-count (taxon.i/count-children db taxon-id)
         accession-count (acc.i/count-by-taxon-id db taxon-id)
         material-count (mat.i/count-by-taxon-id db taxon-id)
         notes (take 3 (note.i/get-for-resource db :taxon taxon-id))
@@ -238,7 +242,8 @@
         parentage (taxon.i/list-parentage db taxon-id)]
     {:taxon taxon
      :parent parent
-     :stats {:accession-count accession-count
+     :stats {:child-count child-count
+             :accession-count accession-count
              :material-count material-count}
      :synonyms synonyms
      :parentage parentage

@@ -443,3 +443,31 @@
           ;; naming this parent makes that a foreign key violation.
           (jdbc.sql/update! *db* :taxon {:parent_id nil} {:id (:taxon/id child)}))))))
 
+(deftest test-the-children-link-lists-a-taxons-children
+  (tf/testing "the panel links to the list filtered to the taxon's children, and
+  that list names the parent in its breadcrumbs"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :admin}
+     [::taxon.i/factory :key/genus] {:db *db* :name "Childlinkia" :rank :genus}
+     [::taxon.i/factory :key/other] {:db *db* :name "Otherlinkia" :rank :genus}}
+    (fn [{:keys [user genus other]}]
+      (let [child (taxon.i/create! *db* {:name "Childlinkia alba"
+                                         :rank :species
+                                         :parent-id (:taxon/id genus)})
+            stray (taxon.i/create! *db* {:name "Otherlinkia nigra"
+                                         :rank :species
+                                         :parent-id (:taxon/id other)})
+            sess (app.test/login (:user/email user) password)
+            fetch (fn [url] (-> (peri/request sess url) :response :body Jsoup/parse))]
+        (try
+          (let [panel (fetch (format "/taxon/%s/panel/" (:taxon/id genus)))
+                link (.selectFirst panel "a[href*=parent.id]")
+                list-page (fetch (.attr link "href"))]
+            (is (some? link) "the panel links to the children")
+            (is (str/includes? (.text link) "1"))
+            (is (str/includes? (.text list-page) "Childlinkia alba"))
+            (is (not (str/includes? (.text list-page) "Otherlinkia nigra")))
+            (is (str/includes? (.text (.selectFirst list-page "nav[aria-label=Breadcrumb]"))
+                               "Childlinkia")))
+          (finally
+            (jdbc.sql/delete! *db* :taxon {:id (:taxon/id child)})
+            (jdbc.sql/delete! *db* :taxon {:id (:taxon/id stray)})))))))
