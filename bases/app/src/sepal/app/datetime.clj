@@ -3,6 +3,7 @@
 
    All timestamps are formatted on the server using the organization's timezone."
   (:require [clojure.string :as str]
+            [sepal.i18n.interface :as i18n :refer [tr trn]]
             [sepal.settings.interface :as settings.i])
   (:import [java.time Duration Instant LocalDate ZoneId]
            [java.time.format DateTimeFormatter FormatStyle]
@@ -54,38 +55,63 @@
 ;;; Server-Side Formatting
 ;;; ---------------------------------------------------------------------------
 
-(def ^:private datetime-formatter
-  "Formatter for datetime display: 'Jan 18, 2025, 2:30 PM'"
-  (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT))
+;; English keeps these hand-written patterns. Every other locale uses the JDK's
+;; localized styles for it, since a translated pattern would keep English word
+;; order: "MMMM d, yyyy 'at' h:mm a" is not how Spanish writes a date.
+(def ^:private english-formatters
+  {:datetime (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT)
+   :full (-> (DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a z")
+             (.withLocale Locale/ENGLISH))
+   :date (-> (DateTimeFormatter/ofPattern "MMM d, yyyy")
+             (.withLocale Locale/ENGLISH))
+   :day (-> (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy")
+            (.withLocale Locale/ENGLISH))
+   :time (-> (DateTimeFormatter/ofPattern "h:mm a")
+             (.withLocale Locale/ENGLISH))})
 
-(def ^:private datetime-full-formatter
-  "Formatter for full datetime with timezone: 'January 18, 2025 at 2:30 PM EST'"
-  (-> (DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a z")
-      (.withLocale Locale/ENGLISH)))
+(defn- localized-formatter [kind ^Locale locale]
+  (-> (case kind
+        :datetime (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT)
+        :full (DateTimeFormatter/ofPattern
+                (str (java.time.format.DateTimeFormatterBuilder/getLocalizedDateTimePattern
+                       FormatStyle/LONG FormatStyle/SHORT
+                       java.time.chrono.IsoChronology/INSTANCE locale)
+                     " z"))
+        :date (DateTimeFormatter/ofLocalizedDate FormatStyle/MEDIUM)
+        :day (DateTimeFormatter/ofLocalizedDate FormatStyle/FULL)
+        :time (DateTimeFormatter/ofLocalizedTime FormatStyle/SHORT))
+      (.withLocale locale)))
 
-(def ^:private date-formatter
-  (-> (DateTimeFormatter/ofPattern "MMM d, yyyy")
-      (.withLocale Locale/ENGLISH)))
+;; Bounded by the locales with a catalog, so memoizing cannot grow without limit.
+(def ^:private localized-formatter* (memoize localized-formatter))
+
+(defn- formatter
+  "The formatter for `kind` in the current locale."
+  ^DateTimeFormatter [kind]
+  (if i18n/*locale*
+    (localized-formatter* kind (i18n/java-locale))
+    (english-formatters kind)))
 
 (defn format-date
   "Format an ISO date string, '2026-03-14', as 'Mar 14, 2026'. A date carries
   no time, so it takes no timezone."
   [iso-date]
   (when iso-date
-    (.format (LocalDate/parse iso-date) date-formatter)))
+    (.format (LocalDate/parse iso-date) (formatter :date))))
 
-(def ^:private day-formatter
-  (-> (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy")
-      (.withLocale Locale/ENGLISH)))
+(defn format-day
+  "A date written out in full: 'Monday, March 14, 2026'."
+  [^LocalDate day]
+  (.format day (formatter :day)))
 
 (defn day-label
   "A day heading: 'Today', 'Yesterday', or 'Monday, March 14, 2026'. `today`
   is the garden's date, from `today`, not the server's."
   [^LocalDate day ^LocalDate today]
   (cond
-    (= day today) "Today"
-    (= day (.minusDays today 1)) "Yesterday"
-    :else (.format day day-formatter)))
+    (= day today) (tr "Today")
+    (= day (.minusDays today 1)) (tr "Yesterday")
+    :else (format-day day)))
 
 (defn local-date
   "The garden's date at `instant`."
@@ -98,7 +124,7 @@
   [^Instant instant timezone]
   (when instant
     (let [zdt (.atZone instant (->zone-id timezone))]
-      (.format datetime-formatter zdt))))
+      (.format (formatter :datetime) zdt))))
 
 (defn format-datetime-full
   "Format an Instant with full date, time, and timezone.
@@ -106,11 +132,7 @@
   [^Instant instant timezone]
   (when instant
     (let [zdt (.atZone instant (->zone-id timezone))]
-      (.format datetime-full-formatter zdt))))
-
-(def ^:private time-formatter
-  (-> (DateTimeFormatter/ofPattern "h:mm a")
-      (.withLocale Locale/ENGLISH)))
+      (.format (formatter :full) zdt))))
 
 (defn clock-time
   "Render a <time> element with the time of day, '2:45 PM', and the full
@@ -120,7 +142,7 @@
     [:time (cond-> {:datetime (str instant)
                     :title (format-datetime-full instant timezone)}
              class (assoc :class class))
-     (.format time-formatter (.atZone instant (->zone-id timezone)))]))
+     (.format (formatter :time) (.atZone instant (->zone-id timezone)))]))
 
 (defn format-relative
   "Format an Instant as a relative time string (e.g., '2 hours ago', 'yesterday')."
@@ -132,13 +154,13 @@
           hours (.toHours duration)
           days (.toDays duration)]
       (cond
-        (< minutes 1) "just now"
-        (< minutes 60) (str minutes (if (= minutes 1) " minute ago" " minutes ago"))
-        (< hours 24) (str hours (if (= hours 1) " hour ago" " hours ago"))
-        (< days 2) "yesterday"
-        (< days 7) (str days " days ago")
-        (< days 30) (str (quot days 7) (if (= (quot days 7) 1) " week ago" " weeks ago"))
-        :else (str days " days ago")))))
+        (< minutes 1) (tr "just now")
+        (< minutes 60) (trn "%1 minute ago" "%1 minutes ago" minutes)
+        (< hours 24) (trn "%1 hour ago" "%1 hours ago" hours)
+        (< days 2) (tr "yesterday")
+        (< days 7) (trn "%1 day ago" "%1 days ago" days)
+        (< days 30) (trn "%1 week ago" "%1 weeks ago" (quot days 7))
+        :else (trn "%1 day ago" "%1 days ago" days)))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Hiccup Helpers (render <time> elements with server-side formatted content)
@@ -174,6 +196,4 @@
 
    Use this for backup notifications, system emails, etc."
   [^Instant instant timezone]
-  (when instant
-    (let [zdt (.atZone instant (->zone-id timezone))]
-      (.format datetime-full-formatter zdt))))
+  (format-datetime-full instant timezone))

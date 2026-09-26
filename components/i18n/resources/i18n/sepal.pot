@@ -57,6 +57,47 @@ msgstr ""
 msgid "Please check the server logs for more details."
 msgstr ""
 
+#: bases/app/src/sepal/app/datetime.clj:112
+msgid "Today"
+msgstr ""
+
+#: bases/app/src/sepal/app/datetime.clj:113
+msgid "Yesterday"
+msgstr ""
+
+#: bases/app/src/sepal/app/datetime.clj:157
+msgid "just now"
+msgstr ""
+
+#: bases/app/src/sepal/app/datetime.clj:158
+msgid "%1 minute ago"
+msgid_plural "%1 minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/datetime.clj:159
+msgid "%1 hour ago"
+msgid_plural "%1 hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/datetime.clj:160
+msgid "yesterday"
+msgstr ""
+
+#: bases/app/src/sepal/app/datetime.clj:161
+#: bases/app/src/sepal/app/datetime.clj:163
+msgid "%1 day ago"
+msgid_plural "%1 days ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/datetime.clj:162
+msgid "%1 week ago"
+msgid_plural "%1 weeks ago"
+msgstr[0] ""
+msgstr[1] ""
+
 #: bases/app/src/sepal/app/delete.clj:200
 msgid "%1 material record references this"
 msgid_plural "%1 material records reference this"
@@ -154,7 +195,7 @@ msgid "Set up your account for %1"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
-#: bases/app/src/sepal/app/routes/settings/profile.clj:38
+#: bases/app/src/sepal/app/routes/settings/profile.clj:37
 msgid "Full name"
 msgstr ""
 
@@ -210,7 +251,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/forgot_password.clj:21
 #: bases/app/src/sepal/app/routes/auth/login.clj:26
-#: bases/app/src/sepal/app/routes/settings/profile.clj:42
+#: bases/app/src/sepal/app/routes/settings/profile.clj:41
 #: components/contact/src/sepal/contact/interface/search.clj:18
 msgid "Email"
 msgstr ""
@@ -376,45 +417,45 @@ msgstr ""
 msgid "No propagations yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:18
+#: bases/app/src/sepal/app/routes/settings/profile.clj:17
 msgid "Language"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:21
+#: bases/app/src/sepal/app/routes/settings/profile.clj:20
 msgid ""
 "Browser default uses the language your browser asks for, or English if Sepal "
 "has no translation for it."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:26
+#: bases/app/src/sepal/app/routes/settings/profile.clj:25
 msgid "Browser default"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:51
+#: bases/app/src/sepal/app/routes/settings/profile.clj:50
 msgid "Save changes"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:58
+#: bases/app/src/sepal/app/routes/settings/profile.clj:57
 msgid "Logout"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:65
+#: bases/app/src/sepal/app/routes/settings/profile.clj:64
 msgid "Account"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:66
+#: bases/app/src/sepal/app/routes/settings/profile.clj:65
 msgid "Profile"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:76
+#: bases/app/src/sepal/app/routes/settings/profile.clj:75
 msgid "Choose a language from the list"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:94
+#: bases/app/src/sepal/app/routes/settings/profile.clj:93
 msgid "Profile updated successfully"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:96
+#: bases/app/src/sepal/app/routes/settings/profile.clj:95
 msgid "Failed to update profile"
 msgstr ""
 

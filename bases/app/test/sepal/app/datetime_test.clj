@@ -1,6 +1,7 @@
 (ns sepal.app.datetime-test
   (:require [clojure.test :refer [deftest is testing]]
-            [sepal.app.datetime :as datetime])
+            [sepal.app.datetime :as datetime]
+            [sepal.i18n.interface :as i18n])
   (:import [java.time Instant]))
 
 (def test-instant
@@ -141,3 +142,30 @@
     (is (= "Mar 14, 2026" (datetime/format-date "2026-03-14"))))
   (testing "nil stays nil"
     (is (nil? (datetime/format-date nil)))))
+
+(deftest test-spanish-uses-spanish-formats
+  (i18n/load-catalogs! {"es" (i18n/parse-catalog "es" "msgid \"\"
+msgstr \"\"
+\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"
+
+msgid \"Today\"
+msgstr \"Hoy\"
+
+msgid \"%1 hour ago\"
+msgid_plural \"%1 hours ago\"
+msgstr[0] \"hace %1 hora\"
+msgstr[1] \"hace %1 horas\"
+")})
+  (try
+    (i18n/with-locale "es"
+      (let [day (java.time.LocalDate/of 2026 1 18)]
+        (is (= "domingo, 18 de enero de 2026" (datetime/format-day day)))
+        (is (= "Hoy" (datetime/day-label day day)))
+        (is (re-find #"ene" (datetime/format-date "2026-01-18")))
+        (is (re-find #"enero" (datetime/format-datetime-full test-instant "UTC")))
+        (is (not (re-find #"\bat\b" (datetime/format-datetime-full test-instant "UTC")))
+            "no English word order carried into Spanish")
+        (is (= "hace 2 horas" (datetime/format-relative
+                                (.minus (java.time.Instant/now) (java.time.Duration/ofHours 2)))))))
+    (finally
+      (i18n/load-catalogs! {}))))

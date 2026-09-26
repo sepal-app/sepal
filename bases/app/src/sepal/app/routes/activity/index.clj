@@ -45,8 +45,7 @@
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z])
-  (:import [java.time Instant LocalDate ZoneId]
-           [java.time.format DateTimeFormatter]))
+  (:import [java.time Instant LocalDate ZoneId]))
 
 ;;; Legacy components (to be removed after refactor)
 
@@ -567,9 +566,6 @@
     (for [item activity]
       [:li item])]])
 
-(def ^:private day-header-formatter
-  (DateTimeFormatter/ofPattern "EEEE, MMMM d, yyyy"))
-
 (defn activity-day
   "The date an activity happened, in the garden's own timezone.
 
@@ -587,11 +583,7 @@
   Takes the same LocalDate the feed grouped by, so the heading and the group
   cannot disagree."
   [^LocalDate day timezone-str]
-  (let [today (LocalDate/now (ZoneId/of (or timezone-str "UTC")))]
-    (cond
-      (.equals day today) "Today"
-      (.equals day (.minusDays today 1)) "Yesterday"
-      :else (.format day-header-formatter day))))
+  (datetime/day-label day (datetime/today timezone-str)))
 
 (defn day-header
   "A day section's heading, with the date itself in a tooltip.
@@ -600,7 +592,7 @@
   is. A heading that already reads as a date gets no tooltip."
   [^LocalDate day timezone]
   (let [label (format-day-header day timezone)
-        date-text (.format day-header-formatter day)]
+        date-text (datetime/format-day day)]
     [:h2 (cond-> {:class "spl-changelog-day"}
            (not= label date-text) (assoc :title date-text))
      label]))
