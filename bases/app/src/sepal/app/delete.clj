@@ -30,6 +30,7 @@
             [sepal.propagation.interface.activity :as propagation.activity]
             [sepal.synonym.interface :as synonym.i]
             [sepal.tag.interface :as tag.i]
+            [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.activity :as taxon.activity]))
 
@@ -178,6 +179,17 @@
   ;; A collection has no activity type of its own; it is part of its accession,
   ;; and the accession's own updated event is what the changelog shows.
   (coll.i/delete! tx (:collection/id collection)))
+
+;;; ---------------------------------------------------------------------------
+;;; tag
+
+(defmethod blockers :tag [_ _db _tag]
+  ;; A tag's links belong to it and go with it; nothing else names a tag.
+  [])
+
+(defmethod delete!* :tag [_ tx tag deleted-by]
+  (tag.activity/create! tx tag.activity/deleted deleted-by tag)
+  (tag.i/delete! tx (:tag/id tag)))
 
 ;;; ---------------------------------------------------------------------------
 

@@ -13,12 +13,16 @@
      :x-on:tag-form:reset.window "$el.reset()"}
     [(form/anti-forgery-field)
      [:div {:class "spl-form"}
-      (form/input-field :label "Name"
-                        :name "name"
-                        :required true
-                        :value (:name values)
-                        :errors (:name errors))
-      (form/textarea-field :label "Description"
-                           :name "description"
-                           :value (:description values)
-                           :errors (:description errors))]]))
+      (form/section
+        :title "Tag"
+        :hint "What the tag is called, and what it groups."
+        :children
+        [(form/input-field :label "Name"
+                           :name "name"
+                           :required true
+                           :value (:name values)
+                           :errors (:name errors))
+         (form/textarea-field :label "Description"
+                              :name "description"
+                              :value (:description values)
+                              :errors (:description errors))])]]))

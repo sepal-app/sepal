@@ -3,6 +3,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.routes.tag.panel :as tag.panel]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -10,7 +11,8 @@
             [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -23,6 +25,28 @@
             {:keys [response]} (peri/request sess "/tag/")]
         (is (= 200 (:status response)))
         (is (re-find #"Fruit" (:body response)))
+        (tag.i/delete! *db* (:tag/id tag))))))
+
+(deftest test-the-edit-page-is-a-record-page-with-a-panel
+  (tf/testing "GET /tag/:id/ as an admin"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            tag (tag.i/create! *db* {:name "Fruit"})
+            _ (tag.i/tag! *db* (:tag/id tag) (:taxon/id taxon) :taxon)
+            {:keys [response]} (peri/request sess (format "/tag/%s/" (:tag/id tag)))
+            body (Jsoup/parse ^String (:body response))]
+        (is (= 200 (:status response)))
+        (is (some? (.selectFirst body ".spl-record-page form#tag-form"))
+            "the form sits in the record shell")
+        (is (some? (.selectFirst body (format "[hx-get=/tag/%s/delete/]" (:tag/id tag))))
+            "delete is in the actions menu")
+        (is (some? (.selectFirst body ".spl-detail-panel"))
+            "the panel sits beside the form")
+        (is (= {:taxon-count 1 :accession-count 0 :material-count 0}
+               (:stats (tag.panel/fetch-panel-data *db* tag)))
+            "and counts the taxon the tag is linked to")
         (tag.i/delete! *db* (:tag/id tag))))))
 
 (deftest test-renaming-a-tag
@@ -78,7 +102,7 @@
         (tag.i/delete! *db* (:tag/id fruit))))))
 
 (deftest test-deleting-a-tag
-  (tf/testing "DELETE removes it"
+  (tf/testing "POST /tag/:id/delete/ removes it"
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}}
     (fn [{:keys [user]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
@@ -86,10 +110,10 @@
             url (format "/tag/%s/" (:tag/id tag))
             {:keys [response] :as sess} (peri/request sess url)
             token (test.i/response-anti-forgery-token response)
-            {:keys [response]} (peri/request sess url
-                                             :request-method :delete
-                                             :headers {"x-csrf-token" token})]
-        (is (contains? #{200 303} (:status response)))
+            {:keys [response]} (peri/request sess (str url "delete/")
+                                             :request-method :post
+                                             :params {:__anti-forgery-token token})]
+        (is (= 303 (:status response)))
         (is (nil? (tag.i/get-by-id *db* (:tag/id tag))))
         (is (some #(= tag.activity/deleted (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :tag :resource-id (:tag/id tag)))
@@ -121,9 +145,9 @@
               token (test.i/response-anti-forgery-token response)]
           (with-redefs [tag.activity/create!
                         (fn [& _] (throw (ex-info "activity write failed" {})))]
-            (peri/request sess url
-                          :request-method :delete
-                          :headers {"x-csrf-token" token}))
+            (peri/request sess (str url "delete/")
+                          :request-method :post
+                          :params {:__anti-forgery-token token}))
           (is (some? (tag.i/get-by-id *db* tag-id))
               "the tag row must survive a rolled-back delete")
           (is (= [tag-id] (mapv :tag/id (tag.i/get-for-resource *db* :taxon (:taxon/id taxon))))

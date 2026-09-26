@@ -119,8 +119,7 @@
                      :order-by [[:t.name :asc]]}))
 
 (defn get-tagged
-  "Every link row for one tag. For browsing a tag's linked records from the
-  tag index, which nothing does yet -- the index shows counts only."
+  "Every link row for one tag. The tag panel counts these by resource type."
   [db tag-id]
   (db.i/execute! db {:select [:*]
                      :from [:tag_link]

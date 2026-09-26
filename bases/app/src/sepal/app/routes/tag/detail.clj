@@ -1,15 +1,15 @@
 (ns sepal.app.routes.tag.detail
   (:require [failjure.core :as f]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
-            [sepal.app.json :as json]
             [sepal.app.routes.tag.form :as tag.form]
+            [sepal.app.routes.tag.panel :as tag.panel]
             [sepal.app.routes.tag.routes :as tag.routes]
+            [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.page :as page]
-            [sepal.app.ui.tooltip :as tooltip]
+            [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.tag.interface :as tag.i]
@@ -22,27 +22,30 @@
    [:name [:string {:min 1}]]
    [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
-(defn- delete-button [tag]
-  (tooltip/wrap
-    [:button {:type "button"
-              :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
-              :aria-label "Delete tag"
-              :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-              :hx-delete (z/url-for tag.routes/detail {:id (:tag/id tag)})
-              :hx-confirm (str "Delete tag \"" (:tag/name tag) "\"? This removes it from every resource it's linked to.")}
-     (heroicons/outline-trash :class "size-4")]
-    "Delete tag"
-    :side "left"))
+(defn page-content [& {:keys [errors tag values footer]}]
+  (pages.record/page
+    :name (:tag/name tag)
+    :footer footer
+    :body
+    (tag.form/form :action (z/url-for tag.routes/detail {:id (:tag/id tag)})
+                   :errors errors
+                   :values values)))
 
-(defn render [& {:keys [errors tag values]}]
-  (page/page
-    :content [:div {:class "max-w-2xl mx-auto"}
-              (tag.form/form :action (z/url-for tag.routes/detail {:id (:tag/id tag)})
-                             :errors errors
-                             :values values)
-              (delete-button tag)]
-    :footer (ui.form/footer :buttons (tag.form/footer-buttons))
-    :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} "Tags"] (:tag/name tag)]))
+(defn render [& {:keys [errors tag values panel-data timezone]}]
+  (page/page :page-title-buttons (ui.actions/menu
+                                   :delete-url (z/url-for tag.routes/delete {:id (:tag/id tag)}))
+             :content (pages.detail/page-content-with-panel
+                        :content (page-content :footer (ui.form/footer :buttons (tag.form/footer-buttons))
+                                               :errors errors
+                                               :tag tag
+                                               :values values)
+                        :panel-content (tag.panel/panel-content
+                                         :tag (:tag panel-data)
+                                         :stats (:stats panel-data)
+                                         :activities (:activities panel-data)
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
+             :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} "Tags"] (:tag/name tag)]))
 
 (def ^:private name-taken-message
   "A tag with this name already exists.")
@@ -70,20 +73,8 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn delete!
-  "Delete the tag and its links, and record the activity in the same
-  transaction. tag.i/delete! joins this transaction rather than opening one
-  of its own, so a failed activity write rolls the deletes back with it."
-  [db id deleted-by tag]
-  (try
-    (db.i/with-transaction [tx db]
-      (tag.i/delete! tx id)
-      (tag.activity/create! tx tag.activity/deleted deleted-by tag))
-    (catch Exception ex
-      (error.i/ex->error ex))))
-
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         id (:tag/id resource)
         values {:name (:tag/name resource) :description (:tag/description resource)}]
     (case request-method
@@ -99,10 +90,7 @@
             (http/validation-errors {:name [name-taken-message]})
             (http/failure-flash e (http/hx-redirect tag.routes/index) "Could not save the tag"))))
 
-      :delete
-      (f/attempt-all [_deleted (f/try* (delete! db id (:user/id viewer) resource))]
-        (http/hx-redirect tag.routes/index)
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect tag.routes/index) "Could not delete the tag")))
-
-      (render :tag resource :values values))))
+      (render :tag resource
+              :values values
+              :panel-data (tag.panel/fetch-panel-data db resource)
+              :timezone timezone))))

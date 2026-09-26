@@ -2,3 +2,4 @@
 
 (def index ::index)
 (def detail ::detail)
+(def delete ::delete)
