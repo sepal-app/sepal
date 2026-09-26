@@ -40,6 +40,7 @@
   has no code, and its rank is what qualifies the name above it."
   [& {:keys [taxon active body footer]}]
   (pages.record/page
+    :wide? (= active media-tab)
     :code (some-> (:taxon/rank taxon) clojure.core/name)
     :name (taxon-name/render (:taxon/name taxon) :author (:taxon/author taxon))
     :tabs (tabs taxon active)

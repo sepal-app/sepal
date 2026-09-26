@@ -7,6 +7,7 @@
 
 (def general-tab ::general)
 (def observations-tab ::observations)
+(def media-tab ::media)
 
 (defn- tab-items [& {:keys [active location]}]
   [(ui.tabs/item "General"
@@ -14,7 +15,10 @@
                   :active (= active general-tab)})
    (ui.tabs/item "Observations"
                  {:href (z/url-for location.routes/detail-observations {:id (:location/id location)})
-                  :active (= active observations-tab)})])
+                  :active (= active observations-tab)})
+   (ui.tabs/item "Media"
+                 {:href (z/url-for location.routes/detail-media {:id (:location/id location)})
+                  :active (= active media-tab)})])
 
 (defn tabs [location active]
   (ui.tabs/tabs {:label "Location sections"
@@ -22,6 +26,7 @@
 
 (defn page [& {:keys [location active body footer]}]
   (pages.record/page
+    :wide? (= active media-tab)
     :name (:location/name location)
     :tabs (tabs location active)
     :body body

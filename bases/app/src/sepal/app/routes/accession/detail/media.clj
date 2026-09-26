@@ -47,10 +47,11 @@
                                          :linkResourceType "accession"
                                          :linkResourceId (:accession/id accession)
                                          :trigger "#upload-button"})}]
-      (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
-                             :below? below?
-                             :label "Include media linked to this accession's material")
-      (media.ui/media-list :media media
+      (media.ui/media-list :context :record
+                           :filters (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
+                                                           :below? below?
+                                                           :hint "Media linked to this accession's material")
+                           :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :accession accession
                                                            :current-page page

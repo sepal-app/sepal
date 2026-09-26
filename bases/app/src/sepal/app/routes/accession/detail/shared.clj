@@ -64,6 +64,7 @@
   [& {:keys [accession taxon active body footer collection-available?]
       :or {collection-available? true}}]
   (pages.record/page
+    :wide? (= active media-tab)
     :code (:accession/code accession)
     :name (when (:taxon/name taxon)
             (taxon-name/render (:taxon/name taxon)

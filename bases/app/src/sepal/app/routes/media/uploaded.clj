@@ -2,7 +2,9 @@
   (:require [failjure.core :as f]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
+            [sepal.app.routes.media.link-info :as link-info]
             [sepal.app.ui.media :as media.ui]
+            [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [sepal.validation.interface :as validation.i]
@@ -19,7 +21,7 @@
    [:size :int]])
 
 (defn handler [& {:keys [::z/context form-params viewer] :as _request}]
-  (let [{:keys [db]} context]
+  (let [{:keys [db material-separator]} context]
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                     result (f/try* (media.i/create! db
                                                     {:media-type (:contentType data)
@@ -39,10 +41,13 @@
         ;; the media and the resource
         (when (and (some? (:linkResourceType data))
                    (some? (:linkResourceId data)))
-          (media.i/link! db
-                         (:media/id media)
-                         (:linkResourceId data)
-                         (:linkResourceType data)))
+          (let [link (media.i/link! db
+                                    (:media/id media)
+                                    (:linkResourceId data)
+                                    (:linkResourceType data))]
+            (when-not (error.i/error? link)
+              (media.activity/create-link! db media.activity/linked (:user/id viewer) media link
+                                           (:text (link-info/link-info db link material-separator))))))
 
         (-> (media.ui/media-item :item media)
             (html/render-partial)))

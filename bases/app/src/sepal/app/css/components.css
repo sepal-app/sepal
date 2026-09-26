@@ -461,6 +461,12 @@
 }
 .spl-record-body > .spl-form,
 .spl-record-body .spl-form { max-width: none; margin-inline: 0; }
+/* A section that is not a form, such as a media grid, gets a wider body. The
+ * header and tabs keep the form column, so they do not move when you change
+ * tabs. */
+.spl-record-page--wide > .spl-record-body {
+  padding-inline: max(22px, calc((100% - 1200px) / 2));
+}
 @media (max-width: 639px) {
   .spl-record,
   .spl-tabs,
@@ -1624,9 +1630,68 @@
   cursor: zoom-in;
 }
 
-/* The zoom view is a .spl-modal sized to the image rather than a form. */
+/* Media grid density. Each size is a target tile width, and the grid fits as
+ * many columns as its own width holds, so a size looks the same on the media
+ * list and on a record tab beside the side panel. A data attribute rather than
+ * Tailwind classes, so Alpine can switch it without the server-rendered
+ * default fighting the binding. */
+.spl-media-grid {
+  display: grid;
+  column-gap: 16px;
+  row-gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--tile), 100%), 1fr));
+}
+.spl-media-grid[data-size="small"]  { --tile: 140px; }
+.spl-media-grid[data-size="medium"] { --tile: 200px; }
+.spl-media-grid[data-size="large"]  { --tile: 300px; }
+
+/* The row above a media grid: filters on the left, the size control on the
+ * right. */
+.spl-media-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+/* A row of mutually exclusive buttons, the pressed one tinted. */
+.spl-segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+.spl-segmented button {
+  font: 500 12px/1 var(--font-sans);
+  padding: 6px 10px;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  border: 0;
+  cursor: pointer;
+}
+.spl-segmented button + button { border-left: 1px solid var(--color-control); }
+.spl-segmented button:hover { background: var(--color-surface-alt); }
+.spl-segmented button[aria-pressed="true"] {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+
+/* The zoom view is a .spl-modal sized to the image rather than a form. The
+ * image gets whatever height the window leaves after the dialog's margin, the
+ * box's padding and the Close row, so it fits without scrolling. */
 .spl-modal--media { max-width: min(96vw, 1800px); width: auto; }
-.spl-modal--media img { display: block; max-width: 100%; max-height: 80vh; margin: 0 auto; }
+.spl-modal--media .spl-modal-box { max-height: none; overflow: hidden; }
+.spl-modal--media img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 150px);
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
 
 .spl-modal-box {
   position: relative;

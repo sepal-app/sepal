@@ -36,6 +36,9 @@
         (try
           (media.i/link! *db* (:media/id on-taxon) (:taxon/id taxon) :taxon)
           (media.i/link! *db* (:media/id on-acc) (:accession/id acc) :accession)
+          (is (some? (-> (peri/request sess url) :response :body Jsoup/parse
+                         (.selectFirst ".spl-record-page--wide")))
+              "a Media tab is not a form, so it takes the wide column")
           (let [direct (tiles "")]
             (is (some? (tile-for direct on-taxon)))
             (is (nil? (tile-for direct on-acc)) "direct leaves out the accession's photo"))

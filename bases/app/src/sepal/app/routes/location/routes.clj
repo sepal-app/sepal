@@ -5,6 +5,7 @@
 (def detail ::detail)
 (def detail-general ::detail-general)
 (def detail-observations ::detail-observations)
+(def detail-media ::detail-media)
 (def detail-observation ::detail-observation)
 (def export ::export)
 

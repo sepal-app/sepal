@@ -38,6 +38,7 @@
   material code together, which is how a curator refers to it."
   [& {:keys [material accession taxon active body footer separator]}]
   (pages.record/page
+    :wide? (= active media-tab)
     :code (when (and accession material)
             (ct.i/full-code separator (:accession/code accession) (:material/code material)))
     :name (when (:taxon/name taxon)

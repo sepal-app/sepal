@@ -5,6 +5,7 @@
             [sepal.app.routes.location.delete :as delete]
             [sepal.app.routes.location.detail :as detail]
             [sepal.app.routes.location.detail.general :as detail-general]
+            [sepal.app.routes.location.detail.media :as detail-media]
             [sepal.app.routes.location.detail.observations :as detail-observations]
             [sepal.app.routes.location.export :as export]
             [sepal.app.routes.location.index :as index]
@@ -44,6 +45,10 @@
                        :middleware [[(middleware/require-permission-or-redirect
                                        location.perm/edit (constantly routes/detail))]]
                        :handler #'detail-observations/handler}]
+    ["/media/" {:name routes/detail-media
+                :middleware [[(middleware/require-permission-or-redirect
+                                location.perm/edit (constantly routes/detail))]]
+                :handler #'detail-media/handler}]
     ["/observations/:observation-id/" {:name routes/detail-observation
                                        :middleware [[(middleware/require-permission-or-redirect
                                                        location.perm/edit (constantly routes/detail))]]

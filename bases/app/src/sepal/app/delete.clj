@@ -139,6 +139,7 @@
   (let [id (:location/id location)]
     (location.activity/create! tx location.activity/deleted deleted-by location)
     (observation.i/delete-for-resource! tx :location id)
+    (media.i/unlink-resource! tx :location id)
     (location.i/delete! tx id)))
 
 ;;; ---------------------------------------------------------------------------

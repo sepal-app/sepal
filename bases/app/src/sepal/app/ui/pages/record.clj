@@ -20,9 +20,10 @@
           through the name renderer.
   :tabs   the section nav, from `ui.tabs/tabs`.
   :body   this section's content, and nothing else — no frame, no padding.
-  :footer optional action bar, pinned to the foot of the column."
-  [& {:keys [code name tabs body footer]}]
-  [:div {:class "spl-record-page"}
+  :footer optional action bar, pinned to the foot of the column.
+  :wide?  a wider column, for a section that is not a form."
+  [& {:keys [code name tabs body footer wide?]}]
+  [:div {:class (cond-> "spl-record-page" wide? (str " spl-record-page--wide"))}
    (ui.page/record-header :code code :name name)
    tabs
    [:div {:class "spl-record-body"} body]

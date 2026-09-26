@@ -10,7 +10,6 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.pages.record :as pages.record]
@@ -62,14 +61,6 @@
             :onclick "document.getElementById('media-zoom').showModal()"
             :onkeydown "if (event.key === 'Enter') document.getElementById('media-zoom').showModal()"}]]))
 
-(defn- caption [media]
-  [:p {:class "mt-2 text-sm text-text-soft"}
-   (->> [(file-name media)
-         (:media/media-type media)
-         (media.ui/format-size (:media/size-in-bytes media))]
-        (remove nil?)
-        (str/join " · "))])
-
 (defn- edit-form [media]
   (ui.form/form
     {:id "media-form"
@@ -90,7 +81,6 @@
   (list
     (zoom-dialog media)
     (image-stage media)
-    (caption media)
     (if editor?
       (edit-form media)
       (when-let [description (not-empty (:media/description media))]

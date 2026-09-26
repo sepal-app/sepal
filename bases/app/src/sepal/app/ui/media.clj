@@ -38,6 +38,8 @@
          :class "inset-0 focus:outline-none"}
      [:img {:class "pointer-events-none h-full w-full object-cover group-hover:opacity-75"
             :src (:thumbnail-url item)}]]]
+   (when-let [title (not-empty (:media/title item))]
+     [:p {:class "mt-2 truncate text-sm" :title title} title])
    ;; Set only when the item is linked to something other than the record whose
    ;; tab this is.
    (when-let [{:keys [text url]} (:via item)]
@@ -65,10 +67,36 @@
    [:span {:class "spl-sentinel-status" :role "status"}
     [:span {:class "spl-sentinel-loading sr-only"} "Loading more media"]]])
 
-(defn- media-grid [& {:keys [media next-page-url]}]
+(def ^:private sizes
+  [["small" "Small"] ["medium" "Medium"] ["large" "Large"]])
+
+(def ^:private size-defaults
+  ;; A record's Media tab shares its width with the side panel, so it starts
+  ;; with fewer, larger tiles than the media list.
+  {:list {:key "spl-media-size-list" :default "small"}
+   :record {:key "spl-media-size-record" :default "large"}})
+
+(defn- size-state
+  "The grid's size, kept in the browser: a display preference, per kind of
+  page, carried across pages and visits."
+  [context]
+  (let [{:keys [key default]} (size-defaults context)]
+    (format "{ size: localStorage.getItem('%s') || '%s', setSize(s) { this.size = s; localStorage.setItem('%s', s) } }"
+            key default key)))
+
+(defn- size-control []
+  [:div {:class "spl-segmented" :role "group" :aria-label "Thumbnail size"}
+   (for [[value label] sizes]
+     [:button {:type "button"
+               :x-on:click (format "setSize('%s')" value)
+               :x-bind:aria-pressed (format "size === '%s'" value)}
+      label])])
+
+(defn- media-grid [& {:keys [media next-page-url context]}]
   [:ul {:id "media-list"
-        :class (html/attr "grid" "grid-cols-2" "gap-x-4" "gap-y-8" "sm:grid-cols-3"
-                          "sm:gap-x-6" "lg:grid-cols-4" "xl:gap-x-8")}
+        :class "spl-media-grid"
+        :data-size (get-in size-defaults [context :default])
+        :x-bind:data-size "size"}
    (media-list-items :media media
                      :next-page-url next-page-url)])
 
@@ -84,43 +112,50 @@
   pages. The grid renders even when empty, because an upload prepends its new
   tile into `#media-list` — a list that only appears once there is media has
   nothing to prepend into."
-  [& {:keys [media next-page-url]}]
-  (list
-    (when (zero? (count media))
-      [:div {:id empty-state-id
-             :data-media-drop-target "true"}
-       (ui.empty/empty-state
-         :icon (heroicons/outline-photo :size 48)
-         :title "No media yet"
-         :body "Photographs of an accession, its material, or the plant in the
+  [& {:keys [media next-page-url context filters] :or {context :list}}]
+  [:div {:x-data (size-state context)}
+   ;; `filters` shows even with nothing to show: widening the scope may be what
+   ;; finds media.
+   (when (or filters (seq media))
+     [:div {:class "spl-media-toolbar"}
+      [:div filters]
+      (when (seq media)
+        (size-control))])
+   (when (zero? (count media))
+     [:div {:id empty-state-id
+            :data-media-drop-target "true"}
+      (ui.empty/empty-state
+        :icon (heroicons/outline-photo :size 48)
+        :title "No media yet"
+        :body "Photographs of an accession, its material, or the plant in the
                 ground show up here. Drag images here, or upload them."
-         :actions [[:button {:id "media-empty-upload"
-                             :type "button"
-                             :class "spl-btn spl-btn--primary"}
-                    "Upload"]])])
-    (media-grid :media media :next-page-url next-page-url)
-    (loading-indicator)))
+        :actions [[:button {:id "media-empty-upload"
+                            :type "button"
+                            :class "spl-btn spl-btn--primary"}
+                   "Upload"]])])
+   (media-grid :media media :next-page-url next-page-url :context context)
+   (loading-indicator)])
 
 (defn scope-toggle
   "A checkbox that widens a Media tab from media linked to this record to media
   linked below it too. A GET form, so the choice is in the URL; boosted like the
   tabs, so changing it swaps the content column."
-  [& {:keys [action below? label]}]
+  [& {:keys [action below? hint]}]
   [:form {:method "get"
           :action action
-          :class "mb-4"
           :hx-boost "true"
           :hx-select ".spl-content"
           :hx-target ".spl-content"
           :hx-swap "outerHTML"}
-   [:label {:class "flex items-center gap-2 text-sm cursor-pointer"}
+   [:label {:class "flex items-center gap-2 text-sm cursor-pointer"
+            :title hint}
     [:input (cond-> {:type "checkbox"
                      :class "spl-checkbox"
                      :name "scope"
                      :value "below"
                      :onchange "this.form.requestSubmit()"}
               below? (assoc :checked true))]
-    [:span label]]])
+    [:span "Include related media"]]])
 
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,
@@ -145,6 +180,8 @@
 
 (defn thumbnail-url
   "Generate a thumbnail URL for a media item."
-  [media-id & {:keys [w h fit] :or {w 300 h 300 fit "crop"}}]
+  ;; 500 rather than the tile's CSS size, so a tile stays sharp on a
+  ;; high-density screen and at the larger size a Media tab uses.
+  [media-id & {:keys [w h fit] :or {w 500 h 500 fit "crop"}}]
   (str (z/url-for media.routes/transform {:id media-id})
        "?" (uri/map->query-string {:w w :h h :fit fit})))

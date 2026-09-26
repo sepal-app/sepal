@@ -40,7 +40,8 @@
                                          :linkResourceType "material"
                                          :linkResourceId (:material/id material)
                                          :trigger "#upload-button"})}]
-      (media.ui/media-list :media media
+      (media.ui/media-list :context :record
+                           :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :material material
                                                            :current-page page)))

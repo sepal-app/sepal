@@ -37,10 +37,11 @@
                                          :linkResourceType "taxon"
                                          :linkResourceId (:taxon/id taxon)
                                          :trigger "#upload-button"})}]
-      (media.ui/scope-toggle :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
-                             :below? below?
-                             :label "Include media linked to taxa, accessions and material below this taxon")
-      (media.ui/media-list :media media
+      (media.ui/media-list :context :record
+                           :filters (media.ui/scope-toggle :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
+                                                           :below? below?
+                                                           :hint "Media linked to the taxa, accessions and material below this taxon")
+                           :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :taxon taxon
                                                            :current-page page
