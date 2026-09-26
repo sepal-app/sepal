@@ -3,7 +3,8 @@
             [clojure.test :refer [deftest is testing]]
             [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
-            [sepal.app.middleware :as middleware]))
+            [sepal.app.middleware :as middleware]
+            [sepal.i18n.interface :as i18n]))
 
 (defn- ok-handler [_request]
   {:status 200 :body "OK"})
@@ -167,3 +168,23 @@
           wrapped (middleware/wrap-flash-messages handler)
           response (wrapped {:htmx-request? true})]
       (is (= "<div>content</div>" (:body response))))))
+
+(def ^:private es
+  (i18n/parse-catalog "es" "msgid \"Profile\"\nmsgstr \"Perfil\"\n"))
+
+(deftest locale-renders-hiccup-inside-its-binding
+  ;; zodiac renders a returned vector after the whole middleware stack has
+  ;; returned, and Chassis realises a lazy seq only then. A tr inside a `for`
+  ;; would run with no catalog bound and come out English.
+  (i18n/load-catalogs! {"es" es})
+  (try
+    (let [handler (middleware/locale
+                    (fn [_] [:ul (for [_ [1]] [:li (i18n/tr "Profile")])]))
+          response (handler {:headers {"accept-language" "es"}})]
+      (is (string? (:body response)) "rendered here, not left to zodiac")
+      (is (str/includes? (:body response) "<li>Perfil</li>")))
+    (testing "a response that is not hiccup passes through"
+      (let [handler (middleware/locale (fn [_] {:status 204}))]
+        (is (= {:status 204} (handler {:headers {}})))))
+    (finally
+      (i18n/load-catalogs! {}))))

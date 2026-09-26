@@ -24,6 +24,15 @@
                (= (get headers "hx-boosted") "true"))
         (handler))))
 
+(defn- render-hiccup
+  "Render a hiccup response to HTML now. zodiac renders a returned vector only
+  after the whole middleware stack has returned, and Chassis realises lazy seqs
+  then, so a tr inside a `for` would run after the locale binding is gone."
+  [response]
+  (if (vector? response)
+    (z/html-response response)
+    response))
+
 (defn locale
   "Bind the browser's language from Accept-Language, or English. require-viewer
   overrides it with the viewer's saved choice; this is what anonymous pages and
@@ -31,7 +40,7 @@
   [handler]
   (fn [{:keys [headers] :as request}]
     (i18n/with-locale (i18n/resolve-locale (get headers "accept-language"))
-      (handler request))))
+      (render-hiccup (handler request)))))
 
 (defn require-viewer
   "Redirects to /login if there are no valid claims in the request.
@@ -53,7 +62,8 @@
                     i18n/*catalog* (or catalog i18n/*catalog*)]
             (-> request
                 (assoc :viewer viewer)
-                (handler))))
+                (handler)
+                (render-hiccup))))
         ;; Clear session and redirect to login for non-active/missing users
         (-> (http/see-other auth.routes/login)
             (assoc :session nil))))))
