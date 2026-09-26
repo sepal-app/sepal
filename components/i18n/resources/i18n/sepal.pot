@@ -17,6 +17,46 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: bases/app/src/sepal/app/backup/core.clj:252
+msgid "Sepal Backup Completed Successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:253
+msgid "A database backup was completed successfully."
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:254
+msgid "Filename: %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:255
+msgid "Size: %1 MB"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:256
+msgid "Created: %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:257
+msgid "Download: %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:271
+msgid "Sepal Backup Failed"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:272
+msgid "A scheduled database backup has failed."
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:273
+msgid "Error: %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/backup/core.clj:274
+msgid "Please check the server logs for more details."
+msgstr ""
+
 #: bases/app/src/sepal/app/delete.clj:200
 msgid "%1 material record references this"
 msgid_plural "%1 material records reference this"
@@ -103,6 +143,155 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/index.clj:105
 msgid "New accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:31
+msgid "Accept invitation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:34
+msgid "Set up your account for %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
+#: bases/app/src/sepal/app/routes/settings/profile.clj:37
+msgid "Full name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:42
+msgid "Your name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:45
+#: bases/app/src/sepal/app/routes/auth/login.clj:28
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:20
+msgid "Password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:51
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:26
+msgid "Confirm password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:57
+msgid "Set password and activate account"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:68
+msgid "Invalid invitation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:85
+msgid "Account already activated. Please log in."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:96
+msgid "Passwords do not match"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:110
+msgid "Password set for %1. Please log in."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:112
+msgid "Could not set your password. Please try again."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:16
+msgid "Forgot password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:17
+msgid ""
+"If the email address exists in Sepal then we'll send you an email to help "
+"reset your password."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:21
+#: bases/app/src/sepal/app/routes/auth/login.clj:26
+#: bases/app/src/sepal/app/routes/settings/profile.clj:41
+msgid "Email"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:25
+msgid "Send"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:41
+msgid "A request was made to reset the Sepal password for %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:42
+msgid ""
+"If you didn't request the password to be reset you can safely ignore this "
+"email."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:43
+msgid "To reset the password for %1 open the following link: %2"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:44
+msgid ""
+"If you have concerns about this email please feel free to reach out to %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:53
+msgid "Sepal - Reset Password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:84
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:92
+msgid "Check your email."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:89
+msgid "Error: Could not send email."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:34
+msgid "Login"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:37
+msgid "Forgot password?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:41
+msgid "Welcome to Sepal"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:58
+msgid "Invalid password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/page.clj:14
+msgid "login banner"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:14
+msgid "Reset your password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:25
+msgid "The password must be at least 8 characters long."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:31
+msgid "The passwords do not match"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:32
+msgid "Reset password"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:58
+msgid "Your password has been reset."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:66
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:69
+msgid "Invalid password reset token."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/contact/delete.clj:18
@@ -199,14 +388,6 @@ msgstr ""
 msgid "Browser default"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:37
-msgid "Full name"
-msgstr ""
-
-#: bases/app/src/sepal/app/routes/settings/profile.clj:41
-msgid "Email"
-msgstr ""
-
 #: bases/app/src/sepal/app/routes/settings/profile.clj:50
 msgid "Save changes"
 msgstr ""
@@ -229,6 +410,55 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/profile.clj:95
 msgid "Failed to update profile"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:102
+msgid "You have been invited to %1 on Sepal"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:104
+msgid "You have been invited to Sepal"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:108
+msgid "Hello %1,"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:108
+msgid "Hello,"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:110
+msgid ""
+"%1 (%2) has invited you to join %3 on Sepal, a botanical collection "
+"management system."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:112
+msgid ""
+"%1 (%2) has invited you to join Sepal, a botanical collection management "
+"system."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:114
+msgid ""
+"To accept this invitation and set up your account, click the link below:"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:116
+msgid ""
+"After clicking the link, you will be asked to set a password for your "
+"account. Once your password is set, you will need to log in with your email "
+"address and new password."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:117
+msgid "This invitation expires in 24 hours."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:118
+msgid ""
+"If you weren't expecting this invitation, you can safely ignore this email."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/tag/delete.clj:18

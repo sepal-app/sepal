@@ -9,6 +9,7 @@
             [sepal.app.backup.protocols :as backup.p]
             [sepal.app.datetime :as datetime]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :as i18n :refer [tr]]
             [sepal.mail.interface :as mail.i]
             [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i]
@@ -222,11 +223,10 @@
 ;; -----------------------------------------------------------------------------
 ;; Email notifications
 
-(defn- get-admin-emails
-  "Get email addresses of all admin users."
+(defn- get-admins
+  "The admin users, who receive backup notices."
   [db]
   (->> (user.i/get-by-role db "admin")
-       (map :user/email)
        (filter some?)))
 
 (defn- format-datetime-for-email
@@ -238,38 +238,40 @@
 (defn- send-backup-success-email!
   "Send backup success notification to all admin users."
   [mail email-from db app-base-url backup-result]
-  (let [admin-emails (get-admin-emails db)
-        download-url (str app-base-url "/settings/backups/"
-                          (:filename backup-result) "/download")
-        subject "Sepal Backup Completed Successfully"
-        body (str "A database backup was completed successfully.\n\n"
-                  "Filename: " (:filename backup-result) "\n"
-                  "Size: " (format "%.2f MB" (/ (:size-bytes backup-result) 1048576.0)) "\n"
-                  "Created: " (format-datetime-for-email db (:created-at backup-result)) "\n\n"
-                  "Download: " download-url "\n")]
-    (doseq [email admin-emails]
-      (try
-        (mail.i/send-message mail {:from email-from
-                                   :to email
-                                   :subject subject
-                                   :body body})
-        (catch Exception e
-          (log/error e "Failed to send backup success email to" email))))))
+  (let [download-url (str app-base-url "/settings/backups/"
+                          (:filename backup-result) "/download")]
+    (doseq [{:user/keys [email language]} (get-admins db)]
+      ;; Each admin in their own saved language, else English: this runs from
+      ;; the scheduler, with no request to take a browser's language from.
+      (i18n/with-locale language
+        (try
+          (mail.i/send-message
+            mail
+            {:from email-from
+             :to email
+             :subject (tr "Sepal Backup Completed Successfully")
+             :body (str (tr "A database backup was completed successfully.") "\n\n"
+                        (tr "Filename: %1" (:filename backup-result)) "\n"
+                        (tr "Size: %1 MB" (String/format (i18n/java-locale) "%.2f" (to-array [(/ (:size-bytes backup-result) 1048576.0)]))) "\n"
+                        (tr "Created: %1" (format-datetime-for-email db (:created-at backup-result))) "\n\n"
+                        (tr "Download: %1" download-url) "\n")})
+          (catch Exception e
+            (log/error e "Failed to send backup success email to" email)))))))
 
 (defn- send-backup-failure-email!
   "Send backup failure notification to all admin users."
   [mail email-from db error-message]
-  (let [admin-emails (get-admin-emails db)
-        subject "Sepal Backup Failed"
-        body (str "A scheduled database backup has failed.\n\n"
-                  "Error: " error-message "\n\n"
-                  "Please check the server logs for more details.")]
-    (doseq [email admin-emails]
+  (doseq [{:user/keys [email language]} (get-admins db)]
+    (i18n/with-locale language
       (try
-        (mail.i/send-message mail {:from email-from
-                                   :to email
-                                   :subject subject
-                                   :body body})
+        (mail.i/send-message
+          mail
+          {:from email-from
+           :to email
+           :subject (tr "Sepal Backup Failed")
+           :body (str (tr "A scheduled database backup has failed.") "\n\n"
+                      (tr "Error: %1" error-message) "\n\n"
+                      (tr "Please check the server logs for more details."))})
         (catch Exception e
           (log/error e "Failed to send backup failure email to" email))))))
 

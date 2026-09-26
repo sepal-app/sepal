@@ -7,6 +7,7 @@
             [sepal.app.routes.dashboard.routes :as dashboard.routes]
             [sepal.app.session :as session]
             [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
 
@@ -22,22 +23,22 @@
              (form/anti-forgery-field)
              (when invitation
                (form/hidden-field :name "invitation" :value invitation))
-             (form/input-field :label "Email" :name "email" :value email :type "email"
+             (form/input-field :label (tr "Email") :name "email" :value email :type "email"
                                :required true)
-             (form/input-field :label "Password" :name "password" :type "password"
+             (form/input-field :label (tr "Password") :name "password" :type "password"
                                :required true)
              (form/hidden-field :name "next" :value next)
              [:div {:class "flex flex-row mt-4 justify-between items-center"}
               [:button {:type "submit"
                         :class "spl-btn spl-btn--primary"}
-               "Login"]
+               (tr "Login")]
               [:a {:class "spl-link text-sm"
                    :href (z/url-for auth.routes/forgot-password)}
-               "Forgot password?"]]))
+               (tr "Forgot password?")]]))
 
 (defn render [& {:keys [email #_field-errors invitation next flash]}]
   (page/page :content [:div
-                       [:h1 {:class "spl-auth-title"} "Welcome to Sepal"]
+                       [:h1 {:class "spl-auth-title"} (tr "Welcome to Sepal")]
                        (form :email email
                              :invitation invitation
                              :next next)]
@@ -54,7 +55,7 @@
     (case request-method
       :post
       (let [user (user.i/verify-password db email password)
-            error (when-not user "Invalid password")
+            error (when-not user (tr "Invalid password"))
             session (when-not error (session/user->session user))]
         (if-not error
           (cond-> (-> (http/see-other dashboard.routes/index)

@@ -1,11 +1,13 @@
 (ns sepal.app.routes.auth.accept-invitation
-  (:require [failjure.core :as f]
+  (:require [clojure.string :as str]
+            [failjure.core :as f]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.spec :as user.spec]
@@ -26,30 +28,33 @@
 
 (defn- page-content [& {:keys [email full-name token errors]}]
   [:div
-   [:h1 {:class "spl-auth-title"} "Accept Invitation"]
-   [:p {:class "text-lg mb-6"} "Set up your account for " [:strong email]]
+   [:h1 {:class "spl-auth-title"} (tr "Accept invitation")]
+   ;; Split at the placeholder so the address stays bold wherever the
+   ;; translation puts it.
+   (let [[before after] (str/split (tr "Set up your account for %1") #"%1" 2)]
+     [:p {:class "text-lg mb-6"} before [:strong email] after])
    (form/form {:action (z/url-for auth.routes/accept-invitation)
                :method "post"}
               [(form/anti-forgery-field)
                (form/hidden-field :name "token" :value token)
-               (form/input-field :label "Full Name"
+               (form/input-field :label (tr "Full name")
                                  :name "full-name"
-                                 :placeholder "Your name"
+                                 :placeholder (tr "Your name")
                                  :value full-name
                                  :errors (:full-name errors))
-               (form/input-field :label "Password"
+               (form/input-field :label (tr "Password")
                                  :name "password"
                                  :type "password"
                                  :minlength 8
                                  :required true
                                  :errors (:password errors))
-               (form/input-field :label "Confirm Password"
+               (form/input-field :label (tr "Confirm password")
                                  :name "confirm-password"
                                  :type "password"
                                  :minlength 8
                                  :required true
                                  :errors (:confirm-password errors))
-               (form/submit-button {:class "spl-btn spl-btn--primary mt-6"} "Set Password & Activate Account")])])
+               (form/submit-button {:class "spl-btn spl-btn--primary mt-6"} (tr "Set password and activate account"))])])
 
 (defn- render [& {:keys [email full-name token errors flash]}]
   (page/page :content (page-content :email email
@@ -60,7 +65,7 @@
 
 (defn- invalid-invitation-response []
   (-> (http/found auth.routes/login)
-      (flash/error "Invalid invitation")))
+      (flash/error (tr "Invalid invitation"))))
 
 (defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [db token-service]} context
@@ -77,7 +82,7 @@
           ;; User already active - redirect to login
           (= :active (:user/status user))
           (-> (http/found auth.routes/login {:email email})
-              (flash/add-message "Account already activated. Please log in."))
+              (flash/add-message (tr "Account already activated. Please log in.")))
 
           ;; User is invited - process invitation
           (= :invited (:user/status user))
@@ -88,7 +93,7 @@
                 (render :email email
                         :full-name (:full-name result)
                         :token token
-                        :errors {:confirm-password ["Passwords do not match"]})
+                        :errors {:confirm-password [(tr "Passwords do not match")]})
                 ;; All good - activate user
                 (f/attempt-all [_activated (f/try* (let [{:keys [password full-name]} result
                                                          user-id (:user/id user)]
@@ -102,9 +107,9 @@
                   ;; Redirect to login with email prefilled
                   (let [display-name (or (:full-name result) (:user/full-name user) email)]
                     (-> (http/found auth.routes/login {:email email})
-                        (flash/add-message (str "Password set for " display-name ". Please log in."))))
+                        (flash/add-message (tr "Password set for %1. Please log in." display-name))))
                   (f/when-failed [e]
-                    (http/failure-flash e (http/found auth.routes/login {:email email}) "Could not set your password. Please try again."))))
+                    (http/failure-flash e (http/found auth.routes/login {:email email}) (tr "Could not set your password. Please try again.")))))
               (f/when-failed [e]
                 (render :email email
                         :full-name (or (get params "full-name") (:user/full-name user))

@@ -1,6 +1,7 @@
 (ns sepal.app.routes.settings.users.invite-subject-test
   (:require [clojure.test :refer [deftest is testing]]
-            [sepal.app.routes.settings.users.invite :as invite]))
+            [sepal.app.routes.settings.users.invite :as invite]
+            [sepal.i18n.interface :as i18n]))
 
 (deftest test-subject-names-the-garden
   (testing "which invitation this is, for someone who keeps records for more
@@ -16,3 +17,16 @@
     (is (= "Configured subject" (invite/invitation-subject nil "Configured subject")))
     (is (= "You have been invited to Sepal" (invite/invitation-subject nil nil)))
     (is (= "You have been invited to Sepal" (invite/invitation-subject nil "   ")))))
+
+(deftest test-subject-is-in-the-inviters-language
+  (i18n/load-catalogs! {"es" (i18n/parse-catalog "es" "msgid \"You have been invited to %1 on Sepal\"
+msgstr \"Le han invitado a %1 en Sepal\"
+")})
+  (try
+    (i18n/with-locale "es"
+      (is (= "Le han invitado a More Tomorrow Farm en Sepal"
+             (invite/invitation-subject "More Tomorrow Farm" nil)))
+      (is (= "Configured subject" (invite/invitation-subject nil "Configured subject"))
+          "a subject the garden configured is sent as configured"))
+    (finally
+      (i18n/load-catalogs! {}))))

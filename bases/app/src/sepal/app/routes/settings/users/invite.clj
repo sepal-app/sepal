@@ -2,7 +2,6 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [failjure.core :as f]
-            [pogonos.core :as mustache]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
@@ -10,6 +9,7 @@
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.mail.interface :as mail.i]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
@@ -99,25 +99,36 @@
   named itself still sends a sensible email."
   [organization-name configured]
   (cond
-    organization-name (str "You have been invited to " organization-name " on Sepal")
+    organization-name (tr "You have been invited to %1 on Sepal" organization-name)
     (not (str/blank? configured)) configured
-    :else "You have been invited to Sepal"))
+    :else (tr "You have been invited to Sepal")))
+
+(defn invitation-body [{:keys [full-name inviter-name inviter-email organization-name accept-url]}]
+  (str (str/join "\n\n"
+                 [(if full-name (tr "Hello %1," full-name) (tr "Hello,"))
+                  (if organization-name
+                    (tr "%1 (%2) has invited you to join %3 on Sepal, a botanical collection management system."
+                        inviter-name inviter-email organization-name)
+                    (tr "%1 (%2) has invited you to join Sepal, a botanical collection management system."
+                        inviter-name inviter-email))
+                  (tr "To accept this invitation and set up your account, click the link below:")
+                  accept-url
+                  (tr "After clicking the link, you will be asked to set a password for your account. Once your password is set, you will need to log in with your email address and new password.")
+                  (tr "This invitation expires in 24 hours.")
+                  (tr "If you weren't expecting this invitation, you can safely ignore this email.")])
+       "\n"))
 
 (defn send-invitation-email
   "Public so resend-invitation sends the same email. It was a private copy
-  there, and the two had already drifted: only this one names the garden."
-  [mail {:keys [to full-name inviter-name inviter-email
-                accept-url from subject organization-name]}]
-  (let [content (mustache/render-resource "app/email/invitation.mustache"
-                                          {:full-name full-name
-                                           :inviter-name inviter-name
-                                           :inviter-email inviter-email
-                                           :organization-name organization-name
-                                           :accept-url accept-url})]
-    (mail.i/send-message mail {:from from
-                               :to to
-                               :subject subject
-                               :body content})))
+  there, and the two had already drifted: only this one names the garden.
+
+  Sends in the current locale, which is the inviter's: the invitee has no
+  account and no browser to ask yet."
+  [mail {:keys [to from subject] :as invitation}]
+  (mail.i/send-message mail {:from from
+                             :to to
+                             :subject subject
+                             :body (invitation-body invitation)}))
 
 (defn- check-email-exists [db email]
   (when-let [existing-user (user.i/get-by-email db email)]

@@ -448,9 +448,9 @@
                         :backup-store (resolve-backup-store backup-store backup-dir)
                         :backup-email-from (or backup-email-from default-backup-email-from)
                         :forgot-password-email-from (or forgot-password-email-from "support@sepal.app")
-                        :forgot-password-email-subject (or forgot-password-email-subject "Sepal - Reset Password")
+                        :forgot-password-email-subject forgot-password-email-subject
                         :invitation-email-from (or invitation-email-from default-invitation-email-from)
-                        :invitation-email-subject (or invitation-email-subject default-invitation-email-subject)
+                        :invitation-email-subject invitation-email-subject
                         :remembered-gardens-cookie-domain remembered-gardens-cookie-domain}}
 
      :sepal.scheduler.interface/scheduler {}

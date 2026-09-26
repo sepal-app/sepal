@@ -8,6 +8,7 @@
             [sepal.app.backup.fake-store :as fake-store]
             [sepal.app.backup.local :as local]
             [sepal.app.test.system :refer [*db* *mail-client* default-system-fixture]]
+            [sepal.i18n.interface :as i18n]
             [sepal.scheduler.interface :as scheduler.i]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i])
@@ -298,3 +299,18 @@
         (finally
           (settings.i/set-values! *db* {"backup.frequency" nil})
           (fs/delete-tree dir))))))
+
+(deftest test-backup-email-uses-each-admins-language
+  (testing "each admin reads the notice in their saved language; the rest get English"
+    (let [spanish (create-admin-user! *db*)
+          english (create-admin-user! *db*)]
+      (user.i/update! *db* (:user/id (user.i/get-by-email *db* spanish)) {:language "es"})
+      (i18n/load-catalogs! {"es" (i18n/parse-catalog "es" "msgid \"Sepal Backup Failed\"\nmsgstr \"Falló la copia de seguridad de Sepal\"\n")})
+      (try
+        (clear-sent-messages!)
+        (#'backup/send-backup-failure-email! *mail-client* "backups@example.org" *db* "disk full")
+        (let [subject-for (fn [email] (:subject (first (filter #(= email (:to %)) (sent-messages)))))]
+          (is (= "Falló la copia de seguridad de Sepal" (subject-for spanish)))
+          (is (= "Sepal Backup Failed" (subject-for english))))
+        (finally
+          (i18n/load-catalogs! {}))))))

@@ -4,31 +4,32 @@
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
 
 (defn page-content [& {:keys [email token]}]
   [:div
-   [:h1 {:class "spl-auth-title"} "Reset the password for "]
+   [:h1 {:class "spl-auth-title"} (tr "Reset your password")]
    [:p {:class "text-lg pb-6"} email]
    (form/form {:method "post"
                :action (z/url-for auth.routes/reset-password)}
               [(form/anti-forgery-field)
                (form/hidden-field :name "token" :value token)
-               (form/input-field :label "Password"
+               (form/input-field :label (tr "Password")
                                  :name "password"
                                  :type "password"
                                  :minlength 8
                                  :required true
-                                 :data-error-msg "The password must be a minimum of 8 characters long.")
-               (form/input-field :label "Confirm password"
+                                 :data-error-msg (tr "The password must be at least 8 characters long."))
+               (form/input-field :label (tr "Confirm password")
                                  :name "confirm_password"
                                  :type "password"
                                  :minlength 8
                                  :required true
-                                 :data-error-msg "The passwords do not match")
-               (form/submit-button {:class "spl-btn spl-btn--primary mt-4"} "Reset Password")])])
+                                 :data-error-msg (tr "The passwords do not match"))
+               (form/submit-button {:class "spl-btn spl-btn--primary mt-4"} (tr "Reset password"))])])
 
 (defn render [& {:keys [email errors flash token]}]
   (page/page :content (page-content :email email
@@ -54,7 +55,7 @@
             (do
               (user.i/set-password! db (:user/id user) password)
               (-> (http/found auth.routes/login)
-                  (flash/add-message "Your password has been reset.")))
+                  (flash/add-message (tr "Your password has been reset."))))
 
             ;; GET - show password reset form
             (render :email email
@@ -62,7 +63,7 @@
                     :flash flash))
           ;; User not found or not active
           (-> (http/found auth.routes/login)
-              (flash/error "Invalid password reset token."))))
+              (flash/error (tr "Invalid password reset token.")))))
       ;; Token invalid or expired
       (-> (http/found auth.routes/login)
-          (flash/error "Invalid password reset token.")))))
+          (flash/error (tr "Invalid password reset token."))))))
