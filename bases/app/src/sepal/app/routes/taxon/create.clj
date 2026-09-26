@@ -7,6 +7,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.validation.interface :as validation.i]
@@ -27,8 +28,8 @@
                                     :values values)
              :flash flash
              :footer (form/footer :buttons (taxon.form/footer-buttons :on-cancel :back))
-             :breadcrumbs [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
-                           "New taxon"]))
+             :breadcrumbs [[:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
+                           (tr "New taxon")]))
 
 (defn create! [db created-by data]
   ;; `parentage` rides in on the form params but is not a taxon column, and
@@ -67,6 +68,6 @@
     (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
                     saved (f/try* (create! db (:user/id viewer) data))]
       (-> (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
-          (flash/success "Taxon created successfully"))
+          (flash/success (tr "Taxon created successfully")))
       (f/when-failed [e]
-        (http/failure-flash e (http/hx-redirect taxon.routes/new) "Could not create the taxon")))))
+        (http/failure-flash e (http/hx-redirect taxon.routes/new) (tr "Could not create the taxon"))))))

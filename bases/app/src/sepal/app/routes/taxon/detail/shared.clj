@@ -5,6 +5,7 @@
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def name-tab ::name)
@@ -14,24 +15,24 @@
 (def tags-tab ::tags)
 
 (defn items [& {:keys [active taxon]}]
-  [(ui.tabs/item "Name"
+  [(ui.tabs/item (tr "Name")
                  {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
                   :active (= active name-tab)})
-   (ui.tabs/item "Media"
+   (ui.tabs/item (tr "Media")
                  {:href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
                   :active (= active media-tab)})
-   (ui.tabs/item "Synonyms"
+   (ui.tabs/item (tr "Synonyms")
                  {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
                   :active (= active synonyms-tab)})
-   (ui.tabs/item "Notes"
+   (ui.tabs/item (tr "Notes")
                  {:href (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
                   :active (= active notes-tab)})
-   (ui.tabs/item "Tags"
+   (ui.tabs/item (tr "Tags")
                  {:href (z/url-for taxon.routes/detail-tags {:id (:taxon/id taxon)})
                   :active (= active tags-tab)})])
 
 (defn tabs [taxon active]
-  (ui.tabs/tabs {:label "Taxon sections"
+  (ui.tabs/tabs {:label (tr "Taxon sections")
                  :items (items :taxon taxon :active active)}))
 
 (defn page
@@ -48,7 +49,7 @@
     :footer footer))
 
 (defn breadcrumbs [taxon]
-  [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+  [[:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
    [:span (taxon-name/render (:taxon/name taxon))]])
 
 (defn actions
@@ -60,8 +61,8 @@
   (let [id (:taxon/id taxon)]
     (ui.actions/menu
       :primary primary
-      :items [{:label "Add an accession"
+      :items [{:label (tr "Add an accession")
                :href (z/url-for accession.routes/new nil {:taxon-id id})}
-              {:label "Add a child taxon"
+              {:label (tr "Add a child taxon")
                :href (z/url-for taxon.routes/new nil {:parent-id id})}]
       :delete-url (z/url-for taxon.routes/delete {:id id}))))

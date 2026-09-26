@@ -13,12 +13,13 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :as i18n :refer [tr trn]]
             [sepal.search.interface :as search.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.permission :as taxon.perm]
             [sepal.taxon.interface.search]
+            [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 
 (defn create-button []
@@ -31,7 +32,7 @@
   (table/summary (:taxon/rank t) (:taxon/author t)))
 
 (defn table-columns []
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :name
     :priority 1
     :stacked stacked-summary
@@ -41,15 +42,15 @@
                  :class "spl-link"
                  :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
              (taxon-name/render (:taxon/name t))])}
-   {:name "Author"
+   {:name (tr "Author")
     :type :text
     :priority 2
     :cell :taxon/author}
-   {:name "Rank"
+   {:name (tr "Rank")
     :type :text
     :priority 3
-    :cell :taxon/rank}
-   {:name "Parent"
+    :cell #(some-> % :taxon/rank keyword taxon.spec/rank-labels tr)}
+   {:name (tr "Parent")
     :type :name
     :priority 3
     :cell (fn [t]
@@ -90,20 +91,20 @@
     (let [shown (take synonym-block-limit matches)
           extra (- (count matches) (count shown))]
       [:div {:class "spl-alert spl-alert--info"}
-       [:p "Also matching a synonym"]
+       [:p (tr "Also matching a synonym")]
        [:ul
         (for [m shown]
-          [:li
-           [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id m)})
-                :class "spl-link"}
-            (taxon-name/render (:taxon/name m))]
-           [:span " — matches synonym "]
-           (taxon-name/render (:synonym/synonym-name m))])
+          (into [:li]
+                (i18n/fill (tr "%1 — matches synonym %2")
+                           [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id m)})
+                                :class "spl-link"}
+                            (taxon-name/render (:taxon/name m))]
+                           (taxon-name/render (:synonym/synonym-name m)))))
         ;; An <li>, not a <p>: a <ul> may only contain list items, and a browser
         ;; keeps a stray <p> right where it is — a list announcing two items
         ;; and then some loose text belonging to none of them.
         (when (pos? extra)
-          [:li (format "and %d more" extra)])]])))
+          [:li (trn "and %1 more" "and %1 more" extra)])]])))
 
 (defn table [& {:keys [rows page href page-size total search-query]}]
   (pages.list/card-table
@@ -116,8 +117,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No taxa yet")
-                                :body "The taxonomy behind your collection. Import the World Flora Online list
-                              from Settings, or add a name by hand."
+                                :body (tr "The taxonomy behind your collection. Import the World Flora Online list from Settings, or add a name by hand.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for taxon.routes/new)))))
 (defn- accessions-only-checkbox
@@ -131,7 +131,7 @@
               :class "spl-checkbox"
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
-     [:span "Only taxa with accessions"]]))
+     [:span (tr "Only taxa with accessions")]]))
 
 (defn render-synonym-notice
   "Why a `synonym:` search returned what it did, when that needs saying.
@@ -143,14 +143,15 @@
   (cond
     too-short?
     [:div {:class "spl-alert spl-alert--info"}
-     [:p (format "Type at least %d characters to search synonyms."
-                 synonym.i/min-synonym-query-length)]]
+     [:p (trn "Type at least %1 character to search synonyms."
+              "Type at least %1 characters to search synonyms."
+              synonym.i/min-synonym-query-length)]]
 
     truncated?
     [:div {:class "spl-alert spl-alert--info"}
-     [:p (format "That synonym matches more than %d taxa. Showing the first %d — narrow the search to see the rest."
-                 synonym.i/max-synonym-taxon-ids
-                 synonym.i/max-synonym-taxon-ids)]]))
+     [:p (trn "That synonym matches more than %1 taxon. Showing the first %1 — narrow the search to see the rest."
+              "That synonym matches more than %1 taxa. Showing the first %1 — narrow the search to see the rest."
+              synonym.i/max-synonym-taxon-ids)]]))
 
 (defn render [& {:keys [field-options viewer href page page-size parent rows search-query total synonym-matches synonym-notice]}]
   (ui.page/page
@@ -172,7 +173,7 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., rank:species Quercus)"
+                                :placeholder (tr "Search... (e.g., rank:species Quercus)")
                                 :filters (accessions-only-checkbox search-query)
                                 :page page
                                 :page-size page-size
@@ -180,12 +181,12 @@
                                 :actions (ui.export/export-button)))
 
     :breadcrumbs (if parent
-                   [[:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+                   [[:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
                     [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id parent)})
                          :class "italic"}
                      (:taxon/name parent)]
-                    "Children"]
-                   ["Taxa"])
+                    (tr "Children")]
+                   [(tr "Taxa")])
     :page-title-buttons (when (authz/user-has-permission? viewer taxon.perm/create)
                           (create-button))))
 
@@ -335,8 +336,8 @@
                  :text (:taxon/name hit)
                  :content (ui.combobox/option-content
                             :title (taxon-name/render (:taxon/name hit))
-                            :meta (str "matches synonym "
-                                       (:synonym/synonym-name hit)))})))))
+                            :meta (tr "matches synonym %1"
+                                      (:synonym/synonym-name hit)))})))))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

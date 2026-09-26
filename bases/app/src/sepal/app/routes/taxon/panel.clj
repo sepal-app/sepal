@@ -1,8 +1,7 @@
 (ns sepal.app.routes.taxon.panel
   "Resource panel content for taxa.
    Displays taxon summary, statistics, external links, and activity."
-  (:require [clojure.string :as str]
-            [sepal.accession.interface :as acc.i]
+  (:require [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -13,19 +12,18 @@
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.material.interface :as mat.i]
             [sepal.note.interface :as note.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 
 (defn- format-rank
-  "Format rank keyword for display."
+  "A rank's display name, translated."
   [rank]
-  (when rank
-    (-> (name rank)
-        (str/replace "-" " ")
-        (str/capitalize))))
+  (some-> rank keyword taxon.spec/rank-labels tr))
 
 (defn- synonyms-section
   "The names this taxon is also known by.
@@ -61,7 +59,7 @@
        (taxon-name/render parent-name)]
       (when (and role (not= :unknown role))
         [:span {:class "text-xs text-text-dim"}
-         (if (= :seed role) "seed parent" "pollen parent")])])])
+         (if (= :seed role) (tr "seed parent") (tr "pollen parent"))])])])
 
 (defn- vernacular-names-section
   "What this taxon is called in everyday speech.
@@ -111,29 +109,29 @@
 
         ;; Summary section
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields (cond-> [{:label "Rank" :value (format-rank rank)}
-                             {:label "Author" :value author}]
+            :fields (cond-> [{:label (tr "Rank") :value (format-rank rank)}
+                             {:label (tr "Author") :value author}]
                       parent
-                      (conj {:label "Parent"
+                      (conj {:label (tr "Parent")
                              :value [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id parent)})
                                          :class "spl-link"}
                                      (:taxon/name parent)]})
                       distribution
-                      (conj {:label "Distribution" :value distribution})
+                      (conj {:label (tr "Distribution") :value distribution})
                       true
-                      (conj {:label "WFO ID" :value wfo-taxon-id}))))
+                      (conj {:label (tr "WFO ID") :value wfo-taxon-id}))))
 
         ;; Parentage. Only a hybrid has one, so this is disabled far more often
         ;; than it is filled — but a section that comes and goes makes the
         ;; panel's shape vary between taxa, which is why the others stay too.
         (panel/collapsible-section
-          :title "Hybrid parentage"
+          :title (tr "Hybrid parentage")
           :count (count parentage)
           :disabled? (empty? parentage)
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (parentage-section :parentage parentage))
 
@@ -141,26 +139,26 @@
         ;; view for a read-only visitor and the common name is often the only
         ;; name they know the plant by.
         (panel/collapsible-section
-          :title "Vernacular names"
+          :title (tr "Vernacular names")
           :count (count vernacular-names)
           :disabled? (empty? vernacular-names)
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (vernacular-names-section :vernacular-names vernacular-names))
 
         ;; Statistics section
         (panel/collapsible-section
-          :title "Statistics"
+          :title (tr "Statistics")
           :count (+ (or child-count 0) (or accession-count 0) (or material-count 0))
           :children
           (panel/statistics-section
-            :stats [{:label "Children"
+            :stats [{:label (tr "Children")
                      :value child-count
                      :href (z/url-for taxon.routes/index nil {:q (str "parent.id:" id)})}
-                    {:label "Accessions"
+                    {:label (tr "Accessions")
                      :value accession-count
                      :href (z/url-for accession.routes/index nil {:taxon-id id})}
-                    {:label "Material"
+                    {:label (tr "Material")
                      :value material-count
                      :href (z/url-for material.routes/index nil {:taxon-id id})}]))
 
@@ -168,20 +166,20 @@
         ;; External Links and Activity below — a section that vanishes makes the
         ;; panel's shape vary between taxa.
         (panel/collapsible-section
-          :title "Synonyms"
+          :title (tr "Synonyms")
           :count (count synonyms)
           :disabled? (empty? synonyms)
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (synonyms-section :synonyms synonyms))
 
         ;; Notes section
         (panel/collapsible-section
-          :title "Notes"
+          :title (tr "Notes")
           :count note-count
           :disabled? (zero? (or note-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (ui.notes/panel-section
@@ -192,9 +190,9 @@
 
         ;; External links section
         (panel/collapsible-section
-          :title "External Links"
+          :title (tr "External Links")
           :disabled? (not wfo-taxon-id)
-          :empty-label "no WFO ID"
+          :empty-label (tr "no WFO ID")
           :children
           (external-links/taxonomic-links-section
             :taxon-name name
@@ -202,10 +200,10 @@
 
         ;; Activity section
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

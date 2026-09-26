@@ -11,6 +11,7 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.validation.interface :as validation.i]
@@ -26,7 +27,7 @@
     (let [read-only? false]
       [:div
        (when read-only?
-         (alert/info "Taxa from the WFO Plantlist are not editable."))
+         (alert/info (tr "Taxa from the WFO Plantlist are not editable.")))
        (taxon.form/form :action (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
                         :errors errors
                         :read-only read-only?
@@ -68,9 +69,9 @@
       (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
                       saved (f/try* (save! db (:taxon/id resource) (:user/id viewer) data))]
         (-> (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
-            (flash/success "Taxon updated successfully"))
+            (flash/success (tr "Taxon updated successfully")))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect taxon.routes/detail {:id (:taxon/id resource)}) "Could not save the taxon")))
+          (http/failure-flash e (http/hx-redirect taxon.routes/detail {:id (:taxon/id resource)}) (tr "Could not save the taxon"))))
 
       :get
       (let [parent (when (:taxon/parent-id resource)

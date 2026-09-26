@@ -6,6 +6,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface.name :as taxon.name]
             [sepal.taxon.interface.spec :as taxon.spec]
             [sepal.validation.interface :as validation.i]
@@ -113,22 +114,22 @@
   [:div {:class "grid grid-cols-[1fr_140px] gap-2 items-end"}
    (combobox/combobox
      :name (str "parentage-parent-" index)
-     :label (if (zero? index) "Crossed from" "and")
+     :label (if (zero? index) (tr "Crossed from") (tr "and"))
      :url (z/url-for taxon.routes/index)
      :errors (:parentage errors)
      :selected (when row
                  {:id (:parent-taxon-id row)
                   :text (:parent-name row)}))
    (form/field
-     :label "Role"
+     :label (tr "Role")
      :name (str "parentage-role-" index)
      :input [:select {:name (str "parentage-role-" index)
                       :id (str "parentage-role-" index)
                       :class "spl-input spl-select"
                       :autocomplete "off"}
-             (for [[v label] [["unknown" "Unknown"]
-                              ["seed" "Seed parent"]
-                              ["pollen" "Pollen parent"]]]
+             (for [[v label] [["unknown" (tr "Unknown")]
+                              ["seed" (tr "Seed parent")]
+                              ["pollen" (tr "Pollen parent")]]]
                [:option {:value v
                          :selected (when (= v (some-> row :role
                                                       clojure.core/name))
@@ -149,7 +150,7 @@
                                {:index next-index})
             :hx-target "#parentage-rows"
             :hx-swap "beforeend"}
-   "Add another parent"])
+   (tr "Add another parent")])
 
 (defn- parentage-section
   "What a hybrid was crossed from.
@@ -182,19 +183,20 @@
                            ".test(n?.value ?? '')) d.open = true };"
                            " f(); n?.addEventListener('input', f)")}
        (hybrid-name? (:name values)) (assoc :open true))
-     [:summary {:class "spl-form-section-title"} "Hybrid parentage"]
+     [:summary {:class "spl-form-section-title"} (tr "Hybrid parentage")]
      [:div {:class "spl-form-fields"}
       [:p {:class "spl-help"}
-       "The taxa this hybrid was crossed from. Opens on its own once the name
-        carries a hybrid marker (×)."]
+       (tr "The taxa this hybrid was crossed from. Opens on its own once the name carries a hybrid marker (×).")]
       (if read-only
         (if (seq rows)
           (for [{:keys [parent-name role]} rows]
             [:p {:class "spl-help"}
              parent-name
-             (when (and role (not= "unknown" (str (clojure.core/name role))))
-               (str " (" (clojure.core/name role) ")"))])
-          [:p {:class "spl-help"} "None recorded."])
+             (case (some-> role clojure.core/name)
+               "seed" (str " (" (tr "seed parent") ")")
+               "pollen" (str " (" (tr "pollen parent") ")")
+               nil)])
+          [:p {:class "spl-help"} (tr "None recorded.")])
         (list
           [:div {:id "parentage-rows" :class "flex flex-col gap-2"}
            (for [i (range slots)]
@@ -210,7 +212,7 @@
   field yourself, after which it stops. The edit form passes neither, so
   nothing can quietly re-rank or re-parent a taxon you are only renaming."
   [& {:keys [action errors read-only values guess-rank-url parent-suggestion-url]}]
-  (let [ranks (->> taxon.spec/rank rest (mapv name))]
+  (let [ranks (rest taxon.spec/rank)]
     [:div
      (form/form
        {:action action
@@ -222,11 +224,10 @@
        [:div {:class "spl-form"}
         (form/anti-forgery-field)
         (form/section
-          :title "Identity"
-          :hint "The scientific name, its author, and where it sits in the
-                 taxonomy."
+          :title (tr "Identity")
+          :hint (tr "The scientific name, its author, and where it sits in the taxonomy.")
           :children
-          [(form/input-field :label "Name"
+          [(form/input-field :label (tr "Name")
                              :name "name"
                              :required true
                              :read-only read-only
@@ -245,13 +246,13 @@
                                 (keyword "hx-on::after-request")
                                 (str "if (event.detail.successful) "
                                      "window.applyRankGuess(event.detail.xhr.responseText)")}))
-           (form/input-field :label "Author"
+           (form/input-field :label (tr "Author")
                              :name "author"
                              :read-only read-only
                              :value (:author values)
                              :errors (:author errors))
            (if read-only
-             (form/input-field :label "Parent"
+             (form/input-field :label (tr "Parent")
                                :name "parent-id"
                                :read-only read-only
                                :value (:parent-name values))
@@ -259,7 +260,7 @@
                (list
                  (combobox/combobox
                    :name "parent-id"
-                   :label "Parent"
+                   :label (tr "Parent")
                    :url url
                    :errors (:parent-id errors)
                    :selected (when (:parent-id values)
@@ -276,11 +277,11 @@
                      :params "name"
                      :apply-fn "window.applyParentSuggestion")))))
            (if read-only
-             (form/input-field :label "Rank"
+             (form/input-field :label (tr "Rank")
                                :name "rank"
                                :read-only read-only
-                               :value (:rank values))
-             (form/field :label "Rank"
+                               :value (some-> (:rank values) keyword taxon.spec/rank-labels tr))
+             (form/field :label (tr "Rank")
                          :name "rank"
                          ;; Built here rather than through `form/enum-select`
                          ;; because the rank guess drives it through
@@ -296,11 +297,11 @@
                                           :required true
                                           :value (:rank values)}
                                  (for [rank ranks]
-                                   [:option {:value rank
-                                             :selected (when (= rank (some-> values :rank name))
+                                   [:option {:value (name rank)
+                                             :selected (when (= (name rank) (some-> values :rank name))
                                                          "selected")}
-                                    rank])]))
-           (form/input-field :label "Distribution"
+                                    (tr (taxon.spec/rank-labels rank))])]))
+           (form/input-field :label (tr "Distribution")
                              :name "distribution"
                              :read-only read-only
                              :value (:distribution values)
@@ -316,15 +317,15 @@
                                         (:vernacular-names values)
                                         [{}])})}
          [:legend {:class "spl-form-section-title flex items-center gap-2"}
-          "Vernacular names"
+          (tr "Vernacular names")
           (tooltip/wrap
             [:button {:type "button"
                       :class "spl-btn spl-btn--sm spl-btn--icon"
                       :x-on:click "vernacularNames.push({id: -1}); $data.dirty = true;"
-                      :aria-label "Add vernacular name"}
+                      :aria-label (tr "Add vernacular name")}
              [:span {:aria-hidden true}
               (heroicons/plus-mini)]]
-            "Add vernacular name"
+            (tr "Add vernacular name")
             :side "right")]
          [:div {:class "spl-form-fields"}
           ;; The rows repeat, so the columns are headed once rather than each
@@ -335,27 +336,27 @@
           ;; between fields, not between a heading and the row under it.
           [:div {:class "flex flex-col gap-2"}
            [:div {:class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
-            [:span {:class "spl-label" :aria-hidden true} "Name"]
-            [:span {:class "spl-label" :aria-hidden true} "Language"]
+            [:span {:class "spl-label" :aria-hidden true} (tr "Name")]
+            [:span {:class "spl-label" :aria-hidden true} (tr "Language")]
             [:span]]
            [:template {:x-for "(vn, index) in vernacularNames"}
             [:div {:class "grid grid-cols-[1fr_1fr_32px] gap-2 items-center"}
              [:input {:name "vernacular-name-name"
                       :class "spl-input min-w-0"
-                      :aria-label "Vernacular name"
+                      :aria-label (tr "Vernacular name")
                       :x-model "vn.name"}]
              [:input {:name "vernacular-name-language"
                       :class "spl-input min-w-0"
-                      :aria-label "Language"
+                      :aria-label (tr "Language")
                       :x-model "vn.language"}]
              (tooltip/wrap
                [:button {:type "button"
                          :class "spl-btn spl-btn--danger spl-btn--icon"
                          :x-on:click "vernacularNames.splice(index, 1); $data.dirty = true;"
-                         :aria-label "Delete"}
+                         :aria-label (tr "Delete")}
                 [:span {:aria-hidden true}
                  (heroicons/outline-trash)]]
-               "Delete"
+               (tr "Delete")
                :side "left")]]]]]
 
         (parentage-section :values values

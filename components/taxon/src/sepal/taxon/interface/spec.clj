@@ -4,6 +4,7 @@
             [camel-snake-kebab.extras :as cske]
             [clojure.data.json :as json]
             [malli.util :as mu]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :as validate.i]))
 
 ;; (def wfo-plantlist-name-id [:re #"^wfo-\d{10}"])
@@ -48,6 +49,46 @@
            :tribe
            :unranked
            :variety])
+
+(def rank-labels
+  "Display names for rank, translated where they are rendered. Rank names are
+  botanical terms with established equivalents in each language."
+  {:aggregate (N_ "Aggregate")
+   :class (N_ "Class")
+   :convariety (N_ "Convariety")
+   :cultivar (N_ "Cultivar")
+   :family (N_ "Family")
+   :form (N_ "Form")
+   :genus (N_ "Genus")
+   :grex (N_ "Grex")
+   :group (N_ "Group")
+   :kingdom (N_ "Kingdom")
+   :lusus (N_ "Lusus")
+   :order (N_ "Order")
+   :phylum (N_ "Phylum")
+   :prole (N_ "Prole")
+   :section (N_ "Section")
+   :series (N_ "Series")
+   :species (N_ "Species")
+   :subclass (N_ "Subclass")
+   :subfamily (N_ "Subfamily")
+   :subform (N_ "Subform")
+   :subgenus (N_ "Subgenus")
+   :subkingdom (N_ "Subkingdom")
+   :suborder (N_ "Suborder")
+   :subphylum (N_ "Subphylum")
+   :subsection (N_ "Subsection")
+   :subseries (N_ "Subseries")
+   :subspecies (N_ "Subspecies")
+   :subtribe (N_ "Subtribe")
+   :subvariety (N_ "Subvariety")
+   :superclass (N_ "Superclass")
+   :superfamily (N_ "Superfamily")
+   :superorder (N_ "Superorder")
+   :supertribe (N_ "Supertribe")
+   :tribe (N_ "Tribe")
+   :unranked (N_ "Unranked")
+   :variety (N_ "Variety")})
 
 (def VernacularName
   [:map {:closed true

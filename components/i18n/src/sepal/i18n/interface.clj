@@ -131,3 +131,19 @@
   [n]
   (.format ^java.text.Format (java.text.NumberFormat/getIntegerInstance (java-locale))
            ^Object n))
+
+(defn fill
+  "A translated string as a vector of its text and `parts`, with each %n
+  replaced by the nth part. For a sentence that has markup inside it:
+
+    (fill (tr \"%1 matches synonym %2\") [:a ...] [:i ...])
+
+  so the translation decides where the markup goes."
+  [s & parts]
+  (let [parts (vec parts)]
+    (into []
+          (comp (map (fn [[text idx]]
+                       (if idx (get parts (dec (parse-long idx)) (str "%" idx)) text)))
+                (remove #(= "" %)))
+          (map (fn [[whole n]] (if n [nil n] [whole nil]))
+               (re-seq #"%(\d+)|[^%]+|%" s)))))

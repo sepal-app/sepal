@@ -111,3 +111,13 @@ msgstr[2] \"%1 plików\"
   (is (= "1,284" (i18n/format-number 1284)))
   (binding [i18n/*locale* "es"]
     (is (= "400.000" (i18n/format-number 400000)))))
+
+(deftest test-fill
+  (is (= [[:a "Quercus"] " — matches synonym " [:i "Q. robur"]]
+         (i18n/fill "%1 — matches synonym %2" [:a "Quercus"] [:i "Q. robur"])))
+  (testing "a translation may reorder the placeholders"
+    (is (= ["el sinónimo " [:i "Q. robur"] " de " [:a "Quercus"]]
+           (i18n/fill "el sinónimo %2 de %1" [:a "Quercus"] [:i "Q. robur"]))))
+  (is (= ["Set up your account for " [:strong "a@b.c"]]
+         (i18n/fill "Set up your account for %1" [:strong "a@b.c"])))
+  (is (= ["no placeholders"] (i18n/fill "no placeholders"))))

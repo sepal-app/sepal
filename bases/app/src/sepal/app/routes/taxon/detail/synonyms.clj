@@ -15,6 +15,7 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.synonym.interface :as synonym.i]
             [sepal.synonym.interface.activity :as synonym.activity]
             [sepal.validation.interface :as validation.i]
@@ -32,25 +33,25 @@
     (tooltip/wrap
       [:button {:type "button"
                 :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
-                :aria-label "Remove synonym"
+                :aria-label (tr "Remove synonym")
                 :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
                 :hx-delete (z/url-for taxon.routes/detail-synonym
                                       {:id (:taxon/id taxon)
                                        :synonym-id (:synonym/id synonym)})
                 :hx-confirm "Remove this synonym?"}
        (heroicons/outline-trash :class "size-4")]
-      "Remove synonym"
+      (tr "Remove synonym")
       :side "left")))
 
 (defn- table-columns [taxon]
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :name
     :priority 1
     :stacked (fn [synonym]
                (list [:span {:class "spl-stacked-line"} (:synonym/source synonym)]
                      (delete-button :taxon taxon :synonym synonym)))
     :cell (fn [synonym] (taxon-name/render (:synonym/synonym-name synonym)))}
-   {:name "Source"
+   {:name (tr "Source")
     :type :text
     :priority 2
     :cell :synonym/source}
@@ -63,8 +64,8 @@
   (ui.table/table :columns (table-columns taxon)
                   :rows synonyms
                   :empty-state (ui.empty/empty-state
-                                 :title "No synonyms yet"
-                                 :body "Other names this garden uses for this taxon show up here.")))
+                                 :title (tr "No synonyms yet")
+                                 :body (tr "Other names this garden uses for this taxon show up here."))))
 
 (defn- add-form [& {:keys [taxon]}]
   (ui.form/form
@@ -72,10 +73,10 @@
      :hx-swap "none"
      :class "flex items-end gap-2"}
     (ui.form/anti-forgery-field)
-    (ui.form/input-field :label "Synonym name"
+    (ui.form/input-field :label (tr "Synonym name")
                          :name "synonym-name"
                          :required true)
-    [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Add"]))
+    [:button {:type "submit" :class "spl-btn spl-btn--primary"} (tr "Add")]))
 
 (defn page-content [& {:keys [synonyms taxon]}]
   (taxon.shared/page
@@ -122,7 +123,7 @@
                       _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
         (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
         (f/when-failed [e]
-          (http/failure-partial e "The synonym could not be added.")))
+          (http/failure-partial e (tr "The synonym could not be added."))))
 
       :get
       (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
@@ -145,4 +146,4 @@
                                        (remove! db (:user/id viewer) synonym)))]
       (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
       (f/when-failed [e]
-        (http/failure-partial e "The synonym could not be removed.")))))
+        (http/failure-partial e (tr "The synonym could not be removed."))))))

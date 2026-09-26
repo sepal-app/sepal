@@ -168,6 +168,7 @@ msgstr[1] ""
 #: bases/app/src/sepal/app/routes/accession/index.clj:138
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:57
 #: bases/app/src/sepal/app/routes/material/index.clj:161
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:159
 #: bases/app/src/sepal/app/ui/page.clj:141
 #: components/taxon/src/sepal/taxon/interface/search.clj:111
 msgid "Accessions"
@@ -318,10 +319,13 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/notes.clj:100
 #: bases/app/src/sepal/app/routes/accession/detail/notes.clj:134
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:87
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:114
 msgid "The note could not be saved."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/notes.clj:143
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:123
 msgid "The note could not be deleted."
 msgstr ""
 
@@ -332,16 +336,20 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/shared.clj:42
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:23
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:21
 msgid "Media"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/shared.clj:45
 #: bases/app/src/sepal/app/routes/accession/panel.clj:107
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:27
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:180
 msgid "Notes"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/shared.clj:48
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:29
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:30
 #: bases/app/src/sepal/app/ui/page.clj:151
 msgid "Tags"
 msgstr ""
@@ -354,6 +362,11 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/accession/index.clj:134
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:53
 #: bases/app/src/sepal/app/routes/material/index.clj:157
+#: bases/app/src/sepal/app/routes/taxon/create.clj:31
+#: bases/app/src/sepal/app/routes/taxon/detail.clj:16
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:52
+#: bases/app/src/sepal/app/routes/taxon/index.clj:184
+#: bases/app/src/sepal/app/routes/taxon/index.clj:189
 #: bases/app/src/sepal/app/ui/page.clj:139
 msgid "Taxa"
 msgstr ""
@@ -369,11 +382,13 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/tags.clj:101
 #: bases/app/src/sepal/app/routes/material/detail/tags.clj:110
+#: bases/app/src/sepal/app/routes/taxon/detail/tags.clj:94
 msgid "The tag could not be added."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/tags.clj:126
 #: bases/app/src/sepal/app/routes/material/detail/tags.clj:137
+#: bases/app/src/sepal/app/routes/taxon/detail/tags.clj:118
 msgid "The tag could not be removed."
 msgstr ""
 
@@ -399,6 +414,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/form.clj:89
 #: bases/app/src/sepal/app/routes/material/form.clj:80
+#: bases/app/src/sepal/app/routes/taxon/form.clj:227
 msgid "Identity"
 msgstr ""
 
@@ -552,6 +568,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:66
 #: bases/app/src/sepal/app/routes/material/panel.clj:115
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:113
 msgid "Summary"
 msgstr ""
 
@@ -564,6 +581,7 @@ msgid "Date accessioned"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:95
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:152
 msgid "Statistics"
 msgstr ""
 
@@ -572,16 +590,23 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/accession/panel.clj:140
 #: bases/app/src/sepal/app/routes/material/panel.clj:146
 #: bases/app/src/sepal/app/routes/material/panel.clj:175
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:135
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:146
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:173
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:183
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:207
 msgctxt "empty section"
 msgid "none"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:101
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:162
 msgid "Material"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:121
 #: bases/app/src/sepal/app/routes/material/panel.clj:156
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:194
 msgid "External Links"
 msgstr ""
 
@@ -591,6 +616,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:137
 #: bases/app/src/sepal/app/routes/material/panel.clj:172
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:204
 #: bases/app/src/sepal/app/ui/page.clj:137
 msgid "Activity"
 msgstr ""
@@ -994,6 +1020,8 @@ msgid "No propagations yet"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/profile.clj:17
+#: bases/app/src/sepal/app/routes/taxon/form.clj:340
+#: bases/app/src/sepal/app/routes/taxon/form.clj:350
 msgid "Language"
 msgstr ""
 
@@ -1116,6 +1144,18 @@ msgstr ""
 msgid "Deleted tag %1"
 msgstr ""
 
+#: bases/app/src/sepal/app/routes/taxon/create.clj:32
+msgid "New taxon"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/create.clj:71
+msgid "Taxon created successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/create.clj:73
+msgid "Could not create the taxon"
+msgstr ""
+
 #: bases/app/src/sepal/app/routes/taxon/delete.clj:18
 msgid "Delete taxon %1?"
 msgstr ""
@@ -1124,8 +1164,261 @@ msgstr ""
 msgid "Deleted taxon %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/taxon/index.clj:118
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:44
+msgid "Media linked to the taxa, accessions and material below this taxon"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:30
+msgid "Taxa from the WFO Plantlist are not editable."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:72
+msgid "Taxon updated successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:74
+msgid "Could not save the taxon"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:18
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:47
+#: bases/app/src/sepal/app/routes/taxon/form.clj:230
+#: bases/app/src/sepal/app/routes/taxon/form.clj:339
+#: bases/app/src/sepal/app/routes/taxon/index.clj:35
+#: components/contact/src/sepal/contact/interface/search.clj:13
+#: components/location/src/sepal/location/interface/search.clj:18
+#: components/taxon/src/sepal/taxon/interface/search.clj:13
+msgid "Name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:24
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:170
+msgid "Synonyms"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:35
+msgid "Taxon sections"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:64
+msgid "Add an accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:66
+msgid "Add a child taxon"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:36
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:43
+msgid "Remove synonym"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:54
+msgid "Source"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:67
+msgid "No synonyms yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:68
+msgid "Other names this garden uses for this taxon show up here."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:76
+msgid "Synonym name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:79
+#: bases/app/src/sepal/app/ui/query_builder.clj:57
+msgid "Add"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:126
+msgid "The synonym could not be added."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:149
+msgid "The synonym could not be removed."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/export.clj:40
+msgid "Include parent taxon (name, author, rank)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:117
+msgid "Crossed from"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:117
+msgid "and"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:124
+msgid "Role"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:130
+#: components/accession/src/sepal/accession/interface/spec.clj:151
+#: components/material/src/sepal/material/interface/spec.clj:26
+msgid "Unknown"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:131
+msgid "Seed parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:132
+msgid "Pollen parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:153
+msgid "Add another parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:186
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:132
+msgid "Hybrid parentage"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:189
+msgid ""
+"The taxa this hybrid was crossed from. Opens on its own once the name "
+"carries a hybrid marker (×)."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:196
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:63
+msgid "seed parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:197
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:63
+msgid "pollen parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:199
+msgid "None recorded."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:228
+msgid "The scientific name, its author, and where it sits in the taxonomy."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:249
+#: bases/app/src/sepal/app/routes/taxon/index.clj:45
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:117
+#: components/taxon/src/sepal/taxon/interface/search.clj:17
+msgid "Author"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:255
+#: bases/app/src/sepal/app/routes/taxon/form.clj:263
+#: bases/app/src/sepal/app/routes/taxon/index.clj:53
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:119
+#: components/taxon/src/sepal/taxon/interface/search.clj:45
+#: components/taxon/src/sepal/taxon/interface/search.clj:50
+msgid "Parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:280
+#: bases/app/src/sepal/app/routes/taxon/form.clj:284
+#: bases/app/src/sepal/app/routes/taxon/index.clj:49
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:116
+#: components/taxon/src/sepal/taxon/interface/search.clj:23
+msgid "Rank"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:304
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:124
+msgid "Distribution"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:320
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:143
+msgid "Vernacular names"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:325
+#: bases/app/src/sepal/app/routes/taxon/form.clj:328
+msgid "Add vernacular name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:346
+msgid "Vernacular name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:356
+#: bases/app/src/sepal/app/routes/taxon/form.clj:359
+#: bases/app/src/sepal/app/ui/delete.clj:30
+#: bases/app/src/sepal/app/ui/delete.clj:56
+#: bases/app/src/sepal/app/ui/delete.clj:105
+msgid "Delete"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:94
+msgid "Also matching a synonym"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:98
+msgid "%1 — matches synonym %2"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:107
+msgid "and %1 more"
+msgid_plural "and %1 more"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:119
 msgid "No taxa yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:120
+msgid ""
+"The taxonomy behind your collection. Import the World Flora Online list from "
+"Settings, or add a name by hand."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:134
+msgid "Only taxa with accessions"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:146
+msgid "Type at least %1 character to search synonyms."
+msgid_plural "Type at least %1 characters to search synonyms."
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:152
+msgid ""
+"That synonym matches more than %1 taxon. Showing the first %1 — narrow the "
+"search to see the rest."
+msgid_plural ""
+"That synonym matches more than %1 taxa. Showing the first %1 — narrow the "
+"search to see the rest."
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:176
+msgid "Search... (e.g., rank:species Quercus)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:188
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:156
+msgid "Children"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:339
+msgid "matches synonym %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:126
+msgid "WFO ID"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:196
+msgid "no WFO ID"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/actions.clj:64
@@ -1196,12 +1489,6 @@ msgstr ""
 
 #: bases/app/src/sepal/app/ui/combobox.clj:131
 msgid "Show %1 options"
-msgstr ""
-
-#: bases/app/src/sepal/app/ui/delete.clj:30
-#: bases/app/src/sepal/app/ui/delete.clj:56
-#: bases/app/src/sepal/app/ui/delete.clj:105
-msgid "Delete"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/delete.clj:75
@@ -1348,10 +1635,6 @@ msgstr ""
 msgid "Select value..."
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/query_builder.clj:57
-msgid "Add"
-msgstr ""
-
 #: bases/app/src/sepal/app/ui/query_builder.clj:65
 msgid "Contains"
 msgstr ""
@@ -1487,14 +1770,17 @@ msgid "Below family"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:45
+#: components/taxon/src/sepal/taxon/interface/spec.clj:60
 msgid "Family"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:46
+#: components/taxon/src/sepal/taxon/interface/spec.clj:62
 msgid "Genus"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:47
+#: components/taxon/src/sepal/taxon/interface/spec.clj:72
 msgid "Species"
 msgstr ""
 
@@ -1507,6 +1793,7 @@ msgid "Second infraspecific epithet"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:50
+#: components/taxon/src/sepal/taxon/interface/spec.clj:59
 msgid "Cultivar"
 msgstr ""
 
@@ -1648,23 +1935,12 @@ msgstr ""
 msgid "Tuber"
 msgstr ""
 
-#: components/accession/src/sepal/accession/interface/spec.clj:151
-#: components/material/src/sepal/material/interface/spec.clj:26
-msgid "Unknown"
-msgstr ""
-
 #: components/accession/src/sepal/accession/interface/spec.clj:152
 msgid "Unrooted cutting"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:153
 msgid "Vegetative spreading"
-msgstr ""
-
-#: components/contact/src/sepal/contact/interface/search.clj:13
-#: components/location/src/sepal/location/interface/search.clj:18
-#: components/taxon/src/sepal/taxon/interface/search.clj:13
-msgid "Name"
 msgstr ""
 
 #: components/contact/src/sepal/contact/interface/search.clj:23
@@ -1872,25 +2148,140 @@ msgid ""
 "it was an estimate."
 msgstr ""
 
-#: components/taxon/src/sepal/taxon/interface/search.clj:17
-msgid "Author"
-msgstr ""
-
-#: components/taxon/src/sepal/taxon/interface/search.clj:23
-msgid "Rank"
-msgstr ""
-
-#: components/taxon/src/sepal/taxon/interface/search.clj:45
-#: components/taxon/src/sepal/taxon/interface/search.clj:50
-msgid "Parent"
-msgstr ""
-
 #: components/taxon/src/sepal/taxon/interface/search.clj:66
 msgid "Parentage"
 msgstr ""
 
 #: components/taxon/src/sepal/taxon/interface/search.clj:135
 msgid "Synonym"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:56
+msgid "Aggregate"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:57
+msgid "Class"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:58
+msgid "Convariety"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:61
+msgid "Form"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:63
+msgid "Grex"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:64
+msgid "Group"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:65
+msgid "Kingdom"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:66
+msgid "Lusus"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:67
+msgid "Order"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:68
+msgid "Phylum"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:69
+msgid "Prole"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:70
+msgid "Section"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:71
+msgid "Series"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:73
+msgid "Subclass"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:74
+msgid "Subfamily"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:75
+msgid "Subform"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:76
+msgid "Subgenus"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:77
+msgid "Subkingdom"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:78
+msgid "Suborder"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:79
+msgid "Subphylum"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:80
+msgid "Subsection"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:81
+msgid "Subseries"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:82
+msgid "Subspecies"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:83
+msgid "Subtribe"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:84
+msgid "Subvariety"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:85
+msgid "Superclass"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:86
+msgid "Superfamily"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:87
+msgid "Superorder"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:88
+msgid "Supertribe"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:89
+msgid "Tribe"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:90
+msgid "Unranked"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:91
+msgid "Variety"
 msgstr ""
 
 #: components/validation/src/sepal/validation/interface.clj:65
