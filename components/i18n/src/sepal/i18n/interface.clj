@@ -10,6 +10,11 @@
   the English: a missing translation is never blank."
   (:require [sepal.i18n.core :as core]))
 
+(def source-locale
+  "The language the msgids are written in. It has no catalog: a user who
+  chooses it gets the msgids."
+  "en")
+
 (def ^:dynamic *locale*
   "The resolved locale, e.g. \"es\", or nil for English."
   nil)

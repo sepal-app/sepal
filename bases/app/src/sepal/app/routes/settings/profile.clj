@@ -23,7 +23,8 @@
                      :class "spl-input spl-select"
                      :aria-describedby (ui.form/description-id "language")}
             [:option {:value ""} (tr "Browser default")]
-            (for [locale (i18n/available-locales)]
+            (for [locale (cons i18n/source-locale
+                               (remove #{i18n/source-locale} (i18n/available-locales)))]
               [:option {:value locale
                         :lang (.replace ^String locale "_" "-")
                         :selected (when (= locale value) "selected")}
@@ -73,7 +74,7 @@
    [:email [:string {:min 1}]]
    [:language {:optional true :decode/form validation.i/empty->nil}
     [:maybe [:fn {:error/message (N_ "Choose a language from the list")}
-             #(contains? (set (i18n/available-locales)) %)]]]])
+             #(contains? (conj (set (i18n/available-locales)) i18n/source-locale) %)]]]])
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
   (let [{:keys [db]} context

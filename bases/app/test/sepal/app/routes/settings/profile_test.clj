@@ -90,7 +90,19 @@ msgstr \"Perfil actualizado\"
           (let [{:keys [response]} (peri/request sess "/settings/profile")
                 options (->> (.select (Jsoup/parse ^String (:body response)) "select[name=language] option")
                              (map #(vector (.attr % "value") (.text %))))]
-            (is (= [["" "Browser default"] ["es" "Español"]] options))))
+            (is (= [["" "Browser default"] ["en" "English"] ["es" "Español"]] options))))
+
+        (testing "English can be chosen explicitly, and beats a Spanish browser"
+          (let [{:keys [response] :as sess} (set-language! sess "en" email)
+                _ (is (= 303 (:status response)))
+                {:keys [response]} (peri/request sess "/settings/profile"
+                                                 :headers {"accept-language" "es"})]
+            (is (= "en" (:user/language (user.i/get-by-email *db* email))))
+            (is (= "Language" (language-label response)))
+            (is (= "en" (some-> (Jsoup/parse ^String (:body response))
+                                (.selectFirst "select[name=language] option[selected]")
+                                (.attr "value"))))
+            (is (= "en" (.attr (.selectFirst (Jsoup/parse ^String (:body response)) "html") "lang")))))
 
         (testing "a saved choice beats the browser"
           (let [{:keys [response] :as sess} (set-language! sess "es" email)

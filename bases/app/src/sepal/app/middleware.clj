@@ -52,14 +52,16 @@
           viewer (when user-id (user.i/get-by-id db user-id))]
       (if (and viewer (= :active (:user/status viewer)))
         (let [language (:user/language viewer)
-              catalog (when language (i18n/catalog language))]
+              english? (= i18n/source-locale language)
+              catalog (when (and language (not english?)) (i18n/catalog language))]
           (binding [g/*viewer* viewer
                     g/*uri* uri
                     g/*rail-open?* (= "1" (get-in cookies ["spl-rail" :value]))
-                    ;; A saved language whose catalog is gone falls back to the
-                    ;; browser's, bound by the locale middleware.
-                    i18n/*locale* (if catalog language i18n/*locale*)
-                    i18n/*catalog* (or catalog i18n/*catalog*)]
+                    ;; English, when chosen, beats the browser. A saved language
+                    ;; whose catalog is gone falls back to the browser's, bound
+                    ;; by the locale middleware.
+                    i18n/*locale* (cond english? nil catalog language :else i18n/*locale*)
+                    i18n/*catalog* (cond english? nil catalog catalog :else i18n/*catalog*)]
             (-> request
                 (assoc :viewer viewer)
                 (handler)

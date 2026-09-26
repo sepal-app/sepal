@@ -202,15 +202,15 @@ msgstr "Descartar"
 msgid "Nothing was saved. Check the highlighted fields."
 msgstr "No se ha guardado nada. Revise los campos resaltados."
 
-#: bases/app/src/sepal/app/middleware.clj:83
+#: bases/app/src/sepal/app/middleware.clj:85
 msgid "There was a problem loading this record."
 msgstr "Se ha producido un problema al cargar este registro."
 
-#: bases/app/src/sepal/app/middleware.clj:115
+#: bases/app/src/sepal/app/middleware.clj:117
 msgid "You don't have permission to perform this action."
 msgstr "No tiene permiso para realizar esta acción."
 
-#: bases/app/src/sepal/app/middleware.clj:118
+#: bases/app/src/sepal/app/middleware.clj:120
 msgid "You don't have permission to access this page."
 msgstr "No tiene permiso para acceder a esta página."
 
@@ -1122,7 +1122,7 @@ msgid "Set up your account for %1"
 msgstr "Configure su cuenta para %1"
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
-#: bases/app/src/sepal/app/routes/settings/profile.clj:37
+#: bases/app/src/sepal/app/routes/settings/profile.clj:38
 #: bases/app/src/sepal/app/routes/setup/admin.clj:38
 #: bases/app/src/sepal/app/routes/setup/admin.clj:104
 msgid "Full name"
@@ -1188,7 +1188,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/contact/index.clj:52
 #: bases/app/src/sepal/app/routes/contact/panel.clj:46
 #: bases/app/src/sepal/app/routes/settings/organization.clj:71
-#: bases/app/src/sepal/app/routes/settings/profile.clj:41
+#: bases/app/src/sepal/app/routes/settings/profile.clj:42
 #: bases/app/src/sepal/app/routes/settings/users/index.clj:105
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:59
 #: bases/app/src/sepal/app/routes/setup/admin.clj:44
@@ -2216,7 +2216,7 @@ msgstr "Última copia de seguridad: "
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:90
 #: bases/app/src/sepal/app/routes/settings/codes.clj:105
 #: bases/app/src/sepal/app/routes/settings/organization.clj:112
-#: bases/app/src/sepal/app/routes/settings/profile.clj:50
+#: bases/app/src/sepal/app/routes/settings/profile.clj:51
 msgid "Save changes"
 msgstr "Guardar cambios"
 
@@ -2355,13 +2355,13 @@ msgid "Settings sections"
 msgstr "Secciones de configuración"
 
 #: bases/app/src/sepal/app/routes/settings/layout.clj:28
-#: bases/app/src/sepal/app/routes/settings/profile.clj:64
+#: bases/app/src/sepal/app/routes/settings/profile.clj:65
 #: bases/app/src/sepal/app/routes/settings/security.clj:41
 msgid "Account"
 msgstr "Cuenta"
 
 #: bases/app/src/sepal/app/routes/settings/layout.clj:32
-#: bases/app/src/sepal/app/routes/settings/profile.clj:65
+#: bases/app/src/sepal/app/routes/settings/profile.clj:66
 msgid "Profile"
 msgstr "Perfil"
 
@@ -2454,19 +2454,19 @@ msgstr ""
 msgid "Browser default"
 msgstr "Predeterminado del navegador"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:57
+#: bases/app/src/sepal/app/routes/settings/profile.clj:58
 msgid "Logout"
 msgstr "Cerrar sesión"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:75
+#: bases/app/src/sepal/app/routes/settings/profile.clj:76
 msgid "Choose a language from the list"
 msgstr "Elija un idioma de la lista"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:93
+#: bases/app/src/sepal/app/routes/settings/profile.clj:94
 msgid "Profile updated successfully"
 msgstr "Perfil actualizado correctamente"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:95
+#: bases/app/src/sepal/app/routes/settings/profile.clj:96
 msgid "Failed to update profile"
 msgstr "No se pudo actualizar el perfil"
 
