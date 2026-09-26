@@ -1,0 +1,4704 @@
+# Spanish translations for Sepal package.
+# Copyright (C) 2026 THE Sepal'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Sepal package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Sepal\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: bases/app/src/sepal/app/backup/core.clj:252
+msgid "Sepal Backup Completed Successfully"
+msgstr "Copia de seguridad de Sepal completada correctamente"
+
+#: bases/app/src/sepal/app/backup/core.clj:253
+msgid "A database backup was completed successfully."
+msgstr ""
+"Se ha completado correctamente una copia de seguridad de la base de datos."
+
+#: bases/app/src/sepal/app/backup/core.clj:254
+msgid "Filename: %1"
+msgstr "Nombre de archivo: %1"
+
+#: bases/app/src/sepal/app/backup/core.clj:255
+msgid "Size: %1 MB"
+msgstr "Tamaño: %1 MB"
+
+#: bases/app/src/sepal/app/backup/core.clj:256
+msgid "Created: %1"
+msgstr "Creado: %1"
+
+#: bases/app/src/sepal/app/backup/core.clj:257
+msgid "Download: %1"
+msgstr "Descarga: %1"
+
+#: bases/app/src/sepal/app/backup/core.clj:271
+msgid "Sepal Backup Failed"
+msgstr "Error en la copia de seguridad de Sepal"
+
+#: bases/app/src/sepal/app/backup/core.clj:272
+msgid "A scheduled database backup has failed."
+msgstr "Ha fallado una copia de seguridad programada de la base de datos."
+
+#: bases/app/src/sepal/app/backup/core.clj:273
+msgid "Error: %1"
+msgstr "Error: %1"
+
+#: bases/app/src/sepal/app/backup/core.clj:274
+msgid "Please check the server logs for more details."
+msgstr "Consulte los registros del servidor para obtener más información."
+
+#: bases/app/src/sepal/app/codes.clj:44
+msgid "Code must look like %1"
+msgstr "El código debe tener el formato %1"
+
+#: bases/app/src/sepal/app/codes.clj:45
+msgid "Code does not match the garden's template"
+msgstr "El código no coincide con la plantilla del jardín"
+
+#: bases/app/src/sepal/app/codes.clj:73
+msgid ""
+"This code does not match the garden's template. A code that fits looks like "
+"%1."
+msgstr ""
+"Este código no coincide con la plantilla del jardín. Un código que se ajusta "
+"tiene este formato: %1."
+
+#: bases/app/src/sepal/app/codes.clj:74
+msgid "This code does not match the garden's template."
+msgstr "Este código no coincide con la plantilla del jardín."
+
+#: bases/app/src/sepal/app/codes.clj:80
+msgid "Save it anyway"
+msgstr "Guardarlo de todos modos"
+
+#: bases/app/src/sepal/app/codes.clj:105
+msgid "%1 is already taken"
+msgstr "%1 ya está en uso"
+
+#: bases/app/src/sepal/app/datetime.clj:112
+msgid "Today"
+msgstr "Hoy"
+
+#: bases/app/src/sepal/app/datetime.clj:113
+msgid "Yesterday"
+msgstr "Ayer"
+
+#: bases/app/src/sepal/app/datetime.clj:157
+msgid "just now"
+msgstr "ahora mismo"
+
+#: bases/app/src/sepal/app/datetime.clj:158
+msgid "%1 minute ago"
+msgid_plural "%1 minutes ago"
+msgstr[0] "Hace %1 minuto"
+msgstr[1] "Hace %1 minutos"
+
+#: bases/app/src/sepal/app/datetime.clj:159
+msgid "%1 hour ago"
+msgid_plural "%1 hours ago"
+msgstr[0] "Hace %1 hora"
+msgstr[1] "Hace %1 horas"
+
+#: bases/app/src/sepal/app/datetime.clj:160
+msgid "yesterday"
+msgstr "ayer"
+
+#: bases/app/src/sepal/app/datetime.clj:161
+#: bases/app/src/sepal/app/datetime.clj:163
+msgid "%1 day ago"
+msgid_plural "%1 days ago"
+msgstr[0] "Hace %1 día"
+msgstr[1] "Hace %1 días"
+
+#: bases/app/src/sepal/app/datetime.clj:162
+msgid "%1 week ago"
+msgid_plural "%1 weeks ago"
+msgstr[0] "Hace %1 semana"
+msgstr[1] "Hace %1 semanas"
+
+#: bases/app/src/sepal/app/delete.clj:200
+msgid "%1 material record references this"
+msgid_plural "%1 material records reference this"
+msgstr[0] "%1 registro de material hace referencia a esto"
+msgstr[1] "%1 registros de material hacen referencia a esto"
+
+#: bases/app/src/sepal/app/delete.clj:202
+msgid "%1 move in the history references this location"
+msgid_plural "%1 moves in the history reference this location"
+msgstr[0] "%1 movimiento del historial hace referencia a esta ubicación"
+msgstr[1] "%1 movimientos del historial hacen referencia a esta ubicación"
+
+#: bases/app/src/sepal/app/delete.clj:204
+msgid "%1 accession references this"
+msgid_plural "%1 accessions reference this"
+msgstr[0] "%1 accesión hace referencia a esto"
+msgstr[1] "%1 accesiones hacen referencia a esto"
+
+#: bases/app/src/sepal/app/delete.clj:206
+msgid "%1 taxon names this one as its parent"
+msgid_plural "%1 taxa name this one as their parent"
+msgstr[0] "%1 taxón nombra a este como su taxón padre"
+msgstr[1] "%1 taxones nombran a este como su taxón padre"
+
+#: bases/app/src/sepal/app/delete.clj:208
+msgid "%1 cross names this taxon as a parent"
+msgid_plural "%1 crosses name this taxon as a parent"
+msgstr[0] "%1 cruce nombra a este taxón como progenitor"
+msgstr[1] "%1 cruces nombran a este taxón como progenitor"
+
+#: bases/app/src/sepal/app/delete.clj:210
+msgid "%1 propagation names this as its parent"
+msgid_plural "%1 propagations name this as their parent"
+msgstr[0] "%1 propagación nombra esto como su material de origen"
+msgstr[1] "%1 propagaciones nombran esto como su material de origen"
+
+#: bases/app/src/sepal/app/delete.clj:212
+msgid "%1 propagation uses this taxon as a rootstock"
+msgid_plural "%1 propagations use this taxon as a rootstock"
+msgstr[0] "%1 propagación utiliza este taxón como portainjerto"
+msgstr[1] "%1 propagaciones utilizan este taxón como portainjerto"
+
+#: bases/app/src/sepal/app/delete.clj:214
+msgid "%1 propagation names this location"
+msgid_plural "%1 propagations name this location"
+msgstr[0] "%1 propagación nombra esta ubicación"
+msgstr[1] "%1 propagaciones nombran esta ubicación"
+
+#: bases/app/src/sepal/app/delete.clj:216
+msgid "%1 record came from this propagation"
+msgid_plural "%1 records came from this propagation"
+msgstr[0] "%1 registro proviene de esta propagación"
+msgstr[1] "%1 registros provienen de esta propagación"
+
+#: bases/app/src/sepal/app/delete.clj:218
+msgid "This name comes from the World Flora Online list"
+msgstr "Este nombre proviene de la lista de World Flora Online"
+
+#: bases/app/src/sepal/app/delete.clj:219
+msgid "%1 record references this"
+msgid_plural "%1 records reference this"
+msgstr[0] "%1 registro hace referencia a esto"
+msgstr[1] "%1 registros hacen referencia a esto"
+
+#: bases/app/src/sepal/app/delete.clj:228
+msgid "Cannot delete this record"
+msgstr "No se puede eliminar este registro"
+
+#: bases/app/src/sepal/app/flash.clj:83 bases/app/src/sepal/app/flash.clj:88
+msgid "Dismiss"
+msgstr "Descartar"
+
+#: bases/app/src/sepal/app/http_response.clj:55
+msgid "Nothing was saved. Check the highlighted fields."
+msgstr "No se ha guardado nada. Revise los campos resaltados."
+
+#: bases/app/src/sepal/app/middleware.clj:83
+msgid "There was a problem loading this record."
+msgstr "Se ha producido un problema al cargar este registro."
+
+#: bases/app/src/sepal/app/middleware.clj:115
+msgid "You don't have permission to perform this action."
+msgstr "No tiene permiso para realizar esta acción."
+
+#: bases/app/src/sepal/app/middleware.clj:118
+msgid "You don't have permission to access this page."
+msgstr "No tiene permiso para acceder a esta página."
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:43
+#: bases/app/src/sepal/app/routes/accession/detail.clj:15
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:83
+#: bases/app/src/sepal/app/routes/accession/index.clj:138
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:57
+#: bases/app/src/sepal/app/routes/material/index.clj:161
+#: bases/app/src/sepal/app/routes/settings/codes.clj:63
+#: bases/app/src/sepal/app/routes/tag/panel.clj:53
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:158
+#: bases/app/src/sepal/app/ui/page.clj:141
+#: components/taxon/src/sepal/taxon/interface/search.clj:111
+msgid "Accessions"
+msgstr "Accesiones"
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:44
+#: bases/app/src/sepal/app/routes/accession/index.clj:28
+#: bases/app/src/sepal/app/routes/accession/index.clj:105
+msgid "New accession"
+msgstr "Nueva accesión"
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:87
+msgid "Accession created successfully"
+msgstr "Accesión creada correctamente"
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:96
+#: bases/app/src/sepal/app/routes/accession/create.clj:99
+msgid "Could not create the accession"
+msgstr "No se pudo crear la accesión"
+
+#: bases/app/src/sepal/app/routes/accession/delete.clj:18
+msgid "Delete accession %1?"
+msgstr "¿Eliminar la accesión %1?"
+
+#: bases/app/src/sepal/app/routes/accession/delete.clj:32
+msgid "Deleted accession %1"
+msgstr "Accesión %1 eliminada"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:32
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:37
+msgid "Collection"
+msgstr "Recolección"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:33
+msgid "Who gathered this material, when, and from what."
+msgstr "Quién recolectó este material, cuándo y de qué."
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:36
+msgid "Collector"
+msgstr "Recolector"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:40
+msgid "Collector's Number"
+msgstr "Número del recolector"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:44
+msgid "Collection Date"
+msgstr "Fecha de recolección"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:52
+msgid "Habitat"
+msgstr "Hábitat"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:57
+msgid "Associated Taxa"
+msgstr "Taxones asociados"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:62
+msgid "Remarks"
+msgstr "Comentarios"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:69
+#: bases/app/src/sepal/app/routes/activity/index.clj:246
+#: bases/app/src/sepal/app/routes/material/form.clj:106
+#: bases/app/src/sepal/app/routes/material/index.clj:75
+#: bases/app/src/sepal/app/routes/material/panel.clj:132
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:29
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:63
+#: bases/app/src/sepal/app/routes/propagation/form.clj:115
+#: bases/app/src/sepal/app/routes/propagation/index.clj:131
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:74
+#: components/accession/src/sepal/accession/interface/search.clj:64
+#: components/accession/src/sepal/accession/interface/search.clj:70
+#: components/material/src/sepal/material/interface/search.clj:78
+#: components/observation/src/sepal/observation/interface/search.clj:43
+#: components/propagation/src/sepal/propagation/interface/search.clj:31
+#: components/propagation/src/sepal/propagation/interface/search.clj:36
+#: components/taxon/src/sepal/taxon/interface/search.clj:102
+msgid "Location"
+msgstr "Ubicación"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:70
+msgid "Where it was collected, in words."
+msgstr "Dónde se recolectó, en palabras."
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:73
+#: bases/app/src/sepal/app/routes/contact/form.clj:97
+#: bases/app/src/sepal/app/routes/contact/panel.clj:69
+#: bases/app/src/sepal/app/routes/settings/organization.clj:101
+msgid "Country"
+msgstr "País"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:77
+msgid "Province/State"
+msgstr "Provincia/Estado"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:81
+msgid "Locality"
+msgstr "Localidad"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:87
+msgid "Coordinates"
+msgstr "Coordenadas"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:88
+msgid "Where it was collected, as a point."
+msgstr "Dónde se recolectó, como un punto."
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:91
+msgid "Latitude"
+msgstr "Latitud"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:99
+msgid "Longitude"
+msgstr "Longitud"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:108
+msgid "Coordinate System"
+msgstr "Sistema de coordenadas"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:119
+msgid "Uncertainty (m)"
+msgstr "Incertidumbre (m)"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:125
+msgid "Elevation (m)"
+msgstr "Elevación (m)"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:130
+msgid "Elevation Accuracy (m)"
+msgstr "Precisión de la elevación (m)"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:266
+msgid "Could not save the collection data"
+msgstr "No se pudieron guardar los datos de recolección"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection_delete.clj:27
+msgid "Delete the collection data on accession %1?"
+msgstr "¿Eliminar los datos de recolección de la accesión %1?"
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection_delete.clj:42
+msgid "Cleared the collection data."
+msgstr "Se eliminaron los datos de recolección."
+
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:136
+msgid "Accession updated successfully"
+msgstr "Accesión actualizada correctamente"
+
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:139
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:142
+msgid "Could not save the accession"
+msgstr "No se pudo guardar la accesión"
+
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:54
+msgid "Media linked to this accession's material"
+msgstr "Contenido multimedia vinculado al material de esta accesión"
+
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:100
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:134
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:87
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:114
+msgid "The note could not be saved."
+msgstr "No se pudo guardar la nota."
+
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:143
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:123
+msgid "The note could not be deleted."
+msgstr "No se pudo eliminar la nota."
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:34
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:14
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:20
+#: bases/app/src/sepal/app/routes/settings/layout.clj:43
+#: bases/app/src/sepal/app/routes/settings/organization.clj:119
+msgid "General"
+msgstr "General"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:42
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:20
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:23
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:21
+msgid "Media"
+msgstr "Multimedia"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:45
+#: bases/app/src/sepal/app/routes/accession/panel.clj:107
+#: bases/app/src/sepal/app/routes/contact/form.clj:103
+#: bases/app/src/sepal/app/routes/contact/form.clj:105
+#: bases/app/src/sepal/app/routes/propagation/form.clj:219
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:93
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:27
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:179
+#: bases/app/src/sepal/app/ui/observations.clj:107
+msgid "Notes"
+msgstr "Notas"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:48
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:29
+#: bases/app/src/sepal/app/routes/tag/detail.clj:49
+#: bases/app/src/sepal/app/routes/tag/index.clj:41
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:30
+#: bases/app/src/sepal/app/ui/page.clj:151
+msgid "Tags"
+msgstr "Etiquetas"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:56
+msgid "Accession sections"
+msgstr "Secciones de la accesión"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:79
+#: bases/app/src/sepal/app/routes/accession/index.clj:134
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:53
+#: bases/app/src/sepal/app/routes/material/index.clj:157
+#: bases/app/src/sepal/app/routes/tag/panel.clj:50
+#: bases/app/src/sepal/app/routes/taxon/create.clj:31
+#: bases/app/src/sepal/app/routes/taxon/detail.clj:16
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:52
+#: bases/app/src/sepal/app/routes/taxon/index.clj:184
+#: bases/app/src/sepal/app/routes/taxon/index.clj:189
+#: bases/app/src/sepal/app/ui/page.clj:139
+msgid "Taxa"
+msgstr "Taxones"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:96
+msgid "Add material"
+msgstr "Añadir material"
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:98
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:72
+msgid "Add a propagation"
+msgstr "Añadir una propagación"
+
+#: bases/app/src/sepal/app/routes/accession/detail/tags.clj:101
+#: bases/app/src/sepal/app/routes/material/detail/tags.clj:110
+#: bases/app/src/sepal/app/routes/taxon/detail/tags.clj:94
+msgid "The tag could not be added."
+msgstr "No se ha podido añadir la etiqueta."
+
+#: bases/app/src/sepal/app/routes/accession/detail/tags.clj:126
+#: bases/app/src/sepal/app/routes/material/detail/tags.clj:137
+#: bases/app/src/sepal/app/routes/taxon/detail/tags.clj:118
+msgid "The tag could not be removed."
+msgstr "No se ha podido eliminar la etiqueta."
+
+#: bases/app/src/sepal/app/routes/accession/export.clj:67
+#: bases/app/src/sepal/app/routes/material/export.clj:53
+msgid "Include taxon (name, author, rank)"
+msgstr "Incluir taxón (nombre, autor, rango)"
+
+#: bases/app/src/sepal/app/routes/accession/export.clj:69
+msgid "Include collection data (collector, locality, coordinates)"
+msgstr "Incluir datos de recolección (recolector, localidad, coordenadas)"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:30
+msgid "Your garden's accession number. Must be unique."
+msgstr "El número de accesión de su jardín. Debe ser único."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:65
+#: bases/app/src/sepal/app/routes/accession/form.clj:66
+#: bases/app/src/sepal/app/routes/material/form.clj:62
+#: bases/app/src/sepal/app/routes/material/form.clj:63
+msgid "Use the next available code"
+msgstr "Usar el siguiente código disponible"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:89
+#: bases/app/src/sepal/app/routes/material/form.clj:80
+#: bases/app/src/sepal/app/routes/taxon/form.clj:227
+msgid "Identity"
+msgstr "Identidad"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:90
+msgid "What this accession is, and what you call it."
+msgstr "Qué es esta accesión y cómo la llama."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:92
+#: bases/app/src/sepal/app/routes/accession/panel.clj:69
+msgctxt "accession"
+msgid "Code"
+msgstr "Código"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:109
+#: bases/app/src/sepal/app/routes/accession/index.clj:65
+#: bases/app/src/sepal/app/routes/accession/panel.clj:70
+#: bases/app/src/sepal/app/routes/activity/index.clj:227
+#: bases/app/src/sepal/app/routes/material/index.clj:67
+#: bases/app/src/sepal/app/routes/material/panel.clj:127
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:27
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:46
+#: components/accession/src/sepal/accession/interface/search.clj:36
+#: components/accession/src/sepal/accession/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:48
+#: components/material/src/sepal/material/interface/search.clj:55
+#: components/material/src/sepal/material/interface/search.clj:61
+#: components/propagation/src/sepal/propagation/interface/search.clj:62
+#: components/propagation/src/sepal/propagation/interface/search.clj:68
+msgid "Taxon"
+msgstr "Taxón"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:113
+msgid "Start typing a name to search the taxonomy."
+msgstr "Empiece a escribir un nombre para buscar en la taxonomía."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:125
+msgid "ID Qualifier"
+msgstr "Calificador de identificación"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:131
+msgid "ID Qualifier Rank"
+msgstr "Rango del calificador de identificación"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:139
+#: bases/app/src/sepal/app/routes/accession/index.clj:73
+#: bases/app/src/sepal/app/routes/accession/panel.clj:75
+#: components/accession/src/sepal/accession/interface/search.clj:25
+msgid "Provenance"
+msgstr "Procedencia"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:140
+msgid ""
+"Where the material came from. Wild status applies only to wild-collected "
+"material."
+msgstr ""
+"De dónde procede el material. El estado silvestre solo se aplica al material "
+"recolectado en estado silvestre."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:143
+msgid "Provenance Type"
+msgstr "Tipo de procedencia"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:154
+msgid "Wild Provenance Status"
+msgstr "Estado de procedencia silvestre"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:163
+#: bases/app/src/sepal/app/routes/accession/panel.clj:76
+#: components/accession/src/sepal/accession/interface/search.clj:53
+#: components/accession/src/sepal/accession/interface/search.clj:58
+msgid "Supplier"
+msgstr "Proveedor"
+
+#. i18n: %1 is a link reading "Create a contact"
+#: bases/app/src/sepal/app/routes/accession/form.clj:171
+msgid ""
+"Suppliers come from your contacts. %1 in a new tab if the one you want is "
+"missing."
+msgstr ""
+"Los proveedores provienen de sus contactos. %1 en una pestaña nueva si no "
+"encuentra el que necesita."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:178
+msgid "Create a contact"
+msgstr "Crear un contacto"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:185
+msgid "Placement"
+msgstr "Emplazamiento"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:186
+msgid "Where this material is meant to go before it is planted."
+msgstr "El lugar al que debe ir este material antes de plantarlo."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:190
+#: bases/app/src/sepal/app/routes/accession/panel.clj:81
+msgid "Intended location"
+msgstr "Ubicación prevista"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:193
+msgid "Leave it empty until the bed is decided."
+msgstr "Déjelo vacío hasta que se decida el arriate."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:201
+msgid "Receipt"
+msgstr "Recepción"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:202
+msgid "What arrived, how much of it, and when."
+msgstr "Qué llegó, cuánto y cuándo."
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:205
+msgid "Date Received"
+msgstr "Fecha de recepción"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:213
+msgid "Date Accessioned"
+msgstr "Fecha de accesión"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:220
+#: bases/app/src/sepal/app/routes/accession/panel.clj:87
+msgid "Received as"
+msgstr "Recibido como"
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:227
+#: bases/app/src/sepal/app/routes/accession/panel.clj:89
+msgid "Quantity received"
+msgstr "Cantidad recibida"
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:56
+#: bases/app/src/sepal/app/routes/location/index.clj:47
+#: bases/app/src/sepal/app/routes/material/index.clj:58
+#: components/accession/src/sepal/accession/interface/search.clj:16
+#: components/location/src/sepal/location/interface/search.clj:13
+#: components/material/src/sepal/material/interface/search.clj:17
+#: components/observation/src/sepal/observation/interface/search.clj:37
+msgid "Code"
+msgstr "Código"
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:77
+msgid "Received"
+msgstr "Recibido"
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:101
+msgid "No accessions yet"
+msgstr "Todavía no hay accesiones"
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:102
+msgid ""
+"An accession is a batch of plant material acquired at one time from one "
+"source."
+msgstr ""
+"Una accesión es un lote de material vegetal adquirido en un mismo momento y "
+"de una misma fuente."
+
+#. i18n: Keep "taxon:", "provenance:" and "wild" in English; they are search syntax
+#: bases/app/src/sepal/app/routes/accession/index.clj:127
+msgid "Search... (e.g., taxon:Quercus provenance:wild)"
+msgstr "Buscar... (p. ej., taxon:Quercus provenance:wild)"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:66
+#: bases/app/src/sepal/app/routes/contact/panel.clj:39
+#: bases/app/src/sepal/app/routes/location/panel.clj:47
+#: bases/app/src/sepal/app/routes/material/panel.clj:115
+#: bases/app/src/sepal/app/routes/media/panel.clj:50
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:65
+#: bases/app/src/sepal/app/routes/tag/panel.clj:35
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:112
+msgid "Summary"
+msgstr "Resumen"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:90
+msgid "Date received"
+msgstr "Fecha de recepción"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:91
+msgid "Date accessioned"
+msgstr "Fecha de accesión"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:95
+#: bases/app/src/sepal/app/routes/contact/panel.clj:73
+#: bases/app/src/sepal/app/routes/location/panel.clj:56
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:151
+msgid "Statistics"
+msgstr "Estadísticas"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:98
+#: bases/app/src/sepal/app/routes/accession/panel.clj:110
+#: bases/app/src/sepal/app/routes/accession/panel.clj:140
+#: bases/app/src/sepal/app/routes/contact/panel.clj:60
+#: bases/app/src/sepal/app/routes/contact/panel.clj:76
+#: bases/app/src/sepal/app/routes/contact/panel.clj:88
+#: bases/app/src/sepal/app/routes/location/panel.clj:59
+#: bases/app/src/sepal/app/routes/location/panel.clj:128
+#: bases/app/src/sepal/app/routes/material/panel.clj:146
+#: bases/app/src/sepal/app/routes/material/panel.clj:175
+#: bases/app/src/sepal/app/routes/media/panel.clj:80
+#: bases/app/src/sepal/app/routes/tag/panel.clj:47
+#: bases/app/src/sepal/app/routes/tag/panel.clj:64
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:134
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:145
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:172
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:182
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:206
+#: bases/app/src/sepal/app/ui/propagations.clj:61
+msgctxt "empty section"
+msgid "none"
+msgstr "Ninguno"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:101
+#: bases/app/src/sepal/app/routes/activity/index.clj:266
+#: bases/app/src/sepal/app/routes/location/panel.clj:62
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:25
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:70
+#: bases/app/src/sepal/app/routes/settings/codes.clj:80
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:161
+msgid "Material"
+msgstr "Material"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:121
+#: bases/app/src/sepal/app/routes/material/panel.clj:156
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:193
+msgid "External Links"
+msgstr "Enlaces externos"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:133
+msgid "nothing grown from this accession"
+msgstr "Nada cultivado a partir de esta accesión"
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:137
+#: bases/app/src/sepal/app/routes/activity/index.clj:805
+#: bases/app/src/sepal/app/routes/contact/panel.clj:85
+#: bases/app/src/sepal/app/routes/location/panel.clj:125
+#: bases/app/src/sepal/app/routes/material/panel.clj:172
+#: bases/app/src/sepal/app/routes/media/panel.clj:77
+#: bases/app/src/sepal/app/routes/tag/panel.clj:61
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:203
+#: bases/app/src/sepal/app/ui/page.clj:137
+msgid "Activity"
+msgstr "Actividad"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:209
+#: bases/app/src/sepal/app/routes/material/panel.clj:122
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:23
+#: bases/app/src/sepal/app/ui/accession_combobox.clj:21
+#: components/material/src/sepal/material/interface/search.clj:43
+#: components/material/src/sepal/material/interface/search.clj:47
+msgid "Accession"
+msgstr "Accesión"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:276
+msgid "Setup wizard"
+msgstr "Asistente de configuración"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:278
+msgid "Initial setup completed"
+msgstr "Configuración inicial completada"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:287
+msgid "%1 record"
+msgid_plural "%1 records"
+msgstr[0] "%1 registro"
+msgstr[1] "%1 registros"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:307
+msgid "%1 from %2"
+msgstr "%1 de %2"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:310
+#: bases/app/src/sepal/app/ui/page.clj:145
+#: bases/app/src/sepal/app/ui/propagations.clj:56
+msgctxt "navigation"
+msgid "Propagation"
+msgstr "Propagación"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:329
+msgid "Observation on material"
+msgstr "Observación sobre material"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:336
+msgid "Observation on location"
+msgstr "Observación sobre ubicación"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:358
+msgid "Note on accession"
+msgstr "Nota sobre accesión"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:364
+msgid "Note on taxon"
+msgstr "Nota sobre taxón"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:389
+#: bases/app/src/sepal/app/routes/media/detail.clj:100
+#: bases/app/src/sepal/app/routes/media/index.clj:46
+#: bases/app/src/sepal/app/ui/page.clj:153
+msgctxt "navigation"
+msgid "Media"
+msgstr "Multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:404
+msgid "Media • linked to %1"
+msgstr "Multimedia • vinculado a %1"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:405
+msgid "Media • unlinked from %1"
+msgstr "Multimedia • desvinculado de %1"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:448
+msgid "created an accession"
+msgid_plural "created %1 accessions"
+msgstr[0] "creó una accesión"
+msgstr[1] "creó %1 accesiones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:449
+msgid "deleted an accession"
+msgid_plural "deleted %1 accessions"
+msgstr[0] "eliminó una accesión"
+msgstr[1] "eliminó %1 accesiones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:450
+msgid "updated an accession"
+msgid_plural "updated %1 accessions"
+msgstr[0] "actualizó una accesión"
+msgstr[1] "actualizó %1 accesiones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:451
+msgid "created collection data"
+msgid_plural "created collection data"
+msgstr[0] "creó datos de la colección"
+msgstr[1] "creó datos de la colección"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:452
+msgid "updated collection data"
+msgid_plural "updated collection data"
+msgstr[0] "actualizó datos de la colección"
+msgstr[1] "actualizó datos de la colección"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:453
+msgid "created a contact"
+msgid_plural "created %1 contacts"
+msgstr[0] "creó un contacto"
+msgstr[1] "creó %1 contactos"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:454
+msgid "deleted a contact"
+msgid_plural "deleted %1 contacts"
+msgstr[0] "eliminó un contacto"
+msgstr[1] "eliminó %1 contactos"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:455
+msgid "updated a contact"
+msgid_plural "updated %1 contacts"
+msgstr[0] "actualizó un contacto"
+msgstr[1] "actualizó %1 contactos"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:456
+msgid "completed an import"
+msgid_plural "completed %1 imports"
+msgstr[0] "completó una importación"
+msgstr[1] "completó %1 importaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:457
+msgid "archived a location"
+msgid_plural "archived %1 locations"
+msgstr[0] "archivó una ubicación"
+msgstr[1] "archivó %1 ubicaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:458
+msgid "created a location"
+msgid_plural "created %1 locations"
+msgstr[0] "creó una ubicación"
+msgstr[1] "creó %1 ubicaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:459
+msgid "deleted a location"
+msgid_plural "deleted %1 locations"
+msgstr[0] "eliminó una ubicación"
+msgstr[1] "eliminó %1 ubicaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:460
+msgid "unarchived a location"
+msgid_plural "unarchived %1 locations"
+msgstr[0] "desarchivó una ubicación"
+msgstr[1] "desarchivó %1 ubicaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:461
+msgid "updated a location"
+msgid_plural "updated %1 locations"
+msgstr[0] "actualizó una ubicación"
+msgstr[1] "actualizó %1 ubicaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:462
+msgid "created a material"
+msgid_plural "created %1 materials"
+msgstr[0] "creó un material"
+msgstr[1] "creó %1 materiales"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:463
+msgid "deleted a material"
+msgid_plural "deleted %1 materials"
+msgstr[0] "eliminó un material"
+msgstr[1] "eliminó %1 materiales"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:464
+msgid "updated a material"
+msgid_plural "updated %1 materials"
+msgstr[0] "actualizó un material"
+msgstr[1] "actualizó %1 materiales"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:465
+msgid "uploaded a media item"
+msgid_plural "uploaded %1 media items"
+msgstr[0] "subió un elemento multimedia"
+msgstr[1] "subió %1 elementos multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:466
+msgid "deleted a media item"
+msgid_plural "deleted %1 media items"
+msgstr[0] "eliminó un elemento multimedia"
+msgstr[1] "eliminó %1 elementos multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:467
+msgid "linked a media item"
+msgid_plural "linked %1 media items"
+msgstr[0] "vinculó un elemento multimedia"
+msgstr[1] "vinculó %1 elementos multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:468
+msgid "unlinked a media item"
+msgid_plural "unlinked %1 media items"
+msgstr[0] "desvinculó un elemento multimedia"
+msgstr[1] "desvinculó %1 elementos multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:469
+msgid "updated a media item"
+msgid_plural "updated %1 media items"
+msgstr[0] "actualizó un elemento multimedia"
+msgstr[1] "actualizó %1 elementos multimedia"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:470
+msgid "created a note"
+msgid_plural "created %1 notes"
+msgstr[0] "creó una nota"
+msgstr[1] "creó %1 notas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:471
+msgid "deleted a note"
+msgid_plural "deleted %1 notes"
+msgstr[0] "eliminó una nota"
+msgstr[1] "eliminó %1 notas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:472
+msgid "updated a note"
+msgid_plural "updated %1 notes"
+msgstr[0] "actualizó una nota"
+msgstr[1] "actualizó %1 notas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:473
+msgid "created an observation"
+msgid_plural "created %1 observations"
+msgstr[0] "creó una observación"
+msgstr[1] "creó %1 observaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:474
+msgid "deleted an observation"
+msgid_plural "deleted %1 observations"
+msgstr[0] "eliminó una observación"
+msgstr[1] "eliminó %1 observaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:475
+msgid "updated an observation"
+msgid_plural "updated %1 observations"
+msgstr[0] "actualizó una observación"
+msgstr[1] "actualizó %1 observaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:476
+msgid "created a propagation"
+msgid_plural "created %1 propagations"
+msgstr[0] "creó una propagación"
+msgstr[1] "creó %1 propagaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:477
+msgid "deleted a propagation"
+msgid_plural "deleted %1 propagations"
+msgstr[0] "eliminó una propagación"
+msgstr[1] "eliminó %1 propagaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:478
+msgid "updated a propagation"
+msgid_plural "updated %1 propagations"
+msgstr[0] "actualizó una propagación"
+msgstr[1] "actualizó %1 propagaciones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:479
+msgid "updated settings"
+msgid_plural "updated settings"
+msgstr[0] "configuración actualizada"
+msgstr[1] "configuración actualizada"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:480
+msgid "completed setup"
+msgid_plural "completed setup"
+msgstr[0] "instalación completada"
+msgstr[1] "instalación completada"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:481
+msgid "created a synonym"
+msgid_plural "created %1 synonyms"
+msgstr[0] "creó un sinónimo"
+msgstr[1] "creó %1 sinónimos"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:482
+msgid "deleted a synonym"
+msgid_plural "deleted %1 synonyms"
+msgstr[0] "eliminó un sinónimo"
+msgstr[1] "eliminó %1 sinónimos"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:483
+msgid "created a tag"
+msgid_plural "created %1 tags"
+msgstr[0] "creó una etiqueta"
+msgstr[1] "creó %1 etiquetas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:484
+msgid "deleted a tag"
+msgid_plural "deleted %1 tags"
+msgstr[0] "eliminó una etiqueta"
+msgstr[1] "eliminó %1 etiquetas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:485
+msgid "linked a tag"
+msgid_plural "linked %1 tags"
+msgstr[0] "vinculó una etiqueta"
+msgstr[1] "vinculó %1 etiquetas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:486
+msgid "unlinked a tag"
+msgid_plural "unlinked %1 tags"
+msgstr[0] "desvinculó una etiqueta"
+msgstr[1] "desvinculó %1 etiquetas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:487
+msgid "updated a tag"
+msgid_plural "updated %1 tags"
+msgstr[0] "actualizó una etiqueta"
+msgstr[1] "actualizó %1 etiquetas"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:488
+msgid "created a taxon"
+msgid_plural "created %1 taxa"
+msgstr[0] "creó un taxón"
+msgstr[1] "creó %1 taxones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:489
+msgid "deleted a taxon"
+msgid_plural "deleted %1 taxa"
+msgstr[0] "eliminó un taxón"
+msgstr[1] "eliminó %1 taxones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:490
+msgid "updated a taxon"
+msgid_plural "updated %1 taxa"
+msgstr[0] "actualizó un taxón"
+msgstr[1] "actualizó %1 taxones"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:491
+msgid "created a user"
+msgid_plural "created %1 users"
+msgstr[0] "creó un usuario"
+msgstr[1] "creó %1 usuarios"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:492
+msgid "updated a user"
+msgid_plural "updated %1 users"
+msgstr[0] "actualizó un usuario"
+msgstr[1] "actualizó %1 usuarios"
+
+#. i18n: Joins the earlier actions of a summary, as in "created a taxon, updated a note"
+#: bases/app/src/sepal/app/routes/activity/index.clj:502
+msgid "%1, %2"
+msgstr "%1, %2"
+
+#. i18n: Joins the last two actions of a summary, as in "created a taxon and updated 2 accessions"
+#: bases/app/src/sepal/app/routes/activity/index.clj:500
+msgid "%1 and %2"
+msgstr "%1 y %2"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:584
+msgid "No activity yet"
+msgstr "Aún no hay actividad"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:585
+msgid ""
+"Records created, edited and uploaded by you and your collaborators show up "
+"here."
+msgstr ""
+"Los registros creados, editados y cargados por usted y sus colaboradores "
+"aparecen aquí."
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:592
+msgid "Add a location"
+msgstr "Añadir una ubicación"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:595
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:64
+msgid "Add an accession"
+msgstr "Añadir una accesión"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:599
+msgid "Invite someone to your organization"
+msgstr "Invitar a alguien a su organización"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:704
+msgid "Loading more activity"
+msgstr "Cargando más actividad"
+
+#: bases/app/src/sepal/app/routes/activity/index.clj:795
+msgid "%1 overdue observation"
+msgid_plural "%1 overdue observations"
+msgstr[0] "%1 observación vencida"
+msgstr[1] "%1 observaciones vencidas"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:31
+msgid "Accept invitation"
+msgstr "Aceptar invitación"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:34
+msgid "Set up your account for %1"
+msgstr "Configure su cuenta para %1"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
+#: bases/app/src/sepal/app/routes/settings/profile.clj:37
+#: bases/app/src/sepal/app/routes/setup/admin.clj:38
+#: bases/app/src/sepal/app/routes/setup/admin.clj:104
+msgid "Full name"
+msgstr "Nombre completo"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:42
+msgid "Your name"
+msgstr "Su nombre"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:45
+#: bases/app/src/sepal/app/routes/auth/login.clj:28
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:20
+#: bases/app/src/sepal/app/routes/setup/admin.clj:51
+msgid "Password"
+msgstr "Contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:51
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:26
+#: bases/app/src/sepal/app/routes/setup/admin.clj:59
+msgid "Confirm password"
+msgstr "Confirmar contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:57
+msgid "Set password and activate account"
+msgstr "Establecer contraseña y activar cuenta"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:68
+msgid "Invalid invitation"
+msgstr "Invitación no válida"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:85
+msgid "Account already activated. Please log in."
+msgstr "La cuenta ya está activada. Inicie sesión."
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:96
+#: bases/app/src/sepal/app/routes/setup/admin.clj:27
+msgid "Passwords do not match"
+msgstr "Las contraseñas no coinciden"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:110
+msgid "Password set for %1. Please log in."
+msgstr "Contraseña establecida para %1. Inicie sesión."
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:112
+msgid "Could not set your password. Please try again."
+msgstr "No se pudo establecer su contraseña. Inténtelo de nuevo."
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:16
+msgid "Forgot password"
+msgstr "Recuperar contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:17
+msgid ""
+"If the email address exists in Sepal then we'll send you an email to help "
+"reset your password."
+msgstr ""
+"Si la dirección de correo electrónico existe en Sepal, le enviaremos un "
+"correo electrónico para ayudarle a restablecer su contraseña."
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:21
+#: bases/app/src/sepal/app/routes/auth/login.clj:26
+#: bases/app/src/sepal/app/routes/contact/form.clj:40
+#: bases/app/src/sepal/app/routes/contact/index.clj:52
+#: bases/app/src/sepal/app/routes/contact/panel.clj:46
+#: bases/app/src/sepal/app/routes/settings/organization.clj:71
+#: bases/app/src/sepal/app/routes/settings/profile.clj:41
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:105
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:59
+#: bases/app/src/sepal/app/routes/setup/admin.clj:44
+#: bases/app/src/sepal/app/routes/setup/admin.clj:108
+#: bases/app/src/sepal/app/routes/setup/review.clj:43
+#: bases/app/src/sepal/app/routes/setup/review.clj:51
+#: components/contact/src/sepal/contact/interface/search.clj:18
+msgid "Email"
+msgstr "Correo electrónico"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:25
+msgid "Send"
+msgstr "Enviar"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:41
+msgid "A request was made to reset the Sepal password for %1"
+msgstr "Se ha solicitado restablecer la contraseña de Sepal para %1"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:42
+msgid ""
+"If you didn't request the password to be reset you can safely ignore this "
+"email."
+msgstr ""
+"Si no ha solicitado restablecer la contraseña, puede ignorar este correo "
+"electrónico con total seguridad."
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:43
+msgid "To reset the password for %1 open the following link: %2"
+msgstr "Para restablecer la contraseña de %1, abra el siguiente enlace: %2"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:44
+msgid ""
+"If you have concerns about this email please feel free to reach out to %1"
+msgstr ""
+"Si tiene alguna duda sobre este correo electrónico, no dude en ponerse en "
+"contacto con %1"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:53
+msgid "Sepal - Reset Password"
+msgstr "Sepal - Restablecer contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:84
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:92
+msgid "Check your email."
+msgstr "Consulte su correo electrónico."
+
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:89
+msgid "Error: Could not send email."
+msgstr "Error: no se pudo enviar el correo electrónico."
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:34
+msgid "Login"
+msgstr "Iniciar sesión"
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:37
+msgid "Forgot password?"
+msgstr "¿Olvidó su contraseña?"
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:41
+msgid "Welcome to Sepal"
+msgstr "Bienvenido a Sepal"
+
+#: bases/app/src/sepal/app/routes/auth/login.clj:58
+msgid "Invalid password"
+msgstr "Contraseña no válida"
+
+#: bases/app/src/sepal/app/routes/auth/page.clj:14
+msgid "login banner"
+msgstr "banner de inicio de sesión"
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:14
+msgid "Reset your password"
+msgstr "Restablezca su contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:25
+msgid "The password must be at least 8 characters long."
+msgstr "La contraseña debe tener al menos 8 caracteres."
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:31
+msgid "The passwords do not match"
+msgstr "Las contraseñas no coinciden"
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:32
+msgid "Reset password"
+msgstr "Restablecer contraseña"
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:58
+msgid "Your password has been reset."
+msgstr "Su contraseña se ha restablecido."
+
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:66
+#: bases/app/src/sepal/app/routes/auth/reset_password.clj:69
+msgid "Invalid password reset token."
+msgstr "El token de restablecimiento de contraseña no es válido."
+
+#: bases/app/src/sepal/app/routes/contact/create.clj:28
+#: bases/app/src/sepal/app/routes/contact/detail.clj:46
+#: bases/app/src/sepal/app/routes/contact/detail.clj:78
+#: bases/app/src/sepal/app/routes/contact/index.clj:116
+#: bases/app/src/sepal/app/ui/page.clj:155
+msgid "Contacts"
+msgstr "Contactos"
+
+#: bases/app/src/sepal/app/routes/contact/create.clj:29
+msgid "New contact"
+msgstr "Nuevo contacto"
+
+#: bases/app/src/sepal/app/routes/contact/create.clj:78
+msgid "Contact created successfully"
+msgstr "Contacto creado correctamente"
+
+#: bases/app/src/sepal/app/routes/contact/create.clj:80
+msgid "Could not create the contact"
+msgstr "No se pudo crear el contacto"
+
+#: bases/app/src/sepal/app/routes/contact/delete.clj:18
+msgid "Delete contact %1?"
+msgstr "¿Eliminar el contacto %1?"
+
+#: bases/app/src/sepal/app/routes/contact/delete.clj:29
+msgid "Deleted contact %1"
+msgstr "Contacto %1 eliminado"
+
+#: bases/app/src/sepal/app/routes/contact/detail.clj:114
+msgid "Contact updated successfully"
+msgstr "Contacto actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/contact/detail.clj:116
+msgid "Could not save the contact"
+msgstr "No se pudo guardar el contacto"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:26
+msgid "Contact"
+msgstr "Contacto"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:27
+msgid "Who this is, and how to reach them."
+msgstr "Quién es esta persona y cómo ponerse en contacto con ella."
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:30
+#: bases/app/src/sepal/app/routes/contact/index.clj:39
+#: bases/app/src/sepal/app/routes/contact/panel.clj:42
+#: bases/app/src/sepal/app/routes/location/form.clj:34
+#: bases/app/src/sepal/app/routes/location/index.clj:38
+#: bases/app/src/sepal/app/routes/location/panel.clj:50
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:100
+#: bases/app/src/sepal/app/routes/setup/review.clj:42
+#: bases/app/src/sepal/app/routes/setup/review.clj:48
+#: bases/app/src/sepal/app/routes/tag/form.clj:21
+#: bases/app/src/sepal/app/routes/tag/index.clj:11
+#: bases/app/src/sepal/app/routes/tag/panel.clj:38
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:18
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:47
+#: bases/app/src/sepal/app/routes/taxon/form.clj:230
+#: bases/app/src/sepal/app/routes/taxon/form.clj:339
+#: bases/app/src/sepal/app/routes/taxon/index.clj:35
+#: components/contact/src/sepal/contact/interface/search.clj:13
+#: components/location/src/sepal/location/interface/search.clj:18
+#: components/taxon/src/sepal/taxon/interface/search.clj:13
+msgid "Name"
+msgstr "Nombre"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:35
+msgid "Business Name"
+msgstr "Nombre de la empresa"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:45
+#: bases/app/src/sepal/app/routes/contact/index.clj:60
+#: bases/app/src/sepal/app/routes/contact/panel.clj:47
+#: bases/app/src/sepal/app/routes/settings/organization.clj:76
+#: bases/app/src/sepal/app/routes/setup/review.clj:52
+msgid "Phone"
+msgstr "Teléfono"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:49
+#: bases/app/src/sepal/app/routes/contact/panel.clj:44
+#: bases/app/src/sepal/app/routes/material/form.clj:148
+#: bases/app/src/sepal/app/routes/material/panel.clj:119
+#: bases/app/src/sepal/app/routes/media/panel.clj:54
+#: bases/app/src/sepal/app/routes/observation/index.clj:70
+#: bases/app/src/sepal/app/routes/propagation/index.clj:96
+#: bases/app/src/sepal/app/ui/observations.clj:40
+#: components/material/src/sepal/material/interface/search.clj:22
+#: components/observation/src/sepal/observation/interface/search.clj:50
+#: components/propagation/src/sepal/propagation/interface/search.clj:23
+msgid "Type"
+msgstr "Tipo"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:58
+#: bases/app/src/sepal/app/routes/contact/panel.clj:57
+#: bases/app/src/sepal/app/routes/contact/panel.clj:63
+#: bases/app/src/sepal/app/routes/settings/organization.clj:87
+#: components/contact/src/sepal/contact/interface/search.clj:29
+msgid "Address"
+msgstr "Dirección"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:67
+msgid "Address (as first entered)"
+msgstr "Dirección (tal como se introdujo originalmente)"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:71
+msgid ""
+"Saved before addresses were split up. Fill in the fields below to replace it."
+msgstr ""
+"Se guardó antes de dividir las direcciones en campos separados. Rellene los "
+"campos siguientes para sustituirla."
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:75
+msgid "Address line 1"
+msgstr "Dirección línea 1"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:79
+msgid "Address line 2"
+msgstr "Dirección línea 2"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:84
+#: bases/app/src/sepal/app/routes/contact/index.clj:56
+#: bases/app/src/sepal/app/routes/contact/panel.clj:66
+#: bases/app/src/sepal/app/routes/settings/organization.clj:93
+#: components/contact/src/sepal/contact/interface/search.clj:41
+msgid "City"
+msgstr "Ciudad"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:88
+msgid "Province / State"
+msgstr "Provincia / Estado"
+
+#: bases/app/src/sepal/app/routes/contact/form.clj:93
+#: bases/app/src/sepal/app/routes/contact/panel.clj:68
+msgid "Postal Code"
+msgstr "Código postal"
+
+#: bases/app/src/sepal/app/routes/contact/index.clj:48
+#: bases/app/src/sepal/app/routes/contact/panel.clj:43
+#: components/contact/src/sepal/contact/interface/search.clj:23
+msgid "Business"
+msgstr "Empresa"
+
+#: bases/app/src/sepal/app/routes/contact/index.clj:87
+msgid "No contacts yet"
+msgstr "Todavía no hay contactos"
+
+#: bases/app/src/sepal/app/routes/contact/index.clj:88
+msgid "The nurseries, gardens and collectors your material comes from."
+msgstr "Los viveros, jardines y recolectores de los que procede su material."
+
+#. i18n: Keep "business:" in English; it is search syntax
+#: bases/app/src/sepal/app/routes/contact/index.clj:111
+msgid "Search... (e.g., business:nursery)"
+msgstr "Buscar... (p. ej., business:nursery)"
+
+#: bases/app/src/sepal/app/routes/contact/panel.clj:64
+#: components/contact/src/sepal/contact/interface/search.clj:33
+msgid "Address 1"
+msgstr "Dirección 1"
+
+#: bases/app/src/sepal/app/routes/contact/panel.clj:65
+#: components/contact/src/sepal/contact/interface/search.clj:37
+msgid "Address 2"
+msgstr "Dirección 2"
+
+#: bases/app/src/sepal/app/routes/contact/panel.clj:67
+msgid "Province"
+msgstr "Provincia"
+
+#: bases/app/src/sepal/app/routes/contact/panel.clj:79
+msgid "Accessions supplied"
+msgstr "Accesiones suministradas"
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:37
+msgid "Archive location %1?"
+msgstr "¿Archivar la ubicación %1?"
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:63
+msgid "Archived location %1"
+msgstr "Ubicación %1 archivada"
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:74
+msgid "Restored location %1"
+msgstr "Ubicación %1 restaurada"
+
+#: bases/app/src/sepal/app/routes/location/create.clj:28
+#: bases/app/src/sepal/app/routes/location/detail.clj:15
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:37
+#: bases/app/src/sepal/app/routes/location/index.clj:107
+#: bases/app/src/sepal/app/ui/page.clj:147
+msgid "Locations"
+msgstr "Ubicaciones"
+
+#: bases/app/src/sepal/app/routes/location/create.clj:29
+msgid "New location"
+msgstr "Nueva ubicación"
+
+#: bases/app/src/sepal/app/routes/location/create.clj:50
+msgid "Location created successfully"
+msgstr "Ubicación creada correctamente"
+
+#: bases/app/src/sepal/app/routes/location/create.clj:61
+#: bases/app/src/sepal/app/routes/location/create.clj:63
+msgid "Could not create the location"
+msgstr "No se pudo crear la ubicación"
+
+#: bases/app/src/sepal/app/routes/location/delete.clj:18
+msgid "Delete location %1?"
+msgstr "¿Eliminar la ubicación %1?"
+
+#: bases/app/src/sepal/app/routes/location/delete.clj:31
+msgid "Deleted location %1"
+msgstr "Ubicación %1 eliminada"
+
+#: bases/app/src/sepal/app/routes/location/detail/general.clj:71
+msgid "Location updated successfully"
+msgstr "Ubicación actualizada correctamente"
+
+#: bases/app/src/sepal/app/routes/location/detail/general.clj:73
+msgid "Could not save the location"
+msgstr "No se pudo guardar la ubicación"
+
+#: bases/app/src/sepal/app/routes/location/detail/media.clj:44
+msgid "Media linked to the material in this location"
+msgstr "Medios vinculados al material de esta ubicación"
+
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:148
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:185
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:161
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:201
+msgid "The observation could not be saved."
+msgstr "No se pudo guardar la observación."
+
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:195
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:211
+msgid "The observation could not be deleted."
+msgstr "No se pudo eliminar la observación."
+
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:17
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:26
+#: bases/app/src/sepal/app/routes/material/panel.clj:143
+#: bases/app/src/sepal/app/routes/observation/index.clj:162
+#: bases/app/src/sepal/app/ui/page.clj:149
+msgid "Observations"
+msgstr "Observaciones"
+
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:25
+msgid "Location sections"
+msgstr "Secciones de la ubicación"
+
+#: bases/app/src/sepal/app/routes/location/form.clj:13
+#: bases/app/src/sepal/app/routes/location/panel.clj:51
+msgctxt "location"
+msgid "Code"
+msgstr "Código"
+
+#: bases/app/src/sepal/app/routes/location/form.clj:30
+msgid "Details"
+msgstr "Detalles"
+
+#: bases/app/src/sepal/app/routes/location/form.clj:31
+msgid "What this place is called and how it is referred to."
+msgstr "Cómo se llama este lugar y cómo se hace referencia a él."
+
+#: bases/app/src/sepal/app/routes/location/form.clj:40
+#: bases/app/src/sepal/app/routes/location/index.clj:51
+#: bases/app/src/sepal/app/routes/location/panel.clj:52
+#: bases/app/src/sepal/app/routes/media/detail.clj:77
+#: bases/app/src/sepal/app/routes/tag/form.clj:26
+#: bases/app/src/sepal/app/routes/tag/index.clj:23
+#: bases/app/src/sepal/app/routes/tag/panel.clj:39
+#: components/location/src/sepal/location/interface/search.clj:23
+msgid "Description"
+msgstr "Descripción"
+
+#: bases/app/src/sepal/app/routes/location/index.clj:78
+msgid "No locations yet"
+msgstr "Todavía no hay ubicaciones"
+
+#: bases/app/src/sepal/app/routes/location/index.clj:79
+msgid "The beds, houses and stores that material lives in."
+msgstr "Los parterres, invernaderos y almacenes donde vive el material."
+
+#. i18n: Keep "taxon:" in English; it is search syntax
+#: bases/app/src/sepal/app/routes/location/index.clj:102
+msgid "Search... (e.g., taxon:Quercus)"
+msgstr "Buscar... (p. ej., taxon:Quercus)"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:68
+msgid "Awaiting planting"
+msgstr "Pendiente de plantación"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:71
+msgid "nothing waiting"
+msgstr "nada en espera"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:85
+msgid "Plant here"
+msgstr "Plantar aquí"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:88
+msgid "received %1"
+msgstr "recibido %1"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:92
+msgid "Moved"
+msgstr "Trasladado"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:95
+msgid "nothing has moved"
+msgstr "nada se ha movido"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:112
+#: bases/app/src/sepal/app/routes/material/panel.clj:46
+msgid "to %1"
+msgstr "a %1"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:113
+msgid "removed"
+msgstr "retirado"
+
+#: bases/app/src/sepal/app/routes/location/panel.clj:121
+msgid "nothing running here"
+msgstr "nada en marcha aquí"
+
+#: bases/app/src/sepal/app/routes/material/create.clj:37
+#: bases/app/src/sepal/app/routes/material/detail.clj:15
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:61
+#: bases/app/src/sepal/app/routes/material/index.clj:165
+#: bases/app/src/sepal/app/ui/page.clj:143
+msgctxt "navigation"
+msgid "Material"
+msgstr "Material"
+
+#: bases/app/src/sepal/app/routes/material/create.clj:38
+msgid "New material"
+msgstr "Nuevo material"
+
+#: bases/app/src/sepal/app/routes/material/create.clj:67
+msgid "Material created successfully"
+msgstr "Material creado correctamente"
+
+#: bases/app/src/sepal/app/routes/material/create.clj:77
+#: bases/app/src/sepal/app/routes/material/create.clj:80
+msgid "Could not create the material"
+msgstr "No se pudo crear el material"
+
+#: bases/app/src/sepal/app/routes/material/delete.clj:27
+msgid "Delete material %1?"
+msgstr "¿Eliminar el material %1?"
+
+#: bases/app/src/sepal/app/routes/material/delete.clj:38
+msgid "Deleted material %1"
+msgstr "Material %1 eliminado"
+
+#: bases/app/src/sepal/app/routes/material/detail/general.clj:119
+msgid "Material updated successfully"
+msgstr "Material actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/material/detail/general.clj:122
+#: bases/app/src/sepal/app/routes/material/detail/general.clj:125
+msgid "Could not save the material"
+msgstr "No se pudo guardar el material"
+
+#: bases/app/src/sepal/app/routes/material/detail/shared.clj:34
+msgid "Material sections"
+msgstr "Secciones del material"
+
+#: bases/app/src/sepal/app/routes/material/export.clj:55
+msgid "Include accession data (code, provenance, dates)"
+msgstr "Incluir datos de la accesión (código, procedencia, fechas)"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:36
+msgid "Required"
+msgstr "Obligatorio"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:36
+msgid "Choose an accession first"
+msgstr "Seleccione primero una accesión"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:81
+msgid "Which accession this material came from, and where it lives."
+msgstr "De qué accesión procede este material y dónde vive."
+
+#: bases/app/src/sepal/app/routes/material/form.clj:92
+#: bases/app/src/sepal/app/routes/material/panel.clj:118
+msgctxt "material"
+msgid "Code"
+msgstr "Código"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:111
+msgid "This accession is intended for %1."
+msgstr "Esta accesión está destinada a %1."
+
+#: bases/app/src/sepal/app/routes/material/form.clj:119
+msgid "Holding"
+msgstr "Existencias"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:120
+msgid "How much there is, and what condition it is in."
+msgstr "Cuánto hay y en qué estado se encuentra."
+
+#: bases/app/src/sepal/app/routes/material/form.clj:123
+#: bases/app/src/sepal/app/routes/material/panel.clj:120
+msgid "Quantity"
+msgstr "Cantidad"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:134
+#: bases/app/src/sepal/app/routes/material/index.clj:83
+#: bases/app/src/sepal/app/routes/material/panel.clj:121
+#: bases/app/src/sepal/app/routes/propagation/form.clj:127
+#: bases/app/src/sepal/app/routes/propagation/index.clj:100
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:69
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:117
+#: components/material/src/sepal/material/interface/search.clj:27
+#: components/propagation/src/sepal/propagation/interface/search.clj:17
+msgid "Status"
+msgstr "Estado"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:166
+msgid "Reason for change"
+msgstr "Motivo del cambio"
+
+#: bases/app/src/sepal/app/routes/material/form.clj:169
+msgid ""
+"Recorded in this material's history when the location or quantity changes."
+msgstr ""
+"Se registra en el historial de este material cuando cambia la ubicación o la "
+"cantidad."
+
+#: bases/app/src/sepal/app/routes/material/form.clj:174
+msgid "None"
+msgstr "Ninguno"
+
+#: bases/app/src/sepal/app/routes/material/index.clj:101
+msgid "Only living material"
+msgstr "Solo material vivo"
+
+#: bases/app/src/sepal/app/routes/material/index.clj:125
+msgid "No material yet"
+msgstr "Aún no hay material"
+
+#: bases/app/src/sepal/app/routes/material/index.clj:126
+msgid ""
+"Material is what an accession became in the garden — a plant in a bed, a "
+"seed lot in store."
+msgstr ""
+"El material es lo que una accesión llegó a ser en el jardín: una planta en "
+"un parterre, un lote de semillas en el almacén."
+
+#. i18n: Keep "type:", "seed", "status:" and "alive" in English; they are search syntax
+#: bases/app/src/sepal/app/routes/material/index.clj:150
+msgid "Search... (e.g., type:seed status:alive)"
+msgstr "Buscar... (p. ej., type:seed status:alive)"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:47
+msgid "from %1"
+msgstr "de %1"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:48
+msgid "quantity change"
+msgstr "cambio de cantidad"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:65
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:83
+msgid "History"
+msgstr "Historial"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:68
+msgid "no recorded changes"
+msgstr "sin cambios registrados"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:79
+msgid "Show all (%1)"
+msgstr "Mostrar todo (%1)"
+
+#: bases/app/src/sepal/app/routes/material/panel.clj:168
+msgid "nothing grown from this plant"
+msgstr "nada cultivado a partir de esta planta"
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:36
+msgid "Delete media %1?"
+msgstr "¿Eliminar el archivo multimedia %1?"
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:37
+msgid "Delete this media item?"
+msgstr "¿Eliminar este archivo multimedia?"
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:41
+msgid "Deleted media %1"
+msgstr "Archivo multimedia %1 eliminado"
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:42
+msgid "Deleted the media item"
+msgstr "Archivo multimedia eliminado"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:32
+#: bases/app/src/sepal/app/routes/media/panel.clj:36
+msgid "Untitled"
+msgstr "Sin título"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:44
+#: bases/app/src/sepal/app/routes/media/detail.clj:49
+#: bases/app/src/sepal/app/ui/archive.clj:59
+#: bases/app/src/sepal/app/ui/archive.clj:74
+#: bases/app/src/sepal/app/ui/delete.clj:88
+#: bases/app/src/sepal/app/ui/delete.clj:107
+msgid "Close"
+msgstr "Cerrar"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:61
+msgid "Zoom"
+msgstr "Ampliar"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:74
+#: bases/app/src/sepal/app/routes/media/panel.clj:53
+msgid "Title"
+msgstr "Título"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:92
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:96
+msgid "Download"
+msgstr "Descargar"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:145
+msgid "Media updated successfully"
+msgstr "Archivo multimedia actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:147
+msgid "Could not save the media"
+msgstr "No se pudo guardar el archivo multimedia"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:82
+msgid "Resource type"
+msgstr "Tipo de recurso"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:98
+msgid "Resource"
+msgstr "Recurso"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:133
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:79
+#: bases/app/src/sepal/app/ui/archive.clj:69
+#: bases/app/src/sepal/app/ui/delete.clj:102
+#: bases/app/src/sepal/app/ui/export.clj:84
+#: bases/app/src/sepal/app/ui/form.clj:224
+#: bases/app/src/sepal/app/ui/notes.clj:81
+#: bases/app/src/sepal/app/ui/observations.clj:190
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:134
+#: bases/app/src/sepal/app/ui/form.clj:229
+#: bases/app/src/sepal/app/ui/notes.clj:82
+#: bases/app/src/sepal/app/ui/observations.clj:191
+msgid "Save"
+msgstr "Guardar"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:151
+msgid "Remove link"
+msgstr "Quitar enlace"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:159
+msgid "Change link"
+msgstr "Cambiar enlace"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:176
+msgid "Link"
+msgstr "Enlace"
+
+#: bases/app/src/sepal/app/routes/media/detail/link.clj:215
+msgid "Error: Could not link resource"
+msgstr "Error: no se pudo enlazar el recurso"
+
+#: bases/app/src/sepal/app/routes/media/index.clj:16
+#: bases/app/src/sepal/app/ui/media.clj:134
+#: bases/app/src/sepal/app/ui/media.clj:169
+msgid "Upload"
+msgstr "Subir"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:42
+msgid "Preview"
+msgstr "Vista previa"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:55
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:109
+msgid "Size"
+msgstr "Tamaño"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:56
+msgid "Uploaded"
+msgstr "Subido"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:60
+#: bases/app/src/sepal/app/ui/observations.clj:145
+msgid "by %1"
+msgstr "por %1"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:66
+msgid "Linked"
+msgstr "Enlazado"
+
+#: bases/app/src/sepal/app/routes/media/panel.clj:73
+msgid "Not linked"
+msgstr "No enlazado"
+
+#: bases/app/src/sepal/app/routes/media/uploaded.clj:56
+msgid "The upload could not be saved."
+msgstr "No se pudo guardar el archivo subido."
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:62
+#: components/observation/src/sepal/observation/interface/search.clj:80
+msgid "Subject"
+msgstr "Asunto"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:74
+#: components/observation/src/sepal/observation/interface/search.clj:58
+msgid "Observed"
+msgstr "Observado"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:78
+msgid "Due"
+msgstr "Vencimiento"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:82
+msgid "Observer"
+msgstr "Observador"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:109
+msgid "No observations yet"
+msgstr "Aún no hay observaciones"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:110
+msgid ""
+"What a curator saw, dated and filed against the material or location it was "
+"about."
+msgstr ""
+"Lo que un curador observó, con fecha, registrado sobre el material o la "
+"ubicación a los que se refería."
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:134
+msgid "Only overdue observations"
+msgstr "Solo observaciones vencidas"
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:156
+msgid "Search... (e.g., type:phenology value:flowering)"
+msgstr "Buscar... (p. ej., type:phenology value:flowering)"
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:41
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:27
+#: bases/app/src/sepal/app/routes/propagation/index.clj:200
+msgid "Propagation"
+msgstr "Propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:42
+msgid "New propagation"
+msgstr "Nueva propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:66
+msgid "Cannot be before the propagated date"
+msgstr "No puede ser anterior a la fecha de propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:163
+msgid "Propagation created"
+msgstr "Propagación creada"
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:167
+msgid "Could not create the propagation"
+msgstr "No se pudo crear la propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/delete.clj:26
+msgid "Delete the propagation from %1?"
+msgstr "¿Eliminar la propagación de %1?"
+
+#: bases/app/src/sepal/app/routes/propagation/delete.clj:38
+msgid "Deleted the propagation from %1"
+msgstr "Propagación de %1 eliminada"
+
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:147
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:185
+msgid "Propagation updated"
+msgstr "Propagación actualizada"
+
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:149
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:187
+msgid "Could not save the propagation"
+msgstr "No se pudo guardar la propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:159
+msgid "You don't have permission to edit this propagation"
+msgstr "No tiene permiso para editar esta propagación"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:19
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:68
+msgid "Method"
+msgstr "Método"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:22
+msgid "How the material was produced."
+msgstr "Cómo se produjo el material."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:42
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:80
+#: components/propagation/src/sepal/propagation/interface/search.clj:76
+msgid "Rootstock"
+msgstr "Patrón"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:48
+msgid ""
+"A graft's other parent. Commercial rootstock is bought by the bundle, so "
+"this names the cultivar rather than a plant here."
+msgstr ""
+"El otro progenitor del injerto. El patrón comercial se compra por lotes, por "
+"lo que aquí se indica el cultivar en vez de una planta."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:58
+#: bases/app/src/sepal/app/routes/propagation/form.clj:88
+msgid "Parent plant"
+msgstr "Planta de origen"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:65
+msgid ""
+"Optional. Leave it out when the cuttings came off the accession without a "
+"particular plant being recorded."
+msgstr ""
+"Opcional. Déjelo en blanco cuando los esquejes procedan de la accesión sin "
+"que se haya registrado una planta concreta."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:66
+msgid "Optional. Choose a parent accession to pick from its plants."
+msgstr "Opcional. Elija una accesión de origen para elegir una de sus plantas."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:79
+#: bases/app/src/sepal/app/routes/propagation/form.clj:103
+#: components/propagation/src/sepal/propagation/interface/search.clj:49
+#: components/propagation/src/sepal/propagation/interface/search.clj:53
+msgid "Parent accession"
+msgstr "Accesión de origen"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:123
+msgid "Where the batch sits while it runs. A nursery bench is a location."
+msgstr ""
+"Dónde se encuentra el lote mientras está en curso. Una mesa de vivero es una "
+"ubicación."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:164
+#: bases/app/src/sepal/app/routes/propagation/index.clj:84
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:70
+#: bases/app/src/sepal/app/routes/taxon/form.clj:255
+#: bases/app/src/sepal/app/routes/taxon/form.clj:263
+#: bases/app/src/sepal/app/routes/taxon/index.clj:53
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:118
+#: components/taxon/src/sepal/taxon/interface/search.clj:45
+#: components/taxon/src/sepal/taxon/interface/search.clj:50
+msgid "Parent"
+msgstr "Origen"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:165
+msgid "The accession this came off, and the plant when it is known."
+msgstr "La accesión de la que procede, y la planta cuando se conoce."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:173
+msgid "Batch"
+msgstr "Lote"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:174
+msgid "Where it sits and how many came through."
+msgstr "Dónde se encuentra y cuántos han salido adelante."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:182
+#: bases/app/src/sepal/app/routes/propagation/index.clj:107
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:86
+#: components/propagation/src/sepal/propagation/interface/search.clj:82
+msgid "Propagated"
+msgstr "Propagado"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:190
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:88
+msgid "Succeeded on"
+msgstr "Logrado el"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:197
+#: bases/app/src/sepal/app/routes/propagation/index.clj:111
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:87
+msgid "Started"
+msgstr "Iniciado"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:202
+msgid "Leave blank for a mass sowing."
+msgstr "Déjelo en blanco para una siembra masiva."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:203
+#: bases/app/src/sepal/app/routes/propagation/index.clj:115
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:89
+#: components/propagation/src/sepal/propagation/interface/search.clj:86
+msgid "Succeeded"
+msgstr "Logrado"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:210
+msgid "Parent quantity"
+msgstr "Cantidad de origen"
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:215
+msgid ""
+"Optional. Filling this reduces the parent lot and records the change as a "
+"division. Leave blank when taking cuttings or seed, which removes nothing."
+msgstr ""
+"Opcional. Completar este campo reduce el lote de origen y registra el cambio "
+"como una división. Déjelo en blanco al tomar esquejes o semillas, que no "
+"quitan nada."
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:223
+msgid ""
+"Anything the fields above do not hold, such as a medium or treatment tried, "
+"or why the batch failed."
+msgstr ""
+"Cualquier información que no quede recogida en los campos anteriores, como "
+"el sustrato o el tratamiento probado, o por qué falló el lote."
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:128
+msgid "No product recorded for this batch"
+msgstr "No hay ningún producto registrado para este lote"
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:168
+msgid "No propagations yet"
+msgstr "Todavía no hay propagaciones"
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:169
+msgid "What the garden has grown itself, and what came out of it."
+msgstr "Lo que el jardín ha propagado, y lo que ha obtenido de ello."
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:195
+msgid "Search... (e.g., status:active type:cutting)"
+msgstr "Buscar... (p. ej., status:active type:cutting)"
+
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:98
+msgid "Products"
+msgstr "Productos"
+
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:101
+msgid "nothing recorded"
+msgstr "nada registrado"
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:126
+msgid ""
+"Material needs a location. Set one on this batch or an intended location on "
+"the accession."
+msgstr ""
+"El material necesita una ubicación. Defina una en este lote o una ubicación "
+"prevista en la accesión."
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:135
+msgid "Material created"
+msgstr "Material creado"
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:138
+msgid "Accession created"
+msgstr "Accesión creada"
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:140
+#: bases/app/src/sepal/app/routes/propagation/product.clj:142
+msgid "Could not create the product"
+msgstr "No se pudo crear el producto"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:84
+msgid "Create material"
+msgstr "Crear material"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:85
+msgid "Create accession"
+msgstr "Crear accesión"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:91
+msgid "Reaccession as a new accession"
+msgstr "Reaccesionar como una nueva accesión"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:92
+msgid "Create material under the parent accession"
+msgstr "Crear material bajo la accesión de origen"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:96
+msgid "Mark complete"
+msgstr "Marcar como completado"
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:99
+msgid "Mark failed"
+msgstr "Marcar como fallido"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:49
+msgid ""
+"Backups include the database only. Media files are stored separately and "
+"must be backed up manually."
+msgstr ""
+"Las copias de seguridad incluyen únicamente la base de datos. Los archivos "
+"multimedia se almacenan por separado y deben respaldarse manualmente."
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:55
+msgid "Disabled"
+msgstr "Desactivada"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:56
+msgid "Daily"
+msgstr "Diaria"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:57
+msgid "Weekly"
+msgstr "Semanal"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:58
+msgid "Monthly"
+msgstr "Mensual"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:73
+msgid "Backup Schedule"
+msgstr "Programación de copias de seguridad"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:77
+msgid "Frequency"
+msgstr "Frecuencia"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:83
+msgid "Next backup: "
+msgstr "Próxima copia de seguridad: "
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:87
+msgid "Last backup: "
+msgstr "Última copia de seguridad: "
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:90
+#: bases/app/src/sepal/app/routes/settings/codes.clj:105
+#: bases/app/src/sepal/app/routes/settings/organization.clj:112
+#: bases/app/src/sepal/app/routes/settings/profile.clj:50
+msgid "Save changes"
+msgstr "Guardar cambios"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:99
+msgid "Filename"
+msgstr "Nombre de archivo"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:113
+#: components/accession/src/sepal/accession/interface/search.clj:98
+#: components/contact/src/sepal/contact/interface/search.clj:50
+#: components/location/src/sepal/location/interface/search.clj:69
+#: components/material/src/sepal/material/interface/search.clj:92
+#: components/propagation/src/sepal/propagation/interface/search.clj:90
+msgid "Created"
+msgstr "Creado"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:117
+#: bases/app/src/sepal/app/ui/actions.clj:64
+msgid "Actions"
+msgstr "Acciones"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:127
+msgid "Your backups could not be reached just now. They are not lost — "
+msgstr ""
+"No se ha podido acceder a sus copias de seguridad en este momento. No se han "
+"perdido: "
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:128
+msgid "try again in a few minutes."
+msgstr "vuelva a intentarlo dentro de unos minutos."
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:132
+msgid "Recent Backups"
+msgstr "Copias de seguridad recientes"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:137
+msgid "No backups yet."
+msgstr "Todavía no hay copias de seguridad."
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:146
+#: bases/app/src/sepal/app/routes/settings/codes.clj:111
+#: bases/app/src/sepal/app/routes/settings/layout.clj:39
+#: bases/app/src/sepal/app/routes/settings/organization.clj:118
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:181
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:86
+#: bases/app/src/sepal/app/routes/setup/review.clj:47
+msgid "Organization"
+msgstr "Organización"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:147
+#: bases/app/src/sepal/app/routes/settings/layout.clj:52
+msgid "Backups"
+msgstr "Copias de seguridad"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:194
+msgid "Backup settings updated successfully"
+msgstr ""
+"La configuración de copias de seguridad se ha actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/settings/backups/index.clj:196
+msgid "Could not save the backup settings"
+msgstr "No se pudo guardar la configuración de copias de seguridad"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:48
+msgid "Reject a code that does not fit"
+msgstr "Rechazar un código que no se ajuste"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:64
+msgid ""
+"How an accession code is suggested on the create form. Leave it blank to "
+"suggest nothing."
+msgstr ""
+"Cómo se sugiere el código de accesión en el formulario de creación. Déjelo "
+"en blanco para no sugerir nada."
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:67
+#: bases/app/src/sepal/app/routes/settings/codes.clj:83
+msgid "Template"
+msgstr "Plantilla"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:73
+msgid "Next: %1"
+msgstr "Siguiente: %1"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:81
+msgid ""
+"Material is numbered within its accession, so it starts again at one for "
+"every accession. Leave it blank to suggest nothing."
+msgstr ""
+"El material se numera dentro de su accesión, por lo que vuelve a empezar en "
+"uno en cada accesión. Déjelo en blanco para no sugerir nada."
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:89
+msgid "For example: %1"
+msgstr "Por ejemplo: %1"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:93
+msgid "Separator"
+msgstr "Separador"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:97
+msgid ""
+"Between the accession code and the material code. Leave it blank for none."
+msgstr ""
+"Entre el código de accesión y el código de material. Déjelo en blanco para "
+"no usar ninguno."
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:102
+msgid ""
+"With no separator, a material code that starts with a digit runs into an "
+"accession code that ends with one, and 2026.0001 and 1 read as 2026.00011."
+msgstr ""
+"Sin separador, un código de material que empieza por un dígito se junta con "
+"un código de accesión que termina en uno, y 2026.0001 y 1 se leen como "
+"2026.00011."
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:112
+#: bases/app/src/sepal/app/routes/settings/layout.clj:46
+msgid "Codes"
+msgstr "Códigos"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:158
+msgid "Set a template before enforcing it"
+msgstr "Defina una plantilla antes de aplicarla"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:205
+msgid "Code settings updated successfully"
+msgstr "La configuración de códigos se ha actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/settings/codes.clj:208
+msgid "Could not save the code settings"
+msgstr "No se pudo guardar la configuración de códigos"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:26
+msgid "Settings sections"
+msgstr "Secciones de configuración"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:28
+#: bases/app/src/sepal/app/routes/settings/profile.clj:64
+#: bases/app/src/sepal/app/routes/settings/security.clj:41
+msgid "Account"
+msgstr "Cuenta"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:32
+#: bases/app/src/sepal/app/routes/settings/profile.clj:65
+msgid "Profile"
+msgstr "Perfil"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:35
+#: bases/app/src/sepal/app/routes/settings/security.clj:42
+msgid "Security"
+msgstr "Seguridad"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:49
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:182
+msgid "Users"
+msgstr "Usuarios"
+
+#: bases/app/src/sepal/app/routes/settings/layout.clj:57
+#: bases/app/src/sepal/app/ui/page.clj:172
+msgid "Settings"
+msgstr "Configuración"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:36
+#: bases/app/src/sepal/app/routes/setup/regional.clj:40
+#: bases/app/src/sepal/app/routes/setup/review.clj:56
+msgid "Timezone"
+msgstr "Zona horaria"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:55
+msgid "Organization Identity"
+msgstr "Identidad de la organización"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:56
+msgid "Long name"
+msgstr "Nombre largo"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:60
+#: bases/app/src/sepal/app/routes/setup/organization.clj:56
+#: bases/app/src/sepal/app/routes/setup/review.clj:49
+msgid "Short name"
+msgstr "Nombre corto"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:64
+#: bases/app/src/sepal/app/routes/setup/organization.clj:61
+#: bases/app/src/sepal/app/routes/setup/review.clj:50
+msgid "Abbreviation"
+msgstr "Abreviatura"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:70
+msgid "Contact Information"
+msgstr "Información de contacto"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:80
+msgid "Website"
+msgstr "Sitio web"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:88
+msgid "Street address"
+msgstr "Dirección"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:97
+msgid "Postal code"
+msgstr "Código postal"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:107
+#: bases/app/src/sepal/app/routes/setup/regional.clj:74
+#: bases/app/src/sepal/app/routes/setup/review.clj:55
+msgid "Regional Settings"
+msgstr "Configuración regional"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:179
+msgid "Organization settings updated successfully"
+msgstr "Configuración de la organización actualizada correctamente"
+
+#: bases/app/src/sepal/app/routes/settings/organization.clj:181
+msgid "Could not save the organization settings"
+msgstr "No se pudo guardar la configuración de la organización"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:17
+#: bases/app/src/sepal/app/routes/taxon/form.clj:340
+#: bases/app/src/sepal/app/routes/taxon/form.clj:350
+msgid "Language"
+msgstr "Idioma"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:20
+msgid ""
+"Browser default uses the language your browser asks for, or English if Sepal "
+"has no translation for it."
+msgstr ""
+"El valor predeterminado del navegador usa el idioma que solicita su "
+"navegador, o inglés si Sepal no tiene una traducción para él."
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:25
+msgid "Browser default"
+msgstr "Predeterminado del navegador"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:57
+msgid "Logout"
+msgstr "Cerrar sesión"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:75
+msgid "Choose a language from the list"
+msgstr "Elija un idioma de la lista"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:93
+msgid "Profile updated successfully"
+msgstr "Perfil actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:95
+msgid "Failed to update profile"
+msgstr "No se pudo actualizar el perfil"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:19
+msgid "Current password"
+msgstr "Contraseña actual"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:24
+msgid "New password"
+msgstr "Contraseña nueva"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:29
+msgid "Confirm new password"
+msgstr "Confirmar contraseña nueva"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:35
+msgid "Change password"
+msgstr "Cambiar contraseña"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:53
+msgid "New passwords don't match"
+msgstr "Las contraseñas nuevas no coinciden"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:72
+msgid "Password changed successfully"
+msgstr "Contraseña cambiada correctamente"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:74
+msgid "Current password is incorrect"
+msgstr "La contraseña actual es incorrecta"
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:76
+msgid "Could not change the password"
+msgstr "No se pudo cambiar la contraseña"
+
+#: bases/app/src/sepal/app/routes/settings/users/activate.clj:17
+msgid "User %1 activated"
+msgstr "Usuario %1 activado"
+
+#: bases/app/src/sepal/app/routes/settings/users/archive.clj:25
+msgid "You cannot archive yourself"
+msgstr "No puede archivarse a sí mismo"
+
+#: bases/app/src/sepal/app/routes/settings/users/archive.clj:33
+msgid "Cannot archive the last admin. Promote another user to admin first."
+msgstr ""
+"No se puede archivar al último administrador. Promueva a otro usuario a "
+"administrador primero."
+
+#: bases/app/src/sepal/app/routes/settings/users/archive.clj:40
+msgid "User %1 archived"
+msgstr "Usuario %1 archivado"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:63
+msgid "Resend invitation"
+msgstr "Reenviar invitación"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:72
+msgid "Activate user"
+msgstr "Activar usuario"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:79
+msgid "Archive user"
+msgstr "Archivar usuario"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:109
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:40
+#: bases/app/src/sepal/app/routes/taxon/form.clj:124
+msgid "Role"
+msgstr "Rol"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:150
+#: bases/app/src/sepal/app/ui/pages/list.clj:57
+#: bases/app/src/sepal/app/ui/query_builder.clj:135
+msgid "Search..."
+msgstr "Buscar..."
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:151
+msgid "Search users"
+msgstr "Buscar usuarios"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:171
+msgid "Show archived"
+msgstr "Mostrar archivados"
+
+#: bases/app/src/sepal/app/routes/settings/users/index.clj:175
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:55
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:87
+msgid "Invite User"
+msgstr "Invitar usuario"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:46
+#: components/user/src/sepal/user/interface/spec.clj:36
+msgid "Reader"
+msgstr "Lector"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:47
+#: components/user/src/sepal/user/interface/spec.clj:35
+msgid "Editor"
+msgstr "Editor"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:48
+#: components/user/src/sepal/user/interface/spec.clj:34
+msgid "Admin"
+msgstr "Administrador"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:65
+msgid "Full Name"
+msgstr "Nombre completo"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:67
+msgid "Optional"
+msgstr "Opcional"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:73
+msgid ""
+"An invitation email will be sent to this address. The invitation expires in "
+"24 hours."
+msgstr ""
+"Se enviará un correo electrónico de invitación a esta dirección. La "
+"invitación caduca en 24 horas."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:80
+msgid "Send Invitation"
+msgstr "Enviar invitación"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:102
+msgid "You have been invited to %1 on Sepal"
+msgstr "Ha sido invitado a %1 en Sepal"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:104
+msgid "You have been invited to Sepal"
+msgstr "Ha sido invitado a Sepal"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:108
+msgid "Hello %1,"
+msgstr "Hola %1,"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:108
+msgid "Hello,"
+msgstr "Hola,"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:110
+msgid ""
+"%1 (%2) has invited you to join %3 on Sepal, a botanical collection "
+"management system."
+msgstr ""
+"%1 (%2) le ha invitado a unirse a %3 en Sepal, un sistema de gestión de "
+"colecciones botánicas."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:112
+msgid ""
+"%1 (%2) has invited you to join Sepal, a botanical collection management "
+"system."
+msgstr ""
+"%1 (%2) le ha invitado a unirse a Sepal, un sistema de gestión de "
+"colecciones botánicas."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:114
+msgid ""
+"To accept this invitation and set up your account, click the link below:"
+msgstr ""
+"Para aceptar esta invitación y configurar su cuenta, haga clic en el "
+"siguiente enlace:"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:116
+msgid ""
+"After clicking the link, you will be asked to set a password for your "
+"account. Once your password is set, you will need to log in with your email "
+"address and new password."
+msgstr ""
+"Después de hacer clic en el enlace, se le pedirá que establezca una "
+"contraseña para su cuenta. Una vez configurada la contraseña, deberá iniciar "
+"sesión con su dirección de correo electrónico y la nueva contraseña."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:117
+msgid "This invitation expires in 24 hours."
+msgstr "Esta invitación caduca en 24 horas."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:118
+msgid ""
+"If you weren't expecting this invitation, you can safely ignore this email."
+msgstr ""
+"Si no esperaba esta invitación, puede ignorar este correo electrónico con "
+"total seguridad."
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:136
+msgid "This email is already registered (user is archived)"
+msgstr "Este correo electrónico ya está registrado (el usuario está archivado)"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:137
+msgid "This email is already registered"
+msgstr "Este correo electrónico ya está registrado"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:176
+msgid "Invitation sent to %1"
+msgstr "Invitación enviada a %1"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:180
+msgid "User created but failed to send invitation email"
+msgstr ""
+"Usuario creado, pero no se pudo enviar el correo electrónico de invitación"
+
+#: bases/app/src/sepal/app/routes/settings/users/invite.clj:197
+msgid "Failed to create user"
+msgstr "No se pudo crear el usuario"
+
+#: bases/app/src/sepal/app/routes/settings/users/resend_invitation.clj:34
+msgid "User not found"
+msgstr "Usuario no encontrado"
+
+#: bases/app/src/sepal/app/routes/settings/users/resend_invitation.clj:37
+msgid "Can only resend invitations for users with 'invited' status"
+msgstr "Solo se pueden reenviar invitaciones a usuarios con estado «invitado»"
+
+#: bases/app/src/sepal/app/routes/settings/users/resend_invitation.clj:56
+msgid "Invitation resent to %1"
+msgstr "Invitación reenviada a %1"
+
+#: bases/app/src/sepal/app/routes/settings/users/resend_invitation.clj:61
+msgid "Failed to send invitation email"
+msgstr "No se pudo enviar el correo electrónico de invitación"
+
+#: bases/app/src/sepal/app/routes/settings/users/update_role.clj:19
+msgid "Cannot remove the last admin. Promote another user to admin first."
+msgstr ""
+"No se puede eliminar al último administrador. Antes, ascienda a otro usuario "
+"a administrador."
+
+#: bases/app/src/sepal/app/routes/settings/users/update_role.clj:54
+msgid "Your role has been changed to %1"
+msgstr "Su rol ha sido cambiado a %1"
+
+#: bases/app/src/sepal/app/routes/settings/users/update_role.clj:61
+msgid "User %1 role changed to %2"
+msgstr "El rol del usuario %1 ha cambiado a %2"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:22
+msgid "Invalid email address"
+msgstr "Dirección de correo electrónico no válida"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:24
+msgid "Password must be at least 8 characters"
+msgstr "La contraseña debe tener al menos 8 caracteres"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:26
+msgid "Full name is required"
+msgstr "El nombre completo es obligatorio"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:70
+msgid "Create Account →"
+msgstr "Crear cuenta →"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:79
+msgid "Admin Account Exists"
+msgstr "Ya existe una cuenta de administrador"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:83
+msgid "An admin account already exists. Please log in to continue setup."
+msgstr ""
+"Ya existe una cuenta de administrador. Inicie sesión para continuar con la "
+"configuración."
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:84
+msgid ""
+"If you created an admin account via the CLI, you need to log in before "
+"continuing with the setup wizard."
+msgstr ""
+"Si ha creado una cuenta de administrador mediante la CLI, debe iniciar "
+"sesión antes de continuar con el asistente de configuración."
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:88
+msgid "Log in to continue →"
+msgstr "Inicie sesión para continuar →"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:99
+#: bases/app/src/sepal/app/routes/setup/review.clj:41
+msgid "Admin Account"
+msgstr "Cuenta de administrador"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:101
+msgid "✓ Admin account has been created"
+msgstr "✓ Se ha creado la cuenta de administrador"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:117
+#: bases/app/src/sepal/app/routes/setup/layout.clj:33
+#: bases/app/src/sepal/app/routes/setup/organization.clj:83
+#: bases/app/src/sepal/app/routes/setup/regional.clj:65
+msgid "Next →"
+msgstr "Siguiente →"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:128
+msgid "Create Admin Account"
+msgstr "Crear cuenta de administrador"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:130
+msgid "Create the first administrator account for your Sepal instance."
+msgstr "Cree la primera cuenta de administrador para su instancia de Sepal."
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:159
+msgid "An account with this email already exists"
+msgstr "Ya existe una cuenta con este correo electrónico"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:172
+msgid "Admin account created successfully"
+msgstr "Cuenta de administrador creada correctamente"
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:177
+msgid "Failed to create admin account"
+msgstr "Error al crear la cuenta de administrador"
+
+#: bases/app/src/sepal/app/routes/setup/layout.clj:30
+#: bases/app/src/sepal/app/routes/setup/organization.clj:80
+#: bases/app/src/sepal/app/routes/setup/regional.clj:62
+#: bases/app/src/sepal/app/routes/setup/review.clj:68
+msgid "← Back"
+msgstr "← Atrás"
+
+#: bases/app/src/sepal/app/routes/setup/layout.clj:45
+msgid "Sepal Setup"
+msgstr "Configuración de Sepal"
+
+#: bases/app/src/sepal/app/routes/setup/layout.clj:59
+msgid "🌱 Sepal Setup"
+msgstr "🌱 Configuración de Sepal"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:19
+msgid "Organization name is required"
+msgstr "El nombre de la organización es obligatorio"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:50
+msgid "Organization name"
+msgstr "Nombre de la organización"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:55
+msgid "e.g., Royal Botanic Gardens, Kew"
+msgstr "p. ej., Royal Botanic Gardens, Kew"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:60
+msgid "e.g., Kew Gardens"
+msgstr "p. ej., Kew Gardens"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:65
+msgid "e.g., RBG Kew"
+msgstr "p. ej., RBG Kew"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:66
+msgid "Contact email"
+msgstr "Correo electrónico de contacto"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:71
+msgid "Contact phone"
+msgstr "Teléfono de contacto"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:92
+msgid "Organization Information"
+msgstr "Información de la organización"
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:94
+msgid "Tell us about your organization. You can update these settings later."
+msgstr ""
+"Cuéntenos sobre su organización. Puede actualizar esta configuración más "
+"adelante."
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:110
+msgid "Organization information saved"
+msgstr "Información de la organización guardada"
+
+#: bases/app/src/sepal/app/routes/setup/regional.clj:22
+msgid "Please select a timezone"
+msgstr "Seleccione una zona horaria"
+
+#: bases/app/src/sepal/app/routes/setup/regional.clj:76
+msgid ""
+"Select your organization's timezone. All timestamps in Sepal will be "
+"displayed in this timezone."
+msgstr ""
+"Seleccione la zona horaria de su organización. Todas las fechas y horas de "
+"Sepal se mostrarán en esta zona horaria."
+
+#: bases/app/src/sepal/app/routes/setup/regional.clj:93
+msgid "Timezone saved"
+msgstr "Zona horaria guardada"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:35
+msgid "Review & Complete"
+msgstr "Revisar y completar"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:38
+msgid ""
+"Review your settings below. You can change these later in the Settings pages."
+msgstr ""
+"Revise su configuración a continuación. Puede cambiarla más adelante en las "
+"páginas de configuración."
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:59
+msgid "Taxonomy"
+msgstr "Taxonomía"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:60
+msgid "Taxa count"
+msgstr "Número de taxones"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:61
+msgid "%1 taxon"
+msgid_plural "%1 taxa"
+msgstr[0] "%1 taxón"
+msgstr[1] "%1 taxones"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:62
+msgid "WFO Plant List"
+msgstr "WFO Plant List"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:62
+msgid "Not imported"
+msgstr "No importada"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:77
+msgid "Complete Setup"
+msgstr "Completar configuración"
+
+#: bases/app/src/sepal/app/routes/setup/review.clj:102
+msgid "Setup complete! Welcome to Sepal."
+msgstr "¡Configuración completada! Bienvenido a Sepal."
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:29
+msgid "Email (SMTP)"
+msgstr "Correo electrónico (SMTP)"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:32
+msgid "Media Storage (S3)"
+msgstr "Almacenamiento multimedia (S3)"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:35
+msgid "App Domain"
+msgstr "Dominio de la aplicación"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:38
+msgid "SpatiaLite (Geo-coordinates)"
+msgstr "SpatiaLite (coordenadas geográficas)"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:51
+msgid "Server Configuration"
+msgstr "Configuración del servidor"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:56
+msgid ""
+"Checking your server configuration. These features are optional but "
+"recommended for full functionality."
+msgstr ""
+"Comprobando la configuración del servidor. Estas funciones son opcionales, "
+"pero se recomiendan para un funcionamiento completo."
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:62
+msgid ""
+"Some features are not configured. You can continue and configure them later, "
+"but the affected features won't work until then."
+msgstr ""
+"Algunas funciones no están configuradas. Puede continuar y configurarlas más "
+"tarde, pero las funciones afectadas no funcionarán hasta entonces."
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:67
+msgid "Re-run Checks"
+msgstr "Repetir comprobaciones"
+
+#: bases/app/src/sepal/app/routes/setup/server.clj:74
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:36
+msgid "Continue →"
+msgstr "Continuar →"
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:61
+msgid "SMTP is configured"
+msgstr "SMTP está configurado"
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:63
+msgid ""
+"Email not configured. Password reset, user invitations, and backup "
+"notifications will not work."
+msgstr ""
+"Correo electrónico no configurado. El restablecimiento de contraseña, las "
+"invitaciones de usuario y las notificaciones de copia de seguridad no "
+"funcionarán."
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:67
+msgid "Media storage (S3) is configured"
+msgstr "El almacenamiento de contenido multimedia (S3) está configurado"
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:69
+msgid ""
+"Media storage not configured. Cannot upload images or documents to records."
+msgstr ""
+"Almacenamiento de contenido multimedia no configurado. No se pueden subir "
+"imágenes ni documentos a los registros."
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:73
+msgid "App domain is configured"
+msgstr "El dominio de la aplicación está configurado"
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:75
+msgid "App domain not set. Links in emails will be incorrect."
+msgstr ""
+"Dominio de la aplicación no configurado. Los enlaces en los correos "
+"electrónicos serán incorrectos."
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:82
+msgid "SpatiaLite is available for geo-coordinates"
+msgstr "SpatiaLite está disponible para coordenadas geográficas"
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:85
+msgid ""
+"SpatiaLite not available. Geo-coordinates for collections will not work."
+msgstr ""
+"SpatiaLite no está disponible. Las coordenadas geográficas de las "
+"colecciones no funcionarán."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:21
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:46
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:102
+msgid "Taxonomy Data"
+msgstr "Datos taxonómicos"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:27
+msgid "Taxonomy data already exists"
+msgstr "Ya existen datos taxonómicos"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:28
+msgid ""
+"Your database already contains %1 taxon. The WFO Plant List import is only "
+"available for empty databases to avoid conflicts with existing taxonomic "
+"data."
+msgid_plural ""
+"Your database already contains %1 taxa. The WFO Plant List import is only "
+"available for empty databases to avoid conflicts with existing taxonomic "
+"data."
+msgstr[0] ""
+"Su base de datos ya contiene %1 taxón. La importación de la Lista de Plantas "
+"del WFO solo está disponible en bases de datos vacías, para evitar "
+"conflictos con los datos taxonómicos existentes."
+msgstr[1] ""
+"Su base de datos ya contiene %1 taxones. La importación de la Lista de "
+"Plantas del WFO solo está disponible en bases de datos vacías, para evitar "
+"conflictos con los datos taxonómicos existentes."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:32
+msgid ""
+"You can continue using your existing taxa, or contact an administrator to "
+"reset the database if you want to start fresh with WFO data."
+msgstr ""
+"Puede continuar usando sus taxones existentes, o ponerse en contacto con un "
+"administrador para restablecer la base de datos si desea empezar de nuevo "
+"con los datos del WFO."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:51
+msgid ""
+"Sepal can import the World Flora Online (WFO) Plant List, a comprehensive "
+"database of plant names and their taxonomic status."
+msgstr ""
+"Sepal puede importar la Lista de Plantas de World Flora Online (WFO), una "
+"base de datos completa de nombres de plantas y su estado taxonómico."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:54
+msgid "What you'll get:"
+msgstr "Lo que obtendrá:"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:56
+msgid "Over 450,000 plant taxa"
+msgstr "Más de 450.000 taxones de plantas"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:57
+msgid "Scientific names with authors"
+msgstr "Nombres científicos con autores"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:58
+msgid "Taxonomic hierarchy (family, genus, species)"
+msgstr "Jerarquía taxonómica (familia, género, especie)"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:71
+msgid "Import WFO Plant List"
+msgstr "Importar la Lista de Plantas del WFO"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:75
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:147
+msgid "Skip for now"
+msgstr "Omitir por ahora"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:81
+msgid "Waiting to start…"
+msgstr "Esperando para empezar…"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:82
+msgid "Looking up the latest WFO Plant List…"
+msgstr "Buscando la última Lista de Plantas del WFO…"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:83
+msgid "Downloading the plant list…"
+msgstr "Descargando la lista de plantas…"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:84
+msgid "Importing taxa. This takes a minute and shows no percentage."
+msgstr "Importando taxones. Esto tarda un minuto y no muestra el porcentaje."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:85
+msgid "Downloading the synonym reference…"
+msgstr "Descargando la referencia de sinónimos…"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:86
+msgid "Done."
+msgstr "Hecho."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:87
+msgid "The import failed."
+msgstr "La importación ha fallado."
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:126
+msgid " (approximate)"
+msgstr " (aproximado)"
+
+#: bases/app/src/sepal/app/routes/setup/taxonomy.clj:144
+msgid "Try again"
+msgstr "Volver a intentarlo"
+
+#: bases/app/src/sepal/app/routes/tag/delete.clj:18
+msgid "Delete tag %1?"
+msgstr "¿Eliminar la etiqueta %1?"
+
+#: bases/app/src/sepal/app/routes/tag/delete.clj:29
+msgid "Deleted tag %1"
+msgstr "Etiqueta %1 eliminada"
+
+#: bases/app/src/sepal/app/routes/tag/detail.clj:52
+msgid "A tag with this name already exists."
+msgstr "Ya existe una etiqueta con este nombre."
+
+#: bases/app/src/sepal/app/routes/tag/detail.clj:86
+msgid "Tag updated successfully"
+msgstr "Etiqueta actualizada correctamente"
+
+#: bases/app/src/sepal/app/routes/tag/detail.clj:92
+msgid "Could not save the tag"
+msgstr "No se pudo guardar la etiqueta"
+
+#: bases/app/src/sepal/app/routes/tag/form.clj:18
+#: bases/app/src/sepal/app/ui/tag.clj:47
+#: components/accession/src/sepal/accession/interface/search.clj:90
+#: components/material/src/sepal/material/interface/search.clj:84
+#: components/taxon/src/sepal/taxon/interface/search.clj:116
+msgid "Tag"
+msgstr "Etiqueta"
+
+#: bases/app/src/sepal/app/routes/tag/form.clj:19
+msgid "What the tag is called, and what it groups."
+msgstr "Cómo se llama la etiqueta y qué agrupa."
+
+#: bases/app/src/sepal/app/routes/tag/index.clj:18
+msgid "%1 link"
+msgid_plural "%1 links"
+msgstr[0] "%1 enlace"
+msgstr[1] "%1 enlaces"
+
+#: bases/app/src/sepal/app/routes/tag/index.clj:27
+msgid "Links"
+msgstr "Enlaces"
+
+#: bases/app/src/sepal/app/routes/tag/index.clj:36
+#: bases/app/src/sepal/app/ui/tag.clj:35
+msgid "No tags yet"
+msgstr "Aún no hay etiquetas"
+
+#: bases/app/src/sepal/app/routes/tag/index.clj:37
+msgid "Ad-hoc groupings a curator can filter a list by later."
+msgstr ""
+"Agrupaciones ad hoc por las que un curador puede filtrar una lista más "
+"adelante."
+
+#: bases/app/src/sepal/app/routes/tag/panel.clj:44
+msgid "Linked records"
+msgstr "Registros vinculados"
+
+#: bases/app/src/sepal/app/routes/tag/panel.clj:56
+msgid "Materials"
+msgstr "Materiales"
+
+#: bases/app/src/sepal/app/routes/taxon/create.clj:32
+msgid "New taxon"
+msgstr "Nuevo taxón"
+
+#: bases/app/src/sepal/app/routes/taxon/create.clj:71
+msgid "Taxon created successfully"
+msgstr "Taxón creado correctamente"
+
+#: bases/app/src/sepal/app/routes/taxon/create.clj:73
+msgid "Could not create the taxon"
+msgstr "No se ha podido crear el taxón"
+
+#: bases/app/src/sepal/app/routes/taxon/delete.clj:18
+msgid "Delete taxon %1?"
+msgstr "¿Eliminar el taxón %1?"
+
+#: bases/app/src/sepal/app/routes/taxon/delete.clj:29
+msgid "Deleted taxon %1"
+msgstr "Taxón %1 eliminado"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:44
+msgid "Media linked to the taxa, accessions and material below this taxon"
+msgstr ""
+"Archivos multimedia vinculados a los taxones, las accesiones y el material "
+"situados por debajo de este taxón"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:30
+msgid "Taxa from the WFO Plantlist are not editable."
+msgstr "Los taxones del WFO Plantlist no se pueden editar."
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:72
+msgid "Taxon updated successfully"
+msgstr "Taxón actualizado correctamente"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/name.clj:74
+msgid "Could not save the taxon"
+msgstr "No se ha podido guardar el taxón"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:24
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:169
+msgid "Synonyms"
+msgstr "Sinónimos"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:35
+msgid "Taxon sections"
+msgstr "Secciones del taxón"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:66
+msgid "Add a child taxon"
+msgstr "Añadir un taxón hijo"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:36
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:43
+msgid "Remove synonym"
+msgstr "Eliminar sinónimo"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:54
+msgid "Source"
+msgstr "Fuente"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:67
+msgid "No synonyms yet"
+msgstr "Aún no hay sinónimos"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:68
+msgid "Other names this garden uses for this taxon show up here."
+msgstr "Aquí aparecen otros nombres que este jardín utiliza para este taxón."
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:76
+msgid "Synonym name"
+msgstr "Nombre del sinónimo"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:79
+#: bases/app/src/sepal/app/ui/query_builder.clj:57
+#: bases/app/src/sepal/app/ui/tag.clj:52
+msgid "Add"
+msgstr "Añadir"
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:126
+msgid "The synonym could not be added."
+msgstr "No se ha podido añadir el sinónimo."
+
+#: bases/app/src/sepal/app/routes/taxon/detail/synonyms.clj:149
+msgid "The synonym could not be removed."
+msgstr "No se ha podido eliminar el sinónimo."
+
+#: bases/app/src/sepal/app/routes/taxon/export.clj:40
+msgid "Include parent taxon (name, author, rank)"
+msgstr "Incluir el taxón padre (nombre, autor, rango)"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:117
+msgid "Crossed from"
+msgstr "Cruzado a partir de"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:117
+msgid "and"
+msgstr "y"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:130
+#: components/accession/src/sepal/accession/interface/spec.clj:151
+#: components/contact/src/sepal/contact/interface/spec.clj:57
+#: components/material/src/sepal/material/interface/spec.clj:26
+msgid "Unknown"
+msgstr "Desconocido"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:131
+msgid "Seed parent"
+msgstr "Progenitor femenino"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:132
+msgid "Pollen parent"
+msgstr "Progenitor masculino"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:153
+msgid "Add another parent"
+msgstr "Añadir otro progenitor"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:186
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:131
+msgid "Hybrid parentage"
+msgstr "Progenitores del híbrido"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:189
+msgid ""
+"The taxa this hybrid was crossed from. Opens on its own once the name "
+"carries a hybrid marker (×)."
+msgstr ""
+"Los taxones a partir de los cuales se ha cruzado este híbrido. Se abre "
+"automáticamente cuando el nombre incluye el marcador de híbrido (×)."
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:196
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:62
+msgid "seed parent"
+msgstr "progenitor femenino"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:197
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:62
+msgid "pollen parent"
+msgstr "progenitor masculino"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:199
+msgid "None recorded."
+msgstr "No se ha registrado ninguno."
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:228
+msgid "The scientific name, its author, and where it sits in the taxonomy."
+msgstr "El nombre científico, su autor y su posición en la taxonomía."
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:249
+#: bases/app/src/sepal/app/routes/taxon/index.clj:45
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:116
+#: components/taxon/src/sepal/taxon/interface/search.clj:17
+msgid "Author"
+msgstr "Autor"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:280
+#: bases/app/src/sepal/app/routes/taxon/form.clj:284
+#: bases/app/src/sepal/app/routes/taxon/index.clj:49
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:115
+#: components/taxon/src/sepal/taxon/interface/search.clj:23
+msgid "Rank"
+msgstr "Rango"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:304
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:123
+msgid "Distribution"
+msgstr "Distribución"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:320
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:142
+msgid "Vernacular names"
+msgstr "Nombres vernáculos"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:325
+#: bases/app/src/sepal/app/routes/taxon/form.clj:328
+msgid "Add vernacular name"
+msgstr "Añadir nombre vernáculo"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:346
+msgid "Vernacular name"
+msgstr "Nombre vernáculo"
+
+#: bases/app/src/sepal/app/routes/taxon/form.clj:356
+#: bases/app/src/sepal/app/routes/taxon/form.clj:359
+#: bases/app/src/sepal/app/ui/delete.clj:30
+#: bases/app/src/sepal/app/ui/delete.clj:56
+#: bases/app/src/sepal/app/ui/delete.clj:105
+msgid "Delete"
+msgstr "Eliminar"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:94
+msgid "Also matching a synonym"
+msgstr "También coincide con un sinónimo"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:98
+msgid "%1 — matches synonym %2"
+msgstr "%1 — coincide con el sinónimo %2"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:107
+msgid "and %1 more"
+msgid_plural "and %1 more"
+msgstr[0] "y %1 más"
+msgstr[1] "y %1 más"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:119
+msgid "No taxa yet"
+msgstr "Aún no hay taxones"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:120
+msgid ""
+"The taxonomy behind your collection. Import the World Flora Online list from "
+"Settings, or add a name by hand."
+msgstr ""
+"La taxonomía detrás de su colección. Importe la lista de World Flora Online "
+"desde Configuración, o añada un nombre manualmente."
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:134
+msgid "Only taxa with accessions"
+msgstr "Solo taxones con accesiones"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:146
+msgid "Type at least %1 character to search synonyms."
+msgid_plural "Type at least %1 characters to search synonyms."
+msgstr[0] "Escriba al menos %1 carácter para buscar sinónimos."
+msgstr[1] "Escriba al menos %1 caracteres para buscar sinónimos."
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:152
+msgid ""
+"That synonym matches more than %1 taxon. Showing the first %1 — narrow the "
+"search to see the rest."
+msgid_plural ""
+"That synonym matches more than %1 taxa. Showing the first %1 — narrow the "
+"search to see the rest."
+msgstr[0] ""
+"Ese sinónimo coincide con más de %1 taxón. Se muestran los primeros %1 — "
+"reduzca la búsqueda para ver el resto."
+msgstr[1] ""
+"Ese sinónimo coincide con más de %1 taxones. Se muestran los primeros %1 — "
+"reduzca la búsqueda para ver el resto."
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:176
+msgid "Search... (e.g., rank:species Quercus)"
+msgstr "Buscar... (p. ej., rank:species Quercus)"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:188
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:155
+msgid "Children"
+msgstr "Hijos"
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:339
+msgid "matches synonym %1"
+msgstr "coincide con el sinónimo %1"
+
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:125
+msgid "WFO ID"
+msgstr "ID de WFO"
+
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:195
+msgid "no WFO ID"
+msgstr "sin ID de WFO"
+
+#: bases/app/src/sepal/app/ui/activity.clj:40
+msgctxt "activity"
+msgid "created"
+msgstr "creado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:41
+msgctxt "activity"
+msgid "uploaded"
+msgstr "subido"
+
+#: bases/app/src/sepal/app/ui/activity.clj:42
+msgctxt "activity"
+msgid "updated"
+msgstr "actualizado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:43
+msgctxt "activity"
+msgid "deleted"
+msgstr "eliminado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:44
+msgctxt "activity"
+msgid "completed"
+msgstr "completado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:45
+msgctxt "activity"
+msgid "linked"
+msgstr "vinculado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:46
+msgctxt "activity"
+msgid "unlinked"
+msgstr "desvinculado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:47
+msgctxt "activity"
+msgid "archived"
+msgstr "archivado"
+
+#: bases/app/src/sepal/app/ui/activity.clj:48
+msgctxt "activity"
+msgid "unarchived"
+msgstr "desarchivado"
+
+#: bases/app/src/sepal/app/ui/archive.clj:29
+#: bases/app/src/sepal/app/ui/archive.clj:72
+msgid "Archive"
+msgstr "Archivar"
+
+#: bases/app/src/sepal/app/ui/archive.clj:38
+msgid "Restore"
+msgstr "Restaurar"
+
+#: bases/app/src/sepal/app/ui/archive.clj:49
+msgid "This location cannot be archived yet:"
+msgstr "Esta ubicación no se puede archivar todavía:"
+
+#: bases/app/src/sepal/app/ui/archive.clj:54
+msgid ""
+"Move that material somewhere else first, so the garden still says where it "
+"is."
+msgstr ""
+"Traslade primero ese material a otro lugar, para que el jardín siga sabiendo "
+"dónde está."
+
+#: bases/app/src/sepal/app/ui/archive.clj:64
+msgid ""
+"The location stops appearing when you file material, and keeps its place in "
+"the history of everything that has already moved through it. You can restore "
+"it at any time."
+msgstr ""
+"La ubicación deja de aparecer cuando registra material y conserva su lugar "
+"en el historial de todo lo que ya ha pasado por ella. Puede restaurarla en "
+"cualquier momento."
+
+#: bases/app/src/sepal/app/ui/combobox.clj:61
+#: bases/app/src/sepal/app/ui/combobox.clj:101
+msgid "No matches"
+msgstr "Sin coincidencias"
+
+#: bases/app/src/sepal/app/ui/combobox.clj:62
+msgid "Showing %1 of %2 — keep typing to narrow"
+msgstr "Mostrando %1 de %2 — siga escribiendo para acotar la búsqueda"
+
+#: bases/app/src/sepal/app/ui/combobox.clj:99
+msgid "%1 is required"
+msgstr "%1 es obligatorio"
+
+#: bases/app/src/sepal/app/ui/combobox.clj:100
+msgid "This field is required"
+msgstr "Este campo es obligatorio"
+
+#. i18n: Read to a screen reader as the number of options found
+#: bases/app/src/sepal/app/ui/combobox.clj:103
+msgid "Results: %1"
+msgstr "Resultados: %1"
+
+#: bases/app/src/sepal/app/ui/combobox.clj:131
+msgid "Show %1 options"
+msgstr "Mostrar %1 opciones"
+
+#: bases/app/src/sepal/app/ui/delete.clj:75
+msgid "This record cannot be deleted yet:"
+msgstr "Este registro no se puede eliminar todavía:"
+
+#: bases/app/src/sepal/app/ui/delete.clj:81
+msgid ""
+"The move log will always name this location, so it cannot be deleted. "
+"Archive it instead: it keeps its place in the history and stops appearing "
+"when you file material."
+msgstr ""
+"El registro de movimientos siempre mencionará esta ubicación, por lo que no "
+"se puede eliminar. Archívela en su lugar: conserva su lugar en el historial "
+"y deja de aparecer cuando registra material."
+
+#: bases/app/src/sepal/app/ui/delete.clj:83
+msgid "Delete or move those records first."
+msgstr "Elimine o traslade esos registros primero."
+
+#: bases/app/src/sepal/app/ui/delete.clj:92
+msgid "Archive instead"
+msgstr "Archivar en su lugar"
+
+#: bases/app/src/sepal/app/ui/delete.clj:97
+msgid ""
+"This cannot be undone. The record and everything belonging to it will be "
+"removed."
+msgstr ""
+"Esta acción no se puede deshacer. Se eliminarán el registro y todo lo que le "
+"pertenece."
+
+#: bases/app/src/sepal/app/ui/export.clj:14
+#: bases/app/src/sepal/app/ui/export.clj:89
+msgid "Export"
+msgstr "Exportar"
+
+#: bases/app/src/sepal/app/ui/export.clj:44
+msgid "Export to CSV"
+msgstr "Exportar a CSV"
+
+#: bases/app/src/sepal/app/ui/export.clj:59
+msgid "Exporting %1 result"
+msgid_plural "Exporting %1 results"
+msgstr[0] "Exportando %1 resultado"
+msgstr[1] "Exportando %1 resultados"
+
+#: bases/app/src/sepal/app/ui/export.clj:63
+msgid "Large export — this may take a moment"
+msgstr "Exportación grande — esto puede tardar un momento"
+
+#: bases/app/src/sepal/app/ui/form.clj:222
+msgid "Are you sure you want to lose your changes?"
+msgstr "¿Seguro que desea perder los cambios?"
+
+#: bases/app/src/sepal/app/ui/media.clj:48
+msgid "via %1"
+msgstr "vía %1"
+
+#: bases/app/src/sepal/app/ui/media.clj:68
+msgid "Loading more media"
+msgstr "Cargando más contenido multimedia"
+
+#: bases/app/src/sepal/app/ui/media.clj:71
+msgid "Small"
+msgstr "Pequeño"
+
+#: bases/app/src/sepal/app/ui/media.clj:71
+msgid "Medium"
+msgstr "Mediano"
+
+#: bases/app/src/sepal/app/ui/media.clj:71
+msgid "Large"
+msgstr "Grande"
+
+#: bases/app/src/sepal/app/ui/media.clj:88
+msgid "Thumbnail size"
+msgstr "Tamaño de las miniaturas"
+
+#: bases/app/src/sepal/app/ui/media.clj:129
+msgid "No media yet"
+msgstr "Todavía no hay contenido multimedia"
+
+#: bases/app/src/sepal/app/ui/media.clj:130
+msgid ""
+"Photographs of an accession, its material, or the plant in the ground show "
+"up here. Drag images here, or upload them."
+msgstr ""
+"Las fotografías de una accesión, su material o la planta en el terreno "
+"aparecen aquí. Arrastre imágenes aquí o súbalas."
+
+#: bases/app/src/sepal/app/ui/media.clj:157
+msgid "Include related media"
+msgstr "Incluir contenido multimedia relacionado"
+
+#: bases/app/src/sepal/app/ui/notes.clj:51
+msgid "Edit note"
+msgstr "Editar nota"
+
+#: bases/app/src/sepal/app/ui/notes.clj:54
+msgid "Delete note"
+msgstr "Eliminar nota"
+
+#: bases/app/src/sepal/app/ui/notes.clj:73
+#: bases/app/src/sepal/app/ui/notes.clj:133
+msgid "Note"
+msgstr "Nota"
+
+#: bases/app/src/sepal/app/ui/notes.clj:110
+msgid "No notes yet."
+msgstr "Todavía no hay notas."
+
+#: bases/app/src/sepal/app/ui/notes.clj:139
+msgid "Add note"
+msgstr "Añadir nota"
+
+#: bases/app/src/sepal/app/ui/notes.clj:162
+#: bases/app/src/sepal/app/ui/observations.clj:292
+msgid "See all %1"
+msgstr "Ver todos %1"
+
+#: bases/app/src/sepal/app/ui/observations.clj:55
+#: components/observation/src/sepal/observation/interface/search.clj:54
+msgid "Value"
+msgstr "Valor"
+
+#: bases/app/src/sepal/app/ui/observations.clj:87
+msgid "Observed on"
+msgstr "Observado el"
+
+#: bases/app/src/sepal/app/ui/observations.clj:96
+#: components/observation/src/sepal/observation/interface/search.clj:62
+msgid "Observed by"
+msgstr "Observado por"
+
+#: bases/app/src/sepal/app/ui/observations.clj:101
+#: components/observation/src/sepal/observation/interface/search.clj:73
+msgid "Next check"
+msgstr "Próxima revisión"
+
+#: bases/app/src/sepal/app/ui/observations.clj:148
+msgid "Edit observation"
+msgstr "Editar observación"
+
+#: bases/app/src/sepal/app/ui/observations.clj:151
+msgid "Delete observation"
+msgstr "Eliminar observación"
+
+#: bases/app/src/sepal/app/ui/observations.clj:155
+msgid "Delete this observation?"
+msgstr "¿Eliminar esta observación?"
+
+#: bases/app/src/sepal/app/ui/observations.clj:160
+msgid "Next check %1"
+msgstr "Próxima revisión %1"
+
+#: bases/app/src/sepal/app/ui/observations.clj:162
+msgid "Overdue"
+msgstr "Vencida"
+
+#: bases/app/src/sepal/app/ui/observations.clj:228
+msgid "No observations yet."
+msgstr "Todavía no hay observaciones."
+
+#: bases/app/src/sepal/app/ui/observations.clj:257
+msgid "Add observation"
+msgstr "Añadir observación"
+
+#: bases/app/src/sepal/app/ui/page.clj:80
+#: bases/app/src/sepal/app/ui/page.clj:82
+#: bases/app/src/sepal/app/ui/page.clj:86
+#: bases/app/src/sepal/app/ui/page.clj:88
+msgid "Toggle sections"
+msgstr "Mostrar u ocultar secciones"
+
+#: bases/app/src/sepal/app/ui/page.clj:90
+msgid "Breadcrumb"
+msgstr "Ruta de navegación"
+
+#: bases/app/src/sepal/app/ui/page.clj:105
+#: bases/app/src/sepal/app/ui/page.clj:107
+msgid "Toggle details"
+msgstr "Mostrar u ocultar detalles"
+
+#: bases/app/src/sepal/app/ui/page.clj:164
+#: bases/app/src/sepal/app/ui/tabs.clj:55
+msgid "Sections"
+msgstr "Secciones"
+
+#. i18n: A filter's name before its value, as in "Taxon: Quercus alba"
+#: bases/app/src/sepal/app/ui/pages/list.clj:22
+msgid "%1:"
+msgstr "%1:"
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:27
+#: bases/app/src/sepal/app/ui/pages/list.clj:29
+msgid "Clear the %1 filter"
+msgstr "Quitar el filtro %1"
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:61
+msgid "Clear search"
+msgstr "Borrar búsqueda"
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:77
+msgid "Create"
+msgstr "Crear"
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:91
+msgid "Nothing matched"
+msgstr "No hay coincidencias"
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:92
+msgid "No results for that search. Try fewer terms, or clear the filters."
+msgstr ""
+"No hay resultados para esa búsqueda. Pruebe con menos términos o borre los "
+"filtros."
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:232
+#: bases/app/src/sepal/app/ui/pages/list.clj:235
+#: bases/app/src/sepal/app/ui/resource_panel.clj:241
+#: bases/app/src/sepal/app/ui/resource_panel.clj:244
+msgid "Close panel"
+msgstr "Cerrar panel"
+
+#. i18n: %1 is the parent accession or "an unrecorded parent", %2 the
+#. method in lower case, %3 a link reading "the propagation"
+#: bases/app/src/sepal/app/ui/propagations.clj:31
+msgid "Grown from %1 by %2 — %3"
+msgstr "Cultivado a partir de %1 mediante %2 — %3"
+
+#: bases/app/src/sepal/app/ui/propagations.clj:36
+msgid "an unrecorded parent"
+msgstr "un progenitor no registrado"
+
+#: bases/app/src/sepal/app/ui/propagations.clj:40
+msgid "the propagation"
+msgstr "la propagación"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:19
+msgid "Select field..."
+msgstr "Seleccionar campo…"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:39
+msgid "Value..."
+msgstr "Valor…"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:45
+msgid "Select value..."
+msgstr "Seleccionar valor…"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Contains"
+msgstr "Contiene"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Does not contain"
+msgstr "No contiene"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Equals"
+msgstr "Igual a"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Does not equal"
+msgstr "Distinto de"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "After"
+msgstr "Posterior a"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "On or after"
+msgstr "Igual o posterior a"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "Before"
+msgstr "Anterior a"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "On or before"
+msgstr "Igual o anterior a"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "Greater than"
+msgstr "Mayor que"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "At least"
+msgstr "Al menos"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "Less than"
+msgstr "Menor que"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "At most"
+msgstr "Como máximo"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:87
+#: bases/app/src/sepal/app/ui/query_builder.clj:106
+msgid "Add filter"
+msgstr "Añadir filtro"
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:89
+msgid "Filter"
+msgstr "Filtro"
+
+#: bases/app/src/sepal/app/ui/resource_panel.clj:198
+msgid "Load %1 more"
+msgstr "Cargar %1 más"
+
+#: bases/app/src/sepal/app/ui/table.clj:104
+msgid "Loading more rows"
+msgstr "Cargando más filas"
+
+#: bases/app/src/sepal/app/ui/table.clj:111
+msgid "End of list"
+msgstr "Fin de la lista"
+
+#: bases/app/src/sepal/app/ui/table.clj:233
+msgid "No rows"
+msgstr "Sin filas"
+
+#. i18n: Rows loaded out of the total, as in "25 of 1,284"
+#: bases/app/src/sepal/app/ui/table.clj:235
+msgid "%1 of %2"
+msgstr "%1 de %2"
+
+#: bases/app/src/sepal/app/ui/table.clj:298
+msgid "Pagination"
+msgstr "Paginación"
+
+#: bases/app/src/sepal/app/ui/table.clj:300
+msgid "First page"
+msgstr "Primera página"
+
+#: bases/app/src/sepal/app/ui/table.clj:303
+msgid "Previous page"
+msgstr "Página anterior"
+
+#: bases/app/src/sepal/app/ui/table.clj:310
+msgid "Next page"
+msgstr "Página siguiente"
+
+#: bases/app/src/sepal/app/ui/table.clj:313
+msgid "Last page"
+msgstr "Última página"
+
+#: bases/app/src/sepal/app/ui/tag.clj:21 bases/app/src/sepal/app/ui/tag.clj:26
+msgid "Remove tag %1"
+msgstr "Eliminar etiqueta %1"
+
+#: bases/app/src/sepal/app/ui/tag.clj:24
+msgid "Remove tag \"%1\"?"
+msgstr "¿Eliminar la etiqueta «%1»?"
+
+#: bases/app/src/sepal/app/ui/tag.clj:36
+msgid "Ad-hoc groupings you can filter this list by later."
+msgstr ""
+"Agrupaciones puntuales por las que podrá filtrar esta lista más adelante."
+
+#: bases/app/src/sepal/app/ui/tag.clj:51
+msgid "Start typing an existing tag, or type a new name."
+msgstr "Empiece a escribir una etiqueta existente, o escriba un nombre nuevo."
+
+#: components/accession/src/sepal/accession/interface/search.clj:20
+#: components/contact/src/sepal/contact/interface/search.clj:45
+#: components/location/src/sepal/location/interface/search.clj:27
+#: components/material/src/sepal/material/interface/search.clj:31
+#: components/observation/src/sepal/observation/interface/search.clj:84
+#: components/propagation/src/sepal/propagation/interface/search.clj:12
+#: components/taxon/src/sepal/taxon/interface/search.clj:27
+msgid "ID"
+msgstr "ID"
+
+#: components/accession/src/sepal/accession/interface/search.clj:29
+msgid "Private"
+msgstr "Privado"
+
+#: components/accession/src/sepal/accession/interface/search.clj:47
+msgid "Taxon Rank"
+msgstr "Rango taxonómico"
+
+#: components/accession/src/sepal/accession/interface/search.clj:78
+#: components/location/src/sepal/location/interface/search.clj:57
+#: components/taxon/src/sepal/taxon/interface/search.clj:73
+msgid "Material Type"
+msgstr "Tipo de material"
+
+#: components/accession/src/sepal/accession/interface/search.clj:84
+#: components/location/src/sepal/location/interface/search.clj:63
+#: components/taxon/src/sepal/taxon/interface/search.clj:81
+msgid "Material Status"
+msgstr "Estado del material"
+
+#: components/accession/src/sepal/accession/interface/search.clj:102
+#: components/contact/src/sepal/contact/interface/search.clj:54
+#: components/location/src/sepal/location/interface/search.clj:73
+#: components/material/src/sepal/material/interface/search.clj:96
+#: components/propagation/src/sepal/propagation/interface/search.clj:94
+msgid "Updated"
+msgstr "Actualizado"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:44
+msgid "Below family"
+msgstr "Por debajo de familia"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:45
+#: components/taxon/src/sepal/taxon/interface/spec.clj:60
+msgid "Family"
+msgstr "Familia"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:46
+#: components/taxon/src/sepal/taxon/interface/spec.clj:62
+msgid "Genus"
+msgstr "Género"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:47
+#: components/taxon/src/sepal/taxon/interface/spec.clj:72
+msgid "Species"
+msgstr "Especie"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:48
+msgid "First infraspecific epithet"
+msgstr "Primer epíteto infraespecífico"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:49
+msgid "Second infraspecific epithet"
+msgstr "Segundo epíteto infraespecífico"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:50
+#: components/taxon/src/sepal/taxon/interface/spec.clj:59
+msgid "Cultivar"
+msgstr "Cultivar"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:63
+msgid "Wild"
+msgstr "Silvestre"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:64
+#: components/accession/src/sepal/accession/interface/spec.clj:85
+msgid "Cultivated"
+msgstr "Cultivado"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:65
+#: components/accession/src/sepal/accession/interface/spec.clj:86
+msgid "Not wild"
+msgstr "No silvestre"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:66
+#: components/accession/src/sepal/accession/interface/spec.clj:87
+msgid "Purchase"
+msgstr "Compra"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:67
+#: components/accession/src/sepal/accession/interface/spec.clj:88
+msgid "Insufficient data"
+msgstr "Datos insuficientes"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:82
+msgid "Wild native"
+msgstr "Silvestre autóctono"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:83
+msgid "Wild non native"
+msgstr "Silvestre no autóctono"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:84
+msgid "Cultivated native"
+msgstr "Cultivado autóctono"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:126
+msgid "Air layer"
+msgstr "Acodo aéreo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:127
+msgid "Balled and burlapped"
+msgstr "Cepellón con arpillera"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:128
+msgid "Bare root plant"
+msgstr "Planta a raíz desnuda"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:129
+msgid "Bud cutting"
+msgstr "Esqueje de yema"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:130
+msgid "Budded"
+msgstr "Injerto de yema"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:131
+msgid "Bulb"
+msgstr "Bulbo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:132
+msgid "Bulbil"
+msgstr "Bulbillo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:133
+msgid "Clump"
+msgstr "Mata"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:134
+msgid "Corm"
+msgstr "Cormo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:135
+msgid "Division"
+msgstr "División"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:136
+msgid "Graft"
+msgstr "Injerto"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:137
+msgid "Layer"
+msgstr "Acodo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:138
+#: components/material/src/sepal/material/interface/spec.clj:30
+msgid "Plant"
+msgstr "Planta"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:139
+msgid "Pseudobulb"
+msgstr "Pseudobulbo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:140
+msgid "Rhizome"
+msgstr "Rizoma"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:141
+msgid "Root"
+msgstr "Raíz"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:142
+msgid "Root cutting"
+msgstr "Esqueje de raíz"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:143
+msgid "Root sucker"
+msgstr "Hijuelo radical"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:144
+msgid "Rooted cutting"
+msgstr "Esqueje enraizado"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:145
+msgid "Scion"
+msgstr "Púa"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:146
+#: components/material/src/sepal/material/interface/spec.clj:31
+msgid "Seed"
+msgstr "Semilla"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:147
+msgid "Seedling"
+msgstr "Plántula"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:148
+msgid "Spore"
+msgstr "Espora"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:149
+msgid "Sporeling"
+msgstr "Plántula de espora"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:150
+msgid "Tuber"
+msgstr "Tubérculo"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:152
+msgid "Unrooted cutting"
+msgstr "Esqueje sin enraizar"
+
+#: components/accession/src/sepal/accession/interface/spec.clj:153
+msgid "Vegetative spreading"
+msgstr "Propagación vegetativa"
+
+#: components/code-template/src/sepal/code_template/interface.clj:33
+msgid "Unknown token {%1}"
+msgstr "Token desconocido {%1}"
+
+#: components/code-template/src/sepal/code_template/interface.clj:43
+msgid "A template cannot be empty"
+msgstr "Una plantilla no puede estar vacía"
+
+#: components/code-template/src/sepal/code_template/interface.clj:55
+msgid "A template needs a {seq} or {letter} token"
+msgstr "Una plantilla necesita un token {seq} o {letter}"
+
+#: components/code-template/src/sepal/code_template/interface.clj:57
+msgid "A template needs exactly one {seq} or {letter} token"
+msgstr "Una plantilla necesita exactamente un token {seq} o {letter}"
+
+#: components/code-template/src/sepal/code_template/interface.clj:63
+msgid "A { is missing its closing }"
+msgstr "Una { no tiene su } de cierre"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:43
+msgid "Expedition"
+msgstr "Expedición"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:44
+msgid "Staff"
+msgstr "Personal"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:45
+msgid "Commercial"
+msgstr "Comercial"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:46
+msgid "Nursery"
+msgstr "Vivero"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:47
+msgid "Seed bank"
+msgstr "Banco de semillas"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:48
+msgid "Arboretum"
+msgstr "Arboreto"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:49
+msgid "Gene bank"
+msgstr "Banco de genes"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:50
+msgid "University department"
+msgstr "Departamento universitario"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:51
+msgid "Individual"
+msgstr "Particular"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:52
+msgid "Botanic garden"
+msgstr "Jardín botánico"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:53
+msgid "Club"
+msgstr "Club"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:54
+#: components/material/src/sepal/material/interface/spec.clj:25
+#: components/material/src/sepal/material/interface/spec.clj:34
+msgid "Other"
+msgstr "Otro"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:55
+msgid "Research station"
+msgstr "Estación de investigación"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:56
+msgid "Municipal department"
+msgstr "Departamento municipal"
+
+#: components/contact/src/sepal/contact/interface/spec.clj:61
+#: components/user/src/sepal/user/interface/spec.clj:14
+msgid "invalid email"
+msgstr "correo electrónico no válido"
+
+#: components/location/src/sepal/location/interface/search.clj:35
+#: components/user/src/sepal/user/interface/spec.clj:42
+msgid "Archived"
+msgstr "Archivado"
+
+#: components/malli/src/sepal/malli/core.clj:38
+msgid "should be between %1 and %2"
+msgstr "debe estar entre %1 y %2"
+
+#: components/malli/src/sepal/malli/core.clj:39
+msgid "should be at least %1"
+msgstr "debe ser al menos %1"
+
+#: components/malli/src/sepal/malli/core.clj:40
+msgid "should be at most %1"
+msgstr "debe ser como máximo %1"
+
+#: components/malli/src/sepal/malli/core.clj:46
+#: components/malli/src/sepal/malli/core.clj:59
+msgid "should be a number"
+msgstr "debe ser un número"
+
+#: components/malli/src/sepal/malli/core.clj:54
+msgid "unknown error"
+msgstr "error desconocido"
+
+#: components/malli/src/sepal/malli/core.clj:55
+msgid "missing required key"
+msgstr "falta una clave obligatoria"
+
+#: components/malli/src/sepal/malli/core.clj:56
+msgid "invalid type"
+msgstr "tipo no válido"
+
+#: components/malli/src/sepal/malli/core.clj:57
+msgid "disallowed key"
+msgstr "clave no permitida"
+
+#: components/malli/src/sepal/malli/core.clj:58
+#: components/malli/src/sepal/malli/core.clj:71
+msgid "should be a string"
+msgstr "debe ser una cadena de texto"
+
+#: components/malli/src/sepal/malli/core.clj:60
+#: components/malli/src/sepal/malli/core.clj:61
+msgid "should be an integer"
+msgstr "debe ser un número entero"
+
+#: components/malli/src/sepal/malli/core.clj:62
+msgid "should be a positive whole number"
+msgstr "debe ser un número entero positivo"
+
+#: components/malli/src/sepal/malli/core.clj:63
+msgid "should be zero or a positive whole number"
+msgstr "debe ser cero o un número entero positivo"
+
+#: components/malli/src/sepal/malli/core.clj:64
+#: components/malli/src/sepal/malli/core.clj:66
+msgid "should be true or false"
+msgstr "debe ser verdadero o falso"
+
+#: components/malli/src/sepal/malli/core.clj:65
+msgid "is not in the expected format"
+msgstr "no tiene el formato esperado"
+
+#: components/malli/src/sepal/malli/core.clj:67
+msgid "should be a uuid"
+msgstr "debe ser un uuid"
+
+#: components/malli/src/sepal/malli/core.clj:72
+msgid "should be %1 character"
+msgid_plural "should be %1 characters"
+msgstr[0] "debe tener %1 carácter"
+msgstr[1] "debe tener %1 caracteres"
+
+#: components/malli/src/sepal/malli/core.clj:73
+msgid "should be at least %1 character"
+msgid_plural "should be at least %1 characters"
+msgstr[0] "debe tener al menos %1 carácter"
+msgstr[1] "debe tener al menos %1 caracteres"
+
+#: components/malli/src/sepal/malli/core.clj:74
+msgid "should be at most %1 character"
+msgid_plural "should be at most %1 characters"
+msgstr[0] "debe tener como máximo %1 carácter"
+msgstr[1] "debe tener como máximo %1 caracteres"
+
+#: components/malli/src/sepal/malli/core.clj:82
+msgid "should be one of: %1"
+msgstr "debe ser uno de los siguientes: %1"
+
+#: components/material/src/sepal/material/interface/search.clj:68
+#: components/taxon/src/sepal/taxon/interface/search.clj:88
+msgid "Location Code"
+msgstr "Código de ubicación"
+
+#: components/material/src/sepal/material/interface/search.clj:73
+#: components/taxon/src/sepal/taxon/interface/search.clj:95
+msgid "Location Name"
+msgstr "Nombre de ubicación"
+
+#: components/material/src/sepal/material/interface/spec.clj:21
+msgid "Alive"
+msgstr "Vivo"
+
+#: components/material/src/sepal/material/interface/spec.clj:22
+msgid "Dead"
+msgstr "Muerto"
+
+#: components/material/src/sepal/material/interface/spec.clj:23
+msgid "Dormant"
+msgstr "Latente"
+
+#: components/material/src/sepal/material/interface/spec.clj:24
+msgid "Transferred"
+msgstr "Transferido"
+
+#: components/material/src/sepal/material/interface/spec.clj:32
+msgid "Vegetative"
+msgstr "Vegetativo"
+
+#: components/material/src/sepal/material/interface/spec.clj:33
+msgid "Tissue"
+msgstr "Tejido"
+
+#: components/observation/src/sepal/observation/interface/search.clj:69
+msgid "Overdue on"
+msgstr "Vencido el"
+
+#: components/propagation/src/sepal/propagation/interface/spec.clj:52
+msgid ""
+"More succeeded than were started. Update the started count, or clear it if "
+"it was an estimate."
+msgstr ""
+"Han tenido éxito más de los que se iniciaron. Actualice el número de "
+"iniciados o bórrelo si era una estimación."
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:66
+msgid "Parentage"
+msgstr "Progenitores"
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:135
+msgid "Synonym"
+msgstr "Sinónimo"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:56
+msgid "Aggregate"
+msgstr "Agregado"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:57
+msgid "Class"
+msgstr "Clase"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:58
+msgid "Convariety"
+msgstr "Convariedad"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:61
+msgid "Form"
+msgstr "Forma"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:63
+msgid "Grex"
+msgstr "Grex"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:64
+msgid "Group"
+msgstr "Grupo"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:65
+msgid "Kingdom"
+msgstr "Reino"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:66
+msgid "Lusus"
+msgstr "Lusus"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:67
+msgid "Order"
+msgstr "Orden"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:68
+msgid "Phylum"
+msgstr "Filo"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:69
+msgid "Prole"
+msgstr "Prole"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:70
+msgid "Section"
+msgstr "Sección"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:71
+msgid "Series"
+msgstr "Serie"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:73
+msgid "Subclass"
+msgstr "Subclase"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:74
+msgid "Subfamily"
+msgstr "Subfamilia"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:75
+msgid "Subform"
+msgstr "Subforma"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:76
+msgid "Subgenus"
+msgstr "Subgénero"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:77
+msgid "Subkingdom"
+msgstr "Subreino"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:78
+msgid "Suborder"
+msgstr "Suborden"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:79
+msgid "Subphylum"
+msgstr "Subfilo"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:80
+msgid "Subsection"
+msgstr "Subsección"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:81
+msgid "Subseries"
+msgstr "Subserie"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:82
+msgid "Subspecies"
+msgstr "Subespecie"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:83
+msgid "Subtribe"
+msgstr "Subtribu"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:84
+msgid "Subvariety"
+msgstr "Subvariedad"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:85
+msgid "Superclass"
+msgstr "Superclase"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:86
+msgid "Superfamily"
+msgstr "Superfamilia"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:87
+msgid "Superorder"
+msgstr "Superorden"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:88
+msgid "Supertribe"
+msgstr "Supertribu"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:89
+msgid "Tribe"
+msgstr "Tribu"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:90
+msgid "Unranked"
+msgstr "Sin rango"
+
+#: components/taxon/src/sepal/taxon/interface/spec.clj:91
+msgid "Variety"
+msgstr "Variedad"
+
+#: components/user/src/sepal/user/interface/spec.clj:40
+msgid "Invited"
+msgstr "Invitado"
+
+#: components/user/src/sepal/user/interface/spec.clj:41
+msgid "Active"
+msgstr "Activo"
+
+#: components/validation/src/sepal/validation/interface.clj:65
+msgid "must be a valid date (YYYY-MM-DD)"
+msgstr "debe ser una fecha válida (AAAA-MM-DD)"
+
+#: components/validation/src/sepal/validation/interface.clj:74
+msgid "Cannot be a future date"
+msgstr "No puede ser una fecha futura"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Dead"
+msgstr "Muerto"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Deleted, year dead unknown"
+msgstr "Eliminado, año de muerte desconocido"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Did not germinate"
+msgstr "No germinó"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded"
+msgstr "Descartado"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded seedling"
+msgstr "Plántula descartada"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded, weedy"
+msgstr "Descartado, invasor"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Distributed elsewhere"
+msgstr "Distribuido a otro lugar"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Divided"
+msgstr "Dividido"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Error correction"
+msgstr "Corrección de error"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Given away"
+msgstr "Regalado"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Lost, whereabouts unknown"
+msgstr "Perdido, paradero desconocido"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Other"
+msgstr "Otro"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Stolen"
+msgstr "Robado"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Summer kill"
+msgstr "Muerte por calor"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Transferred elsewhere"
+msgstr "Transferido a otro lugar"
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Winter kill"
+msgstr "Muerte por frío"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Condition"
+msgstr "Estado"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Disease"
+msgstr "Enfermedad"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "General"
+msgstr "General"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Pest"
+msgstr "Plaga"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Phenology"
+msgstr "Fenología"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Budding"
+msgstr "Brotando"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dead"
+msgstr "Muerto"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dormant"
+msgstr "Latente"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dying"
+msgstr "Moribundo"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Excellent"
+msgstr "Excelente"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Fair"
+msgstr "Regular"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Flowering"
+msgstr "Floración"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Fruiting"
+msgstr "Fructificación"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Good"
+msgstr "Bueno"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Light"
+msgstr "Leve"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Moderate"
+msgstr "Moderado"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "None"
+msgstr "Ninguno"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Poor"
+msgstr "Malo"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Seed dispersal"
+msgstr "Dispersión de semillas"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Senescing"
+msgstr "Senescencia"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Severe"
+msgstr "Severo"
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Vegetative"
+msgstr "Vegetativo"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "Complete"
+msgstr "Completada"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "Failed"
+msgstr "Fallida"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "In progress"
+msgstr "En curso"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Cutting"
+msgstr "Esqueje"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Division"
+msgstr "División"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Graft"
+msgstr "Injerto"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Layering"
+msgstr "Acodo"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Other"
+msgstr "Otro"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Seed"
+msgstr "Semilla"
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Tissue culture"
+msgstr "Cultivo de tejidos"

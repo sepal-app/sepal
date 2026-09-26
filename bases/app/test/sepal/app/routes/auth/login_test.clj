@@ -8,6 +8,7 @@
             [ring.middleware.session.store :as store]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*app* *db* default-system-fixture *cookie-store*]]
+            [sepal.i18n.interface :as i18n]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.spec :as user.spec])
@@ -121,3 +122,16 @@
                  (-> parsed-body
                      (.selectFirst ".banner-text")
                      (.text)))))))))
+
+(deftest login-page-follows-the-browser-language-test
+  (testing "an anonymous visitor gets the shipped Spanish catalog from Accept-Language"
+    ;; The catalogs on the classpath, as a running garden loads them.
+    (i18n/load-catalogs!)
+    (let [page (fn [accept-language]
+                 (-> (*app* {:request-method :get
+                             :uri "/login"
+                             :headers {"accept-language" accept-language}})
+                     :body))]
+      (is (str/includes? (page "es-MX,es;q=0.9") "Bienvenido a Sepal"))
+      (is (str/includes? (page "es-MX,es;q=0.9") "lang=\"es\""))
+      (is (str/includes? (page "fr") "Welcome to Sepal") "no French catalog, so English"))))
