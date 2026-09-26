@@ -16,6 +16,7 @@
             [sepal.contact.interface.permission :as contact.perm]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -42,7 +43,7 @@
                                          :stats (:stats panel-data)
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)))
-             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
+             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
                            (:contact/name contact)]))
 
 (defn update! [db contact-id updated-by data]
@@ -74,7 +75,7 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [contact panel-data]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
+    :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
                   (:contact/name contact)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (contact.panel/panel-content
@@ -110,9 +111,9 @@
           (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                           saved (f/try* (update! db id (:user/id viewer) data))]
             (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-                (flash/success "Contact updated successfully"))
+                (flash/success (tr "Contact updated successfully")))
             (f/when-failed [e]
-              (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) "Could not save the contact")))
+              (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) (tr "Could not save the contact"))))
 
           (let [panel-data (contact.panel/fetch-panel-data db resource)]
             (render :contact resource

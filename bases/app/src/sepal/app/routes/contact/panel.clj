@@ -1,12 +1,13 @@
 (ns sepal.app.routes.contact.panel
   "Resource panel content for contacts.
    Displays contact summary, statistics, linked resources, and activity."
-  (:require [clojure.string :as str]
-            [sepal.accession.interface :as acc.i]
+  (:require [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.contact.interface.spec :as contact.spec]
+            [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
 (defn panel-content
@@ -35,15 +36,15 @@
 
         ;; Summary section
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Name" :value name}
-                     {:label "Business" :value business}
-                     {:label "Type"
-                      :value (some-> type clojure.core/name (str/replace "_" " ") str/capitalize)}
-                     {:label "Email" :value email}
-                     {:label "Phone" :value phone}]))
+            :fields [{:label (tr "Name") :value name}
+                     {:label (tr "Business") :value business}
+                     {:label (tr "Type")
+                      :value (some-> type keyword contact.spec/type-labels tr)}
+                     {:label (tr "Email") :value email}
+                     {:label (tr "Phone") :value phone}]))
 
         ;; Address. The panel is the whole record for a reader — see
         ;; `contact.detail/render-panel-page` — so a contact's address has to
@@ -53,38 +54,38 @@
         ;; the old one-line address shows that and a contact with the split
         ;; fields shows those, without either needing a branch.
         (panel/collapsible-section
-          :title "Address"
+          :title (tr "Address")
           :disabled? (not-any? seq [address address1 address2 city province
                                     postal-code country])
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (panel/summary-section
-            :fields [{:label "Address" :value address}
-                     {:label "Address 1" :value address1}
-                     {:label "Address 2" :value address2}
-                     {:label "City" :value city}
-                     {:label "Province" :value province}
-                     {:label "Postal Code" :value postal-code}
-                     {:label "Country" :value country}]))
+            :fields [{:label (tr "Address") :value address}
+                     {:label (tr "Address 1") :value address1}
+                     {:label (tr "Address 2") :value address2}
+                     {:label (tr "City") :value city}
+                     {:label (tr "Province") :value province}
+                     {:label (tr "Postal Code") :value postal-code}
+                     {:label (tr "Country") :value country}]))
 
         ;; Statistics section
         (panel/collapsible-section
-          :title "Statistics"
+          :title (tr "Statistics")
           :count accession-count
           :disabled? (zero? (or accession-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (panel/statistics-section
-            :stats [{:label "Accessions supplied"
+            :stats [{:label (tr "Accessions supplied")
                      :value accession-count
                      :href (z/url-for accession.routes/index nil {:supplier-contact-id id})}]))
 
         ;; Activity section
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

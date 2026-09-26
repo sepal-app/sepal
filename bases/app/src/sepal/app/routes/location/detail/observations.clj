@@ -11,6 +11,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.validation.interface :as validation.i]
@@ -144,7 +145,7 @@
           ;; field error, not a generic save failure.
           (if (error.i/error? e ::future-observed-on)
             (future-date-error nil)
-            (http/failure-partial e "The observation could not be saved."))))
+            (http/failure-partial e (tr "The observation could not be saved.")))))
 
       (let [panel-data (location.panel/fetch-panel-data db resource)]
         (render :db db
@@ -181,7 +182,7 @@
           (f/when-failed [e]
             (if (error.i/error? e ::future-observed-on)
               (future-date-error observation-id)
-              (http/failure-partial e "The observation could not be saved."
+              (http/failure-partial e (tr "The observation could not be saved.")
                                     :id-suffix observation-id))))
 
         :delete
@@ -191,6 +192,6 @@
                                                    (observation.i/delete! tx observation-id))))]
           (render-list db resource timezone)
           (f/when-failed [e]
-            (http/failure-partial e "The observation could not be deleted.")))
+            (http/failure-partial e (tr "The observation could not be deleted."))))
 
         (http/not-found)))))

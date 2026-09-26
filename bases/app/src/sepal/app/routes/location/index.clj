@@ -35,7 +35,7 @@
   (table/summary (:location/code l) (:location/description l)))
 
 (defn table-columns []
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :text
     :priority 1
     :stacked stacked-summary
@@ -44,11 +44,11 @@
                        :class "spl-link"
                        :x-on:click.stop ""}
                    (:location/name l)])}
-   {:name "Code"
+   {:name (tr "Code")
     :type :identifier
     :priority 2
     :cell :location/code}
-   {:name "Description"
+   {:name (tr "Description")
     :type :text
     :priority 3
     :cell :location/description}])
@@ -76,7 +76,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No locations yet")
-                                :body "The beds, houses and stores that material lives in."
+                                :body (tr "The beds, houses and stores that material lives in.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for location.routes/new)))))
 
@@ -98,12 +98,13 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., taxon:Quercus)"
+                                ;; i18n: Keep "taxon:" in English; it is search syntax
+                                :placeholder (tr "Search... (e.g., taxon:Quercus)")
                                 :page page-num
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
-    :breadcrumbs ["Locations"]
+    :breadcrumbs [(tr "Locations")]
     :page-title-buttons (when (authz/user-has-permission? viewer location.perm/create)
                           (create-button))))
 

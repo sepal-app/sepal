@@ -10,6 +10,7 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.validation.interface :as validation.i]
@@ -67,9 +68,9 @@
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                       saved (f/try* (update! db id (:user/id viewer) data))]
         (-> (http/hx-redirect location.routes/detail-general {:id (:location/id saved)})
-            (flash/success "Location updated successfully"))
+            (flash/success (tr "Location updated successfully")))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect location.routes/detail-general {:id id}) "Could not save the location")))
+          (http/failure-flash e (http/hx-redirect location.routes/detail-general {:id id}) (tr "Could not save the location"))))
 
       (let [panel-data (location.panel/fetch-panel-data db resource)]
         (render :location resource

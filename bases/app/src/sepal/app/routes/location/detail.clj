@@ -4,6 +4,7 @@
             [sepal.app.routes.location.panel :as location.panel]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.page :as page]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface.permission :as location.perm]
             [zodiac.core :as z]))
 
@@ -11,7 +12,7 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [location panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for location.routes/index)} "Locations"]
+    :breadcrumbs [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
                   (:location/name location)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (location.panel/panel-content

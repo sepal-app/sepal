@@ -10,6 +10,7 @@
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -24,8 +25,8 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (contact.form/footer-buttons))
-             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} "Contacts"]
-                           "New contact"]))
+             :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
+                           (tr "New contact")]))
 
 (defn create! [db created-by data]
   (db.i/with-transaction [tx db]
@@ -74,8 +75,8 @@
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                       saved (f/try* (create! db (:user/id viewer) data))]
         (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-            (flash/success "Contact created successfully"))
+            (flash/success (tr "Contact created successfully")))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect contact.routes/new) "Could not create the contact")))
+          (http/failure-flash e (http/hx-redirect contact.routes/new) (tr "Could not create the contact"))))
 
       (render :values form-params))))

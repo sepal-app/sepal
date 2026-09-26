@@ -3,6 +3,7 @@
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -10,18 +11,18 @@
 (def media-tab ::media)
 
 (defn- tab-items [& {:keys [active location]}]
-  [(ui.tabs/item "General"
+  [(ui.tabs/item (tr "General")
                  {:href (z/url-for location.routes/detail-general {:id (:location/id location)})
                   :active (= active general-tab)})
-   (ui.tabs/item "Observations"
+   (ui.tabs/item (tr "Observations")
                  {:href (z/url-for location.routes/detail-observations {:id (:location/id location)})
                   :active (= active observations-tab)})
-   (ui.tabs/item "Media"
+   (ui.tabs/item (tr "Media")
                  {:href (z/url-for location.routes/detail-media {:id (:location/id location)})
                   :active (= active media-tab)})])
 
 (defn tabs [location active]
-  (ui.tabs/tabs {:label "Location sections"
+  (ui.tabs/tabs {:label (tr "Location sections")
                  :items (tab-items :location location :active active)}))
 
 (defn page [& {:keys [location active body footer]}]
@@ -33,7 +34,7 @@
     :footer footer))
 
 (defn breadcrumbs [location]
-  [[:a {:href (z/url-for location.routes/index)} "Locations"]
+  [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
    (:location/name location)])
 
 (defn actions

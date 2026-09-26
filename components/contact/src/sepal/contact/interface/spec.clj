@@ -38,6 +38,24 @@
    :municipal_department
    :unknown])
 
+(def type-labels
+  "Display names for type, translated where they are rendered."
+  {:expedition (N_ "Expedition")
+   :staff (N_ "Staff")
+   :commercial (N_ "Commercial")
+   :nursery (N_ "Nursery")
+   :seed_bank (N_ "Seed bank")
+   :arboretum (N_ "Arboretum")
+   :gene_bank (N_ "Gene bank")
+   :university_department (N_ "University department")
+   :individual (N_ "Individual")
+   :botanic_garden (N_ "Botanic garden")
+   :club (N_ "Club")
+   :other (N_ "Other")
+   :research_station (N_ "Research station")
+   :municipal_department (N_ "Municipal department")
+   :unknown (N_ "Unknown")})
+
 (def id pos-int?)
 (def name [:string {:min 2}])
 (def email [:re {:error/message (N_ "invalid email")} email-re])

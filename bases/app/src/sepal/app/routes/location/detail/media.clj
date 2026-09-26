@@ -11,6 +11,7 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
@@ -40,7 +41,7 @@
                            :filters (media.ui/scope-toggle :action (z/url-for location.routes/detail-media
                                                                               {:id (:location/id location)})
                                                            :below? below?
-                                                           :hint "Media linked to the material in this location")
+                                                           :hint (tr "Media linked to the material in this location"))
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :location location

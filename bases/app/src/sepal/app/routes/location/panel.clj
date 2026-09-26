@@ -10,6 +10,7 @@
             [sepal.app.routes.propagation.shared :as propagation.shared]
             [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.material.interface :as mat.i]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
@@ -43,31 +44,31 @@
 
         ;; Summary section
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Name" :value name}
-                     {:label "Code" :value code}
-                     {:label "Description" :value description}]))
+            :fields [{:label (tr "Name") :value name}
+                     {:label (trc "location" "Code") :value code}
+                     {:label (tr "Description") :value description}]))
 
         ;; Statistics section
         (panel/collapsible-section
-          :title "Statistics"
+          :title (tr "Statistics")
           :count material-count
           :disabled? (zero? (or material-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (panel/statistics-section
-            :stats [{:label "Material"
+            :stats [{:label (tr "Material")
                      :value material-count
                      :href (z/url-for material.routes/index nil {:location-id id})}]))
 
         ;; Awaiting planting section
         (panel/collapsible-section
-          :title "Awaiting planting"
+          :title (tr "Awaiting planting")
           :count (count awaiting)
           :disabled? (empty? awaiting)
-          :empty-label "nothing waiting"
+          :empty-label (tr "nothing waiting")
           :children
           [:div {:class "space-y-2"}
            (for [row awaiting]
@@ -81,17 +82,17 @@
                 [:a {:href (z/url-for material.routes/new nil
                                       {:accession-id (:accession/id row)})
                      :class "spl-link text-sm"}
-                 "Plant here"]]
+                 (tr "Plant here")]]
                [:div {:class "text-sm"} (:taxon/name row)]
                (when-let [received (:accession/date-received row)]
-                 [:div {:class "text-sm text-text-soft"} (str "received " received)])]])])
+                 [:div {:class "text-sm text-text-soft"} (tr "received %1" received)])]])])
 
         ;; Moved section
         (panel/collapsible-section
-          :title "Moved"
+          :title (tr "Moved")
           :count (count moved-out)
           :disabled? (empty? moved-out)
-          :empty-label "nothing has moved"
+          :empty-label (tr "nothing has moved")
           :default-open? false
           :children
           [:div {:class "space-y-2"}
@@ -108,8 +109,8 @@
                   :class "text-sm text-text-soft")]
                [:div {:class "text-sm"}
                 (if-let [to (:location/name row)]
-                  (str "to " to)
-                  "removed")]]])])
+                  (tr "to %1" to)
+                  (tr "removed"))]]])])
 
         ;; Propagations running here: what is on the bench alongside the
         ;; material filed at it.
@@ -117,14 +118,14 @@
           :propagations propagations
           :type-labels type-labels
           :status-labels status-labels
-          :empty-label "nothing running here")
+          :empty-label (tr "nothing running here"))
 
         ;; Activity section
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

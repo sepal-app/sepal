@@ -8,6 +8,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.validation.interface :as validation.i]
@@ -24,8 +25,8 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (location.form/footer-buttons))
-             :breadcrumbs [[:a {:href (z/url-for location.routes/index)} "Locations"]
-                           "New location"]))
+             :breadcrumbs [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
+                           (tr "New location")]))
 
 (defn create! [db created-by data]
   (db.i/with-transaction [tx db]
@@ -46,7 +47,7 @@
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
         (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
           (-> (http/hx-redirect location.routes/detail {:id (:location/id saved)})
-              (flash/success "Location created successfully"))
+              (flash/success (tr "Location created successfully")))
           (f/when-failed [e]
             ;; A code already in the garden is the one failure the form can
             ;; answer for itself. Saying so on the field beats a flash on a
@@ -57,8 +58,8 @@
                                     #(location.form/code-input :value (:code data)
                                                                :errors %))
               (http/failure-flash e (http/hx-redirect location.routes/new)
-                                  "Could not create the location"))))
+                                  (tr "Could not create the location")))))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect location.routes/new) "Could not create the location")))
+          (http/failure-flash e (http/hx-redirect location.routes/new) (tr "Could not create the location"))))
 
       (render :values form-params))))

@@ -36,7 +36,7 @@
   (table/summary (:contact/business l) (:contact/email l)))
 
 (defn table-columns []
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :text
     :priority 1
     :stacked stacked-summary
@@ -45,19 +45,19 @@
                        :class "spl-link"
                        :x-on:click.stop ""}
                    (:contact/name l)])}
-   {:name "Business"
+   {:name (tr "Business")
     :type :text
     :priority 2
     :cell :contact/business}
-   {:name "Email"
+   {:name (tr "Email")
     :type :text
     :priority 2
     :cell :contact/email}
-   {:name "City"
+   {:name (tr "City")
     :type :text
     :priority 3
     :cell :contact/city}
-   {:name "Phone"
+   {:name (tr "Phone")
     :type :text
     :priority 3
     :cell :contact/phone}])
@@ -85,7 +85,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No contacts yet")
-                                :body "The nurseries, gardens and collectors your material comes from."
+                                :body (tr "The nurseries, gardens and collectors your material comes from.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for contact.routes/new)))))
 
@@ -107,12 +107,13 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., business:nursery)"
+                                ;; i18n: Keep "business:" in English; it is search syntax
+                                :placeholder (tr "Search... (e.g., business:nursery)")
                                 :page page-num
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
-    :breadcrumbs ["Contacts"]
+    :breadcrumbs [(tr "Contacts")]
     :page-title-buttons (when (authz/user-has-permission? viewer contact.perm/create)
                           (create-button))))
 
