@@ -174,7 +174,12 @@
                 ;; the logs.
                 (log/error e "could not create the invited user")
                 (render :viewer viewer
-                        :errors (or (error.i/humanize
+                        ;; The check above and the insert are not atomic, so
+                        ;; a double-submitted form can lose the race to its
+                        ;; own first request. Look again before blaming the
+                        ;; insert.
+                        :errors (or (check-email-exists db email)
+                                    (error.i/humanize
                                       (if (instance? Exception e)
                                         (error.i/ex->error e)
                                         e))

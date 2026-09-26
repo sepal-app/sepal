@@ -88,6 +88,39 @@
         (is (= 200 (:status response)))
         (is (app.test/body-contains? response "already registered"))))))
 
+(deftest invite-duplicate-email-race-test
+  (tf/testing "An email taken between the check and the insert reads as taken"
+    {[::user.i/factory :key/admin] {:db *db*
+                                    :role :admin
+                                    :password "adminpass1"}
+     [::user.i/factory :key/existing] {:db *db*
+                                       :role :reader}}
+    (fn [{:keys [admin existing]}]
+      (let [sess (app.test/login (:user/email admin) "adminpass1")
+            {:keys [response] :as sess} (-> sess
+                                            (peri/request "/settings/users/invite"))
+            csrf-token (test.i/response-anti-forgery-token response)
+            email (:user/email existing)
+            get-by-email user.i/get-by-email
+            checked? (atom false)
+            ;; A double-clicked submit: the first lookup misses the row a
+            ;; concurrent request is about to commit.
+            {:keys [response]} (with-redefs [user.i/get-by-email
+                                             (fn [db e]
+                                               (if (and (= e email)
+                                                        (compare-and-set! checked? false true))
+                                                 nil
+                                                 (get-by-email db e)))]
+                                 (-> sess
+                                     (peri/request "/settings/users/invite"
+                                                   :request-method :post
+                                                   :params {:__anti-forgery-token csrf-token
+                                                            :email email
+                                                            :role "editor"})))]
+        (is (= 200 (:status response)))
+        (is (app.test/body-contains? response "already registered"))
+        (is (not (app.test/body-contains? response "Failed to create user")))))))
+
 (deftest invite-requires-admin-test
   (tf/testing "Non-admin cannot access invite page"
     {[::user.i/factory :key/editor] {:db *db*
