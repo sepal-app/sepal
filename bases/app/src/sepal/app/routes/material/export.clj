@@ -3,6 +3,7 @@
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.material.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z])
@@ -49,9 +50,9 @@
 (def export-options
   "Options shown in export modal."
   [{:id "include_taxon"
-    :label "Include taxon (name, author, rank)"}
+    :label (N_ "Include taxon (name, author, rank)")}
    {:id "include_accession"
-    :label "Include accession data (code, provenance, dates)"}])
+    :label (N_ "Include accession data (code, provenance, dates)")}])
 
 ;; =============================================================================
 ;; Handler

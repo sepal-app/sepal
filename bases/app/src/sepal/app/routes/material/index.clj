@@ -1,6 +1,5 @@
 (ns sepal.app.routes.material.index
-  (:require [clojure.string :as str]
-            [lambdaisland.uri :as uri]
+  (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
@@ -19,9 +18,10 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.search]
+            [sepal.material.interface.spec :as material.spec]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -55,7 +55,7 @@
   ;; Linking the two halves separately was the other option and was rejected —
   ;; the second half is a couple of characters wide and nowhere near a tap
   ;; target.
-  [{:name "Code"
+  [{:name (tr "Code")
     :type :identifier-compound
     :priority 1
     :stacked stacked-summary
@@ -64,7 +64,7 @@
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (ct.i/full-code separator (:accession/code row) (:material/code row))])}
-   {:name "Taxon"
+   {:name (tr "Taxon")
     :type :name
     :priority 2
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
@@ -72,7 +72,7 @@
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (taxon-name/render (:taxon/name row))])}
-   {:name "Location"
+   {:name (tr "Location")
     :type :text
     :priority 3
     :cell (fn [row] [:a {:href (z/url-for location.routes/detail
@@ -80,10 +80,10 @@
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:location/code row)])}
-   {:name "Status"
+   {:name (tr "Status")
     :type :text
     :priority 4
-    :cell (fn [row] (some-> (:material/status row) name str/capitalize))}])
+    :cell (fn [row] (some-> (:material/status row) keyword material.spec/status-labels tr))}])
 
 (def living-term "status:alive")
 
@@ -98,7 +98,7 @@
               :class "spl-checkbox"
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
-     [:span "Only living material"]]))
+     [:span (tr "Only living material")]]))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
@@ -123,8 +123,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No material yet")
-                                :body "Material is what an accession became in the garden — a plant in a bed, a
-                              seed lot in store."
+                                :body (tr "Material is what an accession became in the garden — a plant in a bed, a seed lot in store.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for material.routes/new)))))
 
@@ -147,22 +146,23 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., type:seed status:alive)"
+                                ;; i18n: Keep "type:", "seed", "status:" and "alive" in English; they are search syntax
+                                :placeholder (tr "Search... (e.g., type:seed status:alive)")
                                 :filters (living-only-checkbox search-query)
                                 :page page
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
-                   taxon (conj [:a {:href (z/url-for taxon.routes/index)} "Taxa"]
+                   taxon (conj [:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "italic"}
                                 (:taxon/name taxon)])
-                   accession (conj [:a {:href (z/url-for accession.routes/index)} "Accessions"]
+                   accession (conj [:a {:href (z/url-for accession.routes/index)} (tr "Accessions")]
                                    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})
                                         :class "italic"}
                                     (:accession/code accession)])
-                   :always (conj "Material"))
+                   :always (conj (trc "navigation" "Material")))
     :page-title-buttons (when (authz/user-has-permission? viewer material.perm/create)
                           (create-button))))
 

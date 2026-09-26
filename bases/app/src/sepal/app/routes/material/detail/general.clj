@@ -13,6 +13,7 @@
             [sepal.app.ui.page :as page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
@@ -115,13 +116,13 @@
                                                       (datetime/today timezone))))
           (f/attempt-all [saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-                (flash/success "Material updated successfully"))
+                (flash/success (tr "Material updated successfully")))
             (f/when-failed [e]
               (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
-                                  "Could not save the material"))))
+                                  (tr "Could not save the material")))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
-                              "Could not save the material")))
+                              (tr "Could not save the material"))))
 
       (let [panel-data (material.panel/fetch-panel-data db resource)
             reasons (material.i/list-reasons db)]

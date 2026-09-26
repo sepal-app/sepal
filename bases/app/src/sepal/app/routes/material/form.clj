@@ -6,6 +6,7 @@
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
 
@@ -32,7 +33,7 @@
   [& {:keys [value accession-id errors suggest?]}]
   [:input (cond-> {:autocomplete "off"
                    :class "spl-input w-full"
-                   :placeholder (if accession-id "Required" "Choose an accession first")
+                   :placeholder (if accession-id (tr "Required") (tr "Choose an accession first"))
                    :required true
                    :id "code"
                    :name "code"
@@ -58,14 +59,14 @@
                     :hx-get url
                     :hx-target "#code"
                     :hx-swap "outerHTML"
-                    :title "Use the next available code"
-                    :aria-label "Use the next available code"}
+                    :title (tr "Use the next available code")
+                    :aria-label (tr "Use the next available code")}
              include (assoc :hx-include include))
    (lucide/rotate-cw :class "size-4")])
 
 (defn form [& {:keys [action errors values reasons next-code-url]}]
-  (let [statuses (->> material.spec/status rest (mapv name))
-        types (->> material.spec/type rest (mapv name))]
+  (let [statuses (rest material.spec/status)
+        types (rest material.spec/type)]
     [:div
      (form/form
        {:id "material-form"
@@ -76,8 +77,8 @@
        [(form/anti-forgery-field)
         [:div {:class "spl-form"}
          (form/section
-           :title "Identity"
-           :hint "Which accession this material came from, and where it lives."
+           :title (tr "Identity")
+           :hint (tr "Which accession this material came from, and where it lives.")
            :children
            ;; Accession first: the code is numbered within its accession, so
            ;; asking for the code above the field it depends on asks you to
@@ -88,7 +89,7 @@
               :errors (:accession-id errors)
               :accession-id (:accession-id values)
               :accession-text (:accession-code values))
-            (form/field :label "Code"
+            (form/field :label (trc "material" "Code")
                         :name "code"
                         :errors (:code errors)
                         :input [:div {:class "flex items-center gap-2"}
@@ -102,12 +103,12 @@
             (codes/confirm-slot)
             (combobox/combobox
               :name "location-id"
-              :label "Location"
+              :label (tr "Location")
               :url (z/url-for location.routes/index)
               :required true
               :errors (:location-id errors)
               :help (when-let [label (:intended-location-label values)]
-                      (str "This accession is intended for " label "."))
+                      (tr "This accession is intended for %1." label))
               :selected (when (:location-id values)
                           {:id (:location-id values)
                            :text (format "%s (%s)"
@@ -115,11 +116,11 @@
                                          (:location-name values))}))])
 
          (form/section
-           :title "Holding"
-           :hint "How much there is, and what condition it is in."
+           :title (tr "Holding")
+           :hint (tr "How much there is, and what condition it is in.")
            :children
            [[:div {:class "spl-form-pair"}
-             (form/field :label "Quantity"
+             (form/field :label (tr "Quantity")
                          :name "quantity"
                          :errors (:quantity errors)
                          :input [:input {:autocomplete "off"
@@ -130,7 +131,7 @@
                                          :min 0
                                          :required true
                                          :value (or (:quantity values) 1)}])
-             (form/field :label "Status"
+             (form/field :label (tr "Status")
                          :name "status"
                          :errors (:status errors)
                          :input [:select {:name "status"
@@ -140,11 +141,11 @@
                                           :required true
                                           :value (:status values)}
                                  [(for [status statuses]
-                                    [:option {:value status
-                                              :selected (when (= status (some-> values :status name))
+                                    [:option {:value (name status)
+                                              :selected (when (= (name status) (some-> values :status name))
                                                           "selected")}
-                                     status])]])]
-            (form/field :label "Type"
+                                     (tr (material.spec/status-labels status))])]])]
+            (form/field :label (tr "Type")
                         :name "type"
                         :errors (:type errors)
                         :input [:select {:name "type"
@@ -154,22 +155,22 @@
                                          :required true
                                          :value (:type values)}
                                 [(for [type types]
-                                   [:option {:value type
-                                             :selected (when (= type (some-> values :type name))
+                                   [:option {:value (name type)
+                                             :selected (when (= (name type) (some-> values :type name))
                                                          "selected")}
-                                    type])]])
+                                    (tr (material.spec/type-labels type))])]])
             ;; Only where a change can happen. The create page passes no
             ;; reasons, and a record being made for the first time has not
             ;; changed from anything — the field offered None and nothing else.
             (when (seq reasons)
-              (form/field :label "Reason for change"
+              (form/field :label (tr "Reason for change")
                           :name "reason"
                           :errors (:reason errors)
-                          :hint "Recorded in this material's history when the location or quantity changes."
+                          :hint (tr "Recorded in this material's history when the location or quantity changes.")
                           :input [:select {:name "reason"
                                            :id "reason"
                                            :autocomplete "off"
                                            :class "spl-input spl-select w-full"}
-                                  [:option {:value ""} "None"]
+                                  [:option {:value ""} (tr "None")]
                                   (for [{:material-change-reason/keys [code label]} reasons]
-                                    [:option {:value code} label])]))])]])]))
+                                    [:option {:value code} (trc "material_change_reason" label)])]))])]])]))

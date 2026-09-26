@@ -10,6 +10,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as page]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
@@ -33,8 +34,8 @@
   (page/page :content (page-content :errors errors
                                     :values values)
              :footer (ui.form/footer :buttons (footer-buttons))
-             :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Material"]
-                           "New material"]))
+             :breadcrumbs [[:a {:href (z/url-for material.routes/index)} (trc "navigation" "Material")]
+                           (tr "New material")]))
 
 (defn create! [db created-by data]
   (db.i/with-transaction [tx db]
@@ -63,7 +64,7 @@
             (codes/shape-error (material.i/next-code db (:template (codes/material db)) (:accession-id data) today)))
           (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
             (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-                (flash/success "Material created successfully"))
+                (flash/success (tr "Material created successfully")))
             (f/when-failed [e]
               (if (codes/unique-violation? e)
                 (codes/taken-response
@@ -73,10 +74,10 @@
                                              :suggest? true
                                              :errors %))
                 (http/failure-flash e (http/hx-redirect material.routes/new)
-                                    "Could not create the material")))))
+                                    (tr "Could not create the material"))))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect material.routes/new)
-                              "Could not create the material")))
+                              (tr "Could not create the material"))))
 
       ;; The location panel's "Plant here" link names the accession, which is
       ;; the only way this form knows one: the select is searched client-side.

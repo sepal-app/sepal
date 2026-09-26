@@ -10,6 +10,7 @@
             [sepal.app.ui.tag :as tag.ui]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
@@ -106,7 +107,7 @@
                       _saved (f/try* (add! db id (:user/id viewer) data))]
         (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))
         (f/when-failed [e]
-          (http/failure-partial e "The tag could not be added.")))
+          (http/failure-partial e (tr "The tag could not be added."))))
 
       (let [accession (accession.i/get-by-id db (:material/accession-id resource))
             taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
@@ -133,4 +134,4 @@
                                        (remove! db id (:user/id viewer) tag)))]
       (http/hx-redirect (z/url-for material.routes/detail-tags {:id id}))
       (f/when-failed [e]
-        (http/failure-partial e "The tag could not be removed.")))))
+        (http/failure-partial e (tr "The tag could not be removed."))))))

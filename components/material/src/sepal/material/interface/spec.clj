@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [type])
   (:require [camel-snake-kebab.core :as csk]
             [malli.util :as mu]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :as validate.i]))
 
 (def id pos-int?)
@@ -14,6 +15,23 @@
 (def quantity nat-int?)
 (def status [:enum :alive :dead :dormant :transferred :other :unknown])
 (def type [:enum :plant :seed :vegetative :tissue :other])
+
+(def status-labels
+  "Display names for status, translated where they are rendered."
+  {:alive (N_ "Alive")
+   :dead (N_ "Dead")
+   :dormant (N_ "Dormant")
+   :transferred (N_ "Transferred")
+   :other (N_ "Other")
+   :unknown (N_ "Unknown")})
+
+(def type-labels
+  "Display names for type, translated where they are rendered."
+  {:plant (N_ "Plant")
+   :seed (N_ "Seed")
+   :vegetative (N_ "Vegetative")
+   :tissue (N_ "Tissue")
+   :other (N_ "Other")})
 
 (def Material
   [:map {:closed true}

@@ -1,8 +1,7 @@
 (ns sepal.app.routes.material.panel
   "Resource panel content for materials.
    Displays material summary, linked resources, history, and activity."
-  (:require [clojure.string :as str]
-            [sepal.accession.interface :as acc.i]
+  (:require [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
@@ -17,20 +16,14 @@
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.i18n.interface :as i18n :refer [tr trc]]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
+            [sepal.material.interface.spec :as material.spec]
             [sepal.observation.interface :as observation.i]
             [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
-
-(defn- format-material-type
-  "Format material type keyword for display."
-  [material-type]
-  (when material-type
-    (-> (name material-type)
-        (str/replace "-" " ")
-        (str/capitalize))))
 
 (defn- change-card
   "One history card: localized datetime, signed delta, movement, reason."
@@ -50,11 +43,11 @@
       [:div {:class "text-sm"}
        (cond
          (and from to) (str from " → " to)
-         to (str "to " to)
-         from (str "from " from)
-         :else "quantity change")]
+         to (tr "to %1" to)
+         from (tr "from %1" from)
+         :else (tr "quantity change"))]
       (when label
-        [:div {:class "text-sm text-text-soft"} label])]]))
+        [:div {:class "text-sm text-text-soft"} (trc "material_change_reason" label)])]]))
 
 (defn history-cards
   "The change rows as cards, newest first. Shared by the panel section and
@@ -69,10 +62,10 @@
   "Three newest changes, with a Show all button when there are more."
   [material history timezone]
   (panel/collapsible-section
-    :title "History"
+    :title (tr "History")
     :count (count history)
     :disabled? (empty? history)
-    :empty-label "no recorded changes"
+    :empty-label (tr "no recorded changes")
     :default-open? (seq history)
     :children
     (list
@@ -83,7 +76,7 @@
                                      {:id (:material/id material)})
                   :hx-target "closest .spl-collapse-content"
                   :hx-swap "innerHTML"}
-         (format "Show all (%d)" (count history))]))))
+         (tr "Show all (%1)" (i18n/format-number (count history)))]))))
 
 (defn panel-content
   "Render the material panel content.
@@ -119,24 +112,24 @@
 
         ;; Summary section
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Code" :value code}
-                     {:label "Type" :value (format-material-type material-type)}
-                     {:label "Quantity" :value quantity}
-                     {:label "Status" :value (when status (str/capitalize (name status)))}
-                     {:label "Accession"
+            :fields [{:label (trc "material" "Code") :value code}
+                     {:label (tr "Type") :value (some-> material-type keyword material.spec/type-labels tr)}
+                     {:label (tr "Quantity") :value quantity}
+                     {:label (tr "Status") :value (some-> status keyword material.spec/status-labels tr)}
+                     {:label (tr "Accession")
                       :value (when accession
                                [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})
                                     :class "spl-link"}
                                 (:accession/code accession)])}
-                     {:label "Taxon"
+                     {:label (tr "Taxon")
                       :value (when taxon
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "spl-link"}
                                 (taxon-name/render sci-name)])}
-                     {:label "Location"
+                     {:label (tr "Location")
                       :value (when location
                                [:a {:href (z/url-for location.routes/detail {:id (:location/id location)})
                                     :class "spl-link"}
@@ -147,10 +140,10 @@
 
         ;; Observations section
         (panel/collapsible-section
-          :title "Observations"
+          :title (tr "Observations")
           :count observation-count
           :disabled? (zero? (or observation-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (ui.observations/panel-section
@@ -160,7 +153,7 @@
 
         ;; External links section
         (panel/collapsible-section
-          :title "External Links"
+          :title (tr "External Links")
           :children
           (external-links/taxonomic-links-section :taxon-name sci-name))
 
@@ -172,14 +165,14 @@
           :origin-parent origin-parent
           :type-labels type-labels
           :status-labels status-labels
-          :empty-label "nothing grown from this plant")
+          :empty-label (tr "nothing grown from this plant"))
 
         ;; Activity section
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

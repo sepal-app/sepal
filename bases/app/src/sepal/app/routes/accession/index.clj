@@ -53,7 +53,7 @@
           [:span {:class "spl-stacked-line"} received])))
 
 (defn table-columns []
-  [{:name "Code"
+  [{:name (tr "Code")
     :type :identifier
     :priority 1
     :stacked stacked-summary
@@ -62,7 +62,7 @@
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (:accession/code row)])}
-   {:name "Taxon"
+   {:name (tr "Taxon")
     :type :name
     :priority 1
     :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
@@ -70,11 +70,11 @@
                          :class "spl-link"
                          :x-on:click.stop ""}
                      (taxon-name/render (:taxon/name row))])}
-   {:name "Provenance"
+   {:name (tr "Provenance")
     :type :text
     :priority 3
     :cell provenance-label}
-   {:name "Received"
+   {:name (tr "Received")
     :type :date
     :priority 2
     :cell :accession/date-received}])

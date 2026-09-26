@@ -8,6 +8,7 @@
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.code-template.interface :as ct.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -16,21 +17,21 @@
 (def tags-tab ::tags)
 
 (defn- tab-items [& {:keys [active material]}]
-  [(ui.tabs/item "General"
+  [(ui.tabs/item (tr "General")
                  {:href (z/url-for material.routes/detail-general {:id (:material/id material)})
                   :active (= active general-tab)})
-   (ui.tabs/item "Media"
+   (ui.tabs/item (tr "Media")
                  {:href (z/url-for material.routes/detail-media {:id (:material/id material)})
                   :active (= active media-tab)})
-   (ui.tabs/item "Observations"
+   (ui.tabs/item (tr "Observations")
                  {:href (z/url-for material.routes/detail-observations {:id (:material/id material)})
                   :active (= active observations-tab)})
-   (ui.tabs/item "Tags"
+   (ui.tabs/item (tr "Tags")
                  {:href (z/url-for material.routes/detail-tags {:id (:material/id material)})
                   :active (= active tags-tab)})])
 
 (defn tabs [material active]
-  (ui.tabs/tabs {:label "Material sections"
+  (ui.tabs/tabs {:label (tr "Material sections")
                  :items (tab-items :material material :active active)}))
 
 (defn page
@@ -49,15 +50,15 @@
 
 (defn breadcrumbs [& {:keys [accession material taxon separator]}]
   [[:a {:href (z/url-for taxon.routes/index)}
-    "Taxa"]
+    (tr "Taxa")]
    [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
     (taxon-name/render (:taxon/name taxon))]
    [:a {:href (z/url-for accession.routes/index {} {:taxon-id (:taxon/id taxon)})}
-    "Accessions"]
+    (tr "Accessions")]
    [:a {:href (z/url-for accession.routes/detail {:id (:accession/id accession)})}
     (:accession/code accession)]
    [:a {:href (z/url-for material.routes/index {} {:accession-id (:accession/id accession)})}
-    "Material"]
+    (trc "navigation" "Material")]
    (ct.i/full-code separator (:accession/code accession) (:material/code material))])
 
 (defn actions
@@ -68,7 +69,7 @@
   [& {:keys [material primary]}]
   (ui.actions/menu
     :primary primary
-    :items [{:label "Add a propagation"
+    :items [{:label (tr "Add a propagation")
              :href (z/url-for propagation.routes/new nil
                               {:parent-material-id (:material/id material)})}]
     :delete-url (z/url-for material.routes/delete {:id (:material/id material)})))

@@ -4,6 +4,7 @@
             [sepal.app.routes.material.panel :as material.panel]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.page :as page]
+            [sepal.i18n.interface :refer [trc]]
             [sepal.material.interface.permission :as material.perm]
             [zodiac.core :as z]))
 
@@ -11,7 +12,7 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [material panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for material.routes/index)} "Material"]
+    :breadcrumbs [[:a {:href (z/url-for material.routes/index)} (trc "navigation" "Material")]
                   (:material/code material)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (material.panel/panel-content
