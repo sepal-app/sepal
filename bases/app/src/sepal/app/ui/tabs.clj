@@ -5,7 +5,8 @@
   /collection/, /media/ — so they are a nav, not a tablist. ARIA tab semantics
   promise a panel in the same document that the tab controls; putting them on
   cross-document links misdescribes the widget to a screen reader."
-  (:require [sepal.app.ui.icons.lucide :as lucide]))
+  (:require [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn item
   "One section link.
@@ -51,7 +52,7 @@
            Delete and the like, which belong to the record rather than to any
            one section."
   [{:keys [label items actions]}]
-  [:nav {:class "spl-tabs" :aria-label (or label "Sections")}
+  [:nav {:class "spl-tabs" :aria-label (or label (tr "Sections"))}
    items
    (when actions
      [:span {:class "spl-tabs-actions"} actions])])

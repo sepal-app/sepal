@@ -5,6 +5,7 @@
             [sepal.app.flash :as flash]
             [sepal.app.ui.form :as ui.form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn found
@@ -51,7 +52,7 @@
     (-> {:status 422
          :headers {"Content-Type" "text/html"}
          :body (str (chassis/html (into [:div] oob-elements)))}
-        (flash/error "Nothing was saved. Check the highlighted fields."))))
+        (flash/error (tr "Nothing was saved. Check the highlighted fields.")))))
 
 (defn failure-response
   "The response for a failed form post.

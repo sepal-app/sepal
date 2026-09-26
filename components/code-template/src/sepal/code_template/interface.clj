@@ -6,7 +6,8 @@
   queries that fetch those codes live in the accession and material
   components, which is what keeps this namespace pure."
   (:require [clojure.string :as str]
-            [sepal.error.interface :as error.i])
+            [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]])
   (:import [java.time LocalDate]
            [java.util.regex Pattern]))
 
@@ -29,7 +30,7 @@
     {:kind :seq :width (count zeros)}
     (or (get date-tokens body)
         (when (= "letter" body) {:kind :letter})
-        (error.i/error ::unknown-token (str "Unknown token {" body "}")))))
+        (error.i/error ::unknown-token (tr "Unknown token {%1}" body)))))
 
 (defn parse
   "A template string to its parts, or an error naming what is wrong.
@@ -39,7 +40,7 @@
   escaping out keeps this to a single pass."
   [template]
   (if (str/blank? template)
-    (error.i/error ::empty-template "A template cannot be empty")
+    (error.i/error ::empty-template (tr "A template cannot be empty"))
     (loop [i 0
            parts []]
       (let [open (str/index-of template "{" i)]
@@ -51,15 +52,15 @@
                 seqs (count (filter sequence-part? parts))]
             (cond
               (zero? seqs) (error.i/error ::no-seq-token
-                                          "A template needs a {seq} or {letter} token")
+                                          (tr "A template needs a {seq} or {letter} token"))
               (> seqs 1) (error.i/error ::many-seq-tokens
-                                        "A template needs exactly one {seq} or {letter} token")
+                                        (tr "A template needs exactly one {seq} or {letter} token"))
               :else parts))
 
           :else
           (let [close (str/index-of template "}" open)]
             (if (nil? close)
-              (error.i/error ::unclosed-brace "A { is missing its closing }")
+              (error.i/error ::unclosed-brace (tr "A { is missing its closing }"))
               (let [part (token->part (subs template (inc open) close))]
                 (if (error.i/error? part)
                   part

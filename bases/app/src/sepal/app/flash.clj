@@ -2,7 +2,8 @@
   (:require [sepal.app.flash.category :as category]
             [sepal.app.html :as html]
             [sepal.app.ui.icons.lucide :as lucide]
-            [sepal.app.ui.tooltip :as tooltip]))
+            [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn add-message
   ([response text]
@@ -79,12 +80,12 @@
      (tooltip/wrap
        [:button {:type "button"
                  :class "spl-banner-dismiss"
-                 :aria-label "Dismiss"
+                 :aria-label (tr "Dismiss")
                  :x-on:click "show = false"}
         ;; `icons/outline-x` renders an empty 5px svg — it has no path and its
         ;; size is unitless. The banner needs a mark you can actually see.
         (lucide/x :class "w-4 h-4")]
-       "Dismiss"
+       (tr "Dismiss")
        :side "left")]))
 
 (defn banner [messages]

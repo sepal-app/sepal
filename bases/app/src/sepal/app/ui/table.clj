@@ -295,20 +295,20 @@
     [:div {:class "spl-paginator"}
      [:p {:class "spl-count"}
       (format "%s\u2013%s of %s" page-start page-end total)]
-     [:nav {:class "spl-pages" :aria-label "Pagination"}
+     [:nav {:class "spl-pages" :aria-label (tr "Pagination")}
       [:a {:href (page-href 1) :class "spl-page"}
-       [:span {:class "sr-only"} "First page"]
+       [:span {:class "sr-only"} (tr "First page")]
        (icon/backwards-left)]
       [:a {:href previous-page-href :class "spl-page"}
-       [:span {:class "sr-only"} "Previous page"]
+       [:span {:class "sr-only"} (tr "Previous page")]
        (icon/chevron-left)]
       (for [page pages]
         (page-button :label page
                      :active? (= current-page page)
                      :href (page-href page)))
       [:a {:href next-page-href :class "spl-page"}
-       [:span {:class "sr-only"} "Next page"]
+       [:span {:class "sr-only"} (tr "Next page")]
        (icon/chevron-right)]
       [:a {:href (page-href num-pages) :class "spl-page"}
-       [:span {:class "sr-only"} "Last page"]
+       [:span {:class "sr-only"} (tr "Last page")]
        (icon/backwards-right)]]]))

@@ -8,6 +8,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.code-template.interface :as ct.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.settings.interface :as settings.i]))
 
 (defn config
@@ -40,8 +41,8 @@
   the message shows the convention rather than describing it."
   [example]
   {:code [(if example
-            (str "Code must look like " example)
-            "Code does not match the garden's template")]})
+            (tr "Code must look like %1" example)
+            (tr "Code does not match the garden's template"))]})
 
 (def confirm-target-id "code-confirm")
 
@@ -69,15 +70,14 @@
    ;; wraps one word per line.
    [:div {:class "flex flex-col gap-2"}
     [:p (if example
-          (str "This code does not match the garden's template. "
-               "A code that fits looks like " example ".")
-          "This code does not match the garden's template.")]
+          (tr "This code does not match the garden's template. A code that fits looks like %1." example)
+          (tr "This code does not match the garden's template."))]
     [:label {:class "flex items-center gap-2 cursor-pointer"}
      [:input {:type "checkbox"
               :class "spl-checkbox"
               :name "code-override"
               :value "1"}]
-     [:span "Save it anyway"]]]])
+     [:span (tr "Save it anyway")]]]])
 
 (defn unique-violation?
   "Did this failure come from one of the code unique indexes?
@@ -102,7 +102,7 @@
   had. Without that the one field in error is the only one with no error
   styling."
   [code input-fn]
-  (let [errors [(str code " is already taken")]]
+  (let [errors [(tr "%1 is already taken" code)]]
     (http/unprocessable-entity
       [:div
        (ui.form/error-list "code" errors :hx-swap-oob? true)

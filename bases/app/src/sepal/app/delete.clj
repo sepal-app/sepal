@@ -225,7 +225,7 @@
   [resource-type db record deleted-by]
   (let [found (blockers resource-type db record)]
     (if (seq found)
-      (error.i/error ::blocked "Cannot delete this record" {:blockers found})
+      (error.i/error ::blocked (tr "Cannot delete this record") {:blockers found})
       (try
         (db.i/with-transaction [tx db]
           (delete!* resource-type tx record deleted-by))

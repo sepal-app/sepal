@@ -57,6 +57,32 @@ msgstr ""
 msgid "Please check the server logs for more details."
 msgstr ""
 
+#: bases/app/src/sepal/app/codes.clj:44
+msgid "Code must look like %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/codes.clj:45
+msgid "Code does not match the garden's template"
+msgstr ""
+
+#: bases/app/src/sepal/app/codes.clj:73
+msgid ""
+"This code does not match the garden's template. A code that fits looks like "
+"%1."
+msgstr ""
+
+#: bases/app/src/sepal/app/codes.clj:74
+msgid "This code does not match the garden's template."
+msgstr ""
+
+#: bases/app/src/sepal/app/codes.clj:80
+msgid "Save it anyway"
+msgstr ""
+
+#: bases/app/src/sepal/app/codes.clj:105
+msgid "%1 is already taken"
+msgstr ""
+
 #: bases/app/src/sepal/app/datetime.clj:112
 msgid "Today"
 msgstr ""
@@ -161,6 +187,30 @@ msgid "%1 record references this"
 msgid_plural "%1 records reference this"
 msgstr[0] ""
 msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:228
+msgid "Cannot delete this record"
+msgstr ""
+
+#: bases/app/src/sepal/app/flash.clj:83 bases/app/src/sepal/app/flash.clj:88
+msgid "Dismiss"
+msgstr ""
+
+#: bases/app/src/sepal/app/http_response.clj:55
+msgid "Nothing was saved. Check the highlighted fields."
+msgstr ""
+
+#: bases/app/src/sepal/app/middleware.clj:83
+msgid "There was a problem loading this record."
+msgstr ""
+
+#: bases/app/src/sepal/app/middleware.clj:115
+msgid "You don't have permission to perform this action."
+msgstr ""
+
+#: bases/app/src/sepal/app/middleware.clj:118
+msgid "You don't have permission to access this page."
+msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/create.clj:43
 #: bases/app/src/sepal/app/routes/accession/detail.clj:15
@@ -677,6 +727,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/activity/index.clj:209
 #: bases/app/src/sepal/app/routes/material/panel.clj:122
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:23
+#: bases/app/src/sepal/app/ui/accession_combobox.clj:21
 #: components/material/src/sepal/material/interface/search.clj:43
 #: components/material/src/sepal/material/interface/search.clj:47
 msgid "Accession"
@@ -3515,6 +3566,7 @@ msgid "Toggle details"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:164
+#: bases/app/src/sepal/app/ui/tabs.clj:55
 msgid "Sections"
 msgstr ""
 
@@ -3653,6 +3705,26 @@ msgstr ""
 #. i18n: Rows loaded out of the total, as in "25 of 1,284"
 #: bases/app/src/sepal/app/ui/table.clj:235
 msgid "%1 of %2"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:298
+msgid "Pagination"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:300
+msgid "First page"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:303
+msgid "Previous page"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:310
+msgid "Next page"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:313
+msgid "Last page"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/tag.clj:21 bases/app/src/sepal/app/ui/tag.clj:26
@@ -3885,6 +3957,26 @@ msgstr ""
 
 #: components/accession/src/sepal/accession/interface/spec.clj:153
 msgid "Vegetative spreading"
+msgstr ""
+
+#: components/code-template/src/sepal/code_template/interface.clj:33
+msgid "Unknown token {%1}"
+msgstr ""
+
+#: components/code-template/src/sepal/code_template/interface.clj:43
+msgid "A template cannot be empty"
+msgstr ""
+
+#: components/code-template/src/sepal/code_template/interface.clj:55
+msgid "A template needs a {seq} or {letter} token"
+msgstr ""
+
+#: components/code-template/src/sepal/code_template/interface.clj:57
+msgid "A template needs exactly one {seq} or {letter} token"
+msgstr ""
+
+#: components/code-template/src/sepal/code_template/interface.clj:63
+msgid "A { is missing its closing }"
 msgstr ""
 
 #: components/contact/src/sepal/contact/interface/spec.clj:43

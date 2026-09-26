@@ -6,6 +6,7 @@
   the code or the taxon name."
   (:require [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.combobox :as combobox]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn accession-combobox
@@ -17,7 +18,7 @@
   - :accession-text the text shown for it
   - :required, :errors, :help, :label-hidden?  as `combobox/combobox` takes them"
   [& {:keys [name label accession-id accession-text required errors help label-hidden?]
-      :or {label "Accession"}}]
+      :or {label (tr "Accession")}}]
   (combobox/combobox
     :name name
     :label label

@@ -10,7 +10,7 @@
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :as i18n]
+            [sepal.i18n.interface :as i18n :refer [tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
@@ -80,7 +80,7 @@
                        (error.i/error :resource-loader/error "Unknown error loading the resource")))]
       (cond
         (error.i/error? resource)
-        {:body "ERROR: There was a problem loading the resource"
+        {:body (chassis/html [:p (tr "There was a problem loading this record.")])
          :status 500
          :headers {"content-type" "text/html"}}
 
@@ -111,10 +111,11 @@
   (if htmx-request?
     {:status 403
      :headers {"Content-Type" "text/html"}
-     :body "<div class=\"alert alert-error\">You don't have permission to perform this action.</div>"}
+     :body (chassis/html [:div {:class "alert alert-error"}
+                          (tr "You don't have permission to perform this action.")])}
     {:status 403
      :headers {"Content-Type" "text/html"}
-     :body "Forbidden - You don't have permission to access this resource."}))
+     :body (chassis/html [:p (tr "You don't have permission to access this page.")])}))
 
 (defn require-role
   "Middleware that checks if viewer has one of the specified roles.
