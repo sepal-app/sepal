@@ -10,6 +10,7 @@
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.settings.interface :as settings.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z])
@@ -18,7 +19,7 @@
 (def FormParams
   [:map {:closed true}
    form/AntiForgeryField
-   [:timezone [:string {:min 1 :error/message "Please select a timezone"}]]])
+   [:timezone [:string {:min 1 :error/message (N_ "Please select a timezone")}]]])
 
 (defn timezone-options
   "Returns all canonical IANA timezone options with UTC offset labels."

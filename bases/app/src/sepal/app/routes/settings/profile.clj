@@ -6,7 +6,7 @@
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as ui.form]
-            [sepal.i18n.interface :as i18n :refer [tr]]
+            [sepal.i18n.interface :as i18n :refer [N_ tr]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -72,7 +72,7 @@
    [:full-name {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:email [:string {:min 1}]]
    [:language {:optional true :decode/form validation.i/empty->nil}
-    [:maybe [:fn {:error/message "Choose a language from the list"}
+    [:maybe [:fn {:error/message (N_ "Choose a language from the list")}
              #(contains? (set (i18n/available-locales)) %)]]]])
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]

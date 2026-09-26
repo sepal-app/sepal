@@ -7,7 +7,8 @@
    The Alpine.js component logic is in js/query-builder.ts"
   (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :refer [N_ tr]]))
 
 (defn- field-select
   "Dropdown to select a field to filter on."
@@ -15,7 +16,7 @@
   [:select {:class "spl-input spl-select w-40 leading-none"
             :x-model "selectedField"
             :x-on:change "onFieldChange()"}
-   [:option {:value ""} "Select field..."]
+   [:option {:value ""} (tr "Select field...")]
    [:template {:x-for "field in fields" :key "field.key"}
     [:option {:x-bind:value "field.key" :x-text "field.label"}]]])
 
@@ -35,13 +36,13 @@
    [:template {:x-if "currentFieldType === 'text' || currentFieldType === 'fts' || currentFieldType === 'date' || currentFieldType === 'number' || currentFieldType === 'count'"}
     [:input {:type "text"
              :class "spl-input w-full"
-             :placeholder "Value..."
+             :placeholder (tr "Value...")
              :x-model "selectedValue"}]]
    ;; Dropdown for enum fields
    [:template {:x-if "currentFieldType === 'enum'"}
     [:select {:class "spl-input spl-select w-full leading-none"
               :x-model "selectedValue"}
-     [:option {:value ""} "Select value..."]
+     [:option {:value ""} (tr "Select value...")]
      [:template {:x-for "val in currentFieldValues" :key "val"}
       [:option {:x-bind:value "val" :x-text "val"}]]]]])
 
@@ -53,7 +54,17 @@
             :x-on:click "addFilter()"
             :x-bind:disabled "!canAddFilter"}
    (lucide/plus :class "w-4 h-4")
-   "Add"])
+   (tr "Add")])
+
+(defn- operator-labels
+  "The operator names js/query-builder.ts shows, translated and keyed by their
+  English, which is how the script looks them up."
+  []
+  (into {}
+        (map (juxt identity tr))
+        [(N_ "Contains") (N_ "Does not contain") (N_ "Equals") (N_ "Does not equal")
+         (N_ "After") (N_ "On or after") (N_ "Before") (N_ "On or before")
+         (N_ "Greater than") (N_ "At least") (N_ "Less than") (N_ "At most")]))
 
 (defn query-builder-dropdown
   "Dropdown for building search queries.
@@ -66,15 +77,16 @@
       :or {input-id "q"}}]
   (let [fields-json (json/write-str fields)]
     [:div {:class "relative"
-           :x-data (str "queryBuilder(" fields-json ", '" input-id "')")}
+           :x-data (str "queryBuilder(" fields-json ", '" input-id "', "
+                        (json/write-str (operator-labels)) ")")}
 
      ;; Toggle button
      [:button {:type "button"
                :class (html/attr "spl-btn" "spl-btn--ghost" "spl-btn--sm" "gap-1")
                :x-on:click "open = !open"
-               :aria-label "Add filter"}
+               :aria-label (tr "Add filter")}
       (lucide/filter-icon :class "w-4 h-4")
-      [:span {:class "hidden sm:inline"} "Filter"]]
+      [:span {:class "hidden sm:inline"} (tr "Filter")]]
 
      ;; Dropdown panel
      [:div {:class (html/attr "absolute" "top-full" "left-0" "mt-1" "z-50"
@@ -91,7 +103,7 @@
             :x-transition:leave-start "opacity-100 scale-100"
             :x-transition:leave-end "opacity-0 scale-95"}
 
-      [:div {:class "text-sm font-medium mb-2"} "Add Filter"]
+      [:div {:class "text-sm font-medium mb-2"} (tr "Add filter")]
 
       [:div {:class "flex flex-col gap-2"}
        ;; Row 1: Field select
@@ -120,7 +132,7 @@
    - :placeholder - Placeholder text for the input"
   [& {:keys [q fields input-id placeholder]
       :or {input-id "q"
-           placeholder "Search..."}}]
+           placeholder (tr "Search...")}}]
   [:div {:class "spl-search"}
    [:input {:name input-id
             :id input-id

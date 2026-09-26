@@ -5,6 +5,7 @@
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -49,7 +50,7 @@
     [:current_password [:string {:min 1}]]
     [:new_password [:string {:min 8}]]
     [:confirm_password [:string {:min 1}]]]
-   [:fn {:error/message "New passwords don't match"
+   [:fn {:error/message (N_ "New passwords don't match")
          :error/path [:confirm_password]}
     (fn [{:keys [new_password confirm_password]}]
       (= new_password confirm_password))]])

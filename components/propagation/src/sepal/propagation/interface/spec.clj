@@ -1,6 +1,7 @@
 (ns sepal.propagation.interface.spec
   (:refer-clojure :exclude [type])
-  (:require [malli.util :as mu]))
+  (:require [malli.util :as mu]
+            [sepal.i18n.interface :refer [N_]]))
 
 (def id pos-int?)
 (def parent-accession-id pos-int?)
@@ -48,8 +49,7 @@
   hits this in May while entering a germination count against a number
   somebody wrote in March. A mass sowing belongs as null, not as an estimate;
   that convention is what makes this safe to enforce."
-  [:fn {:error/message (str "More succeeded than were started. Update the "
-                            "started count, or clear it if it was an estimate.")}
+  [:fn {:error/message (N_ "More succeeded than were started. Update the started count, or clear it if it was an estimate.")}
    (fn [{:keys [quantity-started quantity-succeeded]}]
      (or (nil? quantity-started)
          (nil? quantity-succeeded)

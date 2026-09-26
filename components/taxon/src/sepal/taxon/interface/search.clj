@@ -1,6 +1,7 @@
 (ns sepal.taxon.interface.search
   "Search field definitions for taxa."
-  (:require [sepal.search.interface :as search.i]))
+  (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :taxon [_]
   {:table [:taxon :t]
@@ -9,21 +10,21 @@
     :name   {:column :t.name
              :type :fts
              :fts-table :taxon_fts
-             :label "Name"}
+             :label (N_ "Name")}
 
     :author {:column :t.author
              :type :text
-             :label "Author"}
+             :label (N_ "Author")}
 
     :rank   {:column :t.rank
              :type :enum
              :values [:kingdom :phylum :class :order :family :genus
                       :species :subspecies :variety :form]
-             :label "Rank"}
+             :label (N_ "Rank")}
 
     :id     {:column :t.id
              :type :id
-             :label "ID"}
+             :label (N_ "ID")}
 
     ;; Related: parent taxon.
     ;;
@@ -41,12 +42,12 @@
                 :type :fts
                 :fts-table :taxon_fts
                 :id-column :t.parent_id
-                :label "Parent"}
+                :label (N_ "Parent")}
 
     ;; On t.parent_id for the same reason, which taxon_parent_id_idx serves.
     :parent.id {:column :t.parent_id
                 :type :id
-                :label "Parent"}
+                :label (N_ "Parent")}
 
     ;; Related: what a hybrid was crossed from, which is not its parent.
     ;;
@@ -62,14 +63,14 @@
                 :type :fts
                 :fts-table :taxon_fts
                 :id-column :pg.parent_taxon_id
-                :label "Parentage"
+                :label (N_ "Parentage")
                 :joins [[:taxon_parentage :pg] [:= :pg.taxon_id :t.id]]}
 
     ;; Related: "has materials of type X" (through accession → material)
     :material.type {:column :m.type
                     :type :enum
                     :values [:plant :seed :vegetative :tissue :other]
-                    :label "Material Type"
+                    :label (N_ "Material Type")
                     :joins [[:accession :a] [:= :a.taxon_id :t.id]
                             [:material :m] [:= :m.accession_id :a.id]]}
 
@@ -77,28 +78,28 @@
     :material.status {:column :m.status
                       :type :enum
                       :values [:alive :dead]
-                      :label "Material Status"
+                      :label (N_ "Material Status")
                       :joins [[:accession :a] [:= :a.taxon_id :t.id]
                               [:material :m] [:= :m.accession_id :a.id]]}
 
     ;; Related: "has materials at location X"
     :location.code {:column :l.code
                     :type :text
-                    :label "Location Code"
+                    :label (N_ "Location Code")
                     :joins [[:accession :a] [:= :a.taxon_id :t.id]
                             [:material :m] [:= :m.accession_id :a.id]
                             [:location :l] [:= :l.id :m.location_id]]}
 
     :location.name {:column :l.name
                     :type :text
-                    :label "Location Name"
+                    :label (N_ "Location Name")
                     :joins [[:accession :a] [:= :a.taxon_id :t.id]
                             [:material :m] [:= :m.accession_id :a.id]
                             [:location :l] [:= :l.id :m.location_id]]}
 
     :location.id {:column :l.id
                   :type :id
-                  :label "Location"
+                  :label (N_ "Location")
                   :joins [[:accession :a] [:= :a.taxon_id :t.id]
                           [:material :m] [:= :m.accession_id :a.id]
                           [:location :l] [:= :l.id :m.location_id]]}
@@ -107,12 +108,12 @@
     :accessions {:column [:= :accession.taxon_id :t.id]  ; join condition for subquery
                  :type :count
                  :fts-table :accession  ; table to count (reusing fts-table key)
-                 :label "Accessions"}
+                 :label (N_ "Accessions")}
 
     ;; Related: tag (through tag_link)
     :tag {:column :tg.name
           :type :text
-          :label "Tag"
+          :label (N_ "Tag")
           :joins [[:tag_link :tl] [:and [:= :tl.resource_id :t.id]
                                    [:= :tl.resource_type "taxon"]]
                   [:tag :tg] [:= :tg.id :tl.tag_id]]}
@@ -131,4 +132,4 @@
     ;; expecting `:when field-def` to skip it -- being in this map is exactly
     ;; what stops that skip from happening.
     :synonym {:type :text
-              :label "Synonym"}}})
+              :label (N_ "Synonym")}}})

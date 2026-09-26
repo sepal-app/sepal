@@ -97,7 +97,7 @@
 
 (deftest future-date-errors-test
   (testing "a date after today is an error on its field"
-    (is (= {:a [validation.i/future-date-message]}
+    (is (= {:a [(validation.i/future-date-message)]}
            (validation.i/future-date-errors {:a "2026-09-25" :b "2026-09-24"}
                                             [:a :b] "2026-09-24"))))
   (testing "today, the past and a blank are fine"

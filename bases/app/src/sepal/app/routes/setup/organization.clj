@@ -8,6 +8,7 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.settings.interface :as settings.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -15,7 +16,7 @@
 (def FormParams
   [:map {:closed true}
    form/AntiForgeryField
-   [:long_name [:string {:min 1 :error/message "Organization name is required"}]]
+   [:long_name [:string {:min 1 :error/message (N_ "Organization name is required")}]]
    [:short_name {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:abbreviation {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:email {:decode/form validation.i/empty->nil} [:maybe :string]]

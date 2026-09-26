@@ -55,7 +55,21 @@ const operatorOptions: OperatorOptions = {
     single: [{ value: "", label: "Equals" }],
 }
 
-export function queryBuilder(fields: Field[], inputId: string) {
+/** The operator tables with their labels replaced from `labels`, which the
+ * server sends translated and keyed by the English label. */
+function translatedOperators(labels: Record<string, string>): OperatorOptions {
+    const tr = (ops: Operator[]) => ops.map((op) => ({ ...op, label: labels[op.label] ?? op.label }))
+    return {
+        text: tr(operatorOptions.text),
+        date: tr(operatorOptions.date),
+        number: tr(operatorOptions.number),
+        enum: tr(operatorOptions.enum),
+        single: tr(operatorOptions.single),
+    }
+}
+
+export function queryBuilder(fields: Field[], inputId: string, labels: Record<string, string> = {}) {
+    const operators = translatedOperators(labels)
     return {
         open: false,
         fields,
@@ -77,11 +91,11 @@ export function queryBuilder(fields: Field[], inputId: string) {
 
         get availableOps(): Operator[] {
             const type = this.currentFieldType
-            if (type === "text" || type === "fts") return operatorOptions.text
-            if (type === "date") return operatorOptions.date
-            if (type === "number" || type === "count") return operatorOptions.number
-            if (type === "enum") return operatorOptions.enum
-            return operatorOptions.single
+            if (type === "text" || type === "fts") return operators.text
+            if (type === "date") return operators.date
+            if (type === "number" || type === "count") return operators.number
+            if (type === "enum") return operators.enum
+            return operators.single
         },
 
         get selectedOp(): Operator | undefined {

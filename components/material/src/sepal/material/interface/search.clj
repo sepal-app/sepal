@@ -1,6 +1,7 @@
 (ns sepal.material.interface.search
   "Search field definitions for materials."
-  (:require [sepal.search.interface :as search.i]))
+  (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :material [_]
   {:table [:material :m]
@@ -13,21 +14,21 @@
     :code   {:column :m.code
              :type :text
              :search? true
-             :label "Code"}
+             :label (N_ "Code")}
 
     :type   {:column :m.type
              :type :enum
              :values [:plant :seed :vegetative :tissue :other]
-             :label "Type"}
+             :label (N_ "Type")}
 
     :status {:column :m.status
              :type :enum
              :values [:alive :dead :dormant :transferred :other :unknown]
-             :label "Status"}
+             :label (N_ "Status")}
 
     :id     {:column :m.id
              :type :id
-             :label "ID"}
+             :label (N_ "ID")}
 
     ;; Related: accession (direct FK).
     ;;
@@ -39,11 +40,11 @@
                    :fts-table :accession_fts
                    :id-column :m.accession_id
                    :search? true
-                   :label "Accession"}
+                   :label (N_ "Accession")}
 
     :accession.id {:column :a.id
                    :type :id
-                   :label "Accession"
+                   :label (N_ "Accession")
                    :joins [[:accession :a] [:= :a.id :m.accession_id]]}
 
     ;; Related: taxon (through accession)
@@ -51,36 +52,36 @@
                   :type :fts
                   :fts-table :taxon_fts
                   :search? true
-                  :label "Taxon"
+                  :label (N_ "Taxon")
                   :joins [[:accession :a] [:= :a.id :m.accession_id]
                           [:taxon :t] [:= :t.id :a.taxon_id]]}
 
     :taxon.id    {:column :t.id
                   :type :id
-                  :label "Taxon"
+                  :label (N_ "Taxon")
                   :joins [[:accession :a] [:= :a.id :m.accession_id]
                           [:taxon :t] [:= :t.id :a.taxon_id]]}
 
     ;; Related: location (direct FK)
     :location.code {:column :l.code
                     :type :text
-                    :label "Location Code"
+                    :label (N_ "Location Code")
                     :joins [[:location :l] [:= :l.id :m.location_id]]}
 
     :location.name {:column :l.name
                     :type :text
-                    :label "Location Name"
+                    :label (N_ "Location Name")
                     :joins [[:location :l] [:= :l.id :m.location_id]]}
 
     :location.id {:column :l.id
                   :type :id
-                  :label "Location"
+                  :label (N_ "Location")
                   :joins [[:location :l] [:= :l.id :m.location_id]]}
 
     ;; Related: tag (through tag_link)
     :tag {:column :tg.name
           :type :text
-          :label "Tag"
+          :label (N_ "Tag")
           :joins [[:tag_link :tl] [:and [:= :tl.resource_id :m.id]
                                    [:= :tl.resource_type "material"]]
                   [:tag :tg] [:= :tg.id :tl.tag_id]]}
@@ -88,8 +89,8 @@
     ;; Date fields
     :created {:column :m.created_at
               :type :date
-              :label "Created"}
+              :label (N_ "Created")}
 
     :updated {:column :m.updated_at
               :type :date
-              :label "Updated"}}})
+              :label (N_ "Updated")}}})

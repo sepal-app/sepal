@@ -17,3 +17,8 @@
   "Return the humanized error of a malli.core/coercion exception."
   [ex]
   (core/humanize-coercion-ex ex))
+
+(defn humanize
+  "malli.error/humanize, translated into the current locale."
+  [explanation]
+  (core/humanize explanation))

@@ -1,5 +1,6 @@
 (ns sepal.user.interface.spec
   (:require [clojure.string :as str]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :refer [email-re]]))
 
 (def id pos-int?)
@@ -10,7 +11,7 @@
   (some-> email str/lower-case))
 
 (def email
-  [:re {:error/message "invalid email"
+  [:re {:error/message (N_ "invalid email")
         :encode/store normalize-email
         :decode/form normalize-email}
    email-re])

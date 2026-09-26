@@ -1,6 +1,7 @@
 (ns sepal.contact.interface.spec
   (:refer-clojure :exclude [name type])
   (:require [malli.util :as mu]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :refer [email-re]]))
 
 (defn- name-encoder [v]
@@ -39,7 +40,7 @@
 
 (def id pos-int?)
 (def name [:string {:min 2}])
-(def email [:re {:error/message "invalid email"} email-re])
+(def email [:re {:error/message (N_ "invalid email")} email-re])
 (def address
   "The single address line every contact had before address1/address2/city.
 

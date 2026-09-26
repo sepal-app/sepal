@@ -9,6 +9,7 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -18,12 +19,12 @@
   [:and
    [:map {:closed true}
     form/AntiForgeryField
-    [:email [:re {:error/message "Invalid email address"}
+    [:email [:re {:error/message (N_ "Invalid email address")}
              #"^[^\s@]+@[^\s@]+\.[^\s@]+$"]]
-    [:password [:string {:min 8 :error/message "Password must be at least 8 characters"}]]
+    [:password [:string {:min 8 :error/message (N_ "Password must be at least 8 characters")}]]
     [:password_confirmation :string]
-    [:full_name [:string {:min 1 :error/message "Full name is required"}]]]
-   [:fn {:error/message "Passwords do not match"
+    [:full_name [:string {:min 1 :error/message (N_ "Full name is required")}]]]
+   [:fn {:error/message (N_ "Passwords do not match")
          :error/path [:password_confirmation]}
     (fn [{:keys [password password_confirmation]}]
       (= password password_confirmation))]])

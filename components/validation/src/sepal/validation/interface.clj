@@ -1,7 +1,8 @@
 (ns sepal.validation.interface
   (:require [malli.core :as m]
             [malli.transform :as mt]
-            [sepal.error.interface :as error.i]))
+            [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [N_ tr]]))
 
 (def form-transformer
   "Transformer for decoding and validating form params.
@@ -61,13 +62,16 @@
    Decodes form input with parse-date, rejects invalid dates.
    Accepts nil (for optional fields) or valid date strings."
   [:fn {:decode/form parse-date
-        :error/message "must be a valid date (YYYY-MM-DD)"}
+        :error/message (N_ "must be a valid date (YYYY-MM-DD)")}
    #(or (nil? %)
         (and (string? %)
              (not= % ::invalid-date)
              (re-matches #"^\d{4}-\d{2}-\d{2}$" %)))])
 
-(def future-date-message "Cannot be a future date")
+(defn future-date-message
+  "In the current locale, so call it when the error is built."
+  []
+  (tr "Cannot be a future date"))
 
 (defn future-date?
   "Whether an ISO date string falls after `today`, also an ISO date string.
@@ -86,4 +90,4 @@
     (into {}
           (for [field fields
                 :when (future-date? (get values field) today)]
-            [field [future-date-message]]))))
+            [field [(future-date-message)]]))))

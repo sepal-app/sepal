@@ -12,6 +12,7 @@
             [sepal.app.ui.page :as page]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.material.interface :as material.i]
             [sepal.propagation.interface :as propagation.i]
             [sepal.propagation.interface.activity :as propagation.activity]
@@ -43,7 +44,7 @@
 (defn- counts-message
   "The spec's own message, so the rule and its wording have one definition."
   []
-  (:error/message (second propagation.spec/counts-consistent)))
+  (tr (:error/message (second propagation.spec/counts-consistent))))
 
 (defn- counts-invalid? [{:keys [quantity-started quantity-succeeded]}]
   (and (some? quantity-started)

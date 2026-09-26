@@ -55,6 +55,7 @@
      ;; Get filter badges for UI
      (def badges (search.i/ast->filter-badges :material ast))"
   (:require [clojure.string :as str]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.search.compiler :as compiler]
             [sepal.search.parser :as parser]))
 
@@ -229,7 +230,7 @@
        (remove (fn [[_ v]] (#{:id :boolean} (:type v))))
        (map (fn [[k v]]
               (cond-> {:key (name k)
-                       :label (:label v)
+                       :label (tr (:label v))
                        :type (name (:type v))}
                 (:values v) (assoc :values (mapv name (:values v))))))
        (sort-by :label)))
@@ -262,7 +263,7 @@
             other-filters (remove #(= % f) filters)
             clear-q (unparse {:filters other-filters :terms terms
                               :excluded-terms excluded-terms})]
-        {:label (or (:label field-def) (str/capitalize field))
+        {:label (if-let [label (:label field-def)] (tr label) (str/capitalize field))
          :value (or (some->> values (str/join ", ")) value "")
          :negated (boolean negated)
          :clear-q clear-q}))))

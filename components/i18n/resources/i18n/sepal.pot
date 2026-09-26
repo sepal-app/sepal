@@ -154,7 +154,7 @@ msgid "Set up your account for %1"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
-#: bases/app/src/sepal/app/routes/settings/profile.clj:37
+#: bases/app/src/sepal/app/routes/settings/profile.clj:38
 msgid "Full name"
 msgstr ""
 
@@ -186,6 +186,7 @@ msgid "Account already activated. Please log in."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:96
+#: bases/app/src/sepal/app/routes/setup/admin.clj:27
 msgid "Passwords do not match"
 msgstr ""
 
@@ -209,7 +210,8 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/forgot_password.clj:21
 #: bases/app/src/sepal/app/routes/auth/login.clj:26
-#: bases/app/src/sepal/app/routes/settings/profile.clj:41
+#: bases/app/src/sepal/app/routes/settings/profile.clj:42
+#: components/contact/src/sepal/contact/interface/search.clj:18
 msgid "Email"
 msgstr ""
 
@@ -374,42 +376,50 @@ msgstr ""
 msgid "No propagations yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:17
+#: bases/app/src/sepal/app/routes/settings/profile.clj:18
 msgid "Language"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:20
+#: bases/app/src/sepal/app/routes/settings/profile.clj:21
 msgid ""
 "Browser default uses the language your browser asks for, or English if Sepal "
 "has no translation for it."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:25
+#: bases/app/src/sepal/app/routes/settings/profile.clj:26
 msgid "Browser default"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:50
+#: bases/app/src/sepal/app/routes/settings/profile.clj:51
 msgid "Save changes"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:57
+#: bases/app/src/sepal/app/routes/settings/profile.clj:58
 msgid "Logout"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:64
+#: bases/app/src/sepal/app/routes/settings/profile.clj:65
 msgid "Account"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:65
+#: bases/app/src/sepal/app/routes/settings/profile.clj:66
 msgid "Profile"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:93
+#: bases/app/src/sepal/app/routes/settings/profile.clj:76
+msgid "Choose a language from the list"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:94
 msgid "Profile updated successfully"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:95
+#: bases/app/src/sepal/app/routes/settings/profile.clj:96
 msgid "Failed to update profile"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/security.clj:53
+msgid "New passwords don't match"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:102
@@ -459,6 +469,26 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:118
 msgid ""
 "If you weren't expecting this invitation, you can safely ignore this email."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:22
+msgid "Invalid email address"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:24
+msgid "Password must be at least 8 characters"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/admin.clj:26
+msgid "Full name is required"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/organization.clj:19
+msgid "Organization name is required"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/regional.clj:22
+msgid "Please select a timezone"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/tag/delete.clj:18
@@ -634,6 +664,7 @@ msgid "Taxa"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:141
+#: components/taxon/src/sepal/taxon/interface/search.clj:111
 msgid "Accessions"
 msgstr ""
 
@@ -687,6 +718,7 @@ msgid "Clear the %1 filter"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/pages/list.clj:57
+#: bases/app/src/sepal/app/ui/query_builder.clj:135
 msgid "Search..."
 msgstr ""
 
@@ -713,6 +745,79 @@ msgstr ""
 msgid "Close panel"
 msgstr ""
 
+#: bases/app/src/sepal/app/ui/query_builder.clj:19
+msgid "Select field..."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:39
+msgid "Value..."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:45
+msgid "Select value..."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:57
+msgid "Add"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Contains"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Does not contain"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Equals"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:65
+msgid "Does not equal"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "After"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "On or after"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "Before"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:66
+msgid "On or before"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "Greater than"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "At least"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "Less than"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:67
+msgid "At most"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:87
+#: bases/app/src/sepal/app/ui/query_builder.clj:106
+msgid "Add filter"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/query_builder.clj:89
+msgid "Filter"
+msgstr ""
+
 #: bases/app/src/sepal/app/ui/resource_panel.clj:198
 msgid "Load %1 more"
 msgstr ""
@@ -732,6 +837,322 @@ msgstr ""
 #. i18n: Rows loaded out of the total, as in "25 of 1,284"
 #: bases/app/src/sepal/app/ui/table.clj:235
 msgid "%1 of %2"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:16
+#: components/location/src/sepal/location/interface/search.clj:13
+#: components/material/src/sepal/material/interface/search.clj:17
+#: components/observation/src/sepal/observation/interface/search.clj:37
+msgid "Code"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:20
+#: components/contact/src/sepal/contact/interface/search.clj:45
+#: components/location/src/sepal/location/interface/search.clj:27
+#: components/material/src/sepal/material/interface/search.clj:31
+#: components/observation/src/sepal/observation/interface/search.clj:84
+#: components/propagation/src/sepal/propagation/interface/search.clj:12
+#: components/taxon/src/sepal/taxon/interface/search.clj:27
+msgid "ID"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:25
+msgid "Provenance"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:29
+msgid "Private"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:36
+#: components/accession/src/sepal/accession/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:48
+#: components/material/src/sepal/material/interface/search.clj:55
+#: components/material/src/sepal/material/interface/search.clj:61
+#: components/propagation/src/sepal/propagation/interface/search.clj:62
+#: components/propagation/src/sepal/propagation/interface/search.clj:68
+msgid "Taxon"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:47
+msgid "Taxon Rank"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:53
+#: components/accession/src/sepal/accession/interface/search.clj:58
+msgid "Supplier"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:64
+#: components/accession/src/sepal/accession/interface/search.clj:70
+#: components/material/src/sepal/material/interface/search.clj:78
+#: components/observation/src/sepal/observation/interface/search.clj:43
+#: components/propagation/src/sepal/propagation/interface/search.clj:31
+#: components/propagation/src/sepal/propagation/interface/search.clj:36
+#: components/taxon/src/sepal/taxon/interface/search.clj:102
+msgid "Location"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:78
+#: components/location/src/sepal/location/interface/search.clj:57
+#: components/taxon/src/sepal/taxon/interface/search.clj:73
+msgid "Material Type"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:84
+#: components/location/src/sepal/location/interface/search.clj:63
+#: components/taxon/src/sepal/taxon/interface/search.clj:81
+msgid "Material Status"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:90
+#: components/material/src/sepal/material/interface/search.clj:84
+#: components/taxon/src/sepal/taxon/interface/search.clj:116
+msgid "Tag"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:98
+#: components/contact/src/sepal/contact/interface/search.clj:50
+#: components/location/src/sepal/location/interface/search.clj:69
+#: components/material/src/sepal/material/interface/search.clj:92
+#: components/propagation/src/sepal/propagation/interface/search.clj:90
+msgid "Created"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/search.clj:102
+#: components/contact/src/sepal/contact/interface/search.clj:54
+#: components/location/src/sepal/location/interface/search.clj:73
+#: components/material/src/sepal/material/interface/search.clj:96
+#: components/propagation/src/sepal/propagation/interface/search.clj:94
+msgid "Updated"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:13
+#: components/location/src/sepal/location/interface/search.clj:18
+#: components/taxon/src/sepal/taxon/interface/search.clj:13
+msgid "Name"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:23
+msgid "Business"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:29
+msgid "Address"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:33
+msgid "Address 1"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:37
+msgid "Address 2"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/search.clj:41
+msgid "City"
+msgstr ""
+
+#: components/contact/src/sepal/contact/interface/spec.clj:43
+#: components/user/src/sepal/user/interface/spec.clj:14
+msgid "invalid email"
+msgstr ""
+
+#: components/location/src/sepal/location/interface/search.clj:23
+msgid "Description"
+msgstr ""
+
+#: components/location/src/sepal/location/interface/search.clj:35
+msgid "Archived"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:38
+msgid "should be between %1 and %2"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:39
+msgid "should be at least %1"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:40
+msgid "should be at most %1"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:46
+#: components/malli/src/sepal/malli/core.clj:59
+msgid "should be a number"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:54
+msgid "unknown error"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:55
+msgid "missing required key"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:56
+msgid "invalid type"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:57
+msgid "disallowed key"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:58
+#: components/malli/src/sepal/malli/core.clj:71
+msgid "should be a string"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:60
+#: components/malli/src/sepal/malli/core.clj:61
+msgid "should be an integer"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:62
+msgid "should be a positive whole number"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:63
+msgid "should be zero or a positive whole number"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:64
+#: components/malli/src/sepal/malli/core.clj:66
+msgid "should be true or false"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:65
+msgid "is not in the expected format"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:67
+msgid "should be a uuid"
+msgstr ""
+
+#: components/malli/src/sepal/malli/core.clj:72
+msgid "should be %1 character"
+msgid_plural "should be %1 characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: components/malli/src/sepal/malli/core.clj:73
+msgid "should be at least %1 character"
+msgid_plural "should be at least %1 characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: components/malli/src/sepal/malli/core.clj:74
+msgid "should be at most %1 character"
+msgid_plural "should be at most %1 characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: components/malli/src/sepal/malli/core.clj:82
+msgid "should be one of: %1"
+msgstr ""
+
+#: components/material/src/sepal/material/interface/search.clj:22
+#: components/observation/src/sepal/observation/interface/search.clj:50
+#: components/propagation/src/sepal/propagation/interface/search.clj:23
+msgid "Type"
+msgstr ""
+
+#: components/material/src/sepal/material/interface/search.clj:27
+#: components/propagation/src/sepal/propagation/interface/search.clj:17
+msgid "Status"
+msgstr ""
+
+#: components/material/src/sepal/material/interface/search.clj:43
+#: components/material/src/sepal/material/interface/search.clj:47
+msgid "Accession"
+msgstr ""
+
+#: components/material/src/sepal/material/interface/search.clj:68
+#: components/taxon/src/sepal/taxon/interface/search.clj:88
+msgid "Location Code"
+msgstr ""
+
+#: components/material/src/sepal/material/interface/search.clj:73
+#: components/taxon/src/sepal/taxon/interface/search.clj:95
+msgid "Location Name"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:54
+msgid "Value"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:58
+msgid "Observed"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:62
+msgid "Observed by"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:69
+msgid "Overdue on"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:73
+msgid "Next check"
+msgstr ""
+
+#: components/observation/src/sepal/observation/interface/search.clj:80
+msgid "Subject"
+msgstr ""
+
+#: components/propagation/src/sepal/propagation/interface/search.clj:49
+#: components/propagation/src/sepal/propagation/interface/search.clj:53
+msgid "Parent accession"
+msgstr ""
+
+#: components/propagation/src/sepal/propagation/interface/search.clj:76
+msgid "Rootstock"
+msgstr ""
+
+#: components/propagation/src/sepal/propagation/interface/search.clj:82
+msgid "Propagated"
+msgstr ""
+
+#: components/propagation/src/sepal/propagation/interface/search.clj:86
+msgid "Succeeded"
+msgstr ""
+
+#: components/propagation/src/sepal/propagation/interface/spec.clj:52
+msgid ""
+"More succeeded than were started. Update the started count, or clear it if "
+"it was an estimate."
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:17
+msgid "Author"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:23
+msgid "Rank"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:45
+#: components/taxon/src/sepal/taxon/interface/search.clj:50
+msgid "Parent"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:66
+msgid "Parentage"
+msgstr ""
+
+#: components/taxon/src/sepal/taxon/interface/search.clj:135
+msgid "Synonym"
+msgstr ""
+
+#: components/validation/src/sepal/validation/interface.clj:65
+msgid "must be a valid date (YYYY-MM-DD)"
+msgstr ""
+
+#: components/validation/src/sepal/validation/interface.clj:74
+msgid "Cannot be a future date"
 msgstr ""
 
 #: components/database/resources/database/schema.sql

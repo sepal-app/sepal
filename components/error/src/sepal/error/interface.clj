@@ -1,7 +1,7 @@
 (ns sepal.error.interface
   (:refer-clojure :exclude [type])
   (:require [failjure.core :as f]
-            [malli.error :as me]))
+            [sepal.malli.interface :as malli.i]))
 
 (defrecord Failure [type message data]
   f/HasFailed
@@ -35,8 +35,11 @@
 (defn explain [err]
   (-> err data :explain))
 
-(defn humanize [err]
-  (-> err explain me/humanize))
+(defn humanize
+  "The field errors of a validation failure, translated into the current
+  locale."
+  [err]
+  (some-> err explain malli.i/humanize))
 
 (defn error?
   ([err] (instance? Failure err))

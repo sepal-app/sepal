@@ -33,7 +33,7 @@
   the garden's date, so a garden ahead of the server can record today."
   [observed-on today]
   (when (validation.i/future-date? observed-on today)
-    (error.i/error ::future-observed-on validation.i/future-date-message)))
+    (error.i/error ::future-observed-on (validation.i/future-date-message))))
 
 (defn- future-date-error
   "The OOB error swap for a rejected observed_on.
@@ -48,7 +48,7 @@
   [id-suffix]
   (http/validation-errors
     {(keyword (str "observed_on" (when id-suffix (str "-" id-suffix))))
-     [validation.i/future-date-message]}))
+     [(validation.i/future-date-message)]}))
 
 (defn- value-options-by-type
   "Every observation_value, grouped by type and shaped for the Value field's
