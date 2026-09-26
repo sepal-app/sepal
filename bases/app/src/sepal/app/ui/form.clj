@@ -15,12 +15,22 @@
   a textarea needs the modifier regardless. Two listeners because Alpine ANDs
   the modifiers on one — there is no way to say cmd-or-ctrl in a single
   directive. `requestSubmit` is what the Save button ends up calling too, so
-  both routes run native validation and go through HTMX the same way."
+  both routes run native validation and go through HTMX the same way.
+
+  One submission at a time, so a double-click cannot send a POST twice. HTMX
+  would queue a second request behind one in flight, and `hx-sync` makes it
+  drop it instead. A plain POST form ignores a repeat submit while
+  `submitting`, which lasts until the page is replaced or restored from the
+  back-forward cache."
   [attrs & children]
-  [:form (merge {:x-data true
+  [:form (merge {:x-data "{ submitting: false }"
                  :x-ref "form"
                  :class "grid gap-1"
                  :x-form-state {}
+                 :hx-sync "this:drop"
+                 :x-on:submit "submitting ? $event.preventDefault() : (submitting = true)"
+                 :x-on:htmx:after-request "submitting = false"
+                 :x-on:pageshow.window "submitting = false"
                  :x-on:keydown.enter.cmd.prevent "$el.requestSubmit()"
                  :x-on:keydown.enter.ctrl.prevent "$el.requestSubmit()"}
                 attrs)
@@ -214,7 +224,7 @@
    (submit-button {} children))
   ([attrs children]
    [:button (merge {:type "submit"
-                    :x-bind:disabled "!dirty || !valid"}
+                    :x-bind:disabled "!dirty || !valid || submitting"}
                    attrs)
     children]))
 
