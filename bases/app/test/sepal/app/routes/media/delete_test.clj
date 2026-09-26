@@ -2,7 +2,7 @@
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
-            [sepal.app.routes.media.detail :as media.detail]
+            [sepal.app.routes.media.delete :as media.delete]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
@@ -27,14 +27,14 @@
           "A media_link row must not outlive its media row"))))
 
 (deftest test-deleting-media-is-in-the-activity-log
-  (tf/testing "media.detail/delete!"
+  (tf/testing "media.delete/delete!"
     {[::user.i/factory :key/user] {:db *db*}
      [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user)}}
     (fn [{:keys [user media]}]
       (try
         ;; No S3 client: the object delete fails and is logged, and the row
         ;; and its event are already committed.
-        (media.detail/delete! *db* nil media (:user/id user))
+        (media.delete/delete! *db* nil media (:user/id user))
         (is (nil? (media.i/get-by-id *db* (:media/id media))))
         (let [[event] (jdbc.sql/find-by-keys *db* :activity {:type "media/deleted"
                                                              :resource_id (:media/id media)})]

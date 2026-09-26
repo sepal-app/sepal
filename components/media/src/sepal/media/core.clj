@@ -21,21 +21,76 @@
            (db.i/execute-one! db)
            (store.i/coerce spec/MediaLink)))
 
-(defn get-linked [db resource-type resource-id opts]
-  (let [opts-map (apply hash-map opts)]
-    (some->> {:select :m.*
-              :from [[:media :m]]
-              :join [[:media_link :ml]
-                     [:= :ml.media_id :m.id]]
-              :where [:and
-                      [:= :ml.resource_type resource-type]
-                      [:= :ml.resource_id resource-id]]}
-             (merge opts-map)
+(defn- linked-to [resource-type ids]
+  [:and [:= :ml.resource_type resource-type] [:in :ml.resource_id ids]])
+
+(defn- scope-clause
+  "Which links a Media tab shows. :direct is links to the record itself.
+  :below adds links to what sits under it: an accession's material, and for a
+  taxon every descendant taxon, their accessions and those accessions'
+  material. For a location, :below adds the material stored there."
+  [resource-type resource-id scope]
+  (let [direct [:and
+                [:= :ml.resource_type resource-type]
+                [:= :ml.resource_id resource-id]]]
+    (if (not= scope :below)
+      direct
+      (case resource-type
+        "accession"
+        [:or direct
+         (linked-to "material" {:select [:id] :from [:material]
+                                :where [:= :accession_id resource-id]})]
+
+        "taxon"
+        (let [descendants {:select [:id] :from [:descendant]}
+              accessions {:select [:id] :from [:accession]
+                          :where [:in :taxon_id descendants]}]
+          [:or
+           (linked-to "taxon" descendants)
+           (linked-to "accession" accessions)
+           (linked-to "material" {:select [:id] :from [:material]
+                                  :where [:in :accession_id accessions]})])
+
+        "location"
+        [:or direct
+         (linked-to "material" {:select [:id] :from [:material]
+                                :where [:= :location_id resource-id]})]
+
+        direct))))
+
+(defn get-linked
+  "Media linked to a record, newest first, each carrying the link it came
+  through as :media/link. See `scope-clause` for :scope."
+  [db resource-type resource-id opts]
+  (let [{:keys [scope] :as opts-map} (apply hash-map opts)
+        descendant-cte (when (and (= scope :below) (= resource-type "taxon"))
+                         {:with-recursive
+                          [[[:descendant {:columns [:id]}]
+                            {:union-all [{:select [:id] :from [:taxon]
+                                          :where [:= :id resource-id]}
+                                         {:select [:t.id] :from [[:taxon :t]]
+                                          :join [:descendant [:= :t.parent_id :descendant.id]]}]}]]})]
+    (some->> (merge descendant-cte
+                    {:select [:m.*
+                              [:ml.resource_type :link_resource_type]
+                              [:ml.resource_id :link_resource_id]]
+                     :from [[:media :m]]
+                     :join [[:media_link :ml]
+                            [:= :ml.media_id :m.id]]
+                     :where (scope-clause resource-type resource-id scope)
+                     :order-by [[:m.created_at :desc] [:m.id :desc]]}
+                    (dissoc opts-map :scope))
              (db.i/execute! db)
-             (mapv #(store.i/coerce spec/Media %)))))
+             (mapv (fn [row]
+                     (assoc (store.i/coerce spec/Media row)
+                            :media/link {:resource-type (:media-link/link-resource-type row)
+                                         :resource-id (:media-link/link-resource-id row)}))))))
 
 (defn create! [db data]
   (store.i/create! db :media data spec/CreateMedia spec/Media))
+
+(defn update! [db id data]
+  (store.i/update! db :media id data spec/UpdateMedia spec/Media))
 
 (defn delete! [db id]
   (jdbc.sql/delete! db :media {:id id}))

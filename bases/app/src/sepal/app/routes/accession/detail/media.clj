@@ -6,6 +6,7 @@
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.media.link-info :as link-info]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.media :as media.ui]
@@ -22,12 +23,13 @@
           :delete-url (z/url-for accession.routes/delete
                                  {:id (:accession/id accession)}))))
 
-(defn next-page-url [& {:keys [accession current-page]}]
+(defn next-page-url [& {:keys [accession current-page below?]}]
   (z/url-for accession.routes/detail-media
              {:id (:accession/id accession)}
-             {:page (+ 1 current-page)}))
+             (cond-> {:page (+ 1 current-page)}
+               below? (assoc :scope "below"))))
 
-(defn page-content [& {:keys [media page page-size accession taxon]}]
+(defn page-content [& {:keys [below? media page page-size accession taxon]}]
   (accession.shared/page
     :accession accession
     :taxon taxon
@@ -45,19 +47,24 @@
                                          :linkResourceType "accession"
                                          :linkResourceId (:accession/id accession)
                                          :trigger "#upload-button"})}]
+      (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
+                             :below? below?
+                             :label "Include media linked to this accession's material")
       (media.ui/media-list :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :accession accession
-                                                           :current-page page)))
+                                                           :current-page page
+                                                           :below? below?)))
       [:div {:id "upload-success-forms"
              :class "hidden"}]]]))
 
-(defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
+(defn render [& {:keys [below? page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (accession.shared/actions
                                       :accession accession
                                       :primary (media.ui/upload-button))
                 :content (pages.detail/page-content-with-panel
-                           :content (page-content :page page
+                           :content (page-content :below? below?
+                                                  :page page
                                                   :page-size page-size
                                                   :media media
                                                   :accession accession
@@ -79,19 +86,23 @@
 (def Params
   [:map
    [:page {:default 1} :int]
-   [:page-size {:default 10} :int]])
+   [:page-size {:default 10} :int]
+   [:scope {:optional true} [:enum "below"]]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db resource timezone]} context
-        {:keys [page page-size]} (params/decode Params query-params)
+  (let [{:keys [db material-separator resource timezone]} context
+        {:keys [page page-size scope]} (params/decode Params query-params)
+        below? (= "below" scope)
         offset (* page-size (- page 1))
         limit page-size
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         media (->> (media.i/get-linked db
                                        "accession"
                                        (:accession/id resource)
+                                       :scope (if below? :below :direct)
                                        :offset offset
                                        :limit limit)
+                   (link-info/with-via db material-separator "accession" (:accession/id resource))
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))]
 
     ;; TODO: if a media instance is unlinked then we need to remove it from the
@@ -101,11 +112,13 @@
       (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
                                                       (next-page-url :accession resource
-                                                                     :current-page page))
+                                                                     :current-page page
+                                                                     :below? below?))
                                      :page page)
           (html/render-partial))
       (let [panel-data (accession.panel/fetch-panel-data db resource)]
-        (render :media media
+        (render :below? below?
+                :media media
                 :page 1
                 :page-size page-size
                 :accession resource

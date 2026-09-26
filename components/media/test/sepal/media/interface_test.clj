@@ -2,9 +2,13 @@
   (:require [clojure.test :as test :refer :all]
             [integrant.core :as ig]
             [matcher-combinators.test :refer [match?]]
+            [next.jdbc.sql :as jdbc.sql]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db*
                                            default-system-fixture]]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
@@ -141,6 +145,55 @@
           ;; Clean up
           (media.i/unlink! db (:media/id media1))
           (media.i/unlink! db (:media/id media2)))))))
+
+(deftest test-get-linked-below
+  (let [db *db*]
+    (tf/testing "a genus, a species under it, an accession of the genus and its material"
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/genus] {:db db :rank :genus}
+       [::accession.i/factory :key/acc] {:db db :taxon (ig/ref :key/genus)}
+       [::location.i/factory :key/loc] {:db db}
+       [::material.i/factory :key/mat] {:db db
+                                        :accession (ig/ref :key/acc)
+                                        :location (ig/ref :key/loc)}
+       [::media.i/factory :key/on-genus] {:db db :user (ig/ref :key/user)}
+       [::media.i/factory :key/on-species] {:db db :user (ig/ref :key/user)}
+       [::media.i/factory :key/on-acc] {:db db :user (ig/ref :key/user)}
+       [::media.i/factory :key/on-mat] {:db db :user (ig/ref :key/user)}}
+      (fn [{:keys [genus acc loc mat on-genus on-species on-acc on-mat]}]
+        (let [species (taxon.i/create! db {:name "Belowia alba"
+                                           :rank :species
+                                           :parent-id (:taxon/id genus)})
+              links (fn [resource-type id & opts]
+                      (->> (apply media.i/get-linked db resource-type id opts)
+                           (map (juxt :media/id (comp :resource-type :media/link)))
+                           set))
+              all [on-genus on-species on-acc on-mat]]
+          (try
+            (media.i/link! db (:media/id on-genus) (:taxon/id genus) :taxon)
+            (media.i/link! db (:media/id on-species) (:taxon/id species) :taxon)
+            (media.i/link! db (:media/id on-acc) (:accession/id acc) :accession)
+            (media.i/link! db (:media/id on-mat) (:material/id mat) :material)
+            (is (= #{[(:media/id on-genus) "taxon"]}
+                   (links "taxon" (:taxon/id genus)))
+                "direct is only what is linked to the genus itself")
+            (is (= #{[(:media/id on-genus) "taxon"]
+                     [(:media/id on-species) "taxon"]
+                     [(:media/id on-acc) "accession"]
+                     [(:media/id on-mat) "material"]}
+                   (links "taxon" (:taxon/id genus) :scope :below))
+                "below reaches a child taxon, an accession and its material")
+            (is (= #{[(:media/id on-acc) "accession"]
+                     [(:media/id on-mat) "material"]}
+                   (links "accession" (:accession/id acc) :scope :below)))
+            (is (= #{[(:media/id on-mat) "material"]}
+                   (links "location" (:location/id loc) :scope :below)))
+            (is (= 2 (count (media.i/get-linked db "taxon" (:taxon/id genus)
+                                                :scope :below :limit 2)))
+                "and it pages")
+            (finally
+              (doseq [m all] (media.i/unlink! db (:media/id m)))
+              (jdbc.sql/delete! db :taxon {:id (:taxon/id species)}))))))))
 
 (deftest test-unlink-resource
   (let [db *db*]

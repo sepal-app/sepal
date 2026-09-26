@@ -38,6 +38,7 @@
                       "completed" "spl-badge--ok"
                       "updated" "spl-badge--info"
                       "deleted" "spl-badge--danger"
+                      "linked" "spl-badge--info"
                       "spl-badge--neutral")]
     [:span {:class (html/attr "spl-badge" badge-class)}
      action]))

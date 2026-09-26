@@ -37,7 +37,13 @@
     [:a {:href (z/url-for media.routes/detail {:id (:media/id item)})
          :class "inset-0 focus:outline-none"}
      [:img {:class "pointer-events-none h-full w-full object-cover group-hover:opacity-75"
-            :src (:thumbnail-url item)}]]]])
+            :src (:thumbnail-url item)}]]]
+   ;; Set only when the item is linked to something other than the record whose
+   ;; tab this is.
+   (when-let [{:keys [text url]} (:via item)]
+     [:p {:class "mt-1 truncate text-sm text-text-soft"}
+      "via "
+      (if url [:a {:href url :class "spl-link"} text] text)])])
 
 (defn media-list-items [& {:keys [media next-page-url]}]
   ;; Clamped, so a short final page still triggers from its first item rather
@@ -95,6 +101,27 @@
     (media-grid :media media :next-page-url next-page-url)
     (loading-indicator)))
 
+(defn scope-toggle
+  "A checkbox that widens a Media tab from media linked to this record to media
+  linked below it too. A GET form, so the choice is in the URL; boosted like the
+  tabs, so changing it swaps the content column."
+  [& {:keys [action below? label]}]
+  [:form {:method "get"
+          :action action
+          :class "mb-4"
+          :hx-boost "true"
+          :hx-select ".spl-content"
+          :hx-target ".spl-content"
+          :hx-swap "outerHTML"}
+   [:label {:class "flex items-center gap-2 text-sm cursor-pointer"}
+    [:input (cond-> {:type "checkbox"
+                     :class "spl-checkbox"
+                     :name "scope"
+                     :value "below"
+                     :onchange "this.form.requestSubmit()"}
+              below? (assoc :checked true))]
+    [:span label]]])
+
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,
   so there is one per page.
@@ -106,6 +133,15 @@
             :type "button"
             :class "spl-btn spl-btn--primary"}
    "Upload"])
+
+(defn format-size
+  "A byte count as KB or MB, the way a file browser shows it."
+  [bytes]
+  (when bytes
+    (cond
+      (< bytes 1024) (str bytes " B")
+      (< bytes (* 1024 1024)) (format "%.0f KB" (/ bytes 1024.0))
+      :else (format "%.1f MB" (/ bytes 1024.0 1024.0)))))
 
 (defn thumbnail-url
   "Generate a thumbnail URL for a media item."

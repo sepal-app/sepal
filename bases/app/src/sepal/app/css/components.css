@@ -1604,22 +1604,29 @@
   color: transparent;
 }
 
-/* The media detail image. `.preview` was in the markup with no rule behind it
- * in any stylesheet, so the image rendered at its intrinsic size. */
-.preview {
-  display: block;
-  max-width: 100%;
-  height: auto;
+/* The media detail image: centred on a neutral stage, never taller than most
+ * of the viewport, so a portrait photo does not push the form off screen. */
+.spl-media-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
   border-radius: var(--radius-card);
   background: var(--color-surface-alt);
 }
-
-/* A scrim for overlays that are not a <dialog> — the media zoom view. */
-.spl-scrim-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgb(18 33 30 / .75);
+.spl-media-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  cursor: zoom-in;
 }
+
+/* The zoom view is a .spl-modal sized to the image rather than a form. */
+.spl-modal--media { max-width: min(96vw, 1800px); width: auto; }
+.spl-modal--media img { display: block; max-width: 100%; max-height: 80vh; margin: 0 auto; }
 
 .spl-modal-box {
   position: relative;

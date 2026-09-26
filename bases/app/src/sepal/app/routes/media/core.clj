@@ -1,5 +1,6 @@
 (ns sepal.app.routes.media.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.media.delete :as delete]
             [sepal.app.routes.media.detail :as detail]
             [sepal.app.routes.media.detail.link :as link]
             [sepal.app.routes.media.index :as index]
@@ -25,11 +26,16 @@
    ["/:id" {:middleware [[middleware/resource-loader media-loader]]
             :parameters {:path {:id nat-int?}}
             :conflicting true}
+    ;; A reader sees the page with its actions hidden; saving needs an editor.
     ["/"
      {:name media.routes/detail
-      :middleware [[middleware/require-editor-or-admin]]
       :get #'detail/handler
-      :delete #'detail/handler}]
+      :post {:middleware [[middleware/require-editor-or-admin]]
+             :handler #'detail/handler}}]
+    ["/delete/" {:name media.routes/delete
+                 :middleware [[middleware/require-editor-or-admin]]
+                 :get #'delete/handler
+                 :post #'delete/handler}]
     ["/link/" {:name media.routes/detail-link
                :middleware [[middleware/require-editor-or-admin]]
                :handler #'link/handler}]

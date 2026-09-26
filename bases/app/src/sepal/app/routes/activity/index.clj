@@ -386,6 +386,23 @@
 (defmethod activity-data media.activity/deleted [activity]
   (media-data activity))
 
+(defmethod activity-data media.activity/updated [activity]
+  (media-data activity))
+
+(defn- media-link-data
+  "Named like any media event, with the linked record in its context. The
+  record's name comes off the payload, so it reads the same once it is gone."
+  [activity preposition]
+  (let [text (get-in activity [:activity/data :link-text])]
+    (cond-> (media-data activity)
+      text (assoc :context (str "Media • " preposition " " text)))))
+
+(defmethod activity-data media.activity/linked [activity]
+  (media-link-data activity "linked to"))
+
+(defmethod activity-data media.activity/unlinked [activity]
+  (media-link-data activity "unlinked from"))
+
 ;;; Grouping logic
 
 (defn group-consecutive-by-user

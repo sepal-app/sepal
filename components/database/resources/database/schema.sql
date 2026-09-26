@@ -309,6 +309,7 @@ CREATE TABLE "media_link" (
   updated_at text not null default (datetime('now'))
 ) strict;
 CREATE INDEX media_link_media_id_idx on media_link (media_id);
+CREATE INDEX media_link_resource_idx ON media_link (resource_type, resource_id);
 CREATE INDEX media_link_resource_id_resource_type_idx on media_link (resource_id, resource_type);
 CREATE TRIGGER trigger_media_link_updated_at after update on media_link
 begin
@@ -664,3 +665,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920130000', '2026-09-21 13:44:07');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924120000', '2026-09-24 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924130000', '2026-09-24 13:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260926120000', '2026-09-26 12:00:00');

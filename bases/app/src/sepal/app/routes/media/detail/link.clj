@@ -3,9 +3,9 @@
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.json :as json]
-            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
+            [sepal.app.routes.media.link-info :as link-info]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.accession-combobox :as accession-combobox]
@@ -15,6 +15,7 @@
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.media.interface :as media.i]
+            [sepal.media.interface.activity :as media.activity]
             [zodiac.core :as z]))
 
 (def resource-types
@@ -73,7 +74,7 @@
 
 (defn media-link-form [& {:keys [media link link-text]}]
   (form/form
-    {:class "flex flex-row gap-2 items-center"
+    {:class "flex flex-col gap-2"
      :hx-post (z/url-for media.routes/detail-link {:id (:media/id media)})
      :hx-target "#media-link-root"}
     [(form/anti-forgery-field)
@@ -92,7 +93,7 @@
                             [:option {:value  (:value rt)}
                              (:label rt)])]])
      [:div {:x-show "resourceType"
-            :class "flex flex-row gap-2 items-end flex-grow"}
+            :class "flex flex-col gap-2"}
       (form/field :label "Resource"
                   :name "resource-id"
                   ;; A seq, not `[:<>]`. Chassis has no fragment element, so
@@ -124,81 +125,12 @@
                                                        link-text))]))
 
       ;; Cancel then Save, the order every other form in the app uses.
-      [:button {:type "button"
-                :class "spl-btn spl-btn--sm mb-4"
-                :x-on:click "editLink=false"}
-       "Cancel"]
-      (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary mb-4"} "Save")]]))
-
-(defmulti link-text
-  (fn [_db link _separator]
-    (:media-link/resource-type link)))
-
-;; A `media_link` row carrying a resource type nothing here recognises should
-;; degrade to showing what is stored, not throw. Nothing the UI can write today
-;; produces one — `resource-types` is a fixed list — but the database is not.
-(defmethod link-text :default
-  [_db link _separator]
-  (:media-link/resource-type link))
-
-(defmethod link-text "accession"
-  [db link _separator]
-  (->> {:select [[[:concat :a.code " (" :t.name ")"] :text]]
-        :from [[:media-link :ml]]
-        :join [[:accession :a]
-               [:= :a.id (:media-link/resource-id link)]
-               [:taxon :t]
-               [:= :t.id :a.taxon-id]]
-        :where [:= :ml.id (:media-link/id link)]}
-       (db.i/execute-one! db)
-       :text))
-
-(defmethod link-text "location"
-  [db link _separator]
-  (->> {:select [[[:concat :l.name " (" :l.code ")"] :text]]
-        :from [[:media-link :ml]]
-        :join [[:location :l]
-               [:= :l.id (:media-link/resource-id link)]]
-        :where [:= :ml.id (:media-link/id link)]}
-       (db.i/execute-one! db)
-       :text))
-
-(defmethod link-text "material"
-  [db link separator]
-  (->> {:select [[[:concat :a.code (str separator) :m.code " (" :t.name ")"] :text]]
-        :from [[:media-link :ml]]
-        :join [[:material :m]
-               [:= :m.id (:media-link/resource-id link)]
-               [:accession :a]
-               [:= :a.id :m.accession_id]
-               [:taxon :t]
-               [:= :t.id :a.taxon-id]]
-        :where [:= :ml.id (:media-link/id link)]}
-       (db.i/execute-one! db)
-       :text))
-
-(defmethod link-text "taxon"
-  [db link _separator]
-  (->> {:select [[[:concat  :t.name] :text]]
-        :from [[:media-link :ml]]
-        :join [[:taxon :t]
-               [:= :t.id (:media-link/resource-id link)]]
-        :where [:= :ml.id (:media-link/id link)]}
-       (db.i/execute-one! db)
-       :text))
-
-(defn link-info
-  "The display text and destination for a link, as data rather than markup. An
-  unrecognised resource type yields no URL — the chip renders as text."
-  [& {:keys [db link separator]}]
-  (let [url (case (:media-link/resource-type link)
-              "accession" (z/url-for accession.routes/detail {:id (:media-link/resource-id link)})
-              "location" (z/url-for location.routes/detail {:id (:media-link/resource-id link)})
-              "material" (z/url-for material.routes/detail {:id (:media-link/resource-id link)})
-              "taxon" (z/url-for taxon.routes/detail {:id (:media-link/resource-id link)})
-              nil)]
-    {:text (link-text db link separator)
-     :url url}))
+      [:div {:class "flex justify-end gap-2"}
+       [:button {:type "button"
+                 :class "spl-btn spl-btn--sm"
+                 :x-on:click "editLink=false"}
+        "Cancel"]
+       (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary"} "Save")]]]))
 
 (defn link-chip
   "The link rendered as one removable chip. A chip with an x, not a tag row: a
@@ -247,32 +179,45 @@
                          :media media)]]
       (html/render-partial)))
 
-(defn handler [& {:keys [::z/context params request-method] :as _request}]
-  ;; TODO: create an activity
+(defn- link!
+  "Link the media and record it, in one transaction. Returns the link, or the
+  error from `media.i/link!`."
+  [db separator media created-by resource-id resource-type]
+  (db.i/with-transaction [tx db]
+    (let [link (media.i/link! tx (:media/id media) resource-id resource-type)]
+      (when-not (error.i/error? link)
+        (media.activity/create-link! tx media.activity/linked created-by media link
+                                     (:text (link-info/link-info tx link separator))))
+      link)))
+
+(defn- unlink!
+  "Remove the media's link and record what it named, in one transaction."
+  [db separator media created-by]
+  (db.i/with-transaction [tx db]
+    (when-let [link (media.i/get-link tx (:media/id media))]
+      (let [text (:text (link-info/link-info tx link separator))]
+        (media.i/unlink! tx (:media/id media))
+        (media.activity/create-link! tx media.activity/unlinked created-by media link text)))))
+
+(defn handler [& {:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db material-separator resource]} context]
     (case request-method
       :post
-      (let [{:keys [resource-id resource-type]} params
-            result (media.i/link! db (:media/id resource) resource-id resource-type)]
+      (let [{:strs [resource-id resource-type]} form-params
+            result (link! db material-separator resource (:user/id viewer)
+                          resource-id resource-type)]
         (if-not (error.i/error? result)
           (render :link result
-                  :link-info (link-info :db db :link result :separator material-separator)
+                  :link-info (link-info/link-info db result material-separator)
                   :media resource)
           ;; TODO: render an error
           (flash/error {} "Error: Could not link resource")))
       :delete
-      (let [result (media.i/unlink! db (:media/id resource))]
-        (if-not (error.i/error? result)
-          (render :media resource)
-          ;; TODO: render an error
-          (flash/error {} "Error: Could not unlink resource")))
+      (do (unlink! db material-separator resource (:user/id viewer))
+          (render :media resource))
 
       :get
-      ;; The widget renders for media with or without a link. link-info runs a
-      ;; query per link type, so it is only computed when there is one.
-      (let [link (media.i/get-link db (:media/id resource))
-            link-info (when link
-                        (link-info :db db :link link :separator material-separator))]
-        (render :link-info link-info
+      (let [link (media.i/get-link db (:media/id resource))]
+        (render :link-info (link-info/link-info db link material-separator)
                 :link link
                 :media resource)))))

@@ -18,7 +18,8 @@
    [:media/description [:maybe description]]
    [:media/size-in-bytes size-in-bytes]
    [:media/media-type media-type]
-   [:media/created-by pos-int?]])
+   [:media/created-by pos-int?]
+   [:media/created-at {:optional true} :string]])
 
 (def CreateMedia
   [:map {:closed true}
@@ -29,6 +30,11 @@
    [:size-in-bytes size-in-bytes]
    [:media-type media-type]
    [:created-by pos-int?]])
+
+(def UpdateMedia
+  [:map {:closed true}
+   [:title {:optional true} [:maybe title]]
+   [:description {:optional true} [:maybe description]]])
 
 (def MediaLink
   [:map {:closed true}

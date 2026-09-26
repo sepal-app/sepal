@@ -14,6 +14,11 @@
 (defn create! [db data]
   (core/create! db data))
 
+(defn update!
+  "Update a media item's title and description."
+  [db id data]
+  (core/update! db id data))
+
 (defn link! [db id resource-id resource-type]
   (core/link! db id resource-id resource-type))
 
