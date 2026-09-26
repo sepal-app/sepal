@@ -3,13 +3,15 @@
    
    Note: Full integration tests require S3 and would be expensive.
    These tests focus on the image service functionality."
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.app.routes.media.transform :as transform]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*app* *db* default-system-fixture]]
+            [sepal.aws-s3.interface :as s3.i]
             [sepal.error.interface :as error.i]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.media.interface :as media.i]
@@ -17,7 +19,7 @@
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z])
   (:import [java.awt.image BufferedImage]
-           [java.io File]
+           [java.io ByteArrayInputStream File]
            [java.nio.file Files]
            [java.nio.file.attribute FileAttribute]
            [javax.imageio ImageIO]))
@@ -108,3 +110,67 @@
                 "the served image is the requested height, not the source's 900"))
           (finally
             (.delete src)))))))
+
+(defn- transform-context [media]
+  (let [cache-dir (str (Files/createTempDirectory "sepal-cache" (into-array FileAttribute [])))]
+    {:media-key-prefix "media/"
+     :media-upload-bucket "sepal-test-media"
+     :s3-client nil
+     :media-transform-service {:cache-ds (media-transform.i/init-cache-db!
+                                           (str (File. cache-dir "cache.db")))
+                               :cache-dir cache-dir
+                               :max-cache-size-bytes (* 10 1024 1024)}
+     :resource media}))
+
+(deftest test-a-cached-transform-does-not-download-the-original
+  (tf/testing "the second request for the same size is served from the cache
+  without going to S3, and the browser may cache it"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/png"
+                                     :s3-key "media/cached.png"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [downloads (atom 0)
+            context (transform-context media)
+            request #(transform/handler ::z/context context
+                                        :query-params {"w" "100" "h" "100"})]
+        (with-redefs-fn {#'transform/download-from-s3
+                         (fn [_client _bucket _key]
+                           (swap! downloads inc)
+                           (let [f (File/createTempFile "sepal-src-" ".png")]
+                             (ImageIO/write (BufferedImage. 400 400 BufferedImage/TYPE_INT_RGB)
+                                            "png" f)
+                             f))}
+          (fn []
+            (let [first-resp (request)
+                  second-resp (request)]
+              (is (= 200 (:status first-resp) (:status second-resp)))
+              (is (= 1 @downloads) "only the miss downloads the original")
+              (is (str/includes? (get-in second-resp [:headers "Cache-Control"]) "max-age")))))))))
+
+(deftest test-an-original-is-streamed-from-s3
+  (tf/testing "a request with no transform streams the original rather than
+  copying it to a temp file"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/png"
+                                     :s3-key "media/original.png"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [bytes (.getBytes "not really a png")
+            resp (with-redefs-fn {#'s3.i/get-object-stream
+                                  (fn [_client _bucket _key]
+                                    {:stream (ByteArrayInputStream. bytes)
+                                     :content-length (alength bytes)})
+                                  #'transform/download-from-s3
+                                  (fn [& _] (throw (ex-info "no temp copy" {})))}
+                   (fn []
+                     (transform/handler ::z/context (transform-context media)
+                                        :query-params {"dl" "original.png"})))]
+        (is (= 200 (:status resp)))
+        (is (= "image/png" (get-in resp [:headers "Content-Type"])))
+        (is (= (str (alength bytes)) (get-in resp [:headers "Content-Length"])))
+        (is (= "not really a png" (slurp (:body resp))))))))

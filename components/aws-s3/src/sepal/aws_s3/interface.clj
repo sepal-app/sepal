@@ -21,6 +21,12 @@
 (defn delete-object [client bucket key]
   (core/delete-object client bucket key))
 
+(defn get-object-stream
+  "An object's body as an InputStream, as {:stream :content-length}. The caller
+   closes the stream; a ring response body is closed once it is written."
+  [client bucket key]
+  (core/get-object-stream client bucket key))
+
 (defn get-object
   "Download an object from S3 to a local file.
    Returns the destination path on success."

@@ -101,7 +101,7 @@
   (testing "get-or-transform creates cached file on miss"
     (let [source (create-test-image (io/file *temp-dir* "source.jpg") 400 300)
           result (media-transform.i/get-or-transform *cache-ds* *temp-dir*
-                                                     1 source
+                                                     1 "jpg" (constantly source)
                                                      {:width 100 :height 100})]
       (is (false? (:hit? result)) "Should be a cache miss")
       (is (.exists (io/file (:path result))) "Cached file should exist"))))
@@ -110,10 +110,13 @@
   (testing "get-or-transform returns cached file on hit"
     (let [source (create-test-image (io/file *temp-dir* "source.jpg") 400 300)
           opts {:width 100 :height 100}
-          result1 (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 source opts)
-          result2 (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 source opts)]
+          fetches (atom 0)
+          fetch (fn [] (swap! fetches inc) source)
+          result1 (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 "jpg" fetch opts)
+          result2 (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 "jpg" fetch opts)]
       (is (false? (:hit? result1)) "First call should be a cache miss")
       (is (true? (:hit? result2)) "Second call should be a cache hit")
+      (is (= 1 @fetches) "a hit does not fetch the original again")
       (is (= (:path result1) (:path result2)) "Both should return same path"))))
 
 (deftest test-evict-lru
@@ -122,7 +125,7 @@
       ;; Create several cached transforms
       (doseq [i (range 5)]
         (media-transform.i/get-or-transform *cache-ds* *temp-dir*
-                                            i source
+                                            i "jpg" (constantly source)
                                             {:width (* 100 (inc i)) :height 100})
         ;; Small delay to ensure different timestamps
         (Thread/sleep 10))
@@ -133,7 +136,9 @@
             evicted (media-transform.i/evict-lru! *cache-ds* *temp-dir* max-size)]
         (is (pos? evicted) "Should have evicted some entries")
         (is (<= (cache/total-size *cache-ds*) max-size)
-            "Cache size should be under max")))))
+            "Cache size should be under max")
+        (is (some? (cache/get-entry *cache-ds* (cache/cache-key 4 {:width 500 :height 100})))
+            "it stops once the cache fits, so the newest entry is kept")))))
 
 (deftest test-image-content-type
   (testing "image-content-type? correctly identifies image types"

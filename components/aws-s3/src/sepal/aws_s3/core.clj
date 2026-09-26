@@ -113,6 +113,18 @@
                 (.build))]
     (.deleteObject client req)))
 
+(defn get-object-stream
+  "An object's body as an InputStream, with its length. The caller closes the
+  stream."
+  [client bucket key]
+  (let [req (-> (GetObjectRequest/builder)
+                (.bucket bucket)
+                (.key key)
+                (.build))
+        stream (.getObject ^S3Client client ^GetObjectRequest req)]
+    {:stream stream
+     :content-length (.contentLength (.response stream))}))
+
 (defn get-object
   "Download an object from S3 to a local file.
    Returns the destination path on success."

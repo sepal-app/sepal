@@ -50,14 +50,31 @@
     (s3.i/get-object s3-client bucket s3-key temp-file)
     temp-file))
 
-(defn- serve-file
-  "Create a ring response serving the given file."
-  [^File file download-filename]
-  (cond-> (-> (response/file-response (.getPath file))
-              (response/content-type (content-type-for-file file)))
+;; A media item's file never changes once uploaded, so a response for one id
+;; and one set of params stays correct for good. Private: it is behind login.
+(def ^:private cache-control "private, max-age=31536000, immutable")
+
+(defn- with-headers [response download-filename]
+  (cond-> (response/header response "Cache-Control" cache-control)
     download-filename
     (response/header "Content-Disposition"
                      (str "attachment; filename=\"" download-filename "\""))))
+
+(defn- serve-file
+  "Create a ring response serving the given file."
+  [^File file download-filename]
+  (some-> (response/file-response (.getPath file))
+          (response/content-type (content-type-for-file file))
+          (with-headers download-filename)))
+
+(defn- serve-original
+  "Stream the original from S3 rather than copying it to disk first."
+  [s3-client bucket s3-key media-type download-filename]
+  (let [{:keys [stream content-length]} (s3.i/get-object-stream s3-client bucket s3-key)]
+    (-> (response/response stream)
+        (response/content-type (or media-type (content-type-for-file s3-key)))
+        (cond-> content-length (response/header "Content-Length" (str content-length)))
+        (with-headers download-filename))))
 
 (defn- serve-icon
   "Serve a file-type icon for non-image media."
@@ -102,7 +119,7 @@
       (f/attempt-all
         [data (validation.i/validate-form-values Params query-params)]
         (let [{:keys [s3-client media-upload-bucket media-transform-service]} context
-              {:keys [cache-ds cache-dir]} media-transform-service
+              {:keys [cache-ds cache-dir max-cache-size-bytes]} media-transform-service
               {:keys [w h fit q fmt dl]} data
               s3-key (:media/s3-key resource)]
           (if-not (media-transform.i/image-content-type? (:media/media-type resource))
@@ -125,23 +142,26 @@
                   ;; Check if we need to transform or just serve original
                   needs-transform? (or width height format-kw quality)]
               (if needs-transform?
-                ;; Generate/fetch cached transform
-                (let [media-id (:media/id resource)
-                      ;; Download original from S3 to temp file
-                      temp-file (download-from-s3 s3-client media-upload-bucket s3-key)
-                      {:keys [path]} (try
-                                       (media-transform.i/get-or-transform cache-ds cache-dir
-                                                                           media-id temp-file opts)
-                                       (finally
-                                         ;; Clean up temp file
-                                         (.delete temp-file)))]
+                ;; The original is downloaded only on a cache miss.
+                (let [temp-file (volatile! nil)
+                      fetch (fn []
+                              (vreset! temp-file
+                                       (download-from-s3 s3-client media-upload-bucket s3-key)))
+                      {:keys [path hit?]}
+                      (try
+                        (media-transform.i/get-or-transform cache-ds cache-dir
+                                                            (:media/id resource)
+                                                            (or (file-extension s3-key) "jpg")
+                                                            fetch
+                                                            opts)
+                        (finally
+                          (some-> ^File @temp-file .delete)))]
+                  (when (and (not hit?) max-cache-size-bytes)
+                    (media-transform.i/evict-lru! cache-ds cache-dir max-cache-size-bytes))
                   (serve-file (io/file path) dl))
 
-                ;; No transform needed - serve original directly from S3
-                (let [temp-file (download-from-s3 s3-client media-upload-bucket s3-key)]
-                  ;; Note: temp-file won't be deleted immediately, but that's ok for downloads
-                  ;; TODO: Consider streaming directly from S3 for large files
-                  (serve-file temp-file dl))))))
+                (serve-original s3-client media-upload-bucket s3-key
+                                (:media/media-type resource) dl)))))
         (f/when-failed [e]
           (log/warn e "Rejecting a transform request with invalid parameters")
           (http/bad-request "Invalid transform parameters"))))))

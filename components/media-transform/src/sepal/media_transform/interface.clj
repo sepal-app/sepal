@@ -36,35 +36,29 @@
 
 (defn get-or-transform
   "Get cached transform or generate and cache it.
-   
-   Args:
-   - cache-ds   - Cache database datasource
-   - cache-dir  - Cache directory path
-   - media-id   - Media ID
-   - source-path - Path to source image
-   - opts       - Transform options (same as transform)
-   
-   Returns {:path \"...\" :hit? true/false}"
-  [cache-ds cache-dir media-id source-path opts]
-  (let [hash (cache/cache-key media-id opts)
-        ;; Determine output extension
-        out-format (or (:format opts) :original)
-        ext (if (= out-format :original)
-              (-> source-path str (subs (inc (.lastIndexOf (str source-path) "."))))
-              (name out-format))
-        cached-path (cache/cache-path cache-dir hash ext)]
 
-    ;; Check if cached version exists
+   Args:
+   - cache-ds     - Cache database datasource
+   - cache-dir    - Cache directory path
+   - media-id     - Media ID
+   - source-ext   - The original's extension, used when :format is :original
+   - fetch-source - (fn []) returning a path to the original. Called only on a
+                    miss, so a hit costs no download.
+   - opts         - Transform options (same as transform)
+
+   Returns {:path \"...\" :hit? true/false}"
+  [cache-ds cache-dir media-id source-ext fetch-source opts]
+  (let [hash (cache/cache-key media-id opts)
+        out-format (or (:format opts) :original)
+        ext (if (= out-format :original) source-ext (name out-format))
+        cached-path (cache/cache-path cache-dir hash ext)]
     (if (and (.exists (io/file cached-path))
              (cache/get-entry cache-ds hash))
-      ;; Cache hit - update access time
       (do
         (cache/touch! cache-ds hash)
         {:path (str cached-path) :hit? true})
-
-      ;; Cache miss - generate
       (do
-        (core/transform source-path cached-path opts)
+        (core/transform (fetch-source) cached-path opts)
         (let [size (.length (io/file cached-path))]
           (cache/put! cache-ds {:hash hash
                                 :media-id media-id

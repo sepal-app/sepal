@@ -99,24 +99,29 @@
   "Evict oldest entries until cache is under max-size-bytes.
    Returns number of entries evicted."
   [ds cache-dir max-size-bytes]
-  (loop [evicted 0]
-    (let [current-size (total-size ds)]
-      (if (<= current-size max-size-bytes)
-        evicted
-        ;; Get batch of oldest entries
-        (let [entries (oldest-entries ds 100)]
-          (if (empty? entries)
-            evicted
-            (do
-              (doseq [{:keys [hash]} entries]
-                ;; Delete file (try both extensions)
-                (doseq [ext ["jpg" "png" "gif" "bmp"]]
-                  (let [f (cache-path cache-dir hash ext)]
-                    (when (.exists f)
-                      (.delete f))))
-                ;; Delete db entry
-                (delete! ds hash))
-              (recur (+ evicted (count entries))))))))))
+  ;; One entry at a time within each batch, stopping as soon as the cache
+  ;; fits, so a small cache keeps its newest entries.
+  (loop [evicted 0
+         size (total-size ds)]
+    (if (<= size max-size-bytes)
+      evicted
+      (let [entries (oldest-entries ds 100)]
+        (if (empty? entries)
+          evicted
+          (let [[evicted size]
+                (reduce (fn [[evicted size] {:keys [hash size-bytes]}]
+                          (if (<= size max-size-bytes)
+                            (reduced [evicted size])
+                            (do
+                              (doseq [ext ["jpg" "jpeg" "png" "gif" "bmp"]]
+                                (let [f (cache-path cache-dir hash ext)]
+                                  (when (.exists f)
+                                    (.delete f))))
+                              (delete! ds hash)
+                              [(inc evicted) (- size (or size-bytes 0))])))
+                        [evicted size]
+                        entries)]
+            (recur evicted size)))))))
 
 (defn clear-all!
   "Clear all cache entries and files."
