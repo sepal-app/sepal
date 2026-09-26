@@ -109,7 +109,10 @@ export default (el, directive, { cleanup, evaluate }) => {
         const onDrop = (e: DragEvent) => {
             e.preventDefault()
             dropTarget.classList.remove("spl-drop-active")
-            if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files)
+            if (e.dataTransfer?.files?.length) {
+                addFiles(e.dataTransfer.files)
+                uppy.getPlugin("Dashboard").openModal()
+            }
         }
         dropTarget.addEventListener("dragover", onDragOver)
         dropTarget.addEventListener("dragleave", onDragLeave)
