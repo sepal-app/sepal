@@ -3,6 +3,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.spec :as spec]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn steps-indicator
@@ -26,10 +27,10 @@
      (if back-url
        [:a {:href back-url
             :class "spl-btn spl-btn--ghost"}
-        "← Back"]
+        (tr "← Back")]
        [:div]) ; Empty div for spacing
      (case next-button
-       :default [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Next →"]
+       :default [:button {:type "submit" :class "spl-btn spl-btn--primary"} (tr "Next →")]
        (nil false) nil  ; Explicitly hide button
        next-button)]]])
 
@@ -41,7 +42,7 @@
     [:meta {:charset "utf-8"}]
     [:meta {:http-equiv "x-ua-compatible" :content "ie=edge"}]
 
-    [:title "Sepal Setup"]
+    [:title (tr "Sepal Setup")]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1"}]
     [:style "[x-cloak] {display: none !important;}"]
     [:link {:rel "stylesheet" :href (html/static-url "app/css/main.css")}]
@@ -55,7 +56,7 @@
       [:div {:class "flex-1"}
        [:a {:href (z/url-for setup.routes/index)
             :class "spl-btn spl-btn--ghost text-xl"}
-        "🌱 Sepal Setup"]]]
+        (tr "🌱 Sepal Setup")]]]
 
      ;; Main content
      [:main {:class "container mx-auto px-4 py-8"}

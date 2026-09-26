@@ -7,6 +7,7 @@
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
@@ -32,7 +33,7 @@
   [& {:keys [value errors]}]
   (combobox/combobox
     :name "timezone"
-    :label "Timezone"
+    :label (tr "Timezone")
     :errors errors
     ;; Four hundred names that never change, so they travel with the page and
     ;; the field filters them here. No request, and no minimum before it will
@@ -51,71 +52,71 @@
 
     [:div {:class "space-y-8"}
      [:div
-      [:h3 {:class "text-lg font-medium mb-4"} "Organization Identity"]
-      (form/input-field :label "Long name"
+      [:h3 {:class "text-lg font-medium mb-4"} (tr "Organization Identity")]
+      (form/input-field :label (tr "Long name")
                         :name "long_name"
                         :value (:long_name values)
                         :errors (:long_name errors))
-      (form/input-field :label "Short name"
+      (form/input-field :label (tr "Short name")
                         :name "short_name"
                         :value (:short_name values)
                         :errors (:short_name errors))
-      (form/input-field :label "Abbreviation"
+      (form/input-field :label (tr "Abbreviation")
                         :name "abbreviation"
                         :value (:abbreviation values)
                         :errors (:abbreviation errors))]
 
      [:div
-      [:h3 {:class "text-lg font-medium mb-4"} "Contact Information"]
-      (form/input-field :label "Email"
+      [:h3 {:class "text-lg font-medium mb-4"} (tr "Contact Information")]
+      (form/input-field :label (tr "Email")
                         :name "email"
                         :type "email"
                         :value (:email values)
                         :errors (:email errors))
-      (form/input-field :label "Phone"
+      (form/input-field :label (tr "Phone")
                         :name "phone"
                         :value (:phone values)
                         :errors (:phone errors))
-      (form/input-field :label "Website"
+      (form/input-field :label (tr "Website")
                         :name "website"
                         :type "url"
                         :value (:website values)
                         :errors (:website errors))]
 
      [:div
-      [:h3 {:class "text-lg font-medium mb-4"} "Address"]
-      (form/input-field :label "Street address"
+      [:h3 {:class "text-lg font-medium mb-4"} (tr "Address")]
+      (form/input-field :label (tr "Street address")
                         :name "address_street"
                         :value (:address_street values)
                         :errors (:address_street errors))
       [:div {:class "grid grid-cols-2 gap-4"}
-       (form/input-field :label "City"
+       (form/input-field :label (tr "City")
                          :name "address_city"
                          :value (:address_city values)
                          :errors (:address_city errors))
-       (form/input-field :label "Postal code"
+       (form/input-field :label (tr "Postal code")
                          :name "address_postal_code"
                          :value (:address_postal_code values)
                          :errors (:address_postal_code errors))]
-      (form/input-field :label "Country"
+      (form/input-field :label (tr "Country")
                         :name "address_country"
                         :value (:address_country values)
                         :errors (:address_country errors))]
 
      [:div
-      [:h3 {:class "text-lg font-medium mb-4"} "Regional Settings"]
+      [:h3 {:class "text-lg font-medium mb-4"} (tr "Regional Settings")]
       (timezone-select :value (:timezone values)
                        :errors (:timezone errors))]]
 
     [:div {:class "mt-4"}
-     (layout/save-button "Save changes")]))
+     (layout/save-button (tr "Save changes"))]))
 
 (defn render [& {:keys [viewer values errors flash]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/organization
-    :category "Organization"
-    :title "General"
+    :category (tr "Organization")
+    :title (tr "General")
     :flash flash
     :content (org-form :values values :errors errors)))
 
@@ -175,8 +176,8 @@
                                                                     (:user/id viewer)
                                                                     {:changes new-settings})))]
           (-> (http/see-other settings.routes/organization)
-              (flash/success "Organization settings updated successfully"))
+              (flash/success (tr "Organization settings updated successfully")))
           (f/when-failed [e]
-            (http/failure-flash e (http/see-other settings.routes/organization) "Could not save the organization settings"))))
+            (http/failure-flash e (http/see-other settings.routes/organization) (tr "Could not save the organization settings")))))
 
       (render :viewer viewer :values values :flash flash))))

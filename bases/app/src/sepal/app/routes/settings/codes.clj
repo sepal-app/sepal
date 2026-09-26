@@ -12,6 +12,7 @@
             [sepal.app.ui.form :as form]
             [sepal.code-template.interface :as ct.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
@@ -44,7 +45,7 @@
              :value "1"
              :checked (boolean checked?)
              :x-bind:disabled "!template.trim()"}]
-    [:span {:class "spl-label"} "Reject a code that does not fit"]]
+    [:span {:class "spl-label"} (tr "Reject a code that does not fit")]]
    (form/error-list name errors :hx-swap-oob? true)])
 
 (defn codes-form [& {:keys [values errors previews]}]
@@ -59,58 +60,56 @@
     [:div
      [:div {:x-data (json/js {:template (or (:accession_template values) "")})}
       (form/section
-        :title "Accessions"
-        :hint (str "How an accession code is suggested on the create form. "
-                   "Leave it blank to suggest nothing. " token-legend)
+        :title (tr "Accessions")
+        :hint (str (tr "How an accession code is suggested on the create form. Leave it blank to suggest nothing.")
+                   " " token-legend)
         :children
-        [(form/input-field :label "Template"
+        [(form/input-field :label (tr "Template")
                            :name "accession_template"
                            :value (:accession_template values)
                            :errors (:accession_template errors)
                            :input-attrs {:x-model "template"}
                            :help (when-let [next-code (:accession previews)]
-                                   (str "Next: " next-code)))
+                                   (tr "Next: %1" next-code)))
          (strict-checkbox :name "accession_strict"
                           :checked? (:accession_strict values)
                           :errors (:accession_strict errors))])]
 
      [:div {:x-data (json/js {:template (or (:material_template values) "")})}
       (form/section
-        :title "Material"
-        :hint "Material is numbered within its accession, so it starts again at one for every accession. Leave it blank to suggest nothing."
+        :title (tr "Material")
+        :hint (tr "Material is numbered within its accession, so it starts again at one for every accession. Leave it blank to suggest nothing.")
         :children
-        [(form/input-field :label "Template"
+        [(form/input-field :label (tr "Template")
                            :name "material_template"
                            :value (:material_template values)
                            :errors (:material_template errors)
                            :input-attrs {:x-model "template"}
                            :help (when-let [example (:material previews)]
-                                   (str "For example: " example)))
+                                   (tr "For example: %1" example)))
          (strict-checkbox :name "material_strict"
                           :checked? (:material_strict values)
                           :errors (:material_strict errors))
-         (form/input-field :label "Separator"
+         (form/input-field :label (tr "Separator")
                            :name "material_separator"
                            :value (:material_separator values)
                            :errors (:material_separator errors)
-                           :help "Between the accession code and the material code. Leave it blank for none.")
+                           :help (tr "Between the accession code and the material code. Leave it blank for none."))
          (when (ct.i/runs-together? (:accession_template values)
                                     (:material_separator values)
                                     (:material_template values))
            [:div {:class "spl-alert spl-alert--warning"}
-            [:p (str "With no separator, a material code that starts with a digit "
-                     "runs into an accession code that ends with one, and "
-                     "2026.0001 and 1 read as 2026.00011.")]])])]]
+            [:p (tr "With no separator, a material code that starts with a digit runs into an accession code that ends with one, and 2026.0001 and 1 read as 2026.00011.")]])])]]
 
     [:div {:class "mt-4"}
-     (layout/save-button "Save changes")]))
+     (layout/save-button (tr "Save changes"))]))
 
 (defn render [& {:keys [viewer values errors flash previews]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/codes
-    :category "Organization"
-    :title "Codes"
+    :category (tr "Organization")
+    :title (tr "Codes")
     :flash flash
     :content (codes-form :values values :errors errors :previews previews)))
 
@@ -156,7 +155,7 @@
                            (let [parsed (ct.i/parse template)]
                              (when (error.i/error? parsed)
                                [(error.i/message parsed)]))))
-        strict-blank ["Set a template before enforcing it"]]
+        strict-blank [(tr "Set a template before enforcing it")]]
     (not-empty
       (cond-> {}
         (template-error accession_template)
@@ -203,10 +202,10 @@
                                                                       {:changes new-settings})
                                            new-settings))]
             (-> (http/see-other settings.routes/codes)
-                (flash/success "Code settings updated successfully"))
+                (flash/success (tr "Code settings updated successfully")))
             (f/when-failed [e]
               (http/failure-flash e (http/see-other settings.routes/codes)
-                                  "Could not save the code settings"))))
+                                  (tr "Could not save the code settings")))))
         (f/when-failed [e]
           (render :viewer viewer
                   :values (settings->values config)

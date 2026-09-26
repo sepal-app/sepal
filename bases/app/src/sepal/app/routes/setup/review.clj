@@ -9,6 +9,7 @@
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :as i18n :refer [tr trn]]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
@@ -31,40 +32,40 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title mb-4"} "Review & Complete"]
+      [:h2 {:class "spl-card-title mb-4"} (tr "Review & Complete")]
 
       [:p {:class "text-text-muted mb-6"}
-       "Review your settings below. You can change these later in the Settings pages."]
+       (tr "Review your settings below. You can change these later in the Settings pages.")]
 
       ;; Admin account
-      (summary-section "Admin Account"
-                       [["Name" (:user/full-name admin)]
-                        ["Email" (:user/email admin)]])
+      (summary-section (tr "Admin Account")
+                       [[(tr "Name") (:user/full-name admin)]
+                        [(tr "Email") (:user/email admin)]])
 
       ;; Organization
       (when (seq (filter second org-settings))
-        (summary-section "Organization"
-                         [["Name" (get org-settings "organization.long_name")]
-                          ["Short name" (get org-settings "organization.short_name")]
-                          ["Abbreviation" (get org-settings "organization.abbreviation")]
-                          ["Email" (get org-settings "organization.email")]
-                          ["Phone" (get org-settings "organization.phone")]]))
+        (summary-section (tr "Organization")
+                         [[(tr "Name") (get org-settings "organization.long_name")]
+                          [(tr "Short name") (get org-settings "organization.short_name")]
+                          [(tr "Abbreviation") (get org-settings "organization.abbreviation")]
+                          [(tr "Email") (get org-settings "organization.email")]
+                          [(tr "Phone") (get org-settings "organization.phone")]]))
 
       ;; Regional
-      (summary-section "Regional Settings"
-                       [["Timezone" timezone]])
+      (summary-section (tr "Regional Settings")
+                       [[(tr "Timezone") timezone]])
 
       ;; Taxonomy
-      (summary-section "Taxonomy"
-                       [["Taxa count" (when (pos? taxa-count)
-                                        (format "%,d taxa" taxa-count))]
-                        ["WFO Plant List" (or wfo-version "Not imported")]])
+      (summary-section (tr "Taxonomy")
+                       [[(tr "Taxa count") (when (pos? taxa-count)
+                                             (trn "%1 taxon" "%1 taxa" taxa-count (i18n/format-number taxa-count)))]
+                        [(tr "WFO Plant List") (or wfo-version (tr "Not imported"))]])
 
       ;; Complete button
       [:div {:class "spl-card-actions justify-between mt-6"}
        [:a {:href (z/url-for setup.routes/taxonomy)
             :class "spl-btn spl-btn--ghost"}
-        "← Back"]
+        (tr "← Back")]
        [:form {:method "post"
                :action (z/url-for setup.routes/review)
                :hx-boost "false"}
@@ -73,7 +74,7 @@
                  :value (force *anti-forgery-token*)}]
         [:button {:type "submit"
                   :class "spl-btn spl-btn--primary"}
-         "Complete Setup"]]]]]))
+         (tr "Complete Setup")]]]]]))
 
 (defn handler [{:keys [::z/context flash request-method session]}]
   (let [{:keys [db]} context
@@ -98,7 +99,7 @@
 
         ;; Redirect to dashboard
         (-> (http/see-other dashboard.routes/index)
-            (flash/success "Setup complete! Welcome to Sepal.")))
+            (flash/success (tr "Setup complete! Welcome to Sepal."))))
 
       ;; GET
       (do

@@ -8,6 +8,7 @@
             [next.jdbc :as jdbc]
             [ring.core.protocols :as ring.protocols]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.settings.interface :as settings.i])
   (:import [java.io File]
            [java.security MessageDigest]
@@ -57,31 +58,31 @@
 
 (defn- check-smtp-configured [{:keys [mail]}]
   (if mail
-    {:status :ok :message "SMTP is configured"}
+    {:status :ok :message (tr "SMTP is configured")}
     {:status :warning
-     :message "Email not configured. Password reset, user invitations, and backup notifications will not work."}))
+     :message (tr "Email not configured. Password reset, user invitations, and backup notifications will not work.")}))
 
 (defn- check-s3-configured [{:keys [s3-client media-upload-bucket]}]
   (if (and s3-client (not (str/blank? media-upload-bucket)))
-    {:status :ok :message "Media storage (S3) is configured"}
+    {:status :ok :message (tr "Media storage (S3) is configured")}
     {:status :warning
-     :message "Media storage not configured. Cannot upload images or documents to records."}))
+     :message (tr "Media storage not configured. Cannot upload images or documents to records.")}))
 
 (defn- check-app-domain [{:keys [app-domain]}]
   (if-not (str/blank? app-domain)
-    {:status :ok :message "App domain is configured"}
+    {:status :ok :message (tr "App domain is configured")}
     {:status :warning
-     :message "App domain not set. Links in emails will be incorrect."}))
+     :message (tr "App domain not set. Links in emails will be incorrect.")}))
 
 (defn- check-spatialite
   "Check if SpatiaLite extension is available."
   [db]
   (try
     (db.i/execute-one! db {:select [[[:spatialite_version] :version]]})
-    {:status :ok :message "SpatiaLite is available for geo-coordinates"}
+    {:status :ok :message (tr "SpatiaLite is available for geo-coordinates")}
     (catch Exception _
       {:status :warning
-       :message "SpatiaLite not available. Geo-coordinates for collections will not work."})))
+       :message (tr "SpatiaLite not available. Geo-coordinates for collections will not work.")})))
 
 (defn check-server-config
   "Run server configuration checks and return results. Takes the zodiac request

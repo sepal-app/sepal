@@ -3,6 +3,7 @@
             [sepal.app.routes.setup.layout :as layout]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn status-icon [status]
@@ -25,16 +26,16 @@
 
 (defn checks-list [checks]
   [:div {:class "space-y-3"}
-   (check-item {:name "Email (SMTP)"
+   (check-item {:name (tr "Email (SMTP)")
                 :status (get-in checks [:smtp :status])
                 :message (get-in checks [:smtp :message])})
-   (check-item {:name "Media Storage (S3)"
+   (check-item {:name (tr "Media Storage (S3)")
                 :status (get-in checks [:s3 :status])
                 :message (get-in checks [:s3 :message])})
-   (check-item {:name "App Domain"
+   (check-item {:name (tr "App Domain")
                 :status (get-in checks [:app-domain :status])
                 :message (get-in checks [:app-domain :message])})
-   (check-item {:name "SpatiaLite (Geo-coordinates)"
+   (check-item {:name (tr "SpatiaLite (Geo-coordinates)")
                 :status (get-in checks [:spatialite :status])
                 :message (get-in checks [:spatialite :message])})])
 
@@ -47,30 +48,30 @@
     :flash-messages flash-messages
     :content
     (layout/step-card
-      :title "Server Configuration"
+      :title (tr "Server Configuration")
       :back-url (z/url-for setup.routes/admin)
       :content
       [:div {:class "space-y-4"}
        [:p {:class "text-text-muted"}
-        "Checking your server configuration. These features are optional but recommended for full functionality."]
+        (tr "Checking your server configuration. These features are optional but recommended for full functionality.")]
 
        (checks-list checks)
 
        (when (has-warnings? checks)
          [:div {:class "spl-alert spl-alert--warning mt-4"}
-          [:span "Some features are not configured. You can continue and configure them later, but the affected features won't work until then."]])
+          [:span (tr "Some features are not configured. You can continue and configure them later, but the affected features won't work until then.")]])
 
        [:div {:class "flex gap-2 mt-4"}
         [:a {:href (z/url-for setup.routes/server)
              :class "spl-btn spl-btn--sm"}
-         "Re-run Checks"]]]
+         (tr "Re-run Checks")]]]
       :next-button
       [:a {:href (z/url-for setup.routes/organization)
            :class "spl-btn spl-btn--primary"
            :hx-get (z/url-for setup.routes/organization)
            :hx-push-url "true"
            :hx-target "body"}
-       "Continue →"])))
+       (tr "Continue →")])))
 
 (defn handler [{:keys [::z/context flash]}]
   (let [{:keys [db]} context

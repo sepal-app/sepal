@@ -8,7 +8,7 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :refer [N_]]
+            [sepal.i18n.interface :refer [N_ tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -47,28 +47,28 @@
     (form/anti-forgery-field)
 
     [:div {:class "space-y-4"}
-     (form/input-field :label "Organization name"
+     (form/input-field :label (tr "Organization name")
                        :name "long_name"
                        :value (:long_name values)
                        :errors (:long_name errors)
                        :required true
-                       :input-attrs {:placeholder "e.g., Royal Botanic Gardens, Kew"})
-     (form/input-field :label "Short name"
+                       :input-attrs {:placeholder (tr "e.g., Royal Botanic Gardens, Kew")})
+     (form/input-field :label (tr "Short name")
                        :name "short_name"
                        :value (:short_name values)
                        :errors (:short_name errors)
-                       :input-attrs {:placeholder "e.g., Kew Gardens"})
-     (form/input-field :label "Abbreviation"
+                       :input-attrs {:placeholder (tr "e.g., Kew Gardens")})
+     (form/input-field :label (tr "Abbreviation")
                        :name "abbreviation"
                        :value (:abbreviation values)
                        :errors (:abbreviation errors)
-                       :input-attrs {:placeholder "e.g., RBG Kew"})
-     (form/input-field :label "Contact email"
+                       :input-attrs {:placeholder (tr "e.g., RBG Kew")})
+     (form/input-field :label (tr "Contact email")
                        :name "email"
                        :type "email"
                        :value (:email values)
                        :errors (:email errors))
-     (form/input-field :label "Contact phone"
+     (form/input-field :label (tr "Contact phone")
                        :name "phone"
                        :value (:phone values)
                        :errors (:phone errors))]
@@ -77,10 +77,10 @@
     [:div {:class "flex justify-between mt-6"}
      [:a {:href (z/url-for setup.routes/server)
           :class "spl-btn spl-btn--ghost"}
-      "← Back"]
+      (tr "← Back")]
      [:button {:type "submit"
                :class "spl-btn spl-btn--primary"}
-      "Next →"]]))
+      (tr "Next →")]]))
 
 (defn render [& {:keys [values errors flash-messages]}]
   (layout/layout
@@ -89,9 +89,9 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title text-2xl mb-4"} "Organization Information"]
+      [:h2 {:class "spl-card-title text-2xl mb-4"} (tr "Organization Information")]
       [:p {:class "mb-4 text-text-muted"}
-       "Tell us about your organization. You can update these settings later."]
+       (tr "Tell us about your organization. You can update these settings later.")]
       (org-form :values values :errors errors)]]))
 
 (defn handler [{:keys [::z/context flash form-params request-method]}]
@@ -107,7 +107,7 @@
                                          (settings.i/set-values! db new-settings))
                                        (setup.shared/set-current-step! db 4)))]
         (-> (http/see-other setup.routes/regional)
-            (flash/success "Organization information saved"))
+            (flash/success (tr "Organization information saved")))
         (f/when-failed [e]
           (html/render-page (render :values form-params
                                     :errors (error.i/humanize e)))))

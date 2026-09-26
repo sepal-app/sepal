@@ -11,6 +11,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.table :as ui.table]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -45,16 +46,16 @@
   ;; nothing needs checking.
   [:div {:class "spl-alert spl-alert--info mb-6"}
    (lucide/info :class "size-5 shrink-0")
-   [:span "Backups include the database only. Media files are stored separately and must be backed up manually."]])
+   [:span (tr "Backups include the database only. Media files are stored separately and must be backed up manually.")]])
 
 (defn- frequency-select [value]
   [:select {:name "frequency"
             :id "frequency"
             :class "spl-input spl-select w-full max-w-xs"}
-   (for [[val label] [["" "Disabled"]
-                      ["daily" "Daily"]
-                      ["weekly" "Weekly"]
-                      ["monthly" "Monthly"]]]
+   (for [[val label] [["" (tr "Disabled")]
+                      ["daily" (tr "Daily")]
+                      ["weekly" (tr "Weekly")]
+                      ["monthly" (tr "Monthly")]]]
      [:option {:value val
                :selected (when (= val (some-> value name)) "selected")}
       label])])
@@ -69,33 +70,33 @@
 
       [:div {:class "space-y-6"}
        [:div
-        [:h3 {:class "text-lg font-medium mb-4"} "Backup Schedule"]
+        [:h3 {:class "text-lg font-medium mb-4"} (tr "Backup Schedule")]
 
         (form/field
           :name "frequency"
-          :label "Frequency"
+          :label (tr "Frequency")
           :errors (:frequency errors)
           :input (frequency-select (:frequency config)))
 
         (when next-backup
           [:p {:class "text-sm text-text-muted -mt-2"}
-           "Next backup: " (datetime/datetime next-backup timezone)])]
+           (tr "Next backup: ") (datetime/datetime next-backup timezone)])]
 
        (when (:last-run-at config)
          [:div {:class "text-sm text-text-muted"}
-          [:p "Last backup: " (datetime/datetime (:last-run-at config) timezone)]])]
+          [:p (tr "Last backup: ") (datetime/datetime (:last-run-at config) timezone)]])]
 
       [:div {:class "mt-4"}
-       (layout/save-button "Save changes")])))
+       (layout/save-button (tr "Save changes"))])))
 
 (defn- download-link [store filename]
   [:a {:href (backup.p/download-url store filename)
        :class "spl-btn spl-btn--sm spl-btn--ghost"}
    (lucide/download :class "size-4")
-   "Download"])
+   (tr "Download")])
 
 (defn- table-columns [store timezone]
-  [{:name "Filename"
+  [{:name (tr "Filename")
     :type :name
     :priority 1
     :stacked (fn [{:keys [filename size-bytes created-at]}]
@@ -105,15 +106,15 @@
                       (datetime/datetime created-at timezone)]
                      (download-link store filename)))
     :cell (fn [{:keys [filename]}] [:span {:class "font-mono text-sm"} filename])}
-   {:name "Size"
+   {:name (tr "Size")
     :type :number
     :priority 2
     :cell (fn [{:keys [size-bytes]}] (format-bytes size-bytes))}
-   {:name "Created"
+   {:name (tr "Created")
     :type :datetime
     :priority 2
     :cell (fn [{:keys [created-at]}] (datetime/datetime created-at timezone))}
-   {:name "Actions"
+   {:name (tr "Actions")
     :type :actions
     :priority 1
     :cell (fn [{:keys [filename]}] (download-link store filename))}])
@@ -123,17 +124,17 @@
   ;; customer has no backups, and this is the page saying it does not know.
   [:div {:class "spl-alert spl-alert--danger"}
    (lucide/triangle-alert :class "size-5 shrink-0")
-   [:span "Your backups could not be reached just now. They are not lost — "
-    "try again in a few minutes."]])
+   [:span (tr "Your backups could not be reached just now. They are not lost — ")
+    (tr "try again in a few minutes.")]])
 
 (defn- backups-table [& {:keys [backups store timezone unreachable?]}]
   [:div {:class "mt-8"}
-   [:h3 {:class "text-lg font-medium mb-4"} "Recent Backups"]
+   [:h3 {:class "text-lg font-medium mb-4"} (tr "Recent Backups")]
    (if unreachable?
      (unreachable-note)
      (ui.table/table :columns (table-columns store timezone)
                      :rows backups
-                     :empty-state [:p {:class "text-text-muted"} "No backups yet."]))])
+                     :empty-state [:p {:class "text-text-muted"} (tr "No backups yet.")]))])
 
 ;; -----------------------------------------------------------------------------
 ;; Render
@@ -142,8 +143,8 @@
   (layout/layout
     :viewer viewer
     :current-route settings.routes/backups
-    :category "Organization"
-    :title "Backups"
+    :category (tr "Organization")
+    :title (tr "Backups")
     :flash flash
     :content
     (if managed?
@@ -190,9 +191,9 @@
                                          (backup/register-backup-job! scheduler db mail backup-email-from
                                                                       app-base-url backup-store)))]
           (-> (http/see-other settings.routes/backups)
-              (flash/success "Backup settings updated successfully"))
+              (flash/success (tr "Backup settings updated successfully")))
           (f/when-failed [e]
-            (http/failure-flash e (http/see-other settings.routes/backups) "Could not save the backup settings"))))
+            (http/failure-flash e (http/see-other settings.routes/backups) (tr "Could not save the backup settings")))))
 
       ;; GET
       (let [backups (try

@@ -29,6 +29,18 @@
                     :encode/store name-encoder}
              :invited :active :archived])
 
+(def role-labels
+  "Display names for role, translated where they are rendered."
+  {:admin (N_ "Admin")
+   :editor (N_ "Editor")
+   :reader (N_ "Reader")})
+
+(def status-labels
+  "Display names for status, translated where they are rendered."
+  {:invited (N_ "Invited")
+   :active (N_ "Active")
+   :archived (N_ "Archived")})
+
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default
   [:map {:store/columns [:id :email :full-name :role :status :language]}

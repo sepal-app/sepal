@@ -37,54 +37,54 @@
   (let [selected-value (or value "reader")]
     (form/field
       :name "role"
-      :label "Role"
+      :label (tr "Role")
       :errors errors
       :input [:select {:name "role"
                        :id "role"
                        :class "spl-input spl-select w-full max-w-sm"
                        :required true}
-              (for [{:keys [value label]} [{:value "reader" :label "Reader"}
-                                           {:value "editor" :label "Editor"}
-                                           {:value "admin" :label "Admin"}]]
+              (for [{:keys [value label]} [{:value "reader" :label (tr "Reader")}
+                                           {:value "editor" :label (tr "Editor")}
+                                           {:value "admin" :label (tr "Admin")}]]
                 [:option {:value value
                           :selected (= value selected-value)}
                  label])])))
 
 (defn- page-content [& {:keys [errors values]}]
   [:div
-   [:h1 {:class "text-2xl font-bold mb-6"} "Invite User"]
+   [:h1 {:class "text-2xl font-bold mb-6"} (tr "Invite User")]
    (form/form {:action (z/url-for settings.routes/users-invite)
                :method "post"}
               [(form/anti-forgery-field)
-               (form/input-field :label "Email"
+               (form/input-field :label (tr "Email")
                                  :name "email"
                                  :type "email"
                                  :required true
                                  :value (:email values)
                                  :errors (:email errors))
-               (form/input-field :label "Full Name"
+               (form/input-field :label (tr "Full Name")
                                  :name "full-name"
-                                 :placeholder "Optional"
+                                 :placeholder (tr "Optional")
                                  :value (:full-name values)
                                  :errors (:full-name errors))
                (role-select :value (:role values)
                             :errors (:role errors))
                [:p {:class "text-sm text-text-muted mt-4"}
-                "An invitation email will be sent to this address. The invitation expires in 24 hours."]
+                (tr "An invitation email will be sent to this address. The invitation expires in 24 hours.")]
                ;; Cancel then the primary action, the order every other form in
                ;; the app uses.
                [:div {:class "flex gap-4 mt-6"}
                 [:a {:href (z/url-for settings.routes/users)
                      :class "spl-btn"}
-                 "Cancel"]
-                (form/submit-button {:class "spl-btn spl-btn--primary"} "Send Invitation")]])])
+                 (tr "Cancel")]
+                (form/submit-button {:class "spl-btn spl-btn--primary"} (tr "Send Invitation"))]])])
 
 (defn- render [& {:keys [errors values viewer]}]
   (layout/layout
     :viewer viewer
     :current-route settings.routes/users-invite
-    :category "Organization"
-    :title "Invite User"
+    :category (tr "Organization")
+    :title (tr "Invite User")
     :content (page-content :errors errors :values values)))
 
 (defn- build-accept-url [app-base-url token]
@@ -133,8 +133,8 @@
 (defn- check-email-exists [db email]
   (when-let [existing-user (user.i/get-by-email db email)]
     (if (= :archived (:user/status existing-user))
-      {:email ["This email is already registered (user is archived)"]}
-      {:email ["This email is already registered"]})))
+      {:email [(tr "This email is already registered (user is archived)")]}
+      {:email [(tr "This email is already registered")]})))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [app-base-url db mail token-service organization-name
@@ -173,11 +173,11 @@
                                                      organization-name
                                                      invitation-email-subject)})
                   (-> (http/see-other settings.routes/users)
-                      (flash/add-message (str "Invitation sent to " email)))
+                      (flash/add-message (tr "Invitation sent to %1" email)))
                   (catch Exception e
                     (println (str "Error: Could not send invitation email: " (ex-message e)))
                     (-> (http/see-other settings.routes/users)
-                        (flash/error "User created but failed to send invitation email")))))
+                        (flash/error (tr "User created but failed to send invitation email"))))))
               (f/when-failed [e]
                 ;; Log it. This swallowed the exception and showed one fixed
                 ;; sentence, so an invitation failing in production told
@@ -194,7 +194,7 @@
                                       (if (instance? Exception e)
                                         (error.i/ex->error e)
                                         e))
-                                    {:email ["Failed to create user"]})
+                                    {:email [(tr "Failed to create user")]})
                         :values form-params)))))
         (f/when-failed [e]
           (render :viewer viewer

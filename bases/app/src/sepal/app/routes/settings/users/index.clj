@@ -7,7 +7,9 @@
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.table :as table]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.user.interface :as user.i]
+            [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z]))
 
 (def Params
@@ -20,14 +22,14 @@
                 :editor "spl-badge--neutral"
                 :reader "spl-badge--neutral"}]
     [:span {:class (html/attr "spl-badge " (get colors role "spl-badge--neutral"))}
-     (name role)]))
+     (tr (user.spec/role-labels role))]))
 
 (defn- status-badge [status]
   (let [colors {:active "spl-badge--ok"
                 :archived "spl-badge--danger"
                 :invited "spl-badge--danger"}]
     [:span {:class (html/attr "spl-badge " (get colors status "spl-badge--neutral"))}
-     (name status)]))
+     (tr (user.spec/status-labels status))]))
 
 (defn- csrf-hx-vals []
   (str "{\"__anti-forgery-token\": \"" (force *anti-forgery-token*) "\"}"))
@@ -47,7 +49,7 @@
      (for [role [:admin :editor :reader]]
        [:option {:value (name role)
                  :selected (= role current-role)}
-        (name role)])]))
+        (tr (user.spec/role-labels role))])]))
 
 (defn- action-buttons
   "Action buttons for a user row."
@@ -58,7 +60,7 @@
      ;; Resend invitation button for invited users
      (when (= :invited (:user/status user))
        [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
-                 :title "Resend invitation"
+                 :title (tr "Resend invitation")
                  :hx-post (z/url-for settings.routes/users-resend-invitation {:id (:user/id user)})
                  :hx-swap "none"
                  :hx-vals (csrf-hx-vals)
@@ -67,14 +69,14 @@
      ;; Archive/Activate buttons
      (if (= :archived (:user/status user))
        [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
-                 :title "Activate user"
+                 :title (tr "Activate user")
                  :hx-post (z/url-for settings.routes/users-activate {:id (:user/id user)})
                  :hx-swap "outerHTML"
                  :hx-target "#users-table"
                  :hx-vals (csrf-hx-vals)}
         (lucide/user-check :class "w-4 h-4")]
        [:button {:class "spl-btn spl-btn--ghost spl-btn--sm"
-                 :title "Archive user"
+                 :title (tr "Archive user")
                  :hx-post (z/url-for settings.routes/users-archive {:id (:user/id user)})
                  :hx-swap "outerHTML"
                  :hx-target "#users-table"
@@ -91,20 +93,20 @@
   reader, or an active account from an archived one."
   [user]
   (table/summary (:user/email user)
-                 (name (:user/role user))
-                 (name (:user/status user))))
+                 (tr (user.spec/role-labels (:user/role user)))
+                 (tr (user.spec/status-labels (:user/status user)))))
 
 (defn- table-columns [viewer]
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :text
     :priority 1
     :stacked stacked-summary
     :cell (fn [user] (or (:user/full-name user) "—"))}
-   {:name "Email"
+   {:name (tr "Email")
     :type :text
     :priority 2
     :cell (fn [user] (:user/email user))}
-   {:name "Role"
+   {:name (tr "Role")
     :type :text
     :priority 2
     :cell (fn [user]
@@ -112,7 +114,7 @@
                      (not= (:user/id user) (:user/id viewer)))
               (role-select user)
               (role-badge (:user/role user))))}
-   {:name "Status"
+   {:name (tr "Status")
     :type :text
     :priority 2
     :cell (fn [user] (status-badge (:user/status user)))}
@@ -145,8 +147,8 @@
              :id "q"
              :type "search"
              :value (:q params)
-             :placeholder "Search..."
-             :aria-label "Search users"
+             :placeholder (tr "Search...")
+             :aria-label (tr "Search users")
              :class "spl-input spl-input--search"
              :hx-get (z/url-for settings.routes/users)
              :hx-trigger "keyup changed delay:300ms"
@@ -166,18 +168,18 @@
              :hx-target "#users-table"
              :hx-swap "outerHTML"
              :hx-include "[name='q']"}]
-    [:span "Show archived"]]
+    [:span (tr "Show archived")]]
    [:a {:href (z/url-for settings.routes/users-invite)
         :class "spl-btn spl-btn--primary ml-auto"}
     (lucide/user-plus :class "w-4 h-4 mr-2")
-    "Invite User"]])
+    (tr "Invite User")]])
 
 (defn render [& {:keys [db viewer params]}]
   (settings.layout/layout
     :viewer viewer
     :current-route settings.routes/users
-    :category "Organization"
-    :title "Users"
+    :category (tr "Organization")
+    :title (tr "Users")
     :content-class "flex-1"
     :content
     [:div {:class "spl-table-card"}

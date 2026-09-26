@@ -2,6 +2,7 @@
   (:require [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.routes.settings.users.index :as users.index]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [zodiac.core :as z]))
@@ -13,7 +14,7 @@
     (user.i/activate! db user-id)
     (user.activity/create! db (:user/id viewer) target-user {:status :active})
     (let [updated-user (user.i/get-by-id db user-id)
-          message (format "User %s activated" (:user/email updated-user))]
+          message (tr "User %1 activated" (:user/email updated-user))]
       (-> (html/render-partial
             (users.index/users-table-container db viewer :show-archived true))
           (flash/success message)))))

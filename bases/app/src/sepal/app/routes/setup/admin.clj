@@ -9,7 +9,7 @@
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :refer [N_]]
+            [sepal.i18n.interface :refer [N_ tr]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
             [sepal.validation.interface :as validation.i]
@@ -35,20 +35,20 @@
      :action (z/url-for setup.routes/admin)}
     (form/anti-forgery-field)
 
-    (form/input-field :label "Full name"
+    (form/input-field :label (tr "Full name")
                       :name "full_name"
                       :value (:full_name values)
                       :errors (:full_name errors)
                       :required true)
 
-    (form/input-field :label "Email"
+    (form/input-field :label (tr "Email")
                       :name "email"
                       :type "email"
                       :value (:email values)
                       :errors (:email errors)
                       :required true)
 
-    (form/input-field :label "Password"
+    (form/input-field :label (tr "Password")
                       :name "password"
                       :type "password"
                       :value (:password values)
@@ -56,7 +56,7 @@
                       :required true
                       :minlength 8)
 
-    (form/input-field :label "Confirm password"
+    (form/input-field :label (tr "Confirm password")
                       :name "password_confirmation"
                       :type "password"
                       :value (:password_confirmation values)
@@ -67,7 +67,7 @@
     [:div {:class "flex justify-end mt-6"}
      [:button {:type "submit"
                :class "spl-btn spl-btn--primary"}
-      "Create Account →"]]))
+      (tr "Create Account →")]]))
 
 (defn render-admin-exists
   "Render the view when an admin already exists - prompt to login."
@@ -76,16 +76,16 @@
     :current-step 1
     :content
     (layout/step-card
-      :title "Admin Account Exists"
+      :title (tr "Admin Account Exists")
       :content
       [:div {:class "space-y-4"}
        [:div {:class "spl-alert spl-alert--info"}
-        [:span "An admin account already exists. Please log in to continue setup."]]
-       [:p "If you created an admin account via the CLI, you need to log in before continuing with the setup wizard."]]
+        [:span (tr "An admin account already exists. Please log in to continue setup.")]]
+       [:p (tr "If you created an admin account via the CLI, you need to log in before continuing with the setup wizard.")]]
       :next-button
       [:a {:href (z/url-for auth.routes/login)
            :class "spl-btn spl-btn--primary"}
-       "Log in to continue →"])))
+       (tr "Log in to continue →")])))
 
 (defn render-admin-complete
   "Render read-only view of admin account when already created and logged in."
@@ -96,16 +96,16 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title mb-4"} "Admin Account"]
+      [:h2 {:class "spl-card-title mb-4"} (tr "Admin Account")]
       [:div {:class "spl-alert spl-alert--ok mb-4"}
-       [:span "✓ Admin account has been created"]]
+       [:span (tr "✓ Admin account has been created")]]
 
       [:div {:class "space-y-4"}
-       (form/input-field :label "Full name"
+       (form/input-field :label (tr "Full name")
                          :name "full_name"
                          :value (:user/full-name user)
                          :input-attrs {:disabled true})
-       (form/input-field :label "Email"
+       (form/input-field :label (tr "Email")
                          :name "email"
                          :type "email"
                          :value (:user/email user)
@@ -114,7 +114,7 @@
       [:div {:class "flex justify-end mt-6"}
        [:a {:href (z/url-for setup.routes/server)
             :class "spl-btn spl-btn--primary"}
-        "Next →"]]]]))
+        (tr "Next →")]]]]))
 
 (defn render-create-admin
   "Render the admin creation form."
@@ -125,9 +125,9 @@
     :content
     [:div {:class "spl-card bg-surface border border-border shadow-sm w-full max-w-2xl"}
      [:div {:class "spl-card-body"}
-      [:h2 {:class "spl-card-title mb-4"} "Create Admin Account"]
+      [:h2 {:class "spl-card-title mb-4"} (tr "Create Admin Account")]
       [:p {:class "mb-4 text-text-muted"}
-       "Create the first administrator account for your Sepal instance."]
+       (tr "Create the first administrator account for your Sepal instance.")]
       (admin-form :values values :errors errors)]]))
 
 (defn handler [{:keys [::z/context flash form-params request-method session]}]
@@ -156,7 +156,7 @@
             (if (user.i/exists? db email)
               ;; Check email doesn't already exist
               (html/render-page (render-create-admin :values form-params
-                                                     :errors {:email ["An account with this email already exists"]}))
+                                                     :errors {:email [(tr "An account with this email already exists")]}))
               ;; Create the admin user
               (f/attempt-all [user-result (f/try* (user.i/create! db {:email email
                                                                       :password password
@@ -169,12 +169,12 @@
                   (user.activity/create-user! db (:user/id user-result) user-result)
                   (setup.shared/set-current-step! db 2)
                   (-> (http/see-other setup.routes/server)
-                      (flash/success "Admin account created successfully")
+                      (flash/success (tr "Admin account created successfully"))
                       ;; Log the user in
                       (assoc :session {:user/id (:user/id user-result)})))
                 (f/when-failed [_e]
                   (-> (http/see-other setup.routes/admin)
-                      (flash/error "Failed to create admin account"))))))
+                      (flash/error (tr "Failed to create admin account")))))))
           (f/when-failed [e]
             (html/render-page (render-create-admin :values form-params
                                                    :errors (error.i/humanize e)))))

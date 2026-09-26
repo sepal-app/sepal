@@ -4,6 +4,7 @@
             [sepal.app.html :as html]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.settings.users.invite :as invite]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
@@ -30,10 +31,10 @@
         user (when user-id (user.i/get-by-id db user-id))]
     (cond
       (nil? user)
-      (say flash/error "User not found")
+      (say flash/error (tr "User not found"))
 
       (not= :invited (:user/status user))
-      (say flash/error "Can only resend invitations for users with 'invited' status")
+      (say flash/error (tr "Can only resend invitations for users with 'invited' status"))
 
       :else
       (let [email (:user/email user)
@@ -52,9 +53,9 @@
              :from invitation-email-from
              :subject (invite/invitation-subject organization-name
                                                  invitation-email-subject)})
-          (say flash/success (str "Invitation resent to " email))
+          (say flash/success (tr "Invitation resent to %1" email))
           (catch Exception e
             ;; Logged, not printed. A resend failing in production said only
             ;; "Failed to send invitation email" and put the reason nowhere.
             (log/error e "could not resend the invitation email")
-            (say flash/error "Failed to send invitation email")))))))
+            (say flash/error (tr "Failed to send invitation email"))))))))

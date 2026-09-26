@@ -4,8 +4,10 @@
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.routes.settings.users.index :as users.index]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.activity :as user.activity]
+            [sepal.user.interface.spec :as user.spec]
             [zodiac.core :as z]))
 
 (defn- validate-role-change [db target-user new-role]
@@ -14,7 +16,7 @@
     (and (= :admin (:user/role target-user))
          (not= :admin new-role)
          (<= (user.i/count-by-role db :admin) 1))
-    {:error "Cannot remove the last admin. Promote another user to admin first."}
+    {:error (tr "Cannot remove the last admin. Promote another user to admin first.")}
 
     :else nil))
 
@@ -49,16 +51,16 @@
         (user.i/update! db user-id {:role new-role})
         (user.activity/create! db (:user/id viewer) target-user {:role new-role})
         (-> (http/see-other settings.routes/profile)
-            (flash/success (format "Your role has been changed to %s" (name new-role)))))
+            (flash/success (tr "Your role has been changed to %1" (tr (user.spec/role-labels new-role))))))
 
       :else
       (do
         (user.i/update! db user-id {:role new-role})
         (user.activity/create! db (:user/id viewer) target-user {:role new-role})
         (let [updated-user (user.i/get-by-id db user-id)
-              message (format "User %s role changed to %s"
-                              (:user/email updated-user)
-                              (name new-role))]
+              message (tr "User %1 role changed to %2"
+                          (:user/email updated-user)
+                          (tr (user.spec/role-labels new-role)))]
           (-> (html/render-partial
                 (users.index/users-table-container db viewer))
               (flash/success message)))))))
