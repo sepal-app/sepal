@@ -3,28 +3,28 @@
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.table :as ui.table]
+            [sepal.i18n.interface :refer [tr trn]]
             [sepal.tag.interface :as tag.i]
             [zodiac.core :as z]))
 
 (defn- table-columns []
-  [{:name "Name"
+  [{:name (tr "Name")
     :type :name
     :priority 1
     :stacked (fn [tag]
                [:span {:class "spl-stacked-line"}
                 (:tag/description tag)
                 " · "
-                (:tag/link-count tag)
-                " links"])
+                (trn "%1 link" "%1 links" (or (:tag/link-count tag) 0))])
     :cell (fn [tag]
             [:a {:class "spl-link"
                  :href (z/url-for tag.routes/detail {:id (:tag/id tag)})}
              (:tag/name tag)])}
-   {:name "Description"
+   {:name (tr "Description")
     :type :text
     :priority 2
     :cell :tag/description}
-   {:name "Links"
+   {:name (tr "Links")
     :type :number
     :priority 2
     :cell :tag/link-count}])
@@ -33,12 +33,12 @@
   (ui.table/table :columns (table-columns)
                   :rows tags
                   :empty-state (ui.empty/empty-state
-                                 :title "No tags yet"
-                                 :body "Ad-hoc groupings a curator can filter a list by later.")))
+                                 :title (tr "No tags yet")
+                                 :body (tr "Ad-hoc groupings a curator can filter a list by later."))))
 
 (defn render [& {:keys [tags]}]
   (ui.page/page :content (table tags)
-                :breadcrumbs ["Tags"]))
+                :breadcrumbs [(tr "Tags")]))
 
 (defn handler [{:keys [::z/context]}]
   (let [{:keys [db]} context]

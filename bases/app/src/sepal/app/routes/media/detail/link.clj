@@ -14,18 +14,19 @@
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [zodiac.core :as z]))
 
 (def resource-types
-  [{:label "Accession"
+  [{:label (tr "Accession")
     :value "accession"}
-   {:label "Material"
+   {:label (tr "Material")
     :value "material"}
-   {:label "Taxon"
+   {:label (tr "Taxon")
     :value "taxon"}
-   {:label "Location"
+   {:label (tr "Location")
     :value "location"}])
 
 (defn- resource-field
@@ -42,7 +43,7 @@
                      :selected selected))
 
 (defn taxon-field [& {:keys [taxon-name name taxon-id]}]
-  (resource-field :label "Taxon"
+  (resource-field :label (tr "Taxon")
                   :name name
                   :url (z/url-for taxon.routes/index)
                   :selected (when taxon-id {:id taxon-id :text taxon-name})))
@@ -59,14 +60,14 @@
     :accession-text accession-name))
 
 (defn location-field [& {:keys [location-name name location-id]}]
-  (resource-field :label "Location"
+  (resource-field :label (tr "Location")
                   :name name
                   :url (z/url-for location.routes/index)
                   :selected (when location-id
                               {:id location-id :text location-name})))
 
 (defn material-field [& {:keys [material-name name material-id]}]
-  (resource-field :label "Material"
+  (resource-field :label (tr "Material")
                   :name name
                   :url (z/url-for material.routes/index)
                   :selected (when material-id
@@ -78,7 +79,7 @@
      :hx-post (z/url-for media.routes/detail-link {:id (:media/id media)})
      :hx-target "#media-link-root"}
     [(form/anti-forgery-field)
-     (form/field :label "Resource type"
+     (form/field :label (tr "Resource type")
                  :name "resource-type"
                  :input [:select {:name "resource-type"
                                   :class "spl-input spl-select w-full max-w-xs leading-4"
@@ -94,7 +95,7 @@
                              (:label rt)])]])
      [:div {:x-show "resourceType"
             :class "flex flex-col gap-2"}
-      (form/field :label "Resource"
+      (form/field :label (tr "Resource")
                   :name "resource-id"
                   ;; A seq, not `[:<>]`. Chassis has no fragment element, so
                   ;; that rendered a literal <<>> around these templates.
@@ -129,8 +130,8 @@
        [:button {:type "button"
                  :class "spl-btn spl-btn--sm"
                  :x-on:click "editLink=false"}
-        "Cancel"]
-       (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary"} "Save")]]]))
+        (tr "Cancel")]
+       (form/submit-button {:class "spl-btn spl-btn--sm spl-btn--primary"} (tr "Save"))]]]))
 
 (defn link-chip
   "The link rendered as one removable chip. A chip with an x, not a tag row: a
@@ -147,7 +148,7 @@
       [:span text])
     [:button {:type "button"
               :class "spl-chip-icon cursor-pointer"
-              :aria-label "Remove link"
+              :aria-label (tr "Remove link")
               :hx-confirm "Remove this link?"
               :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
               :hx-delete (z/url-for media.routes/detail-link {:id (:media/id media)})
@@ -155,7 +156,7 @@
      (heroicons/outline-x)]]
    [:button {:type "button"
              :class "spl-btn spl-btn--sm spl-btn--icon"
-             :aria-label "Change link"
+             :aria-label (tr "Change link")
              :x-on:click "editLink=true"}
     (heroicons/outline-pencil-square :size 16)]])
 
@@ -172,7 +173,7 @@
                      :class "spl-btn spl-btn--sm spl-btn--ghost"
                      :x-on:click "editLink=true"}
             (heroicons/outline-link)
-            " Link"]])]
+            " " (tr "Link")]])]
        [:div {:x-show "editLink"} ;;:template {:x-if "editLink"}
         (media-link-form :link link
                          :link-text (:text link-info)
@@ -211,7 +212,7 @@
                   :link-info (link-info/link-info db result material-separator)
                   :media resource)
           ;; TODO: render an error
-          (flash/error {} "Error: Could not link resource")))
+          (flash/error {} (tr "Error: Could not link resource"))))
       :delete
       (do (unlink! db material-separator resource (:user/id viewer))
           (render :media resource))

@@ -4,6 +4,7 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.i18n.interface :as i18n :refer [N_ tr]]
             [zodiac.core :as z]))
 
 (def sentinel-id
@@ -44,8 +45,7 @@
    ;; tab this is.
    (when-let [{:keys [text url]} (:via item)]
      [:p {:class "mt-1 truncate text-sm text-text-soft"}
-      "via "
-      (if url [:a {:href url :class "spl-link"} text] text)])])
+      (i18n/fill (tr "via %1") (if url [:a {:href url :class "spl-link"} text] text))])])
 
 (defn media-list-items [& {:keys [media next-page-url]}]
   ;; Clamped, so a short final page still triggers from its first item rather
@@ -65,10 +65,10 @@
          :class "spl-grid-sentinel"}
    [:span {:class "spl-sentinel-spinner" :aria-hidden "true"}]
    [:span {:class "spl-sentinel-status" :role "status"}
-    [:span {:class "spl-sentinel-loading sr-only"} "Loading more media"]]])
+    [:span {:class "spl-sentinel-loading sr-only"} (tr "Loading more media")]]])
 
 (def ^:private sizes
-  [["small" "Small"] ["medium" "Medium"] ["large" "Large"]])
+  [["small" (N_ "Small")] ["medium" (N_ "Medium")] ["large" (N_ "Large")]])
 
 (def ^:private size-defaults
   ;; A record's Media tab shares its width with the side panel, so it starts
@@ -85,12 +85,12 @@
             key default key)))
 
 (defn- size-control []
-  [:div {:class "spl-segmented" :role "group" :aria-label "Thumbnail size"}
+  [:div {:class "spl-segmented" :role "group" :aria-label (tr "Thumbnail size")}
    (for [[value label] sizes]
      [:button {:type "button"
                :x-on:click (format "setSize('%s')" value)
                :x-bind:aria-pressed (format "size === '%s'" value)}
-      label])])
+      (tr label)])])
 
 (defn- media-grid [& {:keys [media next-page-url context]}]
   [:ul {:id "media-list"
@@ -126,13 +126,12 @@
             :data-media-drop-target "true"}
       (ui.empty/empty-state
         :icon (heroicons/outline-photo :size 48)
-        :title "No media yet"
-        :body "Photographs of an accession, its material, or the plant in the
-                ground show up here. Drag images here, or upload them."
+        :title (tr "No media yet")
+        :body (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
         :actions [[:button {:id "media-empty-upload"
                             :type "button"
                             :class "spl-btn spl-btn--primary"}
-                   "Upload"]])])
+                   (tr "Upload")]])])
    (media-grid :media media :next-page-url next-page-url :context context)
    (loading-indicator)])
 
@@ -155,7 +154,7 @@
                      :value "below"
                      :onchange "this.form.requestSubmit()"}
               below? (assoc :checked true))]
-    [:span "Include related media"]]])
+    [:span (tr "Include related media")]]])
 
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,
@@ -167,7 +166,7 @@
   [:button {:id "upload-button"
             :type "button"
             :class "spl-btn spl-btn--primary"}
-   "Upload"])
+   (tr "Upload")])
 
 (defn format-size
   "A byte count as KB or MB, the way a file browser shows it."

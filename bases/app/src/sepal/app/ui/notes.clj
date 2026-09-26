@@ -8,7 +8,8 @@
             [sepal.app.ui.avatar :as ui.avatar]
             [sepal.app.ui.button :as ui.button]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :as i18n :refer [tr]]))
 
 (defn- written-at
   "When a note was written, in the garden's timezone, with the full time as a
@@ -47,10 +48,10 @@
            [:span {:class "spl-changelog-time ml-0"} created-at])]
         [:div {:class "spl-entry-actions"}
          (ui.button/icon-button :icon (lucide/pencil)
-                                :label "Edit note"
+                                :label (tr "Edit note")
                                 :attrs {:x-on:click "editing = true"})
          (ui.button/icon-button :icon (lucide/trash-2)
-                                :label "Delete note"
+                                :label (tr "Delete note")
                                 :danger? true
                                 :attrs {:hx-delete url
                                         :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
@@ -69,7 +70,7 @@
          [:div {:class "spl-form"}
           (ui.form/anti-forgery-field)
           (ui.form/section
-            :children (ui.form/textarea-field :label "Note"
+            :children (ui.form/textarea-field :label (tr "Note")
                                               :name "body"
                                               :id (str "body-" id)
                                               :value body))
@@ -77,8 +78,8 @@
            [:button {:type "button"
                      :class "spl-btn spl-btn--ghost spl-btn--sm"
                      :x-on:click "editing = false"}
-            "Cancel"]
-           (ui.form/submit-button {:class "spl-btn spl-btn--primary spl-btn--sm"} "Save")]])]]]))
+            (tr "Cancel")]
+           (ui.form/submit-button {:class "spl-btn spl-btn--primary spl-btn--sm"} (tr "Save"))]])]]]))
 
 (defn- note-day
   "The garden's date a note was written on, or nil for a timestamp that
@@ -106,7 +107,7 @@
             (note-item :note note :note-url-fn note-url-fn :timezone timezone))))]
      [:p {:data-notes-empty ""
           :class "text-text-soft text-sm"}
-      "No notes yet."])])
+      (tr "No notes yet.")])])
 
 (defn note-form
   "The new-note form. Posts to the tab's own URL and replaces the list.
@@ -129,13 +130,13 @@
     [:div {:class "spl-form"}
      (ui.form/anti-forgery-field)
      (ui.form/section
-       :children (ui.form/textarea-field :label "Note"
+       :children (ui.form/textarea-field :label (tr "Note")
                                          :name "body"
                                          :id "body"
                                          :value (:body values)
                                          :errors (:body errors)))
      [:div {:class "flex justify-end"}
-      (ui.form/submit-button {:class "spl-btn spl-btn--primary"} "Add note")]]))
+      (ui.form/submit-button {:class "spl-btn spl-btn--primary"} (tr "Add note"))]]))
 
 (defn notes-body
   "The whole tab body: the form above the list."
@@ -158,4 +159,4 @@
    (when (and more-url note-count (> note-count (count notes)))
      [:a {:href more-url
           :class "spl-link text-sm"}
-      (str "See all " note-count)])])
+      (tr "See all %1" (i18n/format-number note-count))])])

@@ -7,12 +7,13 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
 (defn title-buttons []
   [:button {:id "upload-button"
             :class "spl-btn spl-btn--primary"}
-   "Upload"])
+   (tr "Upload")])
 
 (defn next-page-url [& {:keys [current-page]}]
   (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
@@ -42,7 +43,7 @@
   (ui.page/page :content (page-content :page page
                                        :page-size page-size
                                        :media media)
-                :breadcrumbs ["Media"]
+                :breadcrumbs [(trc "navigation" "Media")]
                 :page-title-buttons (title-buttons)))
 
 (def Params

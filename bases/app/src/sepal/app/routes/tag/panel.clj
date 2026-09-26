@@ -6,6 +6,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.tag.interface :as tag.i]
             [zodiac.core :as z]))
 
@@ -31,36 +32,36 @@
         (panel/panel-header :title name)
 
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Name" :value name}
-                     {:label "Description" :value description}]))
+            :fields [{:label (tr "Name") :value name}
+                     {:label (tr "Description") :value description}]))
 
         ;; The search filter matches names containing the text, so a tag whose
         ;; name is part of another's counts exactly here but not in the list.
         (panel/collapsible-section
-          :title "Linked records"
+          :title (tr "Linked records")
           :count link-count
           :disabled? (zero? link-count)
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (panel/statistics-section
-            :stats [{:label "Taxa"
+            :stats [{:label (tr "Taxa")
                      :value taxon-count
                      :href (search-href taxon.routes/index name)}
-                    {:label "Accessions"
+                    {:label (tr "Accessions")
                      :value accession-count
                      :href (search-href accession.routes/index name)}
-                    {:label "Materials"
+                    {:label (tr "Materials")
                      :value material-count
                      :href (search-href material.routes/index name)}]))
 
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

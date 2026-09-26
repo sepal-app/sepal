@@ -14,6 +14,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [sepal.media.interface.permission :as media.perm]
@@ -28,7 +29,7 @@
   (some-> (:media/s3-key media) (str/split #"/") last))
 
 (defn- display-name [media]
-  (or (not-empty (:media/title media)) (file-name media) "Untitled"))
+  (or (not-empty (:media/title media)) (file-name media) (tr "Untitled")))
 
 (defn- download-url [media]
   (str (z/url-for media.routes/transform {:id (:media/id media)})
@@ -40,12 +41,12 @@
   [:dialog#media-zoom {:class "spl-modal spl-modal--media"}
    [:div {:class "spl-modal-box"}
     [:form {:method "dialog" :class "flex justify-end mb-2"}
-     [:button {:class "spl-btn spl-btn--sm"} "Close"]]
+     [:button {:class "spl-btn spl-btn--sm"} (tr "Close")]]
     [:img {:src (transform-url (:media/id media) {:w 2048 :h 2048 :fit "contain"})
            :loading "lazy"
            :alt (display-name media)}]]
    [:form {:method "dialog" :class "spl-modal-backdrop"}
-    [:button "Close"]]])
+    [:button (tr "Close")]]])
 
 (defn- image-stage [media]
   (let [id (:media/id media)
@@ -57,7 +58,7 @@
             :alt (display-name media)
             :role "button"
             :tabindex "0"
-            :aria-label "Zoom"
+            :aria-label (tr "Zoom")
             :onclick "document.getElementById('media-zoom').showModal()"
             :onkeydown "if (event.key === 'Enter') document.getElementById('media-zoom').showModal()"}]]))
 
@@ -70,10 +71,10 @@
      :x-on:media-form:reset.window "$el.reset()"}
     [:div {:class "spl-form mt-6"}
      (ui.form/anti-forgery-field)
-     (ui.form/input-field :label "Title"
+     (ui.form/input-field :label (tr "Title")
                           :name "title"
                           :value (:media/title media))
-     (ui.form/textarea-field :label "Description"
+     (ui.form/textarea-field :label (tr "Description")
                              :name "description"
                              :value (:media/description media))]))
 
@@ -88,7 +89,7 @@
 
 (defn- actions [media editor?]
   (let [download [:a {:class "spl-btn spl-btn--sm" :href (download-url media)}
-                  "Download"]]
+                  (tr "Download")]]
     (if editor?
       (ui.actions/menu :primary download
                        :delete-url (z/url-for media.routes/delete {:id (:media/id media)}))
@@ -96,7 +97,7 @@
 
 (defn render [& {:keys [media panel-data editor? timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for media.routes/index)} "Media"]
+    :breadcrumbs [[:a {:href (z/url-for media.routes/index)} (trc "navigation" "Media")]
                   (display-name media)]
     :page-title-buttons (actions media editor?)
     :content (pages.detail/page-content-with-panel
@@ -141,9 +142,9 @@
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                       _ (f/try* (save! db (:media/id resource) (:user/id viewer) data))]
         (-> (http/hx-redirect detail-url)
-            (flash/success "Media updated successfully"))
+            (flash/success (tr "Media updated successfully")))
         (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect detail-url) "Could not save the media")))
+          (http/failure-flash e (http/hx-redirect detail-url) (tr "Could not save the media"))))
 
       (render :media resource
               :editor? (authz/user-has-permission? viewer media.perm/edit)

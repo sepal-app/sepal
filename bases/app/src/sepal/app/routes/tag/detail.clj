@@ -12,6 +12,7 @@
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [N_ tr]]
             [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]
             [sepal.validation.interface :as validation.i]
@@ -45,10 +46,10 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
-             :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} "Tags"] (:tag/name tag)]))
+             :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} (tr "Tags")] (:tag/name tag)]))
 
 (def ^:private name-taken-message
-  "A tag with this name already exists.")
+  (N_ "A tag with this name already exists."))
 
 (defn update!
   "Rename or redescribe, and record the activity in the same transaction, the
@@ -68,7 +69,7 @@
         tag))
     (catch org.sqlite.SQLiteException ex
       (if (re-find #"UNIQUE constraint failed" (ex-message ex))
-        (error.i/error ::name-taken name-taken-message)
+        (error.i/error ::name-taken (tr name-taken-message))
         (error.i/ex->error ex)))
     (catch Exception ex
       (error.i/ex->error ex))))
@@ -82,13 +83,13 @@
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                       _saved (f/try* (update! db id (:user/id viewer) data))]
         (-> (http/hx-redirect tag.routes/index)
-            (flash/success "Tag updated successfully"))
+            (flash/success (tr "Tag updated successfully")))
         (f/when-failed [e]
           ;; The one failure this route classifies itself: a duplicate name is a
           ;; field error, not a generic save failure.
           (if (error.i/error? e ::name-taken)
-            (http/validation-errors {:name [name-taken-message]})
-            (http/failure-flash e (http/hx-redirect tag.routes/index) "Could not save the tag"))))
+            (http/validation-errors {:name [(tr name-taken-message)]})
+            (http/failure-flash e (http/hx-redirect tag.routes/index) (tr "Could not save the tag")))))
 
       (render :tag resource
               :values values

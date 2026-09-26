@@ -8,6 +8,7 @@
             [sepal.app.routes.media.link-info :as link-info]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.media.interface :as media.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
@@ -32,13 +33,13 @@
       :children
       (list
         (panel/panel-header
-          :title (or title "Untitled")
+          :title (or title (tr "Untitled"))
           :subtitle media-type
           :on-close on-close)
 
         (when thumbnail-url
           (panel/collapsible-section
-            :title "Preview"
+            :title (tr "Preview")
             :children
             [:div {:class "flex justify-center p-2"}
              [:img {:src thumbnail-url
@@ -46,37 +47,37 @@
                     :alt title}]]))
 
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Title" :value title}
-                     {:label "Type" :value media-type}
-                     {:label "Size" :value (media.ui/format-size size-in-bytes)}
-                     {:label "Uploaded"
+            :fields [{:label (tr "Title") :value title}
+                     {:label (tr "Type") :value media-type}
+                     {:label (tr "Size") :value (media.ui/format-size size-in-bytes)}
+                     {:label (tr "Uploaded")
                       :value (->> [(some-> created-at
                                            datetime/sqlite-datetime->instant
                                            (datetime/format-datetime timezone))
-                                   (some->> (:user/email uploader) (str "by "))]
+                                   (some->> (:user/email uploader) (tr "by %1"))]
                                   (remove nil?)
                                   (str/join " ")
                                   not-empty)}]))
 
         (panel/collapsible-section
-          :title "Linked"
+          :title (tr "Linked")
           :children
           (or linked
               (if link-info
                 (if (:url link-info)
                   [:a {:href (:url link-info) :class "spl-link"} (:text link-info)]
                   (:text link-info))
-                [:p {:class "text-text-soft text-sm"} "Not linked"])))
+                [:p {:class "text-text-soft text-sm"} (tr "Not linked")])))
 
         (when activities
           (panel/collapsible-section
-            :title "Activity"
+            :title (tr "Activity")
             :count activity-count
             :disabled? (zero? (or activity-count 0))
-            :empty-label "none"
+            :empty-label (trc "empty section" "none")
             :default-open? false
             :children
             (panel/activity-section

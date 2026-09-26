@@ -5,6 +5,7 @@
             [sepal.app.routes.media.link-info :as link-info]
             [sepal.app.ui.media :as media.ui]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [sepal.validation.interface :as validation.i]
@@ -52,4 +53,4 @@
         (-> (media.ui/media-item :item media)
             (html/render-partial)))
       (f/when-failed [e]
-        (http/failure-partial e "The upload could not be saved.")))))
+        (http/failure-partial e (tr "The upload could not be saved."))))))

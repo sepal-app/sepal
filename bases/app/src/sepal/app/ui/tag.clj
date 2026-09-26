@@ -4,7 +4,8 @@
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.heroicons :as heroicons]
-            [sepal.app.ui.tooltip :as tooltip]))
+            [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn- chip [& {:keys [tag remove-url]}]
   [:span {:class "spl-chip"}
@@ -17,12 +18,12 @@
    (tooltip/wrap
      [:button {:type "button"
                :class "spl-chip-icon cursor-pointer"
-               :aria-label (str "Remove tag " (:tag/name tag))
+               :aria-label (tr "Remove tag %1" (:tag/name tag))
                :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
                :hx-delete remove-url
-               :hx-confirm (str "Remove tag \"" (:tag/name tag) "\"?")}
+               :hx-confirm (tr "Remove tag \"%1\"?" (:tag/name tag))}
       (heroicons/outline-x)]
-     (str "Remove tag " (:tag/name tag))
+     (tr "Remove tag %1" (:tag/name tag))
      ;; Above: chips wrap into rows, and a tip below one would cover the next.
      :side "top")])
 
@@ -31,8 +32,8 @@
     [:div {:class "flex flex-wrap gap-2"}
      (for [tag tags] ^{:key (:tag/id tag)} (chip :tag tag :remove-url (remove-url-fn tag)))]
     (ui.empty/empty-state
-      :title "No tags yet"
-      :body "Ad-hoc groupings you can filter this list by later.")))
+      :title (tr "No tags yet")
+      :body (tr "Ad-hoc groupings you can filter this list by later."))))
 
 (defn add-form [& {:keys [action all-tags]}]
   [:div
@@ -43,12 +44,12 @@
       :hx-swap "none"
       :class "flex items-end gap-2"}
      (ui.form/anti-forgery-field)
-     (ui.form/input-field :label "Tag"
+     (ui.form/input-field :label (tr "Tag")
                           :name "tag-name"
                           :required true
                           :input-attrs {:list "tag-options"}
-                          :help "Start typing an existing tag, or type a new name.")
-     [:button {:type "submit" :class "spl-btn spl-btn--primary"} "Add"])])
+                          :help (tr "Start typing an existing tag, or type a new name."))
+     [:button {:type "submit" :class "spl-btn spl-btn--primary"} (tr "Add")])])
 
 (defn section [& {:keys [tags all-tags action remove-url-fn]}]
   [:div {:class "grid gap-4"}
