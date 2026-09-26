@@ -7,6 +7,8 @@
   than of this code."
   (:require [babashka.fs :as fs]
             [clojure.data.json :as json]
+            [clojure.java.io :as io]
+            [clojure.set :as set]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]]
             [next.jdbc.sql :as jdbc.sql]
@@ -17,7 +19,8 @@
             [sepal.database.interface :as db.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
-  (:import [java.time Instant]))
+  (:import [java.io PushbackReader]
+           [java.time Instant]))
 
 (clojure.test/use-fixtures :once default-system-fixture)
 
@@ -641,6 +644,28 @@
             (fs/delete-tree dir)
             (jdbc.sql/delete! db :import_record {:source_table "activity"})
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-every-activity-schema-is-required
+  ;; The test system loads every route, and the routes register every activity
+  ;; schema, so a load test passes whether or not the loader requires them.
+  ;; Outside the tests nothing else loads them. This reads the ns form instead.
+  (let [ns-form (with-open [r (PushbackReader.
+                                (io/reader
+                                  (io/resource "sepal/app/cli/load_import.clj")))]
+                  (read r))
+        required (->> ns-form
+                      (filter #(and (seq? %) (= :require (first %))))
+                      first
+                      rest
+                      (map #(if (vector? %) (first %) %))
+                      set)
+        schemas (->> (fs/glob "components" "*/src/sepal/*/interface/activity.clj")
+                     (map #(-> % fs/parent fs/parent fs/file-name str
+                               (str/replace "_" "-")))
+                     (map #(symbol (str "sepal." % ".interface.activity")))
+                     set)]
+    (is (seq schemas))
+    (is (= #{} (set/difference schemas required)))))
 
 (deftest test-activity-dispatch-needs-a-keyword-type
   ;; Pins the reason `pass-activity` converts `:type` to a keyword before
