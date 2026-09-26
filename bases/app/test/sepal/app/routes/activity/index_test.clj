@@ -4,6 +4,7 @@
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.activity.interface :as activity.i]
             [sepal.app.cli.activity :as import.activity]
             [sepal.app.routes.activity.index :as activity.index]
             [sepal.app.test :as app.test]
@@ -12,6 +13,8 @@
             [sepal.database.interface :as db.i]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
+            [sepal.material.interface :as material.i]
+            [sepal.material.interface.activity :as material.activity]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [sepal.note.interface :as note.i]
@@ -22,8 +25,9 @@
             [sepal.propagation.interface.activity :as propagation.activity]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.activity :as taxon.activity]
             [sepal.user.interface :as user.i])
-  (:import [java.time LocalDate]))
+  (:import [java.time Instant LocalDate]))
 
 (use-fixtures :once default-system-fixture)
 
@@ -330,7 +334,7 @@
             (is (some? href) "the count is a link")
             (is (= 200 (:status response)) "the link resolves")
             (is (some-> (app.test/parse-body response)
-                        (.selectFirst "label[x-data^=overdueOnlyFilter]")
+                        (.selectFirst "label[x-data^=termFilter]")
                         (.attr "x-data")
                         (.endsWith ", true)"))
                 "the index's overdue checkbox is checked, because the link applies the very same term it uses"))
@@ -414,3 +418,45 @@
               (db.i/execute! *db* {:delete-from :note :where [:= :id (:note/id note)]})
               (db.i/execute! *db* {:delete-from :media :where [:= :id (:media/id media)]}))))))))
 
+
+(deftest test-a-material-update-is-named-by-its-full-code
+  (tf/testing "an updated material's chip carries its accession code, not the
+  material code alone"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/acc] {:db *db*
+                                       :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/loc] {:db *db*}
+     [::material.i/factory :key/mat] {:db *db*
+                                      :accession (ig/ref :key/acc)
+                                      :location (ig/ref :key/loc)}}
+    (fn [{:keys [user acc mat]}]
+      (with-cleared-activity
+        (material.activity/create! *db* material.activity/updated (:user/id user) mat)
+        (let [chip (-> (get-activity-page user)
+                       (app.test/parse-body)
+                       (.selectFirst (str "a[href*=/material/" (:material/id mat) "/]")))]
+          (is (some? chip))
+          (is (str/includes? (.text chip) (:accession/code acc))))))))
+
+(deftest test-a-taxon-event-with-no-subject-is-named-from-its-payload
+  (tf/testing "an imported taxon event with no taxon row still shows the name it
+  recorded, and links nowhere"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password password
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (with-cleared-activity
+        (activity.i/create! *db* {:type taxon.activity/updated
+                                  :created-at (Instant/now)
+                                  :created-by (:user/id user)
+                                  :data {:taxon-name "Acalypha"
+                                         :taxon-author "L."
+                                         :taxon-rank :genus}})
+        (let [chip (-> (get-activity-page user)
+                       (app.test/parse-body)
+                       (.selectFirst ".spl-chip"))]
+          (is (str/includes? (.text chip) "Acalypha"))
+          (is (nil? (.selectFirst chip "a"))))))))

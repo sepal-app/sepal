@@ -204,19 +204,23 @@
      :resource-url (z/url-for accession.routes/detail {:id (:accession/id accession)})
      :context (str "Accession" (when taxon (str " • " (:taxon/name taxon))))}))
 
-(defmethod activity-data taxon.activity/created [activity]
+(defn- taxon-data
+  "An event with no taxon row -- deleted, or imported with no subject -- is
+  named from its payload, with nothing to link to."
+  [activity]
   (let [{:keys [taxon parent]} activity]
     {:resource-type :taxon
-     :resource-name (:taxon/name taxon)
-     :resource-url (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
+     :resource-name (or (:taxon/name taxon)
+                        (get-in activity [:activity/data :taxon-name]))
+     :resource-url (when taxon
+                     (z/url-for taxon.routes/detail {:id (:taxon/id taxon)}))
      :context (str "Taxon" (when parent (str " • " (:taxon/name parent))))}))
 
+(defmethod activity-data taxon.activity/created [activity]
+  (taxon-data activity))
+
 (defmethod activity-data taxon.activity/updated [activity]
-  (let [{:keys [taxon parent]} activity]
-    {:resource-type :taxon
-     :resource-name (:taxon/name taxon)
-     :resource-url (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
-     :context (str "Taxon" (when parent (str " • " (:taxon/name parent))))}))
+  (taxon-data activity))
 
 (defmethod activity-data location.activity/created [activity]
   (let [{:keys [location]} activity]
@@ -234,19 +238,18 @@
      :context (str "Location" (when (:location/code location)
                                 (str " • " (:location/code location))))}))
 
-(defmethod activity-data material.activity/created [activity]
+(defn- material-data [activity]
   (let [{:keys [accession material material-separator taxon]} activity]
     {:resource-type :material
      :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
      :resource-url (z/url-for material.routes/detail {:id (:material/id material)})
      :context (str "Material" (when taxon (str " • " (:taxon/name taxon))))}))
 
+(defmethod activity-data material.activity/created [activity]
+  (material-data activity))
+
 (defmethod activity-data material.activity/updated [activity]
-  (let [{:keys [material]} activity]
-    {:resource-type :material
-     :resource-name (or (:material/name material) (:material/code material))
-     :resource-url (z/url-for material.routes/detail {:id (:material/id material)})
-     :context "Material"}))
+  (material-data activity))
 
 (defmethod activity-data setup.activity/completed [_activity]
   {:resource-type :setup
