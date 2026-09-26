@@ -29,3 +29,11 @@ fills in each language's column.
 
 Taxon names and their rank connectors (`subsp.`, `var.`, `f.`) are botanical
 Latin. They are never translated.
+
+## Register
+
+How the interface addresses the user, per language.
+
+| Language | Register |
+|---|---|
+| Español | Formal *usted* wherever the text addresses the user ("Su perfil", "Introduzca su correo electrónico"). Buttons and menu commands take the infinitive ("Guardar cambios") |
