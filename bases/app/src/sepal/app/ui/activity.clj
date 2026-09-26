@@ -25,6 +25,16 @@
     ;; Default fallback
     nil))
 
+(def ^:private action-labels
+  "Where the word a person would use differs from the event's name. A media
+  item is created by uploading it."
+  {:media/created "uploaded"})
+
+(defn action-label
+  "The verb shown for an activity type."
+  [activity-type]
+  (get action-labels activity-type (name activity-type)))
+
 (defn action-badge
   "A badge for an activity action — created, updated, deleted, completed.
 
@@ -32,9 +42,10 @@
   always carries the action word as its own text, so the colour is never the
   only carrier of the meaning."
   [activity-type]
-  (let [action (name activity-type)
+  (let [action (action-label activity-type)
         badge-class (case action
                       "created" "spl-badge--ok"
+                      "uploaded" "spl-badge--ok"
                       "completed" "spl-badge--ok"
                       "updated" "spl-badge--info"
                       "deleted" "spl-badge--danger"

@@ -30,24 +30,24 @@
                                                      :size-in-bytes (:size data)
                                                      :title (:filename data)
                                                      :created-by (:user/id viewer)}))]
-      (let [media (assoc result :thumbnail-url (media.ui/thumbnail-url (:media/id result)))]
-        ;; Create activity record for the media creation
+      (let [media (assoc result :thumbnail-url (media.ui/thumbnail-url (:media/id result)))
+            ;; Sent when the upload was made from a record's Media tab.
+            link (when (and (some? (:linkResourceType data))
+                            (some? (:linkResourceId data)))
+                   (let [link (media.i/link! db
+                                             (:media/id media)
+                                             (:linkResourceId data)
+                                             (:linkResourceType data))]
+                     (when-not (error.i/error? link) link)))]
+        ;; One event for the upload, naming the record it was linked to: the
+        ;; link is part of the upload, not a second thing that happened.
         (media.activity/create! db
                                 media.activity/created
                                 (:user/id viewer)
-                                media)
-
-        ;; If we were sent a resource type and resource id to link then link
-        ;; the media and the resource
-        (when (and (some? (:linkResourceType data))
-                   (some? (:linkResourceId data)))
-          (let [link (media.i/link! db
-                                    (:media/id media)
-                                    (:linkResourceId data)
-                                    (:linkResourceType data))]
-            (when-not (error.i/error? link)
-              (media.activity/create-link! db media.activity/linked (:user/id viewer) media link
-                                           (:text (link-info/link-info db link material-separator))))))
+                                media
+                                :link link
+                                :link-text (when link
+                                             (:text (link-info/link-info db link material-separator))))
 
         (-> (media.ui/media-item :item media)
             (html/render-partial)))

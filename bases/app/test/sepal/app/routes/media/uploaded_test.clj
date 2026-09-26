@@ -1,5 +1,6 @@
 (ns sepal.app.routes.media.uploaded-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
@@ -14,7 +15,7 @@
 (use-fixtures :once default-system-fixture)
 
 (deftest test-an-upload-from-a-record-records-the-link
-  (tf/testing "uploading from a taxon's Media tab records the link as well as the upload"
+  (tf/testing "uploading from a taxon's Media tab records one upload that names the taxon"
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db* :name "Uploadia"}}
     (fn [{:keys [user taxon]}]
@@ -34,10 +35,13 @@
             media-id (some-> (jdbc.sql/find-by-keys *db* :media {:s3_key "media/pod.jpg"}) first :media/id)]
         (try
           (is (= 200 (:status response)))
-          (is (= #{media.activity/created media.activity/linked}
+          (is (= [[media.activity/created "Uploadia"]]
                  (->> (activity.i/get-by-resource *db* :resource-type :media :resource-id media-id)
-                      (map :activity/type)
-                      set)))
+                      (map (juxt :activity/type (comp :link-text :activity/data)))))
+              "one event for the upload, naming the record it was linked to")
+          (let [feed (-> (peri/request sess "/activity") :response :body)]
+            (is (str/includes? feed "uploaded a media item"))
+            (is (str/includes? feed "linked to Uploadia")))
           (finally
             (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
             (jdbc.sql/delete! *db* :media {:id media-id})))))))

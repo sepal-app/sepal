@@ -380,9 +380,6 @@
                      (z/url-for media.routes/detail {:id (:media/id media)}))
      :context "Media"}))
 
-(defmethod activity-data media.activity/created [activity]
-  (media-data activity))
-
 (defmethod activity-data media.activity/deleted [activity]
   (media-data activity))
 
@@ -396,6 +393,9 @@
   (let [text (get-in activity [:activity/data :link-text])]
     (cond-> (media-data activity)
       text (assoc :context (str "Media • " preposition " " text)))))
+
+(defmethod activity-data media.activity/created [activity]
+  (media-link-data activity "linked to"))
 
 (defmethod activity-data media.activity/linked [activity]
   (media-link-data activity "linked to"))
@@ -467,7 +467,7 @@
   (->> activities
        (map (fn [a]
               (let [t (:activity/type a)]
-                [(name t) (namespace t)])))
+                [(ui.activity/action-label t) (namespace t)])))
        (reduce (fn [acc pair]
                  (if (contains? (:seen acc) pair)
                    (update-in acc [:counts pair] inc)
