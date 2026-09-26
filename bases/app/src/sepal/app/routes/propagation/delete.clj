@@ -8,33 +8,33 @@
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def resource-type :propagation)
 
-(defn- label [db propagation]
-  (str "propagation from "
-       (shared/parent-name (accession.i/get-by-id
-                             db (:propagation/parent-accession-id propagation))
-                           nil
-                           nil)))
+(defn- parent-name [db propagation]
+  (shared/parent-name (accession.i/get-by-id
+                        db (:propagation/parent-accession-id propagation))
+                      nil
+                      nil))
 
 (defn- render-dialog [db propagation]
   (html/render-partial
     (ui.delete/dialog
       :action (z/url-for propagation.routes/delete {:id (:propagation/id propagation)})
-      :label (label db propagation)
+      :title (tr "Delete the propagation from %1?" (parent-name db propagation))
       :blockers (app.delete/blockers resource-type db propagation))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
   (let [{:keys [db resource]} context]
     (case request-method
       :post
-      (let [label (label db resource)
+      (let [parent (parent-name db resource)
             result (app.delete/delete! resource-type db resource (:user/id viewer))]
         (if (error.i/error? result)
           (assoc (render-dialog db resource) :status 422)
           (-> (http/see-other propagation.routes/index)
-              (flash/success (str "Deleted " label)))))
+              (flash/success (tr "Deleted the propagation from %1" parent)))))
 
       (render-dialog db resource))))

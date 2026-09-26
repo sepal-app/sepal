@@ -47,6 +47,9 @@ msgstr \"Perfil\"
 msgid \"Language\"
 msgstr \"Idioma\"
 
+msgid \"Taxa\"
+msgstr \"Taxones\"
+
 msgid \"Profile updated successfully\"
 msgstr \"Perfil actualizado\"
 "))
@@ -96,6 +99,10 @@ msgstr \"Perfil actualizado\"
                                                  :headers {"accept-language" "en-US"})]
             (is (= "es" (:user/language (user.i/get-by-email *db* email))))
             (is (= "Idioma" (language-label response)))
+            (is (some #(= "Taxones" (.text %))
+                      (.select (Jsoup/parse ^String (:body response)) ".spl-rail .spl-nav-label"))
+                "the section rail is a lazy seq, rendered after the handler returns")
+            (is (= "es" (.attr (.selectFirst (Jsoup/parse ^String (:body response)) "html") "lang")))
             (is (= "es" (some-> (Jsoup/parse ^String (:body response))
                                 (.selectFirst "select[name=language] option[selected]")
                                 (.attr "value"))))))

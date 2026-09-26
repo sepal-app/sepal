@@ -19,6 +19,7 @@
             [sepal.contact.interface.activity :as contact.activity]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr trn]]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.material.interface :as material.i]
@@ -194,23 +195,28 @@
 
 ;;; ---------------------------------------------------------------------------
 
-(def ^:private blocker-labels
-  {:material "%d material record(s) reference this"
-   :material-change "%d move(s) in the history reference this location"
-   :accession "%d accession(s) reference this"
-   :child-taxon "%d taxa name this one as their parent"
-   :parentage "%d cross(es) name this taxon as a parent"
-   :propagation-parent "%d propagation(s) name this as their parent"
-   :propagation-rootstock "%d propagation(s) use this taxon as a rootstock"
-   :propagation-location "%d propagation(s) name this location"
-   :propagation-product "%d record(s) came from this propagation"
-   :wfo "This name comes from the World Flora Online list"})
-
 (defn blocker-label [{:keys [reason count]}]
-  (let [fmt (get blocker-labels reason "%d record(s) reference this")]
-    (if (re-find #"%d" fmt)
-      (format fmt count)
-      fmt)))
+  (case reason
+    :material (trn "%1 material record references this"
+                   "%1 material records reference this" count)
+    :material-change (trn "%1 move in the history references this location"
+                          "%1 moves in the history reference this location" count)
+    :accession (trn "%1 accession references this"
+                    "%1 accessions reference this" count)
+    :child-taxon (trn "%1 taxon names this one as its parent"
+                      "%1 taxa name this one as their parent" count)
+    :parentage (trn "%1 cross names this taxon as a parent"
+                    "%1 crosses name this taxon as a parent" count)
+    :propagation-parent (trn "%1 propagation names this as its parent"
+                             "%1 propagations name this as their parent" count)
+    :propagation-rootstock (trn "%1 propagation uses this taxon as a rootstock"
+                                "%1 propagations use this taxon as a rootstock" count)
+    :propagation-location (trn "%1 propagation names this location"
+                               "%1 propagations name this location" count)
+    :propagation-product (trn "%1 record came from this propagation"
+                              "%1 records came from this propagation" count)
+    :wfo (tr "This name comes from the World Flora Online list")
+    (trn "%1 record references this" "%1 records reference this" count)))
 
 (defn delete!
   "Delete the record and everything it owns, in one transaction.

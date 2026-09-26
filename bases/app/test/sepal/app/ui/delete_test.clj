@@ -11,7 +11,7 @@
 
 (deftest test-a-deletable-record-offers-the-delete
   (let [body (parse (ui.delete/dialog :action "/accession/12/delete/"
-                                      :label "accession 2004.0231"
+                                      :title "Delete accession 2004.0231?"
                                       :blockers []))
         form (.selectFirst body "form[method=post]")]
     (is (some? form))
@@ -25,7 +25,7 @@
 (deftest test-a-blocked-record-offers-no-delete
   (let [body (parse (ui.delete/dialog
                       :action "/accession/12/delete/"
-                      :label "accession 2004.0231"
+                      :title "Delete accession 2004.0231?"
                       :blockers [{:reason :material :count 12}]))]
     (is (nil? (.selectFirst body "form[method=post]"))
         "No form means no way to submit a delete the server would refuse")
@@ -35,7 +35,7 @@
 (deftest test-every-blocker-is-listed
   (let [body (parse (ui.delete/dialog
                       :action "/location/3/delete/"
-                      :label "location Block 24"
+                      :title "Delete location Block 24?"
                       :blockers [{:reason :material :count 3}
                                  {:reason :material-change :count 18}]))]
     (is (= 2 (.size (.select body "li")))

@@ -1,7 +1,8 @@
 (ns sepal.app.ui.table
   (:require [clojure.string :as str]
             [lambdaisland.uri :as uri]
-            [sepal.app.ui.icons.heroicons :as icon]))
+            [sepal.app.ui.icons.heroicons :as icon]
+            [sepal.i18n.interface :refer [format-number tr]]))
 
 (defn summary
   "Joins a row's secondary fields into the one line the first cell shows below
@@ -100,14 +101,14 @@
     ;; what gets announced — a region inserted with its text already present
     ;; announces nothing.
     [:span {:class "spl-sentinel-status" :role "status"}
-     [:span {:class "spl-sentinel-loading sr-only"} "Loading more rows"]]]])
+     [:span {:class "spl-sentinel-loading sr-only"} (tr "Loading more rows")]]]])
 
 (defn end-of-list
   "Shown once every row has been loaded, so the list has a visible bottom
   rather than simply stopping."
   [column-count]
   [:tr {:class "spl-end"}
-   [:td {:colspan column-count} "End of list"]])
+   [:td {:colspan column-count} (tr "End of list")]])
 
 (defn- body-rows
   "The <tr>s, and the paging chrome when there is paging.
@@ -229,8 +230,9 @@
   [:p (cond-> {:id count-id :class "spl-count"}
         oob? (assoc :hx-swap-oob "true"))
    (if (or (nil? total) (zero? total))
-     "No rows"
-     (format "%,d of %,d" (or loaded 0) total))])
+     (tr "No rows")
+     ;; i18n: Rows loaded out of the total, as in "25 of 1,284"
+     (tr "%1 of %2" (format-number (or loaded 0)) (format-number total)))])
 
 (defn rows-only
   "An infinite-scroll response: the next page's <tr>s, plus an out-of-band

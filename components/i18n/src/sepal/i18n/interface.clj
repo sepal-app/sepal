@@ -124,3 +124,10 @@
   (if-let [l *locale*]
     (java.util.Locale/forLanguageTag (.replace ^String l "_" "-"))
     java.util.Locale/ENGLISH))
+
+(defn format-number
+  "n with the grouping separator of *locale*: \"1,284\" in English, \"1.284\"
+  in Spanish."
+  [n]
+  (.format ^java.text.Format (java.text.NumberFormat/getIntegerInstance (java-locale))
+           ^Object n))

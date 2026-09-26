@@ -14,7 +14,8 @@
   (:require [sepal.app.ui.archive :as ui.archive]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.icons.heroicons :as heroicons]))
+            [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn- menu-link [{:keys [label href post-url params]}]
   (if post-url
@@ -60,7 +61,7 @@
                   :x-bind:aria-expanded "open"
                   :x-bind:aria-controls "$id('actions-menu')"
                   :aria-haspopup "menu"}
-         "Actions"
+         (tr "Actions")
          (heroicons/chevron-down)]
         [:ul {:class "spl-actions-panel spl-menu"
               :role "menu"

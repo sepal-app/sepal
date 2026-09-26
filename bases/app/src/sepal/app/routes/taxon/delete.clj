@@ -6,18 +6,16 @@
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def resource-type :taxon)
-
-(defn- label [taxon]
-  (str "taxon " (:taxon/name taxon)))
 
 (defn- render-dialog [db taxon]
   (html/render-partial
     (ui.delete/dialog
       :action (z/url-for taxon.routes/delete {:id (:taxon/id taxon)})
-      :label (label taxon)
+      :title (tr "Delete taxon %1?" (:taxon/name taxon))
       :blockers (app.delete/blockers resource-type db taxon))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
@@ -28,6 +26,6 @@
         (if (error.i/error? result)
           (assoc (render-dialog db resource) :status 422)
           (-> (http/see-other taxon.routes/index)
-              (flash/success (str "Deleted " (label resource))))))
+              (flash/success (tr "Deleted taxon %1" (:taxon/name resource))))))
 
       (render-dialog db resource))))

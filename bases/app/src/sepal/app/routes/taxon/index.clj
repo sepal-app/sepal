@@ -13,6 +13,7 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.search.interface :as search.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
@@ -114,7 +115,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "taxa"
+                                :title (tr "No taxa yet")
                                 :body "The taxonomy behind your collection. Import the World Flora Online list
                               from Settings, or add a name by hand."
                                 :searching? (seq search-query)

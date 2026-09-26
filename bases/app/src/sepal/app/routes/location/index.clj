@@ -12,6 +12,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface.permission :as location.perm]
             [sepal.location.interface.search]
             [sepal.search.interface :as search.i]
@@ -74,7 +75,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "locations"
+                                :title (tr "No locations yet")
                                 :body "The beds, houses and stores that material lives in."
                                 :searching? (seq search-query)
                                 :create-href (z/url-for location.routes/new)))))

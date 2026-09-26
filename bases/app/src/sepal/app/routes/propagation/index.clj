@@ -18,6 +18,7 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.propagation.interface.search]
             [sepal.search.interface :as search.i]
@@ -164,7 +165,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "propagations"
+                                :title (tr "No propagations yet")
                                 :body "What the garden has grown itself, and what came out of it."
                                 :searching? (seq search-query)
                                 :create-href (z/url-for propagation.routes/new)))))

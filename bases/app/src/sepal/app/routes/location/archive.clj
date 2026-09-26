@@ -12,6 +12,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.archive :as ui.archive]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.activity :as location.activity]
             [sepal.material.interface :as material.i]
@@ -29,14 +30,11 @@
           (when (pos? n) {:reason :material :count n}))]
        (filterv some?)))
 
-(defn- label [location]
-  (str "location " (:location/name location)))
-
 (defn- render-dialog [db location]
   (html/render-partial
     (ui.archive/dialog
       :action (z/url-for location.routes/archive {:id (:location/id location)})
-      :label (label location)
+      :title (tr "Archive location %1?" (:location/name location))
       :blockers (blockers db location))))
 
 (defn set-status!
@@ -62,7 +60,7 @@
         (do
           (set-status! db resource :archived location.activity/archived (:user/id viewer))
           (-> (http/see-other location.routes/detail {:id (:location/id resource)})
-              (flash/success (str "Archived " (label resource))))))
+              (flash/success (tr "Archived location %1" (:location/name resource))))))
 
       (render-dialog db resource))))
 
@@ -73,4 +71,4 @@
   (let [{:keys [db resource]} context]
     (set-status! db resource :active location.activity/unarchived (:user/id viewer))
     (-> (http/see-other location.routes/detail {:id (:location/id resource)})
-        (flash/success (str "Restored " (label resource))))))
+        (flash/success (tr "Restored location %1" (:location/name resource))))))

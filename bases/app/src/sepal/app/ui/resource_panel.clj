@@ -12,7 +12,8 @@
             [sepal.app.html :as html]
             [sepal.app.ui.activity :as ui.activity]
             [sepal.app.ui.icons.lucide :as lucide]
-            [sepal.app.ui.tooltip :as tooltip]))
+            [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [format-number tr]]))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Collapsible Section
@@ -194,7 +195,7 @@
                  :hx-get load-more-url
                  :hx-target "closest .space-y-2"
                  :hx-swap "beforeend"}
-        (str "Load " remaining " more")])]))
+        (tr "Load %1 more" (format-number remaining))])]))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Panel Container
@@ -237,10 +238,10 @@
          [:button {:class "spl-panel-close"
                    :type "button"
                    :data-panel-close ""
-                   :aria-label "Close panel"
+                   :aria-label (tr "Close panel")
                    :x-on:click on-close}
           (lucide/x :class "w-4 h-4")]
-         "Close panel"
+         (tr "Close panel")
          :side "left"))]
     (when actions
       [:div {:class "spl-panel-actions"} actions])))

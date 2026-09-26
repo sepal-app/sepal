@@ -1,6 +1,8 @@
 (ns sepal.app.ui.form
-  (:require [clojure.string :as str]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]))
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [sepal.i18n.interface :refer [tr]]))
 
 (def anti-forgery-field-name "__anti-forgery-token")
 
@@ -214,14 +216,17 @@
                   "history.back()")]
     [[:button {:type "button"
                :class "spl-btn"
-               :x-on:click (str "if (!dirty || confirm('Are you sure you want "
-                                "to lose your changes?')) " discard)}
-      "Cancel"]
+               ;; JSON-encoded, so a translation with a quote in it is still
+               ;; a valid JavaScript string.
+               :x-on:click (str "if (!dirty || confirm("
+                                (json/write-str (tr "Are you sure you want to lose your changes?"))
+                                ")) " discard)}
+      (tr "Cancel")]
      [:button {:type "button"
                :class "spl-btn spl-btn--primary"
                :x-on:click (str "$dispatch('" form-event ":submit')")
                :x-bind:disabled "!valid"}
-      "Save"]]))
+      (tr "Save")]]))
 
 (defn submit-button
   ([children]

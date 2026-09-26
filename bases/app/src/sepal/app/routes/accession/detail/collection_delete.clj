@@ -14,6 +14,7 @@
             [sepal.app.ui.delete :as ui.delete]
             [sepal.collection.interface :as coll.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def resource-type :collection)
@@ -23,7 +24,7 @@
     (ui.delete/dialog
       :action (z/url-for accession.routes/detail-collection-delete
                          {:id (:accession/id accession)})
-      :label (str "the collection data on accession " (:accession/code accession))
+      :title (tr "Delete the collection data on accession %1?" (:accession/code accession))
       :blockers (app.delete/blockers resource-type db collection))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
@@ -38,6 +39,6 @@
             (assoc (render-dialog db resource collection) :status 422)
             (-> (http/see-other accession.routes/detail-collection
                                 {:id (:accession/id resource)})
-                (flash/success "Cleared the collection data."))))
+                (flash/success (tr "Cleared the collection data.")))))
 
         (render-dialog db resource collection)))))

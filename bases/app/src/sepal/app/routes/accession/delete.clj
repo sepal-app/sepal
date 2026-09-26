@@ -6,18 +6,16 @@
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def resource-type :accession)
-
-(defn- label [accession]
-  (str "accession " (:accession/code accession)))
 
 (defn- render-dialog [db accession]
   (html/render-partial
     (ui.delete/dialog
       :action (z/url-for accession.routes/delete {:id (:accession/id accession)})
-      :label (label accession)
+      :title (tr "Delete accession %1?" (:accession/code accession))
       :blockers (app.delete/blockers resource-type db accession))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
@@ -31,6 +29,6 @@
           ;; back explaining why, which is what a hand-rolled POST deserves.
           (assoc (render-dialog db resource) :status 422)
           (-> (http/see-other accession.routes/index)
-              (flash/success (str "Deleted " (label resource))))))
+              (flash/success (tr "Deleted accession %1" (:accession/code resource))))))
 
       (render-dialog db resource))))

@@ -19,6 +19,7 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.search]
             [sepal.search.interface :as search.i]
@@ -121,7 +122,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "material"
+                                :title (tr "No material yet")
                                 :body "Material is what an accession became in the garden — a plant in a bed, a
                               seed lot in store."
                                 :searching? (seq search-query)

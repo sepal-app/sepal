@@ -12,6 +12,7 @@
             [sepal.aws-s3.interface :as s3.i]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [zodiac.core :as z]))
@@ -30,8 +31,15 @@
       ;; TODO: handle errors
       (error.i/ex->error ex))))
 
-(defn- label [media]
-  (str "media " (or (:media/title media) "item")))
+(defn- dialog-title [media]
+  (if-let [title (:media/title media)]
+    (tr "Delete media %1?" title)
+    (tr "Delete this media item?")))
+
+(defn- deleted-message [media]
+  (if-let [title (:media/title media)]
+    (tr "Deleted media %1" title)
+    (tr "Deleted the media item")))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
   (let [{:keys [db resource s3-client]} context]
@@ -46,10 +54,10 @@
       (= :post request-method)
       (do (delete! db s3-client resource (:user/id viewer))
           (-> (http/see-other media.routes/index)
-              (flash/success (str "Deleted " (label resource)))))
+              (flash/success (deleted-message resource))))
 
       :else
       (html/render-partial
         (ui.delete/dialog :action (z/url-for media.routes/delete {:id (:media/id resource)})
-                          :label (label resource)
+                          :title (dialog-title resource)
                           :blockers [])))))

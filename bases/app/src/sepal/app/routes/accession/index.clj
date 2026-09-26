@@ -17,6 +17,7 @@
             [sepal.app.ui.table :as table]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -96,12 +97,12 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "accessions"
+                                :title (tr "No accessions yet")
                                 :body "An accession is a batch of plant material acquired at one time from one
                               source."
                                 :searching? (seq search-query)
                                 :create-href (z/url-for accession.routes/new)
-                                :create-label "New accession"))))
+                                :create-label (tr "New accession")))))
 
 (defn render [& {:keys [field-options viewer href page page-size rows search-query taxon total]}]
   (ui.page/page

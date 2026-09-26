@@ -5,7 +5,8 @@
   rendered, so a record that became undeletable while the page sat open says so
   rather than offering a delete the server will refuse."
   (:require [sepal.app.delete :as app.delete]
-            [sepal.app.ui.form :as ui.form]))
+            [sepal.app.ui.form :as ui.form]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn modal-container
   "Where the confirmation dialog swaps in. One per page."
@@ -26,7 +27,7 @@
             :hx-swap "innerHTML"
             (keyword "hx-on::after-request")
             "if (event.detail.successful) document.getElementById('delete_modal').showModal()"}
-   "Delete"])
+   (tr "Delete")])
 
 (defn button
   "The topbar button, and the container its dialog swaps into.
@@ -52,7 +53,7 @@
               ;; `keyword`.
               (keyword "hx-on::after-request")
               "if (event.detail.successful) document.getElementById('delete_modal').showModal()"}
-     "Delete"]
+     (tr "Delete")]
     (modal-container)))
 
 (defn dialog
@@ -61,45 +62,46 @@
 
   `archive-url` turns one blocker from a dead end into a next step. A location
   named by the move log can never be deleted — no action a curator takes will
-  clear that — so a dialog that only says no leaves them nowhere to go."
-  [& {:keys [action label blockers archive-url]}]
+  clear that — so a dialog that only says no leaves them nowhere to go.
+
+  `title` is the whole translated question, e.g. \"Delete accession 2026.0001?\";
+  the route writes it because word order differs between languages."
+  [& {:keys [action title blockers archive-url]}]
   [:dialog#delete_modal {:class "spl-modal"}
    [:div {:class "spl-modal-box"}
-    [:h3 {:class "font-bold text-lg"} (str "Delete " label "?")]
+    [:h3 {:class "font-bold text-lg"} title]
     (if (seq blockers)
       [:div {:class "py-4 flex flex-col gap-2"}
-       [:p "This record cannot be deleted yet:"]
+       [:p (tr "This record cannot be deleted yet:")]
        [:ul {:class "list-disc pl-5"}
         (for [blocker blockers]
           [:li {:key (:reason blocker)} (app.delete/blocker-label blocker)])]
        (if (and archive-url (= [:material-change] (mapv :reason blockers)))
          [:p {:class "text-text-soft text-sm"}
-          "The move log will always name this location, so it cannot be
-           deleted. Archive it instead: it keeps its place in the history and
-           stops appearing when you file material."]
+          (tr "The move log will always name this location, so it cannot be deleted. Archive it instead: it keeps its place in the history and stops appearing when you file material.")]
          [:p {:class "text-text-soft text-sm"}
-          "Delete or move those records first."])
+          (tr "Delete or move those records first.")])
        [:div {:class "spl-modal-actions"}
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "delete_modal.close()"}
-         "Close"]
+         (tr "Close")]
         (when (and archive-url (= [:material-change] (mapv :reason blockers)))
           [:a {:class "spl-btn spl-btn--primary"
                :href archive-url}
-           "Archive instead"])]]
+           (tr "Archive instead")])]]
       [:form {:method "post"
               :action action
               :class "py-4 flex flex-col gap-2"}
        (ui.form/anti-forgery-field)
-       [:p "This cannot be undone. The record and everything belonging to it will be removed."]
+       [:p (tr "This cannot be undone. The record and everything belonging to it will be removed.")]
        [:div {:class "spl-modal-actions"}
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "delete_modal.close()"}
-         "Cancel"]
+         (tr "Cancel")]
         [:button {:type "submit"
                   :class "spl-btn spl-btn--danger"}
-         "Delete"]]])]
+         (tr "Delete")]]])]
    [:form {:method "dialog" :class "spl-modal-backdrop"}
-    [:button "close"]]])
+    [:button (tr "Close")]]])

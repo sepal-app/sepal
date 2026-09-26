@@ -15,6 +15,7 @@
             [sepal.contact.interface.permission :as contact.perm]
             [sepal.contact.interface.search]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z]))
 
@@ -83,7 +84,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "contacts"
+                                :title (tr "No contacts yet")
                                 :body "The nurseries, gardens and collectors your material comes from."
                                 :searching? (seq search-query)
                                 :create-href (z/url-for contact.routes/new)))))

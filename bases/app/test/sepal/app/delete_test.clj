@@ -454,12 +454,13 @@
             (clear-activity! user)))))))
 
 (deftest test-blocker-labels-read-as-sentences
-  (is (= "12 material record(s) reference this"
+  (is (= "12 material records reference this"
          (app.delete/blocker-label {:reason :material :count 12})))
-  (is (= "2 propagation(s) name this as their parent"
+  (is (= "2 propagations name this as their parent"
          (app.delete/blocker-label {:reason :propagation-parent :count 2})))
-  (is (= "1 propagation(s) name this location"
-         (app.delete/blocker-label {:reason :propagation-location :count 1})))
+  (is (= "1 propagation names this location"
+         (app.delete/blocker-label {:reason :propagation-location :count 1}))
+      "one is singular, not \"1 propagation(s)\"")
   (is (= "This name comes from the World Flora Online list"
          (app.delete/blocker-label {:reason :wfo :count 1}))
       "a reason with nothing to count renders without a number"))

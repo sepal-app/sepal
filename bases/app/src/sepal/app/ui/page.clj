@@ -17,6 +17,7 @@
             [sepal.app.ui.base :as base]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
 (defn sidebar-item
@@ -76,17 +77,17 @@
    (tooltip/wrap
      [:label {:for "sidebar-drawer-toggle"
               :class "spl-toggle spl-toggle--rail"
-              :aria-label "Toggle sections"}
+              :aria-label (tr "Toggle sections")}
       (sidebar-toggle-icon)]
-     "Toggle sections")
+     (tr "Toggle sections"))
    (tooltip/wrap
      [:label {:for "sidebar-mobile-toggle"
               :class "spl-toggle spl-toggle--drawer"
-              :aria-label "Toggle sections"}
+              :aria-label (tr "Toggle sections")}
       (sidebar-toggle-icon)]
-     "Toggle sections")
+     (tr "Toggle sections"))
    (when breadcrumbs
-     [:nav {:class "spl-crumbs" :aria-label "Breadcrumb"}
+     [:nav {:class "spl-crumbs" :aria-label (tr "Breadcrumb")}
       [:ol
        (for [item (butlast breadcrumbs)]
          [:li item])
@@ -101,9 +102,9 @@
     (tooltip/wrap
       [:label {:for "detail-panel-toggle"
                :class "spl-toggle spl-toggle--panel"
-               :aria-label "Toggle details"}
+               :aria-label (tr "Toggle details")}
        (lucide/panel-right :size 18)]
-      "Toggle details"
+      (tr "Toggle details")
       :side "bottom")]])
 
 (defn- current-section?
@@ -133,25 +134,25 @@
    ground line, and a bean is one compact diagonal body. The flower Taxa used
    to draw sat next to the sprout and read as the same shape at 20px."
   []
-  [{:label "Activity" :href (z/url-for activity.routes/index)
+  [{:label (tr "Activity") :href (z/url-for activity.routes/index)
     :icon (lucide/history)}
-   {:label "Taxa" :href (z/url-for taxon.routes/index)
+   {:label (tr "Taxa") :href (z/url-for taxon.routes/index)
     :icon (lucide/trees)}
-   {:label "Accessions" :href (z/url-for accession.routes/index)
+   {:label (tr "Accessions") :href (z/url-for accession.routes/index)
     :icon (lucide/clipboard-list)}
-   {:label "Material" :href (z/url-for material.routes/index)
+   {:label (trc "navigation" "Material") :href (z/url-for material.routes/index)
     :icon (lucide/sprout)}
-   {:label "Propagation" :href (z/url-for propagation.routes/index)
+   {:label (trc "navigation" "Propagation") :href (z/url-for propagation.routes/index)
     :icon (lucide/bean)}
-   {:label "Locations" :href (z/url-for location.routes/index)
+   {:label (tr "Locations") :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
-   {:label "Observations" :href (z/url-for observation.routes/index)
+   {:label (tr "Observations") :href (z/url-for observation.routes/index)
     :icon (lucide/eye)}
-   {:label "Tags" :href (z/url-for tag.routes/index)
+   {:label (tr "Tags") :href (z/url-for tag.routes/index)
     :icon (lucide/tag)}
-   {:label "Media" :href (z/url-for media.routes/index)
+   {:label (trc "navigation" "Media") :href (z/url-for media.routes/index)
     :icon (lucide/image)}
-   {:label "Contacts" :href (z/url-for contact.routes/index)
+   {:label (tr "Contacts") :href (z/url-for contact.routes/index)
     :icon (lucide/contact-round)}])
 
 (defn sidebar []
@@ -160,7 +161,7 @@
   ;; unwound and g/*uri* reads nil. Closing over the value is what makes this
   ;; independent of when rendering happens.
   (let [uri g/*uri*]
-    [:nav {:class "spl-rail" :aria-label "Sections"}
+    [:nav {:class "spl-rail" :aria-label (tr "Sections")}
      [:ul {:class "spl-nav-list"}
       (for [{:keys [label href icon]} (sections)]
         (sidebar-item :label label
@@ -168,7 +169,7 @@
                       :icon icon
                       :current? (current-section? uri href)))]
      [:ul {:class "spl-nav-list spl-nav-list--end"}
-      (sidebar-item :label "Settings"
+      (sidebar-item :label (tr "Settings")
                     :href (z/url-for settings.routes/profile)
                     :icon (lucide/settings)
                     :current? (current-section? uri "/settings/"))]]))

@@ -4,7 +4,8 @@
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.query-builder :as query-builder]
             [sepal.app.ui.table :as table]
-            [sepal.app.ui.tooltip :as tooltip]))
+            [sepal.app.ui.tooltip :as tooltip]
+            [sepal.i18n.interface :refer [tr]]))
 
 (def list-container-id "list-container")
 
@@ -17,14 +18,15 @@
    - :clear-href - URL to navigate to when clearing this filter"
   [{:keys [label value clear-href]}]
   [:div {:class "spl-badge spl-badge--neutral gap-1"}
-   [:span (str label ": ")]
+   ;; i18n: A filter's name before its value, as in "Taxon: Quercus alba"
+   [:span (tr "%1:" label)]
    [:span {:class "font-semibold"} value]
    (tooltip/wrap
      [:a {:href clear-href
           :class "hover:text-danger"
-          :aria-label (str "Clear " label " filter")}
+          :aria-label (tr "Clear the %1 filter" label)}
       (lucide/x :class "w-3 h-3")]
-     (str "Clear " label " filter")
+     (tr "Clear the %1 filter" label)
      ;; Above: the badges sit directly on the table, which clips its own
      ;; overflow. The toolbar above them does not.
      :side "top")])
@@ -52,11 +54,11 @@
             :class "spl-input spl-input--search"
             :type "search"
             :value q
-            :placeholder "Search..."}]
+            :placeholder (tr "Search...")}]
    [:button
     {:type "button"
      :class "spl-btn spl-btn--ghost spl-btn--sm"
-     :aria-label "Clear search"
+     :aria-label (tr "Clear search")
      :onclick "document.getElementById('q').value = null; this.form.submit()"}
     (heroicons/outline-x :size 20)]])
 
@@ -72,7 +74,7 @@
   [& {:keys [href label]}]
   [:a {:class "spl-btn spl-btn--primary"
        :href href}
-   (or label "Create")])
+   (or label (tr "Create"))])
 
 (defn empty-list
   "What a list shows when it has no rows.
@@ -80,14 +82,16 @@
   A search that matched nothing is a different situation from a resource you
   have not created yet: one wants the query changed, the other wants the first
   record. Offering \"Create\" to someone whose search just missed is the wrong
-  advice."
-  [& {:keys [noun body searching? create-href create-label]}]
+  advice.
+
+  `title` is the whole heading for the empty case, e.g. \"No accessions yet\"."
+  [& {:keys [title body searching? create-href create-label]}]
   (if searching?
     (ui.empty/empty-state
-      :title "Nothing matched"
-      :body "No results for that search. Try fewer terms, or clear the filters.")
+      :title (tr "Nothing matched")
+      :body (tr "No results for that search. Try fewer terms, or clear the filters."))
     (ui.empty/empty-state
-      :title (str "No " noun " yet")
+      :title title
       :body body
       :actions (when create-href
                  (create-button :href create-href :label create-label)))))
@@ -225,10 +229,10 @@
          [:button {:type "button"
                    :class "spl-panel-close"
                    :data-panel-close ""
-                   :aria-label "Close panel"
+                   :aria-label (tr "Close panel")
                    :x-on:click "closePanel()"}
           "✕"]
-         "Close panel"
+         (tr "Close panel")
          :side "left")]
       ;; Panel content - loaded via HTMX
       [:div {:id panel-container-id}]]]]])

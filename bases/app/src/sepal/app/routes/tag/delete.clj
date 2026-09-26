@@ -6,18 +6,16 @@
             [sepal.app.routes.tag.routes :as tag.routes]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def resource-type :tag)
-
-(defn- label [tag]
-  (str "tag " (:tag/name tag)))
 
 (defn- render-dialog [db tag]
   (html/render-partial
     (ui.delete/dialog
       :action (z/url-for tag.routes/delete {:id (:tag/id tag)})
-      :label (label tag)
+      :title (tr "Delete tag %1?" (:tag/name tag))
       :blockers (app.delete/blockers resource-type db tag))))
 
 (defn handler [{:keys [::z/context request-method viewer]}]
@@ -28,6 +26,6 @@
         (if (error.i/error? result)
           (assoc (render-dialog db resource) :status 422)
           (-> (http/see-other tag.routes/index)
-              (flash/success (str "Deleted " (label resource))))))
+              (flash/success (tr "Deleted tag %1" (:tag/name resource))))))
 
       (render-dialog db resource))))

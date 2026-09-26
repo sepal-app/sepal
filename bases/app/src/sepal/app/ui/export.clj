@@ -1,7 +1,8 @@
 (ns sepal.app.ui.export
   "Export modal component for CSV downloads."
   (:require [clojure.string :as str]
-            [sepal.app.ui.icons.lucide :as lucide]))
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :refer [format-number tr trn]]))
 
 (defn export-button
   "Button that opens the export modal."
@@ -10,7 +11,7 @@
             :class "spl-btn spl-btn--sm spl-btn--ghost gap-1"
             :onclick "export_modal.showModal()"}
    (lucide/download :class "size-4")
-   [:span "Export"]])
+   [:span (tr "Export")]])
 
 (defn export-modal
   "Export modal with optional data checkboxes.
@@ -40,7 +41,7 @@
                       "{}")]
     [:dialog#export_modal {:class "spl-modal"}
      [:div {:class "spl-modal-box"}
-      [:h3 {:class "font-bold text-lg"} "Export to CSV"]
+      [:h3 {:class "font-bold text-lg"} (tr "Export to CSV")]
 
       [:form {:method "GET"
               :action export-action
@@ -55,11 +56,11 @@
 
        ;; Row count with warning
        [:div {:class "py-4"}
-        [:p (format "Exporting %,d results" total)]
+        [:p (trn "Exporting %1 result" "Exporting %1 results" total (format-number total))]
         (when large-export?
           [:div {:class "spl-alert spl-alert--warning mt-2"}
            (lucide/triangle-alert :class "size-4")
-           [:span "Large export — this may take a moment"]])]
+           [:span (tr "Large export — this may take a moment")]])]
 
        ;; Optional data checkboxes (resource-specific)
        (when (seq options)
@@ -79,12 +80,12 @@
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "export_modal.close()"}
-         "Cancel"]
+         (tr "Cancel")]
         [:button {:type "submit"
                   :class "spl-btn spl-btn--primary"
                   :onclick "setTimeout(() => export_modal.close(), 100)"}
          (lucide/download :class "size-4")
-         "Export"]]]]
+         (tr "Export")]]]]
 
      ;; Click outside to close
      [:form {:method "dialog" :class "spl-modal-backdrop"}

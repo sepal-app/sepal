@@ -15,6 +15,175 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: bases/app/src/sepal/app/delete.clj:200
+msgid "%1 material record references this"
+msgid_plural "%1 material records reference this"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:202
+msgid "%1 move in the history references this location"
+msgid_plural "%1 moves in the history reference this location"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:204
+msgid "%1 accession references this"
+msgid_plural "%1 accessions reference this"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:206
+msgid "%1 taxon names this one as its parent"
+msgid_plural "%1 taxa name this one as their parent"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:208
+msgid "%1 cross names this taxon as a parent"
+msgid_plural "%1 crosses name this taxon as a parent"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:210
+msgid "%1 propagation names this as its parent"
+msgid_plural "%1 propagations name this as their parent"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:212
+msgid "%1 propagation uses this taxon as a rootstock"
+msgid_plural "%1 propagations use this taxon as a rootstock"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:214
+msgid "%1 propagation names this location"
+msgid_plural "%1 propagations name this location"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:216
+msgid "%1 record came from this propagation"
+msgid_plural "%1 records came from this propagation"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/delete.clj:218
+msgid "This name comes from the World Flora Online list"
+msgstr ""
+
+#: bases/app/src/sepal/app/delete.clj:219
+msgid "%1 record references this"
+msgid_plural "%1 records reference this"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/routes/accession/delete.clj:18
+msgid "Delete accession %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/delete.clj:32
+msgid "Deleted accession %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection_delete.clj:27
+msgid "Delete the collection data on accession %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection_delete.clj:42
+msgid "Cleared the collection data."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:100
+msgid "No accessions yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:105
+msgid "New accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/contact/delete.clj:18
+msgid "Delete contact %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/contact/delete.clj:29
+msgid "Deleted contact %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/contact/index.clj:87
+msgid "No contacts yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:37
+msgid "Archive location %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:63
+msgid "Archived location %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/archive.clj:74
+msgid "Restored location %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/delete.clj:18
+msgid "Delete location %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/delete.clj:31
+msgid "Deleted location %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/location/index.clj:78
+msgid "No locations yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/material/delete.clj:27
+msgid "Delete material %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/material/delete.clj:38
+msgid "Deleted material %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/material/index.clj:125
+msgid "No material yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:36
+msgid "Delete media %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:37
+msgid "Delete this media item?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:41
+msgid "Deleted media %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/media/delete.clj:42
+msgid "Deleted the media item"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:109
+msgid "No observations yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/delete.clj:26
+msgid "Delete the propagation from %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/delete.clj:38
+msgid "Deleted the propagation from %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:168
+msgid "No propagations yet"
+msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/profile.clj:17
 msgid "Language"
@@ -60,6 +229,279 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/profile.clj:95
 msgid "Failed to update profile"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/tag/delete.clj:18
+msgid "Delete tag %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/tag/delete.clj:29
+msgid "Deleted tag %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/delete.clj:18
+msgid "Delete taxon %1?"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/delete.clj:29
+msgid "Deleted taxon %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/taxon/index.clj:118
+msgid "No taxa yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/actions.clj:64
+msgid "Actions"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:29
+#: bases/app/src/sepal/app/ui/archive.clj:72
+msgid "Archive"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:38
+msgid "Restore"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:49
+msgid "This location cannot be archived yet:"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:54
+msgid ""
+"Move that material somewhere else first, so the garden still says where it "
+"is."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:59
+#: bases/app/src/sepal/app/ui/archive.clj:74
+#: bases/app/src/sepal/app/ui/delete.clj:88
+#: bases/app/src/sepal/app/ui/delete.clj:107
+msgid "Close"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:64
+msgid ""
+"The location stops appearing when you file material, and keeps its place in "
+"the history of everything that has already moved through it. You can restore "
+"it at any time."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/archive.clj:69
+#: bases/app/src/sepal/app/ui/delete.clj:102
+#: bases/app/src/sepal/app/ui/export.clj:83
+#: bases/app/src/sepal/app/ui/form.clj:224
+msgid "Cancel"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/combobox.clj:61
+#: bases/app/src/sepal/app/ui/combobox.clj:101
+msgid "No matches"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/combobox.clj:62
+msgid "Showing %1 of %2 — keep typing to narrow"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/combobox.clj:99
+msgid "%1 is required"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/combobox.clj:100
+msgid "This field is required"
+msgstr ""
+
+#. i18n: Read to a screen reader as the number of options found
+#: bases/app/src/sepal/app/ui/combobox.clj:103
+msgid "Results: %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/combobox.clj:131
+msgid "Show %1 options"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:30
+#: bases/app/src/sepal/app/ui/delete.clj:56
+#: bases/app/src/sepal/app/ui/delete.clj:105
+msgid "Delete"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:75
+msgid "This record cannot be deleted yet:"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:81
+msgid ""
+"The move log will always name this location, so it cannot be deleted. "
+"Archive it instead: it keeps its place in the history and stops appearing "
+"when you file material."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:83
+msgid "Delete or move those records first."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:92
+msgid "Archive instead"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/delete.clj:97
+msgid ""
+"This cannot be undone. The record and everything belonging to it will be "
+"removed."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/export.clj:14
+#: bases/app/src/sepal/app/ui/export.clj:88
+msgid "Export"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/export.clj:44
+msgid "Export to CSV"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/export.clj:59
+msgid "Exporting %1 result"
+msgid_plural "Exporting %1 results"
+msgstr[0] ""
+msgstr[1] ""
+
+#: bases/app/src/sepal/app/ui/export.clj:63
+msgid "Large export — this may take a moment"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/form.clj:222
+msgid "Are you sure you want to lose your changes?"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/form.clj:229
+msgid "Save"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:80
+#: bases/app/src/sepal/app/ui/page.clj:82
+#: bases/app/src/sepal/app/ui/page.clj:86
+#: bases/app/src/sepal/app/ui/page.clj:88
+msgid "Toggle sections"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:90
+msgid "Breadcrumb"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:105
+#: bases/app/src/sepal/app/ui/page.clj:107
+msgid "Toggle details"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:137
+msgid "Activity"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:139
+msgid "Taxa"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:141
+msgid "Accessions"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:143
+msgctxt "navigation"
+msgid "Material"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:145
+msgctxt "navigation"
+msgid "Propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:147
+msgid "Locations"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:149
+msgid "Observations"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:151
+msgid "Tags"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:153
+msgctxt "navigation"
+msgid "Media"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:155
+msgid "Contacts"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:164
+msgid "Sections"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/page.clj:172
+msgid "Settings"
+msgstr ""
+
+#. i18n: A filter's name before its value, as in "Taxon: Quercus alba"
+#: bases/app/src/sepal/app/ui/pages/list.clj:22
+msgid "%1:"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:27
+#: bases/app/src/sepal/app/ui/pages/list.clj:29
+msgid "Clear the %1 filter"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:57
+msgid "Search..."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:61
+msgid "Clear search"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:77
+msgid "Create"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:91
+msgid "Nothing matched"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:92
+msgid "No results for that search. Try fewer terms, or clear the filters."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/pages/list.clj:232
+#: bases/app/src/sepal/app/ui/pages/list.clj:235
+#: bases/app/src/sepal/app/ui/resource_panel.clj:241
+#: bases/app/src/sepal/app/ui/resource_panel.clj:244
+msgid "Close panel"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/resource_panel.clj:198
+msgid "Load %1 more"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:104
+msgid "Loading more rows"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:111
+msgid "End of list"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/table.clj:233
+msgid "No rows"
+msgstr ""
+
+#. i18n: Rows loaded out of the total, as in "25 of 1,284"
+#: bases/app/src/sepal/app/ui/table.clj:235
+msgid "%1 of %2"
 msgstr ""
 
 #: components/database/resources/database/schema.sql

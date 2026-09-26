@@ -1,8 +1,9 @@
 (ns sepal.app.ui.base
-  (:require [sepal.app.html :as html]))
+  (:require [sepal.app.html :as html]
+            [sepal.i18n.interface :as i18n]))
 
 (defn html [content & {:keys [title]}]
-  [:html
+  [:html {:lang (some-> (or i18n/*locale* "en") (.replace "_" "-"))}
    [:head
     [:meta {:charset "utf-8"}]
     [:meta {:http-equiv "x-ua-compatible" :content "ie=edge"}]

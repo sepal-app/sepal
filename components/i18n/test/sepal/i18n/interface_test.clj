@@ -106,3 +106,8 @@ msgstr[2] \"%1 plików\"
       (is (= "Accessions" (i18n/tr "Accessions")))))
   (i18n/with-locale nil
     (is (nil? i18n/*locale*))))
+
+(deftest test-format-number
+  (is (= "1,284" (i18n/format-number 1284)))
+  (binding [i18n/*locale* "es"]
+    (is (= "400.000" (i18n/format-number 400000)))))

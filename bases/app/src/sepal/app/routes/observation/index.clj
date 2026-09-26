@@ -14,6 +14,7 @@
             [sepal.app.ui.table :as table]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.search]
             [sepal.search.interface :as search.i]
@@ -105,7 +106,7 @@
                  :page-size page-size
                  :total total
                  :empty-state (pages.list/empty-list
-                                :noun "observations"
+                                :title (tr "No observations yet")
                                 :body "What a curator saw, dated and filed against the material or location it
                               was about."
                                 :searching? (seq search-query)))))

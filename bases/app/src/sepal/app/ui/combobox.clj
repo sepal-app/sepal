@@ -8,7 +8,8 @@
 
   See js/record-combobox-element.ts for why this is a custom element rather
   than a library."
-  (:require [sepal.app.ui.form :as form]))
+  (:require [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [format-number tr]]))
 
 (defn option
   "One row a picker offers.
@@ -57,9 +58,9 @@
     (list
       (for [item items] (apply option (mapcat identity item)))
       (cond
-        (zero? shown) (note "No matches")
-        (> total shown) (note (format "Showing %d of %d — keep typing to narrow"
-                                      shown total))))))
+        (zero? shown) (note (tr "No matches"))
+        (> total shown) (note (tr "Showing %1 of %2 — keep typing to narrow"
+                                  (format-number shown) (format-number total)))))))
 
 (defn combobox
   "One record picker.
@@ -91,7 +92,15 @@
               ;; needs the chosen record rather than the text on screen.
               :id name
               :data-name name
-              :data-label label}
+              :data-label label
+              ;; The element's own messages, translated here because the
+              ;; browser has no catalog.
+              :data-msg-required (if label
+                                   (tr "%1 is required" label)
+                                   (tr "This field is required"))
+              :data-msg-no-matches (tr "No matches")
+              ;; i18n: Read to a screen reader as the number of options found
+              :data-msg-results (tr "Results: %1")}
        url (assoc :data-url url)
        selected (assoc :data-value (str (:id selected))
                        :data-text (:text selected))
@@ -119,7 +128,7 @@
                 ;; Out of the tab order: the input is the control, and a
                 ;; second stop on the way past a field is noise.
                 :tabindex "-1"
-                :aria-label (str "Show " label " options")}
+                :aria-label (tr "Show %1 options" label)}
        [:svg {:class "spl-combobox-chevron" :viewBox "0 0 20 20"
               :fill "none" :stroke "currentColor" :aria-hidden "true"}
         [:path {:d "M6 8l4 4 4-4" :stroke-width "1.5"

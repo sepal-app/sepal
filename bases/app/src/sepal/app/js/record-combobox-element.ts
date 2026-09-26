@@ -132,7 +132,7 @@ export class SepalCombobox extends HTMLElement {
         if (this.dataset.required !== undefined && !option) {
             this.internals.setValidity(
                 { valueMissing: true },
-                `${this.dataset.label ?? "This field"} is required`,
+                this.dataset.msgRequired ?? `${this.dataset.label ?? "This field"} is required`,
                 this.input,
             )
         } else {
@@ -297,7 +297,7 @@ export class SepalCombobox extends HTMLElement {
             const li = document.createElement("li")
             li.className = "spl-combobox-note"
             li.setAttribute("aria-disabled", "true")
-            li.textContent = "No matches"
+            li.textContent = this.dataset.msgNoMatches ?? "No matches"
             this.listbox.append(li)
         }
         this.index()
@@ -366,9 +366,9 @@ export class SepalCombobox extends HTMLElement {
     /** What a reader who cannot see the list is told. */
     private summary() {
         const note = this.listbox.querySelector(".spl-combobox-note")
-        if (this.options.length === 0) return note?.textContent ?? "No matches"
-        const n = this.options.length
-        return `${n} result${n === 1 ? "" : "s"}${note ? `. ${note.textContent}` : ""}`
+        if (this.options.length === 0) return note?.textContent ?? this.dataset.msgNoMatches ?? "No matches"
+        const results = (this.dataset.msgResults ?? "Results: %1").replace("%1", String(this.options.length))
+        return `${results}${note ? `. ${note.textContent}` : ""}`
     }
 
     private moveTo(index: number) {

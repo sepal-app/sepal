@@ -6,7 +6,8 @@
   things about what happens next. A location is the only resource that has
   this so far — the one whose history makes it undeletable."
   (:require [sepal.app.delete :as app.delete]
-            [sepal.app.ui.form :as ui.form]))
+            [sepal.app.ui.form :as ui.form]
+            [sepal.i18n.interface :refer [tr]]))
 
 (defn modal-container
   "Where the confirmation swaps in. Its own id, so a page can carry this and
@@ -25,7 +26,7 @@
             :hx-swap "innerHTML"
             (keyword "hx-on::after-request")
             "if (event.detail.successful) document.getElementById('archive_modal').showModal()"}
-   "Archive"])
+   (tr "Archive")])
 
 (defn restore-item
   "Bringing one back. A plain post: there is nothing to confirm and nothing
@@ -34,43 +35,40 @@
   [:form {:method "post" :action unarchive-url :role "none"}
    (ui.form/anti-forgery-field)
    [:button {:type "submit" :class "spl-menu-item" :role "menuitem"}
-    "Restore"]])
+    (tr "Restore")]])
 
 (defn dialog
   "The confirmation. With blockers it explains; without them it offers the
-  archive."
-  [& {:keys [action label blockers]}]
+  archive. `title` is the whole translated question, written by the route."
+  [& {:keys [action title blockers]}]
   [:dialog#archive_modal {:class "spl-modal"}
    [:div {:class "spl-modal-box"}
-    [:h3 {:class "font-bold text-lg"} (str "Archive " label "?")]
+    [:h3 {:class "font-bold text-lg"} title]
     (if (seq blockers)
       [:div {:class "py-4 flex flex-col gap-2"}
-       [:p "This location cannot be archived yet:"]
+       [:p (tr "This location cannot be archived yet:")]
        [:ul {:class "list-disc pl-5"}
         (for [blocker blockers]
           [:li {:key (:reason blocker)} (app.delete/blocker-label blocker)])]
        [:p {:class "text-text-soft text-sm"}
-        "Move that material somewhere else first, so the garden still says
-         where it is."]
+        (tr "Move that material somewhere else first, so the garden still says where it is.")]
        [:div {:class "spl-modal-actions"}
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "archive_modal.close()"}
-         "Close"]]]
+         (tr "Close")]]]
       [:form {:method "post"
               :action action
               :class "py-4 flex flex-col gap-2"}
        (ui.form/anti-forgery-field)
-       [:p "The location stops appearing when you file material, and keeps its
-            place in the history of everything that has already moved through
-            it. You can restore it at any time."]
+       [:p (tr "The location stops appearing when you file material, and keeps its place in the history of everything that has already moved through it. You can restore it at any time.")]
        [:div {:class "spl-modal-actions"}
         [:button {:type "button"
                   :class "spl-btn"
                   :onclick "archive_modal.close()"}
-         "Cancel"]
+         (tr "Cancel")]
         [:button {:type "submit"
                   :class "spl-btn spl-btn--primary"}
-         "Archive"]]])]
+         (tr "Archive")]]])]
    [:form {:method "dialog" :class "spl-modal-backdrop"}
-    [:button "close"]]])
+    [:button (tr "Close")]]])
