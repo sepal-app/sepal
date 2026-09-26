@@ -11,7 +11,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.validation.interface :as validation.i]
@@ -59,7 +59,7 @@
        (group-by :observation-value/type)
        (reduce-kv (fn [m t values]
                     (assoc m t (mapv (fn [{:observation-value/keys [code label]}]
-                                       {:value code :label label})
+                                       {:value code :label (trc "observation_value" label)})
                                      values)))
                   {})))
 

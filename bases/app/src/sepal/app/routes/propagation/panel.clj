@@ -14,6 +14,7 @@
             [sepal.app.routes.propagation.product :as propagation.product]
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.propagation.interface.permission :as propagation.perm]
@@ -61,43 +62,43 @@
           :actions actions)
 
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Method" :value type-label}
-                     {:label "Status" :value status-label}
-                     {:label "Parent"
+            :fields [{:label (tr "Method") :value type-label}
+                     {:label (tr "Status") :value status-label}
+                     {:label (tr "Parent")
                       :value [:a {:href (parent-href parent parent-material)
                                   :class "spl-link"}
                               parent-name]}
-                     {:label "Location"
+                     {:label (tr "Location")
                       :value (when location
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id location)})
                                     :class "spl-link"}
                                 (:location/name location)])}
-                     {:label "Rootstock" :value (:taxon/name rootstock)}]))
+                     {:label (tr "Rootstock") :value (:taxon/name rootstock)}]))
 
         (panel/collapsible-section
-          :title "History"
+          :title (tr "History")
           :children
           (panel/summary-section
-            :fields [{:label "Propagated" :value propagated-on}
-                     {:label "Started" :value (some-> quantity-started str)}
-                     {:label "Succeeded on" :value succeeded-on}
-                     {:label "Succeeded" :value (some-> quantity-succeeded str)}]))
+            :fields [{:label (tr "Propagated") :value propagated-on}
+                     {:label (tr "Started") :value (some-> quantity-started str)}
+                     {:label (tr "Succeeded on") :value succeeded-on}
+                     {:label (tr "Succeeded") :value (some-> quantity-succeeded str)}]))
 
         (let [notes (:propagation/notes propagation)]
           (panel/collapsible-section
-            :title "Notes"
+            :title (tr "Notes")
             :disabled? (nil? notes)
             :children [:p {:class "px-4 py-2 text-sm whitespace-pre-line"} notes]))
 
         (panel/collapsible-section
-          :title "Products"
+          :title (tr "Products")
           :count (count products)
           :disabled? (empty? products)
-          :empty-label "nothing recorded"
+          :empty-label (tr "nothing recorded")
           :children
           (panel/linked-resources-section :links products))))))
 

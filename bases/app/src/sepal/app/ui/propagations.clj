@@ -9,6 +9,7 @@
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.resource-panel :as panel]
+            [sepal.i18n.interface :as i18n :refer [tr trc]]
             [zodiac.core :as z]))
 
 (defn propagation-name
@@ -24,19 +25,19 @@
   The parent is named because that is the fact the line exists for: a
   propagation link alone would say how, not from what."
   [origin parent type-labels]
-  [:p {:class "px-4 py-2 text-sm"}
-   "Grown from "
-   (if parent
-     [:a {:href (z/url-for accession.routes/detail {:id (:accession/id parent)})
-          :class "spl-link"}
-      (:accession/code parent)]
-     "an unrecorded parent")
-   " by "
-   (str/lower-case (shared/label type-labels (:propagation/type origin)))
-   " — "
-   [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id origin)})
-        :class "spl-link"}
-    "the propagation"]])
+  (into [:p {:class "px-4 py-2 text-sm"}]
+        ;; i18n: %1 is the parent accession or "an unrecorded parent", %2 the
+        ;; method in lower case, %3 a link reading "the propagation"
+        (i18n/fill (tr "Grown from %1 by %2 — %3")
+                   (if parent
+                     [:a {:href (z/url-for accession.routes/detail {:id (:accession/id parent)})
+                          :class "spl-link"}
+                      (:accession/code parent)]
+                     (tr "an unrecorded parent"))
+                   (str/lower-case (shared/label type-labels (:propagation/type origin)))
+                   [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id origin)})
+                        :class "spl-link"}
+                    (tr "the propagation")])))
 
 (defn panel-section
   "A collapsible list of propagation records.
@@ -52,12 +53,12 @@
   - :empty-label     what an empty section says"
   [& {:keys [propagations origin origin-parent type-labels status-labels
              title empty-label]
-      :or {title "Propagation"}}]
+      :or {title (trc "navigation" "Propagation")}}]
   (panel/collapsible-section
     :title title
     :count (count propagations)
     :disabled? (and (empty? propagations) (nil? origin))
-    :empty-label (or empty-label "none")
+    :empty-label (or empty-label (trc "empty section" "none"))
     :children
     (list
       (when origin

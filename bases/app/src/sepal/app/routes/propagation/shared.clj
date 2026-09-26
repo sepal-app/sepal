@@ -6,6 +6,7 @@
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.code-template.interface :as ct.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
 
@@ -15,15 +16,21 @@
   [rows name-key label-key]
   (into {} (map (juxt name-key label-key)) rows))
 
-(defn type-labels [db]
-  (label-map (propagation.i/list-types db)
-             :propagation-type/name
-             :propagation-type/label))
+(defn type-labels
+  "Translated, keyed by the lookup table's name column."
+  [db]
+  (update-vals (label-map (propagation.i/list-types db)
+                          :propagation-type/name
+                          :propagation-type/label)
+               #(trc "propagation_type" %)))
 
-(defn status-labels [db]
-  (label-map (propagation.i/list-statuses db)
-             :propagation-status/name
-             :propagation-status/label))
+(defn status-labels
+  "Translated, keyed by the lookup table's name column."
+  [db]
+  (update-vals (label-map (propagation.i/list-statuses db)
+                          :propagation-status/name
+                          :propagation-status/label)
+               #(trc "propagation_status" %)))
 
 (defn label
   "The label for `value`, which is a keyword on a coerced row and a string on a
@@ -74,22 +81,22 @@
         product-url (z/url-for propagation.routes/product {:id id})
         status-url (z/url-for propagation.routes/status {:id id})
         other (if (= default-kind :material) :accession :material)
-        label {:material "Create material"
-               :accession "Create accession"}]
+        label {:material (tr "Create material")
+               :accession (tr "Create accession")}]
     (ui.actions/menu
       :items (cond-> [{:label (label default-kind)
                        :post-url product-url
                        :params {:kind (name default-kind)}}
                       {:label (if (= other :accession)
-                                "Reaccession as a new accession"
-                                "Create material under the parent accession")
+                                (tr "Reaccession as a new accession")
+                                (tr "Create material under the parent accession"))
                        :post-url product-url
                        :params {:kind (name other)}}]
                (= :active (:propagation/status propagation))
-               (into [{:label "Mark complete"
+               (into [{:label (tr "Mark complete")
                        :post-url status-url
                        :params {:status "complete"}}
-                      {:label "Mark failed"
+                      {:label (tr "Mark failed")
                        :post-url status-url
                        :params {:status "failed"}}]))
       :delete-url (z/url-for propagation.routes/delete {:id id}))))

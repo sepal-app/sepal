@@ -15,6 +15,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.propagation.interface :as propagation.i]
             [sepal.propagation.interface.activity :as propagation.activity]
             [sepal.propagation.interface.permission :as propagation.perm]
@@ -23,7 +24,7 @@
             [zodiac.core :as z]))
 
 (defn- breadcrumbs [panel-data]
-  [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
+  [[:a {:href (z/url-for propagation.routes/index)} (tr "Propagation")]
    (shared/parent-name (:parent panel-data) (:parent-material panel-data) (:separator panel-data))])
 
 (defn- panel [panel-data & {:keys [actions]}]
@@ -143,9 +144,9 @@
                      (shared/products? (propagation.panel/fetch-panel-data db propagation))
                      (dissoc :parent-accession-id :parent-material-id))]
           (f/attempt-all [_saved (f/try* (update! db id (:user/id viewer) data))]
-            (flash/success redirect "Propagation updated")
+            (flash/success redirect (tr "Propagation updated"))
             (f/when-failed [e]
-              (http/failure-flash e redirect "Could not save the propagation")))))
+              (http/failure-flash e redirect (tr "Could not save the propagation"))))))
       (f/when-failed [e]
         (http/failure-response e redirect)))))
 
@@ -155,7 +156,7 @@
     (cond
       (and (= :post request-method) (not editor?))
       (-> (http/hx-redirect propagation.routes/detail {:id (:propagation/id resource)})
-          (flash/error "You don't have permission to edit this propagation"))
+          (flash/error (tr "You don't have permission to edit this propagation")))
 
       (= :post request-method)
       (save! db resource viewer form-params (str (datetime/today timezone)))
@@ -181,6 +182,6 @@
         redirect (http/hx-redirect propagation.routes/detail {:id id})]
     (f/attempt-all [data (validation.i/validate-form-values StatusParams form-params)
                     _saved (f/try* (update! db id (:user/id viewer) data))]
-      (flash/success redirect "Propagation updated")
+      (flash/success redirect (tr "Propagation updated"))
       (f/when-failed [e]
-        (http/failure-flash e redirect "Could not save the propagation")))))
+        (http/failure-flash e redirect (tr "Could not save the propagation"))))))

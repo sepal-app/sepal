@@ -81,7 +81,7 @@
      label]))
 
 (defn table-columns [& {:keys [type-labels status-labels separator]}]
-  [{:name "Parent"
+  [{:name (tr "Parent")
     :type :identifier
     :priority 1
     :stacked (fn [row]
@@ -93,26 +93,26 @@
                  :class "spl-link"
                  :x-on:click.stop ""}
              (parent-label row separator)])}
-   {:name "Type"
+   {:name (tr "Type")
     :type :text
     :priority 2
     :cell (fn [row] (get type-labels (:propagation/type row) (:propagation/type row)))}
-   {:name "Status"
+   {:name (tr "Status")
     :type :text
     :priority 3
     :cell (fn [row]
             (status-badge (:propagation/status row)
                           (get status-labels (:propagation/status row)
                                (:propagation/status row))))}
-   {:name "Propagated"
+   {:name (tr "Propagated")
     :type :date
     :priority 4
     :cell :propagation/propagated-on}
-   {:name "Started"
+   {:name (tr "Started")
     :type :number
     :priority 5
     :cell :propagation/quantity-started}
-   {:name "Succeeded"
+   {:name (tr "Succeeded")
     :type :number
     :priority 6
     :cell (fn [row]
@@ -125,10 +125,10 @@
                   ;; compared against anything.
                   (tooltip/wrap
                     (lucide/triangle-alert :class "w-4 h-4 text-danger")
-                    "No product recorded for this batch"
+                    (tr "No product recorded for this batch")
                     :side "left"))
                 (when (some? succeeded) (str succeeded)))))}
-   {:name "Location"
+   {:name (tr "Location")
     :type :text
     :priority 7
     :cell (fn [row]
@@ -166,7 +166,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No propagations yet")
-                                :body "What the garden has grown itself, and what came out of it."
+                                :body (tr "What the garden has grown itself, and what came out of it.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for propagation.routes/new)))))
 
@@ -192,12 +192,12 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., status:active type:cutting)"
+                                :placeholder (tr "Search... (e.g., status:active type:cutting)")
                                 :page page-num
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
-    :breadcrumbs ["Propagation"]
+    :breadcrumbs [(tr "Propagation")]
     :page-title-buttons (when (authz/user-has-permission? viewer propagation.perm/create)
                           (create-button))))
 

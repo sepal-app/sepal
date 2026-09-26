@@ -7,7 +7,8 @@
             [sepal.app.json :as json]
             [sepal.app.ui.button :as ui.button]
             [sepal.app.ui.form :as ui.form]
-            [sepal.app.ui.icons.lucide :as lucide])
+            [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.i18n.interface :as i18n :refer [tr trc]])
   (:import [java.time LocalDate]))
 
 (defn- control-id
@@ -36,7 +37,7 @@
                              :valueOptionsByType value-options-by-type})
            :x-init (str "$el.closest('form').addEventListener('reset', () => "
                         "$nextTick(() => { type = $refs.type.value; value = '' }))")}
-     (ui.form/field :label "Type"
+     (ui.form/field :label (tr "Type")
                     :name type-id
                     :errors (:type errors)
                     :input [:select {:name "type"
@@ -49,9 +50,9 @@
                             (for [{:observation-type/keys [code label]} type-options]
                               [:option {:value code
                                         :selected (when (= code (:type values)) "selected")}
-                               label])])
+                               (trc "observation_type" label)])])
      [:div {:x-show "type !== 'general'"}
-      (ui.form/field :label "Value"
+      (ui.form/field :label (tr "Value")
                      :name value-id
                      :errors (:value errors)
                      :input [:select {:name "value"
@@ -83,7 +84,7 @@
                            :value-options-by-type value-options-by-type)
         (ui.form/input-field :id (control-id "observed_on" id-suffix)
                              :name "observed_on"
-                             :label "Observed on"
+                             :label (tr "Observed on")
                              :type "date"
                              :value (or (:observed_on values) today)
                              ;; The routes reject a future date too; max keeps
@@ -92,25 +93,26 @@
                              :errors (:observed_on errors))
         (ui.form/input-field :id (control-id "observed_by" id-suffix)
                              :name "observed_by"
-                             :label "Observed by"
+                             :label (tr "Observed by")
                              :value (:observed_by values)
                              :errors (:observed_by errors))
         (ui.form/input-field :id (control-id "next_check_on" id-suffix)
                              :name "next_check_on"
-                             :label "Next check"
+                             :label (tr "Next check")
                              :type "date"
                              :value (:next_check_on values)
                              :errors (:next_check_on errors))
         (ui.form/textarea-field :id (control-id "note" id-suffix)
                                 :name "note"
-                                :label "Notes"
+                                :label (tr "Notes")
                                 :value (:note values)
                                 :errors (:note errors))))))
 
 (defn- summary
   "The type and, when it has one, the value: 'Phenology · Flowering'."
   [type-label value-label]
-  (str type-label (when value-label (str " · " value-label))))
+  (str (some->> type-label (trc "observation_type"))
+       (when value-label (str " · " (trc "observation_value" value-label)))))
 
 (defn- observation-item
   "One observation as a timeline entry, and an edit form for it hidden
@@ -140,24 +142,24 @@
          ;; imported row has neither -- the element is absent rather than
          ;; empty, the way ui/notes.clj handles the same gap.
          (when observer
-           (list " " [:span {:data-observation-observer ""} "by " observer]))]
+           (list " " [:span {:data-observation-observer ""} (tr "by %1" observer)]))]
         [:div {:class "spl-entry-actions"}
          (ui.button/icon-button :icon (lucide/pencil)
-                                :label "Edit observation"
+                                :label (tr "Edit observation")
                                 :attrs {:x-on:click "editing = true"})
          (ui.button/icon-button :icon (lucide/trash-2)
-                                :label "Delete observation"
+                                :label (tr "Delete observation")
                                 :danger? true
                                 :attrs {:hx-delete url
                                         :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-                                        :hx-confirm "Delete this observation?"
+                                        :hx-confirm (tr "Delete this observation?")
                                         :hx-target "#observations-list"
                                         :hx-swap "outerHTML"})]]
        (when next-check-on
          [:p {:class "spl-changelog-line mt-1 text-text-soft"}
-          "Next check " (datetime/format-date next-check-on)
+          (tr "Next check %1" (datetime/format-date next-check-on))
           (when overdue?
-            (list " " [:span {:class "spl-badge spl-badge--danger"} "Overdue"]))])
+            (list " " [:span {:class "spl-badge spl-badge--danger"} (tr "Overdue")]))])
        (when note
          [:p {:class "spl-note-body mt-1 whitespace-pre-wrap text-sm"} note])]
       ;; x-cloak keeps the form hidden until Alpine applies x-show, rather
@@ -185,8 +187,8 @@
            [:button {:type "button"
                      :class "spl-btn spl-btn--ghost spl-btn--sm"
                      :x-on:click "editing = false"}
-            "Cancel"]
-           (ui.form/submit-button {:class "spl-btn spl-btn--primary spl-btn--sm"} "Save")]])]]]))
+            (tr "Cancel")]
+           (ui.form/submit-button {:class "spl-btn spl-btn--primary spl-btn--sm"} (tr "Save"))]])]]]))
 
 (defn- latest-by-type
   "The ids of the newest observation of each type in `observations`, which
@@ -223,7 +225,7 @@
                                 :followed-up? (not (contains? latest (:observation/id observation)))))))]
        [:p {:data-observations-empty ""
             :class "text-text-soft text-sm"}
-        "No observations yet."])]))
+        (tr "No observations yet.")])]))
 
 (defn observation-form
   "The new-observation form. Posts to the tab's own URL and replaces the
@@ -252,7 +254,7 @@
              :value-options-by-type value-options-by-type
              :today today)
      [:div {:class "flex justify-end"}
-      (ui.form/submit-button {:class "spl-btn spl-btn--primary"} "Add observation")]]))
+      (ui.form/submit-button {:class "spl-btn spl-btn--primary"} (tr "Add observation"))]]))
 
 (defn observations-body
   "The whole tab body: the form above the list."
@@ -287,4 +289,4 @@
    (when (and more-url observation-count (> observation-count (count observations)))
      [:a {:href more-url
           :class "spl-link text-sm"}
-      (str "See all " observation-count)])])
+      (tr "See all %1" (i18n/format-number observation-count))])])

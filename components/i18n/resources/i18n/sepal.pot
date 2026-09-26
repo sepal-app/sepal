@@ -234,6 +234,9 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/material/form.clj:106
 #: bases/app/src/sepal/app/routes/material/index.clj:75
 #: bases/app/src/sepal/app/routes/material/panel.clj:132
+#: bases/app/src/sepal/app/routes/propagation/form.clj:115
+#: bases/app/src/sepal/app/routes/propagation/index.clj:131
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:74
 #: components/accession/src/sepal/accession/interface/search.clj:64
 #: components/accession/src/sepal/accession/interface/search.clj:70
 #: components/material/src/sepal/material/interface/search.clj:78
@@ -348,8 +351,11 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/accession/panel.clj:107
 #: bases/app/src/sepal/app/routes/contact/form.clj:103
 #: bases/app/src/sepal/app/routes/contact/form.clj:105
+#: bases/app/src/sepal/app/routes/propagation/form.clj:219
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:93
 #: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:27
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:179
+#: bases/app/src/sepal/app/ui/observations.clj:107
 msgid "Notes"
 msgstr ""
 
@@ -577,6 +583,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/contact/panel.clj:39
 #: bases/app/src/sepal/app/routes/location/panel.clj:47
 #: bases/app/src/sepal/app/routes/material/panel.clj:115
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:65
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:112
 msgid "Summary"
 msgstr ""
@@ -611,6 +618,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:172
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:182
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:206
+#: bases/app/src/sepal/app/ui/propagations.clj:61
 msgctxt "empty section"
 msgid "none"
 msgstr ""
@@ -869,6 +877,9 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/contact/panel.clj:44
 #: bases/app/src/sepal/app/routes/material/form.clj:148
 #: bases/app/src/sepal/app/routes/material/panel.clj:119
+#: bases/app/src/sepal/app/routes/observation/index.clj:70
+#: bases/app/src/sepal/app/routes/propagation/index.clj:96
+#: bases/app/src/sepal/app/ui/observations.clj:40
 #: components/material/src/sepal/material/interface/search.clj:22
 #: components/observation/src/sepal/observation/interface/search.clj:50
 #: components/propagation/src/sepal/propagation/interface/search.clj:23
@@ -1020,6 +1031,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/location/detail/shared.clj:17
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:26
 #: bases/app/src/sepal/app/routes/material/panel.clj:143
+#: bases/app/src/sepal/app/routes/observation/index.clj:162
 #: bases/app/src/sepal/app/ui/page.clj:149
 msgid "Observations"
 msgstr ""
@@ -1184,6 +1196,9 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/material/form.clj:134
 #: bases/app/src/sepal/app/routes/material/index.clj:83
 #: bases/app/src/sepal/app/routes/material/panel.clj:121
+#: bases/app/src/sepal/app/routes/propagation/form.clj:127
+#: bases/app/src/sepal/app/routes/propagation/index.clj:100
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:69
 #: components/material/src/sepal/material/interface/search.clj:27
 #: components/propagation/src/sepal/propagation/interface/search.clj:17
 msgid "Status"
@@ -1230,6 +1245,7 @@ msgid "quantity change"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/material/panel.clj:65
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:83
 msgid "History"
 msgstr ""
 
@@ -1267,8 +1283,62 @@ msgstr ""
 msgid "Deleted the media item"
 msgstr ""
 
+#: bases/app/src/sepal/app/routes/observation/index.clj:62
+#: components/observation/src/sepal/observation/interface/search.clj:80
+msgid "Subject"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:74
+#: components/observation/src/sepal/observation/interface/search.clj:58
+msgid "Observed"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:78
+msgid "Due"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:82
+msgid "Observer"
+msgstr ""
+
 #: bases/app/src/sepal/app/routes/observation/index.clj:109
 msgid "No observations yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:110
+msgid ""
+"What a curator saw, dated and filed against the material or location it was "
+"about."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:134
+msgid "Only overdue observations"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/observation/index.clj:156
+msgid "Search... (e.g., type:phenology value:flowering)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:41
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:27
+#: bases/app/src/sepal/app/routes/propagation/index.clj:200
+msgid "Propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:42
+msgid "New propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:66
+msgid "Cannot be before the propagated date"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:163
+msgid "Propagation created"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/create.clj:167
+msgid "Could not create the propagation"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/propagation/delete.clj:26
@@ -1279,8 +1349,201 @@ msgstr ""
 msgid "Deleted the propagation from %1"
 msgstr ""
 
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:147
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:185
+msgid "Propagation updated"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:149
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:187
+msgid "Could not save the propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:159
+msgid "You don't have permission to edit this propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:19
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:68
+msgid "Method"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:22
+msgid "How the material was produced."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:42
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:80
+#: components/propagation/src/sepal/propagation/interface/search.clj:76
+msgid "Rootstock"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:48
+msgid ""
+"A graft's other parent. Commercial rootstock is bought by the bundle, so "
+"this names the cultivar rather than a plant here."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:58
+#: bases/app/src/sepal/app/routes/propagation/form.clj:88
+msgid "Parent plant"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:65
+msgid ""
+"Optional. Leave it out when the cuttings came off the accession without a "
+"particular plant being recorded."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:66
+msgid "Optional. Choose a parent accession to pick from its plants."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:79
+#: bases/app/src/sepal/app/routes/propagation/form.clj:103
+#: components/propagation/src/sepal/propagation/interface/search.clj:49
+#: components/propagation/src/sepal/propagation/interface/search.clj:53
+msgid "Parent accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:123
+msgid "Where the batch sits while it runs. A nursery bench is a location."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:164
+#: bases/app/src/sepal/app/routes/propagation/index.clj:84
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:70
+#: bases/app/src/sepal/app/routes/taxon/form.clj:255
+#: bases/app/src/sepal/app/routes/taxon/form.clj:263
+#: bases/app/src/sepal/app/routes/taxon/index.clj:53
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:118
+#: components/taxon/src/sepal/taxon/interface/search.clj:45
+#: components/taxon/src/sepal/taxon/interface/search.clj:50
+msgid "Parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:165
+msgid "The accession this came off, and the plant when it is known."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:173
+msgid "Batch"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:174
+msgid "Where it sits and how many came through."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:182
+#: bases/app/src/sepal/app/routes/propagation/index.clj:107
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:86
+#: components/propagation/src/sepal/propagation/interface/search.clj:82
+msgid "Propagated"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:190
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:88
+msgid "Succeeded on"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:197
+#: bases/app/src/sepal/app/routes/propagation/index.clj:111
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:87
+msgid "Started"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:202
+msgid "Leave blank for a mass sowing."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:203
+#: bases/app/src/sepal/app/routes/propagation/index.clj:115
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:89
+#: components/propagation/src/sepal/propagation/interface/search.clj:86
+msgid "Succeeded"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:210
+msgid "Parent quantity"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:215
+msgid ""
+"Optional. Filling this reduces the parent lot and records the change as a "
+"division. Leave blank when taking cuttings or seed, which removes nothing."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/form.clj:223
+msgid ""
+"Anything the fields above do not hold, such as a medium or treatment tried, "
+"or why the batch failed."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:128
+msgid "No product recorded for this batch"
+msgstr ""
+
 #: bases/app/src/sepal/app/routes/propagation/index.clj:168
 msgid "No propagations yet"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:169
+msgid "What the garden has grown itself, and what came out of it."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/index.clj:195
+msgid "Search... (e.g., status:active type:cutting)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:98
+msgid "Products"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/panel.clj:101
+msgid "nothing recorded"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:126
+msgid ""
+"Material needs a location. Set one on this batch or an intended location on "
+"the accession."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:135
+msgid "Material created"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:138
+msgid "Accession created"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/product.clj:140
+#: bases/app/src/sepal/app/routes/propagation/product.clj:142
+msgid "Could not create the product"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:84
+msgid "Create material"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:85
+msgid "Create accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:91
+msgid "Reaccession as a new accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:92
+msgid "Create material under the parent accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:96
+msgid "Mark complete"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:99
+msgid "Mark failed"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/profile.clj:17
@@ -1566,15 +1829,6 @@ msgstr ""
 msgid "Author"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/taxon/form.clj:255
-#: bases/app/src/sepal/app/routes/taxon/form.clj:263
-#: bases/app/src/sepal/app/routes/taxon/index.clj:53
-#: bases/app/src/sepal/app/routes/taxon/panel.clj:118
-#: components/taxon/src/sepal/taxon/interface/search.clj:45
-#: components/taxon/src/sepal/taxon/interface/search.clj:50
-msgid "Parent"
-msgstr ""
-
 #: bases/app/src/sepal/app/routes/taxon/form.clj:280
 #: bases/app/src/sepal/app/routes/taxon/form.clj:284
 #: bases/app/src/sepal/app/routes/taxon/index.clj:49
@@ -1716,6 +1970,7 @@ msgstr ""
 #: bases/app/src/sepal/app/ui/delete.clj:102
 #: bases/app/src/sepal/app/ui/export.clj:84
 #: bases/app/src/sepal/app/ui/form.clj:224
+#: bases/app/src/sepal/app/ui/observations.clj:190
 msgid "Cancel"
 msgstr ""
 
@@ -1794,7 +2049,63 @@ msgid "Are you sure you want to lose your changes?"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/form.clj:229
+#: bases/app/src/sepal/app/ui/observations.clj:191
 msgid "Save"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:55
+#: components/observation/src/sepal/observation/interface/search.clj:54
+msgid "Value"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:87
+msgid "Observed on"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:96
+#: components/observation/src/sepal/observation/interface/search.clj:62
+msgid "Observed by"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:101
+#: components/observation/src/sepal/observation/interface/search.clj:73
+msgid "Next check"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:145
+msgid "by %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:148
+msgid "Edit observation"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:151
+msgid "Delete observation"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:155
+msgid "Delete this observation?"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:160
+msgid "Next check %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:162
+msgid "Overdue"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:228
+msgid "No observations yet."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:257
+msgid "Add observation"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/observations.clj:292
+msgid "See all %1"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:80
@@ -1814,6 +2125,7 @@ msgid "Toggle details"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:145
+#: bases/app/src/sepal/app/ui/propagations.clj:56
 msgctxt "navigation"
 msgid "Propagation"
 msgstr ""
@@ -1867,6 +2179,20 @@ msgstr ""
 #: bases/app/src/sepal/app/ui/resource_panel.clj:241
 #: bases/app/src/sepal/app/ui/resource_panel.clj:244
 msgid "Close panel"
+msgstr ""
+
+#. i18n: %1 is the parent accession or "an unrecorded parent", %2 the
+#. method in lower case, %3 a link reading "the propagation"
+#: bases/app/src/sepal/app/ui/propagations.clj:31
+msgid "Grown from %1 by %2 — %3"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/propagations.clj:36
+msgid "an unrecorded parent"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/propagations.clj:40
+msgid "the propagation"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/query_builder.clj:19
@@ -2376,45 +2702,8 @@ msgstr ""
 msgid "Tissue"
 msgstr ""
 
-#: components/observation/src/sepal/observation/interface/search.clj:54
-msgid "Value"
-msgstr ""
-
-#: components/observation/src/sepal/observation/interface/search.clj:58
-msgid "Observed"
-msgstr ""
-
-#: components/observation/src/sepal/observation/interface/search.clj:62
-msgid "Observed by"
-msgstr ""
-
 #: components/observation/src/sepal/observation/interface/search.clj:69
 msgid "Overdue on"
-msgstr ""
-
-#: components/observation/src/sepal/observation/interface/search.clj:73
-msgid "Next check"
-msgstr ""
-
-#: components/observation/src/sepal/observation/interface/search.clj:80
-msgid "Subject"
-msgstr ""
-
-#: components/propagation/src/sepal/propagation/interface/search.clj:49
-#: components/propagation/src/sepal/propagation/interface/search.clj:53
-msgid "Parent accession"
-msgstr ""
-
-#: components/propagation/src/sepal/propagation/interface/search.clj:76
-msgid "Rootstock"
-msgstr ""
-
-#: components/propagation/src/sepal/propagation/interface/search.clj:82
-msgid "Propagated"
-msgstr ""
-
-#: components/propagation/src/sepal/propagation/interface/search.clj:86
-msgid "Succeeded"
 msgstr ""
 
 #: components/propagation/src/sepal/propagation/interface/spec.clj:52

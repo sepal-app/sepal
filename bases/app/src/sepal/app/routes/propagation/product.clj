@@ -15,6 +15,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
             [sepal.propagation.interface :as propagation.i]
@@ -122,8 +123,7 @@
                    (nil? (or (:propagation/location-id resource)
                              (:accession/intended-location-id parent))))
             (flash/error detail-redirect
-                         (str "Material needs a location. Set one on this batch "
-                              "or an intended location on the accession."))
+                         (tr "Material needs a location. Set one on this batch or an intended location on the accession."))
             (f/attempt-all [product (f/try*
                                       (db.i/with-transaction [tx db]
                                         (case kind
@@ -132,11 +132,11 @@
               (case kind
                 :material (-> (http/hx-redirect material.routes/detail
                                                 {:id (:material/id product)})
-                              (flash/success "Material created"))
+                              (flash/success (tr "Material created")))
                 :accession (-> (http/hx-redirect accession.routes/detail
                                                  {:id (:accession/id product)})
-                               (flash/success "Accession created")))
+                               (flash/success (tr "Accession created"))))
               (f/when-failed [e]
-                (http/failure-flash e detail-redirect "Could not create the product"))))
+                (http/failure-flash e detail-redirect (tr "Could not create the product")))))
           (f/when-failed [e]
-            (http/failure-flash e detail-redirect "Could not create the product")))))))
+            (http/failure-flash e detail-redirect (tr "Could not create the product"))))))))

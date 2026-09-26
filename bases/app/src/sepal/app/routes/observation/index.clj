@@ -14,7 +14,7 @@
             [sepal.app.ui.table :as table]
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.search]
             [sepal.search.interface :as search.i]
@@ -54,12 +54,12 @@
       nil)))
 
 (defn- type-summary [row]
-  (str (:observation/type-label row)
+  (str (some->> (:observation/type-label row) (trc "observation_type"))
        (when-let [value-label (:observation/value-label row)]
-         (str ": " value-label))))
+         (str ": " (trc "observation_value" value-label)))))
 
 (defn table-columns [viewer separator]
-  [{:name "Subject"
+  [{:name (tr "Subject")
     :type :text
     :priority 1
     :stacked (fn [row] (table/summary (subject-label row separator) (type-summary row)))
@@ -67,19 +67,19 @@
             [:a {:href (subject-href row viewer)
                  :class "spl-link"}
              (subject-label row separator)])}
-   {:name "Type"
+   {:name (tr "Type")
     :type :text
     :priority 2
     :cell type-summary}
-   {:name "Observed"
+   {:name (tr "Observed")
     :type :date
     :priority 3
     :cell :observation/observed-on}
-   {:name "Due"
+   {:name (tr "Due")
     :type :date
     :priority 4
     :cell :observation/next-check-on}
-   {:name "Observer"
+   {:name (tr "Observer")
     :type :text
     :priority 5
     :cell observation.i/observer}])
@@ -107,8 +107,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No observations yet")
-                                :body "What a curator saw, dated and filed against the material or location it
-                              was about."
+                                :body (tr "What a curator saw, dated and filed against the material or location it was about.")
                                 :searching? (seq search-query)))))
 
 (defn overdue-term
@@ -132,7 +131,7 @@
               :class "spl-checkbox"
               :x-bind:checked "checked"
               :x-on:click.prevent "toggle()"}]
-     [:span "Only overdue observations"]]))
+     [:span (tr "Only overdue observations")]]))
 
 (defn render [& {:keys [href page page-size rows search-query separator total today viewer]}]
   (ui.page/page
@@ -154,13 +153,13 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields (search.i/field-options :observation)
-                                :placeholder "Search... (e.g., type:phenology value:flowering)"
+                                :placeholder (tr "Search... (e.g., type:phenology value:flowering)")
                                 :filters (overdue-only-checkbox search-query today)
                                 :page page
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
-    :breadcrumbs ["Observations"]))
+    :breadcrumbs [(tr "Observations")]))
 
 (def Params
   [:map

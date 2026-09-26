@@ -38,8 +38,8 @@
                            :material-items material-items)
     :footer (ui.form/footer
               :buttons (propagation.form/footer-buttons))
-    :breadcrumbs [[:a {:href (z/url-for propagation.routes/index)} "Propagation"]
-                  "New propagation"]))
+    :breadcrumbs [[:a {:href (z/url-for propagation.routes/index)} (tr "Propagation")]
+                  (tr "New propagation")]))
 
 (defn- counts-message
   "The spec's own message, so the rule and its wording have one definition."
@@ -63,7 +63,7 @@
         {:quantity-succeeded [(counts-message)]})
       (when (and propagated-on succeeded-on
                  (neg? (compare succeeded-on propagated-on)))
-        {:succeeded-on ["Cannot be before the propagated date"]})
+        {:succeeded-on [(tr "Cannot be before the propagated date")]})
       (validation.i/future-date-errors data [:propagated-on :succeeded-on] today))))
 
 (defn create!
@@ -160,11 +160,11 @@
           (http/validation-errors errors)
           (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
             (-> (http/hx-redirect propagation.routes/detail {:id (:propagation/id saved)})
-                (flash/success "Propagation created"))
+                (flash/success (tr "Propagation created")))
             (f/when-failed [e]
               (http/failure-flash e
                                   (http/hx-redirect propagation.routes/new)
-                                  "Could not create the propagation"))))
+                                  (tr "Could not create the propagation")))))
         (f/when-failed [e]
           (http/failure-response
             e
