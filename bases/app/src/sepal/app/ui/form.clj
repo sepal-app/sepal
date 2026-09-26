@@ -28,6 +28,10 @@
                  :class "grid gap-1"
                  :x-form-state {}
                  :hx-sync "this:drop"
+                 ;; Otherwise a field's own request (a combobox, a suggestion)
+                 ;; syncs on the form, and a Save made while one is in flight
+                 ;; is dropped.
+                 :hx-disinherit "hx-sync"
                  :x-on:submit "submitting ? $event.preventDefault() : (submitting = true)"
                  :x-on:htmx:after-request "submitting = false"
                  :x-on:pageshow.window "submitting = false"
