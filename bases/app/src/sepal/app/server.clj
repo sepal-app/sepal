@@ -32,6 +32,7 @@
 
 (defn routes []
   ["" {:middleware [middleware/htmx-request
+                    middleware/locale
                     middleware/wrap-org-settings
                     middleware/wrap-flash-messages
                     middleware/wrap-setup-required

@@ -1,0 +1,3 @@
+;; bin/i18n-translate requires sepal.i18n.po, which reads PO files the same way
+;; under babashka as on the JVM.
+{:paths ["components/i18n/src"]}

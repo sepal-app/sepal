@@ -19,6 +19,7 @@
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :as i18n]
             [sepal.mail.interface :as mail.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.material.interface :as material.i]
@@ -308,6 +309,9 @@
   instance."
   [{:keys [master-secret extensions-library-path] :as opts}]
   (validate! ProcessOpts opts "process opts")
+  ;; Per JVM, and here rather than on first use so a catalog that does not
+  ;; parse stops startup.
+  (i18n/load-catalogs!)
   (let [config (process-config opts)
         _ (ig/load-namespaces config)
         system (ig/init config)]

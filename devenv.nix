@@ -29,6 +29,8 @@ in
     clj-kondo
     cljfmt
     clojure-lsp
+    # xgettext, msgmerge and msgfmt, for bin/i18n-extract and bin/i18n-check.
+    gettext
     google-cloud-sdk
     libspatialite
     # cwebp, for sepal.app.screenshot. Playwright writes PNG only, and the
