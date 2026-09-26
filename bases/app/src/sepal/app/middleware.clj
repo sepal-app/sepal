@@ -10,6 +10,7 @@
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
+            [sepal.i18n.interface :as i18n]
             [sepal.settings.interface :as settings.i]
             [sepal.user.interface :as user.i]
             [zodiac.core :as z]))
@@ -23,6 +24,15 @@
                (= (get headers "hx-boosted") "true"))
         (handler))))
 
+(defn locale
+  "Bind the browser's language from Accept-Language, or English. require-viewer
+  overrides it with the viewer's saved choice; this is what anonymous pages and
+  a viewer with no saved language get."
+  [handler]
+  (fn [{:keys [headers] :as request}]
+    (i18n/with-locale (i18n/resolve-locale (get headers "accept-language"))
+      (handler request))))
+
 (defn require-viewer
   "Redirects to /login if there are no valid claims in the request.
    Also rejects non-active users (forces logout for archived, invited, or any future status)."
@@ -32,12 +42,18 @@
           user-id (:user/id session)
           viewer (when user-id (user.i/get-by-id db user-id))]
       (if (and viewer (= :active (:user/status viewer)))
-        (binding [g/*viewer* viewer
-                  g/*uri* uri
-                  g/*rail-open?* (= "1" (get-in cookies ["spl-rail" :value]))]
-          (-> request
-              (assoc :viewer viewer)
-              (handler)))
+        (let [language (:user/language viewer)
+              catalog (when language (i18n/catalog language))]
+          (binding [g/*viewer* viewer
+                    g/*uri* uri
+                    g/*rail-open?* (= "1" (get-in cookies ["spl-rail" :value]))
+                    ;; A saved language whose catalog is gone falls back to the
+                    ;; browser's, bound by the locale middleware.
+                    i18n/*locale* (if catalog language i18n/*locale*)
+                    i18n/*catalog* (or catalog i18n/*catalog*)]
+            (-> request
+                (assoc :viewer viewer)
+                (handler))))
         ;; Clear session and redirect to login for non-active/missing users
         (-> (http/see-other auth.routes/login)
             (assoc :session nil))))))

@@ -30,12 +30,14 @@
 
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default
-  [:map {:store/columns [:id :email :full-name :role :status]}
+  [:map {:store/columns [:id :email :full-name :role :status :language]}
    [:user/id id]
    [:user/email email]
    [:user/full-name {:optional true} [:maybe :string]]
    [:user/role role]
-   [:user/status status]])
+   [:user/status status]
+   ;; A catalog locale such as "es". nil follows the browser.
+   [:user/language {:optional true} [:maybe :string]]])
 
 (def CreateUser
   [:map
@@ -55,4 +57,5 @@
    [:full-name {:optional true} [:maybe :string]]
    [:email {:optional true} email]
    [:role {:optional true} role]
-   [:status {:optional true} status]])
+   [:status {:optional true} status]
+   [:language {:optional true} [:maybe :string]]])

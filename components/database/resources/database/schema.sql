@@ -10,7 +10,7 @@ CREATE TABLE "user" (
   status text not null default 'active' check(status in ('invited', 'active', 'archived')),
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
-) strict;
+, language text) strict;
 CREATE TABLE location (
   id integer primary key autoincrement,
   code text not null,
@@ -666,3 +666,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260920130000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924120000', '2026-09-24 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924130000', '2026-09-24 13:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260926120000', '2026-09-26 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260927120000', '2026-09-27 12:00:00');

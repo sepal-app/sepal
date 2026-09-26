@@ -1,0 +1,42 @@
+# Fixture for sepal.i18n.po-test.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Heading on the accession list
+#: bases/app/src/sepal/app/ui/page.clj:22
+#: bases/app/src/sepal/app/routes/accession/index.clj:10
+msgid "Accessions"
+msgstr "Accesiones"
+
+msgctxt "accession"
+msgid "Code"
+msgstr "Código"
+
+msgid ""
+"A long message that "
+"spans lines"
+msgstr ""
+"Un mensaje largo que "
+"ocupa varias líneas"
+
+msgid "Say \"hi\"\n\tthen \\ leave"
+msgstr "Di \"hola\"\n\tluego \\ vete"
+
+msgid "One accession"
+msgid_plural "%1 accessions"
+msgstr[0] "Una accesión"
+msgstr[1] "%1 accesiones"
+
+#, fuzzy, clojure-format
+#| msgid "Accession number"
+msgid "Accession code"
+msgstr "Código de accesión"
+
+msgid "Untranslated"
+msgstr ""
+
+#~ msgid "Gone"
+#~ msgstr "Ido"

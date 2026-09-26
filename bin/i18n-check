@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Check the translation catalogs and the source that feeds them. Exits non-zero
+# on the first category of problem found.
+set -Eeuo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+I18N=components/i18n/resources/i18n
+status=0
+
+# Syntax, format-string consistency between msgid and msgstr, and plural forms.
+shopt -s nullglob
+for po in "$I18N"/*.po; do
+  msgfmt --check --statistics --output-file=/dev/null "$po" 2>&1 | sed "s|^|$(basename "$po"): |"
+done
+
+# xgettext does not understand #_, so a discarded call is still extracted.
+if grep -rnE '#_\s*\((tr|trc|trn|N_)\s' bases/app/src components --include='*.clj' --include='*.cljc'; then
+  echo "error: discarded translation calls above are still extracted into sepal.pot" >&2
+  status=1
+fi
+
+# The reader and writer must keep running under babashka, which
+# bin/i18n-translate uses.
+# The same pass rejects msgids carrying a wrapped literal's indentation: the
+# spaces are part of the msgid, so re-indenting the code would orphan the
+# translation.
+bb -cp components/i18n/src:components/i18n/test -e '
+(require (quote [sepal.i18n.po :as po]) (quote [clojure.java.io :as io]))
+(let [fixture (po/parse (slurp (io/resource "sepal/i18n/fixture.po")))]
+  (when-not (and (= 9 (count fixture)) (= fixture (po/parse (po/write fixture))))
+    (binding [*out* *err*] (println "error: sepal.i18n.po reads or writes the fixture differently under bb"))
+    (System/exit 1)))
+(let [bad (->> (po/parse (slurp "components/i18n/resources/i18n/sepal.pot"))
+               (filter #(re-find #"\n[ \t]{2,}" (str (:msgid %) (:msgid-plural %)))))]
+  (doseq [{:keys [msgid references]} bad]
+    (binding [*out* *err*]
+      (println "error: msgid keeps source indentation:" (pr-str msgid) (first references))))
+  (when (seq bad) (System/exit 1)))' || status=1
+
+exit $status

@@ -1,0 +1,206 @@
+#!/usr/bin/env bb
+;; Translate the untranslated and fuzzy entries of one catalog with Claude.
+;;
+;;   usage: bin/i18n-translate <locale> [--file PATH] [--chunk N] [--model M] [--dry-run]
+;;
+;; Runs `claude -p`, so it uses the Claude Code login rather than an API key.
+;; Entries go in chunks with components/i18n/glossary.md, their msgctxt, #.
+;; notes and #: references. Translations are written ready to show, with the
+;; fuzzy flag cleared, after checking that every placeholder survived. The file
+;; is written after each chunk and only if `msgfmt -c` accepts it.
+;;
+;; A missing catalog is created from sepal.pot with msginit, which also writes
+;; the language's Plural-Forms header. Run bin/i18n-extract first so the
+;; catalog has the current msgids.
+;;
+;; This script is the only writer of a catalog. A language that gets volunteer
+;; translators stops being translated here.
+
+(require '[babashka.classpath :as cp]
+         '[babashka.fs :as fs]
+         '[babashka.process :as p]
+         '[cheshire.core :as json]
+         '[clojure.string :as str])
+
+(def root (str (fs/parent (fs/parent (fs/absolutize *file*)))))
+(cp/add-classpath (str root "/components/i18n/src"))
+(require '[sepal.i18n.po :as po])
+
+(def i18n-dir (str root "/components/i18n/resources/i18n"))
+
+(defn die [& msg]
+  (binding [*out* *err*] (apply println "error:" msg))
+  (System/exit 1))
+
+(defn parse-args [args]
+  (loop [[a & more] args
+         opts {:chunk 40 :model "sonnet"}]
+    (case a
+      nil opts
+      "--file" (recur (rest more) (assoc opts :file (first more)))
+      "--chunk" (recur (rest more) (assoc opts :chunk (parse-long (first more))))
+      "--model" (recur (rest more) (assoc opts :model (first more)))
+      "--dry-run" (recur more (assoc opts :dry-run? true))
+      (if (and (not (:locale opts)) (not (str/starts-with? a "-")))
+        (recur more (assoc opts :locale a))
+        (die "unknown argument" a)))))
+
+(defn language-name [locale]
+  (.getDisplayName (java.util.Locale/forLanguageTag (str/replace locale "_" "-"))
+                   java.util.Locale/ENGLISH))
+
+(defn needs-translation? [{:keys [msgid msgstr msgstr-plural flags obsolete?]}]
+  (and (not= "" msgid)
+       (not obsolete?)
+       (or (contains? flags "fuzzy")
+           (if msgstr-plural
+             (some str/blank? msgstr-plural)
+             (str/blank? msgstr)))))
+
+(defn placeholders [s]
+  (set (re-seq #"%\d+" (or s ""))))
+
+(defn system-prompt [locale plural-forms]
+  (str/join "\n" [(str "You translate the user interface of Sepal, a collection management application "
+                       "for botanical gardens, from English into " (language-name locale) " (" locale ").")
+                  ""
+                  "Rules:"
+                  "- The glossary below gives the domain meaning of Sepal's terms. Use the translation botanical gardens use for each, and the same one everywhere."
+                  "- `context`, when present, says which sense of a short or ambiguous string is meant. It is not part of the text."
+                  "- Keep every placeholder (%1, %2, ...) exactly. You may move them to suit the word order."
+                  "- Keep leading and trailing spaces and newlines exactly as in the English."
+                  "- Write interface text: short, plain, and in the register standard for professional software in this language. Match the English capitalisation style (a sentence-case label stays sentence case)."
+                  "- Taxon names and botanical rank abbreviations (subsp., var., f.) are Latin and are never translated."
+                  "- `previous_translation`, when present, translated an older wording of the English. Revise it to match the current English."
+                  (str "- `msgstr` is a list. Give one string for an entry without `msgid_plural`. For an entry with "
+                       "`msgid_plural`, give one string per plural form of this language, in the order this "
+                       "Plural-Forms expression numbers them: " plural-forms)
+                  "- Answer with a translation for every id you were given."
+                  ""
+                  "Glossary:"
+                  ""
+                  (slurp (str root "/components/i18n/glossary.md"))]))
+
+(def schema
+  (json/generate-string
+   {:type "object"
+    :properties {:translations {:type "array"
+                                :items {:type "object"
+                                        :properties {:id {:type "integer"}
+                                                     :msgstr {:type "array" :items {:type "string"}}}
+                                        :required ["id" "msgstr"]}}}
+    :required ["translations"]}))
+
+(defn request-item [i {:keys [msgctxt msgid msgid-plural msgstr msgstr-plural flags extracted references]}]
+  (cond-> {:id i :msgid msgid}
+    msgctxt (assoc :context msgctxt)
+    msgid-plural (assoc :msgid_plural msgid-plural)
+    (seq extracted) (assoc :notes extracted)
+    (seq references) (assoc :used_in (vec (take 3 references)))
+    (contains? flags "fuzzy") (assoc :previous_translation (or msgstr msgstr-plural))))
+
+(defn ask-claude [{:keys [model]} system items]
+  (let [{:keys [exit out err]} (p/shell {:continue true
+                                         :in (json/generate-string {:entries items})
+                                         :out :string
+                                         :err :string
+                                         ;; Outside the repo, so no project CLAUDE.md joins the prompt.
+                                         :dir (str (fs/temp-dir))}
+                                        "claude" "-p"
+                                        "--model" model
+                                        "--output-format" "json"
+                                        "--tools" ""
+                                        "--no-session-persistence"
+                                        "--strict-mcp-config"
+                                        "--system-prompt" system
+                                        "--json-schema" schema)
+        result (when (zero? exit) (json/parse-string out true))]
+    (cond
+      (not (zero? exit)) (die "claude exited" exit (str/trim (str err out)))
+      (:is_error result) (die "claude failed:" (:result result))
+      :else (get-in result [:structured_output :translations]))))
+
+(defn check-translation
+  "nil if msgstrs is a usable translation of entry, else why not."
+  [nplurals {:keys [msgid msgid-plural]} msgstrs]
+  (let [expected (if msgid-plural nplurals 1)]
+    (cond
+      (not= expected (count msgstrs)) (str "expected " expected " forms, got " (count msgstrs))
+      (some str/blank? msgstrs) "empty translation"
+      (and (not msgid-plural) (not= (placeholders msgid) (placeholders (first msgstrs))))
+      (str "placeholders " (placeholders msgid) " became " (placeholders (first msgstrs)))
+      (and msgid-plural
+           (not-every? #(every? (placeholders msgid-plural) (placeholders %)) msgstrs))
+      (str "a plural form uses a placeholder " (pr-str msgid-plural) " does not have"))))
+
+(defn apply-translation [entry msgstrs]
+  (let [flags (disj (or (:flags entry) #{}) "fuzzy")]
+    (cond-> (dissoc entry :previous :flags)
+      (seq flags) (assoc :flags flags)
+      (:msgid-plural entry) (-> (dissoc :msgstr) (assoc :msgstr-plural (vec msgstrs)))
+      (not (:msgid-plural entry)) (-> (dissoc :msgstr-plural) (assoc :msgstr (first msgstrs))))))
+
+(defn write-checked!
+  "Write entries to path through msgcat, which gives the canonical line
+  wrapping, keeping the old file if msgfmt -c rejects the result."
+  [path entries]
+  (let [raw (str (fs/create-temp-file {:suffix ".po"}))
+        canonical (str (fs/create-temp-file {:suffix ".po"}))]
+    (spit raw (po/write entries))
+    (let [cat (p/shell {:continue true :err :string} "msgcat" "--output-file" canonical raw)
+          check (when (zero? (:exit cat))
+                  (p/shell {:continue true :err :string} "msgfmt" "--check" "--output-file=/dev/null" canonical))]
+      (if (and check (zero? (:exit check)))
+        (fs/move canonical path {:replace-existing true})
+        (die "the translated catalog failed validation; " path " is unchanged\n"
+             (:err cat) (:err check) "\nrejected file:" raw)))))
+
+(defn -main [args]
+  (let [{:keys [locale file chunk dry-run?] :as opts} (parse-args args)
+        _ (when-not locale (die "usage: bin/i18n-translate <locale> [--file PATH] [--chunk N] [--model M] [--dry-run]"))
+        path (or file (str i18n-dir "/" locale ".po"))]
+    (when-not (fs/exists? path)
+      (when file (die path "does not exist"))
+      (p/shell "msginit" "--no-translator" (str "--locale=" locale)
+               (str "--input=" i18n-dir "/sepal.pot") (str "--output-file=" path)))
+    (let [entries (po/parse (slurp path))
+          header (po/header-fields (:msgstr (first entries)))
+          plural-forms (or (get header "Plural-Forms") "nplurals=2; plural=(n != 1);")
+          nplurals (parse-long (second (re-find #"nplurals\s*=\s*(\d+)" plural-forms)))
+          todo (keep-indexed (fn [i e] (when (needs-translation? e) i)) entries)
+          system (system-prompt locale plural-forms)]
+      (println (count todo) "entries to translate in" path)
+      (loop [entries entries
+             [batch & more] (partition-all chunk todo)
+             done 0
+             skipped 0]
+        (if-not batch
+          (do (println "translated" done "entries," skipped "skipped")
+              (when-not dry-run?
+                (p/shell "msgfmt" "--statistics" "--output-file=/dev/null" path)))
+          (let [answers (->> (ask-claude opts system (map #(request-item % (nth entries %)) batch))
+                             (map (juxt :id :msgstr))
+                             (into {}))
+                results (for [i batch
+                              :let [entry (nth entries i)
+                                    msgstrs (get answers i)
+                                    problem (if msgstrs
+                                              (check-translation nplurals entry msgstrs)
+                                              "no answer")]]
+                          [i entry msgstrs problem])
+                entries (reduce (fn [es [i entry msgstrs problem]]
+                                  (if problem
+                                    (do (println "skipped" (pr-str (:msgid entry)) "-" problem)
+                                        es)
+                                    (do (when dry-run?
+                                          (println (pr-str (:msgid entry)) "=>" (pr-str msgstrs)))
+                                        (assoc es i (apply-translation entry msgstrs)))))
+                                (vec entries)
+                                results)
+                ok (count (remove #(nth % 3) results))]
+            (when-not dry-run?
+              (write-checked! path entries))
+            (println (+ done ok) "of" (count todo) "done")
+            (recur entries more (+ done ok) (+ skipped (- (count batch) ok)))))))))
+
+(-main *command-line-args*)

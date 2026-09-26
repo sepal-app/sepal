@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Regenerate components/i18n/resources/i18n/sepal.pot from the source and merge
+# it into every catalog beside it.
+#
+# msgids come from calls to tr, trc, trn and N_ in the Clojure source, and from
+# the label column of the lookup tables seeded into schema.sql, with the table
+# name as msgctxt. Run bin/dump-schema.sh first if a migration added labels.
+#
+# msgmerge keeps existing translations, marks a reworded msgid fuzzy with the
+# old translation as a starting point, and adds new msgids untranslated.
+set -Eeuo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+I18N=components/i18n/resources/i18n
+SCHEMA=components/database/resources/database/schema.sql
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+find bases/app/src components -path '*/test' -prune -o \
+     \( -name '*.clj' -o -name '*.cljc' \) -print | sort > "$tmp/files"
+
+# `;; i18n: ...` directly above a call becomes a #. note for the translator.
+xgettext --language=Lisp --from-code=UTF-8 \
+         --keyword=tr --keyword=trc:1c,2 --keyword=trn:1,2 --keyword=N_ \
+         --add-comments=i18n: \
+         --package-name=Sepal \
+         --files-from="$tmp/files" --output="$tmp/code.pot"
+
+# A lookup table is any table with a label column.
+sqlite3 "$tmp/schema.db" < "$SCHEMA"
+tables=$(sqlite3 "$tmp/schema.db" "
+  select m.name from sqlite_master m join pragma_table_info(m.name) p
+  where m.type = 'table' and p.name = 'label' order by m.name;")
+{
+  printf 'msgid ""\nmsgstr ""\n"Content-Type: text/plain; charset=UTF-8\\n"\n\n'
+  for table in $tables; do
+    sqlite3 "$tmp/schema.db" "
+      select distinct '#: $SCHEMA' || char(10)
+          || 'msgctxt \"$table\"' || char(10)
+          || 'msgid \"' || replace(replace(label, '\\', '\\\\'), '\"', '\\\"') || '\"' || char(10)
+          || 'msgstr \"\"' || char(10)
+      from \"$table\" order by label;"
+  done
+} > "$tmp/tables.pot"
+
+msgcat --use-first --output-file="$tmp/sepal.pot" "$tmp/code.pot" "$tmp/tables.pot"
+
+# The creation date changes on every run and would make every run a diff.
+grep -v '^"POT-Creation-Date: ' "$tmp/sepal.pot" > "$I18N/sepal.pot"
+
+shopt -s nullglob
+for po in "$I18N"/*.po; do
+  msgmerge --quiet --update --backup=none --previous "$po" "$I18N/sepal.pot"
+done
+
+msgfmt --statistics --output-file=/dev/null "$I18N/sepal.pot" 2>&1 | sed 's/^/sepal.pot: /'

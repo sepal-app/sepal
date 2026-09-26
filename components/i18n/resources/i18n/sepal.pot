@@ -1,0 +1,303 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Sepal package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Sepal\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:17
+msgid "Language"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:20
+msgid ""
+"Browser default uses the language your browser asks for, or English if Sepal "
+"has no translation for it."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:25
+msgid "Browser default"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:37
+msgid "Full name"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:41
+msgid "Email"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:50
+msgid "Save changes"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:57
+msgid "Logout"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:64
+msgid "Account"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:65
+msgid "Profile"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:93
+msgid "Profile updated successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/settings/profile.clj:95
+msgid "Failed to update profile"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Dead"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Deleted, year dead unknown"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Did not germinate"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded seedling"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Discarded, weedy"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Distributed elsewhere"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Divided"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Error correction"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Given away"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Lost, whereabouts unknown"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Other"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Stolen"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Summer kill"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Transferred elsewhere"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "material_change_reason"
+msgid "Winter kill"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Condition"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Disease"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "General"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Pest"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_type"
+msgid "Phenology"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Budding"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dead"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dormant"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Dying"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Excellent"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Fair"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Flowering"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Fruiting"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Good"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Light"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Moderate"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "None"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Poor"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Seed dispersal"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Senescing"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Severe"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "observation_value"
+msgid "Vegetative"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "Complete"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "Failed"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_status"
+msgid "In progress"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Cutting"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Division"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Graft"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Layering"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Other"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Seed"
+msgstr ""
+
+#: components/database/resources/database/schema.sql
+msgctxt "propagation_type"
+msgid "Tissue culture"
+msgstr ""
