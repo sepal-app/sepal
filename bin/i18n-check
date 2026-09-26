@@ -19,15 +19,16 @@ if grep -rnE '#_\s*\((tr|trc|trn|N_)\s' bases/app/src components --include='*.cl
   status=1
 fi
 
-# The reader must keep running under babashka, which bin/i18n-translate uses.
+# The reader and writer must keep running under babashka, which
+# bin/i18n-translate uses.
 # The same pass rejects msgids carrying a wrapped literal's indentation: the
 # spaces are part of the msgid, so re-indenting the code would orphan the
 # translation.
 bb -cp components/i18n/src:components/i18n/test -e '
 (require (quote [sepal.i18n.po :as po]) (quote [clojure.java.io :as io]))
 (let [fixture (po/parse (slurp (io/resource "sepal/i18n/fixture.po")))]
-  (when-not (= 9 (count fixture))
-    (binding [*out* *err*] (println "error: sepal.i18n.po reads the fixture differently under bb"))
+  (when-not (and (= 9 (count fixture)) (= fixture (po/parse (po/write fixture))))
+    (binding [*out* *err*] (println "error: sepal.i18n.po reads or writes the fixture differently under bb"))
     (System/exit 1)))
 (let [bad (->> (po/parse (slurp "components/i18n/resources/i18n/sepal.pot"))
                (filter #(re-find #"\n[ \t]{2,}" (str (:msgid %) (:msgid-plural %)))))]

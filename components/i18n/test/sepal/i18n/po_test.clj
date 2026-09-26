@@ -62,3 +62,11 @@
 (deftest test-malformed
   (is (thrown-with-msg? clojure.lang.ExceptionInfo #"line 2"
                         (po/parse "msgid \"a\"\nmsgstr \"unterminated\n"))))
+
+(deftest test-write-round-trips
+  (let [entries (fixture)]
+    (is (= entries (po/parse (po/write entries))))))
+
+(deftest test-write-splits-at-newlines
+  (is (= "msgid \"\"\n\"one\\n\"\n\"two\"\nmsgstr \"\"\n"
+         (po/write [{:msgid "one\ntwo" :msgstr ""}]))))

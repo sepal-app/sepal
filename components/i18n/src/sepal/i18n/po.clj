@@ -131,3 +131,48 @@
                 (when-let [[_ k v] (re-matches #"([^:]+):\s*(.*)" line)]
                   [(str/trim k) (str/trim v)])))
         (str/split-lines msgstr)))
+
+;;; Writing
+
+(defn- escape [s]
+  (-> s
+      (str/replace "\\" "\\\\")
+      (str/replace "\"" "\\\"")
+      (str/replace "\t" "\\t")
+      (str/replace "\r" "\\r")
+      (str/replace "\n" "\\n")))
+
+(defn- field-lines
+  "`keyword \"value\"`, split after each \\n the way gettext's tools write it.
+  Line width is left to msgcat, which bin/i18n-translate runs afterwards."
+  [kw s]
+  (let [parts (re-seq #"[^\n]*\n|[^\n]+" s)]
+    (if (next parts)
+      (cons (str kw " \"\"") (map #(str "\"" (escape %) "\"") parts))
+      [(str kw " \"" (escape s) "\"")])))
+
+(defn- entry-lines [{:keys [comments extracted references flags previous
+                            msgctxt msgid msgid-plural msgstr msgstr-plural
+                            obsolete?]}]
+  (let [body (concat
+               (when msgctxt (field-lines "msgctxt" msgctxt))
+               (field-lines "msgid" msgid)
+               (when msgid-plural (field-lines "msgid_plural" msgid-plural))
+               (if msgstr-plural
+                 (mapcat #(field-lines (str "msgstr[" %1 "]") %2)
+                         (range) msgstr-plural)
+                 (field-lines "msgstr" (or msgstr ""))))]
+    (concat
+      (map #(str "# " %) comments)
+      (map #(str "#. " %) extracted)
+      (map #(str "#: " %) references)
+      (when (seq flags)
+        [(str "#, " (str/join ", " (sort-by #(if (= "fuzzy" %) "" %) flags)))])
+      (map #(str "#| " %) previous)
+      (if obsolete? (map #(str "#~ " %) body) body))))
+
+(defn write
+  "PO text for entries, the inverse of parse."
+  [entries]
+  (str (str/join "\n\n" (map #(str/join "\n" (entry-lines %)) entries))
+       "\n"))
