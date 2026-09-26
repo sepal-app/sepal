@@ -13,6 +13,7 @@
             [sepal.collection.interface.activity :as coll.activity]
             [sepal.collection.interface.datum :as datum]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -28,19 +29,19 @@
      (ui.form/anti-forgery-field)
 
      (ui.form/section
-       :title "Collection"
-       :hint "Who gathered this material, when, and from what."
+       :title (tr "Collection")
+       :hint (tr "Who gathered this material, when, and from what.")
        :children
        [[:div {:class "spl-form-trio"}
-         (ui.form/input-field :label "Collector"
+         (ui.form/input-field :label (tr "Collector")
                               :name "collector"
                               :value (:collector values)
                               :errors (:collector errors))
-         (ui.form/input-field :label "Collector's Number"
+         (ui.form/input-field :label (tr "Collector's Number")
                               :name "collectors-code"
                               :value (:collectors-code values)
                               :errors (:collectors-code errors))
-         (ui.form/input-field :label "Collection Date"
+         (ui.form/input-field :label (tr "Collection Date")
                               :name "collected-date"
                               :type "date"
                               :value (:collected-date values)
@@ -48,46 +49,46 @@
                               ;; keeps the picker from offering one.
                               :input-attrs {:max today}
                               :errors (:collected-date errors))]
-        (ui.form/textarea-field :label "Habitat"
+        (ui.form/textarea-field :label (tr "Habitat")
                                 :name "habitat"
                                 :id "habitat"
                                 :value (:habitat values)
                                 :errors (:habitat errors))
-        (ui.form/textarea-field :label "Associated Taxa"
+        (ui.form/textarea-field :label (tr "Associated Taxa")
                                 :name "taxa"
                                 :id "taxa"
                                 :value (:taxa values)
                                 :errors (:taxa errors))
-        (ui.form/textarea-field :label "Remarks"
+        (ui.form/textarea-field :label (tr "Remarks")
                                 :name "remarks"
                                 :id "remarks"
                                 :value (:remarks values)
                                 :errors (:remarks errors))])
 
      (ui.form/section
-       :title "Location"
-       :hint "Where it was collected, in words."
+       :title (tr "Location")
+       :hint (tr "Where it was collected, in words.")
        :children
        [[:div {:class "spl-form-trio"}
-         (ui.form/input-field :label "Country"
+         (ui.form/input-field :label (tr "Country")
                               :name "country"
                               :value (:country values)
                               :errors (:country errors))
-         (ui.form/input-field :label "Province/State"
+         (ui.form/input-field :label (tr "Province/State")
                               :name "province"
                               :value (:province values)
                               :errors (:province errors))
-         (ui.form/input-field :label "Locality"
+         (ui.form/input-field :label (tr "Locality")
                               :name "locality"
                               :value (:locality values)
                               :errors (:locality errors))]])
 
      (ui.form/section
-       :title "Coordinates"
-       :hint "Where it was collected, as a point."
+       :title (tr "Coordinates")
+       :hint (tr "Where it was collected, as a point.")
        :children
        [[:div {:class "spl-form-pair"}
-         (ui.form/input-field :label "Latitude"
+         (ui.form/input-field :label (tr "Latitude")
                               :name "lat"
                               :type "number"
                               :value (:lat values)
@@ -95,7 +96,7 @@
                               :input-attrs {:step "any"
                                             :min "-90"
                                             :max "90"})
-         (ui.form/input-field :label "Longitude"
+         (ui.form/input-field :label (tr "Longitude")
                               :name "lng"
                               :type "number"
                               :value (:lng values)
@@ -104,7 +105,7 @@
                                             :min "-180"
                                             :max "180"})]
         (let [current-srid (or (:srid values) datum/default-srid)]
-          (ui.form/field :label "Coordinate System"
+          (ui.form/field :label (tr "Coordinate System")
                          :name "srid"
                          :errors (:srid errors)
                          :input [:select {:name "srid"
@@ -115,18 +116,18 @@
                                              :selected (when (= srid current-srid) "selected")}
                                     label])]))
         [:div {:class "spl-form-trio"}
-         (ui.form/input-field :label "Uncertainty (m)"
+         (ui.form/input-field :label (tr "Uncertainty (m)")
                               :name "geo-uncertainty"
                               :type "number"
                               :value (:geo-uncertainty values)
                               :errors (:geo-uncertainty errors)
                               :input-attrs {:min "1"})
-         (ui.form/input-field :label "Elevation (m)"
+         (ui.form/input-field :label (tr "Elevation (m)")
                               :name "elevation"
                               :type "number"
                               :value (:elevation values)
                               :errors (:elevation errors))
-         (ui.form/input-field :label "Elevation Accuracy (m)"
+         (ui.form/input-field :label (tr "Elevation Accuracy (m)")
                               :name "elevation-accuracy"
                               :type "number"
                               :value (:elevation-accuracy values)
@@ -262,7 +263,7 @@
         :post
         (let [redirect (http/hx-redirect (z/url-for accession.routes/detail-collection
                                                     {:id (:accession/id accession)}))
-              failed #(http/failure-flash % redirect "Could not save the collection data")]
+              failed #(http/failure-flash % redirect (tr "Could not save the collection data"))]
           (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
             (if-let [date-errors (validation.i/future-date-errors
                                    data [:collected-date] (str (datetime/today timezone)))]

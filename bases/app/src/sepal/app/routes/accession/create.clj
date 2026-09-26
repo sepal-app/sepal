@@ -12,6 +12,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -39,8 +40,8 @@
                                        :values values)
                 :footer (ui.form/footer :buttons (footer-buttons))
                 :breadcrumbs [[:a {:href (z/url-for accession.routes/index)}
-                               "Accessions"]
-                              "New accession"]))
+                               (tr "Accessions")]
+                              (tr "New accession")]))
 
 (defn create! [db created-by data]
   (db.i/with-transaction [tx db]
@@ -83,19 +84,19 @@
               (codes/shape-error (accession.i/next-code db (:template config) today)))
             (f/attempt-all [saved (f/try* (create! db (:user/id viewer) data))]
               (-> (http/hx-redirect accession.routes/detail {:id (:accession/id saved)})
-                  (flash/success "Accession created successfully"))
+                  (flash/success (tr "Accession created successfully")))
               (f/when-failed [e]
                 (if (codes/unique-violation? e)
                   (codes/taken-response
                     (:code data)
                     #(accession.form/code-input :value (:code data)
                                                 :errors %
-                                                :help accession.form/code-help))
+                                                :help (tr accession.form/code-help)))
                   (http/failure-flash e (http/hx-redirect accession.routes/new)
-                                      "Could not create the accession"))))))
+                                      (tr "Could not create the accession")))))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect accession.routes/new)
-                              "Could not create the accession")))
+                              (tr "Could not create the accession"))))
 
       ;; The field arrives filled in. With strict off it is a prefill you can
       ;; select and overwrite.

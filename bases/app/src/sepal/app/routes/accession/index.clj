@@ -2,6 +2,7 @@
   (:require [lambdaisland.uri :as uri]
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.search]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
@@ -24,7 +25,7 @@
 
 (defn create-button []
   (pages.list/create-button :href (z/url-for accession.routes/new)
-                            :label "New accession"))
+                            :label (tr "New accession")))
 
 (defn- row-attrs [row]
   (let [id (:accession/id row)]
@@ -32,7 +33,7 @@
                           :panel-url (z/url-for accession.routes/panel {:id id}))))
 
 (defn- provenance-label [row]
-  (some-> (:accession/provenance-type row) (accession.form/enum-label-fn)))
+  (accession.form/enum-label accession.spec/provenance-type-labels (:accession/provenance-type row)))
 
 (defn- stacked-summary
   "What the identifier cell shows below 640px, where the table collapses to a
@@ -98,8 +99,7 @@
                  :total total
                  :empty-state (pages.list/empty-list
                                 :title (tr "No accessions yet")
-                                :body "An accession is a batch of plant material acquired at one time from one
-                              source."
+                                :body (tr "An accession is a batch of plant material acquired at one time from one source.")
                                 :searching? (seq search-query)
                                 :create-href (z/url-for accession.routes/new)
                                 :create-label (tr "New accession")))))
@@ -123,18 +123,19 @@
                :table-actions (pages.list/toolbar
                                 :q search-query
                                 :fields field-options
-                                :placeholder "Search... (e.g., taxon:Quercus provenance:wild)"
+                                ;; i18n: Keep "taxon:", "provenance:" and "wild" in English; they are search syntax
+                                :placeholder (tr "Search... (e.g., taxon:Quercus provenance:wild)")
                                 :page page
                                 :page-size page-size
                                 :total total
                                 :actions (ui.export/export-button)))
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
-                                "Taxa"]
+                                (tr "Taxa")]
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "italic"}
                                 (:taxon/name taxon)])
-                   :always (conj "Accessions"))
+                   :always (conj (tr "Accessions")))
     :page-title-buttons (when (authz/user-has-permission? viewer accession.perm/create)
                           (create-button))))
 

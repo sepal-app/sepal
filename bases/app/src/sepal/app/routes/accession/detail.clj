@@ -5,13 +5,14 @@
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.ui.page :as page]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn render-panel-page
   "Render the panel view as a full page for read-only users."
   [& {:keys [accession panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for accession.routes/index)} "Accessions"]
+    :breadcrumbs [[:a {:href (z/url-for accession.routes/index)} (tr "Accessions")]
                   (:accession/code accession)]
     :content [:div {:class "max-w-2xl mx-auto"}
               (accession.panel/panel-content

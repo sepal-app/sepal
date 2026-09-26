@@ -7,6 +7,7 @@
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
             [sepal.app.ui.taxon-name :as taxon-name]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (def general-tab ::general)
@@ -30,21 +31,21 @@
                (= :wild (:accession/provenance-type accession)))))
 
 (defn items [& {:keys [accession active collection-available?]}]
-  [(ui.tabs/item "General"
+  [(ui.tabs/item (tr "General")
                  {:href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
                   :active (= active general-tab)})
-   (ui.tabs/item "Collection"
+   (ui.tabs/item (tr "Collection")
                  (if collection-available?
                    {:href (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
                     :active (= active collection-tab)}
                    {:disabled collection-disabled-reason}))
-   (ui.tabs/item "Media"
+   (ui.tabs/item (tr "Media")
                  {:href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
                   :active (= active media-tab)})
-   (ui.tabs/item "Notes"
+   (ui.tabs/item (tr "Notes")
                  {:href (z/url-for accession.routes/detail-notes {:id (:accession/id accession)})
                   :active (= active notes-tab)})
-   (ui.tabs/item "Tags"
+   (ui.tabs/item (tr "Tags")
                  {:href (z/url-for accession.routes/detail-tags {:id (:accession/id accession)})
                   :active (= active tags-tab)})])
 
@@ -52,7 +53,7 @@
   ([accession active]
    (tabs accession active true))
   ([accession active collection-available?]
-   (ui.tabs/tabs {:label "Accession sections"
+   (ui.tabs/tabs {:label (tr "Accession sections")
                   :items (items :accession accession
                                 :active active
                                 :collection-available? collection-available?)})))
@@ -75,11 +76,11 @@
 
 (defn breadcrumbs [taxon accession]
   [[:a {:href (z/url-for taxon.routes/index)}
-    "Taxa"]
+    (tr "Taxa")]
    [:a {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})}
     (taxon-name/render (:taxon/name taxon))]
    [:a {:href (z/url-for accession.routes/index {} {:taxon-id (:taxon/id taxon)})}
-    "Accessions"]
+    (tr "Accessions")]
    (:accession/code accession)])
 
 (defn actions
@@ -92,8 +93,8 @@
   (let [id (:accession/id accession)]
     (ui.actions/menu
       :primary primary
-      :items [{:label "Add material"
+      :items [{:label (tr "Add material")
                :href (z/url-for material.routes/new nil {:accession-id id})}
-              {:label "Add a propagation"
+              {:label (tr "Add a propagation")
                :href (z/url-for propagation.routes/new nil {:parent-accession-id id})}]
       :delete-url (z/url-for accession.routes/delete {:id id}))))

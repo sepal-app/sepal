@@ -162,12 +162,132 @@ msgid_plural "%1 records reference this"
 msgstr[0] ""
 msgstr[1] ""
 
+#: bases/app/src/sepal/app/routes/accession/create.clj:43
+#: bases/app/src/sepal/app/routes/accession/detail.clj:15
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:83
+#: bases/app/src/sepal/app/routes/accession/index.clj:138
+#: bases/app/src/sepal/app/ui/page.clj:141
+#: components/taxon/src/sepal/taxon/interface/search.clj:111
+msgid "Accessions"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:44
+#: bases/app/src/sepal/app/routes/accession/index.clj:28
+#: bases/app/src/sepal/app/routes/accession/index.clj:105
+msgid "New accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:87
+msgid "Accession created successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/create.clj:96
+#: bases/app/src/sepal/app/routes/accession/create.clj:99
+msgid "Could not create the accession"
+msgstr ""
+
 #: bases/app/src/sepal/app/routes/accession/delete.clj:18
 msgid "Delete accession %1?"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/delete.clj:32
 msgid "Deleted accession %1"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:32
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:37
+msgid "Collection"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:33
+msgid "Who gathered this material, when, and from what."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:36
+msgid "Collector"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:40
+msgid "Collector's Number"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:44
+msgid "Collection Date"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:52
+msgid "Habitat"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:57
+msgid "Associated Taxa"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:62
+msgid "Remarks"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:69
+#: components/accession/src/sepal/accession/interface/search.clj:64
+#: components/accession/src/sepal/accession/interface/search.clj:70
+#: components/material/src/sepal/material/interface/search.clj:78
+#: components/observation/src/sepal/observation/interface/search.clj:43
+#: components/propagation/src/sepal/propagation/interface/search.clj:31
+#: components/propagation/src/sepal/propagation/interface/search.clj:36
+#: components/taxon/src/sepal/taxon/interface/search.clj:102
+msgid "Location"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:70
+msgid "Where it was collected, in words."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:73
+msgid "Country"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:77
+msgid "Province/State"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:81
+msgid "Locality"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:87
+msgid "Coordinates"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:88
+msgid "Where it was collected, as a point."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:91
+msgid "Latitude"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:99
+msgid "Longitude"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:108
+msgid "Coordinate System"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:119
+msgid "Uncertainty (m)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:125
+msgid "Elevation (m)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:130
+msgid "Elevation Accuracy (m)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/collection.clj:266
+msgid "Could not save the collection data"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/collection_delete.clj:27
@@ -178,12 +298,262 @@ msgstr ""
 msgid "Cleared the collection data."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/index.clj:100
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:136
+msgid "Accession updated successfully"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:139
+#: bases/app/src/sepal/app/routes/accession/detail/general.clj:142
+msgid "Could not save the accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:54
+msgid "Media linked to this accession's material"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:100
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:134
+msgid "The note could not be saved."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:143
+msgid "The note could not be deleted."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:34
+msgid "General"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:42
+msgid "Media"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:45
+#: bases/app/src/sepal/app/routes/accession/panel.clj:107
+msgid "Notes"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:48
+#: bases/app/src/sepal/app/ui/page.clj:151
+msgid "Tags"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:56
+msgid "Accession sections"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:79
+#: bases/app/src/sepal/app/routes/accession/index.clj:134
+#: bases/app/src/sepal/app/ui/page.clj:139
+msgid "Taxa"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:96
+msgid "Add material"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/shared.clj:98
+msgid "Add a propagation"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/tags.clj:101
+msgid "The tag could not be added."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/detail/tags.clj:126
+msgid "The tag could not be removed."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/export.clj:67
+msgid "Include taxon (name, author, rank)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/export.clj:69
+msgid "Include collection data (collector, locality, coordinates)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:30
+msgid "Your garden's accession number. Must be unique."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:65
+#: bases/app/src/sepal/app/routes/accession/form.clj:66
+msgid "Use the next available code"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:89
+msgid "Identity"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:90
+msgid "What this accession is, and what you call it."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:92
+#: bases/app/src/sepal/app/routes/accession/panel.clj:69
+msgctxt "accession"
+msgid "Code"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:109
+#: bases/app/src/sepal/app/routes/accession/panel.clj:70
+#: components/accession/src/sepal/accession/interface/search.clj:36
+#: components/accession/src/sepal/accession/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:41
+#: components/location/src/sepal/location/interface/search.clj:48
+#: components/material/src/sepal/material/interface/search.clj:55
+#: components/material/src/sepal/material/interface/search.clj:61
+#: components/propagation/src/sepal/propagation/interface/search.clj:62
+#: components/propagation/src/sepal/propagation/interface/search.clj:68
+msgid "Taxon"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:113
+msgid "Start typing a name to search the taxonomy."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:125
+msgid "ID Qualifier"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:131
+msgid "ID Qualifier Rank"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:139
+#: bases/app/src/sepal/app/routes/accession/panel.clj:75
+#: components/accession/src/sepal/accession/interface/search.clj:25
+msgid "Provenance"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:140
+msgid ""
+"Where the material came from. Wild status applies only to wild-collected "
+"material."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:143
+msgid "Provenance Type"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:154
+msgid "Wild Provenance Status"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:163
+#: bases/app/src/sepal/app/routes/accession/panel.clj:76
+#: components/accession/src/sepal/accession/interface/search.clj:53
+#: components/accession/src/sepal/accession/interface/search.clj:58
+msgid "Supplier"
+msgstr ""
+
+#. i18n: %1 is a link reading "Create a contact"
+#: bases/app/src/sepal/app/routes/accession/form.clj:171
+msgid ""
+"Suppliers come from your contacts. %1 in a new tab if the one you want is "
+"missing."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:178
+msgid "Create a contact"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:185
+msgid "Placement"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:186
+msgid "Where this material is meant to go before it is planted."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:190
+#: bases/app/src/sepal/app/routes/accession/panel.clj:81
+msgid "Intended location"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:193
+msgid "Leave it empty until the bed is decided."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:201
+msgid "Receipt"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:202
+msgid "What arrived, how much of it, and when."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:205
+msgid "Date Received"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:213
+msgid "Date Accessioned"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:220
+#: bases/app/src/sepal/app/routes/accession/panel.clj:87
+msgid "Received as"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/form.clj:227
+#: bases/app/src/sepal/app/routes/accession/panel.clj:89
+msgid "Quantity received"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/index.clj:101
 msgid "No accessions yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/index.clj:105
-msgid "New accession"
+#: bases/app/src/sepal/app/routes/accession/index.clj:102
+msgid ""
+"An accession is a batch of plant material acquired at one time from one "
+"source."
+msgstr ""
+
+#. i18n: Keep "taxon:", "provenance:" and "wild" in English; they are search syntax
+#: bases/app/src/sepal/app/routes/accession/index.clj:127
+msgid "Search... (e.g., taxon:Quercus provenance:wild)"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:66
+msgid "Summary"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:90
+msgid "Date received"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:91
+msgid "Date accessioned"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:95
+msgid "Statistics"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:98
+#: bases/app/src/sepal/app/routes/accession/panel.clj:110
+#: bases/app/src/sepal/app/routes/accession/panel.clj:140
+msgctxt "empty section"
+msgid "none"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:101
+msgid "Material"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:121
+msgid "External Links"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:133
+msgid "nothing grown from this accession"
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/accession/panel.clj:137
+#: bases/app/src/sepal/app/ui/page.clj:137
+msgid "Activity"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:31
@@ -591,7 +961,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/ui/archive.clj:69
 #: bases/app/src/sepal/app/ui/delete.clj:102
-#: bases/app/src/sepal/app/ui/export.clj:83
+#: bases/app/src/sepal/app/ui/export.clj:84
 #: bases/app/src/sepal/app/ui/form.clj:224
 msgid "Cancel"
 msgstr ""
@@ -654,7 +1024,7 @@ msgid ""
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/export.clj:14
-#: bases/app/src/sepal/app/ui/export.clj:88
+#: bases/app/src/sepal/app/ui/export.clj:89
 msgid "Export"
 msgstr ""
 
@@ -696,19 +1066,6 @@ msgstr ""
 msgid "Toggle details"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/page.clj:137
-msgid "Activity"
-msgstr ""
-
-#: bases/app/src/sepal/app/ui/page.clj:139
-msgid "Taxa"
-msgstr ""
-
-#: bases/app/src/sepal/app/ui/page.clj:141
-#: components/taxon/src/sepal/taxon/interface/search.clj:111
-msgid "Accessions"
-msgstr ""
-
 #: bases/app/src/sepal/app/ui/page.clj:143
 msgctxt "navigation"
 msgid "Material"
@@ -725,10 +1082,6 @@ msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:149
 msgid "Observations"
-msgstr ""
-
-#: bases/app/src/sepal/app/ui/page.clj:151
-msgid "Tags"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/page.clj:153
@@ -897,42 +1250,12 @@ msgstr ""
 msgid "ID"
 msgstr ""
 
-#: components/accession/src/sepal/accession/interface/search.clj:25
-msgid "Provenance"
-msgstr ""
-
 #: components/accession/src/sepal/accession/interface/search.clj:29
 msgid "Private"
 msgstr ""
 
-#: components/accession/src/sepal/accession/interface/search.clj:36
-#: components/accession/src/sepal/accession/interface/search.clj:41
-#: components/location/src/sepal/location/interface/search.clj:41
-#: components/location/src/sepal/location/interface/search.clj:48
-#: components/material/src/sepal/material/interface/search.clj:55
-#: components/material/src/sepal/material/interface/search.clj:61
-#: components/propagation/src/sepal/propagation/interface/search.clj:62
-#: components/propagation/src/sepal/propagation/interface/search.clj:68
-msgid "Taxon"
-msgstr ""
-
 #: components/accession/src/sepal/accession/interface/search.clj:47
 msgid "Taxon Rank"
-msgstr ""
-
-#: components/accession/src/sepal/accession/interface/search.clj:53
-#: components/accession/src/sepal/accession/interface/search.clj:58
-msgid "Supplier"
-msgstr ""
-
-#: components/accession/src/sepal/accession/interface/search.clj:64
-#: components/accession/src/sepal/accession/interface/search.clj:70
-#: components/material/src/sepal/material/interface/search.clj:78
-#: components/observation/src/sepal/observation/interface/search.clj:43
-#: components/propagation/src/sepal/propagation/interface/search.clj:31
-#: components/propagation/src/sepal/propagation/interface/search.clj:36
-#: components/taxon/src/sepal/taxon/interface/search.clj:102
-msgid "Location"
 msgstr ""
 
 #: components/accession/src/sepal/accession/interface/search.clj:78
@@ -967,6 +1290,182 @@ msgstr ""
 #: components/material/src/sepal/material/interface/search.clj:96
 #: components/propagation/src/sepal/propagation/interface/search.clj:94
 msgid "Updated"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:44
+msgid "Below family"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:45
+msgid "Family"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:46
+msgid "Genus"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:47
+msgid "Species"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:48
+msgid "First infraspecific epithet"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:49
+msgid "Second infraspecific epithet"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:50
+msgid "Cultivar"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:63
+msgid "Wild"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:64
+#: components/accession/src/sepal/accession/interface/spec.clj:85
+msgid "Cultivated"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:65
+#: components/accession/src/sepal/accession/interface/spec.clj:86
+msgid "Not wild"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:66
+#: components/accession/src/sepal/accession/interface/spec.clj:87
+msgid "Purchase"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:67
+#: components/accession/src/sepal/accession/interface/spec.clj:88
+msgid "Insufficient data"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:82
+msgid "Wild native"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:83
+msgid "Wild non native"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:84
+msgid "Cultivated native"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:126
+msgid "Air layer"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:127
+msgid "Balled and burlapped"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:128
+msgid "Bare root plant"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:129
+msgid "Bud cutting"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:130
+msgid "Budded"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:131
+msgid "Bulb"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:132
+msgid "Bulbil"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:133
+msgid "Clump"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:134
+msgid "Corm"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:135
+msgid "Division"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:136
+msgid "Graft"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:137
+msgid "Layer"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:138
+msgid "Plant"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:139
+msgid "Pseudobulb"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:140
+msgid "Rhizome"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:141
+msgid "Root"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:142
+msgid "Root cutting"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:143
+msgid "Root sucker"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:144
+msgid "Rooted cutting"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:145
+msgid "Scion"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:146
+msgid "Seed"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:147
+msgid "Seedling"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:148
+msgid "Spore"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:149
+msgid "Sporeling"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:150
+msgid "Tuber"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:151
+msgid "Unknown"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:152
+msgid "Unrooted cutting"
+msgstr ""
+
+#: components/accession/src/sepal/accession/interface/spec.clj:153
+msgid "Vegetative spreading"
 msgstr ""
 
 #: components/contact/src/sepal/contact/interface/search.clj:13

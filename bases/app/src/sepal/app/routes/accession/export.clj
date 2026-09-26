@@ -8,6 +8,7 @@
             [sepal.app.csv :as csv]
             [sepal.app.params :as params]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z])
   (:import [java.time LocalDateTime]
@@ -63,9 +64,9 @@
 (def export-options
   "Options shown in export modal. IDs must match Params keys."
   [{:id "include_taxon"
-    :label "Include taxon (name, author, rank)"}
+    :label (N_ "Include taxon (name, author, rank)")}
    {:id "include_collection"
-    :label "Include collection data (collector, locality, coordinates)"}])
+    :label (N_ "Include collection data (collector, locality, coordinates)")}])
 
 ;; =============================================================================
 ;; Handler

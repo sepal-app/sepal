@@ -17,6 +17,7 @@
             [sepal.collection.interface :as coll.i]
             [sepal.contact.interface :as contact.i]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface :as location.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
@@ -132,13 +133,13 @@
               (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
             (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
               (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                  (flash/success "Accession updated successfully"))
+                  (flash/success (tr "Accession updated successfully")))
               (f/when-failed [e]
                 (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                                    "Could not save the accession")))))
+                                    (tr "Could not save the accession"))))))
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                              "Could not save the accession")))
+                              (tr "Could not save the accession"))))
 
       (let [panel-data (accession.panel/fetch-panel-data db resource)
             collection (coll.i/get-by-accession-id db (:accession/id resource))]

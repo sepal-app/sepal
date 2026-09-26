@@ -9,6 +9,7 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.note.interface :as note.i]
             [sepal.note.interface.activity :as note.activity]
             [sepal.taxon.interface :as taxon.i]
@@ -96,7 +97,7 @@
                                                  note))))]
         (render-list db resource timezone)
         (f/when-failed [e]
-          (http/failure-partial e "The note could not be saved.")))
+          (http/failure-partial e (tr "The note could not be saved."))))
 
       (let [taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
             panel-data (accession.panel/fetch-panel-data db resource)]
@@ -130,7 +131,7 @@
                                                    updated))))]
           (render-list db resource timezone)
           (f/when-failed [e]
-            (http/failure-partial e "The note could not be saved.")))
+            (http/failure-partial e (tr "The note could not be saved."))))
 
         :delete
         (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
@@ -139,6 +140,6 @@
                                                    (note.i/delete! tx note-id))))]
           (render-list db resource timezone)
           (f/when-failed [e]
-            (http/failure-partial e "The note could not be deleted.")))
+            (http/failure-partial e (tr "The note could not be deleted."))))
 
         (http/not-found)))))

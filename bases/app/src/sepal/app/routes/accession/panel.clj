@@ -1,8 +1,8 @@
 (ns sepal.app.routes.accession.panel
   "Resource panel content for accessions.
    Displays accession summary, statistics, linked resources, and activity."
-  (:require [clojure.string :as str]
-            [sepal.accession.interface :as accession.i]
+  (:require [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
@@ -19,20 +19,13 @@
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.contact.interface :as contact.i]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as mat.i]
             [sepal.note.interface :as note.i]
             [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
-
-(defn- format-provenance-type
-  "Format provenance type keyword for display."
-  [provenance-type]
-  (when provenance-type
-    (-> (name provenance-type)
-        (str/replace "-" " ")
-        (str/capitalize))))
 
 (defn panel-content
   "Render the accession panel content.
@@ -70,51 +63,51 @@
 
         ;; Summary section
         (panel/collapsible-section
-          :title "Summary"
+          :title (tr "Summary")
           :children
           (panel/summary-section
-            :fields [{:label "Code" :value code}
-                     {:label "Taxon"
+            :fields [{:label (trc "accession" "Code") :value code}
+                     {:label (tr "Taxon")
                       :value (when taxon
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
                                     :class "spl-link"}
                                 (taxon-name/render sci-name)])}
-                     {:label "Provenance" :value (format-provenance-type provenance-type)}
-                     {:label "Supplier"
+                     {:label (tr "Provenance") :value (accession.form/enum-label accession.spec/provenance-type-labels provenance-type)}
+                     {:label (tr "Supplier")
                       :value (when supplier
                                [:a {:href (z/url-for contact.routes/detail {:id (:contact/id supplier)})
                                     :class "spl-link"}
                                 (:contact/name supplier)])}
-                     {:label "Intended location"
+                     {:label (tr "Intended location")
                       :value (when intended-location
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id intended-location)})
                                     :class "spl-link"}
                                 (:location/name intended-location)])}
-                     {:label "Received as"
-                      :value (some-> received-type accession.form/enum-label-fn)}
-                     {:label "Quantity received" :value quantity-received}
-                     {:label "Date received" :value date-received}
-                     {:label "Date accessioned" :value date-accessioned}]))
+                     {:label (tr "Received as")
+                      :value (accession.form/enum-label accession.spec/received-type-labels received-type)}
+                     {:label (tr "Quantity received") :value quantity-received}
+                     {:label (tr "Date received") :value date-received}
+                     {:label (tr "Date accessioned") :value date-accessioned}]))
 
         ;; Statistics section
         (panel/collapsible-section
-          :title "Statistics"
+          :title (tr "Statistics")
           :count material-count
           :disabled? (zero? (or material-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :children
           (panel/statistics-section
-            :stats [{:label "Material"
+            :stats [{:label (tr "Material")
                      :value material-count
                      :href (z/url-for material.routes/index nil {:accession-id id})}]))
 
         ;; Notes section
         (panel/collapsible-section
-          :title "Notes"
+          :title (tr "Notes")
           :count note-count
           :disabled? (zero? (or note-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (ui.notes/panel-section
@@ -125,7 +118,7 @@
 
         ;; External links section
         (panel/collapsible-section
-          :title "External Links"
+          :title (tr "External Links")
           :children
           (external-links/taxonomic-links-section :taxon-name sci-name))
 
@@ -137,14 +130,14 @@
           :origin-parent origin-parent
           :type-labels type-labels
           :status-labels status-labels
-          :empty-label "nothing grown from this accession")
+          :empty-label (tr "nothing grown from this accession"))
 
         ;; Activity section
         (panel/collapsible-section
-          :title "Activity"
+          :title (tr "Activity")
           :count activity-count
           :disabled? (zero? (or activity-count 0))
-          :empty-label "none"
+          :empty-label (trc "empty section" "none")
           :default-open? false
           :children
           (panel/activity-section

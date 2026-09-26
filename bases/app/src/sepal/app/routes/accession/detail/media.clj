@@ -12,6 +12,7 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
+            [sepal.i18n.interface :refer [tr]]
             [sepal.media.interface :as media.i]
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
@@ -50,7 +51,7 @@
       (media.ui/media-list :context :record
                            :filters (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
                                                            :below? below?
-                                                           :hint "Media linked to this accession's material")
+                                                           :hint (tr "Media linked to this accession's material"))
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :accession accession

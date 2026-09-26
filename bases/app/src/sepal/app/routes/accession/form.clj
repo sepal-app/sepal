@@ -9,6 +9,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.contact.interface.name :as contact.name]
+            [sepal.i18n.interface :refer [N_ tr trc]]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]
@@ -17,7 +18,16 @@
       (str/replace "_" " ")
       (str/capitalize)))
 
-(def code-help "Your garden's accession number. Must be unique.")
+(defn enum-label
+  "An enum value's display name from its labels map, translated. A value the
+  map does not name falls back to its keyword, humanised."
+  [labels v]
+  (when v
+    (if-let [label (get labels v)]
+      (tr label)
+      (enum-label-fn v))))
+
+(def code-help (N_ "Your garden's accession number. Must be unique."))
 
 (defn code-input
   "The Code control on its own, so a collision can swap it for one carrying the
@@ -52,8 +62,8 @@
                     :hx-get url
                     :hx-target "#code"
                     :hx-swap "outerHTML"
-                    :title "Use the next available code"
-                    :aria-label "Use the next available code"}
+                    :title (tr "Use the next available code")
+                    :aria-label (tr "Use the next available code")}
              include (assoc :hx-include include))
    (lucide/rotate-cw :class "size-4")])
 
@@ -76,18 +86,18 @@
      [:div {:class "spl-form"}
       (ui.form/anti-forgery-field)
       (ui.form/section
-        :title "Identity"
-        :hint "What this accession is, and what you call it."
+        :title (tr "Identity")
+        :hint (tr "What this accession is, and what you call it.")
         :children
-        [(ui.form/field :label "Code"
+        [(ui.form/field :label (trc "accession" "Code")
                         :name "code"
                         :required true
                         :errors (:code errors)
-                        :help code-help
+                        :help (tr code-help)
                         :input [:div {:class "flex items-center gap-2"}
                                 (code-input :value (:code values)
                                             :errors (:code errors)
-                                            :help code-help)
+                                            :help (tr code-help))
                                 (when next-code-url
                                   (next-code-button :url next-code-url))])
          (codes/confirm-slot)
@@ -96,11 +106,11 @@
            (list
              (ui.combobox/combobox
                :name "taxon-id"
-               :label "Taxon"
+               :label (tr "Taxon")
                :url taxa-url
                :required true
                :errors (:taxon-id errors)
-               :help "Start typing a name to search the taxonomy."
+               :help (tr "Start typing a name to search the taxonomy.")
                :selected (when (:taxon/id taxon)
                            {:id (:taxon/id taxon) :text (:taxon/name taxon)}))
              (when provenance-suggestion-url
@@ -112,72 +122,75 @@
                  :apply-fn "window.applyProvenanceSuggestion"))))
 
          [:div {:class "spl-form-pair"}
-          (ui.form/field :label "ID Qualifier"
+          (ui.form/field :label (tr "ID Qualifier")
                          :name "id-qualifier"
                          :input (ui.form/enum-select "id-qualifier"
                                                      accession.spec/id-qualifier
                                                      (:id-qualifier values)))
           ;; TODO: This should only be set when the id-qualifier is set
-          (ui.form/field :label "ID Qualifier Rank"
+          (ui.form/field :label (tr "ID Qualifier Rank")
                          :name "id-qualifier-rank"
                          :input (ui.form/enum-select "id-qualifier-rank"
                                                      accession.spec/id-qualifier-rank
                                                      (:id-qualifier-rank values)
-                                                     :label-fn enum-label-fn))]])
+                                                     :label-fn #(enum-label accession.spec/id-qualifier-rank-labels %)))]])
 
       (ui.form/section
-        :title "Provenance"
-        :hint "Where the material came from. Wild status applies only to wild-collected material."
+        :title (tr "Provenance")
+        :hint (tr "Where the material came from. Wild status applies only to wild-collected material.")
         :children
         [[:div {:class "spl-form-pair"}
-          (ui.form/field :label "Provenance Type"
+          (ui.form/field :label (tr "Provenance Type")
                          :name "provenance-type"
                          :input (ui.form/enum-select "provenance-type"
                                                      accession.spec/provenance-type
                                                      (:provenance-type values)
-                                                     :label-fn enum-label-fn
+                                                     :label-fn #(enum-label accession.spec/provenance-type-labels %)
                                                      ;; Set it yourself and the
                                                      ;; suggestion stops.
                                                      :attrs {:x-on:change "$el.dataset.touched = 'true'"}))
 
           ;; TODO: This should only be set when the provenance type is "wild"
-          (ui.form/field :label "Wild Provenance Status"
+          (ui.form/field :label (tr "Wild Provenance Status")
                          :name "wild-provenance-status"
                          :input (ui.form/enum-select "wild-provenance-status"
                                                      accession.spec/wild-provenance-status
                                                      (:wild-provenance-status values)
-                                                     :label-fn enum-label-fn))]
+                                                     :label-fn #(enum-label accession.spec/wild-provenance-status-labels %)))]
 
          (ui.combobox/combobox
            :name "supplier-contact-id"
-           :label "Supplier"
+           :label (tr "Supplier")
            :url (z/url-for contact.routes/index)
            :errors (:supplier-contact-id errors)
            ;; The picker only searches contacts that already exist, so a garden
            ;; with none has no way in from here. The link opens in a new tab
            ;; because this form is usually half filled in by the time you find
            ;; out.
-           :help (list "Suppliers come from your contacts. "
-                       [:a {:class "spl-link"
-                            :href (z/url-for contact.routes/new)
-                            :target "_blank"
-                            :rel "noreferrer"}
-                        "Create a contact"]
-                       " in a new tab if the one you want is missing.")
+           ;; i18n: %1 is a link reading "Create a contact"
+           :help (let [[before after] (str/split (tr "Suppliers come from your contacts. %1 in a new tab if the one you want is missing.")
+                                                 #"%1" 2)]
+                   (list before
+                         [:a {:class "spl-link"
+                              :href (z/url-for contact.routes/new)
+                              :target "_blank"
+                              :rel "noreferrer"}
+                          (tr "Create a contact")]
+                         after))
            :selected (when (:contact/id supplier)
                        {:id (:contact/id supplier)
                         :text (contact.name/label supplier)}))])
 
       (ui.form/section
-        :title "Placement"
-        :hint "Where this material is meant to go before it is planted."
+        :title (tr "Placement")
+        :hint (tr "Where this material is meant to go before it is planted.")
         :children
         [(ui.combobox/combobox
            :name "intended-location-id"
-           :label "Intended location"
+           :label (tr "Intended location")
            :url (z/url-for location.routes/index)
            :errors (:intended-location-id errors)
-           :help "Leave it empty until the bed is decided."
+           :help (tr "Leave it empty until the bed is decided.")
            :selected (when (:location/id location)
                        {:id (:location/id location)
                         :text (format "%s (%s)"
@@ -185,11 +198,11 @@
                                       (:location/name location))}))])
 
       (ui.form/section
-        :title "Receipt"
-        :hint "What arrived, how much of it, and when."
+        :title (tr "Receipt")
+        :hint (tr "What arrived, how much of it, and when.")
         :children
         [[:div {:class "spl-form-pair"}
-          (ui.form/input-field :label "Date Received"
+          (ui.form/input-field :label (tr "Date Received")
                                :name "date-received"
                                :type "date"
                                :value (:date-received values)
@@ -197,21 +210,21 @@
                                ;; keeps the picker from offering one.
                                :input-attrs {:max today}
                                :errors (:date-received errors))
-          (ui.form/input-field :label "Date Accessioned"
+          (ui.form/input-field :label (tr "Date Accessioned")
                                :name "date-accessioned"
                                :type "date"
                                :value (:date-accessioned values)
                                :input-attrs {:max today}
                                :errors (:date-accessioned errors))]
          [:div {:class "spl-form-pair"}
-          (ui.form/field :label "Received as"
+          (ui.form/field :label (tr "Received as")
                          :name "received-type"
                          :errors (:received-type errors)
                          :input (ui.form/enum-select "received-type"
                                                      accession.spec/received-type
                                                      (:received-type values)
-                                                     :label-fn enum-label-fn))
-          (ui.form/input-field :label "Quantity received"
+                                                     :label-fn #(enum-label accession.spec/received-type-labels %)))
+          (ui.form/input-field :label (tr "Quantity received")
                                :name "quantity-received"
                                :type "number"
                                :input-attrs {:min 0}

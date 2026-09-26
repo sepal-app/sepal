@@ -73,7 +73,8 @@
              [:input {:type "checkbox"
                       :x-model id
                       :class "spl-checkbox"}]
-             [:span label]])])
+             ;; Callers mark their option labels with N_.
+             [:span (tr label)]])])
 
        ;; Actions
        [:div {:class "spl-modal-actions"}

@@ -9,6 +9,7 @@
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.form :as accession.form]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]))
 
 (defn handler [{:keys [::z/context]}]
@@ -17,4 +18,4 @@
     (html/render-partial
       (accession.form/code-input
         :value (accession.i/next-code db template (datetime/today timezone))
-        :help accession.form/code-help))))
+        :help (tr accession.form/code-help)))))

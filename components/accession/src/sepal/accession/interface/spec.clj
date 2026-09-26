@@ -1,5 +1,6 @@
 (ns sepal.accession.interface.spec
   (:require [malli.util :as mu]
+            [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :as validate.i]))
 
 (def id pos-int?)
@@ -38,6 +39,16 @@
                         :second_infraspecific_epithet
                         :cultivar])
 
+(def id-qualifier-rank-labels
+  "Display names for id-qualifier-rank, translated where they are rendered."
+  {:below_family (N_ "Below family")
+   :family (N_ "Family")
+   :genus (N_ "Genus")
+   :species (N_ "Species")
+   :first_infraspecific_epithet (N_ "First infraspecific epithet")
+   :second_infraspecific_epithet (N_ "Second infraspecific epithet")
+   :cultivar (N_ "Cultivar")})
+
 (def provenance-type [:enum {:decode/store keyword
                              :encode/store name-encoder
                              :decode/params keyword-encoder}
@@ -46,6 +57,14 @@
                       :not_wild
                       :purchase
                       :insufficient_data])
+
+(def provenance-type-labels
+  "Display names for provenance-type, translated where they are rendered."
+  {:wild (N_ "Wild")
+   :cultivated (N_ "Cultivated")
+   :not_wild (N_ "Not wild")
+   :purchase (N_ "Purchase")
+   :insufficient_data (N_ "Insufficient data")})
 
 (def wild-provenance-status [:enum {:decode/store keyword
                                     :encode/store name-encoder
@@ -58,9 +77,18 @@
                              :purchase
                              :insufficient_data])
 
-;; The form material arrived in. Stored snake_case, so the label helper renders
-;; each value without needing a table of display strings. Mirrors the
-;; accession_received_type rows; a test holds the two equal.
+(def wild-provenance-status-labels
+  "Display names for wild-provenance-status, translated where they are rendered."
+  {:wild_native (N_ "Wild native")
+   :wild_non_native (N_ "Wild non native")
+   :cultivated_native (N_ "Cultivated native")
+   :cultivated (N_ "Cultivated")
+   :not_wild (N_ "Not wild")
+   :purchase (N_ "Purchase")
+   :insufficient_data (N_ "Insufficient data")})
+
+;; The form material arrived in. Mirrors the accession_received_type rows; a
+;; test holds the two equal.
 (def received-type [:enum {:decode/store keyword
                            :encode/store name-encoder
                            :decode/params keyword-encoder}
@@ -92,6 +120,37 @@
                     :unknown
                     :unrooted_cutting
                     :vegetative_spreading])
+
+(def received-type-labels
+  "Display names for received-type, translated where they are rendered."
+  {:air_layer (N_ "Air layer")
+   :balled_and_burlapped (N_ "Balled and burlapped")
+   :bare_root_plant (N_ "Bare root plant")
+   :bud_cutting (N_ "Bud cutting")
+   :budded (N_ "Budded")
+   :bulb (N_ "Bulb")
+   :bulbil (N_ "Bulbil")
+   :clump (N_ "Clump")
+   :corm (N_ "Corm")
+   :division (N_ "Division")
+   :graft (N_ "Graft")
+   :layer (N_ "Layer")
+   :plant (N_ "Plant")
+   :pseudobulb (N_ "Pseudobulb")
+   :rhizome (N_ "Rhizome")
+   :root (N_ "Root")
+   :root_cutting (N_ "Root cutting")
+   :root_sucker (N_ "Root sucker")
+   :rooted_cutting (N_ "Rooted cutting")
+   :scion (N_ "Scion")
+   :seed (N_ "Seed")
+   :seedling (N_ "Seedling")
+   :spore (N_ "Spore")
+   :sporeling (N_ "Sporeling")
+   :tuber (N_ "Tuber")
+   :unknown (N_ "Unknown")
+   :unrooted_cutting (N_ "Unrooted cutting")
+   :vegetative_spreading (N_ "Vegetative spreading")})
 
 ;; How many propagules arrived. Not material.quantity, which is how many plants
 ;; exist now. Zero is legitimate: an accession recorded with nothing received.
