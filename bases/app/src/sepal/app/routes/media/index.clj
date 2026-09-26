@@ -36,9 +36,7 @@
                                           (next-page-url :current-page page))
                          :page page)
     [:div {:id "upload-success-forms"
-           :class "hidden"}]]
-   [:script {:type "module"
-             :src (html/static-url "app/routes/media/media.ts")}]])
+           :class "hidden"}]]])
 
 (defn render [& {:keys [page page-size media]}]
   (ui.page/page :content (page-content :page page

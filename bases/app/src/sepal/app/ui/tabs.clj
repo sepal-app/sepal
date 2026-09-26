@@ -30,9 +30,15 @@
        ;; reader hearing "Collection, lock" would only be hearing it twice.
        [:span {:class "spl-tab-lock" :aria-hidden "true"} (lucide/lock :size 12)]
        [:span {:id reason-id :class "spl-tab-reason"} disabled]])
+    ;; Boosted, so changing section swaps the content column rather than
+    ;; reloading the shell. Page scripts register from page.ts for this reason.
     [:a (cond-> {:href href
                  :class (cond-> ["spl-tab"]
-                          active (conj "spl-tab--current"))}
+                          active (conj "spl-tab--current"))
+                 :hx-boost "true"
+                 :hx-select ".spl-content"
+                 :hx-target ".spl-content"
+                 :hx-swap "outerHTML"}
           active (assoc :aria-current "page"))
      label]))
 

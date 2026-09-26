@@ -1,4 +1,4 @@
-import Alpine from "alpinejs"
+import Alpine, { type DirectiveCallback } from "alpinejs"
 import collapse from "@alpinejs/collapse"
 import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
@@ -31,7 +31,43 @@ document.addEventListener("alpine:init", () => {
     Alpine.data("queryBuilder", queryBuilder)
     Alpine.data("accessionsOnlyFilter", accessionsOnlyFilter)
     Alpine.data("termFilter", termFilter)
+
+    // Page-specific directives, registered here because a page reached by an
+    // hx-boost swap arrives after alpine:init has fired. Each loads its code
+    // the first time an element uses it.
+    lazyDirective("media-uploader", () =>
+        import("~/routes/media/uploader").then((m) => m.default),
+    )
+    lazyDirective("rank-field", () =>
+        import("~/routes/taxon/form").then((m) => m.rankField),
+    )
+    lazyDirective("suggestable", () =>
+        import("~/routes/taxon/form").then((m) => m.suggestable),
+    )
 })
+
+function lazyDirective(name: string, load: () => Promise<DirectiveCallback>) {
+    Alpine.directive(name, (el, directive, utilities) => {
+        load().then((callback) => callback(el, directive, utilities))
+    })
+}
+
+declare global {
+    interface Window {
+        applyProvenanceSuggestion: (provenance: string) => void
+        applyRankGuess: (rank: string) => void
+        applyParentSuggestion: (json: string) => void
+    }
+}
+
+// Called by the server's suggestion responses on the accession and taxon
+// forms. The form code loads on the first call.
+window.applyProvenanceSuggestion = (provenance) =>
+    import("~/routes/accession/form").then((m) => m.applyProvenanceSuggestion(provenance))
+window.applyRankGuess = (rank) =>
+    import("~/routes/taxon/form").then((m) => m.applyRankGuess(rank))
+window.applyParentSuggestion = (json) =>
+    import("~/routes/taxon/form").then((m) => m.applyParentSuggestion(json))
 
 // A rejected save swaps each field's error list in, but not the control — it
 // holds what you typed. So the control never learned it was invalid, and the

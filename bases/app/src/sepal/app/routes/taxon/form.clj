@@ -1,6 +1,5 @@
 (ns sepal.app.routes.taxon.form
   (:require [clojure.string :as str]
-            [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.combobox :as combobox]
@@ -361,7 +360,4 @@
 
         (parentage-section :values values
                            :errors errors
-                           :read-only read-only)])
-
-     [:script {:type "module"
-               :src (html/static-url "app/routes/taxon/form.ts")}]]))
+                           :read-only read-only)])]))

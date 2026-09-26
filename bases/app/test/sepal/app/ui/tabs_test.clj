@@ -69,6 +69,15 @@
   (let [body (nav)]
     (is (some? (.selectFirst body "a[href='/a/1/media/']")))))
 
+(deftest test-enabled-tabs-swap-the-content-column
+  (testing "changing section swaps the content column rather than reloading
+            the shell"
+    (let [link (.selectFirst (nav) "a[href='/a/1/media/']")]
+      (is (= "true" (.attr link "hx-boost")))
+      (is (= ".spl-content" (.attr link "hx-select")))
+      (is (= ".spl-content" (.attr link "hx-target")))
+      (is (= "outerHTML" (.attr link "hx-swap"))))))
+
 (deftest test-emits-no-daisyui
   (let [html (chassis/html (tabs/tabs {:label "X"
                                        :items [(tabs/item "A" {:href "/a"})]}))]

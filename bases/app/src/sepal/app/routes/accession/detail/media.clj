@@ -50,9 +50,7 @@
                                             (next-page-url :accession accession
                                                            :current-page page)))
       [:div {:id "upload-success-forms"
-             :class "hidden"}]]
-     [:script {:type "module"
-               :src (html/static-url "app/routes/media/media.ts")}]]))
+             :class "hidden"}]]]))
 
 (defn render [& {:keys [page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (accession.shared/actions

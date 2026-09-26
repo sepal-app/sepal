@@ -45,9 +45,7 @@
                                             (next-page-url :material material
                                                            :current-page page)))
       [:div {:id "upload-success-forms"
-             :class "hidden"}]]
-     [:script {:type "module"
-               :src (html/static-url "app/routes/media/media.ts")}]]))
+             :class "hidden"}]]]))
 
 (defn render [& {:keys [accession page page-size media material taxon panel-data separator]}]
   (ui.page/page

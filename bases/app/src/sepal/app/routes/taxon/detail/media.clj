@@ -40,9 +40,7 @@
                                             (next-page-url :taxon taxon
                                                            :current-page page)))
       [:div {:id "upload-success-forms"
-             :class "hidden"}]]
-     [:script {:type "module"
-               :src (html/static-url "app/routes/media/media.ts")}]]))
+             :class "hidden"}]]]))
 
 (defn render [& {:keys [page page-size media taxon panel-data]}]
   (ui.page/page :content (pages.detail/page-content-with-panel

@@ -2,7 +2,6 @@
   (:require [clojure.string :as str]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.codes :as codes]
-            [sepal.app.html :as html]
             [sepal.app.routes.contact.routes :as contact.routes]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -217,6 +216,4 @@
                                :type "number"
                                :input-attrs {:min 0}
                                :value (:quantity-received values)
-                               :errors (:quantity-received errors))]])])
-   [:script {:type "module"
-             :src (html/static-url "app/routes/accession/form.ts")}]])
+                               :errors (:quantity-received errors))]])])])

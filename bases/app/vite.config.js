@@ -17,13 +17,10 @@ export default defineConfig({
         rollupOptions: {
             input: [
                 "~/css/main.css",
-                "~/routes/accession/form.ts",
                 "~/routes/auth/img/jose-fontano-WVAVwZ0nkSw-unsplash_1080x1620.jpg",
                 "~/routes/auth/page.ts",
                 "~/routes/media/css/media.css",
-                "~/routes/media/media.ts",
                 "~/routes/setup/setup.ts",
-                "~/routes/taxon/form.ts",
                 "~/ui/page.ts",
             ],
         },
