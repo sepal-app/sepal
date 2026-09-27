@@ -76,7 +76,16 @@
     [:maybe [:fn {:error/message (N_ "Choose a language from the list")}
              #(contains? (conj (set (i18n/available-locales)) i18n/source-locale) %)]]]])
 
-(defn handler [{:keys [::z/context flash form-params request-method viewer]}]
+(defn- chosen-locale
+  "The locale a saved language means: English for the source locale, the
+  browser's for none, and otherwise itself."
+  [language headers]
+  (cond
+    (= i18n/source-locale language) nil
+    language language
+    :else (i18n/resolve-locale (get headers "accept-language"))))
+
+(defn handler [{:keys [::z/context flash form-params headers request-method viewer]}]
   (let [{:keys [db]} context
         values {:full-name (:user/full-name viewer)
                 :email (:user/email viewer)
@@ -90,8 +99,14 @@
                                  (:user/id viewer)  ;; created-by
                                  viewer             ;; user entity
                                  {})                ;; additional data (schema doesn't support full_name)
+          ;; In the language just chosen: the page after the redirect is in it,
+          ;; and the message would otherwise be in the one being left.
           (-> (http/see-other settings.routes/profile)
-              (flash/success (tr "Profile updated successfully"))))
+              (flash/success (i18n/with-locale (chosen-locale (if (contains? data :language)
+                                                                (:language data)
+                                                                (:user/language viewer))
+                                                              headers)
+                               (tr "Profile updated successfully")))))
         (f/when-failed [e]
           (http/failure-flash e (http/see-other settings.routes/profile) (tr "Failed to update profile"))))
 

@@ -111,6 +111,8 @@ msgstr \"Perfil actualizado\"
                                                  :headers {"accept-language" "en-US"})]
             (is (= "es" (:user/language (user.i/get-by-email *db* email))))
             (is (= "Idioma" (language-label response)))
+            (is (= "Perfil actualizado" (flash-banner-text (Jsoup/parse ^String (:body response))))
+                "the confirmation is in the language just chosen")
             (is (some #(= "Taxones" (.text %))
                       (.select (Jsoup/parse ^String (:body response)) ".spl-rail .spl-nav-label"))
                 "the section rail is a lazy seq, rendered after the handler returns")
