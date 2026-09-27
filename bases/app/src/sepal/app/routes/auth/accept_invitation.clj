@@ -1,13 +1,12 @@
 (ns sepal.app.routes.auth.accept-invitation
-  (:require [clojure.string :as str]
-            [failjure.core :as f]
+  (:require [failjure.core :as f]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.page :as page]
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.ui.form :as form]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :as i18n :refer [tr]]
             [sepal.token.interface :as token.i]
             [sepal.user.interface :as user.i]
             [sepal.user.interface.spec :as user.spec]
@@ -29,10 +28,8 @@
 (defn- page-content [& {:keys [email full-name token errors]}]
   [:div
    [:h1 {:class "spl-auth-title"} (tr "Accept invitation")]
-   ;; Split at the placeholder so the address stays bold wherever the
-   ;; translation puts it.
-   (let [[before after] (str/split (tr "Set up your account for %1") #"%1" 2)]
-     [:p {:class "text-lg mb-6"} before [:strong email] after])
+   (into [:p {:class "text-lg mb-6"}]
+         (i18n/fill (tr "Set up your account for %1") [:strong email]))
    (form/form {:action (z/url-for auth.routes/accept-invitation)
                :method "post"}
               [(form/anti-forgery-field)

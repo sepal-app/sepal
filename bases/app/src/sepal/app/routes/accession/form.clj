@@ -9,7 +9,7 @@
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.contact.interface.name :as contact.name]
-            [sepal.i18n.interface :refer [N_ tr trc]]
+            [sepal.i18n.interface :as i18n :refer [N_ tr trc]]
             [zodiac.core :as z]))
 
 (defn enum-label-fn [v]
@@ -168,15 +168,12 @@
            ;; because this form is usually half filled in by the time you find
            ;; out.
            ;; i18n: %1 is a link reading "Create a contact"
-           :help (let [[before after] (str/split (tr "Suppliers come from your contacts. %1 in a new tab if the one you want is missing.")
-                                                 #"%1" 2)]
-                   (list before
-                         [:a {:class "spl-link"
-                              :href (z/url-for contact.routes/new)
-                              :target "_blank"
-                              :rel "noreferrer"}
-                          (tr "Create a contact")]
-                         after))
+           :help (seq (i18n/fill (tr "Suppliers come from your contacts. %1 in a new tab if the one you want is missing.")
+                                 [:a {:class "spl-link"
+                                      :href (z/url-for contact.routes/new)
+                                      :target "_blank"
+                                      :rel "noreferrer"}
+                                  (tr "Create a contact")]))
            :selected (when (:contact/id supplier)
                        {:id (:contact/id supplier)
                         :text (contact.name/label supplier)}))])
