@@ -5,6 +5,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.routes.media.detail :as media.detail]
             [sepal.app.routes.media.keys :as media.keys]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
@@ -175,3 +176,14 @@
               (is (nil? (media.i/get-by-id *db* (:media/id media)))))
             (finally
               (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))))
+
+(deftest test-the-download-keeps-the-originals-extension
+  (let [media (fn [title] {:media/title title :media/s3-key "media/84417d4a.jpeg"})]
+    (is (= "pod.jpeg" (media.detail/download-name (media "pod.jpeg")))
+        "a title that already ends in the extension is left alone")
+    (is (= "Pod.JPEG" (media.detail/download-name (media "Pod.JPEG")))
+        "whatever its case")
+    (is (= "Flowering, March.jpeg" (media.detail/download-name (media "Flowering, March")))
+        "an edited title gets the extension back")
+    (is (= "notes.txt.jpeg" (media.detail/download-name (media "notes.txt")))
+        "a different extension in the title is not the file's")))

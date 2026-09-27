@@ -31,9 +31,23 @@
 (defn- display-name [media]
   (or (not-empty (:media/title media)) (file-name media) (tr "Untitled")))
 
+(defn- extension [s]
+  (some->> s (re-find #"\.([A-Za-z0-9]+)$") second))
+
+(defn download-name
+  "The title, with the original's extension added when the title has none. A
+  title starts as the uploaded file's name, but an edited one usually drops the
+  extension, and a download without one may not open."
+  [media]
+  (let [name (display-name media)
+        ext (extension (:media/s3-key media))]
+    (if (and ext (not= (some-> (extension name) str/lower-case) (str/lower-case ext)))
+      (str name "." ext)
+      name)))
+
 (defn- download-url [media]
   (str (z/url-for media.routes/transform {:id (:media/id media)})
-       "?dl=" (codec/url-encode (display-name media))))
+       "?dl=" (codec/url-encode (download-name media))))
 
 (defn- zoom-dialog [media]
   ;; loading=lazy: the full-size image is fetched when the dialog opens, not
@@ -69,14 +83,18 @@
      :hx-swap "none"
      :x-on:media-form:submit.window "$el.requestSubmit()"
      :x-on:media-form:reset.window "$el.reset()"}
-    [:div {:class "spl-form mt-6"}
-     (ui.form/anti-forgery-field)
-     (ui.form/input-field :label (tr "Title")
-                          :name "title"
-                          :value (:media/title media))
-     (ui.form/textarea-field :label (tr "Description")
-                             :name "description"
-                             :value (:media/description media))]))
+    [(ui.form/anti-forgery-field)
+     [:div {:class "spl-form mt-6"}
+      (ui.form/section
+        :title (tr "Details")
+        :hint (tr "What this image shows and where it was taken.")
+        :children
+        [(ui.form/input-field :label (tr "Title")
+                              :name "title"
+                              :value (:media/title media))
+         (ui.form/textarea-field :label (tr "Description")
+                                 :name "description"
+                                 :value (:media/description media))])]]))
 
 (defn- body [media editor?]
   (list

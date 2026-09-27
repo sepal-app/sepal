@@ -783,7 +783,7 @@ msgid "Note on taxon"
 msgstr "Nota sobre taxón"
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:389
-#: bases/app/src/sepal/app/routes/media/detail.clj:100
+#: bases/app/src/sepal/app/routes/media/detail.clj:118
 #: bases/app/src/sepal/app/routes/media/index.clj:46
 #: bases/app/src/sepal/app/ui/page.clj:153
 msgctxt "navigation"
@@ -1542,6 +1542,7 @@ msgid "Code"
 msgstr "Código"
 
 #: bases/app/src/sepal/app/routes/location/form.clj:30
+#: bases/app/src/sepal/app/routes/media/detail.clj:89
 msgid "Details"
 msgstr "Detalles"
 
@@ -1552,7 +1553,7 @@ msgstr "Cómo se llama este lugar y cómo se hace referencia a él."
 #: bases/app/src/sepal/app/routes/location/form.clj:40
 #: bases/app/src/sepal/app/routes/location/index.clj:51
 #: bases/app/src/sepal/app/routes/location/panel.clj:52
-#: bases/app/src/sepal/app/routes/media/detail.clj:77
+#: bases/app/src/sepal/app/routes/media/detail.clj:95
 #: bases/app/src/sepal/app/routes/tag/form.clj:26
 #: bases/app/src/sepal/app/routes/tag/index.clj:23
 #: bases/app/src/sepal/app/routes/tag/panel.clj:39
@@ -1786,8 +1787,8 @@ msgstr "Archivo multimedia eliminado"
 msgid "Untitled"
 msgstr "Sin título"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:44
-#: bases/app/src/sepal/app/routes/media/detail.clj:49
+#: bases/app/src/sepal/app/routes/media/detail.clj:58
+#: bases/app/src/sepal/app/routes/media/detail.clj:63
 #: bases/app/src/sepal/app/ui/archive.clj:59
 #: bases/app/src/sepal/app/ui/archive.clj:74
 #: bases/app/src/sepal/app/ui/delete.clj:88
@@ -1795,25 +1796,29 @@ msgstr "Sin título"
 msgid "Close"
 msgstr "Cerrar"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:61
+#: bases/app/src/sepal/app/routes/media/detail.clj:75
 msgid "Zoom"
 msgstr "Ampliar"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:74
+#: bases/app/src/sepal/app/routes/media/detail.clj:90
+msgid "What this image shows and where it was taken."
+msgstr "Qué muestra esta imagen y dónde se tomó."
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:92
 #: bases/app/src/sepal/app/routes/media/panel.clj:53
 msgid "Title"
 msgstr "Título"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:92
+#: bases/app/src/sepal/app/routes/media/detail.clj:110
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:96
 msgid "Download"
 msgstr "Descargar"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:145
+#: bases/app/src/sepal/app/routes/media/detail.clj:163
 msgid "Media updated successfully"
 msgstr "Archivo multimedia actualizado correctamente"
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:147
+#: bases/app/src/sepal/app/routes/media/detail.clj:165
 msgid "Could not save the media"
 msgstr "No se pudo guardar el archivo multimedia"
 

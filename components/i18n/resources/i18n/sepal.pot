@@ -775,7 +775,7 @@ msgid "Note on taxon"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:389
-#: bases/app/src/sepal/app/routes/media/detail.clj:100
+#: bases/app/src/sepal/app/routes/media/detail.clj:118
 #: bases/app/src/sepal/app/routes/media/index.clj:46
 #: bases/app/src/sepal/app/ui/page.clj:153
 msgctxt "navigation"
@@ -1524,6 +1524,7 @@ msgid "Code"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/location/form.clj:30
+#: bases/app/src/sepal/app/routes/media/detail.clj:89
 msgid "Details"
 msgstr ""
 
@@ -1534,7 +1535,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/location/form.clj:40
 #: bases/app/src/sepal/app/routes/location/index.clj:51
 #: bases/app/src/sepal/app/routes/location/panel.clj:52
-#: bases/app/src/sepal/app/routes/media/detail.clj:77
+#: bases/app/src/sepal/app/routes/media/detail.clj:95
 #: bases/app/src/sepal/app/routes/tag/form.clj:26
 #: bases/app/src/sepal/app/routes/tag/index.clj:23
 #: bases/app/src/sepal/app/routes/tag/panel.clj:39
@@ -1764,8 +1765,8 @@ msgstr ""
 msgid "Untitled"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:44
-#: bases/app/src/sepal/app/routes/media/detail.clj:49
+#: bases/app/src/sepal/app/routes/media/detail.clj:58
+#: bases/app/src/sepal/app/routes/media/detail.clj:63
 #: bases/app/src/sepal/app/ui/archive.clj:59
 #: bases/app/src/sepal/app/ui/archive.clj:74
 #: bases/app/src/sepal/app/ui/delete.clj:88
@@ -1773,25 +1774,29 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:61
+#: bases/app/src/sepal/app/routes/media/detail.clj:75
 msgid "Zoom"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:74
+#: bases/app/src/sepal/app/routes/media/detail.clj:90
+msgid "What this image shows and where it was taken."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/media/detail.clj:92
 #: bases/app/src/sepal/app/routes/media/panel.clj:53
 msgid "Title"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:92
+#: bases/app/src/sepal/app/routes/media/detail.clj:110
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:96
 msgid "Download"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:145
+#: bases/app/src/sepal/app/routes/media/detail.clj:163
 msgid "Media updated successfully"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/detail.clj:147
+#: bases/app/src/sepal/app/routes/media/detail.clj:165
 msgid "Could not save the media"
 msgstr ""
 
