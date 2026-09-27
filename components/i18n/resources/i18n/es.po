@@ -2467,11 +2467,11 @@ msgstr "Cerrar sesión"
 msgid "Choose a language from the list"
 msgstr "Elija un idioma de la lista"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:94
+#: bases/app/src/sepal/app/routes/settings/profile.clj:109
 msgid "Profile updated successfully"
 msgstr "Perfil actualizado correctamente"
 
-#: bases/app/src/sepal/app/routes/settings/profile.clj:96
+#: bases/app/src/sepal/app/routes/settings/profile.clj:111
 msgid "Failed to update profile"
 msgstr "No se pudo actualizar el perfil"
 
@@ -2986,6 +2986,27 @@ msgid ""
 msgstr ""
 "SpatiaLite no está disponible. Las coordenadas geográficas de las "
 "colecciones no funcionarán."
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:280
+msgid ""
+"Could not connect to GitHub. Please check your network connection and try "
+"again."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:283
+#, fuzzy
+#| msgid "Could not set your password. Please try again."
+msgid "Download timed out. Please try again."
+msgstr "No se pudo establecer su contraseña. Inténtelo de nuevo."
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:286
+msgid ""
+"Could not resolve GitHub. Please check your network connection and try again."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/setup/shared.clj:530
+msgid "The taxonomy imported, but the synonym reference did not download: %1"
+msgstr ""
 
 #: bases/app/src/sepal/app/routes/setup/taxonomy.clj:21
 #: bases/app/src/sepal/app/routes/setup/taxonomy.clj:46

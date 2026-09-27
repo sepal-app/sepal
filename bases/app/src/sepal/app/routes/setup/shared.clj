@@ -8,7 +8,7 @@
             [next.jdbc :as jdbc]
             [ring.core.protocols :as ring.protocols]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :as i18n :refer [N_ tr]]
             [sepal.settings.interface :as settings.i])
   (:import [java.io File]
            [java.security MessageDigest]
@@ -277,13 +277,13 @@
   [^Exception e]
   (condp instance? e
     java.net.ConnectException
-    "Could not connect to GitHub. Please check your network connection and try again."
+    (N_ "Could not connect to GitHub. Please check your network connection and try again.")
 
     java.net.SocketTimeoutException
-    "Download timed out. Please try again."
+    (N_ "Download timed out. Please try again.")
 
     java.net.UnknownHostException
-    "Could not resolve GitHub. Please check your network connection and try again."
+    (N_ "Could not resolve GitHub. Please check your network connection and try again.")
 
     (or (not-empty (.getMessage e))
         (.getName (class e)))))
@@ -470,9 +470,10 @@
                         (try
                           (download-synonyms! tracker download-fn synonyms ref-dest)
                           nil
+                          ;; The reason alone: this runs on the job's thread,
+                          ;; with no locale, so job-frame writes the sentence.
                           (catch Exception e
-                            (str "The taxonomy imported, but the synonym reference did not download: "
-                                 (failure-message e)))))]
+                            (failure-message e))))]
           (swap! tracker merge (cond-> {:phase :done
                                         :bytes-done nil
                                         :bytes-total nil
@@ -522,8 +523,11 @@
    "wfoVersion" wfo-version
    "taxaCount" taxa-count
    "synonyms" (boolean synonyms?)
-   "error" error
-   "warning" warning})
+   ;; Translated here rather than when the job records them, because the job
+   ;; runs on its own thread with no request locale. A message from an
+   ;; exception has no catalog entry and passes through.
+   "error" (some-> error tr)
+   "warning" (some->> warning tr (tr "The taxonomy imported, but the synonym reference did not download: %1"))})
 
 (def terminal-phases #{:done :failed})
 
@@ -555,15 +559,19 @@
   this replaces. The stop-phase check is equally load-bearing: without it the
   connection lives for the life of the process. `max-ms` bounds the rest."
   [tracker & {:keys [poll-ms max-ms] :or {poll-ms 500 max-ms default-stream-max-ms}}]
-  (let [max-frames (max 1 (quot (long max-ms) (long poll-ms)))]
+  (let [max-frames (max 1 (quot (long max-ms) (long poll-ms)))
+        ;; Captured now, on the request: the body is written after the
+        ;; handler returns, when the locale binding is gone.
+        locale i18n/*locale*]
     (reify ring.protocols/StreamableResponseBody
       (write-body-to-stream [_ _ output-stream]
         (with-open [w (io/writer output-stream)]
-          (loop [frames 1]
-            (let [state @tracker]
-              (.write w (str "data: " (json/write-str (job-frame state)) "\n\n"))
-              (.flush w)
-              (when (and (not (contains? stream-stop-phases (or (:phase state) :idle)))
-                         (< frames max-frames))
-                (Thread/sleep ^long poll-ms)
-                (recur (inc frames))))))))))
+          (i18n/with-locale locale
+            (loop [frames 1]
+              (let [state @tracker]
+                (.write w (str "data: " (json/write-str (job-frame state)) "\n\n"))
+                (.flush w)
+                (when (and (not (contains? stream-stop-phases (or (:phase state) :idle)))
+                           (< frames max-frames))
+                  (Thread/sleep ^long poll-ms)
+                  (recur (inc frames)))))))))))

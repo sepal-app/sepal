@@ -10,6 +10,7 @@
             [ring.core.protocols :as ring.protocols]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.i18n.interface :as i18n]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.settings.interface :as settings.i]))
 
@@ -851,3 +852,32 @@
         (is (map? result))
         (is (nil? (:ok result)))
         (is (= "database is locked" (:error result)))))))
+
+(def ^:private es
+  (i18n/parse-catalog "es" "msgid \"Download timed out. Please try again.\"
+msgstr \"Se agotó el tiempo de descarga. Inténtelo de nuevo.\"
+
+msgid \"The taxonomy imported, but the synonym reference did not download: %1\"
+msgstr \"La taxonomía se importó, pero la referencia de sinónimos no se descargó: %1\"
+"))
+
+(deftest test-job-messages-are-translated-in-the-frame
+  (i18n/load-catalogs! {"es" es})
+  (try
+    (i18n/with-locale "es"
+      (is (= "Se agotó el tiempo de descarga. Inténtelo de nuevo."
+             (get (setup.shared/job-frame {:phase :failed :error "Download timed out. Please try again."})
+                  "error")))
+      (is (= "La taxonomía se importó, pero la referencia de sinónimos no se descargó: 503"
+             (get (setup.shared/job-frame {:phase :done :warning "503"}) "warning"))
+          "a reason from an exception has no catalog entry and passes through"))
+    (testing "the stream is written after the request's binding is gone"
+      (let [body (i18n/with-locale "es"
+                   (setup.shared/sse-body (atom {:phase :failed :error "Download timed out. Please try again."})
+                                          :poll-ms 10))
+            out (java.io.ByteArrayOutputStream.)]
+        (ring.protocols/write-body-to-stream body nil out)
+        (is (= "Se agotó el tiempo de descarga. Inténtelo de nuevo."
+               (get (json/read-str (first (frames (.toString out "UTF-8")))) "error")))))
+    (finally
+      (i18n/load-catalogs! {}))))
