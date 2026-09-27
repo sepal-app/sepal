@@ -14,7 +14,8 @@
 # then fail every insert that references one. This script therefore dumps their
 # rows itself.
 #
-# It finds them rather than listing them: a table with a single text primary key
+# It finds them rather than listing them: a table whose primary key is all text
+# columns -- one, or a composite like observation_value's (type, code) -- and
 # that something else has a foreign key onto is a lookup table, and a lookup
 # table's rows are reference data that belongs in the baseline. Every user-data
 # table has an integer primary key, so none of them match -- taxon has 452,000
@@ -45,8 +46,9 @@ SEED_TABLES=$(sqlite3 "$RO" "
   select m.name from sqlite_master m
   where m.type = 'table'
     and m.name not like 'sqlite_%'
-    and (select count(*) from pragma_table_info(m.name) where pk > 0) = 1
-    and (select lower(type) from pragma_table_info(m.name) where pk > 0) = 'text'
+    and (select count(*) from pragma_table_info(m.name) where pk > 0) > 0
+    and not exists (select 1 from pragma_table_info(m.name)
+                    where pk > 0 and lower(type) <> 'text')
     and exists (select 1 from sqlite_master m2
                 join pragma_foreign_key_list(m2.name) fk
                 where m2.type = 'table' and fk.\"table\" = m.name)

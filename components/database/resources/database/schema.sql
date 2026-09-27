@@ -403,28 +403,6 @@ CREATE TABLE observation_value (
   label text not null,
   primary key (type, code)
 ) strict;
-INSERT INTO observation_value (type, code, label) VALUES
-  ('phenology', 'vegetative', 'Vegetative'),
-  ('phenology', 'budding', 'Budding'),
-  ('phenology', 'flowering', 'Flowering'),
-  ('phenology', 'fruiting', 'Fruiting'),
-  ('phenology', 'seed_dispersal', 'Seed dispersal'),
-  ('phenology', 'senescing', 'Senescing'),
-  ('phenology', 'dormant', 'Dormant'),
-  ('condition', 'excellent', 'Excellent'),
-  ('condition', 'good', 'Good'),
-  ('condition', 'fair', 'Fair'),
-  ('condition', 'poor', 'Poor'),
-  ('condition', 'dying', 'Dying'),
-  ('condition', 'dead', 'Dead'),
-  ('pest', 'none', 'None'),
-  ('pest', 'light', 'Light'),
-  ('pest', 'moderate', 'Moderate'),
-  ('pest', 'severe', 'Severe'),
-  ('disease', 'none', 'None'),
-  ('disease', 'light', 'Light'),
-  ('disease', 'moderate', 'Moderate'),
-  ('disease', 'severe', 'Severe');
 CREATE TABLE observation (
   id integer primary key autoincrement,
   resource_id integer not null,
@@ -589,6 +567,27 @@ INSERT INTO observation_type VALUES('condition','Condition');
 INSERT INTO observation_type VALUES('pest','Pest');
 INSERT INTO observation_type VALUES('disease','Disease');
 INSERT INTO observation_type VALUES('general','General');
+INSERT INTO observation_value VALUES('phenology','vegetative','Vegetative');
+INSERT INTO observation_value VALUES('phenology','budding','Budding');
+INSERT INTO observation_value VALUES('phenology','flowering','Flowering');
+INSERT INTO observation_value VALUES('phenology','fruiting','Fruiting');
+INSERT INTO observation_value VALUES('phenology','seed_dispersal','Seed dispersal');
+INSERT INTO observation_value VALUES('phenology','senescing','Senescing');
+INSERT INTO observation_value VALUES('phenology','dormant','Dormant');
+INSERT INTO observation_value VALUES('condition','excellent','Excellent');
+INSERT INTO observation_value VALUES('condition','good','Good');
+INSERT INTO observation_value VALUES('condition','fair','Fair');
+INSERT INTO observation_value VALUES('condition','poor','Poor');
+INSERT INTO observation_value VALUES('condition','dying','Dying');
+INSERT INTO observation_value VALUES('condition','dead','Dead');
+INSERT INTO observation_value VALUES('pest','none','None');
+INSERT INTO observation_value VALUES('pest','light','Light');
+INSERT INTO observation_value VALUES('pest','moderate','Moderate');
+INSERT INTO observation_value VALUES('pest','severe','Severe');
+INSERT INTO observation_value VALUES('disease','none','None');
+INSERT INTO observation_value VALUES('disease','light','Light');
+INSERT INTO observation_value VALUES('disease','moderate','Moderate');
+INSERT INTO observation_value VALUES('disease','severe','Severe');
 INSERT INTO propagation_status VALUES('active','In progress');
 INSERT INTO propagation_status VALUES('complete','Complete');
 INSERT INTO propagation_status VALUES('failed','Failed');
