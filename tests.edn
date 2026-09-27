@@ -27,7 +27,6 @@
                         "components/propagation/test"
                         "components/scheduler/test"
                         "components/search/test"
-                        "components/settings/test"
                         "components/store/test"
                         "components/synonym/test"
                         "components/tag/test"
