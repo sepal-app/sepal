@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Sepal\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2026-09-27 08:11-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -2992,21 +2992,25 @@ msgid ""
 "Could not connect to GitHub. Please check your network connection and try "
 "again."
 msgstr ""
+"No se pudo conectar con GitHub. Compruebe su conexión de red e inténtelo de "
+"nuevo."
 
 #: bases/app/src/sepal/app/routes/setup/shared.clj:283
-#, fuzzy
-#| msgid "Could not set your password. Please try again."
 msgid "Download timed out. Please try again."
-msgstr "No se pudo establecer su contraseña. Inténtelo de nuevo."
+msgstr "Se agotó el tiempo de descarga. Inténtelo de nuevo."
 
 #: bases/app/src/sepal/app/routes/setup/shared.clj:286
 msgid ""
 "Could not resolve GitHub. Please check your network connection and try again."
 msgstr ""
+"No se pudo resolver GitHub. Compruebe su conexión de red e inténtelo de "
+"nuevo."
 
 #: bases/app/src/sepal/app/routes/setup/shared.clj:530
 msgid "The taxonomy imported, but the synonym reference did not download: %1"
 msgstr ""
+"La taxonomía se ha importado, pero no se ha podido descargar la referencia "
+"de sinónimos: %1"
 
 #: bases/app/src/sepal/app/routes/setup/taxonomy.clj:21
 #: bases/app/src/sepal/app/routes/setup/taxonomy.clj:46

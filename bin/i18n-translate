@@ -140,6 +140,15 @@
       (:msgid-plural entry) (-> (dissoc :msgstr) (assoc :msgstr-plural (vec msgstrs)))
       (not (:msgid-plural entry)) (-> (dissoc :msgstr-plural) (assoc :msgstr (first msgstrs))))))
 
+(defn stamp-revision
+  "The header's PO-Revision-Date set to now, so msgfmt stops reporting it as
+  msginit's placeholder and the file says when it last changed."
+  [entries]
+  (let [now (.format (java.time.ZonedDateTime/now)
+                     (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mmZ"))]
+    (update-in entries [0 :msgstr]
+               #(str/replace % #"PO-Revision-Date: [^\n]*" (str "PO-Revision-Date: " now)))))
+
 (defn write-checked!
   "Write entries to path through msgcat, which gives the canonical line
   wrapping, keeping the old file if msgfmt -c rejects the result."
@@ -199,7 +208,7 @@
                                 results)
                 ok (count (remove #(nth % 3) results))]
             (when-not dry-run?
-              (write-checked! path entries))
+              (write-checked! path (stamp-revision entries)))
             (println (+ done ok) "of" (count todo) "done")
             (recur entries more (+ done ok) (+ skipped (- (count batch) ok)))))))))
 
