@@ -283,7 +283,7 @@ msgid "Remarks"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/detail/collection.clj:69
-#: bases/app/src/sepal/app/routes/activity/index.clj:246
+#: bases/app/src/sepal/app/routes/activity/index.clj:114
 #: bases/app/src/sepal/app/routes/material/form.clj:106
 #: bases/app/src/sepal/app/routes/material/index.clj:75
 #: bases/app/src/sepal/app/routes/material/panel.clj:132
@@ -504,7 +504,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/accession/form.clj:109
 #: bases/app/src/sepal/app/routes/accession/index.clj:65
 #: bases/app/src/sepal/app/routes/accession/panel.clj:70
-#: bases/app/src/sepal/app/routes/activity/index.clj:227
+#: bases/app/src/sepal/app/routes/activity/index.clj:95
 #: bases/app/src/sepal/app/routes/material/index.clj:67
 #: bases/app/src/sepal/app/routes/material/panel.clj:127
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:27
@@ -567,49 +567,49 @@ msgid ""
 "missing."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:178
+#: bases/app/src/sepal/app/routes/accession/form.clj:176
 msgid "Create a contact"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:185
+#: bases/app/src/sepal/app/routes/accession/form.clj:182
 msgid "Placement"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:186
+#: bases/app/src/sepal/app/routes/accession/form.clj:183
 msgid "Where this material is meant to go before it is planted."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:190
+#: bases/app/src/sepal/app/routes/accession/form.clj:187
 #: bases/app/src/sepal/app/routes/accession/panel.clj:81
 msgid "Intended location"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:193
+#: bases/app/src/sepal/app/routes/accession/form.clj:190
 msgid "Leave it empty until the bed is decided."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:201
+#: bases/app/src/sepal/app/routes/accession/form.clj:198
 msgid "Receipt"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:202
+#: bases/app/src/sepal/app/routes/accession/form.clj:199
 msgid "What arrived, how much of it, and when."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:205
+#: bases/app/src/sepal/app/routes/accession/form.clj:202
 msgid "Date Received"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:213
+#: bases/app/src/sepal/app/routes/accession/form.clj:210
 msgid "Date Accessioned"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:220
+#: bases/app/src/sepal/app/routes/accession/form.clj:217
 #: bases/app/src/sepal/app/routes/accession/panel.clj:87
 msgid "Received as"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/form.clj:227
+#: bases/app/src/sepal/app/routes/accession/form.clj:224
 #: bases/app/src/sepal/app/routes/accession/panel.clj:89
 msgid "Quantity received"
 msgstr ""
@@ -693,7 +693,7 @@ msgid "none"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:101
-#: bases/app/src/sepal/app/routes/activity/index.clj:266
+#: bases/app/src/sepal/app/routes/activity/index.clj:134
 #: bases/app/src/sepal/app/routes/location/panel.clj:62
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:25
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:70
@@ -713,7 +713,7 @@ msgid "nothing grown from this accession"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:137
-#: bases/app/src/sepal/app/routes/activity/index.clj:805
+#: bases/app/src/sepal/app/routes/activity/index.clj:673
 #: bases/app/src/sepal/app/routes/contact/panel.clj:85
 #: bases/app/src/sepal/app/routes/location/panel.clj:125
 #: bases/app/src/sepal/app/routes/material/panel.clj:172
@@ -724,7 +724,7 @@ msgstr ""
 msgid "Activity"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:209
+#: bases/app/src/sepal/app/routes/activity/index.clj:77
 #: bases/app/src/sepal/app/routes/material/panel.clj:122
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:23
 #: bases/app/src/sepal/app/ui/accession_combobox.clj:21
@@ -733,48 +733,48 @@ msgstr ""
 msgid "Accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:276
+#: bases/app/src/sepal/app/routes/activity/index.clj:144
 msgid "Setup wizard"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:278
+#: bases/app/src/sepal/app/routes/activity/index.clj:146
 msgid "Initial setup completed"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:287
+#: bases/app/src/sepal/app/routes/activity/index.clj:155
 msgid "%1 record"
 msgid_plural "%1 records"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:307
+#: bases/app/src/sepal/app/routes/activity/index.clj:175
 msgid "%1 from %2"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:310
+#: bases/app/src/sepal/app/routes/activity/index.clj:178
 #: bases/app/src/sepal/app/ui/page.clj:145
 #: bases/app/src/sepal/app/ui/propagations.clj:56
 msgctxt "navigation"
 msgid "Propagation"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:329
+#: bases/app/src/sepal/app/routes/activity/index.clj:197
 msgid "Observation on material"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:336
+#: bases/app/src/sepal/app/routes/activity/index.clj:204
 msgid "Observation on location"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:358
+#: bases/app/src/sepal/app/routes/activity/index.clj:226
 msgid "Note on accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:364
+#: bases/app/src/sepal/app/routes/activity/index.clj:232
 msgid "Note on taxon"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:389
+#: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail.clj:118
 #: bases/app/src/sepal/app/routes/media/index.clj:46
 #: bases/app/src/sepal/app/ui/page.clj:153
@@ -782,381 +782,381 @@ msgctxt "navigation"
 msgid "Media"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:404
+#: bases/app/src/sepal/app/routes/activity/index.clj:272
 msgid "Media • linked to %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:405
+#: bases/app/src/sepal/app/routes/activity/index.clj:273
 msgid "Media • unlinked from %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:448
+#: bases/app/src/sepal/app/routes/activity/index.clj:316
 msgid "created an accession"
 msgid_plural "created %1 accessions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:449
+#: bases/app/src/sepal/app/routes/activity/index.clj:317
 msgid "deleted an accession"
 msgid_plural "deleted %1 accessions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:450
+#: bases/app/src/sepal/app/routes/activity/index.clj:318
 msgid "updated an accession"
 msgid_plural "updated %1 accessions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:451
+#: bases/app/src/sepal/app/routes/activity/index.clj:319
 msgid "created collection data"
 msgid_plural "created collection data"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:452
+#: bases/app/src/sepal/app/routes/activity/index.clj:320
 msgid "updated collection data"
 msgid_plural "updated collection data"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:453
+#: bases/app/src/sepal/app/routes/activity/index.clj:321
 msgid "created a contact"
 msgid_plural "created %1 contacts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:454
+#: bases/app/src/sepal/app/routes/activity/index.clj:322
 msgid "deleted a contact"
 msgid_plural "deleted %1 contacts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:455
+#: bases/app/src/sepal/app/routes/activity/index.clj:323
 msgid "updated a contact"
 msgid_plural "updated %1 contacts"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:456
+#: bases/app/src/sepal/app/routes/activity/index.clj:324
 msgid "completed an import"
 msgid_plural "completed %1 imports"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:457
+#: bases/app/src/sepal/app/routes/activity/index.clj:325
 msgid "archived a location"
 msgid_plural "archived %1 locations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:458
+#: bases/app/src/sepal/app/routes/activity/index.clj:326
 msgid "created a location"
 msgid_plural "created %1 locations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:459
+#: bases/app/src/sepal/app/routes/activity/index.clj:327
 msgid "deleted a location"
 msgid_plural "deleted %1 locations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:460
+#: bases/app/src/sepal/app/routes/activity/index.clj:328
 msgid "unarchived a location"
 msgid_plural "unarchived %1 locations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:461
+#: bases/app/src/sepal/app/routes/activity/index.clj:329
 msgid "updated a location"
 msgid_plural "updated %1 locations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:462
+#: bases/app/src/sepal/app/routes/activity/index.clj:330
 msgid "created a material"
 msgid_plural "created %1 materials"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:463
+#: bases/app/src/sepal/app/routes/activity/index.clj:331
 msgid "deleted a material"
 msgid_plural "deleted %1 materials"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:464
+#: bases/app/src/sepal/app/routes/activity/index.clj:332
 msgid "updated a material"
 msgid_plural "updated %1 materials"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:465
+#: bases/app/src/sepal/app/routes/activity/index.clj:333
 msgid "uploaded a media item"
 msgid_plural "uploaded %1 media items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:466
+#: bases/app/src/sepal/app/routes/activity/index.clj:334
 msgid "deleted a media item"
 msgid_plural "deleted %1 media items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:467
+#: bases/app/src/sepal/app/routes/activity/index.clj:335
 msgid "linked a media item"
 msgid_plural "linked %1 media items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:468
+#: bases/app/src/sepal/app/routes/activity/index.clj:336
 msgid "unlinked a media item"
 msgid_plural "unlinked %1 media items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:469
+#: bases/app/src/sepal/app/routes/activity/index.clj:337
 msgid "updated a media item"
 msgid_plural "updated %1 media items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:470
+#: bases/app/src/sepal/app/routes/activity/index.clj:338
 msgid "created a note"
 msgid_plural "created %1 notes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:471
+#: bases/app/src/sepal/app/routes/activity/index.clj:339
 msgid "deleted a note"
 msgid_plural "deleted %1 notes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:472
+#: bases/app/src/sepal/app/routes/activity/index.clj:340
 msgid "updated a note"
 msgid_plural "updated %1 notes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:473
+#: bases/app/src/sepal/app/routes/activity/index.clj:341
 msgid "created an observation"
 msgid_plural "created %1 observations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:474
+#: bases/app/src/sepal/app/routes/activity/index.clj:342
 msgid "deleted an observation"
 msgid_plural "deleted %1 observations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:475
+#: bases/app/src/sepal/app/routes/activity/index.clj:343
 msgid "updated an observation"
 msgid_plural "updated %1 observations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:476
+#: bases/app/src/sepal/app/routes/activity/index.clj:344
 msgid "created a propagation"
 msgid_plural "created %1 propagations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:477
+#: bases/app/src/sepal/app/routes/activity/index.clj:345
 msgid "deleted a propagation"
 msgid_plural "deleted %1 propagations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:478
+#: bases/app/src/sepal/app/routes/activity/index.clj:346
 msgid "updated a propagation"
 msgid_plural "updated %1 propagations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:479
+#: bases/app/src/sepal/app/routes/activity/index.clj:347
 msgid "updated settings"
 msgid_plural "updated settings"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:480
+#: bases/app/src/sepal/app/routes/activity/index.clj:348
 msgid "completed setup"
 msgid_plural "completed setup"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:481
+#: bases/app/src/sepal/app/routes/activity/index.clj:349
 msgid "created a synonym"
 msgid_plural "created %1 synonyms"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:482
+#: bases/app/src/sepal/app/routes/activity/index.clj:350
 msgid "deleted a synonym"
 msgid_plural "deleted %1 synonyms"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:483
+#: bases/app/src/sepal/app/routes/activity/index.clj:351
 msgid "created a tag"
 msgid_plural "created %1 tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:484
+#: bases/app/src/sepal/app/routes/activity/index.clj:352
 msgid "deleted a tag"
 msgid_plural "deleted %1 tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:485
+#: bases/app/src/sepal/app/routes/activity/index.clj:353
 msgid "linked a tag"
 msgid_plural "linked %1 tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:486
+#: bases/app/src/sepal/app/routes/activity/index.clj:354
 msgid "unlinked a tag"
 msgid_plural "unlinked %1 tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:487
+#: bases/app/src/sepal/app/routes/activity/index.clj:355
 msgid "updated a tag"
 msgid_plural "updated %1 tags"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:488
+#: bases/app/src/sepal/app/routes/activity/index.clj:356
 msgid "created a taxon"
 msgid_plural "created %1 taxa"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:489
+#: bases/app/src/sepal/app/routes/activity/index.clj:357
 msgid "deleted a taxon"
 msgid_plural "deleted %1 taxa"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:490
+#: bases/app/src/sepal/app/routes/activity/index.clj:358
 msgid "updated a taxon"
 msgid_plural "updated %1 taxa"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:491
+#: bases/app/src/sepal/app/routes/activity/index.clj:359
 msgid "created a user"
 msgid_plural "created %1 users"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:492
+#: bases/app/src/sepal/app/routes/activity/index.clj:360
 msgid "updated a user"
 msgid_plural "updated %1 users"
 msgstr[0] ""
 msgstr[1] ""
 
 #. i18n: Joins the earlier actions of a summary, as in "created a taxon, updated a note"
-#: bases/app/src/sepal/app/routes/activity/index.clj:502
+#: bases/app/src/sepal/app/routes/activity/index.clj:370
 msgid "%1, %2"
 msgstr ""
 
 #. i18n: Joins the last two actions of a summary, as in "created a taxon and updated 2 accessions"
-#: bases/app/src/sepal/app/routes/activity/index.clj:500
+#: bases/app/src/sepal/app/routes/activity/index.clj:368
 msgid "%1 and %2"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:584
+#: bases/app/src/sepal/app/routes/activity/index.clj:452
 msgid "No activity yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:585
+#: bases/app/src/sepal/app/routes/activity/index.clj:453
 msgid ""
 "Records created, edited and uploaded by you and your collaborators show up "
 "here."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:592
+#: bases/app/src/sepal/app/routes/activity/index.clj:460
 msgid "Add a location"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:595
+#: bases/app/src/sepal/app/routes/activity/index.clj:463
 #: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:64
 msgid "Add an accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:599
+#: bases/app/src/sepal/app/routes/activity/index.clj:467
 msgid "Invite someone to your organization"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:704
+#: bases/app/src/sepal/app/routes/activity/index.clj:572
 msgid "Loading more activity"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/activity/index.clj:795
+#: bases/app/src/sepal/app/routes/activity/index.clj:663
 msgid "%1 overdue observation"
 msgid_plural "%1 overdue observations"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:31
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:30
 msgid "Accept invitation"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:34
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:32
 msgid "Set up your account for %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:40
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:37
 #: bases/app/src/sepal/app/routes/settings/profile.clj:38
 #: bases/app/src/sepal/app/routes/setup/admin.clj:38
 #: bases/app/src/sepal/app/routes/setup/admin.clj:104
 msgid "Full name"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:42
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:39
 msgid "Your name"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:45
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:42
 #: bases/app/src/sepal/app/routes/auth/login.clj:28
 #: bases/app/src/sepal/app/routes/auth/reset_password.clj:20
 #: bases/app/src/sepal/app/routes/setup/admin.clj:51
 msgid "Password"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:51
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:48
 #: bases/app/src/sepal/app/routes/auth/reset_password.clj:26
 #: bases/app/src/sepal/app/routes/setup/admin.clj:59
 msgid "Confirm password"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:57
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:54
 msgid "Set password and activate account"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:68
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:65
 msgid "Invalid invitation"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:85
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:82
 msgid "Account already activated. Please log in."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:96
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:93
 #: bases/app/src/sepal/app/routes/setup/admin.clj:27
 msgid "Passwords do not match"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:110
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:107
 msgid "Password set for %1. Please log in."
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:112
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:109
 msgid "Could not set your password. Please try again."
 msgstr ""
 
