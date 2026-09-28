@@ -10,6 +10,7 @@
             [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
             [sepal.propagation.interface :as propagation.i]
+            [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
@@ -236,6 +237,38 @@
         (doseq [path paths]
           (testing (str "editor " path)
             (is (not= 403 (:status (post :editor path))))))))))
+
+(deftest tag-detail-roles-test
+  (tf/testing "a reader sees a tag's page but can't save it"
+    {[::tag.i/factory :key/tag] {:db *db*}}
+    (fn [{:keys [tag]}]
+      (let [path (str "/tag/" (:tag/id tag) "/")]
+        (testing "reader GET shows the panel without a form"
+          (let [{:keys [response]} (peri/request (login-as *db* :reader) path)]
+            (is (= 200 (:status response)))
+            (is (body-contains? response "Linked records"))
+            (is (not (body-contains? response "<form")))))
+
+        (testing "reader POST is refused and writes nothing"
+          (let [{:keys [response] :as sess} (peri/request (login-as *db* :reader) "/settings/profile")
+                {:keys [response]} (peri/request sess path
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token (test.i/response-anti-forgery-token response)
+                                                          :name "Changed"})]
+            (is (= 403 (:status response)))
+            (is (= (:tag/name tag) (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))))
+
+        (testing "editor GET shows the form, and the editor's POST saves"
+          (let [{:keys [response] :as sess} (peri/request (login-as *db* :editor) path)
+                _ (is (= 200 (:status response)))
+                _ (is (body-contains? response "<form"))
+                {:keys [response]} (peri/request sess path
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token (test.i/response-anti-forgery-token response)
+                                                          :name "Renamed"
+                                                          :description ""})]
+            (is (= 200 (:status response)))
+            (is (= "Renamed" (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))))))))
 
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"

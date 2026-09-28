@@ -1,5 +1,6 @@
 (ns sepal.app.routes.tag.detail
   (:require [failjure.core :as f]
+            [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.tag.form :as tag.form]
@@ -15,6 +16,7 @@
             [sepal.i18n.interface :refer [N_ tr]]
             [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]
+            [sepal.tag.interface.permission :as tag.perm]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -74,24 +76,39 @@
     (catch Exception ex
       (error.i/ex->error ex))))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
-        id (:tag/id resource)
-        values {:name (:tag/name resource) :description (:tag/description resource)}]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _saved (f/try* (update! db id (:user/id viewer) data))]
-        (-> (http/hx-redirect tag.routes/index)
-            (flash/success (tr "Tag updated successfully")))
-        (f/when-failed [e]
-          ;; The one failure this route classifies itself: a duplicate name is a
-          ;; field error, not a generic save failure.
-          (if (error.i/error? e ::name-taken)
-            (http/validation-errors {:name [(tr name-taken-message)]})
-            (http/failure-flash e (http/hx-redirect tag.routes/index) (tr "Could not save the tag")))))
+(defn render-panel-page
+  "Render the panel view as a full page for read-only users."
+  [& {:keys [tag panel-data timezone]}]
+  (page/page
+    :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} (tr "Tags")] (:tag/name tag)]
+    :content [:div {:class "max-w-2xl mx-auto"}
+              (tag.panel/panel-content
+                :tag (:tag panel-data)
+                :stats (:stats panel-data)
+                :activities (:activities panel-data)
+                :activity-count (:activity-count panel-data)
+                :timezone timezone)]))
 
+(defn get-handler [{:keys [::z/context viewer]}]
+  (let [{:keys [db resource timezone]} context
+        panel-data (tag.panel/fetch-panel-data db resource)]
+    (if (authz/user-has-permission? viewer tag.perm/edit)
       (render :tag resource
-              :values values
-              :panel-data (tag.panel/fetch-panel-data db resource)
-              :timezone timezone))))
+              :values {:name (:tag/name resource) :description (:tag/description resource)}
+              :panel-data panel-data
+              :timezone timezone)
+      (render-panel-page :tag resource :panel-data panel-data :timezone timezone))))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context
+        id (:tag/id resource)]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _saved (f/try* (update! db id (:user/id viewer) data))]
+      (-> (http/hx-redirect tag.routes/index)
+          (flash/success (tr "Tag updated successfully")))
+      (f/when-failed [e]
+        ;; The one failure this route classifies itself: a duplicate name is a
+        ;; field error, not a generic save failure.
+        (if (error.i/error? e ::name-taken)
+          (http/validation-errors {:name [(tr name-taken-message)]})
+          (http/failure-flash e (http/hx-redirect tag.routes/index) (tr "Could not save the tag")))))))

@@ -18,9 +18,9 @@
    ["/" {:name routes/index :handler #'index/handler}]
    ["/:id" {:middleware [[middleware/resource-loader tag-loader]]}
     ["/" {:name routes/detail
-          :middleware [[(middleware/require-permission-or-redirect
-                          tag.perm/edit (constantly routes/index))]]
-          :handler #'detail/handler}]
+          :get #'detail/get-handler
+          :post {:middleware [[(middleware/require-permission tag.perm/edit)]]
+                 :handler #'detail/post-handler}}]
     ["/delete/" {:name routes/delete
                  :middleware [[(middleware/require-permission-or-redirect
                                  tag.perm/delete (constantly routes/detail))]]
