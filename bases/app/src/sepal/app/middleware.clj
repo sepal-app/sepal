@@ -114,8 +114,8 @@
   (if htmx-request?
     {:status 403
      :headers {"Content-Type" "text/html"}
-     :body (chassis/html [:div {:class "alert alert-error"}
-                          (tr "You don't have permission to perform this action.")])}
+     :body (chassis/html [:div {:class "spl-alert spl-alert--danger"}
+                          [:span (tr "You don't have permission to perform this action.")]])}
     {:status 403
      :headers {"Content-Type" "text/html"}
      :body (chassis/html [:p (tr "You don't have permission to access this page.")])}))

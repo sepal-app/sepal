@@ -62,7 +62,8 @@
                    :htmx-request? true}
           response (handler request)]
       (is (= 403 (:status response)))
-      (is (.contains (:body response) "alert")))))
+      (is (.contains (:body response) "spl-alert spl-alert--danger"))
+      (is (not (.contains (:body response) "alert-error"))))))
 
 (deftest wrap-flash-messages-htmx-partial-test
   (testing "injects OOB flash for HTMX partial responses"
