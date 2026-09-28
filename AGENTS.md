@@ -366,6 +366,15 @@ Routes are defined per-resource in `bases/app/src/sepal/app/routes/<resource>/`:
 - `core.clj` - Route definitions
 - `index.clj`, `create.clj`, `detail.clj` - Handlers
 
+Every leaf route declares `:permission` in its data: a permission from
+`sepal.app.authorization` or a component's `interface.permission`, or `:public`
+for a route that needs no login. `middleware/require-access` at the root of the
+router checks it, and refuses a route that declares nothing. When GET and POST
+need different permissions, give each method its own handler and put the
+permission on the method, as `routes/contact/core.clj` does. Never declare
+`:permission` on a group, because reitit merges it into every route beneath.
+`sepal.app.route-permission-test` enforces all of this from the route table.
+
 `routes/setup/` is the first-run wizard, and is how a standalone install gets
 its first admin user and its taxon data: the taxonomy step reads the
 `sepal-init-manifest.json` published on the GitHub releases page, downloads the
