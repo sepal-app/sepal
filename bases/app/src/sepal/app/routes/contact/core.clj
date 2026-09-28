@@ -32,7 +32,9 @@
    ["/:id" {:middleware [[middleware/resource-loader contact-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :get #'detail/get-handler
+          :post {:middleware [[(middleware/require-permission contact.perm/edit)]]
+                 :handler #'detail/post-handler}}]
     ["/delete/" {:name routes/delete
                  :middleware [[(middleware/require-permission-or-redirect
                                  contact.perm/delete (constantly routes/detail))]]

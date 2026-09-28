@@ -84,38 +84,38 @@
                 :activities (:activities panel-data)
                 :activity-count (:activity-count panel-data))]))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn- form-values [resource]
+  {:id (:contact/id resource)
+   :name (:contact/name resource)
+   :email (:contact/email resource)
+   :address (:contact/address resource)
+   :address1 (:contact/address1 resource)
+   :address2 (:contact/address2 resource)
+   :city (:contact/city resource)
+   :province (:contact/province resource)
+   :postal-code (:contact/postal-code resource)
+   :country (:contact/country resource)
+   :phone (:contact/phone resource)
+   :business (:contact/business resource)
+   :type (:contact/type resource)
+   :notes (:contact/notes resource)})
+
+(defn get-handler [{:keys [::z/context viewer]}]
+  (let [{:keys [db resource]} context
+        panel-data (contact.panel/fetch-panel-data db resource)]
+    (if (authz/user-has-permission? viewer contact.perm/edit)
+      (render :contact resource
+              :values (form-values resource)
+              :panel-data panel-data)
+      ;; Readers see panel view as full page
+      (render-panel-page :contact resource :panel-data panel-data))))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db resource]} context
         id (:contact/id resource)]
-    ;; Readers see panel view as full page
-    (if (not (authz/user-has-permission? viewer contact.perm/edit))
-      (let [panel-data (contact.panel/fetch-panel-data db resource)]
-        (render-panel-page :contact resource :panel-data panel-data))
-      ;; Editors/Admins see the form
-      (let [values {:id id
-                    :name (:contact/name resource)
-                    :email (:contact/email resource)
-                    :address (:contact/address resource)
-                    :address1 (:contact/address1 resource)
-                    :address2 (:contact/address2 resource)
-                    :city (:contact/city resource)
-                    :province (:contact/province resource)
-                    :postal-code (:contact/postal-code resource)
-                    :country (:contact/country resource)
-                    :phone (:contact/phone resource)
-                    :business (:contact/business resource)
-                    :type (:contact/type resource)
-                    :notes (:contact/notes resource)}]
-        (case request-method
-          :post
-          (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                          saved (f/try* (update! db id (:user/id viewer) data))]
-            (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-                (flash/success (tr "Contact updated successfully")))
-            (f/when-failed [e]
-              (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) (tr "Could not save the contact"))))
-
-          (let [panel-data (contact.panel/fetch-panel-data db resource)]
-            (render :contact resource
-                    :values values
-                    :panel-data panel-data)))))))
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    saved (f/try* (update! db id (:user/id viewer) data))]
+      (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
+          (flash/success (tr "Contact updated successfully")))
+      (f/when-failed [e]
+        (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) (tr "Could not save the contact"))))))

@@ -29,9 +29,9 @@
     ;; A reader sees the page with its actions hidden; saving needs an editor.
     ["/"
      {:name media.routes/detail
-      :get #'detail/handler
+      :get #'detail/get-handler
       :post {:middleware [[middleware/require-editor-or-admin]]
-             :handler #'detail/handler}}]
+             :handler #'detail/post-handler}}]
     ["/delete/" {:name media.routes/delete
                  :middleware [[middleware/require-editor-or-admin]]
                  :get #'delete/handler

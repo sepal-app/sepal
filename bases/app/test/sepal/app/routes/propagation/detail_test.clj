@@ -218,13 +218,13 @@
             {:keys [response] :as sess} (peri/request sess "/settings/profile")
             token (test.i/response-anti-forgery-token response)]
         (is (some? token))
-        (is (= 200 (-> (peri/request sess path
-                                     :request-method :post
-                                     :params {:__anti-forgery-token token
-                                              :status "complete"})
-                       :response
-                       :status))
-            "the POST gets past the anti-forgery check")
+        (let [{:keys [response]} (peri/request sess path
+                                               :request-method :post
+                                               :params {:__anti-forgery-token token
+                                                        :status "complete"})]
+          (is (= 403 (:status response)))
+          (is (re-find #"permission" (:body response))
+              "the refusal is the permission check, not the anti-forgery check"))
         (is (= :active (:propagation/status
                          (propagation.i/get-by-id *db* (:propagation/id prop)))))))))
 

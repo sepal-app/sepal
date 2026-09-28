@@ -152,19 +152,19 @@
       (media.activity/create! tx media.activity/updated updated-by media)
       media)))
 
-(defn handler [& {:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db material-separator resource timezone]} context
-        detail-url (z/url-for media.routes/detail {:id (:media/id resource)})]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _ (f/try* (save! db (:media/id resource) (:user/id viewer) data))]
-        (-> (http/hx-redirect detail-url)
-            (flash/success (tr "Media updated successfully")))
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect detail-url) (tr "Could not save the media"))))
+(defn get-handler [{:keys [::z/context viewer]}]
+  (let [{:keys [db material-separator resource timezone]} context]
+    (render :media resource
+            :editor? (authz/user-has-permission? viewer media.perm/edit)
+            :panel-data (media.panel/fetch-panel-data db resource material-separator)
+            :timezone timezone)))
 
-      (render :media resource
-              :editor? (authz/user-has-permission? viewer media.perm/edit)
-              :panel-data (media.panel/fetch-panel-data db resource material-separator)
-              :timezone timezone))))
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context
+        detail-url (z/url-for media.routes/detail {:id (:media/id resource)})]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _ (f/try* (save! db (:media/id resource) (:user/id viewer) data))]
+      (-> (http/hx-redirect detail-url)
+          (flash/success (tr "Media updated successfully")))
+      (f/when-failed [e]
+        (http/failure-flash e (http/hx-redirect detail-url) (tr "Could not save the media"))))))

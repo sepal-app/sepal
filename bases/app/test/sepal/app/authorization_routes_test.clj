@@ -8,6 +8,8 @@
             [sepal.contact.interface :as contact.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
+            [sepal.media.interface :as media.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
@@ -203,6 +205,37 @@
           (let [{:keys [response]} (peri/request sess path)]
             (is (= 200 (:status response)))
             (is (= shown? (boolean (body-contains? response "spl-actions-menu"))))))))))
+
+(deftest detail-post-requires-edit-test
+  (tf/testing "a detail page's POST needs the resource's edit permission"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::contact.i/factory :key/contact] {:db *db*}
+     [::propagation.i/factory :key/propagation] {:db *db* :accession (ig/ref :key/accession)}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user)}}
+    (fn [{:keys [contact propagation media]}]
+      (let [paths [(str "/contact/" (:contact/id contact) "/")
+                   (str "/propagation/" (:propagation/id propagation) "/")
+                   (str "/media/" (:media/id media) "/")]
+            post (fn [role path]
+                   (let [sess (login-as *db* role)
+                         {:keys [response] :as sess} (peri/request sess "/settings/profile")
+                         token (test.i/response-anti-forgery-token response)]
+                     (:response (peri/request sess path
+                                              :request-method :post
+                                              :params {:__anti-forgery-token token
+                                                       :name "Changed"
+                                                       :title "Changed"}))))]
+        (doseq [path paths]
+          (testing (str "reader " path)
+            (is (= 403 (:status (post :reader path))))))
+        (testing "and the reader's POST wrote nothing"
+          (is (= (:contact/name contact) (:contact/name (contact.i/get-by-id *db* (:contact/id contact)))))
+          (is (= (:media/title media) (:media/title (media.i/get-by-id *db* (:media/id media))))))
+        (doseq [path paths]
+          (testing (str "editor " path)
+            (is (not= 403 (:status (post :editor path))))))))))
 
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"

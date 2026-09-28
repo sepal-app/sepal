@@ -38,7 +38,9 @@
    ["/:id" {:middleware [[middleware/resource-loader propagation-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :get #'detail/get-handler
+          :post {:middleware [[(middleware/require-permission propagation.perm/edit)]]
+                 :handler #'detail/post-handler}}]
     ["/panel/" {:name routes/panel
                 :handler #'panel/handler}]
     ["/status/" {:name routes/status
