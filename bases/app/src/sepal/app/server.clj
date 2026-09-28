@@ -41,7 +41,7 @@
    ["/login" {:name auth.routes/login
               :handler #'login/handler}]
    ["/logout" {:name auth.routes/logout
-               :handler #'logout/handler}]
+               :post #'logout/handler}]
    ["/forgot-password" {:name auth.routes/forgot-password
                         :handler #'forgot-password/handler}]
    ["/reset-password" {:name auth.routes/reset-password

@@ -53,9 +53,10 @@
 (defn page-content [& {:keys [values errors]}]
   [:div
    [:div {:class "flex justify-end mb-6"}
-    [:a {:href (z/url-for auth.routes/logout)
-         :class "spl-btn spl-btn--danger spl-btn--sm"}
-     (tr "Logout")]]
+    [:form {:method "post" :action (z/url-for auth.routes/logout)}
+     (ui.form/anti-forgery-field)
+     [:button {:type "submit" :class "spl-btn spl-btn--danger spl-btn--sm"}
+      (tr "Logout")]]]
    (profile-form :values values :errors errors)])
 
 (defn render [& {:keys [viewer values errors flash]}]
