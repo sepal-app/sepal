@@ -1,6 +1,6 @@
 (ns sepal.app.routes.settings.core
-  (:require [sepal.app.http-response :as http]
-            [sepal.app.middleware :as middleware]
+  (:require [sepal.app.authorization :as authz]
+            [sepal.app.http-response :as http]
             [sepal.app.routes.settings.backups.download :as backups.download]
             [sepal.app.routes.settings.backups.index :as backups.index]
             [sepal.app.routes.settings.codes :as codes]
@@ -16,40 +16,50 @@
             [sepal.app.routes.settings.users.update-role :as users.update-role]))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["" {:name settings.routes/index
+        :permission authz/profile-view
         :handler (fn [_] (http/see-other settings.routes/profile))}]
    ["/profile" {:name settings.routes/profile
+                :permission authz/profile-edit
                 :handler #'profile/handler}]
    ["/security" {:name settings.routes/security
+                 :permission authz/security-edit
                  :handler #'security/handler}]
-   ;; Admin only
+   ;; Admin only. Codes and backups have no permissions of their own, so they
+   ;; go with organization-edit.
    ["/organization" {:name settings.routes/organization
-                     :middleware [[middleware/require-admin]]
+                     :permission authz/organization-edit
                      :handler #'organization/handler}]
    ["/codes" {:name settings.routes/codes
-              :middleware [[middleware/require-admin]]
+              :permission authz/organization-edit
               :get #'codes/handler
               :post #'codes/handler}]
-   ;; Backups (admin only)
-   ["/backups" {:middleware [[middleware/require-admin]]}
+   ["/backups"
     ["" {:name settings.routes/backups
+         :permission authz/organization-edit
          :get #'backups.index/handler
          :post #'backups.index/handler}]
     ["/:filename/download" {:name settings.routes/backup-download
+                            :permission authz/organization-edit
                             :get #'backups.download/handler}]]
-   ;; User management (admin only)
-   ["/users" {:middleware [[middleware/require-admin]]}
+   ["/users"
     ["" {:name settings.routes/users
+         :permission authz/users-view
          :get #'users.index/handler}]
     ["/invite" {:name settings.routes/users-invite
+                :permission authz/users-create
                 :get #'users.invite/handler
                 :post #'users.invite/handler}]
     ["/:id/role" {:name settings.routes/users-update-role
+                  :permission authz/users-change-role
                   :post #'users.update-role/handler}]
     ["/:id/archive" {:name settings.routes/users-archive
+                     :permission authz/users-edit
                      :post #'users.archive/handler}]
     ["/:id/activate" {:name settings.routes/users-activate
+                      :permission authz/users-edit
                       :post #'users.activate/handler}]
     ["/:id/resend-invitation" {:name settings.routes/users-resend-invitation
+                               :permission authz/users-create
                                :post #'users.resend-invitation/handler}]]])

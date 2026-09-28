@@ -1,9 +1,9 @@
 (ns sepal.app.routes.activity.core
-  (:require [sepal.app.middleware :as middleware]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.routes.activity.index :as index]
             [sepal.app.routes.activity.routes :as routes]))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]
-       :name routes/index
+  ["" {:name routes/index
+       :permission authz/activity-view
        :handler #'index/handler}])

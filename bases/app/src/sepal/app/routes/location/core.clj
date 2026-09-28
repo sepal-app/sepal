@@ -20,54 +20,58 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
+     :permission location.perm/view
      :handler #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission location.perm/view
      :conflicting true
      :handler #'export/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission location.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader location-loader]]
             :conflicting true}
     ["/" {:name routes/detail
+          :permission location.perm/view
           :handler #'detail/handler}]
     ["/general/" {:name routes/detail-general
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  location.perm/edit (constantly routes/detail))]]
+                  :permission location.perm/edit
+                  :permission-redirect routes/detail
                   :handler #'detail-general/handler}]
     ["/observations/" {:name routes/detail-observations
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       location.perm/edit (constantly routes/detail))]]
+                       :permission location.perm/edit
+                       :permission-redirect routes/detail
                        :handler #'detail-observations/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[(middleware/require-permission-or-redirect
-                                location.perm/edit (constantly routes/detail))]]
+                :permission location.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/:observation-id/" {:name routes/detail-observation
-                                       :middleware [[(middleware/require-permission-or-redirect
-                                                       location.perm/edit (constantly routes/detail))]]
+                                       :permission location.perm/edit
+                                       :permission-redirect routes/detail
                                        :handler #'detail-observations/observation-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 location.perm/delete (constantly routes/detail))]]
+                 :permission location.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ;; Archiving is an edit, not a delete: it is reversible, and it is the only
     ;; way a location with a history ever leaves the garden.
     ["/archive/" {:name routes/archive
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  location.perm/edit (constantly routes/detail))]]
+                  :permission location.perm/edit
+                  :permission-redirect routes/detail
                   :get #'archive/handler
                   :post #'archive/handler}]
     ["/unarchive/" {:name routes/unarchive
-                    :middleware [[(middleware/require-permission-or-redirect
-                                    location.perm/edit (constantly routes/detail))]]
+                    :permission location.perm/edit
+                    :permission-redirect routes/detail
                     :post #'archive/unarchive-handler}]
     ["/panel/" {:name routes/panel
+                :permission location.perm/view
                 :handler #'panel/handler}]]])

@@ -21,58 +21,63 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
+     :permission material.perm/view
      :handler #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission material.perm/view
      :conflicting true
      :handler #'export/handler}]
    ["/next-code/"
     {:name routes/next-code
      :conflicting true
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission material.perm/edit
      :handler #'next-code/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission material.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail
+          :permission material.perm/view
           :handler #'detail/handler}]
     ["/general/" {:name routes/detail-general
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  material.perm/edit (constantly routes/detail))]]
+                  :permission material.perm/edit
+                  :permission-redirect routes/detail
                   :handler #'detail-general/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[(middleware/require-permission-or-redirect
-                                material.perm/edit (constantly routes/detail))]]
+                :permission material.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/" {:name routes/detail-observations
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       material.perm/edit (constantly routes/detail))]]
+                       :permission material.perm/edit
+                       :permission-redirect routes/detail
                        :handler #'detail-observations/handler}]
     ["/observations/:observation-id/" {:name routes/detail-observation
-                                       :middleware [[(middleware/require-permission-or-redirect
-                                                       material.perm/edit (constantly routes/detail))]]
+                                       :permission material.perm/edit
+                                       :permission-redirect routes/detail
                                        :handler #'detail-observations/observation-handler}]
     ["/tags/" {:name routes/detail-tags
-               :middleware [[(middleware/require-permission-or-redirect
-                               material.perm/edit (constantly routes/detail))]]
+               :permission material.perm/edit
+               :permission-redirect routes/detail
                :handler #'detail-tags/handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       material.perm/edit (constantly routes/detail))]]
+                       :permission material.perm/edit
+                       :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]
     ["/history/" {:name routes/history
+                  :permission material.perm/view
                   :handler #'panel/history-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 material.perm/delete (constantly routes/detail))]]
+                 :permission material.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
+                :permission material.perm/view
                 :handler #'panel/handler}]]])

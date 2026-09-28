@@ -36,23 +36,30 @@
                     middleware/wrap-org-settings
                     middleware/wrap-flash-messages
                     middleware/wrap-setup-required
-                    stacktrace/wrap-stacktrace-web]}
+                    stacktrace/wrap-stacktrace-web
+                    middleware/require-access]}
    ;; Auth routes (inlined so they're under the root middleware)
    ["/login" {:name auth.routes/login
+              :permission :public
               :handler #'login/handler}]
    ["/logout" {:name auth.routes/logout
+               :permission :public
                :post #'logout/handler}]
    ["/forgot-password" {:name auth.routes/forgot-password
+                        :permission :public
                         :handler #'forgot-password/handler}]
    ["/reset-password" {:name auth.routes/reset-password
+                       :permission :public
                        :handler #'reset-password/handler}]
    ["/accept-invitation" {:name auth.routes/accept-invitation
+                          :permission :public
                           :handler #'accept-invitation/handler}]
    ;; Setup wizard routes (before app routes so setup-required middleware can redirect)
    ["/setup" (setup/routes)]
    ;; App routes
    ["/" (dashboard/routes)]
    ["/ok" {:name :ok
+           :permission :public
            :handler (constantly {:status 204})}]
    ["/accession" (accession/routes)]
    ["/activity" (activity/routes)]

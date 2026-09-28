@@ -21,26 +21,28 @@
 (def taxon-loader (middleware/default-loader taxon.i/get-by-id :id parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/" {:name routes/index
+         :permission taxon.perm/view
          :handler #'index/handler}]
    ["/export/" {:name routes/export
+                :permission taxon.perm/view
                 :conflicting true
                 :handler #'export/handler}]
    ["/parent-suggestion/" {:name routes/parent-suggestion
-                           :middleware [[middleware/require-editor-or-admin]]
+                           :permission taxon.perm/create
                            :handler #'parent-suggestion/handler
                            :conflicting true}]
    ["/parentage-row/" {:name routes/parentage-row
-                       :middleware [[middleware/require-editor-or-admin]]
+                       :permission taxon.perm/edit
                        :handler #'parentage-row/handler
                        :conflicting true}]
    ["/rank-guess/" {:name routes/rank-guess
-                    :middleware [[middleware/require-editor-or-admin]]
+                    :permission taxon.perm/create
                     :handler #'rank-guess/handler
                     :conflicting true}]
    ["/new/" {:name routes/new
-             :middleware [[middleware/require-editor-or-admin]]
+             :permission taxon.perm/create
              :get #'create/get-handler
              :post #'create/post-handler
              :conflicting true}]
@@ -48,43 +50,45 @@
             :parameters {:path {:id nat-int?}}
             :conflicting true}
     ["/" {:name routes/detail
+          :permission taxon.perm/view
           :handler #'detail/handler}]
     ["/name/" {:name routes/detail-name
-               :middleware [[(middleware/require-permission-or-redirect
-                               taxon.perm/edit (constantly routes/detail))]]
+               :permission taxon.perm/edit
+               :permission-redirect routes/detail
                :handler #'detail-name/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[(middleware/require-permission-or-redirect
-                                taxon.perm/edit (constantly routes/detail))]]
+                :permission taxon.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/synonyms/" {:name routes/detail-synonyms
-                   :middleware [[(middleware/require-permission-or-redirect
-                                   taxon.perm/edit (constantly routes/detail))]]
+                   :permission taxon.perm/edit
+                   :permission-redirect routes/detail
                    :handler #'detail-synonyms/handler}]
     ["/synonyms/:synonym-id/" {:name routes/detail-synonym
-                               :middleware [[(middleware/require-permission-or-redirect
-                                               taxon.perm/edit (constantly routes/detail))]]
+                               :permission taxon.perm/edit
+                               :permission-redirect routes/detail
                                :delete #'detail-synonyms/row-handler}]
     ["/notes/" {:name routes/detail-notes
-                :middleware [[(middleware/require-permission-or-redirect
-                                taxon.perm/edit (constantly routes/detail))]]
+                :permission taxon.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-notes/handler}]
     ["/notes/:note-id/" {:name routes/detail-note
-                         :middleware [[(middleware/require-permission-or-redirect
-                                         taxon.perm/edit (constantly routes/detail))]]
+                         :permission taxon.perm/edit
+                         :permission-redirect routes/detail
                          :handler #'detail-notes/note-handler}]
     ["/tags/" {:name routes/detail-tags
-               :middleware [[(middleware/require-permission-or-redirect
-                               taxon.perm/edit (constantly routes/detail))]]
+               :permission taxon.perm/edit
+               :permission-redirect routes/detail
                :handler #'detail-tags/handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       taxon.perm/edit (constantly routes/detail))]]
+                       :permission taxon.perm/edit
+                       :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 taxon.perm/delete (constantly routes/detail))]]
+                 :permission taxon.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
+                :permission taxon.perm/view
                 :get #'panel/handler}]]])

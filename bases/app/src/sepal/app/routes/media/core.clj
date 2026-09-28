@@ -9,19 +9,21 @@
             [sepal.app.routes.media.s3 :as s3]
             [sepal.app.routes.media.transform :as transform]
             [sepal.app.routes.media.uploaded :as uploaded]
-            [sepal.media.interface :as media.i]))
+            [sepal.media.interface :as media.i]
+            [sepal.media.interface.permission :as media.perm]))
 
 (def media-loader (middleware/default-loader media.i/get-by-id :id parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/" {:name media.routes/index
+         :permission media.perm/view
          :handler #'index/handler}]
    ["/s3" {:name media.routes/s3
-           :middleware [[middleware/require-editor-or-admin]]
+           :permission media.perm/create
            :handler #'s3/handler}]
    ["/uploaded" {:name media.routes/uploaded
-                 :middleware [[middleware/require-editor-or-admin]]
+                 :permission media.perm/create
                  :handler #'uploaded/handler}]
    ["/:id" {:middleware [[middleware/resource-loader media-loader]]
             :parameters {:path {:id nat-int?}}
@@ -29,17 +31,20 @@
     ;; A reader sees the page with its actions hidden; saving needs an editor.
     ["/"
      {:name media.routes/detail
+      :permission media.perm/view
       :get #'detail/get-handler
-      :post {:middleware [[middleware/require-editor-or-admin]]
+      :post {:permission media.perm/edit
              :handler #'detail/post-handler}}]
     ["/delete/" {:name media.routes/delete
-                 :middleware [[middleware/require-editor-or-admin]]
+                 :permission media.perm/delete
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/link/" {:name media.routes/detail-link
-               :middleware [[middleware/require-editor-or-admin]]
+               :permission media.perm/edit
                :handler #'link/handler}]
     ["/panel/" {:name media.routes/panel
+                :permission media.perm/view
                 :handler #'panel/handler}]
     ["/transform" {:name media.routes/transform
+                   :permission media.perm/view
                    :get #'transform/handler}]]])

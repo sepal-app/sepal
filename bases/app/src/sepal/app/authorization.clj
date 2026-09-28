@@ -26,6 +26,8 @@
 
 (def activity-view ::activity-view)
 
+(def observation-view ::observation-view)
+
 (def permissions
   "Map of role -> set of permissions granted to that role."
   {:admin #{organization-view organization-edit
@@ -40,7 +42,7 @@
             tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
             profile-view profile-edit
             security-view security-edit
-            activity-view}
+            activity-view observation-view}
 
    :editor #{accession.perm/view accession.perm/create accession.perm/edit accession.perm/delete
              taxon.perm/view taxon.perm/create taxon.perm/edit taxon.perm/delete
@@ -52,7 +54,7 @@
              tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
              profile-view profile-edit
              security-view security-edit
-             activity-view}
+             activity-view observation-view}
 
    :reader #{accession.perm/view
              taxon.perm/view
@@ -64,7 +66,7 @@
              tag.perm/view
              profile-view profile-edit
              security-view security-edit
-             activity-view}})
+             activity-view observation-view}})
 
 (defn has-permission?
   "Check if a role has a specific permission."
