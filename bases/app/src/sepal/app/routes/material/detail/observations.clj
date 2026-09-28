@@ -157,7 +157,7 @@
 (defn create-handler
   "Creates an observation and answers with the swapped list."
   [{:keys [::z/context form-params viewer]}]
-  (let [{:keys [db material-separator resource timezone]} context
+  (let [{:keys [db resource timezone]} context
         id (:material/id resource)]
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                     _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
