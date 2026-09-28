@@ -2,8 +2,10 @@
   "Resource panel content for accessions.
    Displays accession summary, statistics, linked resources, and activity."
   (:require [sepal.accession.interface :as accession.i]
+            [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -195,7 +197,7 @@
 
 (defn handler
   "Handler for accession panel route. Returns HTML fragment for HTMX."
-  [{:keys [::z/context]}]
+  [{:keys [::z/context viewer]}]
   (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
@@ -213,5 +215,6 @@
         ;; Only here, not from a record page: that page already carries the
         ;; same menu in its top bar, and a second one would put a second
         ;; #delete-modal-container on the page.
-        :actions (accession.shared/actions :accession resource)
+        :actions (when (authz/user-has-permission? viewer accession.perm/edit)
+                   (accession.shared/actions :accession resource))
         :timezone timezone))))

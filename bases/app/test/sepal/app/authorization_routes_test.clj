@@ -6,6 +6,8 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*app* *db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
@@ -182,6 +184,25 @@
       (is (= 200 (:status response)))
       ;; Create button has specific class and text - check it's not present
       (is (not (body-contains? response "btn-primary[^>]*>Create<"))))))
+
+(deftest panel-actions-visibility-test
+  (tf/testing "the side panel's Actions menu is shown only to roles that can edit"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [taxon accession material]}]
+      (doseq [[role shown?] [[:editor true] [:reader false]]
+              :let [sess (login-as *db* role)]
+              path [(str "/accession/" (:accession/id accession) "/panel/")
+                    (str "/material/" (:material/id material) "/panel/")
+                    (str "/taxon/" (:taxon/id taxon) "/panel/")]]
+        (testing (str role " " path)
+          (let [{:keys [response]} (peri/request sess path)]
+            (is (= 200 (:status response)))
+            (is (= shown? (boolean (body-contains? response "spl-actions-menu"))))))))))
 
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"
