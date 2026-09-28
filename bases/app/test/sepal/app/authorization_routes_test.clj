@@ -3,12 +3,17 @@
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*app* *db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
+            [sepal.note.interface :as note.i]
+            [sepal.note.interface.permission :as note.perm]
+            [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.permission :as observation.perm]
             [sepal.propagation.interface :as propagation.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -269,6 +274,48 @@
                                                           :description ""})]
             (is (= 200 (:status response)))
             (is (= "Renamed" (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))))))))
+
+(deftest notes-and-observations-use-their-own-permissions-test
+  (tf/testing "adding a note or an observation needs its own create permission"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [accession material]}]
+      ;; A reader given only the two create permissions: the parent records'
+      ;; edit permission is still missing.
+      (with-redefs [authz/permissions (update authz/permissions :reader conj
+                                              note.perm/create observation.perm/create)]
+        (let [{:keys [response] :as sess} (peri/request (login-as *db* :reader) "/settings/profile")
+              token (test.i/response-anti-forgery-token response)
+              notes (str "/accession/" (:accession/id accession) "/notes/")
+              observations (str "/material/" (:material/id material) "/observations/")]
+          (testing "the tabs still need the parent's edit permission"
+            (is (= 302 (:status (:response (peri/request sess notes)))))
+            (is (= 302 (:status (:response (peri/request sess observations))))))
+
+          (testing "a note needs only note.perm/create"
+            (is (= 200 (:status (:response (peri/request sess notes
+                                                         :request-method :post
+                                                         :params {:__anti-forgery-token token
+                                                                  :body "A reader's note"})))))
+            (is (some #(= "A reader's note" (:note/body %))
+                      (note.i/get-for-resource *db* :accession (:accession/id accession)))))
+
+          (testing "an observation needs only observation.perm/create"
+            (is (= 200 (:status (:response (peri/request sess observations
+                                                         :request-method :post
+                                                         :params {:__anti-forgery-token token
+                                                                  :type "general"
+                                                                  :value ""
+                                                                  :observed_on "2026-01-01"
+                                                                  :observed_by ""
+                                                                  :next_check_on ""
+                                                                  :note "A reader's observation"})))))
+            (is (some #(= "A reader's observation" (:observation/note %))
+                      (observation.i/get-for-resource *db* :material (:material/id material))))))))))
 
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"

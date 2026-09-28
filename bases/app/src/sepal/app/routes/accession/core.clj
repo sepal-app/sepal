@@ -16,7 +16,8 @@
             [sepal.app.routes.accession.next-code :as next-code]
             [sepal.app.routes.accession.panel :as panel]
             [sepal.app.routes.accession.provenance-suggestion :as provenance-suggestion]
-            [sepal.app.routes.accession.routes :as routes]))
+            [sepal.app.routes.accession.routes :as routes]
+            [sepal.note.interface.permission :as note.perm]))
 
 (def accession-loader
   (middleware/default-loader accession.i/get-by-id
@@ -75,11 +76,14 @@
     ["/notes/" {:name routes/detail-notes
                 :permission accession.perm/edit
                 :permission-redirect routes/detail
-                :handler #'detail-notes/handler}]
+                :get #'detail-notes/get-handler
+                :post {:permission note.perm/create
+                       :handler #'detail-notes/create-handler}}]
     ["/notes/:note-id/" {:name routes/detail-note
-                         :permission accession.perm/edit
-                         :permission-redirect routes/detail
-                         :handler #'detail-notes/note-handler}]
+                         :post {:permission note.perm/edit
+                                :handler #'detail-notes/update-handler}
+                         :delete {:permission note.perm/delete
+                                  :handler #'detail-notes/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
                :permission accession.perm/edit
                :permission-redirect routes/detail

@@ -12,7 +12,8 @@
             [sepal.app.routes.location.panel :as panel]
             [sepal.app.routes.location.routes :as routes]
             [sepal.location.interface :as location.i]
-            [sepal.location.interface.permission :as location.perm]))
+            [sepal.location.interface.permission :as location.perm]
+            [sepal.observation.interface.permission :as observation.perm]))
 
 (def location-loader
   (middleware/default-loader location.i/get-by-id
@@ -47,15 +48,18 @@
     ["/observations/" {:name routes/detail-observations
                        :permission location.perm/edit
                        :permission-redirect routes/detail
-                       :handler #'detail-observations/handler}]
+                       :get #'detail-observations/get-handler
+                       :post {:permission observation.perm/create
+                              :handler #'detail-observations/create-handler}}]
     ["/media/" {:name routes/detail-media
                 :permission location.perm/edit
                 :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/:observation-id/" {:name routes/detail-observation
-                                       :permission location.perm/edit
-                                       :permission-redirect routes/detail
-                                       :handler #'detail-observations/observation-handler}]
+                                       :post {:permission observation.perm/edit
+                                              :handler #'detail-observations/update-handler}
+                                       :delete {:permission observation.perm/delete
+                                                :handler #'detail-observations/delete-handler}}]
     ["/delete/" {:name routes/delete
                  :permission location.perm/delete
                  :permission-redirect routes/detail

@@ -126,45 +126,54 @@
    :note (:note data)
    :created-by created-by})
 
-(defn handler
-  [{:keys [::z/context form-params request-method viewer]}]
+(defn get-handler
+  "Renders the tab."
+  [{:keys [::z/context]}]
+  (let [{:keys [db resource timezone]} context
+        id (:location/id resource)
+        panel-data (location.panel/fetch-panel-data db resource)]
+    (render :db db
+            :location resource
+            :observations (observation.i/get-for-resource db resource-type id)
+            :panel-data panel-data
+            :timezone timezone)))
+
+(defn create-handler
+  "Creates an observation and answers with the swapped list."
+  [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db resource timezone]} context
         id (:location/id resource)]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
-                      _saved (f/try* (write! db (:user/id viewer)
-                                             (fn [tx created-by]
-                                               (let [observation (observation.i/create! tx (observation-data id data created-by))]
-                                                 (observation.activity/create! tx observation.activity/created created-by observation)
-                                                 observation))))]
-        (render-list db resource timezone)
-        (f/when-failed [e]
-          ;; The one failure this route classifies itself: a future date is a
-          ;; field error, not a generic save failure.
-          (if (error.i/error? e ::future-observed-on)
-            (future-date-error nil)
-            (http/failure-partial e (tr "The observation could not be saved.")))))
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
+                    _saved (f/try* (write! db (:user/id viewer)
+                                           (fn [tx created-by]
+                                             (let [observation (observation.i/create! tx (observation-data id data created-by))]
+                                               (observation.activity/create! tx observation.activity/created created-by observation)
+                                               observation))))]
+      (render-list db resource timezone)
+      (f/when-failed [e]
+        ;; The one failure this route classifies itself: a future date is a
+        ;; field error, not a generic save failure.
+        (if (error.i/error? e ::future-observed-on)
+          (future-date-error nil)
+          (http/failure-partial e (tr "The observation could not be saved.")))))))
 
-      (let [panel-data (location.panel/fetch-panel-data db resource)]
-        (render :db db
-                :location resource
-                :observations (observation.i/get-for-resource db resource-type id)
-                :panel-data panel-data
-                :timezone timezone)))))
-
-(defn observation-handler
-  [{:keys [::z/context form-params path-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
-        observation-id (parse-long (str (:observation-id path-params)))
+(defn- resource-observation
+  "The observation in the path, or nil when it belongs to another record."
+  [db resource path-params]
+  (let [observation-id (parse-long (str (:observation-id path-params)))
         observation (when observation-id (observation.i/get-by-id db observation-id))]
-    (if-not (and observation
-                 (= resource-type (:observation/resource-type observation))
-                 (= (:location/id resource) (:observation/resource-id observation)))
-      (http/not-found)
-      (case request-method
-        :post
+    (when (and observation
+               (= resource-type (:observation/resource-type observation))
+               (= (:location/id resource) (:observation/resource-id observation)))
+      observation)))
+
+(defn update-handler
+  "Updates one observation and answers with the swapped list."
+  [{:keys [::z/context form-params path-params viewer]}]
+  (let [{:keys [db resource timezone]} context]
+    (if-let [observation (resource-observation db resource path-params)]
+      (let [observation-id (:observation/id observation)]
         (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                         _future-check (not-in-the-future (:observed_on data) (str (datetime/today timezone)))
                         _saved (f/try* (write! db (:user/id viewer)
@@ -183,15 +192,20 @@
             (if (error.i/error? e ::future-observed-on)
               (future-date-error observation-id)
               (http/failure-partial e (tr "The observation could not be saved.")
-                                    :id-suffix observation-id))))
+                                    :id-suffix observation-id)))))
+      (http/not-found))))
 
-        :delete
+(defn delete-handler
+  "Removes one observation and answers with the swapped list."
+  [{:keys [::z/context path-params viewer]}]
+  (let [{:keys [db resource timezone]} context]
+    (if-let [observation (resource-observation db resource path-params)]
+      (let [observation-id (:observation/id observation)]
         (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
                                                  (fn [tx created-by]
                                                    (observation.activity/create! tx observation.activity/deleted created-by observation)
                                                    (observation.i/delete! tx observation-id))))]
           (render-list db resource timezone)
           (f/when-failed [e]
-            (http/failure-partial e (tr "The observation could not be deleted."))))
-
-        (http/not-found)))))
+            (http/failure-partial e (tr "The observation could not be deleted.")))))
+      (http/not-found))))

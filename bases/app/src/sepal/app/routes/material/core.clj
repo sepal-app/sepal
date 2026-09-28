@@ -13,7 +13,8 @@
             [sepal.app.routes.material.panel :as panel]
             [sepal.app.routes.material.routes :as routes]
             [sepal.material.interface :as material.i]
-            [sepal.material.interface.permission :as material.perm]))
+            [sepal.material.interface.permission :as material.perm]
+            [sepal.observation.interface.permission :as observation.perm]))
 
 (def material-loader
   (middleware/default-loader material.i/get-by-id
@@ -57,11 +58,14 @@
     ["/observations/" {:name routes/detail-observations
                        :permission material.perm/edit
                        :permission-redirect routes/detail
-                       :handler #'detail-observations/handler}]
+                       :get #'detail-observations/get-handler
+                       :post {:permission observation.perm/create
+                              :handler #'detail-observations/create-handler}}]
     ["/observations/:observation-id/" {:name routes/detail-observation
-                                       :permission material.perm/edit
-                                       :permission-redirect routes/detail
-                                       :handler #'detail-observations/observation-handler}]
+                                       :post {:permission observation.perm/edit
+                                              :handler #'detail-observations/update-handler}
+                                       :delete {:permission observation.perm/delete
+                                                :handler #'detail-observations/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
                :permission material.perm/edit
                :permission-redirect routes/detail

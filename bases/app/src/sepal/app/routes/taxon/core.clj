@@ -15,6 +15,7 @@
             [sepal.app.routes.taxon.parentage-row :as parentage-row]
             [sepal.app.routes.taxon.rank-guess :as rank-guess]
             [sepal.app.routes.taxon.routes :as routes]
+            [sepal.note.interface.permission :as note.perm]
             [sepal.taxon.interface :as taxon.i]
             [sepal.taxon.interface.permission :as taxon.perm]))
 
@@ -71,11 +72,14 @@
     ["/notes/" {:name routes/detail-notes
                 :permission taxon.perm/edit
                 :permission-redirect routes/detail
-                :handler #'detail-notes/handler}]
+                :get #'detail-notes/get-handler
+                :post {:permission note.perm/create
+                       :handler #'detail-notes/create-handler}}]
     ["/notes/:note-id/" {:name routes/detail-note
-                         :permission taxon.perm/edit
-                         :permission-redirect routes/detail
-                         :handler #'detail-notes/note-handler}]
+                         :post {:permission note.perm/edit
+                                :handler #'detail-notes/update-handler}
+                         :delete {:permission note.perm/delete
+                                  :handler #'detail-notes/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
                :permission taxon.perm/edit
                :permission-redirect routes/detail

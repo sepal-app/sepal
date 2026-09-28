@@ -5,6 +5,8 @@
             [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
             [sepal.media.interface.permission :as media.perm]
+            [sepal.note.interface.permission :as note.perm]
+            [sepal.observation.interface.permission :as observation.perm]
             [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.tag.interface.permission :as tag.perm]
             [sepal.taxon.interface.permission :as taxon.perm]))
@@ -26,8 +28,6 @@
 
 (def activity-view ::activity-view)
 
-(def observation-view ::observation-view)
-
 (def permissions
   "Map of role -> set of permissions granted to that role."
   {:admin #{organization-view organization-edit
@@ -40,9 +40,11 @@
             media.perm/view media.perm/create media.perm/edit media.perm/delete
             propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
             tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
+            note.perm/view note.perm/create note.perm/edit note.perm/delete
+            observation.perm/view observation.perm/create observation.perm/edit observation.perm/delete
             profile-view profile-edit
             security-view security-edit
-            activity-view observation-view}
+            activity-view}
 
    :editor #{accession.perm/view accession.perm/create accession.perm/edit accession.perm/delete
              taxon.perm/view taxon.perm/create taxon.perm/edit taxon.perm/delete
@@ -52,9 +54,11 @@
              media.perm/view media.perm/create media.perm/edit media.perm/delete
              propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
              tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
+             note.perm/view note.perm/create note.perm/edit note.perm/delete
+             observation.perm/view observation.perm/create observation.perm/edit observation.perm/delete
              profile-view profile-edit
              security-view security-edit
-             activity-view observation-view}
+             activity-view}
 
    :reader #{accession.perm/view
              taxon.perm/view
@@ -64,9 +68,11 @@
              media.perm/view
              propagation.perm/view
              tag.perm/view
+             note.perm/view
+             observation.perm/view
              profile-view profile-edit
              security-view security-edit
-             activity-view observation-view}})
+             activity-view}})
 
 (defn has-permission?
   "Check if a role has a specific permission."
