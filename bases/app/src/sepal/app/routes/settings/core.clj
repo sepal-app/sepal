@@ -19,7 +19,7 @@
   [""
    ["" {:name settings.routes/index
         :permission authz/profile-view
-        :handler (fn [_] (http/see-other settings.routes/profile))}]
+        :get (fn [_] (http/see-other settings.routes/profile))}]
    ["/profile" {:name settings.routes/profile
                 :permission authz/profile-edit
                 :handler #'profile/handler}]

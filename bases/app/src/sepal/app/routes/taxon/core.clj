@@ -24,11 +24,11 @@
   [""
    ["/" {:name routes/index
          :permission taxon.perm/view
-         :handler #'index/handler}]
+         :get #'index/handler}]
    ["/export/" {:name routes/export
                 :permission taxon.perm/view
                 :conflicting true
-                :handler #'export/handler}]
+                :get #'export/handler}]
    ["/parent-suggestion/" {:name routes/parent-suggestion
                            :permission taxon.perm/create
                            :handler #'parent-suggestion/handler
@@ -51,7 +51,7 @@
             :conflicting true}
     ["/" {:name routes/detail
           :permission taxon.perm/view
-          :handler #'detail/handler}]
+          :get #'detail/handler}]
     ["/name/" {:name routes/detail-name
                :permission taxon.perm/edit
                :permission-redirect routes/detail

@@ -20,12 +20,12 @@
    ["/"
     {:name routes/index
      :permission contact.perm/view
-     :handler #'index/handler}]
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
      :permission contact.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/new/"
     {:name routes/new
      :permission contact.perm/create
@@ -45,4 +45,4 @@
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :permission contact.perm/view
-                :handler #'panel/handler}]]])
+                :get #'panel/handler}]]])

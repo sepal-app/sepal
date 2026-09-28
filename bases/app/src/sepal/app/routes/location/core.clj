@@ -24,12 +24,12 @@
    ["/"
     {:name routes/index
      :permission location.perm/view
-     :handler #'index/handler}]
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
      :permission location.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/new/"
     {:name routes/new
      :permission location.perm/create
@@ -39,7 +39,7 @@
             :conflicting true}
     ["/" {:name routes/detail
           :permission location.perm/view
-          :handler #'detail/handler}]
+          :get #'detail/handler}]
     ["/general/" {:name routes/detail-general
                   :permission location.perm/edit
                   :permission-redirect routes/detail
@@ -74,4 +74,4 @@
                     :post #'archive/unarchive-handler}]
     ["/panel/" {:name routes/panel
                 :permission location.perm/view
-                :handler #'panel/handler}]]])
+                :get #'panel/handler}]]])

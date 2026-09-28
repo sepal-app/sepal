@@ -16,7 +16,7 @@
 (defn routes []
   [""
    ["/" {:name routes/index
-         :permission tag.perm/view :handler #'index/handler}]
+         :permission tag.perm/view :get #'index/handler}]
    ["/:id" {:middleware [[middleware/resource-loader tag-loader]]}
     ["/" {:name routes/detail
           :permission tag.perm/view

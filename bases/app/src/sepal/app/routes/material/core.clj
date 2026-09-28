@@ -25,12 +25,12 @@
    ["/"
     {:name routes/index
      :permission material.perm/view
-     :handler #'index/handler}]
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
      :permission material.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/next-code/"
     {:name routes/next-code
      :conflicting true
@@ -45,7 +45,7 @@
             :conflicting true}
     ["/" {:name routes/detail
           :permission material.perm/view
-          :handler #'detail/handler}]
+          :get #'detail/handler}]
     ["/general/" {:name routes/detail-general
                   :permission material.perm/edit
                   :permission-redirect routes/detail
@@ -72,7 +72,7 @@
                        :delete #'detail-tags/row-handler}]
     ["/history/" {:name routes/history
                   :permission material.perm/view
-                  :handler #'panel/history-handler}]
+                  :get #'panel/history-handler}]
     ["/delete/" {:name routes/delete
                  :permission material.perm/delete
                  :permission-redirect routes/detail
@@ -80,4 +80,4 @@
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
                 :permission material.perm/view
-                :handler #'panel/handler}]]])
+                :get #'panel/handler}]]])

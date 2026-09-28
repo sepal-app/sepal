@@ -21,12 +21,12 @@
    ["/"
     {:name routes/index
      :permission propagation.perm/view
-     :handler #'index/handler}]
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
      :permission propagation.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/new/"
     {:name routes/new
      :permission propagation.perm/create
@@ -46,7 +46,7 @@
                  :handler #'detail/post-handler}}]
     ["/panel/" {:name routes/panel
                 :permission propagation.perm/view
-                :handler #'panel/handler}]
+                :get #'panel/handler}]
     ["/status/" {:name routes/status
                  :permission propagation.perm/edit
                  :permission-redirect routes/detail

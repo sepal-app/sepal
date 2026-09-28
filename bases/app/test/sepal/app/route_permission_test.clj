@@ -55,6 +55,22 @@
 (deftest only-leaf-routes-declare-a-permission
   (is (empty? (groups-with-permission (server/routes)))))
 
+(def ^:private reader-writable
+  "The routes a reader may send more than a GET: their own profile and
+  password."
+  #{"/settings/profile" "/settings/security"})
+
+(deftest routes-open-to-readers-answer-only-get
+  ;; The mutating-request test below reads its expectations from the declared
+  ;; permissions, so it can't see one that is too weak. This can: an edit
+  ;; route declared with a view permission shows up here.
+  (is (empty? (for [[path data] (route-table)
+                    [method permission] (methods-of data)
+                    :when (and (some #{method} mutating)
+                               (authz/has-permission? :reader permission)
+                               (not (reader-writable path)))]
+                (str (str/upper-case (name method)) " " path)))))
+
 (defn- session-as [role]
   (let [email (str (name role) "-" (random-uuid) "@test.com")]
     (user.i/create! *db* {:email email :password "password123" :role role})

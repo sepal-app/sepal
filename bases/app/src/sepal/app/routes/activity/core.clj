@@ -6,4 +6,4 @@
 (defn routes []
   ["" {:name routes/index
        :permission authz/activity-view
-       :handler #'index/handler}])
+       :get #'index/handler}])

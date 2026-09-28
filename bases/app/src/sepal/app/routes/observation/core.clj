@@ -9,8 +9,8 @@
    ["/"
     {:name routes/index
      :permission authz/observation-view
-     :handler #'index/handler}]
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
      :permission authz/observation-view
-     :handler #'export/handler}]])
+     :get #'export/handler}]])

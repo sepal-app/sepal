@@ -18,7 +18,7 @@
   [""
    ["/" {:name media.routes/index
          :permission media.perm/view
-         :handler #'index/handler}]
+         :get #'index/handler}]
    ["/s3" {:name media.routes/s3
            :permission media.perm/create
            :handler #'s3/handler}]
@@ -44,7 +44,7 @@
                :handler #'link/handler}]
     ["/panel/" {:name media.routes/panel
                 :permission media.perm/view
-                :handler #'panel/handler}]
+                :get #'panel/handler}]
     ["/transform" {:name media.routes/transform
                    :permission media.perm/view
                    :get #'transform/handler}]]])
