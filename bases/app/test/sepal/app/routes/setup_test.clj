@@ -193,6 +193,26 @@
         (is (redirect? response))
         (is (= "/" (get-in response [:headers "Location"])))))))
 
+(deftest login-during-setup-test
+  (testing "with no admin, /login sends the visitor to the wizard"
+    (let [{:keys [response]} (-> (peri/session *app*)
+                                 (peri/request "/login"))]
+      (is (redirect? response))
+      (is (= "/setup" (get-in response [:headers "Location"])))))
+
+  (tf/testing "once an admin exists, the admin can log in to finish setup"
+    {[::user.i/factory :key/admin] {:db *db*
+                                    :role :admin
+                                    :email "cli-admin@test.com"
+                                    :password "password123"}}
+    (fn [_]
+      (let [{:keys [response]} (-> (peri/session *app*)
+                                   (peri/request "/login"))]
+        (is (= 200 (:status response))))
+      (let [sess (app.test/login "cli-admin@test.com" "password123")
+            {:keys [response]} (peri/request sess "/setup/admin")]
+        (is (body-contains? response "has been created"))))))
+
 (deftest admin-form-validation-test
   (testing "password confirmation must match"
     ;; This test requires no admin to exist. If one exists from another test,

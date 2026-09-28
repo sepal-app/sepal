@@ -249,7 +249,8 @@
 (defn- setup-excluded-path?
   "Returns true if the path should be excluded from setup redirect.
    Only setup routes, static assets, and health check are excluded.
-   Auth routes are NOT excluded - if setup isn't complete, there's no user to log in as."
+   Auth routes are NOT excluded. wrap-setup-required lets /login through only
+   once an admin exists."
   [path]
   (or (str/starts-with? path "/setup")
       (str/starts-with? path "/static")
@@ -263,7 +264,10 @@
   (fn [{:keys [::z/context uri] :as request}]
     (let [{:keys [db]} context]
       (if (or (setup-excluded-path? uri)
-              (setup.shared/setup-complete? db))
+              (setup.shared/setup-complete? db)
+              ;; An admin made before the wizard, such as with the CLI, logs in
+              ;; to finish it.
+              (and (= uri "/login") (setup.shared/admin-exists? db)))
         (handler request)
         (http/see-other setup.routes/index)))))
 
