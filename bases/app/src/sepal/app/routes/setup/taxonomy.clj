@@ -154,9 +154,8 @@
 
     (case request-method
       :post
-      ;; can-import-wfo? is the guard, not decoration: setup routes carry no
-      ;; auth middleware, so until setup is complete this is what stops an
-      ;; unauthenticated caller kicking off a 127 MB download when taxa exist.
+      ;; can-import-wfo? is the guard, not decoration: it is what stops a
+      ;; second 127 MB download into a garden that already has taxa.
       (if-not can-import?
         (http/see-other setup.routes/review)
         (do

@@ -15,15 +15,16 @@
         :handler #'index/handler}]
    ["/admin" {:name setup.routes/admin
               :handler #'admin/handler}]
-   ["/server" {:name setup.routes/server
-               :handler #'server/handler}]
-   ["/organization" {:name setup.routes/organization
-                     :handler #'organization/handler}]
-   ["/regional" {:name setup.routes/regional
-                 :handler #'regional/handler}]
-   ["/taxonomy" {:name setup.routes/taxonomy
-                 :handler #'taxonomy/handler}]
-   ["/taxonomy/progress" {:name setup.routes/taxonomy-progress
-                          :handler #'taxonomy/progress-handler}]
-   ["/review" {:name setup.routes/review
-               :handler #'review/handler}]])
+   ["" {:middleware [[middleware/require-setup-admin]]}
+    ["/server" {:name setup.routes/server
+                :handler #'server/handler}]
+    ["/organization" {:name setup.routes/organization
+                      :handler #'organization/handler}]
+    ["/regional" {:name setup.routes/regional
+                  :handler #'regional/handler}]
+    ["/taxonomy" {:name setup.routes/taxonomy
+                  :handler #'taxonomy/handler}]
+    ["/taxonomy/progress" {:name setup.routes/taxonomy-progress
+                           :handler #'taxonomy/progress-handler}]
+    ["/review" {:name setup.routes/review
+                :handler #'review/handler}]]])

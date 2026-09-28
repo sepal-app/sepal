@@ -213,6 +213,46 @@
             {:keys [response]} (peri/request sess "/setup/admin")]
         (is (body-contains? response "has been created"))))))
 
+(deftest setup-steps-require-admin-session-test
+  (tf/testing "steps after the admin step need the admin's session"
+    {[::user.i/factory :key/admin] {:db *db*
+                                    :role :admin
+                                    :email "steps-admin@test.com"
+                                    :password "password123"}
+     [::user.i/factory :key/editor] {:db *db*
+                                     :role :editor
+                                     :email "steps-editor@test.com"
+                                     :password "password123"}}
+    (fn [_]
+      (settings.i/set-value! *db* "organization.long_name" "Before")
+      (let [{:keys [response] :as anon} (-> (peri/session *app*)
+                                            (peri/request "/login"))
+            token (get-anti-forgery-token response)]
+        (testing "an anonymous GET goes back to the admin step"
+          (doseq [path ["/setup/server" "/setup/organization" "/setup/regional"
+                        "/setup/taxonomy" "/setup/taxonomy/progress" "/setup/review"]]
+            (let [{:keys [response]} (peri/request anon path)]
+              (is (redirect? response) path)
+              (is (= "/setup/admin" (get-in response [:headers "Location"])) path))))
+
+        (testing "an anonymous POST is refused and writes nothing"
+          (let [{:keys [response]} (peri/request anon "/setup/organization"
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token token
+                                                          :long_name "After"})]
+            (is (= 403 (:status response)))
+            (is (= "Before" (settings.i/get-value *db* "organization.long_name"))))))
+
+      (testing "an editor's session is not enough"
+        (let [{:keys [response]} (-> (app.test/login "steps-editor@test.com" "password123")
+                                     (peri/request "/setup/organization"))]
+          (is (= "/setup/admin" (get-in response [:headers "Location"])))))
+
+      (testing "the admin's session reaches the steps"
+        (let [{:keys [response]} (-> (app.test/login "steps-admin@test.com" "password123")
+                                     (peri/request "/setup/organization"))]
+          (is (= 200 (:status response))))))))
+
 (deftest admin-form-validation-test
   (testing "password confirmation must match"
     ;; This test requires no admin to exist. If one exists from another test,

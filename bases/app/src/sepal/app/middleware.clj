@@ -286,3 +286,20 @@
 
       :else
       (forbidden-response request))))
+
+(defn require-setup-admin
+  "Middleware for the setup steps after the admin step. The admin step logs in
+   the admin it creates, so these steps need an active admin's session. Without
+   one, a GET goes back to the admin step and any other method is refused."
+  [handler]
+  (fn [{:keys [::z/context request-method session] :as request}]
+    (let [user (some->> (:user/id session) (user.i/get-by-id (:db context)))]
+      (cond
+        (and (authz/admin? user) (= :active (:user/status user)))
+        (handler request)
+
+        (#{:get :head} request-method)
+        (http/see-other setup.routes/admin)
+
+        :else
+        (forbidden-response request)))))

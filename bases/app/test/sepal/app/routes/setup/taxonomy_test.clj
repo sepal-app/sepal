@@ -7,11 +7,21 @@
             [ring.core.protocols :as ring.protocols]
             [sepal.app.instance :as instance]
             [sepal.app.routes.setup.shared :as setup.shared]
+            [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
-            [sepal.app.test.system :refer [*app* *db* *system* default-system-fixture]]
-            [sepal.taxon.interface :as taxon.i]))
+            [sepal.app.test.system :refer [*db* *system* default-system-fixture]]
+            [sepal.taxon.interface :as taxon.i]
+            [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
+
+(defn- admin-session
+  "A session logged in as a new admin, which the steps after the admin step
+  require."
+  []
+  (let [email (str "admin-" (random-uuid) "@test.com")]
+    (user.i/create! *db* {:email email :password "password123" :role :admin})
+    (app.test/login email "password123")))
 
 (defn- tracker []
   (get *system* ::instance/setup-job))
@@ -56,7 +66,7 @@
 (deftest test-the-idle-step-offers-the-import
   (testing "with an empty taxon table and no job running, the page is the start
             button and not a progress bar"
-    (let [{:keys [response]} (-> (peri/session *app*)
+    (let [{:keys [response]} (-> (admin-session)
                                  (peri/request "/setup/taxonomy"))]
       (is (= 200 (:status response)))
       (is (str/includes? (:body response) "Import WFO Plant List"))
@@ -67,7 +77,7 @@
             redirect would have nothing to report progress into"
     (let [seen (atom [])]
       (with-redefs [setup.shared/default-import-opts (stub-import-opts seen)]
-        (let [sess (peri/session *app*)
+        (let [sess (admin-session)
               {:keys [response] :as sess} (peri/request sess "/setup/taxonomy")
               {:keys [response]} (peri/request sess "/setup/taxonomy"
                                                :request-method :post
@@ -83,7 +93,7 @@
 (deftest test-a-get-during-a-running-job-rejoins-rather-than-restarts
   (testing "a reload mid-download must not show the start button again"
     (reset! (tracker) {:phase :downloading-taxa :bytes-done 5 :bytes-total 10})
-    (let [{:keys [response]} (-> (peri/session *app*)
+    (let [{:keys [response]} (-> (admin-session)
                                  (peri/request "/setup/taxonomy"))]
       (is (= 200 (:status response)))
       (is (str/includes? (:body response) "x-setup-progress"))
@@ -93,9 +103,8 @@
       (is (str/includes? (:body response) "downloading-taxa")))))
 
 (deftest test-a-post-with-taxa-already-present-starts-nothing
-  (testing "setup routes carry no auth middleware, so until setup is complete
-            can-import-wfo? is what stops an unauthenticated caller triggering a
-            127 MB download when taxa exist"
+  (testing "can-import-wfo? is what stops a second 127 MB download into a
+            garden that already has taxa"
     (tf/testing "a garden with a taxon"
       {[::taxon.i/factory :key/taxon] {:db *db*}}
       (fn [_]
@@ -105,7 +114,7 @@
             ;; taxa-already-exist view renders no form and so carries none, and
             ;; a request with no token is refused by CSRF before it ever reaches
             ;; the handler this test is about.
-            (let [sess (peri/session *app*)
+            (let [sess (admin-session)
                   {:keys [response] :as sess} (peri/request sess "/setup/regional")
                   {:keys [response]} (peri/request sess "/setup/taxonomy"
                                                    :request-method :post
@@ -118,11 +127,10 @@
 
 (deftest test-the-progress-route-returns-promptly-on-an-idle-install
   ;; The each-fixture leaves the tracker idle, which is the state of an install
-  ;; whose wizard has not reached the import. /setup is exempt from the
-  ;; setup-required redirect and carries no auth middleware, so until setup is
-  ;; complete this body is what an unauthenticated `curl -N` gets. If it does
-  ;; not return, 200 of them exhaust the Jetty pool.
-  (let [{:keys [response]} (-> (peri/session *app*)
+  ;; whose wizard has not reached the import. If this body does not return,
+  ;; every open progress request pins a thread, and 200 of them exhaust the
+  ;; Jetty pool.
+  (let [{:keys [response]} (-> (admin-session)
                                (peri/request "/setup/taxonomy/progress"))
         out (java.io.ByteArrayOutputStream.)
         worker (future
@@ -130,12 +138,12 @@
                  :returned)]
     (is (= 200 (:status response)))
     (is (= :returned (deref worker 2000 ::timed-out))
-        "the idle stream never ended, so an unauthenticated GET pins a thread")
+        "the idle stream never ended, so a GET pins a thread")
     (is (str/includes? (.toString out "UTF-8") "\"phase\":\"idle\""))))
 
 (deftest test-the-progress-route-streams-server-sent-events
   (reset! (tracker) {:phase :done :taxa-count 42 :wfo-version "2025-12_2"})
-  (let [{:keys [response]} (-> (peri/session *app*)
+  (let [{:keys [response]} (-> (admin-session)
                                (peri/request "/setup/taxonomy/progress"))]
     (is (= 200 (:status response)))
     (is (= "text/event-stream" (get-in response [:headers "Content-Type"])))
