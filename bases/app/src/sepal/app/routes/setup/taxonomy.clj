@@ -155,8 +155,8 @@
     (case request-method
       :post
       ;; can-import-wfo? is the guard, not decoration: setup routes carry no
-      ;; auth middleware, so this is what stops an unauthenticated caller
-      ;; kicking off a 127 MB download against an already-configured install.
+      ;; auth middleware, so until setup is complete this is what stops an
+      ;; unauthenticated caller kicking off a 127 MB download when taxa exist.
       (if-not can-import?
         (http/see-other setup.routes/review)
         (do

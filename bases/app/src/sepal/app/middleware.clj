@@ -7,6 +7,7 @@
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.dashboard.routes :as dashboard.routes]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
@@ -265,3 +266,19 @@
               (setup.shared/setup-complete? db))
         (handler request)
         (http/see-other setup.routes/index)))))
+
+(defn require-setup-incomplete
+  "Middleware that closes the setup wizard once setup is complete. The wizard
+   carries no auth, so after completion a GET redirects to the dashboard and
+   any other method is refused."
+  [handler]
+  (fn [{:keys [::z/context request-method] :as request}]
+    (cond
+      (not (setup.shared/setup-complete? (:db context)))
+      (handler request)
+
+      (#{:get :head} request-method)
+      (http/see-other dashboard.routes/index)
+
+      :else
+      (forbidden-response request))))

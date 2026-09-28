@@ -1,5 +1,6 @@
 (ns sepal.app.routes.setup.core
-  (:require [sepal.app.routes.setup.admin :as admin]
+  (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.setup.admin :as admin]
             [sepal.app.routes.setup.index :as index]
             [sepal.app.routes.setup.organization :as organization]
             [sepal.app.routes.setup.regional :as regional]
@@ -9,7 +10,7 @@
             [sepal.app.routes.setup.taxonomy :as taxonomy]))
 
 (defn routes []
-  ["" {}
+  ["" {:middleware [[middleware/require-setup-incomplete]]}
    ["" {:name setup.routes/index
         :handler #'index/handler}]
    ["/admin" {:name setup.routes/admin

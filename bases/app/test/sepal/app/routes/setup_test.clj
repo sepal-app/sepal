@@ -163,6 +163,36 @@
           (is (body-contains? response "Complete Setup"))
           (is (body-contains? response "__anti-forgery-token")))))))
 
+(deftest setup-closed-once-complete-test
+  (setup.shared/complete-setup! *db*)
+  (settings.i/set-value! *db* "organization.long_name" "Before")
+  (settings.i/set-value! *db* "organization.timezone" "UTC")
+  (let [completed-at (settings.i/get-value *db* "setup.completed_at")
+        ;; The login page gives an anonymous session a valid CSRF token.
+        {:keys [response] :as sess} (-> (peri/session *app*)
+                                        (peri/request "/login"))
+        token (get-anti-forgery-token response)
+        post (fn [path params]
+               (:response (peri/request sess path
+                                        :request-method :post
+                                        :params (assoc params :__anti-forgery-token token))))]
+    (testing "an anonymous POST to a setup step is refused and writes nothing"
+      (is (= 403 (:status (post "/setup/organization" {:long_name "After"
+                                                       :short_name ""
+                                                       :abbreviation ""
+                                                       :email ""
+                                                       :phone ""}))))
+      (is (= 403 (:status (post "/setup/regional" {:timezone "Pacific/Auckland"}))))
+      (is (= 403 (:status (post "/setup/review" {}))))
+      (is (= "Before" (settings.i/get-value *db* "organization.long_name")))
+      (is (= "UTC" (settings.i/get-value *db* "organization.timezone")))
+      (is (= completed-at (settings.i/get-value *db* "setup.completed_at"))))
+
+    (testing "a GET to a setup step redirects away"
+      (let [{:keys [response]} (peri/request sess "/setup/organization")]
+        (is (redirect? response))
+        (is (= "/" (get-in response [:headers "Location"])))))))
+
 (deftest admin-form-validation-test
   (testing "password confirmation must match"
     ;; This test requires no admin to exist. If one exists from another test,

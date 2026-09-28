@@ -16,11 +16,13 @@
 (defn- tracker []
   (get *system* ::instance/setup-job))
 
-(defn- reset-tracker-fixture [f]
+(defn- reset-fixture [f]
+  ;; The test database has setup complete, which closes the wizard.
+  (setup.shared/reset-setup! *db*)
   (reset! (tracker) setup.shared/initial-job-state)
   (f))
 
-(use-fixtures :each reset-tracker-fixture)
+(use-fixtures :each reset-fixture)
 
 (defn- stub-import-opts
   "default-import-opts, but with nothing that touches the network. The real ones
@@ -91,9 +93,9 @@
       (is (str/includes? (:body response) "downloading-taxa")))))
 
 (deftest test-a-post-with-taxa-already-present-starts-nothing
-  (testing "setup routes carry no auth middleware, so can-import-wfo? is what
-            stops an unauthenticated caller triggering a 127 MB download on an
-            already-configured install"
+  (testing "setup routes carry no auth middleware, so until setup is complete
+            can-import-wfo? is what stops an unauthenticated caller triggering a
+            127 MB download when taxa exist"
     (tf/testing "a garden with a taxon"
       {[::taxon.i/factory :key/taxon] {:db *db*}}
       (fn [_]
@@ -115,13 +117,11 @@
               (is (empty? @seen)))))))))
 
 (deftest test-the-progress-route-returns-promptly-on-an-idle-install
-  ;; The each-fixture leaves the tracker idle, which is the state of every
-  ;; install where the wizard's import never ran -- every dispatcher-provisioned
-  ;; garden, and every self-hosted install once setup is done. The route is
-  ;; mounted unconditionally, /setup is exempt from the setup-required redirect,
-  ;; and setup carries no auth middleware, so this body is what an
-  ;; unauthenticated `curl -N` gets. If it does not return, 200 of them exhaust
-  ;; the Jetty pool.
+  ;; The each-fixture leaves the tracker idle, which is the state of an install
+  ;; whose wizard has not reached the import. /setup is exempt from the
+  ;; setup-required redirect and carries no auth middleware, so until setup is
+  ;; complete this body is what an unauthenticated `curl -N` gets. If it does
+  ;; not return, 200 of them exhaust the Jetty pool.
   (let [{:keys [response]} (-> (peri/session *app*)
                                (peri/request "/setup/taxonomy/progress"))
         out (java.io.ByteArrayOutputStream.)
