@@ -75,6 +75,29 @@
     (is (some? (token.i/valid? service token)))))
 
 ;; =============================================================================
+;; Decode Tests
+;; =============================================================================
+
+(deftest test-decode-returns-expired-data
+  (let [service (core/create-service test-secret)
+        data {:email "test@example.com"
+              :expires-at (- (now-epoch) 1)}
+        token (token.i/encode service data)]
+    (is (= data (token.i/decode service token)))))
+
+(deftest test-decode-rejects-what-valid-rejects
+  (let [service (core/create-service test-secret)
+        token (token.i/encode service {:email "test@example.com"
+                                       :expires-at (- (now-epoch) 1)})]
+    (testing "wrong secret"
+      (is (nil? (token.i/decode (core/create-service "different-secret!") token))))
+    (testing "tampered"
+      (is (nil? (token.i/decode service (str token "x")))))
+    (testing "malformed"
+      (is (nil? (token.i/decode service "invalid-token")))
+      (is (nil? (token.i/decode service nil))))))
+
+;; =============================================================================
 ;; Tampering Tests
 ;; =============================================================================
 

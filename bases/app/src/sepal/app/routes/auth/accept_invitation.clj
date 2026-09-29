@@ -60,9 +60,24 @@
                                     :errors errors)
              :flash flash))
 
+(defn- unusable-invitation-page [title message]
+  (page/page :content [:div
+                       [:h1 {:class "spl-auth-title"} title]
+                       [:p {:class "text-lg"} message]]))
+
 (defn- invalid-invitation-response []
-  (-> (http/found auth.routes/login)
-      (flash/error (tr "Invalid invitation"))))
+  (unusable-invitation-page
+    (tr "Invitation not valid")
+    (tr "This invitation link isn't valid. Check that you opened the whole link from the email, or ask the person who invited you to send a new one.")))
+
+(defn- expired-invitation-response []
+  (unusable-invitation-page
+    (tr "Invitation expired")
+    (tr "This invitation has expired. Ask the person who invited you to send a new one.")))
+
+(defn- already-activated-response [email]
+  (-> (http/found auth.routes/login {:email email})
+      (flash/add-message (tr "Account already activated. Please log in."))))
 
 (defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [db token-service]} context
@@ -78,8 +93,7 @@
 
           ;; User already active - redirect to login
           (= :active (:user/status user))
-          (-> (http/found auth.routes/login {:email email})
-              (flash/add-message (tr "Account already activated. Please log in.")))
+          (already-activated-response email)
 
           ;; User is invited - process invitation
           (= :invited (:user/status user))
@@ -123,5 +137,10 @@
           :else
           (invalid-invitation-response)))
 
-      ;; Token invalid or expired
-      (invalid-invitation-response))))
+      ;; Expired, or not a token this garden issued. An expired link is often
+      ;; an old email for an account activated since through a resent one.
+      (if-let [{:keys [email]} (token.i/decode token-service token)]
+        (if (= :active (:user/status (user.i/get-by-email db email)))
+          (already-activated-response email)
+          (expired-invitation-response))
+        (invalid-invitation-response)))))

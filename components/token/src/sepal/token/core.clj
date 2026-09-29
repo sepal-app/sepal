@@ -15,17 +15,19 @@
           (.withoutPadding)
           (.encodeToString frozen))))
 
-  (valid? [_ token]
+  (decode [_ token]
     (when (and token (string? token) (seq token))
       (try
-        (let [data (-> (Base64/getUrlDecoder)
-                       (.decode ^String token)
-                       (nippy/thaw {:password [:cached secret]}))
-              now (.getEpochSecond (Instant/now))]
-          (when (> (:expires-at data) now)
-            data))
+        (-> (Base64/getUrlDecoder)
+            (.decode ^String token)
+            (nippy/thaw {:password [:cached secret]}))
         (catch Exception _
-          nil)))))
+          nil))))
+
+  (valid? [this token]
+    (when-let [data (proto/decode this token)]
+      (when (> (:expires-at data) (.getEpochSecond (Instant/now)))
+        data))))
 
 (defn create-service
   "Create a token service with the given secret.

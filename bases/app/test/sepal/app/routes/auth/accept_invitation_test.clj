@@ -72,18 +72,21 @@
         (is (some? name-input))
         (is (= "Existing Name" (.val name-input)))))))
 
+(defn- password-field [response]
+  (-> (app.test/parse-body response) (.selectFirst "input[name=password]")))
+
 (deftest accept-invitation-invalid-token-test
-  (tf/testing "Invalid token redirects with error"
+  (tf/testing "Invalid token shows a page saying so, not the login form"
     {}
     (fn [_]
       (let [{:keys [response]} (-> (peri/session *app*)
-                                   (peri/request "/accept-invitation?token=invalid-token")
-                                   (peri/follow-redirect))]
+                                   (peri/request "/accept-invitation?token=invalid-token"))]
         (is (= 200 (:status response)))
-        (is (app.test/body-contains? response "Invalid invitation"))))))
+        (is (app.test/body-contains? response "This invitation link isn't valid"))
+        (is (nil? (password-field response)))))))
 
 (deftest accept-invitation-expired-token-test
-  (tf/testing "Expired token redirects with error"
+  (tf/testing "Expired token shows a page saying it expired, not the login form"
     {[::user.i/factory :key/invited-user] {:db *db*
                                            :status :invited}}
     (fn [{:keys [invited-user]}]
@@ -91,10 +94,44 @@
             ;; Create token that expired 1 second ago
             token (create-invitation-token email :expires-at (- (token.i/expires-in 0) 1))
             {:keys [response]} (-> (peri/session *app*)
+                                   (peri/request (str "/accept-invitation?token=" token)))]
+        (is (= 200 (:status response)))
+        (is (app.test/body-contains? response "This invitation has expired"))
+        (is (nil? (password-field response)))))))
+
+(deftest accept-invitation-expires-while-form-is-open-test
+  (tf/testing "Submitting the form after the token expired shows the expired page"
+    {[::user.i/factory :key/invited-user] {:db *db*
+                                           :status :invited}}
+    (fn [{:keys [invited-user]}]
+      (let [token (create-invitation-token (:user/email invited-user)
+                                           :expires-at (- (token.i/expires-in 0) 1))
+            {:keys [response] :as sess} (-> (peri/session *app*)
+                                            (peri/request "/login"))
+            csrf-token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (-> sess
+                                   (peri/request "/accept-invitation"
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token csrf-token
+                                                          :token token
+                                                          :password "password123"
+                                                          :confirm-password "password123"}))]
+        (is (= 200 (:status response)))
+        (is (app.test/body-contains? response "This invitation has expired"))
+        (is (= :invited (:user/status (user.i/get-by-id *db* (:user/id invited-user)))))))))
+
+(deftest accept-invitation-expired-token-already-active-test
+  (tf/testing "An expired link for an account that has since activated goes to login"
+    {[::user.i/factory :key/active-user] {:db *db*
+                                          :status :active}}
+    (fn [{:keys [active-user]}]
+      (let [token (create-invitation-token (:user/email active-user)
+                                           :expires-at (- (token.i/expires-in 0) 1))
+            {:keys [response]} (-> (peri/session *app*)
                                    (peri/request (str "/accept-invitation?token=" token))
                                    (peri/follow-redirect))]
         (is (= 200 (:status response)))
-        (is (app.test/body-contains? response "Invalid invitation"))))))
+        (is (app.test/body-contains? response "already activated"))))))
 
 (deftest accept-invitation-already-active-test
   (tf/testing "Already active user is redirected to login"
@@ -110,17 +147,17 @@
         (is (app.test/body-contains? response "already activated"))))))
 
 (deftest accept-invitation-archived-user-test
-  (tf/testing "Archived user gets invalid invitation error"
+  (tf/testing "Archived user gets the invalid invitation page"
     {[::user.i/factory :key/archived-user] {:db *db*
                                             :status :archived}}
     (fn [{:keys [archived-user]}]
       (let [email (:user/email archived-user)
             token (create-invitation-token email)
             {:keys [response]} (-> (peri/session *app*)
-                                   (peri/request (str "/accept-invitation?token=" token))
-                                   (peri/follow-redirect))]
+                                   (peri/request (str "/accept-invitation?token=" token)))]
         (is (= 200 (:status response)))
-        (is (app.test/body-contains? response "Invalid invitation"))))))
+        (is (app.test/body-contains? response "This invitation link isn't valid"))
+        (is (nil? (password-field response)))))))
 
 (deftest accept-invitation-passwords-must-match-test
   (tf/testing "Passwords must match"

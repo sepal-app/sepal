@@ -100,3 +100,19 @@ msgstr \"Revise su correo electrónico.\"
             (is (str/includes? (:body response) "Revise su correo electrónico."))))
         (finally
           (i18n/load-catalogs! {}))))))
+
+(deftest forgot-password-invited-user-test
+  (tf/testing "an invited user who asks for a password is sent a new invitation link"
+    {[::user.i/factory :key/user] {:db *db* :email "invited@example.com" :status :invited}}
+    (fn [{:keys [user]}]
+      (reset! (:sent-messages *mail-client*) [])
+      (let [response (request-reset! (:user/email user) "en-US")
+            sent (last @(:sent-messages *mail-client*))
+            link (re-find #"/accept-invitation\?token=[A-Za-z0-9_-]+" (str (:body sent)))]
+        (is (str/includes? (:body response) "Check your email."))
+        (is (= (:user/email user) (:to sent)))
+        (is (some? link))
+        (when link
+          (let [accept (:response (peri/request (peri/session *app*) link))]
+            (is (= 200 (:status accept)))
+            (is (some? (-> (Jsoup/parse (:body accept)) (.selectFirst "input[name=password]"))))))))))

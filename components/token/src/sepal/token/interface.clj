@@ -26,6 +26,15 @@
   [service token]
   (proto/valid? service token))
 
+(defn decode
+  "Decode a token without checking its expiration. Returns the decoded data map
+   if the token was encoded with this service's secret, nil otherwise.
+
+   Use valid? to accept a token. This is for telling an expired token apart
+   from one that was never valid."
+  [service token]
+  (proto/decode service token))
+
 ;; =============================================================================
 ;; Helper Functions
 ;; =============================================================================

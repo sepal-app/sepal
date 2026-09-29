@@ -53,9 +53,11 @@
                              :subject (or subject (tr "Sepal - Reset Password"))
                              :body (reset-password-body to reset-password-url from)}))
 
-(defn- active-user? [user]
-  (and (some? user)
-       (= :active (:user/status user))))
+(def ^:private link-route
+  "Where the emailed link goes, by user status. An invited user has no password
+  to reset yet, so their link goes to the invitation page, which sets one."
+  {:active auth.routes/reset-password
+   :invited auth.routes/accept-invitation})
 
 (defn handler [{:keys [::z/context flash params request-method]}]
   (let [{:keys [app-base-url db mail token-service forgot-password-email-from
@@ -63,12 +65,12 @@
         {:strs [email]} params]
     (case request-method
       :post
-      ;; Only send reset email for active users (prevents enumeration)
+      ;; Only send email for active and invited users (prevents enumeration)
       (let [user (user.i/get-by-email db email)]
-        (if (active-user? user)
+        (if-let [route (link-route (:user/status user))]
           (let [token (reset-password-token token-service email)
                 reset-password-url (str app-base-url
-                                        (z/url-for auth.routes/reset-password
+                                        (z/url-for route
                                                    nil
                                                    {:token token}))]
             (try

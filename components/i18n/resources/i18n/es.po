@@ -380,15 +380,15 @@ msgstr "No se pudo guardar la accesión"
 msgid "Media linked to this accession's material"
 msgstr "Contenido multimedia vinculado al material de esta accesión"
 
-#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:100
-#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:134
-#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:87
-#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:114
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:111
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:139
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:97
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:122
 msgid "The note could not be saved."
 msgstr "No se pudo guardar la nota."
 
-#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:143
-#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:123
+#: bases/app/src/sepal/app/routes/accession/detail/notes.clj:153
+#: bases/app/src/sepal/app/routes/taxon/detail/notes.clj:136
 msgid "The note could not be deleted."
 msgstr "No se pudo eliminar la nota."
 
@@ -421,7 +421,8 @@ msgstr "Notas"
 
 #: bases/app/src/sepal/app/routes/accession/detail/shared.clj:48
 #: bases/app/src/sepal/app/routes/material/detail/shared.clj:29
-#: bases/app/src/sepal/app/routes/tag/detail.clj:49
+#: bases/app/src/sepal/app/routes/tag/detail.clj:51
+#: bases/app/src/sepal/app/routes/tag/detail.clj:83
 #: bases/app/src/sepal/app/routes/tag/index.clj:41
 #: bases/app/src/sepal/app/routes/taxon/detail/shared.clj:30
 #: bases/app/src/sepal/app/ui/page.clj:151
@@ -1149,24 +1150,44 @@ msgstr "Confirmar contraseña"
 msgid "Set password and activate account"
 msgstr "Establecer contraseña y activar cuenta"
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:65
-msgid "Invalid invitation"
-msgstr "Invitación no válida"
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:70
+#, fuzzy
+#| msgid "Invitation sent to %1"
+msgid "Invitation not valid"
+msgstr "Invitación enviada a %1"
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:82
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:71
+msgid ""
+"This invitation link isn't valid. Check that you opened the whole link from "
+"the email, or ask the person who invited you to send a new one."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:75
+#, fuzzy
+#| msgid "Invitation resent to %1"
+msgid "Invitation expired"
+msgstr "Invitación reenviada a %1"
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:76
+msgid ""
+"This invitation has expired. Ask the person who invited you to send a new "
+"one."
+msgstr ""
+
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:80
 msgid "Account already activated. Please log in."
 msgstr "La cuenta ya está activada. Inicie sesión."
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:93
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:107
 #: bases/app/src/sepal/app/routes/setup/admin.clj:27
 msgid "Passwords do not match"
 msgstr "Las contraseñas no coinciden"
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:107
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:121
 msgid "Password set for %1. Please log in."
 msgstr "Contraseña establecida para %1. Inicie sesión."
 
-#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:109
+#: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:123
 msgid "Could not set your password. Please try again."
 msgstr "No se pudo establecer su contraseña. Inténtelo de nuevo."
 
@@ -1230,12 +1251,12 @@ msgstr ""
 msgid "Sepal - Reset Password"
 msgstr "Sepal - Restablecer contraseña"
 
-#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:84
-#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:92
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:86
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:94
 msgid "Check your email."
 msgstr "Consulte su correo electrónico."
 
-#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:89
+#: bases/app/src/sepal/app/routes/auth/forgot_password.clj:91
 msgid "Error: Could not send email."
 msgstr "Error: no se pudo enviar el correo electrónico."
 
@@ -1511,15 +1532,15 @@ msgstr "No se pudo guardar la ubicación"
 msgid "Media linked to the material in this location"
 msgstr "Medios vinculados al material de esta ubicación"
 
-#: bases/app/src/sepal/app/routes/location/detail/observations.clj:148
-#: bases/app/src/sepal/app/routes/location/detail/observations.clj:185
-#: bases/app/src/sepal/app/routes/material/detail/observations.clj:161
-#: bases/app/src/sepal/app/routes/material/detail/observations.clj:201
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:159
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:194
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:175
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:210
 msgid "The observation could not be saved."
 msgstr "No se pudo guardar la observación."
 
-#: bases/app/src/sepal/app/routes/location/detail/observations.clj:195
-#: bases/app/src/sepal/app/routes/material/detail/observations.clj:211
+#: bases/app/src/sepal/app/routes/location/detail/observations.clj:210
+#: bases/app/src/sepal/app/routes/material/detail/observations.clj:226
 msgid "The observation could not be deleted."
 msgstr "No se pudo eliminar la observación."
 
@@ -3122,15 +3143,15 @@ msgstr "¿Eliminar la etiqueta %1?"
 msgid "Deleted tag %1"
 msgstr "Etiqueta %1 eliminada"
 
-#: bases/app/src/sepal/app/routes/tag/detail.clj:52
+#: bases/app/src/sepal/app/routes/tag/detail.clj:54
 msgid "A tag with this name already exists."
 msgstr "Ya existe una etiqueta con este nombre."
 
-#: bases/app/src/sepal/app/routes/tag/detail.clj:86
+#: bases/app/src/sepal/app/routes/tag/detail.clj:108
 msgid "Tag updated successfully"
 msgstr "Etiqueta actualizada correctamente"
 
-#: bases/app/src/sepal/app/routes/tag/detail.clj:92
+#: bases/app/src/sepal/app/routes/tag/detail.clj:114
 msgid "Could not save the tag"
 msgstr "No se pudo guardar la etiqueta"
 
@@ -3755,8 +3776,8 @@ msgstr ""
 
 #: bases/app/src/sepal/app/ui/pages/list.clj:232
 #: bases/app/src/sepal/app/ui/pages/list.clj:235
-#: bases/app/src/sepal/app/ui/resource_panel.clj:241
-#: bases/app/src/sepal/app/ui/resource_panel.clj:244
+#: bases/app/src/sepal/app/ui/resource_panel.clj:240
+#: bases/app/src/sepal/app/ui/resource_panel.clj:243
 msgid "Close panel"
 msgstr "Cerrar panel"
 
@@ -3843,7 +3864,7 @@ msgstr "Añadir filtro"
 msgid "Filter"
 msgstr "Filtro"
 
-#: bases/app/src/sepal/app/ui/resource_panel.clj:198
+#: bases/app/src/sepal/app/ui/resource_panel.clj:197
 msgid "Load %1 more"
 msgstr "Cargar %1 más"
 
@@ -4728,3 +4749,6 @@ msgstr "Semilla"
 msgctxt "propagation_type"
 msgid "Tissue culture"
 msgstr "Cultivo de tejidos"
+
+#~ msgid "Invalid invitation"
+#~ msgstr "Invitación no válida"
