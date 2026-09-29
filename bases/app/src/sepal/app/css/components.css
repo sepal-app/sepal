@@ -1755,11 +1755,21 @@
 }
 
 /* A reader's record page: the record's panel, laid out across the page. Its
- * sections flow in the panel's order into as many columns as fit, each as wide
- * as the side panel, and one column on a phone. Every section is open and
- * none toggles: a toggle changes a section's height, the columns rebalance,
- * and the section under the pointer moves. Empty sections stay closed. */
-.spl-reader-page > div { columns: 20rem; column-gap: 32px; }
+ * sections flow in the panel's order into up to three columns, each at least
+ * as wide as the side panel, and one column on a phone. Every section is open
+ * and none toggles: a toggle changes a section's height, the columns
+ * rebalance, and the section under the pointer moves. Empty sections stay
+ * closed.
+ *
+ * Centred like .spl-form once the page is wider than three columns. The cap is
+ * three 20rem columns and their two gaps, and width:100% is there because an
+ * auto inline margin on a flex item turns off its stretch. */
+.spl-reader-page {
+  width: 100%;
+  max-width: calc(3 * 20rem + 2 * 32px);
+  margin-inline: auto;
+}
+.spl-reader-page > div { columns: 20rem 3; column-gap: 32px; }
 .spl-reader-page .spl-panel-header { column-span: all; }
 .spl-reader-page .spl-collapse { break-inside: avoid; }
 .spl-reader-page .spl-collapse > input[type="checkbox"] { display: none; }
