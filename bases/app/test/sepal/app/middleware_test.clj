@@ -9,59 +9,6 @@
 (defn- ok-handler [_request]
   {:status 200 :body "OK"})
 
-(deftest require-role-test
-  (testing "allows matching role"
-    (let [handler ((middleware/require-role :admin) ok-handler)
-          request {:viewer {:user/role :admin}}]
-      (is (= 200 (:status (handler request))))))
-
-  (testing "allows any of multiple roles"
-    (let [handler ((middleware/require-role :admin :editor) ok-handler)]
-      (is (= 200 (:status (handler {:viewer {:user/role :admin}}))))
-      (is (= 200 (:status (handler {:viewer {:user/role :editor}}))))))
-
-  (testing "returns 403 for non-matching role"
-    (let [handler ((middleware/require-role :admin) ok-handler)
-          request {:viewer {:user/role :reader}}]
-      (is (= 403 (:status (handler request))))))
-
-  (testing "returns 403 when viewer has no role"
-    (let [handler ((middleware/require-role :admin) ok-handler)
-          request {:viewer {}}]
-      (is (= 403 (:status (handler request)))))))
-
-(deftest require-admin-test
-  (testing "allows admin"
-    (let [handler (middleware/require-admin ok-handler)
-          request {:viewer {:user/role :admin}}]
-      (is (= 200 (:status (handler request))))))
-
-  (testing "rejects editor"
-    (let [handler (middleware/require-admin ok-handler)
-          request {:viewer {:user/role :editor}}]
-      (is (= 403 (:status (handler request))))))
-
-  (testing "rejects reader"
-    (let [handler (middleware/require-admin ok-handler)
-          request {:viewer {:user/role :reader}}]
-      (is (= 403 (:status (handler request)))))))
-
-(deftest require-editor-or-admin-test
-  (testing "allows admin"
-    (let [handler (middleware/require-editor-or-admin ok-handler)
-          request {:viewer {:user/role :admin}}]
-      (is (= 200 (:status (handler request))))))
-
-  (testing "allows editor"
-    (let [handler (middleware/require-editor-or-admin ok-handler)
-          request {:viewer {:user/role :editor}}]
-      (is (= 200 (:status (handler request))))))
-
-  (testing "rejects reader"
-    (let [handler (middleware/require-editor-or-admin ok-handler)
-          request {:viewer {:user/role :reader}}]
-      (is (= 403 (:status (handler request)))))))
-
 (deftest require-permission-test
   (testing "allows user with permission"
     (let [handler ((middleware/require-permission authz/organization-view) ok-handler)
@@ -71,11 +18,37 @@
   (testing "rejects user without permission"
     (let [handler ((middleware/require-permission authz/organization-view) ok-handler)
           request {:viewer {:user/role :reader}}]
-      (is (= 403 (:status (handler request)))))))
+      (is (= 403 (:status (handler request))))))
+
+  (testing "returns 403 when viewer has no role"
+    (let [handler ((middleware/require-permission authz/organization-view) ok-handler)]
+      (is (= 403 (:status (handler {:viewer {}})))))))
+
+(deftest require-permission-redirect-test
+  (let [handler ((middleware/require-permission authz/organization-view "/fallback/") ok-handler)]
+    (testing "a GET without the permission redirects"
+      (let [response (handler {:viewer {:user/role :reader} :request-method :get})]
+        (is (= 302 (:status response)))
+        (is (= "/fallback/" (get-in response [:headers "Location"])))))
+
+    (testing "a POST without the permission gets 403, not a redirect"
+      (is (= 403 (:status (handler {:viewer {:user/role :reader} :request-method :post})))))))
+
+(deftest require-access-compile-test
+  (let [compile (:compile middleware/require-access)]
+    (testing ":public compiles to no middleware"
+      (is (nil? (compile {:permission :public} nil))))
+
+    (testing "a route that declares no permission is refused"
+      (let [handler ((compile {} nil) ok-handler)]
+        (is (= 403 (:status (handler {:request-method :get :uri "/x"}))))))
+
+    (testing "a declared permission compiles to middleware"
+      (is (fn? (compile {:permission authz/organization-view} nil))))))
 
 (deftest forbidden-response-htmx-test
   (testing "regular request gets plain forbidden"
-    (let [handler ((middleware/require-role :admin) ok-handler)
+    (let [handler ((middleware/require-permission authz/organization-view) ok-handler)
           request {:viewer {:user/role :reader}
                    :htmx-request? false}
           response (handler request)]
@@ -84,12 +57,13 @@
       (is (not (.contains (:body response) "alert")))))
 
   (testing "HTMX request gets alert fragment"
-    (let [handler ((middleware/require-role :admin) ok-handler)
+    (let [handler ((middleware/require-permission authz/organization-view) ok-handler)
           request {:viewer {:user/role :reader}
                    :htmx-request? true}
           response (handler request)]
       (is (= 403 (:status response)))
-      (is (.contains (:body response) "alert")))))
+      (is (.contains (:body response) "spl-alert spl-alert--danger"))
+      (is (not (.contains (:body response) "alert-error"))))))
 
 (deftest wrap-flash-messages-htmx-partial-test
   (testing "injects OOB flash for HTMX partial responses"

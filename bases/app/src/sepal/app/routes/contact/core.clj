@@ -16,27 +16,33 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
-     :handler #'index/handler}]
+     :permission contact.perm/view
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission contact.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission contact.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader contact-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :permission contact.perm/view
+          :get #'detail/get-handler
+          :post {:permission contact.perm/edit
+                 :handler #'detail/post-handler}}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 contact.perm/delete (constantly routes/detail))]]
+                 :permission contact.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
-                :handler #'panel/handler}]]])
+                :permission contact.perm/view
+                :get #'panel/handler}]]])

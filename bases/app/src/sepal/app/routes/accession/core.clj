@@ -16,7 +16,8 @@
             [sepal.app.routes.accession.next-code :as next-code]
             [sepal.app.routes.accession.panel :as panel]
             [sepal.app.routes.accession.provenance-suggestion :as provenance-suggestion]
-            [sepal.app.routes.accession.routes :as routes]))
+            [sepal.app.routes.accession.routes :as routes]
+            [sepal.note.interface.permission :as note.perm]))
 
 (def accession-loader
   (middleware/default-loader accession.i/get-by-id
@@ -24,71 +25,78 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
-     :handler #'index/handler}]
+     :permission accession.perm/view
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission accession.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/next-code/"
     {:name routes/next-code
      :conflicting true
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission accession.perm/create
      :handler #'next-code/handler}]
    ["/provenance-suggestion/"
     {:name routes/provenance-suggestion
      :conflicting true
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission accession.perm/create
      :handler #'provenance-suggestion/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission accession.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader accession-loader]]
             :parameters {:path {:id nat-int?}}
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :permission accession.perm/view
+          :get #'detail/handler}]
     ["/general/" {:name routes/detail-general
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  accession.perm/edit (constantly routes/detail))]]
+                  :permission accession.perm/edit
+                  :permission-redirect routes/detail
                   :handler #'detail-general/handler}]
     ["/collection/" {:name routes/detail-collection
-                     :middleware [[(middleware/require-permission-or-redirect
-                                     accession.perm/edit (constantly routes/detail))]]
+                     :permission accession.perm/edit
+                     :permission-redirect routes/detail
                      :handler #'detail-collection/handler}]
     ["/collection/delete/" {:name routes/detail-collection-delete
-                            :middleware [[(middleware/require-permission-or-redirect
-                                            accession.perm/edit (constantly routes/detail))]]
+                            :permission accession.perm/edit
+                            :permission-redirect routes/detail
                             :get #'detail-collection-delete/handler
                             :post #'detail-collection-delete/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[(middleware/require-permission-or-redirect
-                                accession.perm/edit (constantly routes/detail))]]
+                :permission accession.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/notes/" {:name routes/detail-notes
-                :middleware [[(middleware/require-permission-or-redirect
-                                accession.perm/edit (constantly routes/detail))]]
-                :handler #'detail-notes/handler}]
+                :permission accession.perm/edit
+                :permission-redirect routes/detail
+                :get #'detail-notes/get-handler
+                :post {:permission note.perm/create
+                       :handler #'detail-notes/create-handler}}]
     ["/notes/:note-id/" {:name routes/detail-note
-                         :middleware [[(middleware/require-permission-or-redirect
-                                         accession.perm/edit (constantly routes/detail))]]
-                         :handler #'detail-notes/note-handler}]
+                         :post {:permission note.perm/edit
+                                :handler #'detail-notes/update-handler}
+                         :delete {:permission note.perm/delete
+                                  :handler #'detail-notes/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
-               :middleware [[(middleware/require-permission-or-redirect
-                               accession.perm/edit (constantly routes/detail))]]
+               :permission accession.perm/edit
+               :permission-redirect routes/detail
                :handler #'detail-tags/handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       accession.perm/edit (constantly routes/detail))]]
+                       :permission accession.perm/edit
+                       :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 accession.perm/delete (constantly routes/detail))]]
+                 :permission accession.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
-                :handler #'panel/handler}]]])
+                :permission accession.perm/view
+                :get #'panel/handler}]]])

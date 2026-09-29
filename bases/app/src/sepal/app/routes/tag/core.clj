@@ -14,15 +14,17 @@
     (tag.i/get-by-id db (parse-long (:id path-params)))))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
-   ["/" {:name routes/index :handler #'index/handler}]
+  [""
+   ["/" {:name routes/index
+         :permission tag.perm/view :get #'index/handler}]
    ["/:id" {:middleware [[middleware/resource-loader tag-loader]]}
     ["/" {:name routes/detail
-          :middleware [[(middleware/require-permission-or-redirect
-                          tag.perm/edit (constantly routes/index))]]
-          :handler #'detail/handler}]
+          :permission tag.perm/view
+          :get #'detail/get-handler
+          :post {:permission tag.perm/edit
+                 :handler #'detail/post-handler}}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 tag.perm/delete (constantly routes/detail))]]
+                 :permission tag.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]]])

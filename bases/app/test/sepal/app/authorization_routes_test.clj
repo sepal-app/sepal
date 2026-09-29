@@ -3,9 +3,19 @@
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*app* *db* default-system-fixture]]
             [sepal.contact.interface :as contact.i]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
+            [sepal.media.interface :as media.i]
+            [sepal.note.interface :as note.i]
+            [sepal.note.interface.permission :as note.perm]
+            [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.permission :as observation.perm]
+            [sepal.propagation.interface :as propagation.i]
+            [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
@@ -182,6 +192,130 @@
       (is (= 200 (:status response)))
       ;; Create button has specific class and text - check it's not present
       (is (not (body-contains? response "btn-primary[^>]*>Create<"))))))
+
+(deftest panel-actions-visibility-test
+  (tf/testing "the side panel's Actions menu is shown only to roles that can edit"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [taxon accession material]}]
+      (doseq [[role shown?] [[:editor true] [:reader false]]
+              :let [sess (login-as *db* role)]
+              path [(str "/accession/" (:accession/id accession) "/panel/")
+                    (str "/material/" (:material/id material) "/panel/")
+                    (str "/taxon/" (:taxon/id taxon) "/panel/")]]
+        (testing (str role " " path)
+          (let [{:keys [response]} (peri/request sess path)]
+            (is (= 200 (:status response)))
+            (is (= shown? (boolean (body-contains? response "spl-actions-menu"))))))))))
+
+(deftest detail-post-requires-edit-test
+  (tf/testing "a detail page's POST needs the resource's edit permission"
+    {[::user.i/factory :key/user] {:db *db*}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::contact.i/factory :key/contact] {:db *db*}
+     [::propagation.i/factory :key/propagation] {:db *db* :accession (ig/ref :key/accession)}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user)}}
+    (fn [{:keys [contact propagation media]}]
+      (let [paths [(str "/contact/" (:contact/id contact) "/")
+                   (str "/propagation/" (:propagation/id propagation) "/")
+                   (str "/media/" (:media/id media) "/")]
+            post (fn [role path]
+                   (let [sess (login-as *db* role)
+                         {:keys [response] :as sess} (peri/request sess "/settings/profile")
+                         token (test.i/response-anti-forgery-token response)]
+                     (:response (peri/request sess path
+                                              :request-method :post
+                                              :params {:__anti-forgery-token token
+                                                       :name "Changed"
+                                                       :title "Changed"}))))]
+        (doseq [path paths]
+          (testing (str "reader " path)
+            (is (= 403 (:status (post :reader path))))))
+        (testing "and the reader's POST wrote nothing"
+          (is (= (:contact/name contact) (:contact/name (contact.i/get-by-id *db* (:contact/id contact)))))
+          (is (= (:media/title media) (:media/title (media.i/get-by-id *db* (:media/id media))))))
+        (doseq [path paths]
+          (testing (str "editor " path)
+            (is (not= 403 (:status (post :editor path))))))))))
+
+(deftest tag-detail-roles-test
+  (tf/testing "a reader sees a tag's page but can't save it"
+    {[::tag.i/factory :key/tag] {:db *db*}}
+    (fn [{:keys [tag]}]
+      (let [path (str "/tag/" (:tag/id tag) "/")]
+        (testing "reader GET shows the panel without a form"
+          (let [{:keys [response]} (peri/request (login-as *db* :reader) path)]
+            (is (= 200 (:status response)))
+            (is (body-contains? response "Linked records"))
+            (is (not (body-contains? response "<form")))))
+
+        (testing "reader POST is refused and writes nothing"
+          (let [{:keys [response] :as sess} (peri/request (login-as *db* :reader) "/settings/profile")
+                {:keys [response]} (peri/request sess path
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token (test.i/response-anti-forgery-token response)
+                                                          :name "Changed"})]
+            (is (= 403 (:status response)))
+            (is (= (:tag/name tag) (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))))
+
+        (testing "editor GET shows the form, and the editor's POST saves"
+          (let [{:keys [response] :as sess} (peri/request (login-as *db* :editor) path)
+                _ (is (= 200 (:status response)))
+                _ (is (body-contains? response "<form"))
+                {:keys [response]} (peri/request sess path
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token (test.i/response-anti-forgery-token response)
+                                                          :name "Renamed"
+                                                          :description ""})]
+            (is (= 200 (:status response)))
+            (is (= "Renamed" (:tag/name (tag.i/get-by-id *db* (:tag/id tag)))))))))))
+
+(deftest notes-and-observations-use-their-own-permissions-test
+  (tf/testing "adding a note or an observation needs its own create permission"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}}
+    (fn [{:keys [accession material]}]
+      ;; A reader given only the two create permissions: the parent records'
+      ;; edit permission is still missing.
+      (with-redefs [authz/permissions (update authz/permissions :reader conj
+                                              note.perm/create observation.perm/create)]
+        (let [{:keys [response] :as sess} (peri/request (login-as *db* :reader) "/settings/profile")
+              token (test.i/response-anti-forgery-token response)
+              notes (str "/accession/" (:accession/id accession) "/notes/")
+              observations (str "/material/" (:material/id material) "/observations/")]
+          (testing "the tabs still need the parent's edit permission"
+            (is (= 302 (:status (:response (peri/request sess notes)))))
+            (is (= 302 (:status (:response (peri/request sess observations))))))
+
+          (testing "a note needs only note.perm/create"
+            (is (= 200 (:status (:response (peri/request sess notes
+                                                         :request-method :post
+                                                         :params {:__anti-forgery-token token
+                                                                  :body "A reader's note"})))))
+            (is (some #(= "A reader's note" (:note/body %))
+                      (note.i/get-for-resource *db* :accession (:accession/id accession)))))
+
+          (testing "an observation needs only observation.perm/create"
+            (is (= 200 (:status (:response (peri/request sess observations
+                                                         :request-method :post
+                                                         :params {:__anti-forgery-token token
+                                                                  :type "general"
+                                                                  :value ""
+                                                                  :observed_on "2026-01-01"
+                                                                  :observed_by ""
+                                                                  :next_check_on ""
+                                                                  :note "A reader's observation"})))))
+            (is (some #(= "A reader's observation" (:observation/note %))
+                      (observation.i/get-for-resource *db* :material (:material/id material))))))))))
 
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"

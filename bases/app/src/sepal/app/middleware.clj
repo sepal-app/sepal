@@ -7,6 +7,7 @@
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
             [sepal.app.routes.auth.routes :as auth.routes]
+            [sepal.app.routes.dashboard.routes :as dashboard.routes]
             [sepal.app.routes.setup.routes :as setup.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.error.interface :as error.i]
@@ -113,54 +114,57 @@
   (if htmx-request?
     {:status 403
      :headers {"Content-Type" "text/html"}
-     :body (chassis/html [:div {:class "alert alert-error"}
-                          (tr "You don't have permission to perform this action.")])}
+     :body (chassis/html [:div {:class "spl-alert spl-alert--danger"}
+                          [:span (tr "You don't have permission to perform this action.")]])}
     {:status 403
      :headers {"Content-Type" "text/html"}
      :body (chassis/html [:p (tr "You don't have permission to access this page.")])}))
 
-(defn require-role
-  "Middleware that checks if viewer has one of the specified roles.
-   Returns 403 if role check fails.
-   Must be used after require-viewer middleware."
-  [& roles]
-  (let [allowed-roles (set roles)]
-    (fn [handler]
-      (fn [{:keys [viewer] :as request}]
-        (if (contains? allowed-roles (:user/role viewer))
-          (handler request)
-          (forbidden-response request))))))
-
-(defn require-admin
-  "Middleware that requires viewer to be an admin."
-  [handler]
-  ((require-role :admin) handler))
-
-(defn require-editor-or-admin
-  "Middleware that requires viewer to be an editor or admin."
-  [handler]
-  ((require-role :admin :editor) handler))
-
 (defn require-permission
-  "Middleware that checks if viewer has a specific permission.
-   More granular than role-based checks."
-  [permission]
-  (fn [handler]
-    (fn [{:keys [viewer] :as request}]
-      (if (authz/user-has-permission? viewer permission)
-        (handler request)
-        (forbidden-response request)))))
+  "Middleware that checks the viewer holds `permission`. When they don't, a GET
+   redirects to the `redirect` route, given the request's :id, if one is named;
+   anything else gets a 403. Must run after require-viewer."
+  ([permission]
+   (require-permission permission nil))
+  ([permission redirect]
+   (fn [handler]
+     (fn [{:keys [viewer request-method path-params] :as request}]
+       (cond
+         (authz/user-has-permission? viewer permission)
+         (handler request)
 
-(defn require-permission-or-redirect
-  "Middleware that checks if viewer has a specific permission.
-   If not, redirects to a fallback route instead of returning 403.
-   redirect-route-fn should be a function that returns the route name."
-  [permission redirect-route-fn]
-  (fn [handler]
-    (fn [{:keys [viewer path-params] :as request}]
-      (if (authz/user-has-permission? viewer permission)
-        (handler request)
-        (http/found (redirect-route-fn) {:id (:id path-params)})))))
+         (and redirect (#{:get :head} request-method))
+         (http/found redirect {:id (:id path-params)})
+
+         :else
+         (forbidden-response request))))))
+
+(def require-access
+  "Middleware compiled from the :permission in each route's data, method data
+   winning over route data. Applied once, at the root of the router.
+
+   :public needs nothing. Any other value needs a logged-in viewer who holds
+   that permission, and a GET may name a :permission-redirect to go to instead
+   of a 403. A route that declares nothing is refused, so a new route fails
+   closed. Declare :permission on leaf routes only: reitit merges route data
+   into children, so a group's permission would cover every route added under
+   it."
+  {:name ::require-access
+   :compile (fn [{:keys [permission permission-redirect]} _opts]
+              (cond
+                (= :public permission)
+                nil
+
+                (nil? permission)
+                (fn [_handler]
+                  (fn [{:keys [request-method uri] :as request}]
+                    (log/error "Route declares no :permission" request-method uri)
+                    (forbidden-response request)))
+
+                :else
+                (let [check (require-permission permission permission-redirect)]
+                  (fn [handler]
+                    (require-viewer (check handler))))))})
 
 (defn- html-response?
   "Returns true if response has text/html content type."
@@ -248,7 +252,8 @@
 (defn- setup-excluded-path?
   "Returns true if the path should be excluded from setup redirect.
    Only setup routes, static assets, and health check are excluded.
-   Auth routes are NOT excluded - if setup isn't complete, there's no user to log in as."
+   Auth routes are NOT excluded. wrap-setup-required lets /login through only
+   once an admin exists."
   [path]
   (or (str/starts-with? path "/setup")
       (str/starts-with? path "/static")
@@ -262,6 +267,42 @@
   (fn [{:keys [::z/context uri] :as request}]
     (let [{:keys [db]} context]
       (if (or (setup-excluded-path? uri)
-              (setup.shared/setup-complete? db))
+              (setup.shared/setup-complete? db)
+              ;; An admin made before the wizard, such as with the CLI, logs in
+              ;; to finish it.
+              (and (= uri "/login") (setup.shared/admin-exists? db)))
         (handler request)
         (http/see-other setup.routes/index)))))
+
+(defn require-setup-incomplete
+  "Middleware that closes the setup wizard once setup is complete. The wizard
+   carries no auth, so after completion a GET redirects to the dashboard and
+   any other method is refused."
+  [handler]
+  (fn [{:keys [::z/context request-method] :as request}]
+    (cond
+      (not (setup.shared/setup-complete? (:db context)))
+      (handler request)
+
+      (#{:get :head} request-method)
+      (http/see-other dashboard.routes/index)
+
+      :else
+      (forbidden-response request))))
+
+(defn require-setup-admin
+  "Middleware for the setup steps after the admin step. The admin step logs in
+   the admin it creates, so these steps need an active admin's session. Without
+   one, a GET goes back to the admin step and any other method is refused."
+  [handler]
+  (fn [{:keys [::z/context request-method session] :as request}]
+    (let [user (some->> (:user/id session) (user.i/get-by-id (:db context)))]
+      (cond
+        (and (authz/admin? user) (= :active (:user/status user)))
+        (handler request)
+
+        (#{:get :head} request-method)
+        (http/see-other setup.routes/admin)
+
+        :else
+        (forbidden-response request)))))

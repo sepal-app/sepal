@@ -150,25 +150,19 @@
       (f/when-failed [e]
         (http/failure-response e redirect)))))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn get-handler [{:keys [::z/context viewer]}]
   (let [{:keys [db material-separator resource timezone]} context
-        editor? (authz/user-has-permission? viewer propagation.perm/edit)]
-    (cond
-      (and (= :post request-method) (not editor?))
-      (-> (http/hx-redirect propagation.routes/detail {:id (:propagation/id resource)})
-          (flash/error (tr "You don't have permission to edit this propagation")))
+        ;; The separator rides in panel-data, which every renderer here already
+        ;; takes.
+        panel-data (-> (propagation.panel/fetch-panel-data db resource)
+                       (assoc :separator material-separator))]
+    (if (authz/user-has-permission? viewer propagation.perm/edit)
+      (render-edit-page db resource panel-data (str (datetime/today timezone)))
+      (render-panel-page panel-data))))
 
-      (= :post request-method)
-      (save! db resource viewer form-params (str (datetime/today timezone)))
-
-      :else
-      ;; The separator rides in panel-data, which every renderer here already
-      ;; takes.
-      (let [panel-data (-> (propagation.panel/fetch-panel-data db resource)
-                           (assoc :separator material-separator))]
-        (if editor?
-          (render-edit-page db resource panel-data (str (datetime/today timezone)))
-          (render-panel-page panel-data))))))
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource timezone]} context]
+    (save! db resource viewer form-params (str (datetime/today timezone)))))
 
 (def StatusParams
   [:map {:closed true}

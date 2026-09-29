@@ -17,40 +17,46 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
-     :handler #'index/handler}]
+     :permission propagation.perm/view
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission propagation.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission propagation.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/parent-plant/"
     {:name routes/parent-plant
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission propagation.perm/edit
      :handler #'create/parent-plant-handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader propagation-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :permission propagation.perm/view
+          :get #'detail/get-handler
+          :post {:permission propagation.perm/edit
+                 :handler #'detail/post-handler}}]
     ["/panel/" {:name routes/panel
-                :handler #'panel/handler}]
+                :permission propagation.perm/view
+                :get #'panel/handler}]
     ["/status/" {:name routes/status
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 propagation.perm/edit (constantly routes/detail))]]
+                 :permission propagation.perm/edit
+                 :permission-redirect routes/detail
                  :post #'detail/status-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 propagation.perm/delete (constantly routes/detail))]]
+                 :permission propagation.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/product/" {:name routes/product
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  propagation.perm/edit (constantly routes/detail))]]
+                  :permission propagation.perm/edit
+                  :permission-redirect routes/detail
                   :post #'product/handler}]]])

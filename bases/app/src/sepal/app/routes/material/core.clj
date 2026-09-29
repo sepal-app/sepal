@@ -13,7 +13,8 @@
             [sepal.app.routes.material.panel :as panel]
             [sepal.app.routes.material.routes :as routes]
             [sepal.material.interface :as material.i]
-            [sepal.material.interface.permission :as material.perm]))
+            [sepal.material.interface.permission :as material.perm]
+            [sepal.observation.interface.permission :as observation.perm]))
 
 (def material-loader
   (middleware/default-loader material.i/get-by-id
@@ -21,58 +22,66 @@
                              parse-long))
 
 (defn routes []
-  ["" {:middleware [[middleware/require-viewer]]}
+  [""
    ["/"
     {:name routes/index
-     :handler #'index/handler}]
+     :permission material.perm/view
+     :get #'index/handler}]
    ["/export/"
     {:name routes/export
+     :permission material.perm/view
      :conflicting true
-     :handler #'export/handler}]
+     :get #'export/handler}]
    ["/next-code/"
     {:name routes/next-code
      :conflicting true
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission material.perm/edit
      :handler #'next-code/handler}]
    ["/new/"
     {:name routes/new
-     :middleware [[middleware/require-editor-or-admin]]
+     :permission material.perm/create
      :handler #'create/handler
      :conflicting true}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail
-          :handler #'detail/handler}]
+          :permission material.perm/view
+          :get #'detail/handler}]
     ["/general/" {:name routes/detail-general
-                  :middleware [[(middleware/require-permission-or-redirect
-                                  material.perm/edit (constantly routes/detail))]]
+                  :permission material.perm/edit
+                  :permission-redirect routes/detail
                   :handler #'detail-general/handler}]
     ["/media/" {:name routes/detail-media
-                :middleware [[(middleware/require-permission-or-redirect
-                                material.perm/edit (constantly routes/detail))]]
+                :permission material.perm/edit
+                :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/" {:name routes/detail-observations
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       material.perm/edit (constantly routes/detail))]]
-                       :handler #'detail-observations/handler}]
+                       :permission material.perm/edit
+                       :permission-redirect routes/detail
+                       :get #'detail-observations/get-handler
+                       :post {:permission observation.perm/create
+                              :handler #'detail-observations/create-handler}}]
     ["/observations/:observation-id/" {:name routes/detail-observation
-                                       :middleware [[(middleware/require-permission-or-redirect
-                                                       material.perm/edit (constantly routes/detail))]]
-                                       :handler #'detail-observations/observation-handler}]
+                                       :post {:permission observation.perm/edit
+                                              :handler #'detail-observations/update-handler}
+                                       :delete {:permission observation.perm/delete
+                                                :handler #'detail-observations/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
-               :middleware [[(middleware/require-permission-or-redirect
-                               material.perm/edit (constantly routes/detail))]]
+               :permission material.perm/edit
+               :permission-redirect routes/detail
                :handler #'detail-tags/handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
-                       :middleware [[(middleware/require-permission-or-redirect
-                                       material.perm/edit (constantly routes/detail))]]
+                       :permission material.perm/edit
+                       :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]
     ["/history/" {:name routes/history
-                  :handler #'panel/history-handler}]
+                  :permission material.perm/view
+                  :get #'panel/history-handler}]
     ["/delete/" {:name routes/delete
-                 :middleware [[(middleware/require-permission-or-redirect
-                                 material.perm/delete (constantly routes/detail))]]
+                 :permission material.perm/delete
+                 :permission-redirect routes/detail
                  :get #'delete/handler
                  :post #'delete/handler}]
     ["/panel/" {:name routes/panel
-                :handler #'panel/handler}]]])
+                :permission material.perm/view
+                :get #'panel/handler}]]])

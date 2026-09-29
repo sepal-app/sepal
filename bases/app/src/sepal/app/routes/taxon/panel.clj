@@ -3,6 +3,7 @@
    Displays taxon summary, statistics, external links, and activity."
   (:require [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
@@ -17,6 +18,7 @@
             [sepal.note.interface :as note.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
+            [sepal.taxon.interface.permission :as taxon.perm]
             [sepal.taxon.interface.spec :as taxon.spec]
             [zodiac.core :as z]))
 
@@ -252,7 +254,7 @@
 
 (defn handler
   "Handler for taxon panel route. Returns HTML fragment for HTMX."
-  [{:keys [::z/context]}]
+  [{:keys [::z/context viewer]}]
   (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data context db resource)]
     (html/render-partial
@@ -269,5 +271,6 @@
         ;; Only here, not from a record page: that page already carries
         ;; the same menu in its top bar, and a second one would put a
         ;; second #delete-modal-container on the page.
-        :actions (taxon.shared/actions :taxon resource)
+        :actions (when (authz/user-has-permission? viewer taxon.perm/edit)
+                   (taxon.shared/actions :taxon resource))
         :timezone timezone))))

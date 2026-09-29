@@ -163,6 +163,96 @@
           (is (body-contains? response "Complete Setup"))
           (is (body-contains? response "__anti-forgery-token")))))))
 
+(deftest setup-closed-once-complete-test
+  (setup.shared/complete-setup! *db*)
+  (settings.i/set-value! *db* "organization.long_name" "Before")
+  (settings.i/set-value! *db* "organization.timezone" "UTC")
+  (let [completed-at (settings.i/get-value *db* "setup.completed_at")
+        ;; The login page gives an anonymous session a valid CSRF token.
+        {:keys [response] :as sess} (-> (peri/session *app*)
+                                        (peri/request "/login"))
+        token (get-anti-forgery-token response)
+        post (fn [path params]
+               (:response (peri/request sess path
+                                        :request-method :post
+                                        :params (assoc params :__anti-forgery-token token))))]
+    (testing "an anonymous POST to a setup step is refused and writes nothing"
+      (is (= 403 (:status (post "/setup/organization" {:long_name "After"
+                                                       :short_name ""
+                                                       :abbreviation ""
+                                                       :email ""
+                                                       :phone ""}))))
+      (is (= 403 (:status (post "/setup/regional" {:timezone "Pacific/Auckland"}))))
+      (is (= 403 (:status (post "/setup/review" {}))))
+      (is (= "Before" (settings.i/get-value *db* "organization.long_name")))
+      (is (= "UTC" (settings.i/get-value *db* "organization.timezone")))
+      (is (= completed-at (settings.i/get-value *db* "setup.completed_at"))))
+
+    (testing "a GET to a setup step redirects away"
+      (let [{:keys [response]} (peri/request sess "/setup/organization")]
+        (is (redirect? response))
+        (is (= "/" (get-in response [:headers "Location"])))))))
+
+(deftest login-during-setup-test
+  (testing "with no admin, /login sends the visitor to the wizard"
+    (let [{:keys [response]} (-> (peri/session *app*)
+                                 (peri/request "/login"))]
+      (is (redirect? response))
+      (is (= "/setup" (get-in response [:headers "Location"])))))
+
+  (tf/testing "once an admin exists, the admin can log in to finish setup"
+    {[::user.i/factory :key/admin] {:db *db*
+                                    :role :admin
+                                    :email "cli-admin@test.com"
+                                    :password "password123"}}
+    (fn [_]
+      (let [{:keys [response]} (-> (peri/session *app*)
+                                   (peri/request "/login"))]
+        (is (= 200 (:status response))))
+      (let [sess (app.test/login "cli-admin@test.com" "password123")
+            {:keys [response]} (peri/request sess "/setup/admin")]
+        (is (body-contains? response "has been created"))))))
+
+(deftest setup-steps-require-admin-session-test
+  (tf/testing "steps after the admin step need the admin's session"
+    {[::user.i/factory :key/admin] {:db *db*
+                                    :role :admin
+                                    :email "steps-admin@test.com"
+                                    :password "password123"}
+     [::user.i/factory :key/editor] {:db *db*
+                                     :role :editor
+                                     :email "steps-editor@test.com"
+                                     :password "password123"}}
+    (fn [_]
+      (settings.i/set-value! *db* "organization.long_name" "Before")
+      (let [{:keys [response] :as anon} (-> (peri/session *app*)
+                                            (peri/request "/login"))
+            token (get-anti-forgery-token response)]
+        (testing "an anonymous GET goes back to the admin step"
+          (doseq [path ["/setup/server" "/setup/organization" "/setup/regional"
+                        "/setup/taxonomy" "/setup/taxonomy/progress" "/setup/review"]]
+            (let [{:keys [response]} (peri/request anon path)]
+              (is (redirect? response) path)
+              (is (= "/setup/admin" (get-in response [:headers "Location"])) path))))
+
+        (testing "an anonymous POST is refused and writes nothing"
+          (let [{:keys [response]} (peri/request anon "/setup/organization"
+                                                 :request-method :post
+                                                 :params {:__anti-forgery-token token
+                                                          :long_name "After"})]
+            (is (= 403 (:status response)))
+            (is (= "Before" (settings.i/get-value *db* "organization.long_name"))))))
+
+      (testing "an editor's session is not enough"
+        (let [{:keys [response]} (-> (app.test/login "steps-editor@test.com" "password123")
+                                     (peri/request "/setup/organization"))]
+          (is (= "/setup/admin" (get-in response [:headers "Location"])))))
+
+      (testing "the admin's session reaches the steps"
+        (let [{:keys [response]} (-> (app.test/login "steps-admin@test.com" "password123")
+                                     (peri/request "/setup/organization"))]
+          (is (= 200 (:status response))))))))
+
 (deftest admin-form-validation-test
   (testing "password confirmation must match"
     ;; This test requires no admin to exist. If one exists from another test,

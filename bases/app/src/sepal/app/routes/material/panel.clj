@@ -3,6 +3,7 @@
    Displays material summary, linked resources, history, and activity."
   (:require [sepal.accession.interface :as acc.i]
             [sepal.activity.interface :as activity.i]
+            [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -19,6 +20,7 @@
             [sepal.i18n.interface :as i18n :refer [tr trc]]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
+            [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.spec :as material.spec]
             [sepal.observation.interface :as observation.i]
             [sepal.propagation.interface :as propagation.i]
@@ -236,7 +238,7 @@
 
 (defn handler
   "Handler for material panel route. Returns HTML fragment for HTMX."
-  [{:keys [::z/context]}]
+  [{:keys [::z/context viewer]}]
   (let [{:keys [db resource timezone]} context
         panel-data (fetch-panel-data db resource)]
     (html/render-partial
@@ -254,7 +256,8 @@
         ;; Only here, not from a record page: that page already carries
         ;; the same menu in its top bar, and a second one would put a
         ;; second #delete-modal-container on the page.
-        :actions (material.shared/actions :material resource)
+        :actions (when (authz/user-has-permission? viewer material.perm/edit)
+                   (material.shared/actions :material resource))
         :timezone timezone))))
 
 (defn history-handler

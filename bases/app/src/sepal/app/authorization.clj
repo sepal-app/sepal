@@ -5,6 +5,8 @@
             [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
             [sepal.media.interface.permission :as media.perm]
+            [sepal.note.interface.permission :as note.perm]
+            [sepal.observation.interface.permission :as observation.perm]
             [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.tag.interface.permission :as tag.perm]
             [sepal.taxon.interface.permission :as taxon.perm]))
@@ -38,6 +40,8 @@
             media.perm/view media.perm/create media.perm/edit media.perm/delete
             propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
             tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
+            note.perm/view note.perm/create note.perm/edit note.perm/delete
+            observation.perm/view observation.perm/create observation.perm/edit observation.perm/delete
             profile-view profile-edit
             security-view security-edit
             activity-view}
@@ -50,6 +54,8 @@
              media.perm/view media.perm/create media.perm/edit media.perm/delete
              propagation.perm/view propagation.perm/create propagation.perm/edit propagation.perm/delete
              tag.perm/view tag.perm/create tag.perm/edit tag.perm/delete
+             note.perm/view note.perm/create note.perm/edit note.perm/delete
+             observation.perm/view observation.perm/create observation.perm/edit observation.perm/delete
              profile-view profile-edit
              security-view security-edit
              activity-view}
@@ -62,6 +68,8 @@
              media.perm/view
              propagation.perm/view
              tag.perm/view
+             note.perm/view
+             observation.perm/view
              profile-view profile-edit
              security-view security-edit
              activity-view}})
