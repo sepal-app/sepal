@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Sepal\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2026-09-27 08:11-0400\n"
+"PO-Revision-Date: 2026-09-29 12:31-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -1151,28 +1151,29 @@ msgid "Set password and activate account"
 msgstr "Establecer contraseña y activar cuenta"
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:70
-#, fuzzy
-#| msgid "Invitation sent to %1"
 msgid "Invitation not valid"
-msgstr "Invitación enviada a %1"
+msgstr "Invitación no válida"
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:71
 msgid ""
 "This invitation link isn't valid. Check that you opened the whole link from "
 "the email, or ask the person who invited you to send a new one."
 msgstr ""
+"Este enlace de invitación no es válido. Compruebe que ha abierto el enlace "
+"completo del correo electrónico o pida a la persona que le invitó que le "
+"envíe uno nuevo."
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:75
-#, fuzzy
-#| msgid "Invitation resent to %1"
 msgid "Invitation expired"
-msgstr "Invitación reenviada a %1"
+msgstr "Invitación caducada"
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:76
 msgid ""
 "This invitation has expired. Ask the person who invited you to send a new "
 "one."
 msgstr ""
+"Esta invitación ha caducado. Pida a la persona que le invitó que le envíe "
+"una nueva."
 
 #: bases/app/src/sepal/app/routes/auth/accept_invitation.clj:80
 msgid "Account already activated. Please log in."
