@@ -14,7 +14,7 @@
   (page/page
     :breadcrumbs [[:a {:href (z/url-for accession.routes/index)} (tr "Accessions")]
                   (:accession/code accession)]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (accession.panel/panel-content
                 :panel-data panel-data
                 :accession (:accession panel-data)

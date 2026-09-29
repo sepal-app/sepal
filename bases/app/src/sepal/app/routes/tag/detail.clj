@@ -81,7 +81,7 @@
   [& {:keys [tag panel-data timezone]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} (tr "Tags")] (:tag/name tag)]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (tag.panel/panel-content
                 :tag (:tag panel-data)
                 :stats (:stats panel-data)

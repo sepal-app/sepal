@@ -14,7 +14,7 @@
   (page/page
     :breadcrumbs [[:a {:href (z/url-for material.routes/index)} (trc "navigation" "Material")]
                   (:material/code material)]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (material.panel/panel-content
                 :panel-data panel-data
                 :material (:material panel-data)

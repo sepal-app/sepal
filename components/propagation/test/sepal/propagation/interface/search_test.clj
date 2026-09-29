@@ -18,12 +18,17 @@
 (deftest test-propagation-filters
   (let [db *db*]
     (tf/testing "filters narrow the nursery list"
-      {[::taxon.i/factory :key/taxon-a] {:db db}
-       [::taxon.i/factory :key/taxon-b] {:db db}
+      ;; Fixed names and codes: the bare-word searches below look for one
+      ;; record's word, and a generated one can be short enough to match the
+      ;; other record too.
+      {[::taxon.i/factory :key/taxon-a] {:db db :name "Swietenia macrophylla"}
+       [::taxon.i/factory :key/taxon-b] {:db db :name "Cedrela odorata"}
        [::accession.i/factory :key/acc-a] {:db db
-                                           :taxon (ig/ref :key/taxon-a)}
+                                           :taxon (ig/ref :key/taxon-a)
+                                           :data {:code "2026.0101"}}
        [::accession.i/factory :key/acc-b] {:db db
-                                           :taxon (ig/ref :key/taxon-b)}
+                                           :taxon (ig/ref :key/taxon-b)
+                                           :data {:code "2026.0202"}}
        [::location.i/factory :key/loc-a] {:db db}
        [::location.i/factory :key/loc-b] {:db db}}
       (fn [{:keys [taxon-a acc-a acc-b loc-a loc-b]}]

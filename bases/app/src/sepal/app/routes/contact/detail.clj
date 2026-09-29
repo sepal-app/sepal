@@ -77,7 +77,7 @@
   (page/page
     :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
                   (:contact/name contact)]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (contact.panel/panel-content
                 :contact (:contact panel-data)
                 :stats (:stats panel-data)

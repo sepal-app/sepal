@@ -33,7 +33,7 @@
       :or {default-open? true
            disabled? false
            empty-label "none"}}]
-  [:div {:class (html/attr "spl-collapse  rounded-none"
+  [:div {:class (html/attr "spl-collapse"
                            (when disabled? "opacity-50"))}
    ;; Hidden checkbox controls open/closed state
    [:input {:type "checkbox"
@@ -41,9 +41,8 @@
             :checked (when default-open? true)}]
    ;; Header (collapse-title)
    [:div {:class (html/attr "spl-collapse-title text-xs font-semibold uppercase tracking-wider min-h-0 py-3 px-4"
-                            (if disabled?
-                              "text-text-dim cursor-not-allowed"
-                              "text-text-soft"))}
+                            (when disabled?
+                              "text-text-dim cursor-not-allowed"))}
     [:span {:class "flex items-center gap-2"}
      title
      (if disabled?
@@ -209,7 +208,7 @@
    - :children - Panel content
    - :class    - Additional CSS classes"
   [& {:keys [children class]}]
-  [:div {:class (html/attr "divide-y divide-border-light" class)}
+  [:div {:class (html/attr "spl-panel-sections" class)}
    children])
 
 (defn panel-header

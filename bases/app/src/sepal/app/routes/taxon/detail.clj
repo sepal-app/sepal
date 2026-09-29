@@ -15,7 +15,7 @@
   (page/page
     :breadcrumbs [[:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
                   (taxon-name/render (:taxon/name taxon))]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (taxon.panel/panel-content
                 :taxon (:taxon panel-data)
                 :parent (:parent panel-data)

@@ -1220,6 +1220,9 @@
   padding: 10px 12px 0;
 }
 
+/* The panel's stack: a hairline under the header and under each section. */
+.spl-panel-sections > :not(:last-child) { border-bottom: 1px solid var(--color-border-light); }
+
 /* The panel's identity band. Same treatment as a record page's header, because
  * the panel and the page it opens from are labelling the same record. */
 .spl-panel-header {
@@ -1751,6 +1754,65 @@
 }
 .spl-collapse-content { display: none; padding: 0 14px 12px; }
 .spl-collapse > input[type="checkbox"]:checked ~ .spl-collapse-content {
+  display: block;
+}
+
+/* A reader's record page: the record's panel, laid out across the page. Its
+ * sections flow in the panel's order into up to three columns, each at least
+ * as wide as the side panel, and one column on a phone. Every section is open
+ * and none toggles: a toggle changes a section's height, the columns
+ * rebalance, and the section under the pointer moves. Empty sections stay
+ * closed.
+ *
+ * Centred like .spl-form once the page is wider than three columns. The cap is
+ * three 20rem columns and their two gaps, and width:100% is there because an
+ * auto inline margin on a flex item turns off its stretch. */
+.spl-reader-page {
+  width: 100%;
+  max-width: calc(3 * 20rem + 2 * 32px);
+  margin-inline: auto;
+}
+.spl-reader-page > div { columns: 20rem 3; column-gap: 32px; }
+/* The panel's hairlines are for a narrow column read top to bottom. Across
+ * columns they have to mark where a section ends, so the page draws them at
+ * --color-border and the section titles at full strength. */
+.spl-reader-page .spl-panel-sections > *,
+.spl-reader-page .spl-collapse { border-color: var(--color-border); }
+.spl-reader-page .spl-collapse-title { color: var(--color-text); }
+/* On a wide screen each section is a card: across three columns even
+ * --color-border lines leave the reader unsure where one section ends. A
+ * disabled section, one with nothing to show, gets no card, so the page is
+ * not a grid of blank ones. The card is .spl-card's surface, border, radius and
+ * shadow. The page gains side padding so a card never meets the rail or the
+ * window edge, and the cap grows by the same amount so three columns still
+ * fit. */
+@media (min-width: 1024px) {
+  .spl-reader-page {
+    padding-inline: 22px;
+    max-width: calc(3 * 20rem + 2 * 32px + 2 * 22px);
+  }
+  .spl-reader-page .spl-panel-sections > .spl-panel-header {
+    border-bottom: 0;
+    margin-bottom: 12px;
+  }
+  .spl-reader-page .spl-collapse {
+    margin-bottom: 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgb(18 33 30 / .04);
+  }
+  .spl-reader-page .spl-collapse:has(> input:disabled) {
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
+.spl-reader-page .spl-panel-header { column-span: all; }
+.spl-reader-page .spl-collapse { break-inside: avoid; }
+.spl-reader-page .spl-collapse > input[type="checkbox"] { display: none; }
+.spl-reader-page .spl-collapse-title::after { display: none; }
+.spl-reader-page .spl-collapse:not(:has(> input:disabled)) > .spl-collapse-content {
   display: block;
 }
 

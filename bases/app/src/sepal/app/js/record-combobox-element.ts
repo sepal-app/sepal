@@ -109,6 +109,7 @@ export class SepalCombobox extends HTMLElement {
         input.addEventListener("input", this.onInput)
         input.addEventListener("keydown", this.onKeydown)
         input.addEventListener("blur", this.onBlur)
+        input.addEventListener("change", this.onNativeChange)
         button.addEventListener("mousedown", this.onButton)
         listbox.addEventListener("mousedown", this.onListMousedown)
     }
@@ -176,6 +177,15 @@ export class SepalCombobox extends HTMLElement {
             this.close()
             this.input.value = this.selected ? this.selected.text : ""
         }, 120)
+    }
+
+    // The browser's own `change` on the text box fires when focus leaves after
+    // typing, whether or not a record was chosen. The record changes only
+    // through commit and setSelection, which send their own, so this one stops
+    // here: outside, it read as a new record and re-ran suggestions, such as a
+    // material's next code, over what was just typed in the next field.
+    private onNativeChange = (event: Event) => {
+        if (event.isTrusted) event.stopPropagation()
     }
 
     private onButton = (event: MouseEvent) => {

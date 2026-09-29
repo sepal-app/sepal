@@ -317,6 +317,32 @@
             (is (some #(= "A reader's observation" (:observation/note %))
                       (observation.i/get-for-resource *db* :material (:material/id material))))))))))
 
+(deftest reader-record-pages-use-the-reader-layout-test
+  (tf/testing "every record page a reader opens lays the panel out in columns"
+    {[::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::location.i/factory :key/location] {:db *db*}
+     [::material.i/factory :key/material] {:db *db*
+                                           :accession (ig/ref :key/accession)
+                                           :location (ig/ref :key/location)}
+     [::contact.i/factory :key/contact] {:db *db*}
+     [::propagation.i/factory :key/propagation] {:db *db* :accession (ig/ref :key/accession)}
+     [::tag.i/factory :key/tag] {:db *db*}}
+    (fn [{:keys [taxon accession location material contact propagation tag]}]
+      (let [sess (login-as *db* :reader)]
+        (doseq [path [(str "/accession/" (:accession/id accession) "/")
+                      (str "/material/" (:material/id material) "/")
+                      (str "/location/" (:location/id location) "/")
+                      (str "/taxon/" (:taxon/id taxon) "/")
+                      (str "/contact/" (:contact/id contact) "/")
+                      (str "/propagation/" (:propagation/id propagation) "/")
+                      (str "/tag/" (:tag/id tag) "/")]]
+          (testing path
+            (let [{:keys [response]} (peri/request sess path)]
+              (is (= 200 (:status response)))
+              (is (body-contains? response "class=\"spl-reader-page\""))
+              (is (not (body-contains? response "spl-panes"))))))))))
+
 (deftest detail-page-redirect-test
   (tf/testing "admin is redirected to edit tabs on accession detail"
     {[::taxon.i/factory :key/taxon] {:db *db*}

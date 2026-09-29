@@ -14,7 +14,7 @@
   (page/page
     :breadcrumbs [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
                   (:location/name location)]
-    :content [:div {:class "max-w-2xl mx-auto"}
+    :content [:div {:class "spl-reader-page"}
               (location.panel/panel-content
                 :panel-data panel-data
                 :location (:location panel-data)
