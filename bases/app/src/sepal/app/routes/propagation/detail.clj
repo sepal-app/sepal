@@ -45,7 +45,7 @@
   "The record as a full page, for a viewer who cannot edit it."
   [panel-data]
   (page/page
-    :content [:div {:class "max-w-2xl mx-auto"} (panel panel-data)]
+    :content [:div {:class "spl-reader-page"} (panel panel-data)]
     :breadcrumbs (breadcrumbs panel-data)))
 
 (defn- form-values

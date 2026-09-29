@@ -1754,6 +1754,20 @@
   display: block;
 }
 
+/* A reader's record page: the record's panel, laid out across the page. Its
+ * sections flow in the panel's order into as many columns as fit, each as wide
+ * as the side panel, and one column on a phone. Every section is open and
+ * none toggles: a toggle changes a section's height, the columns rebalance,
+ * and the section under the pointer moves. Empty sections stay closed. */
+.spl-reader-page > div { columns: 20rem; column-gap: 32px; }
+.spl-reader-page .spl-panel-header { column-span: all; }
+.spl-reader-page .spl-collapse { break-inside: avoid; }
+.spl-reader-page .spl-collapse > input[type="checkbox"] { display: none; }
+.spl-reader-page .spl-collapse-title::after { display: none; }
+.spl-reader-page .spl-collapse:not(:has(> input:disabled)) > .spl-collapse-content {
+  display: block;
+}
+
 .spl-divider { height: 1px; background: var(--color-border-light); margin: 12px 0; border: 0; }
 
 .spl-menu { list-style: none; margin: 0; padding: 0; }
