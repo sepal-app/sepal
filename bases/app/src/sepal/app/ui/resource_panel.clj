@@ -33,7 +33,7 @@
       :or {default-open? true
            disabled? false
            empty-label "none"}}]
-  [:div {:class (html/attr "spl-collapse  rounded-none"
+  [:div {:class (html/attr "spl-collapse"
                            (when disabled? "opacity-50"))}
    ;; Hidden checkbox controls open/closed state
    [:input {:type "checkbox"

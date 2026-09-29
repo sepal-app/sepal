@@ -1779,6 +1779,35 @@
 .spl-reader-page .spl-panel-sections > *,
 .spl-reader-page .spl-collapse { border-color: var(--color-border); }
 .spl-reader-page .spl-collapse-title { color: var(--color-text); }
+/* On a wide screen each section is a card: across three columns even
+ * --color-border lines leave the reader unsure where one section ends. A
+ * disabled section, one with nothing to show, gets no card, so the page is
+ * not a grid of blank ones. The card is .spl-card's surface, border, radius and
+ * shadow. The page gains side padding so a card never meets the rail or the
+ * window edge, and the cap grows by the same amount so three columns still
+ * fit. */
+@media (min-width: 1024px) {
+  .spl-reader-page {
+    padding-inline: 22px;
+    max-width: calc(3 * 20rem + 2 * 32px + 2 * 22px);
+  }
+  .spl-reader-page .spl-panel-sections > .spl-panel-header {
+    border-bottom: 0;
+    margin-bottom: 12px;
+  }
+  .spl-reader-page .spl-collapse {
+    margin-bottom: 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgb(18 33 30 / .04);
+  }
+  .spl-reader-page .spl-collapse:has(> input:disabled) {
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
 .spl-reader-page .spl-panel-header { column-span: all; }
 .spl-reader-page .spl-collapse { break-inside: avoid; }
 .spl-reader-page .spl-collapse > input[type="checkbox"] { display: none; }
