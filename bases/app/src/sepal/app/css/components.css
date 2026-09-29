@@ -1220,6 +1220,9 @@
   padding: 10px 12px 0;
 }
 
+/* The panel's stack: a hairline under the header and under each section. */
+.spl-panel-sections > :not(:last-child) { border-bottom: 1px solid var(--color-border-light); }
+
 /* The panel's identity band. Same treatment as a record page's header, because
  * the panel and the page it opens from are labelling the same record. */
 .spl-panel-header {
@@ -1770,6 +1773,12 @@
   margin-inline: auto;
 }
 .spl-reader-page > div { columns: 20rem 3; column-gap: 32px; }
+/* The panel's hairlines are for a narrow column read top to bottom. Across
+ * columns they have to mark where a section ends, so the page draws them at
+ * --color-border and the section titles at full strength. */
+.spl-reader-page .spl-panel-sections > *,
+.spl-reader-page .spl-collapse { border-color: var(--color-border); }
+.spl-reader-page .spl-collapse-title { color: var(--color-text); }
 .spl-reader-page .spl-panel-header { column-span: all; }
 .spl-reader-page .spl-collapse { break-inside: avoid; }
 .spl-reader-page .spl-collapse > input[type="checkbox"] { display: none; }
