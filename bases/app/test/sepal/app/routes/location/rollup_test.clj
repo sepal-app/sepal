@@ -224,3 +224,11 @@
           (finally
             (media.i/unlink! *db* (:media/id on-row))
             (media.i/unlink! *db* (:media/id on-material))))))))
+
+(deftest test-the-material-link-lists-material-in-sub-locations
+  (tf/testing "the panel's Material link, ?location-id=, covers the rows"
+    (tree [::material.i/factory :key/in-row] (material-in :key/row3))
+    (fn [{:keys [user orchard in-row]}]
+      (let [sess (app.test/login (:user/email user) password)
+            doc (page sess "/material/" "location-id" (str (:location/id orchard)))]
+        (is (some? (.selectFirst doc (str "a[href=\"/material/" (:material/id in-row) "/\"]"))))))))

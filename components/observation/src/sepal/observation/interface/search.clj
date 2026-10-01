@@ -1,6 +1,7 @@
 (ns sepal.observation.interface.search
   "Search field definitions for observations."
   (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.location.interface :as loc.i]
             [sepal.observation.core :as core]
             [sepal.search.interface :as search.i]))
 
@@ -24,6 +25,16 @@
    [:like :l.code (str "%" word "%")]
    [:like :l.name (str "%" word "%")]])
 
+(def ^:private in-location-subtree
+  (loc.i/subtree-filter :o.resource_id {:column :l.name :type :text}))
+
+(defn- location-filter-clause
+  "`location:` names a location subject or anything it sits inside, so a
+  filter on the Orchard finds observations on its rows. `-location:` keeps
+  material observations, which aren't at that location."
+  [parsed]
+  [:and [:= :o.resource_type "location"] (in-location-subtree parsed)])
+
 ;; :code and :location read acc, m and l with no :joins of their own. Both
 ;; callers, the index and the export, left-join all three in their base
 ;; statement, and a subject is only ever one of material or location.
@@ -40,6 +51,7 @@
                :type :text
                :search? true
                :search-clause location-clause
+               :filter-clause location-filter-clause
                :label (N_ "Location")}
 
     ;; type and value are :text, not :enum: both vocabularies live in

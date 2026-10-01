@@ -1,6 +1,7 @@
 (ns sepal.location.interface
   (:require [integrant.core :as ig]
-            [sepal.location.core :as core]))
+            [sepal.location.core :as core]
+            [sepal.search.interface :as search.i]))
 
 (defn get-by-id [db id]
   (core/get-by-id db id))
@@ -16,6 +17,15 @@
   location itself, in one query."
   [db ids]
   (core/paths db ids))
+
+(defn subtree-filter
+  "A search field's :filter-clause: match `location-field` against location
+  rows, as `l`, the way that field type always matches, then compare
+  `id-column` against those locations and everything below them. Filtering by
+  the Orchard means the Orchard's rows too."
+  [id-column location-field]
+  (fn [parsed]
+    [:in id-column (core/subtree (search.i/field-clause parsed location-field))]))
 
 (defn count-children
   "Direct children of this location, or only those with `status`."

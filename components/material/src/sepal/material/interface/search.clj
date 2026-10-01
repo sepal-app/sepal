@@ -1,6 +1,7 @@
 (ns sepal.material.interface.search
   "Search field definitions for materials."
   (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.location.interface :as loc.i]
             [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :material [_]
@@ -62,21 +63,25 @@
                   :joins [[:accession :a] [:= :a.id :m.accession_id]
                           [:taxon :t] [:= :t.id :a.taxon_id]]}
 
-    ;; Related: location (direct FK)
+    ;; Related: location (direct FK). A location filter covers its
+    ;; sub-locations; see loc.i/subtree-filter.
     :location.code {:column :l.code
                     :type :text
                     :label (N_ "Location Code")
-                    :joins [[:location :l] [:= :l.id :m.location_id]]}
+                    :filter-clause (loc.i/subtree-filter :m.location_id
+                                                         {:column :l.code :type :text})}
 
     :location.name {:column :l.name
                     :type :text
                     :label (N_ "Location Name")
-                    :joins [[:location :l] [:= :l.id :m.location_id]]}
+                    :filter-clause (loc.i/subtree-filter :m.location_id
+                                                         {:column :l.name :type :text})}
 
     :location.id {:column :l.id
                   :type :id
                   :label (N_ "Location")
-                  :joins [[:location :l] [:= :l.id :m.location_id]]}
+                  :filter-clause (loc.i/subtree-filter :m.location_id
+                                                       {:column :l.id :type :id})}
 
     ;; Related: tag (through tag_link)
     :tag {:column :tg.name

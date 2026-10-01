@@ -1,6 +1,7 @@
 (ns sepal.propagation.interface.search
   "Search field definitions for propagations."
   (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.location.interface :as loc.i]
             [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :propagation [_]
@@ -25,15 +26,21 @@
     ;; Related: location (direct FK). A nursery bench is a location, so the
     ;; filter is the bench's name, matched through location_fts the way the
     ;; location list matches its own.
+    ;; A location filter covers its sub-locations; see loc.i/subtree-filter.
     :location    {:column :l.name
                   :type :fts
                   :fts-table :location_fts
                   :label (N_ "Location")
-                  :joins [[:location :l] [:= :l.id :p.location_id]]}
+                  :filter-clause (loc.i/subtree-filter :p.location_id
+                                                       {:column :l.name
+                                                        :type :fts
+                                                        :fts-table :location_fts})}
 
     :location.id {:column :p.location_id
                   :type :id
-                  :label (N_ "Location")}
+                  :label (N_ "Location")
+                  :filter-clause (loc.i/subtree-filter :p.location_id
+                                                       {:column :l.id :type :id})}
 
     ;; Related: the parent accession (direct FK).
     ;;

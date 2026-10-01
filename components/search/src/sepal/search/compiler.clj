@@ -77,7 +77,7 @@
       (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") phrases)]
         (str/join " " (conj (vec (butlast quoted)) (str (last quoted) "*")))))))
 
-(defn- field->clause
+(defn field->clause
   "Convert a single filter to a HoneySQL WHERE clause.
 
    Arguments:
