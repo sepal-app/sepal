@@ -5,6 +5,30 @@
 (defn get-by-id [db id]
   (core/get-by-id db id))
 
+(defn subtree
+  "A HoneySQL subquery selecting the ids of every location matching `pred`,
+  over `location l`, and of every location below one."
+  [pred]
+  (core/subtree pred))
+
+(defn paths
+  "{id [location ...]} for each of `ids`, root first and ending with the
+  location itself, in one query."
+  [db ids]
+  (core/paths db ids))
+
+(defn count-children
+  "Direct children of this location, or only those with `status`."
+  ([db id]
+   (core/count-children db id))
+  ([db id status]
+   (core/count-children db id status)))
+
+(defn list-children
+  "Direct children of this location, by code."
+  [db id]
+  (core/list-children db id))
+
 (defn create! [db data]
   (core/create! db data))
 
