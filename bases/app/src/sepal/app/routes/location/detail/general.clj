@@ -42,7 +42,7 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
-             :breadcrumbs (location.shared/breadcrumbs location)))
+             :breadcrumbs (location.shared/breadcrumbs location (:ancestors panel-data))))
 
 (defn update! [db location-id updated-by data]
   (db.i/with-transaction [tx db]

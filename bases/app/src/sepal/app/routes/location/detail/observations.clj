@@ -113,7 +113,7 @@
                                 :activities (:activities panel-data)
                                 :activity-count (:activity-count panel-data)
                                 :timezone timezone))
-    :breadcrumbs (location.shared/breadcrumbs location)))
+    :breadcrumbs (location.shared/breadcrumbs location (:ancestors panel-data))))
 
 (defn- observation-data [id data created-by]
   {:resource-type resource-type

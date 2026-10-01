@@ -33,9 +33,14 @@
     :body body
     :footer footer))
 
-(defn breadcrumbs [location]
-  [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
-   (:location/name location)])
+(defn breadcrumbs
+  "Locations, then each ancestor, root first, then this location."
+  [location ancestors]
+  (vec (concat [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]]
+               (for [a ancestors]
+                 [:a {:href (z/url-for location.routes/detail {:id (:location/id a)})}
+                  (:location/name a)])
+               [(:location/name location)])))
 
 (defn actions
   "The page-title actions for the location's General tab. `general.clj` is

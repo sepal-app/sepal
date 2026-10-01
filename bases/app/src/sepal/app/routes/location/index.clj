@@ -1,6 +1,5 @@
 (ns sepal.app.routes.location.index
-  (:require [clojure.string :as str]
-            [lambdaisland.uri :as uri]
+  (:require [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
@@ -9,6 +8,7 @@
             [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -50,6 +50,10 @@
     :type :identifier
     :priority 2
     :cell :location/code}
+   {:name (tr "Parent")
+    :type :text
+    :priority 4
+    :cell (fn [l] (some-> (:location/parent-path l) seq location-path/markup))}
    {:name (tr "Description")
     :type :text
     :priority 3
@@ -158,31 +162,35 @@
                                               :limit page-size
                                               :offset offset
                                               :order-by (concat (search.i/relevance-order :location ast)
-                                                                [[:l.name :asc]])))]
+                                                                [[:l.name :asc]])))
+        ;; Each row's ancestors, from one query for the page: the list's
+        ;; Parent column and the picker's meta line both show them.
+        rows (let [paths (location.i/paths db (map :location/id rows))]
+               (mapv #(assoc % :location/parent-path (butlast (get paths (:location/id %))))
+                     rows))]
 
     (cond
       ;; The combobox asks for its rows as markup, so what an option looks like
       ;; is decided here with the rest of the UI rather than assembled from
       ;; JSON in the browser.
       (some? (get query-params "options"))
-      (let [paths (location.i/paths db (map :location/id rows))]
-        (html/render-partial
-          (ui.combobox/options-fragment
-            :total total
-            :items (for [location rows
-                         :let [ancestors (butlast (get paths (:location/id location)))]]
-                     {:id (:location/id location)
+      (html/render-partial
+        (ui.combobox/options-fragment
+          :total total
+          :items (for [location rows
+                       :let [ancestors (:location/parent-path location)]]
+                   {:id (:location/id location)
                       ;; What the field shows once it is chosen: one line, plain.
-                      :text (format "%s (%s)"
-                                    (:location/code location)
-                                    (:location/name location))
-                      :content (ui.combobox/option-content
-                                 :icon (lucide/map-pin)
-                                 :title (:location/name location)
+                    :text (format "%s (%s)"
+                                  (:location/code location)
+                                  (:location/name location))
+                    :content (ui.combobox/option-content
+                               :icon (lucide/map-pin)
+                               :title (:location/name location)
                                  ;; The parent path tells two Row 3s apart.
-                                 :meta (cond-> (:location/code location)
-                                         (seq ancestors)
-                                         (str " · " (str/join " › " (map :location/name ancestors)))))}))))
+                               :meta (cond-> (:location/code location)
+                                       (seq ancestors)
+                                       (str " · " (location-path/text ancestors))))})))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

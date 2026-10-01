@@ -6,11 +6,14 @@
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.shared :as propagation.shared]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.i18n.interface :refer [tr trc]]
+            [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
@@ -20,6 +23,8 @@
 
    Options:
    - :location       - The location map
+   - :ancestors      - Its ancestors, root first
+   - :children       - The locations directly inside it
    - :stats          - Map with :material-count
    - :awaiting       - Accessions intended for this location, nothing planted yet
    - :moved-out      - Change rows whose material left this location
@@ -28,8 +33,9 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:as opts}]
-  (let [{:keys [location stats awaiting moved-out activities activity-count timezone
-                on-close propagations type-labels status-labels]}
+  (let [{:keys [location ancestors children stats awaiting moved-out activities
+                activity-count timezone on-close propagations type-labels
+                status-labels]}
         (merge (:panel-data opts) opts)
         {:location/keys [id name code description]} location
         {:keys [material-count]} stats]
@@ -49,7 +55,33 @@
           (panel/summary-section
             :fields [{:label (tr "Name") :value name}
                      {:label (trc "location" "Code") :value code}
+                     {:label (tr "Parent")
+                      :value (when-let [parent (last ancestors)]
+                               [:a {:href (z/url-for location.routes/detail
+                                                     {:id (:location/id parent)})
+                                    :class "spl-link"}
+                                (location-path/markup ancestors)])}
                      {:label (tr "Description") :value description}]))
+
+        ;; Sub-locations: the ones directly inside this one. Deeper levels are
+        ;; a click away on each. Never disabled, because it holds the link
+        ;; that adds the first one.
+        (panel/collapsible-section
+          :title (tr "Sub-locations")
+          :count (count children)
+          :children
+          [:div {:class "space-y-1"}
+           (for [child children]
+             ^{:key (:location/id child)}
+             [:div {:class "text-sm"}
+              [:a {:href (z/url-for location.routes/detail {:id (:location/id child)})
+                   :class "spl-link"}
+               (:location/name child)]
+              " "
+              [:span {:class "text-text-soft"} (:location/code child)]])
+           [:a {:href (z/url-for location.routes/new nil {:parent-id id})
+                :class "spl-link text-sm"}
+            (tr "Add sub-location")]])
 
         ;; Statistics section
         (panel/collapsible-section
@@ -139,6 +171,7 @@
    :activity-count."
   [db location]
   (let [location-id (:location/id location)
+        chain (get (loc.i/paths db #{location-id}) location-id)
         material-count (mat.i/count-by-location-id db location-id)
         awaiting (acc.i/awaiting-planting-by-location-id db location-id)
         moved-out (mat.i/moved-out-by-location-id db location-id)
@@ -154,6 +187,8 @@
         propagations (filter #(= "active" (name (:propagation/status %)))
                              (propagation.i/list-by-location-id db location-id))]
     {:location location
+     :ancestors (vec (butlast chain))
+     :children (loc.i/list-children db location-id)
      :stats {:material-count material-count}
      :awaiting awaiting
      :moved-out moved-out
