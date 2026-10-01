@@ -55,7 +55,7 @@
           (panel/summary-section
             :fields [{:label (tr "Name") :value name}
                      {:label (trc "location" "Code") :value code}
-                     {:label (tr "Parent")
+                     {:label (trc "location" "Parent")
                       :value (when-let [parent (last ancestors)]
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id parent)})

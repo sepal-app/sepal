@@ -13,7 +13,7 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [tr trc]]
             [sepal.location.interface :as location.i]
             [sepal.location.interface.permission :as location.perm]
             [sepal.location.interface.search]
@@ -50,7 +50,7 @@
     :type :identifier
     :priority 2
     :cell :location/code}
-   {:name (tr "Parent")
+   {:name (trc "location" "Parent")
     :type :text
     :priority 4
     :cell (fn [l] (some-> (:location/parent-path l) seq location-path/markup))}

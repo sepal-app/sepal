@@ -46,7 +46,7 @@
                                :errors (:description errors))
           (combobox/combobox
             :name "parent-id"
-            :label (tr "Parent")
+            :label (trc "location" "Parent")
             :help (tr "The location this one sits inside, if any.")
             ;; Editing leaves out this location and everything below it.
             :url (if-let [id (:id values)]

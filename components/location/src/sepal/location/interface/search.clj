@@ -32,11 +32,11 @@
                   :type :fts
                   :fts-table :location_fts
                   :id-column :l.parent_id
-                  :label (N_ "Parent")}
+                  :label (N_ "Parent location")}
 
     :parent.id   {:column :l.parent_id
                   :type :id
-                  :label (N_ "Parent")}
+                  :label (N_ "Parent location")}
 
     ;; A retired location is out of the way unless asked for: `archived:true`
     ;; lists them, `archived:false` the rest, and a query that says neither
