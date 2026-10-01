@@ -2,6 +2,7 @@
   "CSV export handler for materials."
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [N_]]
             [sepal.material.interface.search]
@@ -79,15 +80,19 @@
         ast (search.i/parse q)
 
         ;; Build columns based on options
-        cols (cond-> base-columns
-               include-taxon? (into taxon-columns)
-               include-accession? (into accession-columns))
+        cols (-> (cond-> base-columns
+                   include-taxon? (into taxon-columns)
+                   include-accession? (into accession-columns))
+                 ;; Last, after the optional groups, so a spreadsheet reading
+                 ;; the columns by position keeps working. Computed after the
+                 ;; query, so it has no :column.
+                 (conj {:key :location/path :header "location_path"}))
 
         ;; Build query - taxon requires joining through accession
         ;; Even if accession columns aren't selected, we need the join for taxon
         needs-accession-join? (or include-taxon? include-accession?)
 
-        base-stmt (cond-> {:select (mapv :column cols)
+        base-stmt (cond-> {:select (keep :column cols)
                            :from [[:material :m]]
                            ;; Location is always joined (required FK)
                            :join [[:location :l] [:= :l.id :m.location_id]]}
@@ -101,7 +106,9 @@
 
         stmt (-> (search.i/compile-query :material ast base-stmt)
                  (assoc :order-by [:m.code]))
-        rows (db.i/execute! db stmt)
+        rows (let [rows (db.i/execute! db stmt)
+                   paths (location-path/by-id db (keep :location/id rows))]
+               (mapv #(assoc % :location/path (get paths (:location/id %))) rows))
 
         csv-content (csv/rows->csv cols rows)
         filename (format "materials-%s.csv"

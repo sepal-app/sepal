@@ -2,6 +2,7 @@
   "CSV export handler for observations."
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.database.interface :as db.i]
             [sepal.observation.interface.search]
             [sepal.search.interface :as search.i]
@@ -25,7 +26,9 @@
    {:key :accession/code :header "accession_code" :column :acc.code}
    {:key :material/code :header "material_code" :column :m.code}
    {:key :location/code :header "location_code" :column :l.code}
-   {:key :location/name :header "location_name" :column :l.name}])
+   {:key :location/name :header "location_name" :column :l.name}
+   ;; Computed after the query, from the location id selected alongside.
+   {:key :location/path :header "location_path"}])
 
 ;; No export options -- there is nothing optional to toggle, unlike material's
 ;; taxon and accession columns.
@@ -42,7 +45,7 @@
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
-        base-stmt {:select (mapv :column columns)
+        base-stmt {:select (conj (vec (keep :column columns)) :l.id)
                    :from [[:observation :o]]
                    :join-by [:left [[:material :m]
                                     [:and [:= :o.resource_type "material"] [:= :m.id :o.resource_id]]]
@@ -53,7 +56,9 @@
         stmt (-> (search.i/compile-query :observation ast base-stmt
                                          {:material-separator material-separator})
                  (assoc :order-by [[:o.observed_on :desc] [:o.id :desc]]))
-        rows (db.i/execute! db stmt)
+        rows (let [rows (db.i/execute! db stmt)
+                   paths (location-path/by-id db (keep :location/id rows))]
+               (mapv #(assoc % :location/path (get paths (:location/id %))) rows))
 
         csv-content (csv/rows->csv columns rows)
         filename (format "observations-%s.csv"
