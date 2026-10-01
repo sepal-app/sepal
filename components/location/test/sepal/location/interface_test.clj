@@ -110,7 +110,7 @@
     (fn [{:keys [zone orchard row nursery]}]
       (doseq [[label parent] [["itself" zone] ["its child" orchard] ["its grandchild" row]]]
         (is (thrown-with-msg? clojure.lang.ExceptionInfo #"inside itself"
-              (loc.i/update! *db* (:location/id zone) {:parent-id (:location/id parent)}))
+                              (loc.i/update! *db* (:location/id zone) {:parent-id (:location/id parent)}))
             label))
       (is (nil? (:location/parent-id (loc.i/get-by-id *db* (:location/id zone))))
           "and nothing changed")

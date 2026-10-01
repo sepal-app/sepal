@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.index
-  (:require [lambdaisland.uri :as uri]
+  (:require [clojure.string :as str]
+            [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
@@ -13,6 +14,7 @@
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [tr]]
+            [sepal.location.interface :as location.i]
             [sepal.location.interface.permission :as location.perm]
             [sepal.location.interface.search]
             [sepal.search.interface :as search.i]
@@ -112,11 +114,12 @@
   [:map
    [:page {:default 1} :int]
    [:page-size {:default default-page-size} :int]
-   [:q :string]])
+   [:q :string]
+   [:exclude {:optional true} :int]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
-        {:keys [page page-size q]} (params/decode Params query-params)
+        {:keys [page page-size q exclude]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
         ;; Parse search query
@@ -141,7 +144,13 @@
         stmt (cond-> (search.i/compile-query :location ast base-stmt)
                (or picker? (not asked-about-archived?))
                (update :where #(let [active [:= :l.status "active"]]
-                                 (if % [:and % active] active))))
+                                 (if % [:and % active] active)))
+
+               ;; Choosing a parent while editing: a location can't sit inside
+               ;; itself or anything below it, so neither is offered.
+               exclude
+               (update :where #(let [clause [:not-in :l.id (location.i/subtree [:= :l.id exclude])]]
+                                 (if % [:and % clause] clause))))
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
@@ -156,19 +165,24 @@
       ;; is decided here with the rest of the UI rather than assembled from
       ;; JSON in the browser.
       (some? (get query-params "options"))
-      (html/render-partial
-        (ui.combobox/options-fragment
-          :total total
-          :items (for [location rows]
-                   {:id (:location/id location)
-                    ;; What the field shows once it is chosen: one line, plain.
-                    :text (format "%s (%s)"
-                                  (:location/code location)
-                                  (:location/name location))
-                    :content (ui.combobox/option-content
-                               :icon (lucide/map-pin)
-                               :title (:location/name location)
-                               :meta (:location/code location))})))
+      (let [paths (location.i/paths db (map :location/id rows))]
+        (html/render-partial
+          (ui.combobox/options-fragment
+            :total total
+            :items (for [location rows
+                         :let [ancestors (butlast (get paths (:location/id location)))]]
+                     {:id (:location/id location)
+                      ;; What the field shows once it is chosen: one line, plain.
+                      :text (format "%s (%s)"
+                                    (:location/code location)
+                                    (:location/name location))
+                      :content (ui.combobox/option-content
+                                 :icon (lucide/map-pin)
+                                 :title (:location/name location)
+                                 ;; The parent path tells two Row 3s apart.
+                                 :meta (cond-> (:location/code location)
+                                         (seq ancestors)
+                                         (str " · " (str/join " › " (map :location/name ancestors)))))}))))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

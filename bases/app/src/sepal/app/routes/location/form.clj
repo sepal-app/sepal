@@ -1,6 +1,9 @@
 (ns sepal.app.routes.location.form
-  (:require [sepal.app.ui.form :as form]
-            [sepal.i18n.interface :refer [tr trc]]))
+  (:require [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.ui.combobox :as combobox]
+            [sepal.app.ui.form :as form]
+            [sepal.i18n.interface :refer [tr trc]]
+            [zodiac.core :as z]))
 
 (defn footer-buttons []
   (form/footer-buttons :form-event "location-form" :on-cancel :back))
@@ -40,4 +43,16 @@
           (form/textarea-field :label (tr "Description")
                                :name "description"
                                :value (:description values)
-                               :errors (:description errors))])]])])
+                               :errors (:description errors))
+          (combobox/combobox
+            :name "parent-id"
+            :label (tr "Parent")
+            :help (tr "The location this one sits inside, if any.")
+            ;; Editing leaves out this location and everything below it.
+            :url (if-let [id (:id values)]
+                   (z/url-for location.routes/index nil {:exclude id})
+                   (z/url-for location.routes/index))
+            :errors (:parent-id errors)
+            :selected (when (:parent-id values)
+                        {:id (:parent-id values)
+                         :text (format "%s (%s)" (:parent-code values) (:parent-name values))}))])]])])

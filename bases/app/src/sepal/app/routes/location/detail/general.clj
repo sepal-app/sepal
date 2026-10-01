@@ -54,15 +54,21 @@
   [:map {:closed true}
    [:name [:string {:min 1}]]
    [:code {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
+   [:description {:decode/form validation.i/empty->nil} [:maybe :string]]
+   ;; Always posted, so an empty one clears the parent.
+   [:parent-id {:optional true :decode/form validation.i/empty->nil} [:maybe :int]]])
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
   (let [{:keys [db resource timezone]} context
         id (:location/id resource)
+        parent (some->> (:location/parent-id resource) (location.i/get-by-id db))
         values {:id id
                 :name (:location/name resource)
                 :code (:location/code resource)
-                :description (:location/description resource)}]
+                :description (:location/description resource)
+                :parent-id (:location/id parent)
+                :parent-code (:location/code parent)
+                :parent-name (:location/name parent)}]
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)

@@ -38,9 +38,20 @@
   [:map {:closed true}
    [:name [:string {:min 1}]]
    [:code {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:description {:decode/form validation.i/empty->nil} [:maybe :string]]])
+   [:description {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:parent-id {:optional true :decode/form validation.i/empty->nil} [:maybe :int]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
+(defn- parent-values
+  "The Parent field's values for a new location, from ?parent-id= -- how Add
+  sub-location on a location's panel opens this form."
+  [db query-params]
+  (when-let [parent (some->> (get query-params "parent-id") parse-long
+                             (location.i/get-by-id db))]
+    {:parent-id (:location/id parent)
+     :parent-code (:location/code parent)
+     :parent-name (:location/name parent)}))
+
+(defn handler [{:keys [::z/context form-params query-params request-method viewer]}]
   (let [{:keys [db]} context]
     (case request-method
       :post
@@ -62,4 +73,4 @@
         (f/when-failed [e]
           (http/failure-flash e (http/hx-redirect location.routes/new) (tr "Could not create the location"))))
 
-      (render :values form-params))))
+      (render :values (merge form-params (parent-values db query-params))))))

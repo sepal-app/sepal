@@ -326,8 +326,12 @@ export class SepalCombobox extends HTMLElement {
             "page-size": size,
             options: "1",
         })
+        // The field's own URL can carry a query, such as a location picker
+        // that leaves out the location being edited.
+        const url = new URL(this.dataset.url ?? "", window.location.origin)
+        params.forEach((value, key) => url.searchParams.set(key, value))
         try {
-            const response = await fetch(`${this.dataset.url}?${params}`, {
+            const response = await fetch(url, {
                 headers: { Accept: "text/html" },
                 signal: controller.signal,
             })
