@@ -66,7 +66,6 @@
    This is needed for parallel execution where each thread needs isolation."
   []
   (let [db-path (.getAbsolutePath (File/createTempFile "sepal-test" ".db"))
-        schema-dump-file (or (System/getenv "SCHEMA_DUMP_FILE") "db/schema.sql")
         system-config {:sepal.app.server/zodiac-sql {:database-path db-path
                                                      :pragmas {:journal_mode "WAL"
                                                                :foreign_keys "ON"}
@@ -83,8 +82,8 @@
                                                                    :app-domain "test.sepal.app"}
                                                  :cookie-secret "1234567890123456"
                                                  :start-server? false}
-                       :sepal.database.interface/schema {:database-path db-path
-                                                         :schema-dump-file schema-dump-file}
+                       ;; load-schema! reads schema.sql off the classpath.
+                       :sepal.database.interface/schema {:db-path db-path}
                        :sepal.malli.interface/init {}}]
     (test.i/create-system-fixture
      system-config

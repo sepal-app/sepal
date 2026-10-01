@@ -46,8 +46,5 @@ WORKDIR /app
 RUN java -cp "$(clojure -Spath -M:test-e2e)" com.microsoft.playwright.CLI install chromium firefox && \
     java -cp "$(clojure -Spath -M:test-e2e)" com.microsoft.playwright.CLI install-deps chromium firefox
 
-# Set environment variables
-ENV SCHEMA_DUMP_FILE=db/schema.sql
-
 # Default command runs e2e tests
 CMD ["clojure", "-M:dev:test:test-e2e:test-runner", "--focus", ":e2e"]
