@@ -12,13 +12,13 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.shared :as propagation.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.observations :as ui.observations]
             [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.app.ui.resource-panel.external-links :as external-links]
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.i18n.interface :as i18n :refer [tr trc]]
-            [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.spec :as material.spec]
@@ -31,8 +31,8 @@
   "One history card: localized datetime, signed delta, movement, reason."
   [change timezone]
   (let [{:material-change/keys [changed-at quantity]} change
-        from (some-> change :from-location :location/name)
-        to (some-> change :to-location :location/name)
+        from (:from-path change)
+        to (:to-path change)
         label (:material-change-reason/label change)]
     [:div {:class "spl-card bg-surface shadow-sm"}
      [:div {:class "spl-card-body p-3"}
@@ -87,8 +87,8 @@
    - :material       - The material map
    - :accession      - The associated accession map
    - :taxon          - The associated taxon map
-   - :location       - The associated location map
-   - :history        - Change rows with :from-location and :to-location maps
+   - :location       - The associated location map, carrying :location/path
+   - :history        - Change rows with :from-path and :to-path
    - :observations   - Recent observations for this material
    - :observation-count - Total observation count
    - :activities     - Recent activities for this material
@@ -135,7 +135,7 @@
                       :value (when location
                                [:a {:href (z/url-for location.routes/detail {:id (:location/id location)})
                                     :class "spl-link"}
-                                (:location/name location)])}]))
+                                (location-path/markup (:location/path location))])}]))
 
         ;; History section
         (history-section material history timezone)
@@ -183,17 +183,17 @@
             :timezone timezone))))))
 
 (defn- history-for
-  "A material's change rows with their from/to locations attached."
+  "A material's change rows with their from and to locations as paths, from
+  one query for the lot."
   [db material-id]
-  (mapv (fn [change]
-          (assoc change
-                 :from-location
-                 (when-let [id (:material-change/from-location-id change)]
-                   (loc.i/get-by-id db id))
-                 :to-location
-                 (when-let [id (:material-change/to-location-id change)]
-                   (loc.i/get-by-id db id))))
-        (mat.i/list-by-material-id db material-id)))
+  (let [changes (mat.i/list-by-material-id db material-id)
+        paths (location-path/by-id db (mapcat (juxt :material-change/from-location-id
+                                                    :material-change/to-location-id)
+                                              changes))]
+    (mapv #(assoc %
+                  :from-path (get paths (:material-change/from-location-id %))
+                  :to-path (get paths (:material-change/to-location-id %)))
+          changes)))
 
 (defn fetch-panel-data
   "Fetch all data needed for the material panel.
@@ -205,8 +205,7 @@
                     (acc.i/get-by-id db accession-id))
         taxon (when-let [taxon-id (:accession/taxon-id accession)]
                 (taxon.i/get-by-id db taxon-id))
-        location (when-let [location-id (:material/location-id material)]
-                   (loc.i/get-by-id db location-id))
+        location (location-path/location db (:material/location-id material))
         observations (take 3 (observation.i/get-for-resource db :material material-id))
         observation-count (observation.i/count-for-resource db :material material-id)
         activities (activity.i/get-by-resource db

@@ -9,6 +9,7 @@
             [sepal.app.routes.observation.export :as export]
             [sepal.app.routes.observation.routes :as observation.routes]
             [sepal.app.ui.export :as ui.export]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -38,7 +39,7 @@
   [row separator]
   (case (:observation/resource-type row)
     "material" (ct.i/full-code separator (:accession/code row) (:material/code row))
-    "location" (cond-> (:location/name row)
+    "location" (cond-> (or (:location/path row) (:location/name row))
                  (:location/code row) (str (format " (%s)" (:location/code row))))
     nil))
 
@@ -208,6 +209,11 @@
                                               :offset offset
                                               :order-by (concat (search.i/relevance-order :observation ast)
                                                                 [[:o.observed_on :desc] [:o.id :desc]])))
+        ;; A location subject reads as its path, from one query for the page.
+        rows (let [location-id #(when (= "location" (:observation/resource-type %))
+                                  (:observation/resource-id %))
+                   paths (location-path/by-id db (keep location-id rows))]
+               (mapv #(assoc % :location/path (get paths (location-id %))) rows))
         today (str (datetime/today timezone))]
 
     (cond

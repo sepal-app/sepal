@@ -140,7 +140,7 @@
                   timezone
                   :class "text-sm text-text-soft")]
                [:div {:class "text-sm"}
-                (if-let [to (:location/name row)]
+                (if-let [to (:to-path row)]
                   (tr "to %1" to)
                   (tr "removed"))]]])])
 
@@ -174,7 +174,9 @@
         chain (get (loc.i/paths db #{location-id}) location-id)
         material-count (mat.i/count-by-location-id db location-id)
         awaiting (acc.i/awaiting-planting-by-location-id db location-id)
-        moved-out (mat.i/moved-out-by-location-id db location-id)
+        moved-out (let [rows (mat.i/moved-out-by-location-id db location-id)
+                        paths (location-path/by-id db (keep :material-change/to-location-id rows))]
+                    (mapv #(assoc % :to-path (get paths (:material-change/to-location-id %))) rows))
         activities (activity.i/get-by-resource db
                                                :resource-type :location
                                                :resource-id location-id

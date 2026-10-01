@@ -15,6 +15,7 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.shared :as propagation.shared]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.notes :as ui.notes]
             [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
@@ -22,7 +23,6 @@
             [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.contact.interface :as contact.i]
             [sepal.i18n.interface :refer [tr trc]]
-            [sepal.location.interface :as location.i]
             [sepal.material.interface :as mat.i]
             [sepal.note.interface :as note.i]
             [sepal.propagation.interface :as propagation.i]
@@ -85,7 +85,7 @@
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id intended-location)})
                                     :class "spl-link"}
-                                (:location/name intended-location)])}
+                                (location-path/markup (:location/path intended-location))])}
                      {:label (tr "Received as")
                       :value (accession.form/enum-label accession.spec/received-type-labels received-type)}
                      {:label (tr "Quantity received") :value quantity-received}
@@ -158,8 +158,7 @@
                 (taxon.i/get-by-id db taxon-id))
         supplier (when-let [supplier-id (:accession/supplier-contact-id accession)]
                    (contact.i/get-by-id db supplier-id))
-        intended-location (when-let [location-id (:accession/intended-location-id accession)]
-                            (location.i/get-by-id db location-id))
+        intended-location (location-path/location db (:accession/intended-location-id accession))
         material-count (mat.i/count-by-accession-id db accession-id)
         notes (take 3 (note.i/get-for-resource db :accession accession-id))
         note-count (note.i/count-for-resource db :accession accession-id)

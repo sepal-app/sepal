@@ -18,6 +18,15 @@
   [db ids]
   (update-vals (location.i/paths db (set (remove nil? ids))) text))
 
+(defn location
+  "The location with this id carrying its path as :location/path, root first,
+  or nil. For a panel that shows one location, so the path rides along with
+  the map it already passes."
+  [db id]
+  (when id
+    (when-let [chain (get (location.i/paths db #{id}) id)]
+      (assoc (last chain) :location/path chain))))
+
 (defn markup
   "The path with the ancestors free to truncate, so a deep one never hides the
   location's own name."

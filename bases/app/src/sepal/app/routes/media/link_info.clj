@@ -5,6 +5,7 @@
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.database.interface :as db.i]
             [zodiac.core :as z]))
 
@@ -14,9 +15,6 @@
                  :from [[:accession :a]]
                  :join [[:taxon :t] [:= :t.id :a.taxon-id]]
                  :where [:= :a.id resource-id]}
-    "location" {:select [[[:concat :l.name " (" :l.code ")"] :text]]
-                :from [[:location :l]]
-                :where [:= :l.id resource-id]}
     "material" {:select [[[:concat :a.code (str separator) :m.code " (" :t.name ")"] :text]]
                 :from [[:material :m]]
                 :join [[:accession :a] [:= :a.id :m.accession_id]
@@ -39,6 +37,12 @@
     "taxon" (z/url-for taxon.routes/detail {:id resource-id})
     nil))
 
+(defn- location-text
+  "A location as its path then its code, Orchard › Row 3 (R3)."
+  [db id]
+  (when-let [{:location/keys [path code]} (location-path/location db id)]
+    (str (location-path/text path) " (" code ")")))
+
 (defn link-info
   "{:text :url :type} for a `media_link` row, or nil without one. An
   unrecognised resource type shows the type as its text and has no URL."
@@ -46,9 +50,10 @@
   (when link
     (let [{:media-link/keys [resource-type resource-id]} link
           query (text-query resource-type resource-id separator)]
-      {:text (if query
-               (:text (db.i/execute-one! db query))
-               resource-type)
+      {:text (cond
+               (= "location" resource-type) (location-text db resource-id)
+               query (:text (db.i/execute-one! db query))
+               :else resource-type)
        :url (url resource-type resource-id)
        :type resource-type})))
 
