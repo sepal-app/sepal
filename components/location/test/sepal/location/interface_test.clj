@@ -121,3 +121,17 @@
       (testing "and so is clearing the parent"
         (is (nil? (:location/parent-id (loc.i/update! *db* (:location/id row)
                                                       {:parent-id nil}))))))))
+
+(deftest test-an-archived-location-takes-no-sub-locations
+  (tf/testing "an active location never sits under an archived one"
+    (tree)
+    (fn [{:keys [zone nursery]}]
+      (loc.i/set-status! *db* (:location/id nursery) :archived)
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"archived"
+                            (loc.i/create! *db* {:code "ARCHCHILD" :name "Under an archived one"
+                                                 :parent-id (:location/id nursery)}))
+          "creating one inside it")
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"archived"
+                            (loc.i/update! *db* (:location/id zone) {:parent-id (:location/id nursery)}))
+          "or moving one into it")
+      (is (nil? (:location/parent-id (loc.i/get-by-id *db* (:location/id zone))))))))

@@ -112,3 +112,11 @@
             ;; The locations' halts don't wait for these, so let go of them.
             (doseq [p [p-row p-other]]
               (propagation.i/update! *db* (:propagation/id p) {:location-id nil}))))))))
+
+(deftest test-a-blank-location-filter-narrows-nothing
+  (tf/testing "location:\" \" compiles to no filter rather than failing"
+    {}
+    (fn [_]
+      (is (vector? (db.i/execute! *db* (search.i/compile-query
+                                         :propagation (search.i/parse "location:\" \"")
+                                         {:select [:p.id] :from [[:propagation :p]]})))))))

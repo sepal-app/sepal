@@ -71,7 +71,22 @@
                           :order-by [[:code :asc]]})
        (mapv #(store.i/coerce spec/Location %))))
 
-(defn create! [db data]
+(defn- refuse-archived-parent!
+  "An active location never sits under an archived one, so an archived
+  location takes no new sub-locations."
+  [db parent-id]
+  (when (= "archived" (:location/status
+                        (db.i/execute-one! db {:select [:status] :from [:location]
+                                               :where [:= :id parent-id]})))
+    (throw (ex-info "A location can't sit inside an archived one"
+                    {:reason ::archived-parent :parent-id parent-id}))))
+
+(defn create!
+  "Refuses an archived parent. Checked here rather than in the route, so the
+  import loader gets it too."
+  [db data]
+  (when-let [parent-id (:parent-id data)]
+    (refuse-archived-parent! db parent-id))
   (store.i/create! db :location data spec/CreateLocation spec/Location))
 
 (defn- inside-itself? [db id parent-id]
@@ -80,13 +95,15 @@
                                         [:in :id (subtree [:= :l.id id])]]})))
 
 (defn update!
-  "Refuses a parent that is the location itself or anything below it. Checked
-  here rather than in the route, so the import loader gets it too."
+  "Refuses a parent that is the location itself, anything below it, or
+  archived. Checked here rather than in the route, so the import loader gets
+  it too."
   [db id data]
   (when-let [parent-id (:parent-id data)]
     (when (inside-itself? db id parent-id)
       (throw (ex-info "A location can't sit inside itself"
-                      {:reason ::cycle :id id :parent-id parent-id}))))
+                      {:reason ::cycle :id id :parent-id parent-id})))
+    (refuse-archived-parent! db parent-id))
   (store.i/update! db :location id data spec/UpdateLocation spec/Location))
 
 (defn set-status! [db id status]

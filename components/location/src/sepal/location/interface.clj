@@ -22,10 +22,13 @@
   "A search field's :filter-clause: match `location-field` against location
   rows, as `l`, the way that field type always matches, then compare
   `id-column` against those locations and everything below them. Filtering by
-  the Orchard means the Orchard's rows too."
+  the Orchard means the Orchard's rows too. A value that matches nothing to
+  match on, such as a blank full-text one, narrows nothing, as it would on the
+  field itself."
   [id-column location-field]
   (fn [parsed]
-    [:in id-column (core/subtree (search.i/field-clause parsed location-field))]))
+    (when-let [clause (search.i/field-clause parsed location-field)]
+      [:in id-column (core/subtree clause)])))
 
 (defn count-children
   "Direct children of this location, or only those with `status`."

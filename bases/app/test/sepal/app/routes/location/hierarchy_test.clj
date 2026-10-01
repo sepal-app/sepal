@@ -97,3 +97,12 @@
         (is (some? (link-to by-id orchard)))
         (is (nil? (link-to by-id row)))
         (is (some? (link-to by-name row)))))))
+
+(deftest test-an-archived-panel-offers-no-sub-location
+  (tf/testing "an archived location takes no new sub-locations"
+    (tree)
+    (fn [{:keys [user row]}]
+      (location.i/set-status! *db* (:location/id row) :archived)
+      (let [sess (app.test/login (:user/email user) password)
+            doc (page sess (str "/location/" (:location/id row) "/panel/"))]
+        (is (nil? (.selectFirst doc "a[href^=\"/location/new/\"]")))))))

@@ -79,9 +79,11 @@
                (:location/name child)]
               " "
               [:span {:class "text-text-soft"} (:location/code child)]])
-           [:a {:href (z/url-for location.routes/new nil {:parent-id id})
-                :class "spl-link text-sm"}
-            (tr "Add sub-location")]])
+           ;; An archived location takes no new sub-locations.
+           (when-not (= :archived (:location/status location))
+             [:a {:href (z/url-for location.routes/new nil {:parent-id id})
+                  :class "spl-link text-sm"}
+              (tr "Add sub-location")])])
 
         ;; Statistics section
         (panel/collapsible-section
