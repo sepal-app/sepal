@@ -199,3 +199,44 @@
            :stderr (:stderr (ex-data e))}))
       (finally
         (fs/delete-tree dir)))))
+
+(defn run
+  "The command line, as an exit code: 0 when everything pending applied, 1 when
+  the database is missing or a migration failed, 2 for a usage error. Split
+  from -main so it can be tested without exiting the JVM."
+  [args]
+  (let [[db-path & more] args]
+    (cond
+      (or (nil? db-path) (seq more))
+      (binding [*out* *err*]
+        (println "Usage: clojure -M:migrate DB_PATH")
+        2)
+
+      ;; Checked first: opening a path that isn't there creates an empty
+      ;; database, which then fails for want of schema_version.
+      (not (fs/exists? db-path))
+      (binding [*out* *err*]
+        (println (str "No database at " db-path))
+        1)
+
+      :else
+      (try
+        (let [{:keys [applied]} (migrate! {:db-path db-path})]
+          (println (if (seq applied)
+                     (str "Applied " (str/join ", " applied))
+                     "Nothing to apply"))
+          0)
+        (catch Exception e
+          (binding [*out* *err*]
+            (println (ex-message e))
+            (some-> (ex-data e) :stderr str/trim not-empty println)
+            1))))))
+
+(defn -main
+  "Apply every pending migration to the database at DB_PATH, with the same
+  runner start! uses. The :migrate alias puts only the database component on
+  the classpath:
+
+    clojure -M:migrate DB_PATH"
+  [& args]
+  (System/exit (run args)))

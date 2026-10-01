@@ -517,3 +517,59 @@
           @released
           (is (seq (query db-path "select name from sqlite_master where name = 'probe'"))))
         (finally (fs/delete-tree dir))))))
+
+(defn- run-cli
+  "migrate/run on `args`, as {:exit :out :err}."
+  [& args]
+  (let [err (java.io.StringWriter.)
+        out (java.io.StringWriter.)
+        exit (binding [*out* out *err* err] (migrate/run args))]
+    {:exit exit :out (str out) :err (str err)}))
+
+(deftest test-the-command-line-applies-what-is-pending
+  (fs/with-temp-dir [dir {}]
+    (let [db-path (floor-db dir)
+          pending (migrate/pending {:db-path db-path})
+          {:keys [exit out]} (run-cli db-path)]
+      (is (seq pending) "the floor has migrations to apply")
+      (is (= 0 exit))
+      (is (str/includes? out (last pending)) "it names what it applied")
+      (is (empty? (migrate/pending {:db-path db-path}))))))
+
+(deftest test-the-command-line-on-an-up-to-date-database
+  (fs/with-temp-dir [dir {}]
+    (let [{:keys [exit out]} (run-cli (fresh-db dir))]
+      (is (= 0 exit))
+      (is (str/includes? out "Nothing to apply")))))
+
+(deftest test-the-command-line-refuses-a-missing-database
+  (fs/with-temp-dir [dir {}]
+    (let [db-path (str (fs/path dir "nope.db"))
+          {:keys [exit err]} (run-cli db-path)]
+      (is (= 1 exit))
+      (is (str/includes? err db-path))
+      (is (not (fs/exists? db-path)) "and doesn't create one"))))
+
+(deftest test-the-command-line-reports-a-failure
+  (fs/with-temp-dir [dir {}]
+    ;; A database with no schema_version table: not one Sepal made.
+    (let [db-path (str (fs/path dir "other.db"))
+          _ (shell/sh "sqlite3" db-path "create table a (x);")
+          {:keys [exit err]} (run-cli db-path)]
+      (is (= 1 exit))
+      (is (str/includes? err "schema_version")))))
+
+(deftest test-the-command-line-wants-one-path
+  (is (= 2 (:exit (run-cli))))
+  (is (= 2 (:exit (run-cli "a.db" "b.db"))))
+  (is (str/includes? (:err (run-cli)) "Usage")))
+
+(deftest test-clojure-m-migrate-applies-what-is-pending
+  ;; The way bin/reset-db.sh and a person at a terminal run it, so the alias
+  ;; and -main are covered as well as `run`. Starts a JVM, about a second.
+  (fs/with-temp-dir [dir {}]
+    (let [db-path (floor-db dir)
+          {:keys [exit out err]} (shell/sh "clojure" "-M:migrate" db-path)]
+      (is (= 0 exit) err)
+      (is (str/starts-with? out "Applied "))
+      (is (empty? (migrate/pending {:db-path db-path}))))))

@@ -124,4 +124,16 @@
            ;; CLI for administrative tasks (user management)
            ;; clojure -M:dev:cli create-user --email admin@example.com --password secret --role admin
            ;; clojure -M:dev:cli list-users
-           :cli {:main-opts ["-m" "sepal.app.cli"]}}}
+           :cli {:main-opts ["-m" "sepal.app.cli"]}
+
+           ;; clojure -M:migrate path/to/sepal.db
+           ;;
+           ;; The database component and nothing else, so it starts in about a
+           ;; second rather than the three :dev takes: no user.clj, and a
+           ;; classpath of a few jars rather than hundreds.
+           :migrate {:replace-paths []
+                     :replace-deps {org.clojure/clojure {:mvn/version "1.12.0"}
+                                    poly/database {:local/root "components/database"}}
+                     ;; sqlite-jdbc loads a native library, as :dev allows.
+                     :jvm-opts ["--enable-native-access=ALL-UNNAMED"]
+                     :main-opts ["-m" "sepal.database.migrate"]}}}
