@@ -41,11 +41,11 @@
   [db material-id]
   (core/list-by-material-id db material-id))
 
-(defn moved-out-by-location-id
-  "Change rows whose material left this location, most recent first, with the
-  material code and destination name."
-  [db location-id]
-  (core/moved-out-by-location-id db location-id))
+(defn moved-out-of-locations
+  "Change rows whose material left `location-ids`, a subquery, for somewhere
+  outside them, or was removed, most recent first, with the material code."
+  [db location-ids]
+  (core/moved-out-of-locations db location-ids))
 
 (defn list-by-propagation-id
   "Material this propagation produced, by code."
@@ -71,9 +71,17 @@
   (core/count-by-accession-id db accession-id))
 
 (defn count-by-location-id
-  "Count materials at a given location."
+  "Count materials standing directly in this location, not in its
+  sub-locations. The delete and archive blockers rely on that: an orchard is
+  emptied of what stands in it, not of what is in its rows. The location
+  panel's count covers sub-locations, through count-in-locations."
   [db location-id]
   (core/count-by-location-id db location-id))
+
+(defn count-in-locations
+  "Count materials in any of `location-ids`, a subquery."
+  [db location-ids]
+  (core/count-in-locations db location-ids))
 
 (defn count-by-taxon-id
   "Count materials for a given taxon (via accession)."

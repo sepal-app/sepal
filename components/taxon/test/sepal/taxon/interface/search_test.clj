@@ -1,8 +1,12 @@
 (ns sepal.taxon.interface.search-test
   (:require [clojure.test :refer [deftest is testing use-fixtures]]
+            [integrant.core :as ig]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.database.interface :as db.i]
+            [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
             [sepal.search.interface :as search.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]))
@@ -104,3 +108,34 @@
           (testing "and a cross of several parents is one row, not one per parent"
             (is (= 1 (count (filter #(= (:taxon/id hybrid) %)
                                     (map :taxon/id (db.i/execute! *db* stmt))))))))))))
+
+(deftest test-location-filters-cover-sub-locations
+  (tf/testing "a filter on the orchard finds taxa with material in its rows"
+    {[::location.i/factory :key/orchard] {:db *db* :data {:code "TSRCH" :name "TSRCH orchard"}}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
+                                      :data {:code "TSRCH-R1" :name "TSRCH row"}}
+     [::location.i/factory :key/other] {:db *db* :data {:code "TSRCHX" :name "TSRCH other"}}
+     [::taxon.i/factory :key/taxon-in-row] {:db *db*}
+     [::taxon.i/factory :key/taxon-elsewhere] {:db *db*}
+     [::accession.i/factory :key/a1] {:db *db* :taxon (ig/ref :key/taxon-in-row)}
+     [::accession.i/factory :key/a2] {:db *db* :taxon (ig/ref :key/taxon-elsewhere)}
+     [::material.i/factory :key/m1] {:db *db* :accession (ig/ref :key/a1)
+                                     :location (ig/ref :key/row)}
+     [::material.i/factory :key/m2] {:db *db* :accession (ig/ref :key/a2)
+                                     :location (ig/ref :key/other)}}
+    (fn [{:keys [orchard row] :as fx}]
+      (let [found (fn [q]
+                    (->> (search.i/compile-query :taxon (search.i/parse q)
+                                                 {:select [:t.id] :from [[:taxon :t]]})
+                         (db.i/execute! *db*)
+                         (mapv :taxon/id)))
+            in-row (:taxon/id (:taxon-in-row fx))
+            elsewhere (:taxon/id (:taxon-elsewhere fx))]
+        (is (some #{in-row} (found (str "location.id:" (:location/id orchard)))) "parent id")
+        (is (some #{in-row} (found (str "location.id:" (:location/id row)))) "leaf id")
+        (is (= 1 (count (filter #{in-row} (found "location.code:TSRCH"))))
+            "matching the orchard and the row returns it once")
+        (let [negated (found (str "-location.id:" (:location/id orchard)))]
+          (is (not-any? #{in-row} negated) "negated excludes the subtree")
+          (is (some #{elsewhere} negated) "and keeps the rest"))
+        (is (some #{in-row} (found "location.name:\"TSRCH orchard\"")) "parent name")))))

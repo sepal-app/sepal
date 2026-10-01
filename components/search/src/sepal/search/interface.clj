@@ -39,7 +39,9 @@
    built from two columns.
 
    `:filter-clause` does the same for a `field:value` filter: a function of the
-   parsed filter, with `:value` and `:op`, that returns the clause.
+   parsed filter, with `:value` and `:op`, that returns the clause. One that
+   matches the value against another table can build that match with
+   `field-clause`, so it compares the way a field of that type always does.
 
    ## Usage
 
@@ -172,6 +174,15 @@
 ;; =============================================================================
 ;; Compilation
 ;; =============================================================================
+
+(defn field-clause
+  "The WHERE clause one parsed `field:value` filter compiles to against
+  `field-def`, a field definition as a search config writes one, without its
+  negation. For a :filter-clause that matches the value against another table
+  and uses the result, such as a location filter that widens to sub-locations.
+  The compiler negates the enclosing clause."
+  [parsed field-def]
+  (compiler/field->clause (dissoc parsed :negated) field-def))
 
 (defn compile-query
   "Compile a parsed AST into HoneySQL for a specific resource context.

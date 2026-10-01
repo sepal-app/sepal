@@ -1,6 +1,7 @@
 (ns sepal.taxon.interface.search
   "Search field definitions for taxa."
   (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.location.interface :as loc.i]
             [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :taxon [_]
@@ -82,27 +83,31 @@
                       :joins [[:accession :a] [:= :a.taxon_id :t.id]
                               [:material :m] [:= :m.accession_id :a.id]]}
 
-    ;; Related: "has materials at location X"
+    ;; Related: "has materials at location X". A location filter covers its
+    ;; sub-locations; see loc.i/subtree-filter.
     :location.code {:column :l.code
                     :type :text
                     :label (N_ "Location Code")
+                    :filter-clause (loc.i/subtree-filter :m.location_id
+                                                         {:column :l.code :type :text})
                     :joins [[:accession :a] [:= :a.taxon_id :t.id]
-                            [:material :m] [:= :m.accession_id :a.id]
-                            [:location :l] [:= :l.id :m.location_id]]}
+                            [:material :m] [:= :m.accession_id :a.id]]}
 
     :location.name {:column :l.name
                     :type :text
                     :label (N_ "Location Name")
+                    :filter-clause (loc.i/subtree-filter :m.location_id
+                                                         {:column :l.name :type :text})
                     :joins [[:accession :a] [:= :a.taxon_id :t.id]
-                            [:material :m] [:= :m.accession_id :a.id]
-                            [:location :l] [:= :l.id :m.location_id]]}
+                            [:material :m] [:= :m.accession_id :a.id]]}
 
     :location.id {:column :l.id
                   :type :id
                   :label (N_ "Location")
+                  :filter-clause (loc.i/subtree-filter :m.location_id
+                                                       {:column :l.id :type :id})
                   :joins [[:accession :a] [:= :a.taxon_id :t.id]
-                          [:material :m] [:= :m.accession_id :a.id]
-                          [:location :l] [:= :l.id :m.location_id]]}
+                          [:material :m] [:= :m.accession_id :a.id]]}
 
     ;; Count fields - use >0 for "has any", =0 for "has none"
     :accessions {:column [:= :accession.taxon_id :t.id]  ; join condition for subquery

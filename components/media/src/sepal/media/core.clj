@@ -8,6 +8,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
+            [sepal.location.interface :as loc.i]
             [sepal.media.interface.spec :as spec]
             [sepal.store.interface :as store.i]))
 
@@ -28,7 +29,8 @@
   "Which links a Media tab shows. :direct is links to the record itself.
   :below adds links to what sits under it: an accession's material, and for a
   taxon every descendant taxon, their accessions and those accessions'
-  material. For a location, :below adds the material stored there."
+  material. For a location, :below adds its sub-locations and the material in
+  all of them."
   [resource-type resource-id scope]
   (let [direct [:and
                 [:= :ml.resource_type resource-type]
@@ -52,9 +54,11 @@
                                   :where [:in :accession_id accessions]})])
 
         "location"
-        [:or direct
-         (linked-to "material" {:select [:id] :from [:material]
-                                :where [:= :location_id resource-id]})]
+        (let [locations (loc.i/subtree [:= :l.id resource-id])]
+          [:or
+           (linked-to "location" locations)
+           (linked-to "material" {:select [:id] :from [:material]
+                                  :where [:in :location_id locations]})])
 
         direct))))
 

@@ -1,10 +1,10 @@
 (ns sepal.app.routes.location.detail
   (:require [sepal.app.authorization :as authz]
             [sepal.app.http-response :as http]
+            [sepal.app.routes.location.detail.shared :as location.shared]
             [sepal.app.routes.location.panel :as location.panel]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.page :as page]
-            [sepal.i18n.interface :refer [tr]]
             [sepal.location.interface.permission :as location.perm]
             [zodiac.core :as z]))
 
@@ -12,8 +12,7 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [location panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for location.routes/index)} (tr "Locations")]
-                  (:location/name location)]
+    :breadcrumbs (location.shared/breadcrumbs location (:ancestors panel-data))
     :content [:div {:class "spl-reader-page"}
               (location.panel/panel-content
                 :panel-data panel-data

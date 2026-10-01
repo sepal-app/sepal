@@ -40,10 +40,11 @@
   [db]
   (core/count-all db))
 
-(defn awaiting-planting-by-location-id
-  "Accessions intended for this location with no material in it yet."
-  [db location-id]
-  (core/awaiting-planting-by-location-id db location-id))
+(defn awaiting-planting-in-locations
+  "Accessions intended for one of `location-ids`, a subquery, with no material
+  in any of them yet."
+  [db location-ids]
+  (core/awaiting-planting-in-locations db location-ids))
 
 (defn list-by-propagation-id
   "Accessions this propagation produced, by code."

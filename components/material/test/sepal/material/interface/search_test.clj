@@ -61,3 +61,31 @@
         (is (not (contains? (found "nothingmatchesthis") id))
             "and a word that matches none of the three finds nothing")))))
 
+(deftest test-location-filters-cover-sub-locations
+  (tf/testing "a filter on the orchard finds material in its rows"
+    {[::location.i/factory :key/orchard] {:db *db* :data {:code "MSRCH" :name "MSRCH orchard"}}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
+                                      :data {:code "MSRCH-R1" :name "MSRCH row"}}
+     [::location.i/factory :key/other] {:db *db* :data {:code "MSRCHX" :name "MSRCH other"}}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::material.i/factory :key/in-row] {:db *db* :accession (ig/ref :key/accession)
+                                         :location (ig/ref :key/row)}
+     [::material.i/factory :key/elsewhere] {:db *db* :accession (ig/ref :key/accession)
+                                            :location (ig/ref :key/other)}}
+    (fn [{:keys [orchard row] :as fx}]
+      (let [found (fn [q]
+                    (->> (search.i/compile-query :material (search.i/parse q)
+                                                 {:select [:m.id] :from [[:material :m]]})
+                         (db.i/execute! *db*)
+                         (mapv :material/id)))
+            in-row (:material/id (:in-row fx))
+            elsewhere (:material/id (:elsewhere fx))]
+        (is (some #{in-row} (found (str "location.id:" (:location/id orchard)))) "parent id")
+        (is (some #{in-row} (found (str "location.id:" (:location/id row)))) "leaf id")
+        (is (= 1 (count (filter #{in-row} (found "location.code:MSRCH"))))
+            "matching the orchard and the row returns it once")
+        (let [negated (found (str "-location.id:" (:location/id orchard)))]
+          (is (not-any? #{in-row} negated) "negated excludes the subtree")
+          (is (some #{elsewhere} negated) "and keeps the rest"))
+        (is (some #{in-row} (found "location.name:\"MSRCH orchard\"")) "parent name")))))

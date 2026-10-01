@@ -6,11 +6,14 @@
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.shared :as propagation.shared]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.propagations :as ui.propagations]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.i18n.interface :refer [tr trc]]
+            [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
             [sepal.propagation.interface :as propagation.i]
             [zodiac.core :as z]))
@@ -20,6 +23,8 @@
 
    Options:
    - :location       - The location map
+   - :ancestors      - Its ancestors, root first
+   - :children       - The locations directly inside it
    - :stats          - Map with :material-count
    - :awaiting       - Accessions intended for this location, nothing planted yet
    - :moved-out      - Change rows whose material left this location
@@ -28,8 +33,9 @@
    - :timezone       - Timezone string for formatting timestamps
    - :on-close       - Optional close handler (for list page)"
   [& {:as opts}]
-  (let [{:keys [location stats awaiting moved-out activities activity-count timezone
-                on-close propagations type-labels status-labels]}
+  (let [{:keys [location ancestors children stats awaiting moved-out activities
+                activity-count timezone on-close propagations type-labels
+                status-labels]}
         (merge (:panel-data opts) opts)
         {:location/keys [id name code description]} location
         {:keys [material-count]} stats]
@@ -49,7 +55,31 @@
           (panel/summary-section
             :fields [{:label (tr "Name") :value name}
                      {:label (trc "location" "Code") :value code}
+                     {:label (trc "location" "Parent")
+                      :value (when-let [parent (last ancestors)]
+                               [:a {:href (z/url-for location.routes/detail
+                                                     {:id (:location/id parent)})
+                                    :class "spl-link"}
+                                (location-path/markup ancestors)])}
                      {:label (tr "Description") :value description}]))
+
+        ;; Sub-locations: the ones directly inside this one. Deeper levels are
+        ;; a click away on each. Adding one is in the record's Actions menu.
+        (panel/collapsible-section
+          :title (tr "Sub-locations")
+          :count (count children)
+          :disabled? (empty? children)
+          :empty-label (trc "empty section" "none")
+          :children
+          [:div {:class "space-y-1"}
+           (for [child children]
+             ^{:key (:location/id child)}
+             [:div {:class "text-sm"}
+              [:a {:href (z/url-for location.routes/detail {:id (:location/id child)})
+                   :class "spl-link"}
+               (:location/name child)]
+              " "
+              [:span {:class "text-text-soft"} (:location/code child)]])])
 
         ;; Statistics section
         (panel/collapsible-section
@@ -108,7 +138,7 @@
                   timezone
                   :class "text-sm text-text-soft")]
                [:div {:class "text-sm"}
-                (if-let [to (:location/name row)]
+                (if-let [to (:to-path row)]
                   (tr "to %1" to)
                   (tr "removed"))]]])])
 
@@ -139,9 +169,15 @@
    :activity-count."
   [db location]
   (let [location-id (:location/id location)
-        material-count (mat.i/count-by-location-id db location-id)
-        awaiting (acc.i/awaiting-planting-by-location-id db location-id)
-        moved-out (mat.i/moved-out-by-location-id db location-id)
+        chain (get (loc.i/paths db #{location-id}) location-id)
+        ;; Everything below covers the location and its sub-locations, apart
+        ;; from Activity, which is about the location record itself.
+        subtree (loc.i/subtree [:= :l.id location-id])
+        material-count (mat.i/count-in-locations db subtree)
+        awaiting (acc.i/awaiting-planting-in-locations db subtree)
+        moved-out (let [rows (mat.i/moved-out-of-locations db subtree)
+                        paths (location-path/by-id db (keep :material-change/to-location-id rows))]
+                    (mapv #(assoc % :to-path (get paths (:material-change/to-location-id %))) rows))
         activities (activity.i/get-by-resource db
                                                :resource-type :location
                                                :resource-id location-id
@@ -152,8 +188,10 @@
         ;; The worklist: a completed or failed batch is history, not something
         ;; on the bench. The raw row holds the stored string, not the keyword.
         propagations (filter #(= "active" (name (:propagation/status %)))
-                             (propagation.i/list-by-location-id db location-id))]
+                             (propagation.i/list-in-locations db subtree))]
     {:location location
+     :ancestors (vec (butlast chain))
+     :children (loc.i/list-children db location-id)
      :stats {:material-count material-count}
      :awaiting awaiting
      :moved-out moved-out

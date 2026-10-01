@@ -27,13 +27,15 @@
    [:location/code code]
    [:location/description [:maybe description]]
    [:location/name name]
-   [:location/status status]])
+   [:location/status status]
+   [:location/parent-id [:maybe id]]])
 
 (def CreateLocation
   [:map {:closed true}
    [:code code]
    [:name name]
-   [:description {:optional true} [:maybe description]]])
+   [:description {:optional true} [:maybe description]]
+   [:parent-id {:optional true} [:maybe id]]])
 
 (def UpdateLocation
   (mu/optional-keys
@@ -41,4 +43,5 @@
      [:code code]
      [:name name]
      [:description [:maybe description]]
-     [:status status]]))
+     [:status status]
+     [:parent-id [:maybe id]]]))

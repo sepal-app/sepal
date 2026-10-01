@@ -58,6 +58,17 @@
   (some-> (db.i/execute-one! db (assoc base-query :where [:= :o.id id]))
           row->observation))
 
+(defn get-for-locations
+  "Observations on any of `location-ids`, a subquery, newest observed first,
+  in the order get-for-resource uses."
+  [db location-ids]
+  (->> (db.i/execute! db (assoc base-query
+                                :where [:and
+                                        [:= :o.resource_type "location"]
+                                        [:in :o.resource_id location-ids]]
+                                :order-by [[:o.observed_on :desc] [:o.id :desc]]))
+       (mapv row->observation)))
+
 (defn get-for-resource
   "A resource's observations, newest observed first.
 

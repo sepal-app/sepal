@@ -188,3 +188,52 @@
                   "once material is in the location nothing is waiting for it"))
             (finally
               (jdbc.sql/delete! *db* :material {:id (:material/id mat)}))))))))
+
+(deftest test-saving-and-clearing-a-parent
+  (tf/testing "the Parent field sets parent_id, and clearing it makes the
+               location top level again"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::location.i/factory :key/orchard] {:db *db*}
+     [::location.i/factory :key/row] {:db *db*}}
+    (fn [{:keys [user orchard row]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            id (:location/id row)
+            url (str "/location/" id "/general/")
+            post (fn [parent-id]
+                   (let [{:keys [response] :as sess} (peri/request sess url)
+                         token (test.i/response-anti-forgery-token response)]
+                     (-> sess
+                         (peri/request url
+                                       :request-method :post
+                                       :params {:__anti-forgery-token token
+                                                :name (:location/name row)
+                                                :code (:location/code row)
+                                                :description ""
+                                                :parent-id parent-id})
+                         :response :status)))]
+        (try
+          (is (= 200 (post (str (:location/id orchard)))))
+          (is (= (:location/id orchard)
+                 (:location/parent-id (location.i/get-by-id *db* id))))
+          (is (= 200 (post "")))
+          (is (nil? (:location/parent-id (location.i/get-by-id *db* id))))
+          (finally
+            (jdbc.sql/delete! *db* :activity {:resource_type "location"
+                                              :resource_id id})))))))
+
+(deftest test-the-form-shows-the-current-parent
+  (tf/testing "editing a sub-location shows its parent chosen"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::location.i/factory :key/orchard] {:db *db*}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)}}
+    (fn [{:keys [user orchard row]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            doc (-> sess
+                    (peri/request (str "/location/" (:location/id row) "/general/"))
+                    :response :body
+                    (as-> ^String b (Jsoup/parse b)))
+            field (.selectFirst doc "sepal-combobox[name=parent-id]")]
+        (is (= (str (:location/id orchard)) (.attr field "data-value")))
+        (is (re-find (re-pattern (str "exclude=" (:location/id row)))
+                     (.attr field "data-url"))
+            "and its picker leaves out the row and everything below it")))))

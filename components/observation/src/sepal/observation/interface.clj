@@ -9,6 +9,12 @@
   [db id]
   (core/get-by-id db id))
 
+(defn get-for-locations
+  "Observations on any of `location-ids`, a subquery, newest observed first,
+  each shaped as get-for-resource's are."
+  [db location-ids]
+  (core/get-for-locations db location-ids))
+
 (defn get-for-resource
   "A resource's observations, newest observed first. Each carries
   :observation/observer -- :observation/observed-by when it's set, else the

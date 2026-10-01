@@ -13,6 +13,7 @@
             [sepal.app.routes.propagation.shared :as shared]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
@@ -136,7 +137,7 @@
               [:a {:href (z/url-for location.routes/detail {:id location-id})
                    :class "spl-link"
                    :x-on:click.stop ""}
-               (:location/name row)]))}])
+               (:location/path row)]))}])
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
@@ -243,6 +244,8 @@
                                               :order-by (concat (search.i/relevance-order :propagation ast)
                                                                 [[:p.propagated_on :desc]
                                                                  [:p.id :desc]])))
+        rows (let [paths (location-path/by-id db (keep :propagation/location-id rows))]
+               (mapv #(assoc % :location/path (get paths (:propagation/location-id %))) rows))
         type-labels (shared/type-labels db)
         status-labels (shared/status-labels db)]
 

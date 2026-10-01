@@ -56,15 +56,20 @@
                      :where [:= :mc.material_id material-id]
                      :order-by [[:mc.changed_at :desc] [:mc.id :desc]]}))
 
-(defn moved-out-by-location-id
-  "Change rows whose material left this location, most recent first, with the
-  material code and destination name."
-  [db location-id]
-  (db.i/execute! db {:select [:mc.* :m.code :l.name]
+(defn moved-out-of-locations
+  "Change rows whose material left `location-ids`, a subquery, for somewhere
+  outside them, or was removed, most recent first, with the material code.
+  Given a location and its sub-locations, a move between two of them stays
+  inside and isn't listed."
+  [db location-ids]
+  (db.i/execute! db {:select [:mc.* :m.code]
                      :from [[:material-change :mc]]
                      :join [[:material :m] [:= :mc.material_id :m.id]]
-                     :left-join [[:location :l] [:= :mc.to_location_id :l.id]]
-                     :where [:= :mc.from_location_id location-id]
+                     :where [:and
+                             [:in :mc.from_location_id location-ids]
+                             [:or
+                              [:= :mc.to_location_id nil]
+                              [:not-in :mc.to_location_id location-ids]]]
                      :order-by [[:mc.changed_at :desc] [:mc.id :desc]]}))
 
 (defn list-by-propagation-id
@@ -141,11 +146,21 @@
                   :where [:= :accession_id accession-id]}))
 
 (defn count-by-location-id
-  "Count materials at a given location."
+  "Count materials standing directly in this location, not in its
+  sub-locations. The delete and archive blockers rely on that: an orchard is
+  emptied of what stands in it, not of what is in its rows. The location
+  panel's count covers sub-locations, through count-in-locations."
   [db location-id]
   (db.i/count db {:select [:id]
                   :from [:material]
                   :where [:= :location_id location-id]}))
+
+(defn count-in-locations
+  "Count materials in any of `location-ids`, a subquery."
+  [db location-ids]
+  (db.i/count db {:select [:id]
+                  :from [:material]
+                  :where [:in :location_id location-ids]}))
 
 (defn count-by-taxon-id
   "Count materials for a given taxon (via accession)."

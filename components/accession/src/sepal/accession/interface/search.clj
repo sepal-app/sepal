@@ -1,6 +1,7 @@
 (ns sepal.accession.interface.search
   "Search field definitions for accessions."
   (:require [sepal.i18n.interface :refer [N_]]
+            [sepal.location.interface :as loc.i]
             [sepal.search.interface :as search.i]))
 
 (defmethod search.i/search-config :accession [_]
@@ -58,18 +59,21 @@
                   :label (N_ "Supplier")
                   :joins [[:contact :c] [:= :c.id :a.supplier_contact_id]]}
 
-    ;; Related: location (through material)
+    ;; Related: location (through material). A location filter covers its
+    ;; sub-locations; see loc.i/subtree-filter.
     :location    {:column :l.code
                   :type :text
                   :label (N_ "Location")
-                  :joins [[:material :m] [:= :m.accession_id :a.id]
-                          [:location :l] [:= :l.id :m.location_id]]}
+                  :filter-clause (loc.i/subtree-filter :m.location_id
+                                                       {:column :l.code :type :text})
+                  :joins [[:material :m] [:= :m.accession_id :a.id]]}
 
     :location.id {:column :l.id
                   :type :id
                   :label (N_ "Location")
-                  :joins [[:material :m] [:= :m.accession_id :a.id]
-                          [:location :l] [:= :l.id :m.location_id]]}
+                  :filter-clause (loc.i/subtree-filter :m.location_id
+                                                       {:column :l.id :type :id})
+                  :joins [[:material :m] [:= :m.accession_id :a.id]]}
 
     ;; Related: material type
     :material.type {:column :m.type

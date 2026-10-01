@@ -129,6 +129,8 @@
 (defmethod blockers :location [_ db location]
   (let [id (:location/id location)]
     (->> [(counted :material (material.i/count-by-location-id db id))
+          ;; The foreign key would refuse anyway; this says why first.
+          (counted :child-location (location.i/count-children db id))
           (counted :material-change (material.i/count-changes-by-location-id db id))
           ;; A batch is history, so a finished one holds the bench as firmly
           ;; as a running one.
@@ -203,6 +205,8 @@
                           "%1 moves in the history reference this location" count)
     :accession (trn "%1 accession references this"
                     "%1 accessions reference this" count)
+    :child-location (trn "%1 location sits inside this one"
+                         "%1 locations sit inside this one" count)
     :child-taxon (trn "%1 taxon names this one as its parent"
                       "%1 taxa name this one as their parent" count)
     :parentage (trn "%1 cross names this taxon as a parent"

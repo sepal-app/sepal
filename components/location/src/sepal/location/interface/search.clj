@@ -26,6 +26,18 @@
                   :type :id
                   :label (N_ "ID")}
 
+    ;; The parent's name or code, through location_fts keyed by parent_id, the
+    ;; way taxon's parent: works.
+    :parent      {:column :l.parent_id
+                  :type :fts
+                  :fts-table :location_fts
+                  :id-column :l.parent_id
+                  :label (N_ "Parent location")}
+
+    :parent.id   {:column :l.parent_id
+                  :type :id
+                  :label (N_ "Parent location")}
+
     ;; A retired location is out of the way unless asked for: `archived:true`
     ;; lists them, `archived:false` the rest, and a query that says neither
     ;; gets the active ones. The column holds a word rather than a flag, so the

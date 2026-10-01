@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.picker-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
@@ -88,3 +89,34 @@
             (is (= "false" (.attr row "aria-selected"))))
           (finally
             (location.i/delete! *db* (:location/id loc))))))))
+
+(deftest test-exclude-drops-a-location-and-everything-under-it
+  (tf/testing "editing never offers a parent the component would refuse"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}
+     [::location.i/factory :key/orchard] {:db *db* :data {:name "Excl orchard"}}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
+                                      :data {:name "Excl row"}}
+     [::location.i/factory :key/other] {:db *db* :data {:name "Excl other"}}}
+    (fn [{:keys [user orchard other]}]
+      (let [sess (app.test/login (:user/email user) password)
+            ids (->> (-> sess
+                         (peri/request "/location/"
+                                       :params {"q" "Excl" "options" "1"
+                                                "exclude" (str (:location/id orchard))})
+                         :response :body
+                         (as-> ^String b (Jsoup/parse b))
+                         (.select "[role=option]"))
+                     (mapv #(parse-long (.attr % "data-value"))))]
+        (is (= [(:location/id other)] ids))))))
+
+(deftest test-an-option-names-its-parent-path
+  (tf/testing "two orchards can each have a Row 3, so the option says which"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}
+     [::location.i/factory :key/orchard] {:db *db* :data {:name "Meta orchard"}}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
+                                      :data {:name "Meta row"}}}
+    (fn [{:keys [user row]}]
+      (let [sess (app.test/login (:user/email user) password)
+            option (.selectFirst (picker-body sess "Meta row") "[role=option]")]
+        (is (re-find #"Meta orchard" (.text option)))
+        (is (re-find (re-pattern (:location/code row)) (.text option)))))))

@@ -19,7 +19,7 @@ CREATE TABLE location (
   created_at text not null default (datetime('now')),
   updated_at text not null default (datetime('now'))
 , status text not null default 'active'
-  check(status in ('active', 'archived'))) strict;
+  check(status in ('active', 'archived')), parent_id integer references location(id)) strict;
 CREATE TABLE accession (
   id integer primary key autoincrement,
   code text not null,
@@ -497,6 +497,8 @@ begin
 end;
 CREATE INDEX material_propagation_id_idx on material (propagation_id);
 CREATE INDEX accession_propagation_id_idx on accession (propagation_id);
+CREATE INDEX location_parent_id_idx ON location (parent_id);
+CREATE INDEX material_location_id_idx ON material (location_id);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -666,3 +668,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924130000', '2026-09-24 13:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260926120000', '2026-09-26 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260927120000', '2026-09-27 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20260930120000', '2026-09-30 12:00:00');

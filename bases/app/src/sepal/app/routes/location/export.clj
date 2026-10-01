@@ -3,6 +3,7 @@
   (:require [sepal.app.csv :as csv]
             [sepal.app.params :as params]
             [sepal.database.interface :as db.i]
+            [sepal.location.interface :as location.i]
             [sepal.location.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z])
@@ -14,7 +15,10 @@
   [{:key :location/id :header "location_id" :column :l.id}
    {:key :location/code :header "location_code" :column :l.code}
    {:key :location/name :header "location_name" :column :l.name}
-   {:key :location/description :header "location_description" :column :l.description}])
+   {:key :location/description :header "location_description" :column :l.description}
+   ;; Computed after the query, so it has no :column. Codes are unique, so the
+   ;; code identifies the parent.
+   {:key :location/parent-code :header "parent_code"}])
 
 ;; No export options for location - simple resource
 (def export-options [])
@@ -30,12 +34,16 @@
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
-        base-stmt {:select (mapv :column columns)
+        base-stmt {:select (keep :column columns)
                    :from [[:location :l]]}
 
         stmt (-> (search.i/compile-query :location ast base-stmt)
                  (assoc :order-by [:l.code]))
-        rows (db.i/execute! db stmt)
+        rows (let [rows (db.i/execute! db stmt)
+                   paths (location.i/paths db (map :location/id rows))]
+               (mapv #(assoc % :location/parent-code
+                             (:location/code (last (butlast (get paths (:location/id %))))))
+                     rows))
 
         csv-content (csv/rows->csv columns rows)
         filename (format "locations-%s.csv"

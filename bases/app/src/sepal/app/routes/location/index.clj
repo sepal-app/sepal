@@ -8,11 +8,13 @@
             [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.export :as ui.export]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [tr trc]]
+            [sepal.location.interface :as location.i]
             [sepal.location.interface.permission :as location.perm]
             [sepal.location.interface.search]
             [sepal.search.interface :as search.i]
@@ -48,6 +50,10 @@
     :type :identifier
     :priority 2
     :cell :location/code}
+   {:name (trc "location" "Parent")
+    :type :text
+    :priority 4
+    :cell (fn [l] (some-> (:location/parent-path l) seq location-path/markup))}
    {:name (tr "Description")
     :type :text
     :priority 3
@@ -112,11 +118,12 @@
   [:map
    [:page {:default 1} :int]
    [:page-size {:default default-page-size} :int]
-   [:q :string]])
+   [:q :string]
+   [:exclude {:optional true} :int]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
   (let [{:keys [db]} context
-        {:keys [page page-size q]} (params/decode Params query-params)
+        {:keys [page page-size q exclude]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
         ;; Parse search query
@@ -141,7 +148,13 @@
         stmt (cond-> (search.i/compile-query :location ast base-stmt)
                (or picker? (not asked-about-archived?))
                (update :where #(let [active [:= :l.status "active"]]
-                                 (if % [:and % active] active))))
+                                 (if % [:and % active] active)))
+
+               ;; Choosing a parent while editing: a location can't sit inside
+               ;; itself or anything below it, so neither is offered.
+               exclude
+               (update :where #(let [clause [:not-in :l.id (location.i/subtree [:= :l.id exclude])]]
+                                 (if % [:and % clause] clause))))
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
@@ -149,7 +162,12 @@
                                               :limit page-size
                                               :offset offset
                                               :order-by (concat (search.i/relevance-order :location ast)
-                                                                [[:l.name :asc]])))]
+                                                                [[:l.name :asc]])))
+        ;; Each row's ancestors, from one query for the page: the list's
+        ;; Parent column and the picker's meta line both show them.
+        rows (let [paths (location.i/paths db (map :location/id rows))]
+               (mapv #(assoc % :location/parent-path (butlast (get paths (:location/id %))))
+                     rows))]
 
     (cond
       ;; The combobox asks for its rows as markup, so what an option looks like
@@ -159,16 +177,20 @@
       (html/render-partial
         (ui.combobox/options-fragment
           :total total
-          :items (for [location rows]
+          :items (for [location rows
+                       :let [ancestors (:location/parent-path location)]]
                    {:id (:location/id location)
-                    ;; What the field shows once it is chosen: one line, plain.
+                      ;; What the field shows once it is chosen: one line, plain.
                     :text (format "%s (%s)"
                                   (:location/code location)
                                   (:location/name location))
                     :content (ui.combobox/option-content
                                :icon (lucide/map-pin)
                                :title (:location/name location)
-                               :meta (:location/code location))})))
+                                 ;; The parent path tells two Row 3s apart.
+                               :meta (cond-> (:location/code location)
+                                       (seq ancestors)
+                                       (str " · " (location-path/text ancestors))))})))
 
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
       ;; swaps itself out for them.

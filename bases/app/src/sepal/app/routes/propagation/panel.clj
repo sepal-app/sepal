@@ -13,9 +13,9 @@
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.product :as propagation.product]
             [sepal.app.routes.propagation.shared :as shared]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.resource-panel :as panel]
             [sepal.i18n.interface :refer [tr]]
-            [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.propagation.interface.permission :as propagation.perm]
             [sepal.taxon.interface :as taxon.i]
@@ -76,7 +76,7 @@
                                [:a {:href (z/url-for location.routes/detail
                                                      {:id (:location/id location)})
                                     :class "spl-link"}
-                                (:location/name location)])}
+                                (location-path/markup (:location/path location))])}
                      {:label (tr "Rootstock") :value (:taxon/name rootstock)}]))
 
         (panel/collapsible-section
@@ -111,8 +111,7 @@
   (let [parent (accession.i/get-by-id db (:propagation/parent-accession-id propagation))
         parent-material (some->> (:propagation/parent-material-id propagation)
                                  (material.i/get-by-id db))
-        location (some->> (:propagation/location-id propagation)
-                          (location.i/get-by-id db))
+        location (location-path/location db (:propagation/location-id propagation))
         rootstock (some->> (:propagation/rootstock-taxon-id propagation)
                            (taxon.i/get-by-id db))]
     {:propagation propagation

@@ -78,3 +78,45 @@
             (finally
               (doseq [p [p1 p2 p3]]
                 (jdbc.sql/delete! db :propagation {:id (:propagation/id p)})))))))))
+
+(deftest test-location-filters-cover-sub-locations
+  (tf/testing "a filter on the orchard finds batches on its rows"
+    {[::location.i/factory :key/orchard] {:db *db* :data {:code "PSRCH" :name "PSRCH orchard"}}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
+                                      :data {:code "PSRCH-R1" :name "PSRCH row"}}
+     [::location.i/factory :key/other] {:db *db* :data {:code "PSRCHX" :name "PSRCH other"}}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+     [::propagation.i/factory :key/p-row] {:db *db* :accession (ig/ref :key/accession)}
+     [::propagation.i/factory :key/p-other] {:db *db* :accession (ig/ref :key/accession)}}
+    (fn [{:keys [orchard row other p-row p-other]}]
+      (propagation.i/update! *db* (:propagation/id p-row) {:location-id (:location/id row)})
+      (propagation.i/update! *db* (:propagation/id p-other) {:location-id (:location/id other)})
+      (let [found (fn [q]
+                    (->> (search.i/compile-query :propagation (search.i/parse q)
+                                                 {:select [:p.id] :from [[:propagation :p]]})
+                         (db.i/execute! *db*)
+                         (mapv :propagation/id)))
+            in-row (:propagation/id p-row)
+            elsewhere (:propagation/id p-other)]
+        (try
+          (is (some #{in-row} (found (str "location.id:" (:location/id orchard)))) "parent id")
+          (is (some #{in-row} (found (str "location.id:" (:location/id row)))) "leaf id")
+          (is (= 1 (count (filter #{in-row} (found "location:PSRCH"))))
+              "matching the orchard and the row returns it once")
+          (let [negated (found (str "-location.id:" (:location/id orchard)))]
+            (is (not-any? #{in-row} negated) "negated excludes the subtree")
+            (is (some #{elsewhere} negated) "and keeps the rest"))
+          (is (some #{in-row} (found "location:\"PSRCH orchard\"")) "parent name")
+          (finally
+            ;; The locations' halts don't wait for these, so let go of them.
+            (doseq [p [p-row p-other]]
+              (propagation.i/update! *db* (:propagation/id p) {:location-id nil}))))))))
+
+(deftest test-a-blank-location-filter-narrows-nothing
+  (tf/testing "location:\" \" compiles to no filter rather than failing"
+    {}
+    (fn [_]
+      (is (vector? (db.i/execute! *db* (search.i/compile-query
+                                         :propagation (search.i/parse "location:\" \"")
+                                         {:select [:p.id] :from [[:propagation :p]]})))))))

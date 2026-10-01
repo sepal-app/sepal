@@ -120,7 +120,7 @@
         (is (some? (jdbc.sql/delete! db :location {:id (:location/id loc)}))
             "once nothing intends it the location can go")))))
 
-(deftest test-awaiting-planting-by-location-id
+(deftest test-awaiting-planting-in-locations
   (let [db *db*]
     (tf/testing "an accession intended for a location with nothing planted"
       {[::taxon.i/factory :key/taxon] {:db db}
@@ -132,8 +132,8 @@
         (is (match? [{:accession/id (:accession/id acc)
                       :accession/code (:accession/code acc)
                       :taxon/name (:taxon/name taxon)}]
-                    (acc.i/awaiting-planting-by-location-id
-                      db (:location/id loc))))))
+                    (acc.i/awaiting-planting-in-locations
+                      db (loc.i/subtree [:= :l.id (:location/id loc)]))))))
 
     (tf/testing "material in the intended location takes it off the list"
       {[::taxon.i/factory :key/taxon] {:db db}
@@ -146,8 +146,8 @@
                                    :location (ig/ref :key/loc)}}
       (fn [{:keys [loc mat]}]
         (is (some? mat))
-        (is (= [] (acc.i/awaiting-planting-by-location-id
-                    db (:location/id loc))))))
+        (is (= [] (acc.i/awaiting-planting-in-locations
+                    db (loc.i/subtree [:= :l.id (:location/id loc)]))))))
 
     (tf/testing "material somewhere else leaves it on the list"
       {[::taxon.i/factory :key/taxon] {:db db}
@@ -162,8 +162,8 @@
       (fn [{:keys [acc intended mat]}]
         (is (some? mat))
         (is (match? [{:accession/id (:accession/id acc)}]
-                    (acc.i/awaiting-planting-by-location-id
-                      db (:location/id intended))))))
+                    (acc.i/awaiting-planting-in-locations
+                      db (loc.i/subtree [:= :l.id (:location/id intended)]))))))
 
     (tf/testing "partly planted counts as planted"
       ;; Material in two locations, one of them the intended one. The bed has
@@ -183,8 +183,8 @@
       (fn [{:keys [intended mat1 mat2]}]
         (is (some? mat1))
         (is (some? mat2))
-        (is (= [] (acc.i/awaiting-planting-by-location-id
-                    db (:location/id intended))))))
+        (is (= [] (acc.i/awaiting-planting-in-locations
+                    db (loc.i/subtree [:= :l.id (:location/id intended)]))))))
 
     (tf/testing "an accession with no intended location is never listed"
       {[::taxon.i/factory :key/taxon] {:db db}
@@ -192,8 +192,8 @@
        [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}}
       (fn [{:keys [acc loc]}]
         (is (some? acc))
-        (is (= [] (acc.i/awaiting-planting-by-location-id
-                    db (:location/id loc))))))))
+        (is (= [] (acc.i/awaiting-planting-in-locations
+                    db (loc.i/subtree [:= :l.id (:location/id loc)]))))))))
 
 (deftest test-receipt-fields-round-trip
   (let [db *db*]

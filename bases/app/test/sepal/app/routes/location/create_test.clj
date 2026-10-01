@@ -104,3 +104,16 @@
           (finally
             (location.i/delete! *db* (:location/id existing))))))))
 
+(deftest test-new-location-prefills-its-parent
+  (tf/testing "Add sub-location opens the form with the parent chosen"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::location.i/factory :key/orchard] {:db *db*}}
+    (fn [{:keys [user orchard]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            doc (-> sess
+                    (peri/request "/location/new/"
+                                  :params {"parent-id" (str (:location/id orchard))})
+                    :response :body
+                    (as-> ^String b (Jsoup/parse b)))]
+        (is (= (str (:location/id orchard))
+               (.attr (.selectFirst doc "sepal-combobox[name=parent-id]") "data-value")))))))
