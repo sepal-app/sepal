@@ -6,12 +6,14 @@
             [sepal.app.routes.location.detail.shared :as location.shared]
             [sepal.app.routes.location.panel :as location.panel]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.ui.location-path :as location-path]
             [sepal.app.ui.observations :as ui.observations]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
             [sepal.i18n.interface :refer [tr trc]]
+            [sepal.location.interface :as location.i]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.validation.interface :as validation.i]
@@ -83,19 +85,46 @@
                                         :value-options-by-type (value-options-by-type db)
                                         :today (str (datetime/today timezone))))))
 
+(defn- sub-location-observations
+  "Observations on the sub-locations, read only. Each is edited on its own
+  location's tab, which is where its form posts and what it re-renders. Not
+  part of the swapped list, because saving one of this location's own
+  observations changes nothing here."
+  [db location]
+  (let [observations (observation.i/get-for-locations
+                       db (location.i/subtree [:= :l.parent_id (:location/id location)]))
+        paths (location-path/by-id db (map :observation/resource-id observations))]
+    (when (seq observations)
+      [:section {:class "mt-6"}
+       [:h3 {:class "text-sm font-medium"} (tr "In sub-locations")]
+       [:ul {:class "mt-2 space-y-2"}
+        (for [{:observation/keys [id resource-id type-label value-label observed-on observer]}
+              observations]
+          ^{:key id}
+          [:li {:class "text-sm"}
+           [:a {:href (z/url-for location.routes/detail-observations {:id resource-id})
+                :class "spl-link"}
+            (get paths resource-id)]
+           " · " (some->> type-label (trc "observation_type"))
+           (when value-label (str " · " (trc "observation_value" value-label)))
+           " · " observed-on
+           (when observer (str " · " observer))])]])))
+
 (defn page-content [& {:keys [location observations errors values db timezone]}]
   (let [id (:location/id location)]
     (location.shared/page
       :location location
       :active location.shared/observations-tab
-      :body (ui.observations/observations-body :observations observations
-                                               :create-url (create-url id)
-                                               :observation-url-fn (observation-url-fn id)
-                                               :errors errors
-                                               :values values
-                                               :type-options (observation.i/list-types db)
-                                               :value-options-by-type (value-options-by-type db)
-                                               :today (str (datetime/today timezone))))))
+      :body (list
+              (ui.observations/observations-body :observations observations
+                                                 :create-url (create-url id)
+                                                 :observation-url-fn (observation-url-fn id)
+                                                 :errors errors
+                                                 :values values
+                                                 :type-options (observation.i/list-types db)
+                                                 :value-options-by-type (value-options-by-type db)
+                                                 :today (str (datetime/today timezone)))
+              (sub-location-observations db location)))))
 
 (defn render [& {:keys [db location observations panel-data timezone]}]
   (ui.page/page

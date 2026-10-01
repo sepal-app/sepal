@@ -172,9 +172,12 @@
   [db location]
   (let [location-id (:location/id location)
         chain (get (loc.i/paths db #{location-id}) location-id)
-        material-count (mat.i/count-by-location-id db location-id)
-        awaiting (acc.i/awaiting-planting-by-location-id db location-id)
-        moved-out (let [rows (mat.i/moved-out-by-location-id db location-id)
+        ;; Everything below covers the location and its sub-locations, apart
+        ;; from Activity, which is about the location record itself.
+        subtree (loc.i/subtree [:= :l.id location-id])
+        material-count (mat.i/count-in-locations db subtree)
+        awaiting (acc.i/awaiting-planting-in-locations db subtree)
+        moved-out (let [rows (mat.i/moved-out-of-locations db subtree)
                         paths (location-path/by-id db (keep :material-change/to-location-id rows))]
                     (mapv #(assoc % :to-path (get paths (:material-change/to-location-id %))) rows))
         activities (activity.i/get-by-resource db
@@ -187,7 +190,7 @@
         ;; The worklist: a completed or failed batch is history, not something
         ;; on the bench. The raw row holds the stored string, not the keyword.
         propagations (filter #(= "active" (name (:propagation/status %)))
-                             (propagation.i/list-by-location-id db location-id))]
+                             (propagation.i/list-in-locations db subtree))]
     {:location location
      :ancestors (vec (butlast chain))
      :children (loc.i/list-children db location-id)

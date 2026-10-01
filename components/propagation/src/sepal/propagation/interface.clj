@@ -31,8 +31,8 @@
 (defn list-by-parent-material-id [db material-id]
   (core/list-by-parent-material-id db material-id))
 
-(defn list-by-location-id [db location-id]
-  (core/list-by-location-id db location-id))
+(defn list-in-locations [db location-ids]
+  (core/list-in-locations db location-ids))
 
 (defn count-by-parent-accession-id [db accession-id]
   (core/count-by-parent-accession-id db accession-id))

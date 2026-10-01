@@ -47,13 +47,13 @@
                      :where [:= :parent_material_id material-id]
                      :order-by [[:propagated_on :desc] [:id :desc]]}))
 
-(defn list-by-location-id
-  "Propagations running at this location. The location panel shows what is on
-  a bench alongside the material filed there."
-  [db location-id]
+(defn list-in-locations
+  "Propagations at any of `location-ids`, a subquery. The location panel shows
+  what is on a bench alongside the material filed there."
+  [db location-ids]
   (db.i/execute! db {:select [:*]
                      :from [:propagation]
-                     :where [:= :location_id location-id]
+                     :where [:in :location_id location-ids]
                      :order-by [[:propagated_on :desc] [:id :desc]]}))
 
 ;; The counts the delete path asks for. A propagation is history like a

@@ -188,7 +188,7 @@
                          :parent-accession-id (:accession/id acc)
                          :location-id (:location/id loc)})]
           (try
-            (let [rows (propagation.i/list-by-location-id db (:location/id loc))]
+            (let [rows (propagation.i/list-in-locations db (location.i/subtree [:= :l.id (:location/id loc)]))]
               (is (= 1 (count rows)))
               (is (= (:propagation/id prop) (:propagation/id (first rows)))))
             (finally
