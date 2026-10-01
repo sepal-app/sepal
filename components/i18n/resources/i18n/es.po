@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Sepal\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2026-09-30 21:34-0400\n"
+"PO-Revision-Date: 2026-10-01 15:47-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -679,7 +679,7 @@ msgstr "Fecha de accesión"
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:97
 #: bases/app/src/sepal/app/routes/contact/panel.clj:73
-#: bases/app/src/sepal/app/routes/location/panel.clj:88
+#: bases/app/src/sepal/app/routes/location/panel.clj:86
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:153
 msgid "Statistics"
 msgstr "Estadísticas"
@@ -690,8 +690,9 @@ msgstr "Estadísticas"
 #: bases/app/src/sepal/app/routes/contact/panel.clj:60
 #: bases/app/src/sepal/app/routes/contact/panel.clj:76
 #: bases/app/src/sepal/app/routes/contact/panel.clj:88
-#: bases/app/src/sepal/app/routes/location/panel.clj:91
-#: bases/app/src/sepal/app/routes/location/panel.clj:160
+#: bases/app/src/sepal/app/routes/location/panel.clj:72
+#: bases/app/src/sepal/app/routes/location/panel.clj:89
+#: bases/app/src/sepal/app/routes/location/panel.clj:158
 #: bases/app/src/sepal/app/routes/material/panel.clj:148
 #: bases/app/src/sepal/app/routes/material/panel.clj:177
 #: bases/app/src/sepal/app/routes/media/panel.clj:80
@@ -709,7 +710,7 @@ msgstr "Ninguno"
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:103
 #: bases/app/src/sepal/app/routes/activity/index.clj:134
-#: bases/app/src/sepal/app/routes/location/panel.clj:94
+#: bases/app/src/sepal/app/routes/location/panel.clj:92
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:25
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:70
 #: bases/app/src/sepal/app/routes/settings/codes.clj:80
@@ -730,7 +731,7 @@ msgstr "Nada cultivado a partir de esta accesión"
 #: bases/app/src/sepal/app/routes/accession/panel.clj:139
 #: bases/app/src/sepal/app/routes/activity/index.clj:673
 #: bases/app/src/sepal/app/routes/contact/panel.clj:85
-#: bases/app/src/sepal/app/routes/location/panel.clj:157
+#: bases/app/src/sepal/app/routes/location/panel.clj:155
 #: bases/app/src/sepal/app/routes/material/panel.clj:174
 #: bases/app/src/sepal/app/routes/media/panel.clj:77
 #: bases/app/src/sepal/app/routes/tag/panel.clj:61
@@ -1570,6 +1571,10 @@ msgstr "Observaciones"
 msgid "Location sections"
 msgstr "Secciones de la ubicación"
 
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:59
+msgid "Add a sub-location"
+msgstr "Añadir una sububicación"
+
 #: bases/app/src/sepal/app/routes/location/form.clj:16
 #: bases/app/src/sepal/app/routes/location/panel.clj:57
 msgctxt "location"
@@ -1620,48 +1625,44 @@ msgstr "Los parterres, invernaderos y almacenes donde vive el material."
 msgid "Search... (e.g., taxon:Quercus)"
 msgstr "Buscar... (p. ej., taxon:Quercus)"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:70
+#: bases/app/src/sepal/app/routes/location/panel.clj:69
 msgid "Sub-locations"
 msgstr "Sububicaciones"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:84
-msgid "Add sub-location"
-msgstr "Añadir sububicación"
-
-#: bases/app/src/sepal/app/routes/location/panel.clj:100
+#: bases/app/src/sepal/app/routes/location/panel.clj:98
 msgid "Awaiting planting"
 msgstr "Pendiente de plantación"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:103
+#: bases/app/src/sepal/app/routes/location/panel.clj:101
 msgid "nothing waiting"
 msgstr "nada en espera"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:117
+#: bases/app/src/sepal/app/routes/location/panel.clj:115
 msgid "Plant here"
 msgstr "Plantar aquí"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:120
+#: bases/app/src/sepal/app/routes/location/panel.clj:118
 msgid "received %1"
 msgstr "recibido %1"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:124
+#: bases/app/src/sepal/app/routes/location/panel.clj:122
 msgid "Moved"
 msgstr "Trasladado"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:127
+#: bases/app/src/sepal/app/routes/location/panel.clj:125
 msgid "nothing has moved"
 msgstr "nada se ha movido"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:144
+#: bases/app/src/sepal/app/routes/location/panel.clj:142
 #: bases/app/src/sepal/app/routes/material/panel.clj:48
 msgid "to %1"
 msgstr "a %1"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:145
+#: bases/app/src/sepal/app/routes/location/panel.clj:143
 msgid "removed"
 msgstr "retirado"
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:153
+#: bases/app/src/sepal/app/routes/location/panel.clj:151
 msgid "nothing running here"
 msgstr "nada en marcha aquí"
 

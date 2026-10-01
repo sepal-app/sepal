@@ -671,7 +671,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:97
 #: bases/app/src/sepal/app/routes/contact/panel.clj:73
-#: bases/app/src/sepal/app/routes/location/panel.clj:88
+#: bases/app/src/sepal/app/routes/location/panel.clj:86
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:153
 msgid "Statistics"
 msgstr ""
@@ -682,8 +682,9 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/contact/panel.clj:60
 #: bases/app/src/sepal/app/routes/contact/panel.clj:76
 #: bases/app/src/sepal/app/routes/contact/panel.clj:88
-#: bases/app/src/sepal/app/routes/location/panel.clj:91
-#: bases/app/src/sepal/app/routes/location/panel.clj:160
+#: bases/app/src/sepal/app/routes/location/panel.clj:72
+#: bases/app/src/sepal/app/routes/location/panel.clj:89
+#: bases/app/src/sepal/app/routes/location/panel.clj:158
 #: bases/app/src/sepal/app/routes/material/panel.clj:148
 #: bases/app/src/sepal/app/routes/material/panel.clj:177
 #: bases/app/src/sepal/app/routes/media/panel.clj:80
@@ -701,7 +702,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:103
 #: bases/app/src/sepal/app/routes/activity/index.clj:134
-#: bases/app/src/sepal/app/routes/location/panel.clj:94
+#: bases/app/src/sepal/app/routes/location/panel.clj:92
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:25
 #: bases/app/src/sepal/app/routes/media/detail/link.clj:70
 #: bases/app/src/sepal/app/routes/settings/codes.clj:80
@@ -722,7 +723,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/accession/panel.clj:139
 #: bases/app/src/sepal/app/routes/activity/index.clj:673
 #: bases/app/src/sepal/app/routes/contact/panel.clj:85
-#: bases/app/src/sepal/app/routes/location/panel.clj:157
+#: bases/app/src/sepal/app/routes/location/panel.clj:155
 #: bases/app/src/sepal/app/routes/material/panel.clj:174
 #: bases/app/src/sepal/app/routes/media/panel.clj:77
 #: bases/app/src/sepal/app/routes/tag/panel.clj:61
@@ -1547,6 +1548,10 @@ msgstr ""
 msgid "Location sections"
 msgstr ""
 
+#: bases/app/src/sepal/app/routes/location/detail/shared.clj:59
+msgid "Add a sub-location"
+msgstr ""
+
 #: bases/app/src/sepal/app/routes/location/form.clj:16
 #: bases/app/src/sepal/app/routes/location/panel.clj:57
 msgctxt "location"
@@ -1597,48 +1602,44 @@ msgstr ""
 msgid "Search... (e.g., taxon:Quercus)"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:70
+#: bases/app/src/sepal/app/routes/location/panel.clj:69
 msgid "Sub-locations"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:84
-msgid "Add sub-location"
-msgstr ""
-
-#: bases/app/src/sepal/app/routes/location/panel.clj:100
+#: bases/app/src/sepal/app/routes/location/panel.clj:98
 msgid "Awaiting planting"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:103
+#: bases/app/src/sepal/app/routes/location/panel.clj:101
 msgid "nothing waiting"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:117
+#: bases/app/src/sepal/app/routes/location/panel.clj:115
 msgid "Plant here"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:120
+#: bases/app/src/sepal/app/routes/location/panel.clj:118
 msgid "received %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:124
+#: bases/app/src/sepal/app/routes/location/panel.clj:122
 msgid "Moved"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:127
+#: bases/app/src/sepal/app/routes/location/panel.clj:125
 msgid "nothing has moved"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:144
+#: bases/app/src/sepal/app/routes/location/panel.clj:142
 #: bases/app/src/sepal/app/routes/material/panel.clj:48
 msgid "to %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:145
+#: bases/app/src/sepal/app/routes/location/panel.clj:143
 msgid "removed"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/panel.clj:153
+#: bases/app/src/sepal/app/routes/location/panel.clj:151
 msgid "nothing running here"
 msgstr ""
 

@@ -64,11 +64,12 @@
                      {:label (tr "Description") :value description}]))
 
         ;; Sub-locations: the ones directly inside this one. Deeper levels are
-        ;; a click away on each. Never disabled, because it holds the link
-        ;; that adds the first one.
+        ;; a click away on each. Adding one is in the record's Actions menu.
         (panel/collapsible-section
           :title (tr "Sub-locations")
           :count (count children)
+          :disabled? (empty? children)
+          :empty-label (trc "empty section" "none")
           :children
           [:div {:class "space-y-1"}
            (for [child children]
@@ -78,12 +79,7 @@
                    :class "spl-link"}
                (:location/name child)]
               " "
-              [:span {:class "text-text-soft"} (:location/code child)]])
-           ;; An archived location takes no new sub-locations.
-           (when-not (= :archived (:location/status location))
-             [:a {:href (z/url-for location.routes/new nil {:parent-id id})
-                  :class "spl-link text-sm"}
-              (tr "Add sub-location")])])
+              [:span {:class "text-text-soft"} (:location/code child)]])])
 
         ;; Statistics section
         (panel/collapsible-section

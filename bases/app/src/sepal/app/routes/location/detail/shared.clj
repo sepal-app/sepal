@@ -44,8 +44,9 @@
 
 (defn actions
   "The page-title actions for the location's General tab. `general.clj` is
-  the only caller, so Archive, Unarchive and Delete appear there and nowhere
-  else on the record.
+  the only caller, so Add a sub-location, Archive, Unarchive and Delete appear
+  there and nowhere else on the record. An archived location takes no new
+  sub-locations, so it isn't offered one.
 
   A location that has ever held material cannot be deleted -- the move log
   names it -- so archiving is the only way it leaves the garden, and it
@@ -54,6 +55,9 @@
   (let [id (:location/id location)
         archived? (= :archived (:location/status location))]
     (ui.actions/menu
+      :items (when-not archived?
+               [{:label (tr "Add a sub-location")
+                 :href (z/url-for location.routes/new nil {:parent-id id})}])
       :archive-url (when-not archived?
                      (z/url-for location.routes/archive {:id id}))
       :unarchive-url (when archived?

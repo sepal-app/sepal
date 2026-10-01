@@ -43,9 +43,8 @@
             "the Parent row links to the zone")
         (is (some? (link-to doc row))
             "the Sub-locations section links to the row")
-        (is (some? (.selectFirst doc (str "a[href=\"/location/new/?parent-id="
-                                          (:location/id orchard) "\"]")))
-            "and offers to add another")))))
+        (is (nil? (.selectFirst doc "a[href^=\"/location/new/\"]"))
+            "adding one is an action, not a panel link")))))
 
 (deftest test-reader-page-shows-the-same-panel
   (tf/testing "a reader sees the parent and sub-locations too"
@@ -98,11 +97,32 @@
         (is (nil? (link-to by-id row)))
         (is (some? (link-to by-name row)))))))
 
-(deftest test-an-archived-panel-offers-no-sub-location
+(defn- add-sub-location [doc location]
+  (.selectFirst doc (str "a[href=\"/location/new/?parent-id=" (:location/id location) "\"]")))
+
+(deftest test-the-actions-menu-adds-a-sub-location
+  (tf/testing "an editor adds one from the General tab's Actions menu"
+    (tree)
+    (fn [{:keys [user orchard]}]
+      (let [sess (app.test/login (:user/email user) password)
+            doc (page sess (str "/location/" (:location/id orchard) "/general/"))]
+        (is (some? (some-> (.selectFirst doc ".spl-actions") (add-sub-location orchard))))))))
+
+(deftest test-an-archived-location-offers-no-sub-location
   (tf/testing "an archived location takes no new sub-locations"
     (tree)
     (fn [{:keys [user row]}]
       (location.i/set-status! *db* (:location/id row) :archived)
       (let [sess (app.test/login (:user/email user) password)
-            doc (page sess (str "/location/" (:location/id row) "/panel/"))]
-        (is (nil? (.selectFirst doc "a[href^=\"/location/new/\"]")))))))
+            doc (page sess (str "/location/" (:location/id row) "/general/"))]
+        (is (some? (.selectFirst doc ".spl-actions")) "the menu is still there")
+        (is (nil? (add-sub-location doc row)))))))
+
+(deftest test-a-reader-is-not-offered-a-sub-location
+  (tf/testing "adding a location needs create permission"
+    (assoc (tree) [::user.i/factory :key/user] {:db *db* :password password :role :reader})
+    (fn [{:keys [user orchard]}]
+      (let [sess (app.test/login (:user/email user) password)]
+        (doseq [path [(str "/location/" (:location/id orchard) "/")
+                      (str "/location/" (:location/id orchard) "/panel/")]]
+          (is (nil? (add-sub-location (page sess path) orchard)) path))))))
