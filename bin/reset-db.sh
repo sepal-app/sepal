@@ -16,19 +16,15 @@ DB_PATH="$SEPAL_DATA_HOME/sepal.db"
 mkdir -p "$SEPAL_DATA_HOME"
 
 WFO_DATABASE_PATH=${WFO_DATABASE_PATH:-wfo_plantlist_2025-06.db}
-MIGRATE_SH=${MIGRATE_SH:-migrate.sh}
-# Nothing else needs these paths any more — the app reads the schema and the
-# migrations off the classpath — so this script carries them rather than
-# reading the environment. migrate.sh is external, so it still needs the path.
-SCHEMA_DUMP_FILE=$SCRIPT_DIR/../components/database/resources/database/schema.sql
-MIGRATIONS_DIR=$SCRIPT_DIR/../components/database/resources/database/migrations
+SCHEMA_FILE=$SCRIPT_DIR/../components/database/resources/database/schema.sql
 
 # Remove existing database and SQLite WAL/SHM files
 rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"
-sqlite3 "$DB_PATH" <"$SCHEMA_DUMP_FILE"
+sqlite3 "$DB_PATH" <"$SCHEMA_FILE"
 
-# Apply any pending migrations
-MIGRATIONS_DIR="$MIGRATIONS_DIR" ${MIGRATE_SH} apply "$DB_PATH"
+# Apply any pending migrations, with the runner the app itself uses. From the
+# project root, where deps.edn defines the alias.
+(cd "$SCRIPT_DIR/.." && clojure -M:migrate "$DB_PATH")
 
 # Initialize SpatiaLite metadata and register geometry column
 sqlite3 "$DB_PATH" "SELECT InitSpatialMetaData(1);" 2>/dev/null || true

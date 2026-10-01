@@ -4,7 +4,6 @@ FROM eclipse-temurin:21-jdk
 # Install system dependencies including Node.js and Playwright browser dependencies
 RUN apt-get update && apt-get install -y \
     curl \
-    wget \
     rlwrap \
     sqlite3 \
     libsqlite3-mod-spatialite \
@@ -21,10 +20,6 @@ RUN curl -L -O https://github.com/clojure/brew-install/releases/latest/download/
     && chmod +x linux-install.sh \
     && ./linux-install.sh \
     && rm linux-install.sh
-
-# Install migrate.sh (tests load schema directly via sqlite3, but this is available if needed)
-RUN wget -O /usr/local/bin/migrate.sh https://raw.githubusercontent.com/brettatoms/sqlite-migrate/main/migrate.sh \
-    && chmod +x /usr/local/bin/migrate.sh
 
 # Set working directory
 WORKDIR /app

@@ -104,7 +104,6 @@ for a duplicate tag name.
 - **Peridot/Kerodon** - HTTP testing
 
 ### Tools
-- **[sqlite-migrate](https://github.com/brettatoms/sqlite-migrate)** - Database migrations
 - **clj-kondo** - Linter
 - **cljfmt** - Formatter
 
@@ -180,9 +179,7 @@ The failure when you forget is misleading. `clojure` is on `PATH` anyway, so the
 command starts and then dies on what devenv supplies: without
 `EXTENSIONS_LIBRARY_PATH`, every test that opens a database fails with
 `dlopen(mod_spatialite.dylib) ... no such file`, which reads like a missing
-system library rather than a missing shell. `bin/reset-db.sh` fails a second
-way, on `migrate.sh: command not found` — the migration runner is a pinned
-package in `devenv.nix`, not something the system has.
+system library rather than a missing shell.
 
 ```bash
 # Run unit tests (default - excludes e2e tests)
@@ -251,16 +248,15 @@ devenv shell          # or just cd, with direnv active
 `devenv.nix` sets the two values that have to be absolute paths,
 `EXTENSIONS_LIBRARY_PATH` and `SEPAL_DATA_HOME`, so they follow the project
 directory instead of breaking when it moves. Don't set those in `.env.local`.
-`bin/reset-db.sh` carries `MIGRATIONS_DIR` and `SCHEMA_DUMP_FILE` itself,
-derived from its own location; nothing reads them from the environment.
+`bin/reset-db.sh` finds `schema.sql` from its own location; nothing reads that
+path from the environment.
 
 Copy `.env.local.example` to `.env.local` for everything else. Only
 `SEPAL_SECRET` is required. The full variable list, with defaults, is in
-`README.md`; the three worth knowing here are:
+`README.md`; the two worth knowing here are:
 - `SEPAL_SECRET` - The master secret everything else is derived from. Was
   called `COOKIE_SECRET` until it came to cover the token secret too
 - `WFO_DATABASE_PATH` - World Flora Online database, read by `bin/reset-db.sh`
-- `MIGRATE_SH` - Absolute path to the sqlite-migrate script, same
 
 `sepal.app.main/-main` passes `SEPAL_SECRET` to the instance API as the *master
 secret*, and the cookie key and token secret are HKDF-derived from it per
@@ -475,19 +471,27 @@ with `bin/dump-schema.sh <db-path>` against a fully migrated database. The scrip
 is `.schema` rather than `.dump`, because a dump emits the FTS5 shadow tables and
 toggles `writable_schema`, neither of which belongs in a baseline.
 
-**`bin/reset-db.sh` needs `migrate.sh`, which nothing here installs.** It is
-[`brettatoms/sqlite-migrate`](https://github.com/brettatoms/sqlite-migrate),
-`devenv.nix` does not provide it, and it is on no PATH in a fresh checkout or a
-new worktree. `bin/reset-db.sh:19` reads `MIGRATE_SH` and falls back to a bare
-`migrate.sh`, so fetch the script and point the variable at it:
+**`clojure -M:migrate DB_PATH` makes the migrated database.** It applies what
+is pending with `sepal.database.migrate/migrate!`, the runner `start!` uses, and
+it is the only way migrations are applied: `bin/reset-db.sh` calls it too. The
+alias puts only the database component on the classpath, so it runs in about a
+second. To regenerate `schema.sql`, seed a scratch database from the committed
+baseline, migrate it and dump it:
 
 ```bash
-MIGRATE_SH=/path/to/migrate.sh SEPAL_DATA_HOME=/tmp/whatever bin/reset-db.sh
+git show HEAD:components/database/resources/database/schema.sql > /tmp/base-schema.sql
+sqlite3 /tmp/schema.db < /tmp/base-schema.sql
+clojure -M:migrate /tmp/schema.db
+bin/dump-schema.sh /tmp/schema.db > components/database/resources/database/schema.sql
 ```
 
-`WFO_DATABASE_PATH` defaults to `wfo_plantlist_2025-06.db` relative to the
-working directory, which is also absent from a worktree — it is gitignored, so
-it lives only in the checkout you downloaded it into. Pass it explicitly.
+The new `schema_version` row's `applied_at` comes out as the time you ran it.
+Every other row carries the time its version names, so set it to match.
+
+`bin/reset-db.sh` also reads `WFO_DATABASE_PATH`, which defaults to
+`wfo_plantlist_2025-06.db` relative to the working directory and is absent from
+a worktree — it is gitignored, so it lives only in the checkout you downloaded
+it into. Pass it explicitly.
 
 Three things to know before you trust the output:
 
@@ -499,10 +503,11 @@ Three things to know before you trust the output:
   `CREATE TABLE "taxon"`. That is expected; don't hand-edit it back.
 - **Amending a migration you already regenerated for is a silent trap.** The
   committed `schema.sql` carries a `schema_version` row for that migration, so
-  `migrate.sh` treats the rewritten file as already applied, skips it without a
+  the runner treats the rewritten file as already applied, skips it without a
   word, and the regenerated schema comes back missing whatever the rewrite
-  added. Nothing errors. Seed `bin/reset-db.sh` from the pre-change baseline
-  instead of from the working copy:
+  added. Nothing errors. Seed the scratch database from the pre-change baseline
+  instead of from the working copy — `HEAD` until you commit, then the branch's
+  base:
 
   ```bash
   git show <base>:components/database/resources/database/schema.sql > /tmp/base-schema.sql

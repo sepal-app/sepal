@@ -196,8 +196,7 @@ for almost everything. `bin/reset-db.sh` exists for the case where you want to
 rebuild a development database from the full WFO Plantlist instead: it drops the
 database, loads the schema, applies migrations and inserts every taxon.
 
-It needs the WFO SQLite database and
-[sqlite-migrate](https://github.com/brettatoms/sqlite-migrate):
+It needs the WFO SQLite database:
 
 - Download a prebuilt database: [10.5281/zenodo.17444674](https://doi.org/10.5281/zenodo.17444674)
 - Or build one: [wfo-plantlist-sqlite](https://github.com/brettatoms/wfo-plantlist-sqlite)
