@@ -68,7 +68,7 @@ one before it.
 |---|---|---|---|
 | `user` | yes | — | — |
 | `taxon` | yes | — | `parent_id` |
-| `location` | yes | yes | — |
+| `location` | yes | yes | `parent_id` |
 | `contact` | yes | yes | — |
 | `tag` | yes | yes | — |
 | `settings` | yes | — | — |
@@ -83,6 +83,10 @@ one before it.
 | `taxon_synonym` | yes | — | `taxon_id` |
 | `taxon_distribution` | — | — | `taxon_id` |
 | `activity` | yes | in `data` | `resource_id`, `created_by`, `data.*` |
+
+A reference can also point at a record earlier in the same file:
+`taxon.parent_id` and `location.parent_id` do. Write a parent before its
+children. A reference to one later in the file fails the load.
 
 A file with no records may be omitted. Malformed JSON stops the run.
 

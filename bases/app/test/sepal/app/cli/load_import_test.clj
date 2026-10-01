@@ -699,3 +699,58 @@
               (is (= :accession/created (:activity/type created)))))
           (finally
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-a-nested-location-set-loads
+  (tf/testing "a location's parent_id resolves against one earlier in the file"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-nested"})]
+        (try
+          (spit (fs/file (fs/path dir "location.json"))
+                (json/write-str
+                  [(rec "orch" {"code" "IMPORCH" "name" "Import orchard"})
+                   (rec "row3" {"code" "IMPORCH-R3" "name" "Import row 3"}
+                        {"parent_id" (ref-to "location" "orch")})]))
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+          (let [by-code (->> (db.i/execute! db {:select [:id :code :parent_id]
+                                                :from [:location]
+                                                :where [:in :code ["IMPORCH" "IMPORCH-R3"]]})
+                             (into {} (map (juxt :location/code identity))))]
+            (is (= (:location/id (by-code "IMPORCH"))
+                   (:location/parent-id (by-code "IMPORCH-R3")))))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :import_record {:source_table "location"
+                                                 :source_id "row3"})
+            (jdbc.sql/delete! db :import_record {:source_table "location"
+                                                 :source_id "orch"})
+            (jdbc.sql/delete! db :location {:code "IMPORCH-R3"})
+            (jdbc.sql/delete! db :location {:code "IMPORCH"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-a-child-before-its-parent-is-a-reported-failure
+  (tf/testing "parents come first; a child naming a later one fails the load"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-order"})]
+        (try
+          (spit (fs/file (fs/path dir "location.json"))
+                (json/write-str
+                  [(rec "ordr-row3" {"code" "ORDR-R3" "name" "Order row 3"}
+                        {"parent_id" (ref-to "location" "ordr")})
+                   (rec "ordr" {"code" "ORDR" "name" "Order orchard"})]))
+          (is (not (zero? (li/load-import! db {:dir (str dir)
+                                               :actor (:user/email user)
+                                               :allow-nonempty true}))))
+          (is (empty? (db.i/execute! db {:select [:id] :from [:location]
+                                         :where [:in :code ["ORDR" "ORDR-R3"]]}))
+              "and the load rolled back")
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :location {:code "ORDR-R3"})
+            (jdbc.sql/delete! db :location {:code "ORDR"})
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
