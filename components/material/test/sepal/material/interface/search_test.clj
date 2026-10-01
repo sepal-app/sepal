@@ -61,7 +61,6 @@
         (is (not (contains? (found "nothingmatchesthis") id))
             "and a word that matches none of the three finds nothing")))))
 
-
 (deftest test-location-filters-cover-sub-locations
   (tf/testing "a filter on the orchard finds material in its rows"
     {[::location.i/factory :key/orchard] {:db *db* :data {:code "MSRCH" :name "MSRCH orchard"}}

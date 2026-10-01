@@ -29,7 +29,7 @@
      [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)
                                       :data {:code "OSRCH-R1" :name "OSRCH row"}}
      [::location.i/factory :key/other] {:db *db* :data {:code "OSRCHX" :name "OSRCH other"}}}
-    (fn [{:keys [orchard row other]}]
+    (fn [{:keys [row other]}]
       (let [on-row (observe! row)
             on-other (observe! other)
             found (fn [q]
