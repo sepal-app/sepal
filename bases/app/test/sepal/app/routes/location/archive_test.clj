@@ -1,5 +1,5 @@
 (ns sepal.app.routes.location.archive-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -117,3 +117,53 @@
               "the dialog offers archiving instead")
           (finally
             (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))))
+
+(deftest test-a-location-with-active-sub-locations-cannot-be-archived
+  (tf/testing "an active row under an archived orchard would leave the
+               pickers offering a place inside one that is gone"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}
+     [::location.i/factory :key/orchard] {:db *db*}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)}}
+    (fn [{:keys [user orchard row]}]
+      (let [id (:location/id orchard)
+            sess (app.test/login (:user/email user) password)]
+        (try
+          (let [response (post-archive sess id "/archive/")]
+            (is (= 422 (:status response)))
+            (is (re-find #"1 location sits inside this one" (:body response))))
+          (testing "archiving the row first clears it"
+            (location.i/set-status! *db* (:location/id row) :archived)
+            (is (= 303 (:status (post-archive sess id "/archive/")))))
+          (finally
+            (jdbc.sql/delete! *db* :activity {:resource_type "location"
+                                              :resource_id id})))))))
+
+(deftest test-a-location-under-an-archived-parent-cannot-be-unarchived
+  (tf/testing "an active location never sits under an archived one"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}
+     [::location.i/factory :key/orchard] {:db *db*}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)}}
+    (fn [{:keys [user orchard row]}]
+      (location.i/set-status! *db* (:location/id row) :archived)
+      (location.i/set-status! *db* (:location/id orchard) :archived)
+      (let [id (:location/id row)
+            sess (app.test/login (:user/email user) password)
+            {:keys [response] :as sess} (peri/request sess (str "/location/" id "/general/"))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response] :as sess} (peri/request sess (str "/location/" id "/unarchive/")
+                                                      :request-method :post
+                                                      :params {:__anti-forgery-token token})]
+        (try
+          (is (= 303 (:status response)))
+          (is (= :archived (:location/status (location.i/get-by-id *db* id)))
+              "refused")
+          (is (re-find #"Restore the parent first"
+                       ;; The detail page sends an editor on to General.
+                       (-> sess
+                           (peri/request (get-in response [:headers "Location"]))
+                           (peri/follow-redirect)
+                           :response :body))
+              "and the page it lands on says why")
+          (finally
+            (jdbc.sql/delete! *db* :activity {:resource_type "location"
+                                              :resource_id id})))))))

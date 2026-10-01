@@ -21,13 +21,17 @@
 (defn blockers
   "What stops this location being archived, as [{:reason kw :count int}].
 
-  Material standing in it, and nothing else. History is the reason to archive
-  rather than a reason not to. Plants still here are a different matter: a
-  location that has left the pickers but still holds material hides where that
-  material is, so it has to be emptied first."
+  Material standing in it, or an active location inside it. History is the
+  reason to archive rather than a reason not to. Plants still here are a
+  different matter: a location that has left the pickers but still holds
+  material hides where that material is, so it has to be emptied first. An
+  active sub-location would sit under one that is gone, so it is archived
+  first."
   [db location]
   (->> [(when-let [n (material.i/count-by-location-id db (:location/id location))]
-          (when (pos? n) {:reason :material :count n}))]
+          (when (pos? n) {:reason :material :count n}))
+        (let [n (location.i/count-children db (:location/id location) :active)]
+          (when (pos? n) {:reason :child-location :count n}))]
        (filterv some?)))
 
 (defn- render-dialog [db location]
@@ -65,10 +69,17 @@
       (render-dialog db resource))))
 
 (defn unarchive-handler
-  "Bringing one back has nothing to check: an active location is the ordinary
-  state, and anything that would block archiving is no reason to refuse it."
+  "Bringing one back checks only its parent: an active location never sits
+  under an archived one. Anything that would block archiving is no reason to
+  refuse it."
   [{:keys [::z/context viewer]}]
-  (let [{:keys [db resource]} context]
-    (set-status! db resource :active location.activity/unarchived (:user/id viewer))
-    (-> (http/see-other location.routes/detail {:id (:location/id resource)})
-        (flash/success (tr "Restored location %1" (:location/name resource))))))
+  (let [{:keys [db resource]} context
+        parent (some->> (:location/parent-id resource) (location.i/get-by-id db))]
+    (if (= :archived (:location/status parent))
+      (-> (http/see-other location.routes/detail {:id (:location/id resource)})
+          (flash/error (tr "Restore the parent first. %1 is archived."
+                           (:location/name parent))))
+      (do
+        (set-status! db resource :active location.activity/unarchived (:user/id viewer))
+        (-> (http/see-other location.routes/detail {:id (:location/id resource)})
+            (flash/success (tr "Restored location %1" (:location/name resource))))))))

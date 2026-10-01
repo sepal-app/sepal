@@ -89,3 +89,13 @@
             {:keys [response]} (peri/request sess (delete-url location))]
         (is (= 302 (:status response)))
         (is (some? (location.i/get-by-id *db* (:location/id location))))))))
+
+(deftest test-a-location-with-sub-locations-cannot-be-deleted
+  (tf/testing "the foreign key would refuse; the dialog says why first"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :admin}
+     [::location.i/factory :key/orchard] {:db *db*}
+     [::location.i/factory :key/row] {:db *db* :parent (ig/ref :key/orchard)}}
+    (fn [{:keys [user orchard]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (-> sess (peri/request (delete-url orchard)) :response :body)]
+        (is (re-find #"1 location sits inside this one" body))))))
