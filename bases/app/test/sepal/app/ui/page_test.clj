@@ -149,3 +149,13 @@
         (is (nil? (.selectFirst region "#flash-container")))
         (is (some? (.getElementById body "flash-container")))
         (is (nil? (.selectFirst region "script[type=module]")))))))
+
+(deftest test-region-swap-keeps-its-target-off-the-requests-inside
+  ;; HTMX inherits hx-target and hx-select down the DOM, so a suggestion
+  ;; inside a form carrying these would select #page-region from a response
+  ;; that has none and swap in nothing.
+  (let [el (.selectFirst (Jsoup/parseBodyFragment
+                           (chassis/html [:button page/region-swap]))
+                         "button")]
+    (is (= #{"hx-target" "hx-select"}
+           (set (str/split (.attr el "hx-disinherit") #" "))))))

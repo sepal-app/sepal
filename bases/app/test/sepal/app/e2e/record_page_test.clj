@@ -390,3 +390,41 @@
             (pw/wait-for-attached "[x-data*=\"cutting\"]" 10000)
             (is (= :cutting (:propagation/type (propagation.i/get-by-id db id)))
                 "the second save landed")))))))
+
+(deftest ^:e2e propagation-parent-plant-follows-a-new-parent
+  (testing "Choosing another parent accession on an edit offers its plants"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [acc loc taxon]} (create-record-fixtures db)
+              acc2 (acc.i/create! db {:code "E2E-ACC2" :taxon-id (:taxon/id taxon)})
+              mat2 (mat.i/create! db {:code "E2E-M2"
+                                      :accession-id (:accession/id acc2)
+                                      :location-id (:location/id loc)
+                                      :type :plant
+                                      :status :alive
+                                      :quantity 1})
+              prop (propagation.i/create! db {:type :seed
+                                              :parent-accession-id (:accession/id acc)})
+              id (:propagation/id prop)]
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/propagation/" id "/"))
+            (pw/wait-for-selector "#parent-material-id-input" 10000)
+            (pick "parent-accession-id" "E2E-ACC2")
+            ;; The plant picker is fetched for the new accession and swapped
+            ;; in, so it only offers E2E-M2 once that request has landed.
+            (pick "parent-material-id" "E2E-M2")
+            (pw/click "button:has-text(\"Save\")")
+            (pw/wait-for-selector ".spl-panel-code:has-text(\"E2E-M2\")" 10000)
+            (is (str/includes? (pw/text-content ".spl-panel-code") "E2E-ACC2")
+                "the panel names the new parent")
+            (is (= (:material/id mat2)
+                   (:propagation/parent-material-id (propagation.i/get-by-id db id)))
+                "the propagation holds the plant")))))))

@@ -3,7 +3,8 @@
             [clojure.test :refer [deftest is testing]]
             [dev.onionpancakes.chassis.core :as chassis]
             [sepal.app.ui.button :as button]
-            [sepal.app.ui.form :as form])
+            [sepal.app.ui.form :as form]
+            [sepal.app.ui.page :as page])
   (:import [org.jsoup Jsoup]))
 
 (defn- parse [hiccup] (Jsoup/parseBodyFragment (chassis/html hiccup)))
@@ -91,3 +92,13 @@
         form-el (.selectFirst body "form")]
     (is (= "noop()" (.attr form-el "x-on:keydown.enter.cmd.prevent"))
         "caller attrs win over the defaults, as with every other attribute")))
+
+(deftest test-a-region-swapped-form-disinherits-sync-and-target
+  (let [body (parse (form/form (merge page/region-swap {:hx-post "/x"})
+                               [:input {:name "name"}]))
+        disinherit (set (str/split (.attr (.selectFirst body "form") "hx-disinherit")
+                                   #" "))]
+    (is (contains? disinherit "hx-sync")
+        "a field's own request must not sync on the form and drop a Save")
+    (is (every? disinherit ["hx-target" "hx-select"])
+        "a field's own request must not swap the page region")))

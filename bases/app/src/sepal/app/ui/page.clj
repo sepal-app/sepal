@@ -79,10 +79,16 @@
   "Attributes for a form or control whose write answers with the whole page.
   It selects the region from that response and morphs this one into it, so
   scroll position, focus and Alpine state survive wherever the markup is the
-  same."
+  same.
+
+  HTMX passes hx-target and hx-select down to every request inside, so a
+  suggestion in a form would select a region its response does not have and
+  swap in nothing. They are disinherited; hx-swap is not, because \"morph\" is
+  what the page's body already gives everything below it."
   {:hx-target (str "#" region-id)
    :hx-select (str "#" region-id)
-   :hx-swap "morph"})
+   :hx-swap "morph"
+   :hx-disinherit "hx-target hx-select"})
 
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
   [:header {:class "spl-topbar"}

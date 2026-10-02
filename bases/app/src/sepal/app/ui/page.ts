@@ -114,13 +114,14 @@ document.addEventListener("htmx:beforeSwap", (evt: Event) => {
     }
 })
 
-// The page's morph swap: htmx-ext-alpine-morph's, with one rule added. When
-// an element's x-data changes, Alpine morph keeps the element and Alpine
-// evaluates the new x-data on it, but the bindings already inside it go on
-// reading the old data while anything the morph adds reads the new, so the
-// component stops reacting. Such an element is replaced with the server's
-// markup and starts as a new component; everything else morphs and keeps its
-// state and focus.
+// The page's morph swap. It morphs the target into the response's first
+// element with Alpine morph, which patches the DOM in place, so whatever
+// matches keeps its state and focus. One element is replaced rather than
+// patched: one whose x-data changed. Alpine morph would keep it and evaluate
+// the new x-data on it, but the bindings already inside it go on reading the
+// old data while anything the morph adds reads the new, so the component
+// stops reacting. Replaced with the server's markup, it starts as a new
+// component.
 type MorphHook = (el: Node, toEl: Node, childrenOnly: () => void, skip: () => void) => void
 const alpineMorph = (Alpine as unknown as {
     morph: (from: Node, to: Node, options: { updating: MorphHook }) => void
