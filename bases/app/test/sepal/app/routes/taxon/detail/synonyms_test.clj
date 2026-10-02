@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.synonyms-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
@@ -21,6 +22,12 @@
     (user.i/create! db {:email email :password password :role role})
     email))
 
+(defn- panel-synonyms
+  "The text of the panel's Synonyms section in `response`."
+  [response]
+  (->> (.select (Jsoup/parse ^String (:body response)) "#detail-panel-content .spl-collapse")
+       (some #(when (str/starts-with? (.text %) "Synonyms") (.text %)))))
+
 (defn- ctx []
   {:schema-version (db.i/latest-version)})
 
@@ -38,7 +45,9 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :synonym-name "Encyclia cochleata"})]
-        (is (contains? #{200 303} (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (panel-synonyms response) "Encyclia cochleata")
+            "the panel's Synonyms section shows it")
         (is (= ["Encyclia cochleata"]
                (mapv :synonym/synonym-name
                      (synonym.i/list-for-taxon (ctx) *db* id))))
@@ -110,7 +119,9 @@
                                  (format "/taxon/%s/synonyms/%s/" id (:synonym/id row))
                                  :request-method :delete
                                  :headers {"x-csrf-token" token})]
-        (is (contains? #{200 303} (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (not (str/includes? (panel-synonyms response) "Dypsis lutescens"))
+            "the panel's Synonyms section no longer shows it")
         (is (empty? (synonym.i/list-for-taxon (ctx) *db* id)))
         (is (some #(= synonym.activity/deleted (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :taxon :resource-id id)))

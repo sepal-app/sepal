@@ -31,14 +31,15 @@
   ;; that task doesn't have to revisit this file.
   (when (not= "wfo" (:synonym/source synonym))
     (tooltip/wrap
-      [:button {:type "button"
-                :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
-                :aria-label (tr "Remove synonym")
-                :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-                :hx-delete (z/url-for taxon.routes/detail-synonym
-                                      {:id (:taxon/id taxon)
-                                       :synonym-id (:synonym/id synonym)})
-                :hx-confirm "Remove this synonym?"}
+      [:button (merge ui.page/region-swap
+                      {:type "button"
+                       :class "spl-btn spl-btn--sm spl-btn--icon spl-btn--danger"
+                       :aria-label (tr "Remove synonym")
+                       :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+                       :hx-delete (z/url-for taxon.routes/detail-synonym
+                                             {:id (:taxon/id taxon)
+                                              :synonym-id (:synonym/id synonym)})
+                       :hx-confirm "Remove this synonym?"})
        (heroicons/outline-trash :class "size-4")]
       (tr "Remove synonym")
       :side "left")))
@@ -63,15 +64,16 @@
 (defn- synonyms-table [& {:keys [taxon synonyms]}]
   (ui.table/table :columns (table-columns taxon)
                   :rows synonyms
+                  :row-attrs (fn [synonym] {:key (:synonym/id synonym)})
                   :empty-state (ui.empty/empty-state
                                  :title (tr "No synonyms yet")
                                  :body (tr "Other names this garden uses for this taxon show up here."))))
 
 (defn- add-form [& {:keys [taxon]}]
   (ui.form/form
-    {:hx-post (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
-     :hx-swap "none"
-     :class "flex items-end gap-2"}
+    (merge ui.page/region-swap
+           {:hx-post (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
+            :class "flex items-end gap-2"})
     (ui.form/anti-forgery-field)
     (ui.form/input-field :label (tr "Synonym name")
                          :name "synonym-name"
@@ -116,23 +118,25 @@
     (synonym.i/remove-synonym! tx (:synonym/id synonym))
     (synonym.activity/create! tx synonym.activity/deleted removed-by synonym)))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
-        (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
-        (f/when-failed [e]
-          (http/failure-partial e (tr "The synonym could not be added."))))
+(defn- page
+  "The tab, as its GET renders it. Every write answers with it, so the panel
+  beside the list is current too."
+  [{:keys [db resource timezone] :as context}]
+  (render :taxon resource
+          :synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
+          :panel-data (taxon.panel/fetch-panel-data context db resource)
+          :timezone timezone))
 
-      :get
-      (let [synonyms (synonym.i/list-for-taxon context db (:taxon/id resource))
-            panel-data (taxon.panel/fetch-panel-data context db resource)]
-        (render :taxon resource
-                :synonyms synonyms
-                :panel-data panel-data
-                :timezone timezone)))))
+(defn get-handler [{:keys [::z/context]}]
+  (page context))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
+      (http/saved (page context))
+      (f/when-failed [e]
+        (http/not-saved e (tr "The synonym could not be added."))))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context
@@ -146,6 +150,6 @@
                         (synonym.i/list-for-taxon context db (:taxon/id resource))))]
     (f/attempt-all [_removed (f/try* (when synonym
                                        (remove! db (:user/id viewer) synonym)))]
-      (http/hx-redirect (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id resource)}))
+      (http/saved (page context))
       (f/when-failed [e]
-        (http/failure-partial e (tr "The synonym could not be removed."))))))
+        (http/not-saved e (tr "The synonym could not be removed."))))))

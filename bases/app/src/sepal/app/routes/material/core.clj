@@ -70,7 +70,8 @@
     ["/tags/" {:name routes/detail-tags
                :permission material.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-tags/handler}]
+               :get #'detail-tags/get-handler
+               :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
                        :permission material.perm/edit
                        :permission-redirect routes/detail

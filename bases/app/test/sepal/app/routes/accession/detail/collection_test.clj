@@ -60,8 +60,8 @@
           (is (some? (.attr form "hx-post"))
               "Form should have hx-post attribute")
 
-          (is (= "none" (.attr form "hx-swap"))
-              "Form should have hx-swap='none' for OOB error updates")
+          (is (= "morph" (.attr form "hx-swap"))
+              "Form should morph the page region the save answers with")
 
           ;; Check for key form fields
           (is (some? (.selectFirst body "input[name=\"collector\"]"))
@@ -123,6 +123,7 @@
             {:keys [response]} (-> sess
                                    (peri/request collection-url
                                                  :request-method :post
+                                                 :headers {"hx-request" "true"}
                                                  :params (merge empty-form-params
                                                                 {:__anti-forgery-token token
                                                                  :collector "Jane Smith"
@@ -131,10 +132,9 @@
                                                                  :province "British Columbia"
                                                                  :locality "Vancouver"
                                                                  :habitat "Temperate rainforest"})))]
-        ;; Should redirect on success
-        (is (= 200 (:status response)))
-        (is (= collection-url (get-in response [:headers "HX-Redirect"]))
-            "Should redirect back to collection page")
+        (is (app.test/saved-in-place? response))
+        (is (.contains (.text (Jsoup/parse ^String (:body response)))
+                       "Collection data updated"))
 
         ;; Verify collection was created
         (let [coll (coll.i/get-by-accession-id *db* (:accession/id accession))]
@@ -180,8 +180,7 @@
                                                                 {:__anti-forgery-token token
                                                                  :collector "Updated Collector"
                                                                  :country "Brazil"})))]
-        ;; Should redirect on success
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
 
         ;; Verify collection was updated (same ID)
         (let [updated-coll (coll.i/get-by-id *db* (:collection/id coll))]
@@ -317,8 +316,7 @@
                                                                 {:__anti-forgery-token token
                                                                  :collectors-code "BH9078"
                                                                  :elevation-accuracy "25"})))]
-        (is (= 200 (:status response)))
-        (is (= collection-url (get-in response [:headers "HX-Redirect"])))
+        (is (app.test/saved-in-place? response))
         (let [coll (coll.i/get-by-accession-id *db* (:accession/id accession))]
           (is (= "BH9078" (:collection/collectors-code coll)))
           (is (= 25 (:collection/elevation-accuracy coll))))
@@ -371,6 +369,8 @@
                                                                 {:__anti-forgery-token token
                                                                  :collected-date "2999-01-01"})))]
         (is (= 422 (:status response)))
-        (is (some? (.selectFirst (Jsoup/parse ^String (:body response)) "#collected-date-errors")))
+        (let [body (Jsoup/parse ^String (:body response))]
+          (is (some? (.selectFirst body "#collected-date-errors")))
+          (is (nil? (.selectFirst body "#page-region"))))
         (is (nil? (coll.i/get-by-accession-id *db* (:accession/id accession))))))))
 
