@@ -377,6 +377,22 @@ permission on the method, as `routes/contact/core.clj` does. Never declare
 `:permission` on a group, because reitit merges it into every route beneath.
 `sepal.app.route-permission-test` enforces all of this from the route table.
 
+A route that reads and writes has one handler per method, so the route table
+says what each does:
+
+```clojure
+["/general/" {:name routes/detail-general
+              :permission location.perm/edit
+              :permission-redirect routes/detail
+              :get #'detail-general/get-handler
+              :post #'detail-general/post-handler}]
+```
+
+The `get-handler` and `post-handler` share a `page` function. The GET renders
+it, and the POST answers a successful save with it through `http/saved`, so the
+two cannot drift. A record-page save that branches on `request-method` is the
+shape this replaced.
+
 `routes/setup/` is the first-run wizard, and is how a standalone install gets
 its first admin user and its taxon data: the taxonomy step reads the
 `sepal-init-manifest.json` published on the GitHub releases page, downloads the
@@ -409,28 +425,98 @@ The frontend uses HTMX for server-driven interactivity and Alpine.js for client-
 - HTMX must be imported in page-specific scripts (not just page.ts) to ensure DOM processing
 - Use `$el.requestSubmit()` for form submission (not `$el.submit()`) so HTMX can intercept
 - Handle non-2xx responses with `htmx:beforeSwap` event (configured in `ui/page.ts`)
+- A save on a record page answers with the whole page and swaps it with
+  `ui.page/region-swap`; see Form Validation
 
 ### Form Validation
 
-Route handlers use failjure. `f/attempt-all` binds the validated params and the
-save, and one `f/when-failed` answers every way either can fail:
+Route handlers use failjure. Every write has the same shape: decode with
+`validate-form-values`, then one `f/attempt-all` that binds the decoded params
+and every write, and one `f/when-failed` that answers every way any step can
+fail.
 
 ```clojure
-(f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                saved (f/try* (create! db (:user/id viewer) data))]
-  (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
-  (f/when-failed [e]
-    (http/failure-response e (-> (http/hx-redirect taxon.routes/new)
-                                 (flash/error "Could not create the taxon")))))
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context
+        id (:location/id resource)]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _saved (f/try* (update! db id (:user/id viewer) data))]
+      (http/saved (page context (location.i/get-by-id db id))
+                  (tr "Location updated successfully"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the location"))))))
 ```
 
-`http/failure-response` picks the response: a failure carrying a malli explain
-becomes a 422 with per-field out-of-band errors, and anything else is logged
-and becomes the fallback you pass. Forms use `hx-swap="none"`, so the errors
-swap into `#field-errors` targets.
-
 `f/try*` is what turns a throwing component call into a value `attempt-all`
-stops on. Without it an exception escapes the handler as a 500.
+stops on. Without it an exception escapes the handler as a 500. A check that
+is not a component call joins the same chain as a step that returns a failure:
+`http/field-errors` for a field the decoder cannot judge on its own (nil when
+there are none), `http/halt-with` for an answer that is not an error, such as
+asking the user to confirm a code.
+
+**What a save answers with.** A write on a record page answers with the whole
+page, as its GET renders it, and HTMX morphs that into `#page-region`. The
+header, breadcrumb, title, panel and tabs are all current after one save.
+
+- `http/saved page [message]` is the success answer. `page` is what the GET
+  handler returns, so build it with the same `page` function. `message` is an
+  optional success flash. The response carries `HX-Trigger-After-Settle:
+  form-saved`.
+- `http/not-saved e message [:id-suffix s]` is the fallback in
+  `f/when-failed`. A failure with a malli explain, or one built by
+  `field-errors`, becomes a 422 of per-field out-of-band errors for the
+  `#field-errors` targets. Anything else is logged and becomes `message` as an
+  error flash on a 422 with no page in it, so nothing is replaced and the form
+  keeps what was typed. `:id-suffix` is for a form repeated per item whose
+  control ids carry one.
+- `http/failure-response`, `failure-partial` and `failure-flash` are the
+  fallbacks for the other answers: a create or delete that redirects, and a
+  partial that is not a page.
+- Creates and deletes still answer with `http/hx-redirect`, because they leave
+  the page.
+
+**Wiring a control.** Spread `ui.page/region-swap` into a form or control whose
+write answers with the page:
+
+```clojure
+(ui.form/form (merge ui.page/region-swap {:hx-post action}) ...)
+```
+
+It sets `hx-target` and `hx-select` to `#page-region` and `hx-swap="morph"`.
+`hx-target` and `hx-select` are disinherited, so a request made from inside the
+form (the next-code button, the propagation parent-plant lookup) is not sent
+to the region. A form that answers with a partial or a redirect does not take
+`region-swap`.
+
+A control rendered inside a list page's panel must not take `region-swap`
+either. The list page has a `#page-region` of its own, so the record's page
+would morph into it and replace the list under the list's URL.
+`ui.actions/menu` takes `:in-panel? true` for this. A handler reachable from
+both the record page and a panel answers with the page only when the request's
+`HX-Target` header is `page-region`, and otherwise redirects, as
+`propagation/detail.clj`'s `status-handler` does.
+
+**`form-saved`.** After the swap settles, the form that made the request gets a
+`form-saved` event. `js/form-state.ts` resets the form on it, so the button
+disables again and the fields take the server's values, and inline editors
+close with `x-on:form-saved`. A rejected save fires nothing, which is why a
+form keeps what was typed.
+
+**What morph does.** `ui/page.ts` has its own `morph` swap. It matches
+siblings by `key`, so give every repeated item a stable one, and it keeps
+scroll, focus and Alpine state wherever the markup is the same. Two rules
+follow from how it works:
+
+- Morph does not update the contents of a `<template x-if>`. Alpine owns what
+  it rendered from the template, so a change the server makes inside one never
+  shows. Render server-driven content outside a template.
+- An element whose `x-data` attribute changes is rebuilt rather than patched,
+  because Alpine reads `x-data` once. State on that element, and in everything
+  inside it, restarts from the new value. Put anything that must survive a save
+  on an element whose `x-data` the server does not change.
+
+A response with no `#page-region` is never swapped in: `ui/page.ts` guards
+against it, so a confirmation or an error body cannot replace the page.
 
 **Empty String Handling:** Use `validation.i/empty->nil` decoder for optional fields:
 ```clojure
