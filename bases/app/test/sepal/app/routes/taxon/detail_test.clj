@@ -103,12 +103,11 @@
                   {:keys [response]} (-> sess
                                          (peri/request detail-url
                                                        :request-method :post
+                                                       :headers {"hx-request" "true"}
                                                        :params (assoc base-params
                                                                       :__anti-forgery-token token
                                                                       :distribution "Central America")))]
-              (is (contains? #{200 204 302} (:status response))
-                  (str "expected a redirect or success, got " (:status response)
-                       " with body: " (:body response)))
+              (is (app.test/saved-in-place? response))
               (is (= "Central America" (:taxon/distribution (taxon.i/get-by-id *db* (:taxon/id taxon))))
                   "distribution should be saved")
 
@@ -124,12 +123,11 @@
                   {:keys [response]} (-> sess
                                          (peri/request detail-url
                                                        :request-method :post
+                                                       :headers {"hx-request" "true"}
                                                        :params (assoc base-params
                                                                       :__anti-forgery-token token
                                                                       :distribution "")))]
-              (is (contains? #{200 204 302} (:status response))
-                  (str "expected a redirect or success, got " (:status response)
-                       " with body: " (:body response)))
+              (is (app.test/saved-in-place? response))
               (is (nil? (:taxon/distribution (taxon.i/get-by-id *db* (:taxon/id taxon))))
                   "distribution should be cleared to nil")
 

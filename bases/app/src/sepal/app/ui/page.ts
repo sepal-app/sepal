@@ -132,8 +132,10 @@ htmx.defineExtension("morph", {
     handleSwap: (swapStyle, target, fragment) => {
         if (swapStyle !== "morph") return false
         const to = fragment instanceof DocumentFragment
-            ? fragment.firstElementChild!
+            ? fragment.firstElementChild
             : fragment
+        // An hx-select that matched nothing leaves nothing to morph to.
+        if (!to) return [target]
         alpineMorph(target, to, {
             updating(el, toEl, _childrenOnly, skip) {
                 if (el instanceof Element && toEl instanceof Element

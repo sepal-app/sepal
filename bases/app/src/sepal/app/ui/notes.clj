@@ -103,7 +103,6 @@
             [:h2 {:class "spl-changelog-day"}
              (datetime/day-label day (datetime/today timezone))])
           (for [note day-notes]
-            ^{:key (:note/id note)}
             (note-item :note note :note-url-fn note-url-fn :timezone timezone))))]
      [:p {:data-notes-empty ""
           :class "text-text-soft text-sm"}

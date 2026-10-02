@@ -175,6 +175,85 @@
               (is (true? (pw/evaluate "document.querySelector('#observation-form button[type=submit]').disabled"))
                   "and its button disables again"))))))))
 
+(defn- observation-page
+  "Logs in and opens the observations tab of a material with three
+  observations on one day, so the list's rows are siblings with nothing
+  between them. Returns the rows' ids in the order the list shows them."
+  [base-url db]
+  (let [email (test.email/unique)
+        password "TestPassword123!"
+        user (user.i/create! db {:email email
+                                 :password password
+                                 :role :admin})
+        {:keys [mat]} (create-record-fixtures db)]
+    (doseq [note ["Alpha" "Beta" "Gamma"]]
+      (observation.i/create! db {:resource-type :material
+                                 :resource-id (:material/id mat)
+                                 :type "general"
+                                 :observed-on "2026-03-01"
+                                 :note note
+                                 :created-by (:user/id user)}))
+    (login base-url email password)
+    (pw/navigate (str base-url "/material/" (:material/id mat) "/observations/"))
+    (pw/wait-for-selector "[data-observation-id]" 10000)
+    (pw/evaluate "window.confirm = () => true")
+    (pw/evaluate (str "Array.from(document.querySelectorAll('[data-observation-id]'))"
+                      ".map(e => e.dataset.observationId)"))))
+
+(defn- observation-row [id]
+  (str "[data-observation-id=\"" id "\"]"))
+
+(defn- open-editors
+  "The ids of the observations whose inline edit form is showing."
+  []
+  (pw/evaluate (str "Array.from(document.querySelectorAll('[data-observation-id]'))"
+                    ".filter(e => e.querySelector('form').checkVisibility())"
+                    ".map(e => e.dataset.observationId)")))
+
+(deftest ^:e2e an-open-editor-stays-on-its-row-when-another-is-deleted
+  (testing "deleting the row above an open editor leaves that editor open on its row"
+    (server/with-server
+      (fn [started]
+        (pw/with-browser
+          (let [[first-id second-id third-id] (observation-page (server/server-url started)
+                                                                (server/db started))
+                second-row (observation-row second-id)]
+            (pw/click (str second-row " button[aria-label=\"Edit observation\"]"))
+            (pw/fill (str "#note-" second-id) "Unsaved edit")
+            (pw/click (str (observation-row first-id) " button[aria-label=\"Delete observation\"]"))
+            (pw/wait-for-hidden (observation-row first-id) 10000)
+            (is (= [second-id] (open-editors))
+                "the open editor is the second row's, and no other row's opened")
+            (is (= "Unsaved edit" (pw/evaluate (str "document.querySelector('#note-" second-id "').value")))
+                "and it still holds what was typed")
+            (is (= [second-id third-id]
+                   (pw/evaluate (str "Array.from(document.querySelectorAll('[data-observation-id]'))"
+                                     ".map(e => e.dataset.observationId)")))
+                "the remaining rows are the two that were not deleted")))))))
+
+(deftest ^:e2e a-second-inline-edit-after-a-save
+  (testing "after one row's inline edit saves, another row's editor opens and saves"
+    (server/with-server
+      (fn [started]
+        (pw/with-browser
+          (let [db (server/db started)
+                [first-id second-id] (observation-page (server/server-url started) db)
+                edit (fn [id text]
+                       (let [row (observation-row id)]
+                         (pw/click (str row " button[aria-label=\"Edit observation\"]"))
+                         (pw/fill (str "#note-" id) text)
+                         (pw/wait-for-enabled (str row " form button[type=submit]"))
+                         (pw/click (str row " form button[type=submit]"))
+                         (pw/wait-for-selector (str row " .spl-note-body:has-text(\"" text "\")") 10000)
+                         (pw/wait-for-hidden (str row " form") 10000)))]
+            (edit first-id "First saved")
+            (is (= [] (open-editors)) "the first save closes its editor")
+            (edit second-id "Second saved")
+            (is (= [] (open-editors)) "the second save closes its editor")
+            (is (= "Second saved"
+                   (:observation/note (observation.i/get-by-id db (parse-long second-id))))
+                "the second edit landed")))))))
+
 (deftest ^:e2e media-link-editor-closes-after-a-save
   (testing "linking shows the chip and hides the form"
     (server/with-server

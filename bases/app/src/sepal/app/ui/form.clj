@@ -36,9 +36,9 @@
                  :x-on:keydown.enter.cmd.prevent "$el.requestSubmit()"
                  :x-on:keydown.enter.ctrl.prevent "$el.requestSubmit()"}
                 attrs
-                ;; Otherwise a field's own request (a combobox, a suggestion)
-                ;; syncs on the form, and a Save made while one is in flight
-                ;; is dropped. Added to a caller's list rather than replaced
+                ;; Otherwise a field's own request (the next-code button, the
+                ;; propagation parent-plant lookup) syncs on the form, and a
+                ;; Save made while one is in flight is dropped. Added to a caller's list rather than replaced
                 ;; by it, as `ui.page/region-swap` brings one.
                 {:hx-disinherit (str/join " " (remove nil? ["hx-sync" (:hx-disinherit attrs)]))})
    children])

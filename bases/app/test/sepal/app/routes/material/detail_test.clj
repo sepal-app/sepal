@@ -180,6 +180,7 @@
             {:keys [response]} (-> sess
                                    (peri/request detail-url
                                                  :request-method :post
+                                                 :headers {"hx-request" "true"}
                                                  :params {:__anti-forgery-token token
                                                           :code (:material/code material)
                                                           :accession-id (:material/accession-id material)
@@ -188,9 +189,7 @@
                                                           :status (name (:material/status material))
                                                           :type (name (:material/type material))
                                                           :reason "transferred"}))
-            _ (is (contains? #{200 204 302} (:status response))
-                  (str "expected a redirect or success, got " (:status response)
-                       " with body: " (:body response)))
+            _ (is (app.test/saved-in-place? response))
             changes (material.i/list-by-material-id *db* (:material/id material))]
         (is (= 1 (count changes)))
         (is (= "transferred" (:material-change/reason (first changes))))
