@@ -207,3 +207,74 @@
             (is (pw/visible? (str root " .spl-chip")) "the chip shows the accession")
             (pw/wait-for-hidden (str root " form") 10000)
             (is (not (pw/visible? (str root " form"))) "the edit form is hidden")))))))
+
+(deftest ^:e2e media-link-picker-shows-the-saved-link
+  (testing "Change link after a save is prefilled with the link just saved"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              user (user.i/create! db {:email email
+                                       :password password
+                                       :role :admin})
+              {:keys [acc taxon]} (create-record-fixtures db)
+              other (acc.i/create! db {:code "E2E-ACC2" :taxon-id (:taxon/id taxon)})
+              media (media.i/create! db {:s3-bucket "b" :s3-key "media/e2e.jpg"
+                                         :size-in-bytes 1 :media-type "image/jpeg"
+                                         :title "e2e.jpg"
+                                         :created-by (:user/id user)})
+              root "#media-link-root"
+              picker "#resource-id-input"]
+          (media.i/link! db (:media/id media) (:accession/id acc) "accession")
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/media/" (:media/id media) "/"))
+            (pw/wait-for-selector (str root " .spl-chip:has-text(\"E2E-ACC\")") 10000)
+            (pw/click (str root " button[aria-label=\"Change link\"]"))
+            (pw/click picker)
+            (pw/fill picker (:accession/code other))
+            (pw/wait-for-attached (str "#resource-id-listbox [role=option]:has-text(\""
+                                       (:accession/code other) "\")"))
+            (pw/press "ArrowDown")
+            (pw/press "Enter")
+            (pw/click (str root " form button[type=submit]"))
+            (pw/wait-for-selector (str root " .spl-chip:has-text(\"E2E-ACC2\")") 10000)
+            (pw/click (str root " button[aria-label=\"Change link\"]"))
+            (pw/wait-for-selector picker 10000)
+            (is (str/includes? (pw/evaluate (str "document.querySelector('" picker "').value"))
+                               "E2E-ACC2")
+                "the picker holds the link just saved")))))))
+
+(deftest ^:e2e media-link-picker-is-empty-after-unlinking
+  (testing "Link after removing the link does not offer the removed one"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              user (user.i/create! db {:email email
+                                       :password password
+                                       :role :admin})
+              {:keys [acc]} (create-record-fixtures db)
+              media (media.i/create! db {:s3-bucket "b" :s3-key "media/e2e.jpg"
+                                         :size-in-bytes 1 :media-type "image/jpeg"
+                                         :title "e2e.jpg"
+                                         :created-by (:user/id user)})
+              root "#media-link-root"
+              picker "#resource-id-input"]
+          (media.i/link! db (:media/id media) (:accession/id acc) "accession")
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/media/" (:media/id media) "/"))
+            (pw/wait-for-selector (str root " .spl-chip:has-text(\"E2E-ACC\")") 10000)
+            (pw/evaluate "window.confirm = () => true")
+            (pw/click (str root " button[aria-label=\"Remove link\"]"))
+            (pw/wait-for-selector (str root " button:has-text(\"Link\")") 10000)
+            (pw/click (str root " button:has-text(\"Link\")"))
+            (pw/select-option "#resource-type" "accession")
+            (pw/wait-for-selector picker 10000)
+            (is (= "" (pw/evaluate (str "document.querySelector('" picker "').value")))
+                "the picker does not hold the removed link")))))))

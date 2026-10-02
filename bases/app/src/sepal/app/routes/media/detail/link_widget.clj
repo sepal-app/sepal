@@ -155,8 +155,12 @@
     (heroicons/outline-pencil-square :size 16)]])
 
 (defn widget [& {:keys [link-info link media]}]
-  [:div#media-link-root {:x-data (json/js {:editLink false
-                                           :resourceType (:media-link/resource-type link)})
+  ;; x-data is the same on every render, so a morph leaves it alone: it
+  ;; stopped the bindings reacting when it changed. The saved type is read
+  ;; once, when the widget starts.
+  [:div#media-link-root {:x-data (json/js {:editLink false :resourceType ""})
+                         :x-init "resourceType = $el.dataset.linkType || ''"
+                         :data-link-type (:media-link/resource-type link)
                          :x-on:form-saved "editLink = false"}
    ;; x-show, not x-if: a morph does not update what is inside a template, so
    ;; the chip would keep showing the link the page loaded with.
