@@ -1,8 +1,6 @@
 (ns sepal.app.routes.media.detail.link
   (:require [failjure.core :as f]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
-            [sepal.app.routes.media.detail.link-widget :as link-widget]
             [sepal.app.routes.media.detail.shared :as shared]
             [sepal.app.routes.media.link-info :as link-info]
             [sepal.database.interface :as db.i]
@@ -38,14 +36,6 @@
    [:resource-id [:string {:min 1}]]
    [:resource-type [:enum "accession" "material" "taxon" "location"]]])
 
-(defn get-handler [{:keys [::z/context]}]
-  (let [{:keys [db material-separator resource]} context
-        link (media.i/get-link db (:media/id resource))]
-    (html/render-partial
-      (link-widget/widget :link-info (link-info/link-info db link material-separator)
-                          :link link
-                          :media resource))))
-
 (defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db material-separator resource]} context]
     (f/attempt-all [{:keys [resource-id resource-type]} (validation.i/validate-form-values
@@ -58,5 +48,7 @@
 
 (defn delete-handler [{:keys [::z/context viewer]}]
   (let [{:keys [db material-separator resource]} context]
-    (unlink! db material-separator resource (:user/id viewer))
-    (http/saved (shared/page context resource true))))
+    (f/attempt-all [_unlinked (f/try* (unlink! db material-separator resource (:user/id viewer)))]
+      (http/saved (shared/page context resource true))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not unlink the media"))))))

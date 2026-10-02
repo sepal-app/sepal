@@ -44,7 +44,7 @@
             "the media row must still exist after a refused delete")))))
 
 (deftest test-link-widget-renders-for-media-with-no-link
-  (tf/testing "GET on the link widget for media with no link offers the link control rather than 500ing"
+  (tf/testing "the page's link widget for media with no link offers the link control rather than 500ing"
     ;; Media uploaded from /media/ carries no linkResourceType/linkResourceId, so
     ;; it has no media_link row. That is the ordinary case, not an edge.
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
@@ -55,7 +55,7 @@
                                      :s3-bucket "sepal-test-media"}}
     (fn [{:keys [user media]}]
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/link/"))]
+            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/"))]
         (is (= 200 (:status response))
             "no link is a state the widget renders, not a server error")
         (is (nil? (media.i/get-link *db* (:media/id media)))
@@ -64,7 +64,7 @@
             "the no-link state offers the link action as a labelled button")))))
 
 (deftest test-link-widget-renders-chip-for-linked-media
-  (tf/testing "GET on the link widget for linked media renders one removable chip, not a second trash icon"
+  (tf/testing "the page's link widget for linked media renders one removable chip, not a second trash icon"
     {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
      [::taxon.i/factory :key/taxon] {:db *db* :name "Zzyzxia" :rank :genus}
      [::media.i/factory :key/media] {:db *db*
@@ -75,7 +75,7 @@
     (fn [{:keys [user taxon media]}]
       (media.i/link! *db* (:media/id media) (:taxon/id taxon) "taxon")
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/link/"))
+            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/"))
             body (:body response)]
         (is (= 200 (:status response)))
         (is (re-find #"Zzyzxia" body) "the chip names the linked resource")
@@ -105,7 +105,7 @@
                                          :resource-type "oddity"
                                          :resource-id 1}]})
       (let [sess (app.test/login (:user/email user) "testpassword123")
-            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/link/"))
+            {:keys [response]} (peri/request sess (str "/media/" (:media/id media) "/"))
             body (:body response)]
         (is (= 200 (:status response)))
         (is (re-find #"oddity" body)
@@ -156,7 +156,8 @@
             (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))))
 
 (defn- post-in-place [sess url params]
-  (let [{:keys [response] :as sess} (peri/request sess url)
+  (let [;; The token comes off the media page, which has the forms.
+        {:keys [response] :as sess} (peri/request sess (str/replace url #"link/$" ""))
         token (test.i/response-anti-forgery-token response)]
     (:response (peri/request sess url
                              :request-method :post
@@ -197,6 +198,29 @@
               "the widget shows the chip")
           (is (str/includes? (.text body) "Activity(1) linked")
               "and the Activity section has the event"))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-unlinking-media-answers-with-the-page
+  (tf/testing "the chip is gone from the page"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db* :name "Linkia rubra"}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user) :title "Pod"}}
+    (fn [{:keys [user taxon media]}]
+      (media.i/link! *db* (:media/id media) (:taxon/id taxon) "taxon")
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (peri/request sess (str "/media/" (:media/id media) "/"))
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (-> sess
+                                     (peri/header "X-CSRF-Token" token)
+                                     (peri/header "hx-request" "true")
+                                     (peri/request (str "/media/" (:media/id media) "/link/")
+                                                   :request-method :delete))
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (nil? (media.i/get-link *db* (:media/id media))))
+          (is (nil? (.selectFirst body ".spl-chip"))))
         (finally
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
 

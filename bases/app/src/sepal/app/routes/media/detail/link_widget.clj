@@ -156,8 +156,11 @@
 
 (defn widget [& {:keys [link-info link media]}]
   [:div#media-link-root {:x-data (json/js {:editLink false
-                                           :resourceType (:media-link/resource-type link)})}
-   [:template {:x-if "!editLink"}
+                                           :resourceType (:media-link/resource-type link)})
+                         :x-on:form-saved "editLink = false"}
+   ;; x-show, not x-if: a morph does not update what is inside a template, so
+   ;; the chip would keep showing the link the page loaded with.
+   [:div {:x-show "!editLink"}
     (if link
       (link-chip :media media
                  :text (:text link-info)
@@ -168,7 +171,7 @@
                  :x-on:click "editLink=true"}
         (heroicons/outline-link)
         " " (tr "Link")]])]
-   [:div {:x-show "editLink"} ;;:template {:x-if "editLink"}
+   [:div {:x-show "editLink"}
     (media-link-form :link link
                      :link-text (:text link-info)
                      :media media)]])

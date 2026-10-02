@@ -9,6 +9,7 @@
             [sepal.app.test.email :as test.email]
             [sepal.location.interface :as loc.i]
             [sepal.material.interface :as mat.i]
+            [sepal.media.interface :as media.i]
             [sepal.observation.interface :as observation.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
@@ -171,3 +172,38 @@
                   "the form resets itself on form-saved")
               (is (true? (pw/evaluate "document.querySelector('#observation-form button[type=submit]').disabled"))
                   "and its button disables again"))))))))
+
+(deftest ^:e2e media-link-editor-closes-after-a-save
+  (testing "linking shows the chip and hides the form"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              user (user.i/create! db {:email email
+                                       :password password
+                                       :role :admin})
+              {:keys [acc]} (create-record-fixtures db)
+              media (media.i/create! db {:s3-bucket "b" :s3-key "media/e2e.jpg"
+                                         :size-in-bytes 1 :media-type "image/jpeg"
+                                         :title "e2e.jpg"
+                                         :created-by (:user/id user)})
+              root "#media-link-root"]
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/media/" (:media/id media) "/"))
+            (pw/wait-for-selector (str root " button:has-text(\"Link\")") 10000)
+            (pw/click (str root " button:has-text(\"Link\")"))
+            (pw/select-option "#resource-type" "accession")
+            (pw/click "#resource-id-input")
+            (pw/fill "#resource-id-input" (:accession/code acc))
+            (pw/wait-for-attached (str "#resource-id-listbox [role=option]:has-text(\""
+                                       (:accession/code acc) "\")"))
+            (pw/press "ArrowDown")
+            (pw/press "Enter")
+            (pw/click (str root " form button[type=submit]"))
+            (pw/wait-for-selector (str root " .spl-chip:has-text(\"" (:accession/code acc) "\")") 10000)
+            (is (pw/visible? (str root " .spl-chip")) "the chip shows the accession")
+            (pw/wait-for-hidden (str root " form") 10000)
+            (is (not (pw/visible? (str root " form"))) "the edit form is hidden")))))))
