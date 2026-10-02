@@ -130,7 +130,8 @@
                                                  updated))))]
         (http/saved (page context))
         (f/when-failed [e]
-          (http/not-saved e (tr "The note could not be saved."))))
+          (http/not-saved e (tr "The note could not be saved.")
+                          :id-suffix (:note/id note))))
       (http/not-found))))
 
 (defn delete-handler
