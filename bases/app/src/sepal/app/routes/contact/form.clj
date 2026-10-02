@@ -1,6 +1,7 @@
 (ns sepal.app.routes.contact.form
   (:require [clojure.string :as str]
             [sepal.app.ui.form :as ui.form]
+            [sepal.app.ui.page :as ui.page]
             [sepal.contact.interface.spec :as contact.spec]
             [sepal.i18n.interface :refer [tr]]))
 
@@ -15,11 +16,11 @@
 
 (defn form [& {:keys [action errors values]}]
   (ui.form/form
-    {:id "contact-form"
-     :hx-post action
-     :hx-swap "none"
-     :x-on:contact-form:submit.window "$el.requestSubmit()"
-     :x-on:contact-form:reset.window "$el.reset()"}
+    (merge ui.page/region-swap
+           {:id "contact-form"
+            :hx-post action
+            :x-on:contact-form:submit.window "$el.requestSubmit()"
+            :x-on:contact-form:reset.window "$el.reset()"})
     [(ui.form/anti-forgery-field)
      [:div {:class "spl-form"}
       (ui.form/section

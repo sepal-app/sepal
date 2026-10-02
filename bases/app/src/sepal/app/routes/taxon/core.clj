@@ -56,7 +56,8 @@
     ["/name/" {:name routes/detail-name
                :permission taxon.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-name/handler}]
+               :get #'detail-name/get-handler
+               :post #'detail-name/post-handler}]
     ["/media/" {:name routes/detail-media
                 :permission taxon.perm/edit
                 :permission-redirect routes/detail
@@ -64,7 +65,8 @@
     ["/synonyms/" {:name routes/detail-synonyms
                    :permission taxon.perm/edit
                    :permission-redirect routes/detail
-                   :handler #'detail-synonyms/handler}]
+                   :get #'detail-synonyms/get-handler
+                   :post #'detail-synonyms/post-handler}]
     ["/synonyms/:synonym-id/" {:name routes/detail-synonym
                                :permission taxon.perm/edit
                                :permission-redirect routes/detail
@@ -83,7 +85,8 @@
     ["/tags/" {:name routes/detail-tags
                :permission taxon.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-tags/handler}]
+               :get #'detail-tags/get-handler
+               :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
                        :permission taxon.perm/edit
                        :permission-redirect routes/detail

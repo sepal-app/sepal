@@ -28,7 +28,7 @@
     (fn [{:keys [user taxon media]}]
       (let [sess (app.test/login (:user/email user) password)
             url (format "/media/%s/link/" (:media/id media))
-            {:keys [response] :as sess} (peri/request sess url)
+            {:keys [response] :as sess} (peri/request sess (format "/media/%s/" (:media/id media)))
             token (test.i/response-anti-forgery-token response)
             events #(->> (activity.i/get-by-resource *db*
                                                      :resource-type :media

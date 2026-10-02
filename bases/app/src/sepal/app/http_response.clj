@@ -3,6 +3,7 @@
             [dev.onionpancakes.chassis.core :as chassis]
             [ring.util.http-response :as http]
             [sepal.app.flash :as flash]
+            [sepal.app.html :as html]
             [sepal.app.ui.form :as ui.form]
             [sepal.error.interface :as error.i]
             [sepal.i18n.interface :refer [tr]]
@@ -54,6 +55,31 @@
          :body (str (chassis/html (into [:div] oob-elements)))}
         (flash/error (tr "Nothing was saved. Check the highlighted fields.")))))
 
+(defn saved
+  "The response to a save on a record page: `page`, the page as its GET renders
+  it, which the form's region-swap morphs into the page. `message`, when given,
+  is a success flash. `form-saved` fires on the form once the page has
+  settled, which is what resets it."
+  ([page]
+   (saved page nil))
+  ([page message]
+   (cond-> (assoc-in (html/render-page page) [:headers "HX-Trigger-After-Settle"] "form-saved")
+     message (flash/success message))))
+
+(defn field-errors
+  "A step for f/attempt-all: nil when `errors` is empty, otherwise a failure
+  that failure-response answers with these field errors. `errors` is keyed
+  the way validation-errors takes it."
+  [errors]
+  (when (seq errors)
+    (error.i/error ::field-errors nil {:fields errors})))
+
+(defn halt-with
+  "A step for f/attempt-all that stops it and answers with `response`, for a
+  check whose answer is not an error, such as asking to confirm a code."
+  [response]
+  (error.i/error ::halt nil {:response response}))
+
 (defn failure-response
   "The response for a failed form post.
 
@@ -66,10 +92,18 @@
    `validation-errors`."
   [e fallback & {:keys [id-suffix]}]
   (let [err (if (instance? Exception e) (error.i/ex->error e) e)]
-    (if-let [errors (error.i/humanize err)]
-      (validation-errors errors :id-suffix id-suffix)
-      (do (log/error e "form post failed")
-          fallback))))
+    (cond
+      (error.i/error? err ::halt)
+      (:response (error.i/data err))
+
+      (error.i/error? err ::field-errors)
+      (validation-errors (:fields (error.i/data err)) :id-suffix id-suffix)
+
+      :else
+      (if-let [errors (error.i/humanize err)]
+        (validation-errors errors :id-suffix id-suffix)
+        (do (log/error e "form post failed")
+            fallback)))))
 
 (defn failure-partial
   "Fallback for a handler that answers with an HTML partial. A redirect would
@@ -87,6 +121,16 @@
    are all in use, and a default would make the odd ones read wrong."
   [e response message]
   (failure-response e (flash/error response message)))
+
+(defn not-saved
+  "Fallback for a handler that answers with the page: field errors when the
+  failure carries them, otherwise `message` as an error flash on a response
+  with no page in it, so nothing on the page is replaced and the form keeps
+  what was typed. `id-suffix` is passed to `failure-response`, for a form whose
+  field ids are suffixed."
+  [e message & {:keys [id-suffix]}]
+  (failure-response e (flash/error (unprocessable-entity nil) message)
+                    :id-suffix id-suffix))
 
 (defn hx-redirect
   "Returns 200 with HX-Redirect header for HTMX client-side redirect.

@@ -59,11 +59,13 @@
     ["/general/" {:name routes/detail-general
                   :permission accession.perm/edit
                   :permission-redirect routes/detail
-                  :handler #'detail-general/handler}]
+                  :get #'detail-general/get-handler
+                  :post #'detail-general/post-handler}]
     ["/collection/" {:name routes/detail-collection
                      :permission accession.perm/edit
                      :permission-redirect routes/detail
-                     :handler #'detail-collection/handler}]
+                     :get #'detail-collection/get-handler
+                     :post #'detail-collection/post-handler}]
     ["/collection/delete/" {:name routes/detail-collection-delete
                             :permission accession.perm/edit
                             :permission-redirect routes/detail
@@ -87,7 +89,8 @@
     ["/tags/" {:name routes/detail-tags
                :permission accession.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-tags/handler}]
+               :get #'detail-tags/get-handler
+               :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
                        :permission accession.perm/edit
                        :permission-redirect routes/detail

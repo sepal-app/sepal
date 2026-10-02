@@ -2,6 +2,7 @@
   (:require [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
@@ -22,11 +23,11 @@
 (defn form [& {:keys [action errors values]}]
   [:div
    (form/form
-     {:id "location-form"
-      :hx-post action
-      :hx-swap "none"
-      :x-on:location-form:submit.window "$el.requestSubmit()"
-      :x-on:location-form:reset.window "$el.reset()"}
+     (merge ui.page/region-swap
+            {:id "location-form"
+             :hx-post action
+             :x-on:location-form:submit.window "$el.requestSubmit()"
+             :x-on:location-form:reset.window "$el.reset()"})
      [(form/anti-forgery-field)
       [:div {:class "spl-form"}
        (form/section

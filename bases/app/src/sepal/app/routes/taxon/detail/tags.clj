@@ -83,23 +83,26 @@
     (when (tag.i/untag! tx (:tag/id tag) taxon-id :taxon)
       (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :taxon taxon-id))))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
-        id (:taxon/id resource)]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      _saved (f/try* (add! db id (:user/id viewer) data))]
-        (http/hx-redirect (z/url-for taxon.routes/detail-tags {:id id}))
-        (f/when-failed [e]
-          (http/failure-partial e (tr "The tag could not be added."))))
+(defn- page
+  "The tab, as its GET renders it. Every write answers with it, so the panel
+  beside the chips is current too."
+  [{:keys [db resource timezone] :as context}]
+  (render :taxon resource
+          :tags (tag.i/get-for-resource db :taxon (:taxon/id resource))
+          :all-tags (tag.i/list-all db)
+          :panel-data (taxon.panel/fetch-panel-data context db resource)
+          :timezone timezone))
 
-      (let [tags (tag.i/get-for-resource db :taxon id)
-            all-tags (tag.i/list-all db)
-            panel-data (taxon.panel/fetch-panel-data context db resource)]
-        (render :taxon resource :tags tags :all-tags all-tags
-                :panel-data panel-data
-                :timezone timezone)))))
+(defn get-handler [{:keys [::z/context]}]
+  (page context))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _saved (f/try* (add! db (:taxon/id resource) (:user/id viewer) data))]
+      (http/saved (page context))
+      (f/when-failed [e]
+        (http/not-saved e (tr "The tag could not be added."))))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context
@@ -115,6 +118,6 @@
         tag (when tag-id (tag.i/get-by-id db tag-id))]
     (f/attempt-all [_removed (f/try* (when tag
                                        (remove! db id (:user/id viewer) tag)))]
-      (http/hx-redirect (z/url-for taxon.routes/detail-tags {:id id}))
+      (http/saved (page context))
       (f/when-failed [e]
-        (http/failure-partial e (tr "The tag could not be removed."))))))
+        (http/not-saved e (tr "The tag could not be removed."))))))

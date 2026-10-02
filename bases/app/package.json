@@ -28,7 +28,6 @@
         "@uppy/dashboard": "3.8.3",
         "alpinejs": "3.15.0",
         "cssnano": "7.0.6",
-        "htmx-ext-alpine-morph": "2.0.2",
         "htmx.org": "^2.0.8",
         "prettier": "3.7.4",
         "tailwindcss": "4.1.14",

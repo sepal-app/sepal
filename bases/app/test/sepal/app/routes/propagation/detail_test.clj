@@ -1,5 +1,6 @@
 (ns sepal.app.routes.propagation.detail-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -57,6 +58,7 @@
         token (test.i/response-anti-forgery-token response)]
     (:response (peri/request sess path
                              :request-method :post
+                             :headers {"hx-request" "true"}
                              :params (assoc params :__anti-forgery-token token)))))
 
 (deftest test-editing-a-batch
@@ -72,7 +74,9 @@
                                              :succeeded-on "2026-05-01"
                                              :notes "Half in perlite"})
               saved (propagation.i/get-by-id *db* (:propagation/id prop))]
-          (is (= 200 (:status response)))
+          (is (app.test/saved-in-place? response))
+          (is (str/includes? (.text (Jsoup/parse ^String (:body response))) "Half in perlite")
+              "the page answers with the new notes")
           (is (= 20 (:propagation/quantity-started saved)))
           (is (= 12 (:propagation/quantity-succeeded saved)))
           (is (= "2026-05-01" (:propagation/succeeded-on saved)))
@@ -238,8 +242,68 @@
                                            :propagated-on "2026-03-01"
                                            :succeeded-on "2026-02-01"})]
         (is (= 422 (:status response)))
+        (is (some? (.selectFirst (Jsoup/parse ^String (:body response)) "#succeeded-on-errors")))
+        (is (not (str/includes? (:body response) "page-region")))
         (is (nil? (:propagation/succeeded-on
                     (propagation.i/get-by-id *db* (:propagation/id prop)))))))))
+
+(defn- post-status
+  "Posts the status action with `headers`, as the menu that holds it would."
+  [user prop status headers]
+  (let [path (str "/propagation/" (:propagation/id prop) "/")
+        sess (app.test/login (:user/email user) "testpassword123")
+        {:keys [response] :as sess} (peri/request sess path)
+        token (test.i/response-anti-forgery-token response)]
+    (:response (peri/request sess (str path "status/")
+                             :request-method :post
+                             :headers (assoc headers "hx-request" "true")
+                             :params {:__anti-forgery-token token
+                                      :status status}))))
+
+(deftest test-marking-a-batch-complete-answers-with-the-page
+  (tf/testing "the status action answers in place and the menu stops offering it"
+    (fixtures)
+    (fn [{:keys [user prop]}]
+      (try
+        (let [response (post-status user prop "complete" {"hx-target" "page-region"})
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (= :complete (:propagation/status
+                             (propagation.i/get-by-id *db* (:propagation/id prop)))))
+          (is (nil? (.selectFirst body "form[hx-post$=/status/]"))
+              "Mark complete is gone from the menu"))
+        (finally
+          (propagation.i/update! *db* (:propagation/id prop) {:status :active})
+          (clear-activity! user))))))
+
+(deftest test-marking-a-batch-complete-from-the-list-panel-redirects
+  (tf/testing "from the list's panel the status action goes to the batch's page"
+    (fixtures)
+    (fn [{:keys [user prop]}]
+      (try
+        (let [response (post-status user prop "complete" {})]
+          (is (= 200 (:status response)))
+          (is (= (str "/propagation/" (:propagation/id prop) "/")
+                 (get-in response [:headers "HX-Redirect"])))
+          (is (not (str/includes? (str (:body response)) "page-region"))
+              "no page for the list to swap in")
+          (is (= :complete (:propagation/status
+                             (propagation.i/get-by-id *db* (:propagation/id prop))))))
+        (finally
+          (propagation.i/update! *db* (:propagation/id prop) {:status :active})
+          (clear-activity! user))))))
+
+(deftest test-the-list-panel-menu-does-not-swap-the-page
+  (tf/testing "the panel's menu forms post without the record page's region swap"
+    (fixtures)
+    (fn [{:keys [user prop]}]
+      (let [body (page user (str "/propagation/" (:propagation/id prop) "/panel/"))
+            forms (.select body "form[hx-post]")]
+        (is (some? (.selectFirst body "form[hx-post$=/status/]"))
+            "the panel offers the status action")
+        (is (seq forms))
+        (is (every? #(not= "#page-region" (.attr % "hx-target")) forms))
+        (is (every? #(= "none" (.attr % "hx-swap")) forms))))))
 
 (deftest test-deleting-a-propagation
   (tf/testing "the actions menu deletes a batch with nothing produced"

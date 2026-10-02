@@ -128,3 +128,34 @@
             body (Jsoup/parse ^String (:body response))]
         (is (some? (.selectFirst body "nav[aria-label]"))
             "a nav landmark lets a screen reader jump to navigation")))))
+
+(deftest test-the-region-is-everything-inside-the-shell
+  ;; A save swaps #page-region, so the flash container must sit outside it:
+  ;; HTMX swaps the out-of-band banner in first, and a region holding the
+  ;; container would replace it with an empty one. The page script must sit
+  ;; outside too, or each swap would run Alpine.start() again.
+  (tf/testing "a served page keeps its banner and script outside the region"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (-> sess (peri/request "/accession/"))
+            body (Jsoup/parse ^String (:body response))
+            region (.getElementById body "page-region")]
+        (is (some? region))
+        (is (some? (.selectFirst region ".spl-topbar")) "the breadcrumb and actions")
+        (is (some? (.selectFirst region "main")) "the content")
+        (is (nil? (.selectFirst region "#flash-container")))
+        (is (some? (.getElementById body "flash-container")))
+        (is (nil? (.selectFirst region "script[type=module]")))))))
+
+(deftest test-region-swap-keeps-its-target-off-the-requests-inside
+  ;; HTMX inherits hx-target and hx-select down the DOM, so a suggestion
+  ;; inside a form carrying these would select #page-region from a response
+  ;; that has none and swap in nothing.
+  (let [el (.selectFirst (Jsoup/parseBodyFragment
+                           (chassis/html [:button page/region-swap]))
+                         "button")]
+    (is (= #{"hx-target" "hx-select"}
+           (set (str/split (.attr el "hx-disinherit") #" "))))))

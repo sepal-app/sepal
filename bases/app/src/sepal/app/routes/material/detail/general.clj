@@ -3,7 +3,6 @@
             [sepal.accession.interface :as accession.i]
             [sepal.app.codes :as codes]
             [sepal.app.datetime :as datetime]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.form :as material.form]
@@ -86,52 +85,55 @@
    [:type [:string {:min 1}]]
    [:reason [:string {:min 0}]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db material-separator organization resource timezone]} context
-        config (codes/material db)
-        accession (accession.i/get-by-id db (:material/accession-id resource))
+(defn- page
+  "The tab for `material`, as its GET renders it."
+  [{:keys [db material-separator organization timezone]} material]
+  (let [accession (accession.i/get-by-id db (:material/accession-id material))
         taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
-        location (location.i/get-by-id db (:material/location-id resource))
-        values {:id (:material/id resource)
-                :code (:material/code resource)
-                :accession-id (:accession/id accession)
-                :accession-code (:accession/code accession)
-                :location-id (:material/location-id resource)
-                :location-name (:location/name location)
-                :location-code (:location/code location)
-                :status (:material/status resource)
-                :quantity (:material/quantity resource)
-                :type (:material/type resource)}]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-        (if (and (codes/rejects? config (:code data))
-                 ;; Skipped when the code is untouched, as on the accession.
-                 (not= (:code data) (:material/code resource))
-                 (not= "1" (:code-override data)))
-          (http/unprocessable-entity
-            (codes/confirm-swap (material.i/next-code db
-                                                      (:template config)
-                                                      (:material/accession-id resource)
-                                                      (datetime/today timezone))))
-          (f/attempt-all [saved (f/try* (save! db (:material/id resource) (:user/id viewer) data))]
-            (-> (http/hx-redirect material.routes/detail {:id (:material/id saved)})
-                (flash/success (tr "Material updated successfully")))
-            (f/when-failed [e]
-              (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
-                                  (tr "Could not save the material")))))
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect material.routes/detail {:id (:material/id resource)})
-                              (tr "Could not save the material"))))
+        location (location.i/get-by-id db (:material/location-id material))]
+    (render :org organization
+            :material material
+            :accession accession
+            :taxon taxon
+            :values {:id (:material/id material)
+                     :code (:material/code material)
+                     :accession-id (:accession/id accession)
+                     :accession-code (:accession/code accession)
+                     :location-id (:material/location-id material)
+                     :location-name (:location/name location)
+                     :location-code (:location/code location)
+                     :status (:material/status material)
+                     :quantity (:material/quantity material)
+                     :type (:material/type material)}
+            :reasons (material.i/list-reasons db)
+            :separator material-separator
+            :timezone timezone
+            :panel-data (material.panel/fetch-panel-data db material))))
 
-      (let [panel-data (material.panel/fetch-panel-data db resource)
-            reasons (material.i/list-reasons db)]
-        (render :org organization
-                :material resource
-                :accession accession
-                :taxon taxon
-                :values values
-                :reasons reasons
-                :separator material-separator
-                :timezone timezone
-                :panel-data panel-data)))))
+(defn- confirm-code
+  "A step: a halt asking to confirm the code when the template rejects it.
+  Skipped when the code is untouched, as on the accession."
+  [db config material data today]
+  (when (and (codes/rejects? config (:code data))
+             (not= (:code data) (:material/code material))
+             (not= "1" (:code-override data)))
+    (http/halt-with
+      (http/unprocessable-entity
+        (codes/confirm-swap (material.i/next-code db (:template config)
+                                                  (:material/accession-id material)
+                                                  today))))))
+
+(defn get-handler [{:keys [::z/context]}]
+  (page context (:resource context)))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource timezone]} context
+        id (:material/id resource)]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _confirmed (confirm-code db (codes/material db) resource data
+                                             (datetime/today timezone))
+                    _saved (f/try* (save! db id (:user/id viewer) data))]
+      (http/saved (page context (material.i/get-by-id db id))
+                  (tr "Material updated successfully"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the material"))))))

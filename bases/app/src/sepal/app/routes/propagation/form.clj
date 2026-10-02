@@ -5,6 +5,7 @@
             [sepal.app.ui.accession-combobox :as accession-combobox]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr trc]]
             [zodiac.core :as z]))
 
@@ -144,11 +145,11 @@
         material? (and (not edit?) (:parent-material-id values))]
     [:div {:x-data (str "{ type: '" (name type) "' }")}
      (form/form
-       {:id "propagation-form"
-        :hx-post action
-        :hx-swap "none"
-        :x-on:propagation-form:submit.window "$el.requestSubmit()"
-        :x-on:propagation-form:reset.window "$el.reset()"}
+       (merge ui.page/region-swap
+              {:id "propagation-form"
+               :hx-post action
+               :x-on:propagation-form:submit.window "$el.requestSubmit()"
+               :x-on:propagation-form:reset.window "$el.reset()"})
        [(form/anti-forgery-field)
         [:div {:class "spl-form"}
          ;; Untitled: the method is one field, and a heading would repeat its

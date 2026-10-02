@@ -44,7 +44,8 @@
     ["/general/" {:name routes/detail-general
                   :permission location.perm/edit
                   :permission-redirect routes/detail
-                  :handler #'detail-general/handler}]
+                  :get #'detail-general/get-handler
+                  :post #'detail-general/post-handler}]
     ["/observations/" {:name routes/detail-observations
                        :permission location.perm/edit
                        :permission-redirect routes/detail

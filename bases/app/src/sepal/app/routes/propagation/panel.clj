@@ -147,4 +147,5 @@
         ;; Only here, not on the record page: that page carries the same menu
         ;; in its title bar.
         :actions (when (authz/user-has-permission? viewer propagation.perm/edit)
-                   (shared/actions resource (propagation.product/default-kind-for db resource)))))))
+                   (shared/actions resource (propagation.product/default-kind-for db resource)
+                                   :in-panel? true))))))

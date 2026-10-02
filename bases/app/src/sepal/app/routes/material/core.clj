@@ -50,7 +50,8 @@
     ["/general/" {:name routes/detail-general
                   :permission material.perm/edit
                   :permission-redirect routes/detail
-                  :handler #'detail-general/handler}]
+                  :get #'detail-general/get-handler
+                  :post #'detail-general/post-handler}]
     ["/media/" {:name routes/detail-media
                 :permission material.perm/edit
                 :permission-redirect routes/detail
@@ -69,7 +70,8 @@
     ["/tags/" {:name routes/detail-tags
                :permission material.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-tags/handler}]
+               :get #'detail-tags/get-handler
+               :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
                        :permission material.perm/edit
                        :permission-redirect routes/detail

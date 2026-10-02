@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.tags-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -14,7 +15,11 @@
             [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
-            [sepal.user.interface :as user.i]))
+            [sepal.user.interface :as user.i])
+  (:import [org.jsoup Jsoup]))
+
+(defn- panel-text [response]
+  (.text (.getElementById (Jsoup/parse ^String (:body response)) "detail-panel-content")))
 
 (use-fixtures :once default-system-fixture)
 
@@ -38,7 +43,9 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :tag-name "fruit"})]
-        (is (contains? #{200 303} (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (panel-text response) "Activity(1) linked")
+            "the panel's Activity section shows the new event")
         (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id))))
         (is (some #(= tag.activity/linked (:activity/type %))
                   (activity.i/get-by-resource *db* :resource-type :material :resource-id id)))
@@ -65,7 +72,9 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :tag-name "sand tolerent"})]
-        (is (contains? #{200 303} (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (panel-text response) "Activity(1) linked")
+            "the panel's Activity section shows the new event")
         (let [tag (tag.i/get-by-name *db* "sand tolerent")]
           (is (some? tag))
           (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id))))
@@ -95,7 +104,9 @@
                                    (format "/material/%s/tags/%s/" id (:tag/id tag))
                                    :request-method :delete
                                    :headers {"x-csrf-token" token})]
-          (is (contains? #{200 303} (:status response)))
+          (is (app.test/saved-in-place? response))
+          (is (not (str/includes? (:body response) "Remove tag MIBO"))
+              "the response has no chip for it")
           (is (empty? (tag.i/get-for-resource *db* :material id)))
           (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
               "the tag itself survives; only the link is gone")
@@ -123,7 +134,7 @@
                                  (format "/material/%s/tags/%s/" id (:tag/id tag))
                                  :request-method :delete
                                  :headers {"x-csrf-token" token})]
-        (is (contains? #{200 303} (:status response)))
+        (is (app.test/saved-in-place? response))
         (is (empty? (activity.i/get-by-resource *db* :resource-type :material :resource-id id))
             "the tag was never linked here, so untag! is a true no-op: no unlinked event")
         (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
@@ -150,13 +161,13 @@
                                                       :request-method :post
                                                       :params {:__anti-forgery-token token
                                                                :tag-name "Bromeliad"})
-            first-status (:status response)
+            first-saved (app.test/saved-in-place? response)
             {:keys [response]} (peri/request sess url
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :tag-name "Bromeliad"})]
-        (is (contains? #{200 303} first-status))
-        (is (contains? #{200 303} (:status response)))
+        (is first-saved)
+        (is (app.test/saved-in-place? response))
         (is (= [(:tag/id tag)] (mapv :tag/id (tag.i/get-for-resource *db* :material id)))
             "still exactly one link row")
         (is (= 1 (count (filter #(= tag.activity/linked (:activity/type %))

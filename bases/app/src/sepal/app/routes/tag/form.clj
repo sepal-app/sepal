@@ -1,5 +1,6 @@
 (ns sepal.app.routes.tag.form
   (:require [sepal.app.ui.form :as form]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr]]))
 
 (defn footer-buttons []
@@ -7,11 +8,11 @@
 
 (defn form [& {:keys [action errors values]}]
   (form/form
-    {:id "tag-form"
-     :hx-post action
-     :hx-swap "none"
-     :x-on:tag-form:submit.window "$el.requestSubmit()"
-     :x-on:tag-form:reset.window "$el.reset()"}
+    (merge ui.page/region-swap
+           {:id "tag-form"
+            :hx-post action
+            :x-on:tag-form:submit.window "$el.requestSubmit()"
+            :x-on:tag-form:reset.window "$el.reset()"})
     [(form/anti-forgery-field)
      [:div {:class "spl-form"}
       (form/section

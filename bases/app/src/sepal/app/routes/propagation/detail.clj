@@ -133,49 +133,58 @@
       (propagation.activity/create! tx propagation.activity/updated updated-by propagation)
       propagation)))
 
-(defn- save! [db propagation viewer form-params today]
-  (let [id (:propagation/id propagation)
-        redirect (http/hx-redirect propagation.routes/detail {:id id})]
-    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-      (if-let [errors (propagation.create/form-errors data today)]
-        (http/validation-errors errors)
-        (let [;; A batch with products keeps its parent, whatever the form sent.
-              data (cond-> data
-                     (shared/products? (propagation.panel/fetch-panel-data db propagation))
-                     (dissoc :parent-accession-id :parent-material-id))]
-          (f/attempt-all [_saved (f/try* (update! db id (:user/id viewer) data))]
-            (flash/success redirect (tr "Propagation updated"))
-            (f/when-failed [e]
-              (http/failure-flash e redirect (tr "Could not save the propagation"))))))
-      (f/when-failed [e]
-        (http/failure-response e redirect)))))
+(defn- locked-parent
+  "A batch with products keeps its parent, whatever the form sent."
+  [db propagation data]
+  (cond-> data
+    (shared/products? (propagation.panel/fetch-panel-data db propagation))
+    (dissoc :parent-accession-id :parent-material-id)))
+
+(defn- page
+  "The edit page for `propagation`, as its GET renders it for an editor."
+  [{:keys [db material-separator timezone]} propagation]
+  ;; The separator rides in panel-data, which every renderer here already
+  ;; takes.
+  (let [panel-data (-> (propagation.panel/fetch-panel-data db propagation)
+                       (assoc :separator material-separator))]
+    (render-edit-page db propagation panel-data (str (datetime/today timezone)))))
 
 (defn get-handler [{:keys [::z/context viewer]}]
-  (let [{:keys [db material-separator resource timezone]} context
-        ;; The separator rides in panel-data, which every renderer here already
-        ;; takes.
-        panel-data (-> (propagation.panel/fetch-panel-data db resource)
-                       (assoc :separator material-separator))]
+  (let [{:keys [db material-separator resource]} context]
     (if (authz/user-has-permission? viewer propagation.perm/edit)
-      (render-edit-page db resource panel-data (str (datetime/today timezone)))
-      (render-panel-page panel-data))))
+      (page context resource)
+      (render-panel-page (-> (propagation.panel/fetch-panel-data db resource)
+                             (assoc :separator material-separator))))))
 
 (defn post-handler [{:keys [::z/context form-params viewer]}]
-  (let [{:keys [db resource timezone]} context]
-    (save! db resource viewer form-params (str (datetime/today timezone)))))
+  (let [{:keys [db resource timezone]} context
+        id (:propagation/id resource)
+        today (str (datetime/today timezone))]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _checked (http/field-errors (propagation.create/form-errors data today))
+                    _saved (f/try* (update! db id (:user/id viewer) (locked-parent db resource data)))]
+      (http/saved (page context (propagation.i/get-by-id db id))
+                  (tr "Propagation updated"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the propagation"))))))
 
 (def StatusParams
   [:map {:closed true}
    [:status [:enum :complete :failed]]])
 
 (defn status-handler
-  "Close a batch out from the actions menu."
-  [{:keys [::z/context form-params viewer]}]
+  "Close a batch out from the actions menu. The record page's menu targets
+  #page-region and gets the page back; the list panel's menu does not, and is
+  sent to the batch's page."
+  [{:keys [::z/context form-params headers viewer]}]
   (let [{:keys [db resource]} context
-        id (:propagation/id resource)
-        redirect (http/hx-redirect propagation.routes/detail {:id id})]
+        id (:propagation/id resource)]
     (f/attempt-all [data (validation.i/validate-form-values StatusParams form-params)
                     _saved (f/try* (update! db id (:user/id viewer) data))]
-      (flash/success redirect (tr "Propagation updated"))
+      (if (= "page-region" (get headers "hx-target"))
+        (http/saved (page context (propagation.i/get-by-id db id))
+                    (tr "Propagation updated"))
+        (flash/success (http/hx-redirect propagation.routes/detail {:id id})
+                       (tr "Propagation updated")))
       (f/when-failed [e]
-        (http/failure-flash e redirect (tr "Could not save the propagation"))))))
+        (http/not-saved e (tr "Could not save the propagation"))))))

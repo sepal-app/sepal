@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail.notes-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -7,6 +8,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.app.ui.form :as ui.form]
             [sepal.contact.interface :as contact.i]
             [sepal.note.interface :as note.i]
             [sepal.taxon.interface :as taxon.i]
@@ -45,11 +47,15 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "Reaccessioned, lost original acc #"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "Reaccessioned, lost original acc #")
+            "the panel's Notes section shows it")
         (let [notes (note.i/get-for-resource *db* :accession (:accession/id accession))]
           (is (= ["Reaccessioned, lost original acc #"] (mapv :note/body notes)))
           (is (= (:user/id user) (:note/created-by (first notes))))
-          (testing "the response is the swapped list, carrying the new note"
+          (testing "the response is the page, carrying the new note"
             (let [body (Jsoup/parse ^String (:body response))]
               (is (some? (.selectFirst body "#notes-list")))
               (is (= 1 (.size (.select body "[data-note-id]"))))))
@@ -107,13 +113,43 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "before"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "before")
+            "the panel's Notes section shows the edit")
         (is (= "before" (:note/body (note.i/get-by-id *db* (:note/id note)))))
         (note.i/delete! *db* (:note/id note))
         ;; The route also logs note/created and note/updated activity, whose
         ;; created_by is a not-null FK to user — left behind, it blocks the
         ;; fixture teardown from deleting this test's user.
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-a-rejected-inline-edit-reports-on-that-note
+  (tf/testing "POST an empty body to a note's URL"
+    (fixtures)
+    (fn [{:keys [user accession]}]
+      (let [note (note.i/create! *db* {:body "keep me"
+                                       :resource-type :accession
+                                       :resource-id (:accession/id accession)
+                                       :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (notes-url accession))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess
+                                             (str (notes-url accession) (:note/id note) "/")
+                                             :request-method :post
+                                             :headers {"hx-request" "true"}
+                                             :params {:__anti-forgery-token token
+                                                      :body ""})
+            body (str (:body response))]
+        (is (= 422 (:status response)))
+        (is (not (str/includes? body "page-region")))
+        (is (str/includes? body (str "id=\"" (ui.form/errors-id (str "body-" (:note/id note))) "\"")))
+        (is (not (str/includes? body (str "id=\"" (ui.form/errors-id "body") "\"")))
+            "the new-note form's error list is not the target")
+        (is (= "keep me" (:note/body (note.i/get-by-id *db* (:note/id note)))))
+        (note.i/delete! *db* (:note/id note))))))
 
 (deftest test-delete-removes-the-note
   (tf/testing "DELETE /accession/:id/notes/:note-id/"
@@ -130,7 +166,11 @@
                                              (str (notes-url accession) (:note/id note) "/")
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (not (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                        "detail-panel-content"))
+                                "written by mistake"))
+            "the panel's Notes section no longer shows it")
         (is (nil? (note.i/get-by-id *db* (:note/id note))))
         ;; The route also logs a note/created and a note/deleted activity,
         ;; whose created_by is a not-null FK to user — left behind, it blocks

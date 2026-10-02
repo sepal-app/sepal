@@ -2,7 +2,6 @@
 import Alpine from "alpinejs"
 import morph from "@alpinejs/morph"
 import htmx from "htmx.org"
-import "htmx-ext-alpine-morph"
 
 import SetupProgress from "~/routes/setup/taxonomy"
 

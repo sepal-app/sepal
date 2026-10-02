@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.observations-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -476,3 +477,50 @@
         (is (badge? follow-up) "the follow-up's own check is overdue")
         (doseq [o [settled follow-up]]
           (observation.i/delete! *db* (:observation/id o)))))))
+
+(deftest test-a-new-observation-updates-the-panel-in-place
+  (tf/testing "create answers with the page, panel included"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [url (observations-url material)
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess url)
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess url
+                                             :request-method :post
+                                             :headers {"hx-request" "true"}
+                                             :params {:__anti-forgery-token token
+                                                      :type "general"
+                                                      :value ""
+                                                      :observed_on "2026-03-14"
+                                                      :observed_by ""
+                                                      :next_check_on ""
+                                                      :note "In place"})
+            body (Jsoup/parse ^String (:body response))]
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById body "detail-panel-content")) "In place")
+            "the panel's Observations section shows it")
+        (doseq [o (observation.i/get-for-resource *db* :material (:material/id material))]
+          (observation.i/delete! *db* (:observation/id o)))
+        (cleanup-activity! user)))))
+
+(deftest test-a-failed-observation-leaves-the-page-alone
+  (tf/testing "a write that fails answers with no page, and a flash"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (with-redefs [observation.i/create! (fn [& _] (throw (ex-info "disk full" {})))]
+        (let [url (observations-url material)
+              sess (app.test/login (:user/email user) "testpassword123")
+              {:keys [response] :as sess} (peri/request sess url)
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (peri/request sess url
+                                               :request-method :post
+                                               :headers {"hx-request" "true"}
+                                               :params {:__anti-forgery-token token
+                                                        :type "general" :value ""
+                                                        :observed_on "2026-03-14"
+                                                        :observed_by "" :next_check_on ""
+                                                        :note ""})]
+          (is (= 422 (:status response)))
+          (is (not (str/includes? (str (:body response)) "page-region")))
+          (is (str/includes? (str (:body response)) "The observation could not be saved.")))))))

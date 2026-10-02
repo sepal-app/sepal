@@ -5,6 +5,7 @@
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.i18n.interface :refer [tr]]
             [sepal.taxon.interface.name :as taxon.name]
@@ -215,12 +216,12 @@
   (let [ranks (rest taxon.spec/rank)]
     [:div
      (form/form
-       {:action action
-        :hx-post action
-        :hx-swap "none"
-        :id "taxon-form"
-        :x-on:taxon-form:submit.window "$el.requestSubmit()"
-        :x-on:taxon-form:reset.window "$el.reset()"}
+       (merge ui.page/region-swap
+              {:action action
+               :hx-post action
+               :id "taxon-form"
+               :x-on:taxon-form:submit.window "$el.requestSubmit()"
+               :x-on:taxon-form:reset.window "$el.reset()"})
        [:div {:class "spl-form"}
         (form/anti-forgery-field)
         (form/section

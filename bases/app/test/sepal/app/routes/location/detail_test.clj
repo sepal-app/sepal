@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.detail-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -76,8 +77,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-update-location-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
@@ -237,3 +238,37 @@
         (is (re-find (re-pattern (str "exclude=" (:location/id row)))
                      (.attr field "data-url"))
             "and its picker leaves out the row and everything below it")))))
+
+(deftest test-a-location-save-answers-with-the-page
+  (tf/testing "the page comes back with the saved name in every place it shows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [location (location.i/create! *db* (test-location-data))]
+        (try
+          (let [sess (app.test/login (:user/email user) "testpassword123")
+                url (str "/location/" (:location/id location) "/general/")
+                {:keys [response] :as sess} (peri/request sess url)
+                token (test.i/response-anti-forgery-token response)
+                {:keys [response]} (peri/request sess url
+                                                 :request-method :post
+                                                 :headers {"hx-request" "true"}
+                                                 :params {:__anti-forgery-token token
+                                                          :name "NEW-NAME"
+                                                          :code (:location/code location)
+                                                          :description ""
+                                                          :parent-id ""})]
+            (is (app.test/saved-in-place? response))
+            (let [body (Jsoup/parse ^String (:body response))]
+              (is (str/includes? (.text (.selectFirst body ".spl-crumbs-current")) "NEW-NAME")
+                  "the breadcrumb")
+              (is (str/includes? (.text (.selectFirst body ".spl-record")) "NEW-NAME")
+                  "the record header")
+              (is (str/includes? (.text (.selectFirst body "title")) "NEW-NAME")
+                  "the browser tab")
+              (is (= "NEW-NAME" (.attr (.selectFirst body "input[name=name]") "value"))
+                  "the form, from the saved record")))
+          (finally
+            (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+            (jdbc.sql/delete! *db* :location {:id (:location/id location)})))))))

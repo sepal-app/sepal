@@ -50,32 +50,36 @@
         form (.selectFirst body "[data-note-id=2] form")]
     (is (some? form))
     (is (= "/accession/12/notes/2/" (.attr form "hx-post")))
-    (is (= "#notes-list" (.attr form "hx-target")))
-    (is (= "outerHTML" (.attr form "hx-swap")))))
+    (is (= "#page-region" (.attr form "hx-target")))
+    (is (= "morph" (.attr form "hx-swap")))))
 
-(deftest test-delete-targets-the-list
+(deftest test-each-note-carries-a-key-and-closes-on-save
+  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn :timezone "UTC"))
+        item (.selectFirst body "[data-note-id=2]")]
+    (is (= "2" (.attr item "key")) "a morph matches notes by id")
+    (is (= "editing = false" (.attr item "x-on:form-saved")))))
+
+(deftest test-delete-swaps-the-page
   (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn :timezone "UTC"))
         button (.selectFirst body "[data-note-id=2] [hx-delete]")]
     (is (= "/accession/12/notes/2/" (.attr button "hx-delete")))
-    (is (= "#notes-list" (.attr button "hx-target")))
+    (is (= "#page-region" (.attr button "hx-target")))
+    (is (= "morph" (.attr button "hx-swap")))
     (is (not (empty? (.attr button "hx-confirm")))
         "Deleting a note asks first")
     (is (re-find #"test-token" (.attr button "hx-headers"))
         "A bodyless hx-delete carries no CSRF token unless hx-headers supplies one")))
 
-(deftest test-the-new-note-form-clears-itself-after-a-successful-post
-  (let [body (parse (ui.notes/notes-body :notes notes
-                                         :create-url "/accession/12/notes/"
-                                         :note-url-fn note-url-fn :timezone "UTC"))
-        form (.selectFirst body "form#note-form")
-        handler (.attr form "hx-on::after-request")]
-    (is (re-find #"this\.reset\(\)" handler)
-        "The swap replaces the list, not the form, so the form must clear itself")
-    (is (re-find #"dirty = false" handler)
-        "x-form-state only sets dirty true; without this the submit button
-         stays enabled over an empty textarea")
-    (is (re-find #"event\.detail\.successful" handler)
-        "A rejected post keeps the text where the curator can fix it")))
+(deftest test-the-new-note-form-swaps-the-page
+  (let [form (.selectFirst (parse (ui.notes/notes-body :notes notes
+                                                       :create-url "/accession/12/notes/"
+                                                       :note-url-fn note-url-fn
+                                                       :timezone "UTC"))
+                           "form#note-form")]
+    (is (= "#page-region" (.attr form "hx-target")))
+    (is (= "morph" (.attr form "hx-swap")))
+    (is (= "" (.attr form "hx-on::after-request"))
+        "x-form-state resets it on form-saved instead")))
 
 (deftest test-empty-list-says-so
   (let [body (parse (ui.notes/note-list :notes [] :note-url-fn note-url-fn :timezone "UTC"))]

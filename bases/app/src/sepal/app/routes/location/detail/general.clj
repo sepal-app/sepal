@@ -1,6 +1,5 @@
 (ns sepal.app.routes.location.detail.general
   (:require [failjure.core :as f]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.location.detail.shared :as location.shared]
             [sepal.app.routes.location.form :as location.form]
@@ -58,28 +57,30 @@
    ;; Always posted, so an empty one clears the parent.
    [:parent-id {:optional true :decode/form validation.i/empty->nil} [:maybe :int]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
-        id (:location/id resource)
-        parent (some->> (:location/parent-id resource) (location.i/get-by-id db))
-        values {:id id
-                :name (:location/name resource)
-                :code (:location/code resource)
-                :description (:location/description resource)
-                :parent-id (:location/id parent)
-                :parent-code (:location/code parent)
-                :parent-name (:location/name parent)}]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                      saved (f/try* (update! db id (:user/id viewer) data))]
-        (-> (http/hx-redirect location.routes/detail-general {:id (:location/id saved)})
-            (flash/success (tr "Location updated successfully")))
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect location.routes/detail-general {:id id}) (tr "Could not save the location"))))
+(defn- page
+  "The tab for `location`, as its GET renders it."
+  [{:keys [db timezone]} location]
+  (let [parent (some->> (:location/parent-id location) (location.i/get-by-id db))]
+    (render :location location
+            :values {:id (:location/id location)
+                     :name (:location/name location)
+                     :code (:location/code location)
+                     :description (:location/description location)
+                     :parent-id (:location/id parent)
+                     :parent-code (:location/code parent)
+                     :parent-name (:location/name parent)}
+            :panel-data (location.panel/fetch-panel-data db location)
+            :timezone timezone)))
 
-      (let [panel-data (location.panel/fetch-panel-data db resource)]
-        (render :location resource
-                :values values
-                :panel-data panel-data
-                :timezone timezone)))))
+(defn get-handler [{:keys [::z/context]}]
+  (page context (:resource context)))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context
+        id (:location/id resource)]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _saved (f/try* (update! db id (:user/id viewer) data))]
+      (http/saved (page context (location.i/get-by-id db id))
+                  (tr "Location updated successfully"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the location"))))))

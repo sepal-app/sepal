@@ -82,9 +82,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        ;; Form should have hx-swap="none" for OOB-only updates
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-create-accession-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"

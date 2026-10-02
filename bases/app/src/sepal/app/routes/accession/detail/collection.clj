@@ -20,11 +20,11 @@
 
 (defn form [& {:keys [action errors values today]}]
   (ui.form/form
-    {:id "collection-form"
-     :hx-post action
-     :hx-swap "none"
-     :x-on:collection-form:submit.window "$el.requestSubmit()"
-     :x-on:collection-form:reset.window "$el.reset()"}
+    (merge page/region-swap
+           {:id "collection-form"
+            :hx-post action
+            :x-on:collection-form:submit.window "$el.requestSubmit()"
+            :x-on:collection-form:reset.window "$el.reset()"})
     [:div {:class "spl-form"}
      (ui.form/anti-forgery-field)
 
@@ -245,39 +245,41 @@
       (assoc base-data :geo-coordinates {:lat lat :lng lng :srid srid})
       base-data)))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context
-        accession resource
-        taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
-        collection (coll.i/get-by-accession-id db (:accession/id accession))
-        values (if collection
-                 (collection->values collection)
-                 {})]
+(defn- page
+  "The tab for `accession`, as its GET renders it. Every write answers with it."
+  [{:keys [db timezone]} accession]
+  (let [collection (coll.i/get-by-accession-id db (:accession/id accession))]
+    (render :accession accession
+            :taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
+            :values (collection->values collection)
+            :collection? (some? collection)
+            :panel-data (accession.panel/fetch-panel-data db accession)
+            :timezone timezone)))
 
-    ;; A disabled tab is not a security control — the route exists either way,
-    ;; so guard it here. Available when provenance is wild, or when the record
-    ;; already carries collection data.
-    (if-not (accession.shared/collection-available? accession (some? collection))
+(defn- unavailable?
+  "A disabled tab is not a security control -- the route exists either way, so
+  guard it here. Available when provenance is wild, or when the record already
+  carries collection data."
+  [db accession]
+  (not (accession.shared/collection-available?
+         accession (some? (coll.i/get-by-accession-id db (:accession/id accession))))))
+
+(defn get-handler [{:keys [::z/context]}]
+  (let [{:keys [db resource]} context]
+    (if (unavailable? db resource)
       (http/not-found)
-      (case request-method
-        :post
-        (let [redirect (http/hx-redirect (z/url-for accession.routes/detail-collection
-                                                    {:id (:accession/id accession)}))
-              failed #(http/failure-flash % redirect (tr "Could not save the collection data"))]
-          (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-            (if-let [date-errors (validation.i/future-date-errors
-                                   data [:collected-date] (str (datetime/today timezone)))]
-              (http/validation-errors date-errors)
-              (f/attempt-all [_saved (f/try* (save! db (:accession/id accession) (:user/id viewer)
-                                                    (form-params->collection-data data)))]
-                redirect
-                (f/when-failed [e] (failed e))))
-            (f/when-failed [e] (failed e))))
+      (page context resource))))
 
-        (let [panel-data (accession.panel/fetch-panel-data db accession)]
-          (render :accession accession
-                  :taxon taxon
-                  :values values
-                  :collection? (some? collection)
-                  :panel-data panel-data
-                  :timezone timezone))))))
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource timezone]} context]
+    (if (unavailable? db resource)
+      (http/not-found)
+      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                      _dated (http/field-errors (validation.i/future-date-errors
+                                                  data [:collected-date]
+                                                  (str (datetime/today timezone))))
+                      _saved (f/try* (save! db (:accession/id resource) (:user/id viewer)
+                                            (form-params->collection-data data)))]
+        (http/saved (page context resource) (tr "Collection data updated"))
+        (f/when-failed [e]
+          (http/not-saved e (tr "Could not save the collection data")))))))

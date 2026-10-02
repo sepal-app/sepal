@@ -1,5 +1,6 @@
 (ns sepal.app.routes.contact.detail-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
@@ -85,8 +86,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-update-contact-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
@@ -154,3 +155,35 @@
         (let [selected (->> (.select select "option[selected]") first)]
           (is (some? selected) "an option should be selected")
           (is (= "research_station" (.attr selected "value"))))))))
+
+(deftest test-a-contact-save-answers-with-the-page
+  (tf/testing "the page comes back with the saved name in every place it shows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}}
+    (fn [{:keys [user]}]
+      (let [contact (contact.i/create! *db* test-contact-data)]
+        (try
+          (let [sess (app.test/login (:user/email user) "testpassword123")
+                url (str "/contact/" (:contact/id contact) "/")
+                {:keys [response] :as sess} (peri/request sess url)
+                token (test.i/response-anti-forgery-token response)
+                {:keys [response]} (peri/request sess url
+                                                 :request-method :post
+                                                 :headers {"hx-request" "true"}
+                                                 :params (assoc valid-update-params
+                                                                :__anti-forgery-token token
+                                                                :name "NEW-NAME"))]
+            (is (app.test/saved-in-place? response))
+            (let [body (Jsoup/parse ^String (:body response))]
+              (is (str/includes? (.text (.selectFirst body ".spl-crumbs-current")) "NEW-NAME")
+                  "the breadcrumb")
+              (is (str/includes? (.text (.selectFirst body ".spl-record")) "NEW-NAME")
+                  "the record header")
+              (is (str/includes? (.text (.selectFirst body "title")) "NEW-NAME")
+                  "the browser tab")
+              (is (= "NEW-NAME" (.attr (.selectFirst body "input[name=name]") "value"))
+                  "the form, from the saved record")))
+          (finally
+            (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+            (jdbc.sql/delete! *db* :contact {:id (:contact/id contact)})))))))

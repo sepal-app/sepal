@@ -1,10 +1,12 @@
 (ns sepal.app.routes.taxon.detail.notes-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.app.ui.form :as ui.form]
             [sepal.note.interface :as note.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
@@ -40,7 +42,11 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "BBG grows the white form only"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "BBG grows the white form only")
+            "the panel's Notes section shows it")
         (let [notes (note.i/get-for-resource *db* :taxon (:taxon/id taxon))]
           (is (= ["BBG grows the white form only"] (mapv :note/body notes)))
           (is (= (:user/id user) (:note/created-by (first notes))))
@@ -114,13 +120,43 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "before"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "before")
+            "the panel's Notes section shows the edit")
         (is (= "before" (:note/body (note.i/get-by-id *db* (:note/id note)))))
         (note.i/delete! *db* (:note/id note))
         ;; The route also logs note/created and note/updated activity, whose
         ;; created_by is a not-null FK to user — left behind, it blocks the
         ;; fixture teardown from deleting this test's user.
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-a-rejected-inline-edit-reports-on-that-note
+  (tf/testing "POST an empty body to a note's URL"
+    (fixtures)
+    (fn [{:keys [user taxon]}]
+      (let [note (note.i/create! *db* {:body "keep me"
+                                       :resource-type :taxon
+                                       :resource-id (:taxon/id taxon)
+                                       :created-by (:user/id user)})
+            sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response] :as sess} (peri/request sess (notes-url taxon))
+            token (test.i/response-anti-forgery-token response)
+            {:keys [response]} (peri/request sess
+                                             (str (notes-url taxon) (:note/id note) "/")
+                                             :request-method :post
+                                             :headers {"hx-request" "true"}
+                                             :params {:__anti-forgery-token token
+                                                      :body ""})
+            body (str (:body response))]
+        (is (= 422 (:status response)))
+        (is (not (str/includes? body "page-region")))
+        (is (str/includes? body (str "id=\"" (ui.form/errors-id (str "body-" (:note/id note))) "\"")))
+        (is (not (str/includes? body (str "id=\"" (ui.form/errors-id "body") "\"")))
+            "the new-note form's error list is not the target")
+        (is (= "keep me" (:note/body (note.i/get-by-id *db* (:note/id note)))))
+        (note.i/delete! *db* (:note/id note))))))
 
 (deftest test-delete-removes-the-note
   (tf/testing "DELETE /taxon/:id/notes/:note-id/"
@@ -137,7 +173,11 @@
                                              (str (notes-url taxon) (:note/id note) "/")
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (not (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                        "detail-panel-content"))
+                                "written by mistake"))
+            "the panel's Notes section no longer shows it")
         (is (nil? (note.i/get-by-id *db* (:note/id note))))
         ;; The route also logs a note/created and a note/deleted activity,
         ;; whose created_by is a not-null FK to user — left behind, it blocks

@@ -4,7 +4,6 @@ import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
 import htmx from "htmx.org"
-import "htmx-ext-alpine-morph"
 
 window.htmx = htmx
 
@@ -101,6 +100,54 @@ document.addEventListener("htmx:beforeSwap", (evt: Event) => {
         event.detail.shouldSwap = true
         event.detail.isError = false
     }
+})
+
+// A write on a record page selects #page-region from its response. A
+// response without one -- field errors, a confirmation, a failed save -- is
+// out-of-band content only, and swapping it would select nothing and empty
+// the page. "none" still applies the out-of-band parts.
+document.addEventListener("htmx:beforeSwap", (evt: Event) => {
+    const detail = (evt as CustomEvent).detail
+    if (detail.target?.id === "page-region"
+        && !String(detail.serverResponse).includes('id="page-region"')) {
+        detail.swapOverride = "none"
+    }
+})
+
+// The page's morph swap. It morphs the target into the response's first
+// element with Alpine morph, which patches the DOM in place, so whatever
+// matches keeps its state and focus. One element is replaced rather than
+// patched: one whose x-data changed. Alpine morph would keep it and evaluate
+// the new x-data on it, but the bindings already inside it go on reading the
+// old data while anything the morph adds reads the new, so the component
+// stops reacting. Replaced with the server's markup, it starts as a new
+// component.
+type MorphHook = (el: Node, toEl: Node, childrenOnly: () => void, skip: () => void) => void
+const alpineMorph = (Alpine as unknown as {
+    morph: (from: Node, to: Node, options: { updating: MorphHook }) => void
+}).morph
+
+htmx.defineExtension("morph", {
+    isInlineSwap: (swapStyle) => swapStyle === "morph",
+    handleSwap: (swapStyle, target, fragment) => {
+        if (swapStyle !== "morph") return false
+        const to = fragment instanceof DocumentFragment
+            ? fragment.firstElementChild
+            : fragment
+        // An hx-select that matched nothing leaves nothing to morph to.
+        if (!to) return [target]
+        alpineMorph(target, to, {
+            updating(el, toEl, _childrenOnly, skip) {
+                if (el instanceof Element && toEl instanceof Element
+                    && toEl.hasAttribute("x-data")
+                    && el.getAttribute("x-data") !== toEl.getAttribute("x-data")) {
+                    el.replaceWith(toEl.cloneNode(true))
+                    skip()
+                }
+            },
+        })
+        return [target]
+    },
 })
 
 Alpine.start()

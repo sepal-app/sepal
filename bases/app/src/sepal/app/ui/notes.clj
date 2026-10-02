@@ -9,6 +9,7 @@
             [sepal.app.ui.button :as ui.button]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :as i18n :refer [tr]]))
 
 (defn- written-at
@@ -27,8 +28,10 @@
         url (note-url-fn id)
         instant (datetime/sqlite-datetime->instant created-at)]
     [:div {:class "spl-changelog-entry"
+           :key id
            :data-note-id id
-           :x-data (json/js {:editing false})}
+           :x-data (json/js {:editing false})
+           :x-on:form-saved "editing = false"}
      [:div {:class "spl-changelog-avatar"}
       (if author-email
         (ui.avatar/avatar :email author-email :size :sm)
@@ -53,20 +56,17 @@
          (ui.button/icon-button :icon (lucide/trash-2)
                                 :label (tr "Delete note")
                                 :danger? true
-                                :attrs {:hx-delete url
-                                        :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-                                        :hx-confirm "Delete this note?"
-                                        :hx-target "#notes-list"
-                                        :hx-swap "outerHTML"})]]
+                                :attrs (merge ui.page/region-swap
+                                              {:hx-delete url
+                                               :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+                                               :hx-confirm "Delete this note?"}))]]
        [:p {:class "spl-note-body mt-1 whitespace-pre-wrap text-sm"} body]]
      ;; x-cloak keeps the form hidden until Alpine applies x-show, rather
      ;; than flashing every note's edit form on a full page load.
       [:div {:x-show "editing"
              :x-cloak true}
        (ui.form/form
-         {:hx-post url
-          :hx-target "#notes-list"
-          :hx-swap "outerHTML"}
+         (merge ui.page/region-swap {:hx-post url})
          [:div {:class "spl-form"}
           (ui.form/anti-forgery-field)
           (ui.form/section
@@ -103,30 +103,24 @@
             [:h2 {:class "spl-changelog-day"}
              (datetime/day-label day (datetime/today timezone))])
           (for [note day-notes]
-            ^{:key (:note/id note)}
             (note-item :note note :note-url-fn note-url-fn :timezone timezone))))]
      [:p {:data-notes-empty ""
           :class "text-text-soft text-sm"}
       (tr "No notes yet.")])])
 
 (defn note-form
-  "The new-note form. Posts to the tab's own URL and replaces the list.
+  "The new-note form. Posts to the tab's own URL and morphs the page.
 
-  It clears itself after a successful post. The swap replaces the list, not
-  this form, so without the reset the textarea keeps the text it just sent and
-  a second click writes the same note twice. `dirty` has to go back to false
-  alongside the DOM reset: x-form-state only ever sets it true, and
-  submit-button is bound to `!dirty || !valid`, so a reset without it leaves an
-  enabled button over an empty box. A failed post resets nothing — the text
-  stays where the curator can fix it."
+  It clears itself after a successful post: the morph keeps the form's live
+  values, so x-form-state copies the server-rendered defaults back in on
+  `form-saved`, and a second click cannot write the same note twice. The server
+  renders the textarea empty. A rejected post fires no `form-saved`, so the
+  text stays where the curator can fix it."
   [& {:keys [action errors values]}]
   (ui.form/form
-    {:id "note-form"
-     :hx-post action
-     :hx-target "#notes-list"
-     :hx-swap "outerHTML"
-     (keyword "hx-on::after-request")
-     "if (event.detail.successful) { this.reset(); Alpine.$data(this).dirty = false }"}
+    (merge ui.page/region-swap
+           {:id "note-form"
+            :hx-post action})
     [:div {:class "spl-form"}
      (ui.form/anti-forgery-field)
      (ui.form/section

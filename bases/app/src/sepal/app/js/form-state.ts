@@ -95,10 +95,41 @@ export default (
         return el.querySelectorAll("input, select, textarea")
     }
 
+    // A save answers with the page, and the morph keeps this form and its
+    // Alpine data: `dirty` would stay true, the morph has stripped each
+    // control's data-initial-value, and a control the curator edited still
+    // holds its live value rather than what the server saved. The save fires
+    // form-saved once the page has settled; a rejected save does not.
+    const reset = () => {
+        for (const input of findInputs()) {
+            if (input instanceof HTMLInputElement
+                && (input.type === "checkbox" || input.type === "radio")) {
+                input.checked = input.defaultChecked
+            } else if (input instanceof HTMLSelectElement) {
+                for (const option of Array.from(input.options)) {
+                    option.selected = option.defaultSelected
+                }
+            } else if (input instanceof HTMLInputElement
+                       || input instanceof HTMLTextAreaElement) {
+                input.value = input.defaultValue
+            }
+            if (input instanceof HTMLElement) {
+                delete input.dataset.initialValue
+                input.classList.remove("spl-input--edited")
+                rememberInitial(input)
+            }
+        }
+        data.dirty = false
+        data.valid = el.checkValidity()
+    }
+
+    el.addEventListener("form-saved", reset)
+
     addListeners()
 
     cleanup(() => {
         observer.disconnect()
         removeListeners()
+        el.removeEventListener("form-saved", reset)
     })
 }

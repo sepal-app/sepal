@@ -4,11 +4,12 @@
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.i18n.interface :refer [tr]]))
 
 (defn- chip [& {:keys [tag remove-url]}]
-  [:span {:class "spl-chip"}
+  [:span {:class "spl-chip" :key (:tag/id tag)}
    (:tag/name tag)
    ;; spl-chip-icon, not spl-btn: spl-btn--icon is a fixed 32x32 box, which is
    ;; two and a half times the height of the 12px chip it sits in. The chip
@@ -16,12 +17,13 @@
    ;; why outline-x is called with no arguments — it takes :color and :size,
    ;; not the :class it used to be handed and silently dropped.
    (tooltip/wrap
-     [:button {:type "button"
-               :class "spl-chip-icon cursor-pointer"
-               :aria-label (tr "Remove tag %1" (:tag/name tag))
-               :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-               :hx-delete remove-url
-               :hx-confirm (tr "Remove tag \"%1\"?" (:tag/name tag))}
+     [:button (merge ui.page/region-swap
+                     {:type "button"
+                      :class "spl-chip-icon cursor-pointer"
+                      :aria-label (tr "Remove tag %1" (:tag/name tag))
+                      :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+                      :hx-delete remove-url
+                      :hx-confirm (tr "Remove tag \"%1\"?" (:tag/name tag))})
       (heroicons/outline-x)]
      (tr "Remove tag %1" (:tag/name tag))
      ;; Above: chips wrap into rows, and a tip below one would cover the next.
@@ -40,9 +42,9 @@
    [:datalist {:id "tag-options"}
     (for [t all-tags] ^{:key (:tag/id t)} [:option {:value (:tag/name t)}])]
    (ui.form/form
-     {:hx-post action
-      :hx-swap "none"
-      :class "flex items-end gap-2"}
+     (merge ui.page/region-swap
+            {:hx-post action
+             :class "flex items-end gap-2"})
      (ui.form/anti-forgery-field)
      (ui.form/input-field :label (tr "Tag")
                           :name "tag-name"
