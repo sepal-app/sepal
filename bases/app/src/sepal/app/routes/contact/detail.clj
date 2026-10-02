@@ -1,7 +1,6 @@
 (ns sepal.app.routes.contact.detail
   (:require [failjure.core :as f]
             [sepal.app.authorization :as authz]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.contact.form :as contact.form]
             [sepal.app.routes.contact.panel :as contact.panel]
@@ -102,23 +101,29 @@
    :type (:contact/type resource)
    :notes (:contact/notes resource)})
 
+(defn- page
+  "The editable page for `contact`, as its GET renders it."
+  [{:keys [db timezone]} contact]
+  (render :contact contact
+          :values (form-values contact)
+          :panel-data (contact.panel/fetch-panel-data db contact)
+          :timezone timezone))
+
 (defn get-handler [{:keys [::z/context viewer]}]
-  (let [{:keys [db resource timezone]} context
-        panel-data (contact.panel/fetch-panel-data db resource)]
+  (let [{:keys [db resource timezone]} context]
     (if (authz/user-has-permission? viewer contact.perm/edit)
-      (render :contact resource
-              :values (form-values resource)
-              :panel-data panel-data
-              :timezone timezone)
+      (page context resource)
       ;; Readers see panel view as full page
-      (render-panel-page :contact resource :panel-data panel-data :timezone timezone))))
+      (render-panel-page :contact resource
+                         :panel-data (contact.panel/fetch-panel-data db resource)
+                         :timezone timezone))))
 
 (defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db resource]} context
         id (:contact/id resource)]
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
-                    saved (f/try* (update! db id (:user/id viewer) data))]
-      (-> (http/hx-redirect contact.routes/detail {:id (:contact/id saved)})
-          (flash/success (tr "Contact updated successfully")))
+                    _saved (f/try* (update! db id (:user/id viewer) data))]
+      (http/saved (page context (contact.i/get-by-id db id))
+                  (tr "Contact updated successfully"))
       (f/when-failed [e]
-        (http/failure-flash e (http/hx-redirect contact.routes/detail {:id id}) (tr "Could not save the contact"))))))
+        (http/not-saved e (tr "Could not save the contact"))))))

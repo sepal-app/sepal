@@ -59,7 +59,8 @@
     ["/general/" {:name routes/detail-general
                   :permission accession.perm/edit
                   :permission-redirect routes/detail
-                  :handler #'detail-general/handler}]
+                  :get #'detail-general/get-handler
+                  :post #'detail-general/post-handler}]
     ["/collection/" {:name routes/detail-collection
                      :permission accession.perm/edit
                      :permission-redirect routes/detail

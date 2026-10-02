@@ -50,7 +50,8 @@
     ["/general/" {:name routes/detail-general
                   :permission material.perm/edit
                   :permission-redirect routes/detail
-                  :handler #'detail-general/handler}]
+                  :get #'detail-general/get-handler
+                  :post #'detail-general/post-handler}]
     ["/media/" {:name routes/detail-media
                 :permission material.perm/edit
                 :permission-redirect routes/detail

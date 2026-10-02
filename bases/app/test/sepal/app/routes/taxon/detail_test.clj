@@ -61,8 +61,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-update-taxon-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
@@ -164,3 +164,36 @@
                              (str "parent-id=" (:taxon/id taxon)))))
         (is (some? (.selectFirst body "#delete-modal-container"))
             "and Delete has somewhere to put its confirmation")))))
+
+(deftest test-a-taxon-save-answers-with-the-page
+  (tf/testing "the page comes back with the saved name in every place it shows"
+    {[::user.i/factory :key/user] {:db *db*
+                                   :password "testpassword123"
+                                   :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [user taxon]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              url (str "/taxon/" (:taxon/id taxon) "/name/")
+              {:keys [response] :as sess} (peri/request sess url)
+              token (test.i/response-anti-forgery-token response)
+              {:keys [response]} (peri/request sess url
+                                               :request-method :post
+                                               :headers {"hx-request" "true"}
+                                               :params {:__anti-forgery-token token
+                                                        :name "Newname"
+                                                        :author ""
+                                                        :rank (name (:taxon/rank taxon))
+                                                        :parent-id ""})]
+          (is (app.test/saved-in-place? response))
+          (let [body (Jsoup/parse ^String (:body response))]
+            (is (str/includes? (.text (.selectFirst body ".spl-crumbs-current")) "Newname")
+                "the breadcrumb")
+            (is (str/includes? (.text (.selectFirst body ".spl-record")) "Newname")
+                "the record header")
+            (is (str/includes? (.text (.selectFirst body "title")) "Newname")
+                "the browser tab")
+            (is (= "Newname" (.attr (.selectFirst body "input[name=name]") "value"))
+                "the form, from the saved record")))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))

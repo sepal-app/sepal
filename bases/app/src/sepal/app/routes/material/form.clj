@@ -6,6 +6,7 @@
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr trc]]
             [sepal.material.interface.spec :as material.spec]
             [zodiac.core :as z]))
@@ -69,11 +70,11 @@
         types (rest material.spec/type)]
     [:div
      (form/form
-       {:id "material-form"
-        :hx-post action
-        :hx-swap "none"
-        :x-on:material-form:submit.window "$el.requestSubmit()"
-        :x-on:material-form:reset.window "$el.reset()"}
+       (merge ui.page/region-swap
+              {:id "material-form"
+               :hx-post action
+               :x-on:material-form:submit.window "$el.requestSubmit()"
+               :x-on:material-form:reset.window "$el.reset()"})
        [(form/anti-forgery-field)
         [:div {:class "spl-form"}
          (form/section

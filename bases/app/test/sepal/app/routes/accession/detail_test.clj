@@ -5,18 +5,58 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.codes :as codes]
+            [sepal.app.routes.accession.detail.general :as detail-general]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.app.ui.form :as ui.form]
             [sepal.error.interface :as err.i]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as mat.i]
+            [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
+
+;; Settings rows outlive a test and the suite shares one database.
+(use-fixtures :each (fn [t] (try (t) (finally (app.test/reset-codes! *db*)))))
+
+(defn- in-place-fixtures []
+  {[::user.i/factory :key/user] {:db *db*
+                                 :password "testpassword123"
+                                 :role :editor}
+   [::taxon.i/factory :key/taxon] {:db *db*}
+   [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}})
+
+(defn- post-general
+  "Posts the general form for `accession` the way htmx does, with `overrides`
+  on top of a form that changes nothing."
+  [user accession overrides]
+  (let [sess (app.test/login (:user/email user) "testpassword123")
+        url (str "/accession/" (:accession/id accession) "/general/")
+        {:keys [response] :as sess} (peri/request sess url)
+        token (test.i/response-anti-forgery-token response)]
+    (:response (peri/request sess url
+                             :request-method :post
+                             :headers {"hx-request" "true"}
+                             :params (merge {:__anti-forgery-token token
+                                             :code (:accession/code accession)
+                                             :taxon-id (str (:accession/taxon-id accession))
+                                             :id-qualifier ""
+                                             :id-qualifier-rank ""
+                                             :provenance-type ""
+                                             :wild-provenance-status ""
+                                             :supplier-contact-id ""
+                                             :intended-location-id ""
+                                             :date-received ""
+                                             :date-accessioned ""
+                                             :received-type ""
+                                             :quantity-received ""}
+                                            overrides)))))
 
 (deftest test-update-accession-general-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
@@ -67,8 +107,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-update-accession-general-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
@@ -240,52 +280,16 @@
             (jdbc.sql/delete! *db* :material {:id (:material/id material)})))))))
 
 (deftest test-a-save-says-so
-  (tf/testing "the whole path, because two separate things broke it: no page
-               passed :flash to the shell, and the redirect chain
-               /accession/:id/ -> /general/ ate the message before any page
-               rendered it. A save that looks like it did nothing is
-               indistinguishable from one that failed."
-    {[::user.i/factory :key/user] {:db *db*
-                                   :password "testpassword123"
-                                   :role :editor}
-     [::taxon.i/factory :key/taxon] {:db *db*}
-     [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}}
-    (fn [{:keys [user accession taxon]}]
+  (tf/testing "the page a save answers with carries the banner, because a save
+               that looks like it did nothing is indistinguishable from one
+               that failed"
+    (in-place-fixtures)
+    (fn [{:keys [user accession]}]
       (try
-        (let [sess (app.test/login (:user/email user) "testpassword123")
-              general-url (str "/accession/" (:accession/id accession) "/general/")
-              {:keys [response] :as sess} (-> sess (peri/request general-url))
-              token (test.i/response-anti-forgery-token response)
-              {:keys [response] :as sess}
-              (-> sess
-                  (peri/request general-url
-                                :request-method :post
-                                :params {:__anti-forgery-token token
-                                         :code (:accession/code accession)
-                                         :taxon-id (str (:taxon/id taxon))
-                                         :id-qualifier ""
-                                         :id-qualifier-rank ""
-                                         :provenance-type ""
-                                         :wild-provenance-status ""
-                                         :supplier-contact-id ""
-                                         :intended-location-id ""
-                                         :date-received ""
-                                         :date-accessioned ""
-                                         :received-type ""
-                                         :quantity-received "3"}))]
-          (is (contains? #{200 204 302} (:status response))
-              (str "the save itself should succeed, got " (:status response)))
-
-          ;; Exactly the hop a browser makes: htmx follows HX-Redirect to
-          ;; /accession/:id/, which redirects again to the general tab.
-          (let [{:keys [response] :as sess}
-                (-> sess (peri/request (str "/accession/" (:accession/id accession) "/")))
-                _ (is (contains? #{302 303} (:status response))
-                      "the record root is a redirect, which is what ate the flash")
-                {:keys [response]} (-> sess (peri/request general-url))
-                body (Jsoup/parse ^String (:body response))]
-            (is (.contains (.text body) "Accession updated successfully")
-                "the banner has to survive the hop and reach a rendered page")))
+        (let [response (post-general user accession {:quantity-received "3"})]
+          (is (app.test/saved-in-place? response))
+          (is (.contains (.text (Jsoup/parse ^String (:body response)))
+                         "Accession updated successfully")))
         (finally
           (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
 
@@ -323,3 +327,57 @@
                (:accession/date-accessioned
                  (accession.i/get-by-id *db* (:accession/id accession))))
             "the saved date is unchanged")))))
+
+(deftest test-an-accession-save-answers-with-the-page
+  (tf/testing "the page comes back with the saved code in every place it shows"
+    (in-place-fixtures)
+    (fn [{:keys [user accession]}]
+      (try
+        (let [response (post-general user accession {:code "NEW-CODE"})
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (str/includes? (.text (.selectFirst body ".spl-crumbs-current")) "NEW-CODE")
+              "the breadcrumb")
+          (is (str/includes? (.text (.selectFirst body ".spl-record")) "NEW-CODE")
+              "the record header")
+          (is (str/includes? (.text (.selectFirst body "title")) "NEW-CODE")
+              "the browser tab")
+          (is (= "NEW-CODE" (.attr (.selectFirst body "input[name=code]") "value"))
+              "the form, from the saved record"))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-a-code-the-template-rejects-asks-for-confirmation
+  (tf/testing "422 with the confirmation and no page"
+    (in-place-fixtures)
+    (fn [{:keys [user accession]}]
+      (settings.i/set-values! *db* {"codes.accession_template" "ZT{year}-{seq:0000}"
+                                    "codes.accession_strict" "1"})
+      (let [response (post-general user accession {:code "NOT-A-MATCH"})
+            body (:body response)]
+        (is (= 422 (:status response)))
+        (is (some? (.selectFirst (Jsoup/parse ^String body)
+                                 (str "#" codes/confirm-target-id)))
+            "the confirmation")
+        (is (not (str/includes? body "page-region")))))))
+
+(deftest test-a-future-date-received-is-a-field-error
+  (tf/testing "422 with the field's errors and no page"
+    (in-place-fixtures)
+    (fn [{:keys [user accession]}]
+      (let [response (post-general user accession {:date-received "2999-01-01"})
+            body (:body response)]
+        (is (= 422 (:status response)))
+        (is (some? (.selectFirst (Jsoup/parse ^String body)
+                                 (str "#" (ui.form/errors-id "date-received")))))
+        (is (not (str/includes? body "page-region")))))))
+
+(deftest test-an-accession-save-that-throws-answers-with-a-flash
+  (tf/testing "422 with the error flash and no page"
+    (in-place-fixtures)
+    (fn [{:keys [user accession]}]
+      (with-redefs [detail-general/save! (fn [& _] (throw (ex-info "disk full" {})))]
+        (let [response (post-general user accession {:code "NEW-CODE"})]
+          (is (= 422 (:status response)))
+          (is (not (str/includes? (str (:body response)) "page-region")))
+          (is (str/includes? (str (:body response)) "Could not save the accession")))))))

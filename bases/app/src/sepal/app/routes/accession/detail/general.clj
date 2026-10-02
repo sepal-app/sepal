@@ -5,7 +5,6 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.codes :as codes]
             [sepal.app.datetime :as datetime]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -96,60 +95,64 @@
    [:received-type {:decode/form validation.i/empty->nil} [:maybe accession.spec/received-type]]
    [:quantity-received {:decode/form parse-long} [:maybe accession.spec/quantity-received]]])
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db organization resource timezone]} context
-        config (codes/accession db)
-        taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
-        supplier (contact.i/get-by-id db (:accession/supplier-contact-id resource))
-        intended-location (location.i/get-by-id db (:accession/intended-location-id resource))
-        values {:id (:accession/id resource)
-                :code (:accession/code resource)
-                :taxon-id (:accession/taxon-id resource)
-                :taxon-name (:taxon/name taxon)
-                :supplier-contact-id (:accession/supplier-contact-id resource)
-                :intended-location-id (:accession/intended-location-id resource)
-                :id-qualifier (:accession/id-qualifier resource)
-                :id-qualifier-rank (:accession/id-qualifier-rank resource)
-                :provenance-type (:accession/provenance-type resource)
-                :wild-provenance-status (:accession/wild-provenance-status resource)
-                :date-received (:accession/date-received resource)
-                :date-accessioned (:accession/date-accessioned resource)
-                :received-type (:accession/received-type resource)
-                :quantity-received (:accession/quantity-received resource)}]
+(defn- page
+  "The tab for `accession`, as its GET renders it."
+  [{:keys [db organization timezone]} accession]
+  (let [taxon (taxon.i/get-by-id db (:accession/taxon-id accession))
+        supplier (contact.i/get-by-id db (:accession/supplier-contact-id accession))
+        intended-location (location.i/get-by-id db (:accession/intended-location-id accession))
+        collection (coll.i/get-by-accession-id db (:accession/id accession))]
+    (render :collection-available? (accession.shared/collection-available?
+                                     accession (some? collection))
+            :org organization
+            :accession accession
+            :location intended-location
+            :supplier supplier
+            :taxon taxon
+            :values {:id (:accession/id accession)
+                     :code (:accession/code accession)
+                     :taxon-id (:accession/taxon-id accession)
+                     :taxon-name (:taxon/name taxon)
+                     :supplier-contact-id (:accession/supplier-contact-id accession)
+                     :intended-location-id (:accession/intended-location-id accession)
+                     :id-qualifier (:accession/id-qualifier accession)
+                     :id-qualifier-rank (:accession/id-qualifier-rank accession)
+                     :provenance-type (:accession/provenance-type accession)
+                     :wild-provenance-status (:accession/wild-provenance-status accession)
+                     :date-received (:accession/date-received accession)
+                     :date-accessioned (:accession/date-accessioned accession)
+                     :received-type (:accession/received-type accession)
+                     :quantity-received (:accession/quantity-received accession)}
+            :panel-data (accession.panel/fetch-panel-data db accession)
+            :timezone timezone)))
 
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
-        (if-let [date-errors (validation.i/future-date-errors
-                               data [:date-received :date-accessioned] (str (datetime/today timezone)))]
-          (http/validation-errors date-errors)
-          (if (and (codes/rejects? config (:code data))
-                 ;; Skipped when the code is untouched. Moving an accession to
-                 ;; a new location must not make you confirm a code you never
-                 ;; edited, or every save on every legacy record grows a step.
-                   (not= (:code data) (:accession/code resource))
-                   (not= "1" (:code-override data)))
-            (http/unprocessable-entity
-              (codes/confirm-swap (accession.i/next-code db (:template config) (datetime/today timezone))))
-            (f/attempt-all [_saved (f/try* (save! db (:accession/id resource) (:user/id viewer) data))]
-              (-> (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                  (flash/success (tr "Accession updated successfully")))
-              (f/when-failed [e]
-                (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                                    (tr "Could not save the accession"))))))
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect (z/url-for accession.routes/detail {:id (:accession/id resource)}))
-                              (tr "Could not save the accession"))))
+(defn- confirm-code
+  "A step: a halt asking to confirm the code when the template rejects it.
+  Skipped when the code is untouched. Moving an accession to a new location
+  must not make you confirm a code you never edited, or every save on every
+  legacy record grows a step."
+  [db config accession data today]
+  (when (and (codes/rejects? config (:code data))
+             (not= (:code data) (:accession/code accession))
+             (not= "1" (:code-override data)))
+    (http/halt-with
+      (http/unprocessable-entity
+        (codes/confirm-swap (accession.i/next-code db (:template config) today))))))
 
-      (let [panel-data (accession.panel/fetch-panel-data db resource)
-            collection (coll.i/get-by-accession-id db (:accession/id resource))]
-        (render :collection-available? (accession.shared/collection-available?
-                                         resource (some? collection))
-                :org organization
-                :accession resource
-                :location intended-location
-                :supplier supplier
-                :taxon taxon
-                :values values
-                :panel-data panel-data
-                :timezone timezone)))))
+(defn get-handler [{:keys [::z/context]}]
+  (page context (:resource context)))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource timezone]} context
+        id (:accession/id resource)
+        today (datetime/today timezone)]
+    (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
+                    _dated (http/field-errors (validation.i/future-date-errors
+                                                data [:date-received :date-accessioned]
+                                                (str today)))
+                    _confirmed (confirm-code db (codes/accession db) resource data today)
+                    _saved (f/try* (save! db id (:user/id viewer) data))]
+      (http/saved (page context (accession.i/get-by-id db id))
+                  (tr "Accession updated successfully"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the accession"))))))

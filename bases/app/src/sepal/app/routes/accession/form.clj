@@ -8,6 +8,7 @@
             [sepal.app.ui.combobox :as ui.combobox]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.page :as ui.page]
             [sepal.contact.interface.name :as contact.name]
             [sepal.i18n.interface :as i18n :refer [N_ tr trc]]
             [zodiac.core :as z]))
@@ -78,11 +79,11 @@
              provenance-suggestion-url today]}]
   [:div
    (ui.form/form
-     {:id "accession-form"
-      :hx-post action
-      :hx-swap "none"
-      :x-on:accession-form:submit.window "$el.requestSubmit()"
-      :x-on:accession-form:reset.window "$el.reset()"}
+     (merge ui.page/region-swap
+            {:id "accession-form"
+             :hx-post action
+             :x-on:accession-form:submit.window "$el.requestSubmit()"
+             :x-on:accession-form:reset.window "$el.reset()"})
      [:div {:class "spl-form"}
       (ui.form/anti-forgery-field)
       (ui.form/section

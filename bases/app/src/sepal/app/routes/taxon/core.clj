@@ -56,7 +56,8 @@
     ["/name/" {:name routes/detail-name
                :permission taxon.perm/edit
                :permission-redirect routes/detail
-               :handler #'detail-name/handler}]
+               :get #'detail-name/get-handler
+               :post #'detail-name/post-handler}]
     ["/media/" {:name routes/detail-media
                 :permission taxon.perm/edit
                 :permission-redirect routes/detail

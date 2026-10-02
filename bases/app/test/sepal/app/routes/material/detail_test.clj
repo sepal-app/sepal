@@ -1,20 +1,63 @@
 (ns sepal.app.routes.material.detail-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.codes :as codes]
+            [sepal.app.routes.material.detail.general :as detail-general]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
+            [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
+
+;; Settings rows outlive a test and the suite shares one database.
+(use-fixtures :each (fn [t] (try (t) (finally (app.test/reset-codes! *db*)))))
+
+(defn- in-place-fixtures []
+  {[::user.i/factory :key/user] {:db *db*
+                                 :password "testpassword123"
+                                 :role :editor}
+   [::taxon.i/factory :key/taxon] {:db *db*}
+   [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+   [::location.i/factory :key/location] {:db *db*}
+   [::material.i/factory :key/material] {:db *db*
+                                         :accession (ig/ref :key/accession)
+                                         :location (ig/ref :key/location)}})
+
+(defn- post-general
+  "Posts the general form for `material` the way htmx does, with `overrides`
+  on top of the record's own values."
+  [user material overrides]
+  (let [sess (app.test/login (:user/email user) "testpassword123")
+        url (str "/material/" (:material/id material) "/general/")
+        {:keys [response] :as sess} (peri/request sess url)
+        token (test.i/response-anti-forgery-token response)]
+    (:response (peri/request sess url
+                             :request-method :post
+                             :headers {"hx-request" "true"}
+                             :params (merge {:__anti-forgery-token token
+                                             :code (:material/code material)
+                                             :accession-id (:material/accession-id material)
+                                             :location-id (:material/location-id material)
+                                             :quantity (:material/quantity material)
+                                             :status (name (:material/status material))
+                                             :type (name (:material/type material))
+                                             :reason ""}
+                                            overrides)))))
+
+(defn- clean-up! [user material]
+  (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+  (jdbc.sql/delete! *db* :material {:id (:material/id material)}))
 
 (deftest test-update-material-validation-errors
   (tf/testing "POST with invalid data returns 422 with OOB error elements"
@@ -72,8 +115,8 @@
         (is (some? (.attr form "hx-post"))
             "Form should have hx-post attribute")
 
-        (is (= "none" (.attr form "hx-swap"))
-            "Form should have hx-swap='none' for OOB error updates")))))
+        (is (= "morph" (.attr form "hx-swap"))
+            "Form should morph the page in place")))))
 
 (deftest test-update-material-form-has-error-containers
   (tf/testing "Form fields have error containers with correct IDs for OOB targeting"
@@ -222,3 +265,46 @@
                 (str "the " tab " tab has the actions menu"))
             (is (.contains (.text body) "Add a propagation")
                 (str "the " tab " tab offers Add a propagation"))))))))
+
+(deftest test-a-material-save-answers-with-the-page
+  (tf/testing "the page comes back with the saved code in every place it shows"
+    (in-place-fixtures)
+    (fn [{:keys [user material]}]
+      (try
+        (let [response (post-general user material {:code "NEW-CODE"})
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (str/includes? (.text (.selectFirst body ".spl-crumbs-current")) "NEW-CODE")
+              "the breadcrumb")
+          (is (str/includes? (.text (.selectFirst body ".spl-record")) "NEW-CODE")
+              "the record header")
+          (is (str/includes? (.text (.selectFirst body "title")) "NEW-CODE")
+              "the browser tab")
+          (is (= "NEW-CODE" (.attr (.selectFirst body "input[name=code]") "value"))
+              "the form, from the saved record"))
+        (finally
+          (clean-up! user material))))))
+
+(deftest test-a-code-the-template-rejects-asks-for-confirmation
+  (tf/testing "422 with the confirmation and no page"
+    (in-place-fixtures)
+    (fn [{:keys [user material]}]
+      (settings.i/set-values! *db* {"codes.material_template" "M{seq:000}"
+                                    "codes.material_strict" "1"})
+      (let [response (post-general user material {:code "NOT-A-MATCH"})
+            body (:body response)]
+        (is (= 422 (:status response)))
+        (is (some? (.selectFirst (Jsoup/parse ^String body)
+                                 (str "#" codes/confirm-target-id)))
+            "the confirmation")
+        (is (not (str/includes? body "page-region")))))))
+
+(deftest test-a-material-save-that-throws-answers-with-a-flash
+  (tf/testing "422 with the error flash and no page"
+    (in-place-fixtures)
+    (fn [{:keys [user material]}]
+      (with-redefs [detail-general/save! (fn [& _] (throw (ex-info "disk full" {})))]
+        (let [response (post-general user material {:code "NEW-CODE"})]
+          (is (= 422 (:status response)))
+          (is (not (str/includes? (str (:body response)) "page-region")))
+          (is (str/includes? (str (:body response)) "Could not save the material")))))))

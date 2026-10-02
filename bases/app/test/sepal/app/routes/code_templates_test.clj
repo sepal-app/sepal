@@ -279,8 +279,7 @@
               {:keys [response]} (post-accession-edit (editor-session) id
                                                       (:taxon/id taxon) "N0046A"
                                                       {:code-override "1"})]
-          (is (= 200 (:status response)))
-          (is (some? (get-in response [:headers "HX-Redirect"])))
+          (is (app.test/saved-in-place? response))
           (is (= "N0046A" (:accession/code (accession.i/get-by-id *db* id)))))))))
 
 (deftest test-an-untouched-legacy-code-saves-without-confirming
@@ -301,6 +300,5 @@
             {:keys [response]} (post-accession-edit (editor-session) id
                                                     (:taxon/id taxon) "N0046"
                                                     {:quantity-received "7"})]
-        (is (= 200 (:status response))
-            "no confirmation, because the code is unchanged")
-        (is (some? (get-in response [:headers "HX-Redirect"])))))))
+        (is (app.test/saved-in-place? response)
+            "no confirmation, because the code is unchanged")))))

@@ -1,6 +1,5 @@
 (ns sepal.app.routes.taxon.detail.name
   (:require [failjure.core :as f]
-            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.form :as taxon.form]
@@ -63,35 +62,37 @@
         (taxon.activity/create! tx taxon.activity/updated updated-by taxon)
         taxon))))
 
-(defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource timezone]} context]
-    (case request-method
-      :post
-      (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
-                      saved (f/try* (save! db (:taxon/id resource) (:user/id viewer) data))]
-        (-> (http/hx-redirect (z/url-for taxon.routes/detail {:id (:taxon/id saved)}))
-            (flash/success (tr "Taxon updated successfully")))
-        (f/when-failed [e]
-          (http/failure-flash e (http/hx-redirect taxon.routes/detail {:id (:taxon/id resource)}) (tr "Could not save the taxon"))))
+(defn- page
+  "The tab for `taxon`, as its GET renders it."
+  [{:keys [db timezone] :as context} taxon]
+  (let [parent (when (:taxon/parent-id taxon)
+                 (taxon.i/get-by-id db (:taxon/parent-id taxon)))]
+    (render :taxon taxon
+            :values {:id (:taxon/id taxon)
+                     :name (:taxon/name taxon)
+                     :rank (:taxon/rank taxon)
+                     :author (:taxon/author taxon)
+                     :parent-id (:taxon/id parent)
+                     :parent-name (:taxon/name parent)
+                     :distribution (:taxon/distribution taxon)
+                     :vernacular-names (:taxon/vernacular-names taxon)
+                     :parentage (mapv (fn [r]
+                                        {:parent-taxon-id (:parentage/parent-taxon-id r)
+                                         :parent-name (:parent/name r)
+                                         :role (:parentage/role r)})
+                                      (taxon.i/list-parentage db (:taxon/id taxon)))}
+            :panel-data (taxon.panel/fetch-panel-data context db taxon)
+            :timezone timezone)))
 
-      :get
-      (let [parent (when (:taxon/parent-id resource)
-                     (taxon.i/get-by-id db (:taxon/parent-id resource)))
-            values {:id (:taxon/id resource)
-                    :name (:taxon/name resource)
-                    :rank (:taxon/rank resource)
-                    :author (:taxon/author resource)
-                    :parent-id (:taxon/id parent)
-                    :parent-name (:taxon/name parent)
-                    :distribution (:taxon/distribution resource)
-                    :vernacular-names (:taxon/vernacular-names resource)
-                    :parentage (mapv (fn [r]
-                                       {:parent-taxon-id (:parentage/parent-taxon-id r)
-                                        :parent-name (:parent/name r)
-                                        :role (:parentage/role r)})
-                                     (taxon.i/list-parentage db (:taxon/id resource)))}
-            panel-data (taxon.panel/fetch-panel-data context db resource)]
-        (render :taxon resource
-                :values values
-                :panel-data panel-data
-                :timezone timezone)))))
+(defn get-handler [{:keys [::z/context]}]
+  (page context (:resource context)))
+
+(defn post-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db resource]} context
+        id (:taxon/id resource)]
+    (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
+                    _saved (f/try* (save! db id (:user/id viewer) data))]
+      (http/saved (page context (taxon.i/get-by-id db id))
+                  (tr "Taxon updated successfully"))
+      (f/when-failed [e]
+        (http/not-saved e (tr "Could not save the taxon"))))))
