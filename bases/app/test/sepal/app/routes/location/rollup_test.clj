@@ -38,11 +38,16 @@
           [::location.i/factory :key/nursery] {:db *db*}}
          more))
 
-(defn- material-in [location-key]
+(defn- material-in
+  "Material in `location-key`. A test that looks for its code in page text
+  passes one, because a generated code can be a single character that turns
+  up inside any other text on the page."
+  [location-key & {:keys [code]}]
   {:db *db*
    :accession (ig/ref :key/accession)
    :location (ig/ref location-key)
-   :data {:status :alive :quantity 1}})
+   :data (cond-> {:status :alive :quantity 1}
+           code (assoc :code code))})
 
 (defn- page [sess path & {:as params}]
   (-> sess
@@ -116,10 +121,12 @@
                Row 3 and not planted"
     (tree [::accession.i/factory :key/intended] {:db *db*
                                                  :taxon (ig/ref :key/taxon)
-                                                 :intended-location (ig/ref :key/row3)}
+                                                 :intended-location (ig/ref :key/row3)
+                                                 :data {:code "AWAIT-PLANTED"}}
           [::accession.i/factory :key/waiting] {:db *db*
                                                 :taxon (ig/ref :key/taxon)
-                                                :intended-location (ig/ref :key/row3)}
+                                                :intended-location (ig/ref :key/row3)
+                                                :data {:code "AWAIT-WAITING"}}
           [::material.i/factory :key/planted] {:db *db*
                                                :accession (ig/ref :key/intended)
                                                :location (ig/ref :key/row5)
@@ -137,8 +144,8 @@
 
 (deftest test-moved-shows-only-moves-out-of-the-subtree
   (tf/testing "a move between rows stays inside the Orchard"
-    (tree [::material.i/factory :key/to-row5] (material-in :key/row3)
-          [::material.i/factory :key/to-nursery] (material-in :key/row3))
+    (tree [::material.i/factory :key/to-row5] (material-in :key/row3 :code "MOVED-TO-ROW5")
+          [::material.i/factory :key/to-nursery] (material-in :key/row3 :code "MOVED-TO-NURSERY"))
     (fn [{:keys [user orchard row3 row5 nursery to-row5 to-nursery]}]
       (move! to-row5 row5)
       (move! to-nursery nursery)

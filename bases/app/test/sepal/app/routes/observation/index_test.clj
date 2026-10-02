@@ -3,6 +3,7 @@
             [integrant.core :as ig]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.datetime :as datetime]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
@@ -12,12 +13,16 @@
             [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
-  (:import [java.time LocalDate ZoneId]
-           [org.jsoup Jsoup]))
+  (:import [org.jsoup Jsoup]))
 
 (use-fixtures :once default-system-fixture)
 
 (def ^:private password "testpassword123")
+
+(defn- garden-today
+  "The date the app uses: the garden's, not the JVM's."
+  []
+  (datetime/today (datetime/get-timezone *db*)))
 
 ;; A function, not a top-level def: *db* is bound by the fixture at run time,
 ;; so a def's value expression would capture nil at namespace load.
@@ -97,7 +102,7 @@
   (tf/testing "the overdue checkbox's overdue:<today> query"
     (fixtures)
     (fn [{:keys [user material]}]
-      (let [today (LocalDate/now)
+      (let [today (garden-today)
             overdue (create! :resource-type :material
                              :resource-id (:material/id material)
                              :user user
@@ -135,7 +140,7 @@
             body (fetch sess "/observation/")
             checkbox (overdue-checkbox body)]
         (is (some? checkbox) "a checkbox applies the overdue filter without typing it")
-        (is (.contains (.attr checkbox "x-data") (str "'overdue:" (LocalDate/now) "'")))
+        (is (.contains (.attr checkbox "x-data") (str "'overdue:" (garden-today) "'")))
         (is (.contains (.attr checkbox "x-data") ", false)") "unchecked with no overdue term")
         (is (.contains (.text checkbox) "Only overdue observations"))))))
 
@@ -147,16 +152,16 @@
             _ (settings.i/set-value! *db* "organization.timezone" zone)
             sess (app.test/login (:user/email user) password)
             body (fetch sess "/observation/")
-            garden-today (LocalDate/now (ZoneId/of zone))]
+            zone-today (datetime/today zone)]
         (is (.contains (.attr (overdue-checkbox body) "x-data")
-                       (str "'overdue:" garden-today "'")))
+                       (str "'overdue:" zone-today "'")))
         (settings.i/set-value! *db* "organization.timezone" "UTC")))))
 
 (deftest test-a-combined-query-of-a-filter-and-overdue-narrows-and-shows-checked
   (tf/testing "type:phenology plus overdue:<today> applies both filters"
     (fixtures)
     (fn [{:keys [user material]}]
-      (let [today (LocalDate/now)
+      (let [today (garden-today)
             matching (create! :resource-type :material
                               :resource-id (:material/id material)
                               :user user
@@ -296,7 +301,7 @@
   (tf/testing "overdue: leaves out a check a later observation settled; due: still matches it"
     (fixtures)
     (fn [{:keys [user material]}]
-      (let [today (LocalDate/now)
+      (let [today (garden-today)
             settled (create! :resource-type :material
                              :resource-id (:material/id material)
                              :user user
