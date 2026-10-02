@@ -422,7 +422,7 @@ msgstr "Accesión actualizada correctamente"
 msgid "Could not save the accession"
 msgstr "No se pudo guardar la accesión"
 
-#: bases/app/src/sepal/app/routes/accession/detail/media.clj:54
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:55
 msgid "Media linked to this accession's material"
 msgstr "Contenido multimedia vinculado al material de esta accesión"
 
@@ -832,7 +832,7 @@ msgstr "Nota sobre taxón"
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:111
-#: bases/app/src/sepal/app/routes/media/index.clj:46
+#: bases/app/src/sepal/app/routes/media/index.clj:45
 #: bases/app/src/sepal/app/ui/page.clj:174
 msgctxt "navigation"
 msgid "Media"
@@ -1579,7 +1579,7 @@ msgstr "Ubicación actualizada correctamente"
 msgid "Could not save the location"
 msgstr "No se pudo guardar la ubicación"
 
-#: bases/app/src/sepal/app/routes/location/detail/media.clj:44
+#: bases/app/src/sepal/app/routes/location/detail/media.clj:45
 msgid "Media linked to the material in this location"
 msgstr "Medios vinculados al material de esta ubicación"
 
@@ -1968,12 +1968,6 @@ msgstr "Título"
 msgid "Download"
 msgstr "Descargar"
 
-#: bases/app/src/sepal/app/routes/media/index.clj:16
-#: bases/app/src/sepal/app/ui/media.clj:134
-#: bases/app/src/sepal/app/ui/media.clj:169
-msgid "Upload"
-msgstr "Subir"
-
 #: bases/app/src/sepal/app/routes/media/panel.clj:42
 msgid "Preview"
 msgstr "Vista previa"
@@ -2281,17 +2275,17 @@ msgstr "Marcar como fallido"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:27
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:28
-#: bases/app/src/sepal/app/ui/media.clj:176
+#: bases/app/src/sepal/app/ui/media.clj:188
 msgid "%1 B"
 msgstr "%1 B"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:29
-#: bases/app/src/sepal/app/ui/media.clj:177
+#: bases/app/src/sepal/app/ui/media.clj:189
 msgid "%1 KB"
 msgstr "%1 KB"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:30
-#: bases/app/src/sepal/app/ui/media.clj:178
+#: bases/app/src/sepal/app/ui/media.clj:190
 msgid "%1 MB"
 msgstr "%1 MB"
 
@@ -3317,7 +3311,7 @@ msgstr "¿Eliminar el taxón %1?"
 msgid "Deleted taxon %1"
 msgstr "Taxón %1 eliminado"
 
-#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:44
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:45
 msgid "Media linked to the taxa, accessions and material below this taxon"
 msgstr ""
 "Archivos multimedia vinculados a los taxones, las accesiones y el material "
@@ -3561,7 +3555,9 @@ msgstr "sin ID de WFO"
 #: bases/app/src/sepal/app/server.clj:127
 msgid ""
 "Something went wrong, and it has been logged. Try again, or reload the page."
-msgstr "Algo salió mal y quedó registrado. Inténtelo de nuevo o vuelva a cargar la página."
+msgstr ""
+"Algo salió mal y quedó registrado. Inténtelo de nuevo o vuelva a cargar la "
+"página."
 
 #: bases/app/src/sepal/app/server.clj:135
 msgid "Something went wrong"
@@ -3742,11 +3738,11 @@ msgstr "Grande"
 msgid "Thumbnail size"
 msgstr "Tamaño de las miniaturas"
 
-#: bases/app/src/sepal/app/ui/media.clj:129
+#: bases/app/src/sepal/app/ui/media.clj:137
 msgid "No media yet"
 msgstr "Todavía no hay contenido multimedia"
 
-#: bases/app/src/sepal/app/ui/media.clj:130
+#: bases/app/src/sepal/app/ui/media.clj:139
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here. Drag images here, or upload them."
@@ -3754,7 +3750,20 @@ msgstr ""
 "Las fotografías de una accesión, su material o la planta en el terreno "
 "aparecen aquí. Arrastre imágenes aquí o súbalas."
 
-#: bases/app/src/sepal/app/ui/media.clj:157
+#: bases/app/src/sepal/app/ui/media.clj:140
+msgid ""
+"Photographs of an accession, its material, or the plant in the ground show "
+"up here."
+msgstr ""
+"Las fotografías de una accesión, su material o la planta en el terreno "
+"aparecen aquí."
+
+#: bases/app/src/sepal/app/ui/media.clj:145
+#: bases/app/src/sepal/app/ui/media.clj:181
+msgid "Upload"
+msgstr "Subir"
+
+#: bases/app/src/sepal/app/ui/media.clj:168
 msgid "Include related media"
 msgstr "Incluir contenido multimedia relacionado"
 

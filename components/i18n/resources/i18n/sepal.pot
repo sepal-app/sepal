@@ -412,7 +412,7 @@ msgstr ""
 msgid "Could not save the accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/detail/media.clj:54
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:55
 msgid "Media linked to this accession's material"
 msgstr ""
 
@@ -816,7 +816,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:111
-#: bases/app/src/sepal/app/routes/media/index.clj:46
+#: bases/app/src/sepal/app/routes/media/index.clj:45
 #: bases/app/src/sepal/app/ui/page.clj:174
 msgctxt "navigation"
 msgid "Media"
@@ -1548,7 +1548,7 @@ msgstr ""
 msgid "Could not save the location"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/detail/media.clj:44
+#: bases/app/src/sepal/app/routes/location/detail/media.clj:45
 msgid "Media linked to the material in this location"
 msgstr ""
 
@@ -1933,12 +1933,6 @@ msgstr ""
 msgid "Download"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/index.clj:16
-#: bases/app/src/sepal/app/ui/media.clj:134
-#: bases/app/src/sepal/app/ui/media.clj:169
-msgid "Upload"
-msgstr ""
-
 #: bases/app/src/sepal/app/routes/media/panel.clj:42
 msgid "Preview"
 msgstr ""
@@ -2231,17 +2225,17 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:27
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:28
-#: bases/app/src/sepal/app/ui/media.clj:176
+#: bases/app/src/sepal/app/ui/media.clj:188
 msgid "%1 B"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:29
-#: bases/app/src/sepal/app/ui/media.clj:177
+#: bases/app/src/sepal/app/ui/media.clj:189
 msgid "%1 KB"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:30
-#: bases/app/src/sepal/app/ui/media.clj:178
+#: bases/app/src/sepal/app/ui/media.clj:190
 msgid "%1 MB"
 msgstr ""
 
@@ -3191,7 +3185,7 @@ msgstr ""
 msgid "Deleted taxon %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:44
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:45
 msgid "Media linked to the taxa, accessions and material below this taxon"
 msgstr ""
 
@@ -3596,17 +3590,28 @@ msgstr ""
 msgid "Thumbnail size"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:129
+#: bases/app/src/sepal/app/ui/media.clj:137
 msgid "No media yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:130
+#: bases/app/src/sepal/app/ui/media.clj:139
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here. Drag images here, or upload them."
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:157
+#: bases/app/src/sepal/app/ui/media.clj:140
+msgid ""
+"Photographs of an accession, its material, or the plant in the ground show "
+"up here."
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:145
+#: bases/app/src/sepal/app/ui/media.clj:181
+msgid "Upload"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:168
 msgid "Include related media"
 msgstr ""
 

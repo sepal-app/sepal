@@ -43,3 +43,9 @@
                                       :presigner presigner
                                       :duration (Duration/ofMinutes 5))]
     (is (re-find #"%2Fauto%2Fs3%2Faws4_request" url))))
+
+(deftest presign-put-url-needs-a-presigner
+  ;; It used to build one on the SDK's default credential chain, which signs
+  ;; with whatever credentials the host happens to have, or none.
+  (is (thrown? IllegalArgumentException
+               (aws-s3.i/presign-put-url "bucket" "key" "image/png"))))

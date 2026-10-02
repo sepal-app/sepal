@@ -75,8 +75,14 @@
   If no `duration` is provided will default to 8 hours.
 
   If an md5 is provided it should be base64 encoded.
+
+  `presigner` is required. Falling back to one built on the SDK's default
+  credential chain signed with whatever credentials the host happened to
+  have, or failed with an error naming every AWS profile on it.
   "
   [bucket key content-type & {:keys [duration md5 presigner metadata]}]
+  (when (nil? presigner)
+    (throw (IllegalArgumentException. "presign-put-url needs a presigner")))
   (let [builder (cond-> (doto (PutObjectRequest/builder)
                           (.bucket bucket)
                           (.key key)
@@ -88,7 +94,7 @@
                           (.signatureDuration duration)
                           (.putObjectRequest obj-req)
                           (.build))]
-    (-> (or presigner (s3-presigner))
+    (-> ^S3Presigner presigner
         (.presignPutObject presigned-req)
         .url
         .toString)))

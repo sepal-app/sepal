@@ -3,6 +3,7 @@
             [camel-snake-kebab.core :as csk]
             [clojure.string :as s]
             [sepal.app.html :as html]
+            [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
@@ -37,7 +38,10 @@
    [:linkResourceType [:maybe :string]]
    [:linkResourceId [:maybe :string]]])
 
-(defn handler [& {:keys [::z/context form-params] :as _request}]
+(defn- sign
+  "Presigned PUT URLs for the files in `form-params`, as the forms that record
+  each upload once it lands."
+  [context form-params]
   (let [{:keys [s3-presigner media-upload-bucket media-key-prefix]} context
         {files :files
          link-resource-type :linkResourceType
@@ -71,3 +75,12 @@
          (mapv #(assoc % :s3-url (presign-fn %)))
          (mapv #(success-form :fields %))
          (html/render-partial))))
+
+(defn handler
+  "Sign the files a browser is about to upload. Without S3 credentials the app
+  builds no presigner and media upload is off, so there is nothing to sign
+  with: no page offers an upload, and this answers 404."
+  [& {:keys [::z/context form-params] :as _request}]
+  (if (:s3-presigner context)
+    (sign context form-params)
+    (http/not-found)))

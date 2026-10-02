@@ -7,13 +7,11 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [tr trc]]
+            [sepal.i18n.interface :refer [trc]]
             [zodiac.core :as z]))
 
 (defn title-buttons []
-  [:button {:id "upload-button"
-            :class "spl-btn spl-btn--primary"}
-   (tr "Upload")])
+  (media.ui/upload-button))
 
 (defn next-page-url [& {:keys [current-page]}]
   (z/url-for media.routes/index nil {:page (+ 1 current-page)}))
@@ -29,9 +27,10 @@
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
-    [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                       :signingUrl (z/url-for media.routes/s3)
-                                       :trigger "#upload-button"})}]
+    (when (media.ui/uploads-enabled?)
+      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                         :signingUrl (z/url-for media.routes/s3)
+                                         :trigger "#upload-button"})}])
     (media.ui/media-list :media media
                          :next-page-url (when (>= (count media) page-size)
                                           (next-page-url :current-page page))

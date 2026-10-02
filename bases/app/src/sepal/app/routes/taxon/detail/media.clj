@@ -33,11 +33,12 @@
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :linkResourceType "taxon"
-                                         :linkResourceId (:taxon/id taxon)
-                                         :trigger "#upload-button"})}]
+      (when (media.ui/uploads-enabled?)
+        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                           :signingUrl (z/url-for media.routes/s3)
+                                           :linkResourceType "taxon"
+                                           :linkResourceId (:taxon/id taxon)
+                                           :trigger "#upload-button"})}])
       (media.ui/media-list :context :record
                            :filters (media.ui/scope-toggle :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
                                                            :below? below?

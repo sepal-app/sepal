@@ -100,6 +100,13 @@
    (media-list-items :media media
                      :next-page-url next-page-url)])
 
+(defn uploads-enabled?
+  "Whether this garden can take an upload. Without S3 credentials the app
+  builds no presigner, so an upload could never be signed, and no page offers
+  one."
+  []
+  (some? (get-in z/*request* [::z/context :s3-presigner])))
+
 (def empty-state-id
   "The id of the page's empty state. The uploader removes it after the first
   upload lands a tile in the list."
@@ -124,14 +131,18 @@
    (when (zero? (count media))
      [:div {:id empty-state-id
             :data-media-drop-target "true"}
-      (ui.empty/empty-state
-        :icon (heroicons/outline-photo :size 48)
-        :title (tr "No media yet")
-        :body (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
-        :actions [[:button {:id "media-empty-upload"
-                            :type "button"
-                            :class "spl-btn spl-btn--primary"}
-                   (tr "Upload")]])])
+      (let [uploads? (uploads-enabled?)]
+        (ui.empty/empty-state
+          :icon (heroicons/outline-photo :size 48)
+          :title (tr "No media yet")
+          :body (if uploads?
+                  (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
+                  (tr "Photographs of an accession, its material, or the plant in the ground show up here."))
+          :actions (when uploads?
+                     [[:button {:id "media-empty-upload"
+                                :type "button"
+                                :class "spl-btn spl-btn--primary"}
+                       (tr "Upload")]])))])
    (media-grid :media media :next-page-url next-page-url :context context)
    (loading-indicator)])
 
@@ -158,15 +169,16 @@
 
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,
-  so there is one per page.
+  so there is one per page. Nil when uploads are off.
 
   This existed four times — commented out here and hand-rolled in each of the
   three media tabs, all in indigo, which is not a colour this app has."
   []
-  [:button {:id "upload-button"
-            :type "button"
-            :class "spl-btn spl-btn--primary"}
-   (tr "Upload")])
+  (when (uploads-enabled?)
+    [:button {:id "upload-button"
+              :type "button"
+              :class "spl-btn spl-btn--primary"}
+     (tr "Upload")]))
 
 (defn format-size
   "A byte count as KB or MB, the way a file browser shows it."

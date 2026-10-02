@@ -35,11 +35,12 @@
     ;; TODO: This won't work b/c its reusing the anti forgery token. We should
     ;; probably store the antiForgeryToken in a separate element and then that
     ;; element can be updated with the when we get the signing urls
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :linkResourceType "material"
-                                         :linkResourceId (:material/id material)
-                                         :trigger "#upload-button"})}]
+      (when (media.ui/uploads-enabled?)
+        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                           :signingUrl (z/url-for media.routes/s3)
+                                           :linkResourceType "material"
+                                           :linkResourceId (:material/id material)
+                                           :trigger "#upload-button"})}])
       (media.ui/media-list :context :record
                            :media media
                            :next-page-url (when (>= (count media) page-size)

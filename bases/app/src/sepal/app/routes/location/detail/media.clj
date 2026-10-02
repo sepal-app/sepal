@@ -30,11 +30,12 @@
      [:link {:rel "stylesheet"
              :href (html/static-url "app/routes/media/css/media.css")}]
      [:div {:id "media-page"}
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :linkResourceType "location"
-                                         :linkResourceId (:location/id location)
-                                         :trigger "#upload-button"})}]
+      (when (media.ui/uploads-enabled?)
+        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
+                                           :signingUrl (z/url-for media.routes/s3)
+                                           :linkResourceType "location"
+                                           :linkResourceId (:location/id location)
+                                           :trigger "#upload-button"})}])
       ;; A location is where material is, not what it is, so its material's
       ;; media is opt-in rather than part of the location's own.
       (media.ui/media-list :context :record
