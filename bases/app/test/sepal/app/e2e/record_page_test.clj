@@ -12,6 +12,7 @@
             [sepal.media.interface :as media.i]
             [sepal.observation.interface :as observation.i]
             [sepal.propagation.interface :as propagation.i]
+            [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -428,3 +429,62 @@
             (is (= (:material/id mat2)
                    (:propagation/parent-material-id (propagation.i/get-by-id db id)))
                 "the propagation holds the plant")))))))
+
+(deftest ^:e2e location-rename-updates-the-page-in-place
+  (testing "the header, breadcrumb and title show the new name with no navigation"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [loc]} (create-record-fixtures db)]
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/location/" (:location/id loc) "/general/"))
+            (pw/wait-for-selector ".spl-record-name:has-text(\"E2e block\")" 10000)
+            ;; A navigation builds a new document, which drops this.
+            (pw/evaluate "window.sameDocument = true")
+            (pw/fill "input[name=\"name\"]" "Renamed block")
+            (pw/click "button:has-text(\"Save\")")
+            (pw/wait-for-selector ".spl-record-name:has-text(\"Renamed block\")" 10000)
+            (is (str/includes? (pw/text-content ".spl-crumbs-current") "Renamed block")
+                "the breadcrumb shows the new name")
+            (is (str/includes? (pw/evaluate "document.title") "Renamed block")
+                "the document title shows the new name")
+            (is (= "Renamed block" (:location/name (loc.i/get-by-id db (:location/id loc))))
+                "the location holds it")
+            (is (true? (pw/evaluate "window.sameDocument === true"))
+                "the page was not reloaded")
+            (is (= 1 (pw/evaluate "performance.getEntriesByType('navigation').length"))
+                "there was one navigation")))))))
+
+(deftest ^:e2e tag-removal-leaves-the-other-chip
+  (testing "removing one of two tags keeps the other"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [mat]} (create-record-fixtures db)]
+          (doseq [name ["alpha" "beta"]]
+            (tag.i/tag! db (:tag/id (tag.i/create! db {:name name}))
+                        (:material/id mat) :material))
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/material/" (:material/id mat) "/tags/"))
+            (pw/wait-for-selector ".spl-chip:has-text(\"alpha\")" 10000)
+            (pw/evaluate "window.confirm = () => true")
+            (pw/click "button[aria-label=\"Remove tag alpha\"]")
+            (pw/wait-for-hidden ".spl-chip:has-text(\"alpha\")" 10000)
+            (is (not (pw/visible? ".spl-chip:has-text(\"alpha\")")) "alpha is gone")
+            (is (pw/visible? ".spl-chip:has-text(\"beta\")") "beta is still there")
+            (is (= ["beta"] (mapv :tag/name (tag.i/get-for-resource db :material (:material/id mat))))
+                "and is the only tag the material holds")))))))
