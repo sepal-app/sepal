@@ -4,7 +4,6 @@ import focus from "@alpinejs/focus"
 import ui from "@alpinejs/ui"
 import morph from "@alpinejs/morph"
 import htmx from "htmx.org"
-import "htmx-ext-alpine-morph"
 
 window.htmx = htmx
 
@@ -113,6 +112,39 @@ document.addEventListener("htmx:beforeSwap", (evt: Event) => {
         && !String(detail.serverResponse).includes('id="page-region"')) {
         detail.swapOverride = "none"
     }
+})
+
+// The page's morph swap: htmx-ext-alpine-morph's, with one rule added. When
+// an element's x-data changes, Alpine morph keeps the element and Alpine
+// evaluates the new x-data on it, but the bindings already inside it go on
+// reading the old data while anything the morph adds reads the new, so the
+// component stops reacting. Such an element is replaced with the server's
+// markup and starts as a new component; everything else morphs and keeps its
+// state and focus.
+type MorphHook = (el: Node, toEl: Node, childrenOnly: () => void, skip: () => void) => void
+const alpineMorph = (Alpine as unknown as {
+    morph: (from: Node, to: Node, options: { updating: MorphHook }) => void
+}).morph
+
+htmx.defineExtension("morph", {
+    isInlineSwap: (swapStyle) => swapStyle === "morph",
+    handleSwap: (swapStyle, target, fragment) => {
+        if (swapStyle !== "morph") return false
+        const to = fragment instanceof DocumentFragment
+            ? fragment.firstElementChild!
+            : fragment
+        alpineMorph(target, to, {
+            updating(el, toEl, _childrenOnly, skip) {
+                if (el instanceof Element && toEl instanceof Element
+                    && toEl.hasAttribute("x-data")
+                    && el.getAttribute("x-data") !== toEl.getAttribute("x-data")) {
+                    el.replaceWith(toEl.cloneNode(true))
+                    skip()
+                }
+            },
+        })
+        return [target]
+    },
 })
 
 Alpine.start()

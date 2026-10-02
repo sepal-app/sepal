@@ -11,6 +11,7 @@
             [sepal.material.interface :as mat.i]
             [sepal.media.interface :as media.i]
             [sepal.observation.interface :as observation.i]
+            [sepal.propagation.interface :as propagation.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -278,3 +279,114 @@
             (pw/wait-for-selector picker 10000)
             (is (= "" (pw/evaluate (str "document.querySelector('" picker "').value")))
                 "the picker does not hold the removed link")))))))
+
+(defn- pick
+  "Choose the one option matching `text` in the <sepal-combobox> named
+  `field`."
+  [field text]
+  (let [input (str "#" field "-input")]
+    (pw/click input)
+    (pw/fill input text)
+    (pw/wait-for-attached (str "#" field "-listbox [role=option]:has-text(\"" text "\")"))
+    (pw/press "ArrowDown")
+    (pw/press "Enter")))
+
+(deftest ^:e2e accession-taxon-saves-twice
+  (testing "A second taxon picked after a save is saved too"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [acc]} (create-record-fixtures db)
+              header ".spl-record-name"]
+          (taxon.i/create! db {:name "Quercus robur" :rank "species"})
+          (taxon.i/create! db {:name "Betula pendula" :rank "species"})
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/accession/" (:accession/id acc) "/general/"))
+            (pw/wait-for-selector (str header ":has-text(\"Acer palmatum\")") 10000)
+            (pick "taxon-id" "Quercus robur")
+            (pw/click "button:has-text(\"Save\")")
+            (pw/wait-for-selector (str header ":has-text(\"Quercus robur\")") 10000)
+            (pick "taxon-id" "Betula pendula")
+            (pw/click "button:has-text(\"Save\")")
+            (pw/wait-for-selector (str header ":has-text(\"Betula pendula\")") 10000)
+            (is (str/includes? (pw/text-content header) "Betula pendula")
+                "the header names the taxon saved second")
+            (let [saved (acc.i/get-by-id db (:accession/id acc))]
+              (is (= "Betula pendula"
+                     (:taxon/name (taxon.i/get-by-id db (:accession/taxon-id saved))))
+                  "the accession holds it"))))))))
+
+(def ^:private vernacular-rows
+  "How many vernacular name rows the taxon form shows, read a frame after
+  whatever was just clicked, so Alpine has rendered it."
+  (str "new Promise(r => requestAnimationFrame(() => r("
+       "document.querySelectorAll('[data-section=vernacular-names] "
+       "input[name=vernacular-name-name]').length)))"))
+
+(deftest ^:e2e taxon-vernacular-rows-after-a-save
+  (testing "A row added after a save can be deleted"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [taxon]} (create-record-fixtures db)
+              section "[data-section=vernacular-names]"]
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/taxon/" (:taxon/id taxon) "/name/"))
+            (pw/wait-for-selector (str section " input[name=vernacular-name-name]") 10000)
+            (pw/fill (str section " input[name=vernacular-name-name]") "Japanese maple")
+            (pw/click "button:has-text(\"Save\")")
+            ;; The fieldset's x-data carries the saved names, so it changes.
+            (pw/wait-for-attached (str section "[x-data*=\"Japanese maple\"]") 10000)
+            (is (= 1 (pw/evaluate vernacular-rows)) "the saved name is one row")
+            (pw/click (str section " button[aria-label=\"Add vernacular name\"]"))
+            (is (= 2 (pw/evaluate vernacular-rows)) "Add gives a second row")
+            (pw/evaluate (str "document.querySelectorAll('" section
+                              " button[aria-label=Delete]')[1].click()"))
+            (is (= 1 (pw/evaluate vernacular-rows)) "Delete removes it")))))))
+
+(deftest ^:e2e propagation-form-after-its-method-changes
+  (testing "The form still reacts and saves after a save that changed the method"
+    (server/with-server
+      (fn [started]
+        (let [base-url (server/server-url started)
+              db (server/db started)
+              email (test.email/unique)
+              password "TestPassword123!"
+              _ (user.i/create! db {:email email
+                                    :password password
+                                    :role :admin})
+              {:keys [acc]} (create-record-fixtures db)
+              prop (propagation.i/create! db {:type :seed
+                                              :parent-accession-id (:accession/id acc)})
+              id (:propagation/id prop)
+              rootstock "#rootstock-taxon-id"]
+          (pw/with-browser
+            (login base-url email password)
+            (pw/navigate (str base-url "/propagation/" id "/"))
+            (pw/wait-for-selector "select#type" 10000)
+            (pw/select-option "select#type" "graft")
+            (pw/wait-for-selector rootstock 10000)
+            (pw/click "button:has-text(\"Save\")")
+            ;; The method is in the wrapper's x-data, so the save changes it.
+            (pw/wait-for-attached "[x-data*=\"graft\"]" 10000)
+            (pw/select-option "select#type" "cutting")
+            (pw/wait-for-hidden rootstock 10000)
+            (is (not (pw/visible? rootstock)) "the rootstock hides for a cutting")
+            (pw/click "button:has-text(\"Save\")")
+            (pw/wait-for-attached "[x-data*=\"cutting\"]" 10000)
+            (is (= :cutting (:propagation/type (propagation.i/get-by-id db id)))
+                "the second save landed")))))))
