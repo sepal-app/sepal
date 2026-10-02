@@ -5,7 +5,7 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
-            [sepal.app.routes.media.detail :as media.detail]
+            [sepal.app.routes.media.detail.shared :as media.detail]
             [sepal.app.routes.media.keys :as media.keys]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
@@ -154,6 +154,78 @@
                                                 :resource-id (:media/id media))))
           (finally
             (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))))
+
+(defn- post-in-place [sess url params]
+  (let [{:keys [response] :as sess} (peri/request sess url)
+        token (test.i/response-anti-forgery-token response)]
+    (:response (peri/request sess url
+                             :request-method :post
+                             :headers {"hx-request" "true"}
+                             :params (assoc params :__anti-forgery-token token)))))
+
+(deftest test-a-media-save-answers-with-the-page
+  (tf/testing "the new title is in the record header, and the link widget is still there"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user) :title "Old"}}
+    (fn [{:keys [user media]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              response (post-in-place sess (str "/media/" (:media/id media) "/")
+                                      {:title "Renamed" :description ""})
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (str/includes? (.text (.selectFirst body ".spl-record")) "Renamed"))
+          (is (some? (.selectFirst body "#media-link-root"))
+              "the link widget is rendered inline, since a morph never fires load"))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-linking-media-answers-with-the-page
+  (tf/testing "the link shows in the Activity section"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db* :name "Linkia rubra"}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user) :title "Pod"}}
+    (fn [{:keys [user taxon media]}]
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              response (post-in-place sess (str "/media/" (:media/id media) "/link/")
+                                      {:resource-type "taxon"
+                                       :resource-id (str (:taxon/id taxon))})
+              body (Jsoup/parse ^String (:body response))]
+          (is (app.test/saved-in-place? response))
+          (is (str/includes? (.text (.selectFirst body "#media-link-root")) "Linkia rubra")
+              "the widget shows the chip")
+          (is (str/includes? (.text body) "Activity(1) linked")
+              "and the Activity section has the event"))
+        (finally
+          (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)}))))))
+
+(deftest test-linking-to-an-unknown-resource-is-refused
+  (tf/testing "a resource-id that is no id answers 422 with nothing linked"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user) :title "Pod"}}
+    (fn [{:keys [user media]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            response (post-in-place sess (str "/media/" (:media/id media) "/link/")
+                                    {:resource-type "taxon" :resource-id "not-an-id"})]
+        (is (= 422 (:status response)))
+        (is (not (str/includes? (str (:body response)) "page-region")))
+        (is (nil? (media.i/get-link *db* (:media/id media))))))))
+
+(deftest test-a-link-that-throws-answers-with-a-flash
+  (tf/testing "a 422 with the error flash and no page"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::media.i/factory :key/media] {:db *db* :user (ig/ref :key/user) :title "Pod"}}
+    (fn [{:keys [user taxon media]}]
+      (with-redefs [media.i/link! (fn [& _] (throw (ex-info "disk full" {})))]
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              response (post-in-place sess (str "/media/" (:media/id media) "/link/")
+                                      {:resource-type "taxon"
+                                       :resource-id (str (:taxon/id taxon))})]
+          (is (= 422 (:status response)))
+          (is (not (str/includes? (str (:body response)) "page-region")))
+          (is (str/includes? (str (:body response)) "Could not link the media")))))))
 
 (deftest test-deleting-goes-through-the-shared-dialog
   (tf/testing "the dialog names the media, and confirming it removes the row"

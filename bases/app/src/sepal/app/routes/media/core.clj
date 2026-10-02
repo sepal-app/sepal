@@ -41,7 +41,9 @@
                  :post #'delete/handler}]
     ["/link/" {:name media.routes/detail-link
                :permission media.perm/edit
-               :handler #'link/handler}]
+               :get #'link/get-handler
+               :post #'link/post-handler
+               :delete #'link/delete-handler}]
     ["/panel/" {:name media.routes/panel
                 :permission media.perm/view
                 :get #'panel/handler}]

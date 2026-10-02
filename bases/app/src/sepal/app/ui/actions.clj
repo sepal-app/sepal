@@ -15,14 +15,16 @@
             [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr]]))
 
 (defn- menu-link [{:keys [label href post-url params]}]
   (if post-url
-    ;; An action that writes. Posted through htmx, so a handler answering with
-    ;; HX-Redirect lands the page where it says.
+    ;; An action that writes. Posted through htmx: a write answers with the
+    ;; page, which morphs into place, and one that answers with HX-Redirect,
+    ;; such as creating a product, still navigates.
     [:li
-     [:form {:hx-post post-url :hx-swap "none" :role "none"}
+     [:form (merge ui.page/region-swap {:hx-post post-url :role "none"})
       (ui.form/anti-forgery-field)
       (for [[k v] params]
         [:input {:type "hidden" :name (name k) :value (str v)}])
