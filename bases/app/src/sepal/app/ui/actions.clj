@@ -18,13 +18,15 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :refer [tr]]))
 
-(defn- menu-link [{:keys [label href post-url params]}]
+(defn- menu-link [in-panel? {:keys [label href post-url params]}]
   (if post-url
     ;; An action that writes. Posted through htmx: a write answers with the
     ;; page, which morphs into place, and one that answers with HX-Redirect,
-    ;; such as creating a product, still navigates.
+    ;; such as creating a product, still navigates. In a list's panel there is
+    ;; no record page to morph, so the form swaps nothing.
     [:li
-     [:form (merge ui.page/region-swap {:hx-post post-url :role "none"})
+     [:form (merge (if in-panel? {:hx-swap "none"} ui.page/region-swap)
+                   {:hx-post post-url :role "none"})
       (ui.form/anti-forgery-field)
       (for [[k v] params]
         [:input {:type "hidden" :name (name k) :value (str v)}])
@@ -45,10 +47,12 @@
               knows how that dialog is fetched and opened.
   :archive-url / :unarchive-url render Archive or Restore above the rule, on
               the same terms. A record has one or the other, never both.
+  :in-panel?  true for a menu in a list page's panel, whose post items must
+              not swap the record page into the list.
 
   Returns nil when there is nothing to show, so a page with no actions renders
   no empty bar."
-  [& {:keys [primary items delete-url archive-url unarchive-url]}]
+  [& {:keys [primary items delete-url archive-url unarchive-url in-panel?]}]
   (when (or primary (seq items) delete-url archive-url unarchive-url)
     [:div {:class "spl-actions"}
      primary
@@ -73,7 +77,7 @@
               ;; Hidden until Alpine boots. x-show alone leaves the panel
               ;; painted on first render, and it sits over the page.
               :style "display: none;"}
-         (map menu-link items)
+         (map #(menu-link in-panel? %) items)
          (when archive-url
            [:li (ui.archive/menu-item :archive-url archive-url)])
          (when unarchive-url

@@ -75,8 +75,10 @@
   rare -- a research project, signed off by whoever keeps the records -- so it
   sits second rather than with equal weight: fragmenting one genotype across
   accession numbers by accident is the corruption this model exists to
-  prevent."
-  [propagation default-kind]
+  prevent.
+
+  `:in-panel?` is for the list page's panel; see `ui.actions/menu`."
+  [propagation default-kind & {:keys [in-panel?]}]
   (let [id (:propagation/id propagation)
         product-url (z/url-for propagation.routes/product {:id id})
         status-url (z/url-for propagation.routes/status {:id id})
@@ -99,4 +101,5 @@
                       {:label (tr "Mark failed")
                        :post-url status-url
                        :params {:status "failed"}}]))
-      :delete-url (z/url-for propagation.routes/delete {:id id}))))
+      :delete-url (z/url-for propagation.routes/delete {:id id})
+      :in-panel? in-panel?)))

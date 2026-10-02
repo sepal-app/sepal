@@ -2,6 +2,7 @@
   (:require [failjure.core :as f]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.propagation.create :as propagation.create]
             [sepal.app.routes.propagation.form :as propagation.form]
@@ -172,13 +173,18 @@
    [:status [:enum :complete :failed]]])
 
 (defn status-handler
-  "Close a batch out from the actions menu."
-  [{:keys [::z/context form-params viewer]}]
+  "Close a batch out from the actions menu. The record page's menu targets
+  #page-region and gets the page back; the list panel's menu does not, and is
+  sent to the batch's page."
+  [{:keys [::z/context form-params headers viewer]}]
   (let [{:keys [db resource]} context
         id (:propagation/id resource)]
     (f/attempt-all [data (validation.i/validate-form-values StatusParams form-params)
                     _saved (f/try* (update! db id (:user/id viewer) data))]
-      (http/saved (page context (propagation.i/get-by-id db id))
-                  (tr "Propagation updated"))
+      (if (= "page-region" (get headers "hx-target"))
+        (http/saved (page context (propagation.i/get-by-id db id))
+                    (tr "Propagation updated"))
+        (flash/success (http/hx-redirect propagation.routes/detail {:id id})
+                       (tr "Propagation updated")))
       (f/when-failed [e]
         (http/not-saved e (tr "Could not save the propagation"))))))
