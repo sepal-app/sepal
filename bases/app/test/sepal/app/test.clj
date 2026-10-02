@@ -1,5 +1,6 @@
 (ns sepal.app.test
-  (:require [peridot.core :as peri]
+  (:require [clojure.string :as str]
+            [peridot.core :as peri]
             [sepal.app.test.system :refer [*app*]]
             [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i])
@@ -61,3 +62,11 @@
   them."
   [db]
   (settings.i/set-values! db seeded-codes))
+
+(defn saved-in-place?
+  "A save answered with the page rather than a navigation."
+  [response]
+  (and (= 200 (:status response))
+       (nil? (get-in response [:headers "HX-Redirect"]))
+       (= "form-saved" (get-in response [:headers "HX-Trigger-After-Settle"]))
+       (str/includes? (str (:body response)) "id=\"page-region\"")))

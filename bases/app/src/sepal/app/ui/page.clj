@@ -69,6 +69,21 @@
   [:div {:class "spl-inner"}
    children])
 
+(def region-id
+  "What a write on a record page swaps: everything inside the shell. The rail,
+  the scrims and the drawer checkboxes are the shell; the top bar, the content
+  and the action bar are the page."
+  "page-region")
+
+(def region-swap
+  "Attributes for a form or control whose write answers with the whole page.
+  It selects the region from that response and morphs this one into it, so
+  scroll position, focus and Alpine state survive wherever the markup is the
+  same."
+  {:hx-target (str "#" region-id)
+   :hx-select (str "#" region-id)
+   :hx-swap "morph"})
+
 (defn navbar [& {:keys [breadcrumbs page-title-buttons]}]
   [:header {:class "spl-topbar"}
    ;; Two controls, one per width, because they toggle different things: the
@@ -252,7 +267,7 @@
          [:label {:for "sidebar-mobile-toggle"
                   :class "spl-scrim"
                   :aria-hidden "true"}]
-         [:div {:class "spl-content"}
+         [:div {:class "spl-content" :id region-id}
           (navbar :breadcrumbs breadcrumbs
                   :page-title-buttons page-title-buttons)
           [:main
@@ -265,14 +280,15 @@
 
            [:div {:class "spl-main"}
             content]
-           [:div {:id "flash-container"}
-            (flash/banner (:messages flash))]
 
            (when footer
              [:div {:id "page-footer"}
-              footer])
-
-           [:script {:type "module"
-                     :src (html/static-url "app/ui/page.ts")}]]]]]]
+              footer])]]]
+        ;; Outside the region a save swaps. The banner stack is position: fixed,
+        ;; so the container's place in the document does not move it.
+        [:div {:id "flash-container"}
+         (flash/banner (:messages flash))]
+        [:script {:type "module"
+                  :src (html/static-url "app/ui/page.ts")}]]]
       :title (document-title :breadcrumbs breadcrumbs
                              :organization-name organization-name))))

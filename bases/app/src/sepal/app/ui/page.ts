@@ -103,4 +103,16 @@ document.addEventListener("htmx:beforeSwap", (evt: Event) => {
     }
 })
 
+// A write on a record page selects #page-region from its response. A
+// response without one -- field errors, a confirmation, a failed save -- is
+// out-of-band content only, and swapping it would select nothing and empty
+// the page. "none" still applies the out-of-band parts.
+document.addEventListener("htmx:beforeSwap", (evt: Event) => {
+    const detail = (evt as CustomEvent).detail
+    if (detail.target?.id === "page-region"
+        && !String(detail.serverResponse).includes('id="page-region"')) {
+        detail.swapOverride = "none"
+    }
+})
+
 Alpine.start()

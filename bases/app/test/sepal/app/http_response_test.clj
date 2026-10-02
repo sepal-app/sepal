@@ -30,3 +30,27 @@
     (is (= fallback
            (http/failure-response (SQLException. "FOREIGN KEY constraint failed")
                                   fallback)))))
+
+(deftest test-saved
+  (let [response (http/saved [:html [:body [:div {:id "page-region"} "x"]]] "Saved")]
+    (is (= 200 (:status response)))
+    (is (= "form-saved" (get-in response [:headers "HX-Trigger-After-Settle"])))
+    (is (= ["Saved"] (map :text (get-in response [:flash :messages]))))
+    (is (str/includes? (:body response) "id=\"page-region\""))))
+
+(deftest test-not-saved
+  (let [response (http/not-saved (error.i/error ::boom "boom") "Could not save")]
+    (is (= 422 (:status response)))
+    (is (= "" (:body response)))
+    (is (= ["Could not save"] (map :text (get-in response [:flash :messages]))))))
+
+(deftest test-field-errors-is-a-step
+  (is (nil? (http/field-errors nil)))
+  (is (nil? (http/field-errors {})))
+  (let [response (http/failure-response (http/field-errors {:date-received ["Too late"]}) nil)]
+    (is (= 422 (:status response)))
+    (is (str/includes? (:body response) "date-received-errors"))))
+
+(deftest test-halt-with-answers-with-its-response
+  (let [response {:status 422 :headers {} :body "confirm"}]
+    (is (= response (http/failure-response (http/halt-with response) nil)))))
