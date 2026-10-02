@@ -1,6 +1,5 @@
 (ns sepal.app.routes.accession.detail.notes
   (:require [failjure.core :as f]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
@@ -36,15 +35,6 @@
   (db.i/with-transaction [tx db]
     (f tx created-by)))
 
-(defn render-list
-  "The HTMX response every write returns: the list, swapped in place."
-  [db accession timezone]
-  (let [id (:accession/id accession)]
-    (html/render-partial
-      (ui.notes/note-list :notes (note.i/get-for-resource db resource-type id)
-                          :note-url-fn (note-url-fn id)
-                          :timezone timezone))))
-
 (defn page-content [& {:keys [accession taxon notes errors values timezone]}]
   (let [id (:accession/id accession)]
     (accession.shared/page
@@ -79,23 +69,27 @@
                                 :timezone timezone))
     :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
-(defn get-handler
-  "Renders the tab."
-  [{:keys [::z/context]}]
-  (let [{:keys [db resource timezone]} context
-        id (:accession/id resource)
-        taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
+(defn- page
+  "The tab, as its GET renders it. Every write answers with it, so the panel
+  beside the list is current too."
+  [{:keys [db resource timezone]}]
+  (let [taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
         panel-data (accession.panel/fetch-panel-data db resource)]
     (render :accession resource
             :taxon taxon
-            :notes (note.i/get-for-resource db resource-type id)
+            :notes (note.i/get-for-resource db resource-type (:accession/id resource))
             :panel-data panel-data
             :timezone timezone)))
 
+(defn get-handler
+  "Renders the tab."
+  [{:keys [::z/context]}]
+  (page context))
+
 (defn create-handler
-  "Creates a note and answers with the swapped list."
+  "Creates a note and answers with the page."
   [{:keys [::z/context form-params viewer]}]
-  (let [{:keys [db resource timezone]} context
+  (let [{:keys [db resource]} context
         id (:accession/id resource)]
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                     _saved (f/try* (write! db (:user/id viewer)
@@ -106,9 +100,9 @@
                                                                             :created-by created-by})]
                                                (note.activity/create! tx note.activity/created created-by note)
                                                note))))]
-      (render-list db resource timezone)
+      (http/saved (page context))
       (f/when-failed [e]
-        (http/failure-partial e (tr "The note could not be saved."))))))
+        (http/not-saved e (tr "The note could not be saved."))))))
 
 (defn- resource-note
   "The note in the path, or nil when it belongs to another record."
@@ -124,9 +118,9 @@
       note)))
 
 (defn update-handler
-  "Updates one note and answers with the swapped list."
+  "Updates one note and answers with the page."
   [{:keys [::z/context form-params path-params viewer]}]
-  (let [{:keys [db resource timezone]} context]
+  (let [{:keys [db resource]} context]
     (if-let [note (resource-note db resource path-params)]
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
                       _saved (f/try* (write! db (:user/id viewer)
@@ -134,21 +128,21 @@
                                                (let [updated (note.i/update! tx (:note/id note) {:body (:body data)})]
                                                  (note.activity/create! tx note.activity/updated created-by updated)
                                                  updated))))]
-        (render-list db resource timezone)
+        (http/saved (page context))
         (f/when-failed [e]
-          (http/failure-partial e (tr "The note could not be saved."))))
+          (http/not-saved e (tr "The note could not be saved."))))
       (http/not-found))))
 
 (defn delete-handler
-  "Removes one note and answers with the swapped list."
+  "Removes one note and answers with the page."
   [{:keys [::z/context path-params viewer]}]
-  (let [{:keys [db resource timezone]} context]
+  (let [{:keys [db resource]} context]
     (if-let [note (resource-note db resource path-params)]
       (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
                                                (fn [tx created-by]
                                                  (note.activity/create! tx note.activity/deleted created-by note)
                                                  (note.i/delete! tx (:note/id note)))))]
-        (render-list db resource timezone)
+        (http/saved (page context))
         (f/when-failed [e]
-          (http/failure-partial e (tr "The note could not be deleted."))))
+          (http/not-saved e (tr "The note could not be deleted."))))
       (http/not-found))))

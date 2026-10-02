@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail.notes-test
-  (:require [clojure.test :refer [deftest is testing use-fixtures]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
@@ -45,7 +46,11 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "Reaccessioned, lost original acc #"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "Reaccessioned, lost original acc #")
+            "the panel's Notes section shows it")
         (let [notes (note.i/get-for-resource *db* :accession (:accession/id accession))]
           (is (= ["Reaccessioned, lost original acc #"] (mapv :note/body notes)))
           (is (= (:user/id user) (:note/created-by (first notes))))
@@ -107,7 +112,11 @@
                                              :request-method :post
                                              :params {:__anti-forgery-token token
                                                       :body "before"})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                   "detail-panel-content"))
+                           "before")
+            "the panel's Notes section shows the edit")
         (is (= "before" (:note/body (note.i/get-by-id *db* (:note/id note)))))
         (note.i/delete! *db* (:note/id note))
         ;; The route also logs note/created and note/updated activity, whose
@@ -130,7 +139,11 @@
                                              (str (notes-url accession) (:note/id note) "/")
                                              :request-method :delete
                                              :headers {"x-csrf-token" token})]
-        (is (= 200 (:status response)))
+        (is (app.test/saved-in-place? response))
+        (is (not (str/includes? (.text (.getElementById (Jsoup/parse ^String (:body response))
+                                                        "detail-panel-content"))
+                                "written by mistake"))
+            "the panel's Notes section no longer shows it")
         (is (nil? (note.i/get-by-id *db* (:note/id note))))
         ;; The route also logs a note/created and a note/deleted activity,
         ;; whose created_by is a not-null FK to user — left behind, it blocks
