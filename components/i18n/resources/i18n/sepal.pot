@@ -2006,7 +2006,7 @@ msgid "Search... (e.g., type:phenology value:flowering)"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/propagation/create.clj:41
-#: bases/app/src/sepal/app/routes/propagation/detail.clj:26
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:27
 #: bases/app/src/sepal/app/routes/propagation/index.clj:201
 msgid "Propagation"
 msgstr ""
@@ -2035,13 +2035,14 @@ msgstr ""
 msgid "Deleted the propagation from %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/detail.clj:166
-#: bases/app/src/sepal/app/routes/propagation/detail.clj:182
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:167
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:186
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:188
 msgid "Propagation updated"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/detail.clj:168
-#: bases/app/src/sepal/app/routes/propagation/detail.clj:184
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:169
+#: bases/app/src/sepal/app/routes/propagation/detail.clj:190
 msgid "Could not save the propagation"
 msgstr ""
 
@@ -2204,27 +2205,27 @@ msgstr ""
 msgid "Could not create the product"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:84
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:86
 msgid "Create material"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:85
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:87
 msgid "Create accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:91
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:93
 msgid "Reaccession as a new accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:92
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:94
 msgid "Create material under the parent accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:96
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:98
 msgid "Mark complete"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/propagation/shared.clj:99
+#: bases/app/src/sepal/app/routes/propagation/shared.clj:101
 msgid "Mark failed"
 msgstr ""
 
@@ -2307,7 +2308,7 @@ msgid "Created"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:118
-#: bases/app/src/sepal/app/ui/actions.clj:66
+#: bases/app/src/sepal/app/ui/actions.clj:70
 msgid "Actions"
 msgstr ""
 
@@ -3421,6 +3422,15 @@ msgstr ""
 msgid "no WFO ID"
 msgstr ""
 
+#: bases/app/src/sepal/app/server.clj:127
+msgid ""
+"Something went wrong, and it has been logged. Try again, or reload the page."
+msgstr ""
+
+#: bases/app/src/sepal/app/server.clj:135
+msgid "Something went wrong"
+msgstr ""
+
 #: bases/app/src/sepal/app/ui/activity.clj:40
 msgctxt "activity"
 msgid "created"
@@ -3609,19 +3619,19 @@ msgid "Delete note"
 msgstr ""
 
 #: bases/app/src/sepal/app/ui/notes.clj:73
-#: bases/app/src/sepal/app/ui/notes.clj:128
+#: bases/app/src/sepal/app/ui/notes.clj:127
 msgid "Note"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/notes.clj:110
+#: bases/app/src/sepal/app/ui/notes.clj:109
 msgid "No notes yet."
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/notes.clj:134
+#: bases/app/src/sepal/app/ui/notes.clj:133
 msgid "Add note"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/notes.clj:157
+#: bases/app/src/sepal/app/ui/notes.clj:156
 #: bases/app/src/sepal/app/ui/observations.clj:286
 msgid "See all %1"
 msgstr ""

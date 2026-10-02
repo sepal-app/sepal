@@ -1,8 +1,10 @@
 (ns sepal.app.server
   (:require [babashka.fs :as fs]
+            [dev.onionpancakes.chassis.core :as chassis]
             [integrant.core :as ig]
             [reitit.ring]
-            [ring.middleware.stacktrace :as stacktrace]
+            [sepal.app.flash :as flash]
+            [sepal.app.flash.category :as category]
             [sepal.app.middleware :as middleware]
             [sepal.app.routes.accession.core :as accession]
             [sepal.app.routes.activity.core :as activity]
@@ -24,6 +26,7 @@
             [sepal.app.routes.tag.core :as tag]
             [sepal.app.routes.taxon.core :as taxon]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :refer [tr]]
             [zodiac.core :as z]
             [zodiac.ext.assets :as z.assets]
             [zodiac.ext.headers :as z.headers]
@@ -36,7 +39,6 @@
                     middleware/wrap-org-settings
                     middleware/wrap-flash-messages
                     middleware/wrap-setup-required
-                    stacktrace/wrap-stacktrace-web
                     middleware/require-access]}
    ;; Auth routes (inlined so they're under the root middleware)
    ["/login" {:name auth.routes/login
@@ -112,13 +114,35 @@
               "font-src 'self' data: http://localhost:5173; "
               "connect-src 'self' https: ws://localhost:5173")))
 
+(defn- error-response
+  "What an unhandled exception answers with. zodiac's exception middleware has
+  already logged it with the request's URI. The client never sees the
+  exception: its message and stack name classes, paths and data that are no
+  business of a browser's. A page request gets a plain page; an htmx request
+  gets the message as a banner, which page.ts applies out of band.
+
+  This runs outside the app's middleware, so there is no locale or router to
+  render a full page with."
+  [_exception request]
+  (let [message (tr "Something went wrong, and it has been logged. Try again, or reload the page.")]
+    {:status 500
+     :headers {"Content-Type" "text/html; charset=utf-8"}
+     :body (chassis/html
+             (if (= "true" (get-in request [:headers "hx-request"]))
+               (flash/banner-oob [{:text message :category category/error}])
+               [chassis/doctype-html5
+                [:html
+                 [:head [:meta {:charset "utf-8"}] [:title (tr "Something went wrong")]]
+                 [:body [:p message]]]]))}))
+
 (defmethod ig/init-key ::zodiac [_ {:keys [extensions] :as options}]
   (let [extensions (-> extensions
                        (conj (z.headers/init {:headers csp-headers}))
                        (->> (filterv some?)))]
     (z/start (merge options
                     {:routes #'routes
-                     :extensions extensions}))))
+                     :extensions extensions
+                     :error-handlers {Exception error-response}}))))
 
 (defmethod ig/halt-key! ::zodiac [_ zodiac]
   (z/stop zodiac))

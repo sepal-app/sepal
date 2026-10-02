@@ -102,6 +102,17 @@ document.addEventListener("htmx:beforeSwap", (evt: Event) => {
     }
 })
 
+// A server error answers an htmx request with an error banner and nothing
+// else. HTMX swaps nothing for a 5xx, so apply the banner out of band and
+// leave the page alone. It stays an error, so a form doesn't reset.
+document.addEventListener("htmx:beforeSwap", (evt: Event) => {
+    const detail = (evt as CustomEvent).detail
+    if (detail.xhr.status >= 500) {
+        detail.shouldSwap = true
+        detail.swapOverride = "none"
+    }
+})
+
 // A write on a record page selects #page-region from its response. A
 // response without one -- field errors, a confirmation, a failed save -- is
 // out-of-band content only, and swapping it would select nothing and empty
