@@ -8,6 +8,7 @@
             [sepal.app.ui.button :as ui.button]
             [sepal.app.ui.form :as ui.form]
             [sepal.app.ui.icons.lucide :as lucide]
+            [sepal.app.ui.page :as ui.page]
             [sepal.i18n.interface :as i18n :refer [tr trc]])
   (:import [java.time LocalDate]))
 
@@ -127,8 +128,10 @@
         overdue? (and next-check-on today (not followed-up?)
                       (<= (compare next-check-on today) 0))]
     [:div {:class "spl-changelog-entry"
+           :key id
            :data-observation-id id
-           :x-data (json/js {:editing false})}
+           :x-data (json/js {:editing false})
+           :x-on:form-saved "editing = false"}
      [:div {:class "spl-changelog-avatar"}
       [:span {:class "flex size-8 items-center justify-center rounded-full bg-surface-alt text-text-dim"
               :aria-hidden "true"}
@@ -150,11 +153,10 @@
          (ui.button/icon-button :icon (lucide/trash-2)
                                 :label (tr "Delete observation")
                                 :danger? true
-                                :attrs {:hx-delete url
-                                        :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
-                                        :hx-confirm (tr "Delete this observation?")
-                                        :hx-target "#observations-list"
-                                        :hx-swap "outerHTML"})]]
+                                :attrs (merge ui.page/region-swap
+                                              {:hx-delete url
+                                               :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})
+                                               :hx-confirm (tr "Delete this observation?")}))]]
        (when next-check-on
          [:p {:class "spl-changelog-line mt-1 text-text-soft"}
           (tr "Next check %1" (datetime/format-date next-check-on))
@@ -167,9 +169,7 @@
       [:div {:x-show "editing"
              :x-cloak true}
        (ui.form/form
-         {:hx-post url
-          :hx-target "#observations-list"
-          :hx-swap "outerHTML"}
+         (merge ui.page/region-swap {:hx-post url})
          [:div {:class "spl-form"}
           (ui.form/anti-forgery-field)
           (fields :id-suffix id
@@ -204,7 +204,7 @@
 
 (defn observation-list
   "The list of observations as a timeline, newest observed first and grouped
-  under a heading per observed day. Carries the id every swap targets."
+  under a heading per observed day."
   [& {:keys [observations observation-url-fn type-options value-options-by-type today]}]
   (let [latest (latest-by-type observations)]
     [:div {:id "observations-list"}
@@ -228,24 +228,18 @@
         (tr "No observations yet.")])]))
 
 (defn observation-form
-  "The new-observation form. Posts to the tab's own URL and replaces the
-  list.
+  "The new-observation form. Posts to the tab's own URL and morphs the page.
 
-  It clears itself after a successful post. The swap replaces the list, not
-  this form, so without the reset the fields keep the values they just sent
-  and a second click writes the same observation twice. `dirty` has to go
-  back to false alongside the DOM reset: x-form-state only ever sets it true,
-  and submit-button is bound to `!dirty || !valid`, so a reset without it
-  leaves an enabled button over an empty form. A failed post resets nothing —
-  the values stay where the curator can fix them."
+  It clears itself after a successful post: the morph keeps the form's live
+  values, so x-form-state copies the server-rendered defaults back in on
+  `form-saved`, and a second click cannot write the same observation twice.
+  A failed post changes nothing — the values stay where the curator can fix
+  them."
   [& {:keys [action errors values type-options value-options-by-type today]}]
   (ui.form/form
-    {:id "observation-form"
-     :hx-post action
-     :hx-target "#observations-list"
-     :hx-swap "outerHTML"
-     (keyword "hx-on::after-request")
-     "if (event.detail.successful) { this.reset(); Alpine.$data(this).dirty = false }"}
+    (merge ui.page/region-swap
+           {:id "observation-form"
+            :hx-post action})
     [:div {:class "spl-form"}
      (ui.form/anti-forgery-field)
      (fields :errors errors

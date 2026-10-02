@@ -126,9 +126,11 @@
   "Fallback for a handler that answers with the page: field errors when the
   failure carries them, otherwise `message` as an error flash on a response
   with no page in it, so nothing on the page is replaced and the form keeps
-  what was typed."
-  [e message]
-  (failure-flash e (unprocessable-entity nil) message))
+  what was typed. `id-suffix` is passed to `failure-response`, for a form whose
+  field ids are suffixed."
+  [e message & {:keys [id-suffix]}]
+  (failure-response e (flash/error (unprocessable-entity nil) message)
+                    :id-suffix id-suffix))
 
 (defn hx-redirect
   "Returns 200 with HX-Redirect header for HTMX client-side redirect.

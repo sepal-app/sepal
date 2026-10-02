@@ -1,7 +1,6 @@
 (ns sepal.app.routes.material.detail.observations
   (:require [failjure.core :as f]
             [sepal.app.datetime :as datetime]
-            [sepal.app.html :as html]
             [sepal.app.http-response :as http]
             [sepal.app.routes.material.detail.shared :as material.shared]
             [sepal.app.routes.material.panel :as material.panel]
@@ -77,15 +76,6 @@
   (db.i/with-transaction [tx db]
     (f tx created-by)))
 
-(defn render-list [db material timezone]
-  (let [id (:material/id material)]
-    (html/render-partial
-      (ui.observations/observation-list :observations (observation.i/get-for-resource db resource-type id)
-                                        :observation-url-fn (observation-url-fn id)
-                                        :type-options (observation.i/list-types db)
-                                        :value-options-by-type (value-options-by-type db)
-                                        :today (str (datetime/today timezone))))))
-
 (defn page-content [& {:keys [material accession taxon observations errors values db separator timezone]}]
   (let [id (:material/id material)]
     (material.shared/page
@@ -142,23 +132,27 @@
    :note (:note data)
    :created-by created-by})
 
-(defn get-handler
-  "Renders the tab."
-  [{:keys [::z/context]}]
-  (let [{:keys [db material-separator resource timezone]} context
-        id (:material/id resource)
-        panel-data (material.panel/fetch-panel-data db resource)]
+(defn- page
+  "The tab, as its GET renders it. Every write answers with it, so the panel
+  beside the list is current too."
+  [{:keys [db material-separator resource timezone]}]
+  (let [panel-data (material.panel/fetch-panel-data db resource)]
     (render :db db
             :material resource
             :accession (:accession panel-data)
             :taxon (:taxon panel-data)
-            :observations (observation.i/get-for-resource db resource-type id)
+            :observations (observation.i/get-for-resource db resource-type (:material/id resource))
             :panel-data panel-data
             :separator material-separator
             :timezone timezone)))
 
+(defn get-handler
+  "Renders the tab."
+  [{:keys [::z/context]}]
+  (page context))
+
 (defn create-handler
-  "Creates an observation and answers with the swapped list."
+  "Creates an observation and answers with the page."
   [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db resource timezone]} context
         id (:material/id resource)]
@@ -169,13 +163,13 @@
                                              (let [observation (observation.i/create! tx (observation-data id data created-by))]
                                                (observation.activity/create! tx observation.activity/created created-by observation)
                                                observation))))]
-      (render-list db resource timezone)
+      (http/saved (page context))
       (f/when-failed [e]
         ;; The one failure this route classifies itself: a future date is a
         ;; field error, not a generic save failure.
         (if (error.i/error? e ::future-observed-on)
           (future-date-error nil)
-          (http/failure-partial e (tr "The observation could not be saved.")))))))
+          (http/not-saved e (tr "The observation could not be saved.")))))))
 
 (defn- resource-observation
   "The observation in the path, or nil when it belongs to another record."
@@ -188,7 +182,7 @@
       observation)))
 
 (defn update-handler
-  "Updates one observation and answers with the swapped list."
+  "Updates one observation and answers with the page."
   [{:keys [::z/context form-params path-params viewer]}]
   (let [{:keys [db resource timezone]} context]
     (if-let [observation (resource-observation db resource path-params)]
@@ -206,25 +200,25 @@
                                                                                        :note (:note data)})]
                                                    (observation.activity/create! tx observation.activity/updated created-by updated)
                                                    updated))))]
-          (render-list db resource timezone)
+          (http/saved (page context))
           (f/when-failed [e]
             (if (error.i/error? e ::future-observed-on)
               (future-date-error observation-id)
-              (http/failure-partial e (tr "The observation could not be saved.")
-                                    :id-suffix observation-id)))))
+              (http/not-saved e (tr "The observation could not be saved.")
+                              :id-suffix observation-id)))))
       (http/not-found))))
 
 (defn delete-handler
-  "Removes one observation and answers with the swapped list."
+  "Removes one observation and answers with the page."
   [{:keys [::z/context path-params viewer]}]
-  (let [{:keys [db resource timezone]} context]
+  (let [{:keys [db resource]} context]
     (if-let [observation (resource-observation db resource path-params)]
       (let [observation-id (:observation/id observation)]
         (f/attempt-all [_deleted (f/try* (write! db (:user/id viewer)
                                                  (fn [tx created-by]
                                                    (observation.activity/create! tx observation.activity/deleted created-by observation)
                                                    (observation.i/delete! tx observation-id))))]
-          (render-list db resource timezone)
+          (http/saved (page context))
           (f/when-failed [e]
-            (http/failure-partial e (tr "The observation could not be deleted.")))))
+            (http/not-saved e (tr "The observation could not be deleted.")))))
       (http/not-found))))
