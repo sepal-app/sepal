@@ -1021,9 +1021,10 @@
   font-family: var(--font-mono);
   font-size: 12.5px;
 }
-/* A YYYY-MM-DD set in 12px mono measures 98px once the cell's 14px padding is
- * counted, so anything tighter than this ellipsises every date in the column. */
-.spl-col--date { width: 104px; }
+/* A medium date, "Sep 30, 2026" or "30 sept 2026", is at most 12 characters in
+ * the languages with a catalog. Set in 12px mono that measures 115px once the
+ * cell's 14px padding is counted, so anything tighter ellipsises the column. */
+.spl-col--date { width: 120px; }
 .spl-table td.spl-col--date {
   font-family: var(--font-mono);
   font-size: 12px;

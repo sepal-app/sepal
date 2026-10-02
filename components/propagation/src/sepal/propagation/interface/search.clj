@@ -93,9 +93,9 @@
                 :label (N_ "Succeeded")}
 
     :created {:column :p.created_at
-              :type :date
+              :type :timestamp
               :label (N_ "Created")}
 
     :updated {:column :p.updated_at
-              :type :date
+              :type :timestamp
               :label (N_ "Updated")}}})

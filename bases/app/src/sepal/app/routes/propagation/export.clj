@@ -7,9 +7,7 @@
             [sepal.database.interface :as db.i]
             [sepal.propagation.interface.search]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 (def ^:private columns
   "The list's columns plus both counts and the rootstock, which the table shows
@@ -40,7 +38,7 @@
 (defn handler
   "Export propagations as CSV, over the same rows the list shows."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [q]} (params/decode Params query-params)
         ast (index/default-status-ast (search.i/parse q))
 
@@ -51,16 +49,14 @@
                                [:location :l] [:= :l.id :p.location_id]
                                [:taxon :rt] [:= :rt.id :p.rootstock_taxon_id]]}
 
-        stmt (-> (search.i/compile-query :propagation ast base-stmt)
+        stmt (-> (search.i/compile-query :propagation ast base-stmt {:timezone timezone})
                  (assoc :order-by [[:p.propagated_on :desc] [:p.id :desc]]))
         rows (let [rows (db.i/execute! db stmt)
                    paths (location-path/by-id db (keep :location/id rows))]
                (mapv #(assoc % :location/path (get paths (:location/id %))) rows))
 
         csv-content (csv/rows->csv columns rows)
-        filename (format "propagations-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "propagations" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

@@ -668,17 +668,19 @@
   (testing "four bands over the field the free-text search reads"
     (let [[[expr dir]] (compiler/relevance-order test-fields {:terms ["quercus"]})]
       (is (= :asc dir))
+      ;; The query goes through lower() the same as the column, since SQLite
+      ;; folds ASCII only and Java's str/lower-case folds all of Unicode.
       (is (= [:case
-              [:= [:lower :t.name] "quercus"] 0
-              [:= [:instr [:lower :t.name] "quercus"] 1] 1
-              [:> [:instr [:|| " " [:lower :t.name]] " quercus"] 0] 2
+              [:= [:lower :t.name] [:lower "quercus"]] 0
+              [:= [:instr [:lower :t.name] [:lower "quercus"]] 1] 1
+              [:> [:instr [:|| " " [:lower :t.name]] [:|| " " [:lower "quercus"]]] 0] 2
               :else 3]
              expr))))
 
   (testing "multiple terms band on the whole phrase, so `quercus alb` puts
             Quercus alba above a name that only matches one word"
     (let [[[expr _]] (compiler/relevance-order test-fields {:terms ["quercus" "alb"]})]
-      (is (= "quercus alb" (get-in expr [1 2])))))
+      (is (= [:lower "quercus alb"] (get-in expr [1 2])))))
 
   (testing "nothing to rank by without free-text terms"
     (is (nil? (compiler/relevance-order test-fields {:terms []})))
@@ -761,3 +763,45 @@
                                                   {:select [:*] :from [[:material :m]]})]
       (is (= :in (first where))))))
 
+(deftest compile-timestamp-filter-test
+  ;; created_at holds UTC text, '2026-03-14 01:00:00'. A day asked for is the
+  ;; garden's day, here Belize at UTC-6, so March 13 runs from 06:00 UTC on
+  ;; the 13th to 06:00 UTC on the 14th.
+  (let [fields {:created {:column :m.created_at :type :timestamp}}
+        compile (fn [op value]
+                  (:where (compiler/compile-query
+                            fields
+                            {:terms [] :filters [(cond-> {:field "created" :value value :negated false}
+                                                   op (assoc :op op))]}
+                            base-stmt
+                            {:timezone "America/Belize"})))
+        start "2026-03-13 06:00:00"
+        end "2026-03-14 06:00:00"]
+    (testing "a day matches every time within it"
+      (is (= [:and [:>= :m.created_at start] [:< :m.created_at end]] (compile nil "2026-03-13"))))
+    (testing "after a day starts when it ends"
+      (is (= [:>= :m.created_at end] (compile ">" "2026-03-13"))))
+    (testing "on or after a day starts when it starts"
+      (is (= [:>= :m.created_at start] (compile ">=" "2026-03-13"))))
+    (testing "before a day ends when it starts"
+      (is (= [:< :m.created_at start] (compile "<" "2026-03-13"))))
+    (testing "on or before a day ends when it ends"
+      (is (= [:< :m.created_at end] (compile "<=" "2026-03-13"))))
+    (testing "a value that is not a date matches nothing"
+      (is (= [:= 1 0] (compile ">" "2026"))))
+    (testing "several days match any of them"
+      (is (= [:or
+              [:and [:>= :m.created_at start] [:< :m.created_at end]]
+              [:and [:>= :m.created_at end] [:< :m.created_at "2026-03-15 06:00:00"]]]
+             (:where (compiler/compile-query
+                       fields
+                       {:terms [] :filters [{:field "created" :values ["2026-03-13" "2026-03-14"]
+                                             :negated false}]}
+                       base-stmt
+                       {:timezone "America/Belize"})))))
+    (testing "the garden's timezone is required"
+      (is (thrown? IllegalArgumentException
+                   (compiler/compile-query
+                     fields
+                     {:terms [] :filters [{:field "created" :value "2026-03-13" :negated false}]}
+                     base-stmt))))))

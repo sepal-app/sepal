@@ -191,8 +191,8 @@
    [:received-type {:optional true} [:maybe received-type]]
    [:quantity-received {:optional true :decode/store validate.i/coerce-int}
     [:maybe quantity-received]]
-   [:date-received {:optional true} [:maybe :string]]
-   [:date-accessioned {:optional true} [:maybe :string]]
+   [:date-received {:optional true} [:maybe validate.i/date]]
+   [:date-accessioned {:optional true} [:maybe validate.i/date]]
    [:propagation-id {:optional true
                      :decode/store validate.i/coerce-int}
     ;; Generated data has no propagation to point at, and a random foreign key
@@ -214,8 +214,8 @@
      [:received-type {:optional true} [:maybe received-type]]
      [:quantity-received {:optional true :decode/store validate.i/coerce-int}
       [:maybe quantity-received]]
-     [:date-received {:optional true} [:maybe :string]]
-     [:date-accessioned {:optional true} [:maybe :string]]
+     [:date-received {:optional true} [:maybe validate.i/date]]
+     [:date-accessioned {:optional true} [:maybe validate.i/date]]
      [:propagation-id {:optional true
                        :decode/store validate.i/coerce-int}
       [:maybe {:gen/return nil} id]]]))

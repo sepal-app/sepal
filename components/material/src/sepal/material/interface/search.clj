@@ -93,9 +93,9 @@
 
     ;; Date fields
     :created {:column :m.created_at
-              :type :date
+              :type :timestamp
               :label (N_ "Created")}
 
     :updated {:column :m.updated_at
-              :type :date
+              :type :timestamp
               :label (N_ "Updated")}}})

@@ -115,7 +115,7 @@
                  (tr "Plant here")]]
                [:div {:class "text-sm"} (:taxon/name row)]
                (when-let [received (:accession/date-received row)]
-                 [:div {:class "text-sm text-text-soft"} (tr "received %1" received)])]])])
+                 [:div {:class "text-sm text-text-soft"} (tr "received %1" (datetime/format-date received))])]])])
 
         ;; Moved section
         (panel/collapsible-section

@@ -669,3 +669,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260924130000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260926120000', '2026-09-26 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260927120000', '2026-09-27 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260930120000', '2026-09-30 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20261001120000', '2026-10-01 12:00:00');

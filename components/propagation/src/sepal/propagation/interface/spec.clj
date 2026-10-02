@@ -1,7 +1,8 @@
 (ns sepal.propagation.interface.spec
   (:refer-clojure :exclude [type])
   (:require [malli.util :as mu]
-            [sepal.i18n.interface :refer [N_]]))
+            [sepal.i18n.interface :refer [N_]]
+            [sepal.validation.interface :as validate.i]))
 
 (def id pos-int?)
 (def parent-accession-id pos-int?)
@@ -80,8 +81,8 @@
     [:parent-material-id {:optional true} [:maybe parent-material-id]]
     [:rootstock-taxon-id {:optional true} [:maybe rootstock-taxon-id]]
     [:location-id {:optional true} [:maybe location-id]]
-    [:propagated-on {:optional true} [:maybe propagated-on]]
-    [:succeeded-on {:optional true} [:maybe succeeded-on]]
+    [:propagated-on {:optional true} [:maybe validate.i/date]]
+    [:succeeded-on {:optional true} [:maybe validate.i/date]]
     [:quantity-started {:optional true} [:maybe quantity]]
     [:quantity-succeeded {:optional true} [:maybe quantity]]
     [:notes {:optional true} [:maybe notes]]
@@ -98,8 +99,8 @@
       [:parent-material-id [:maybe parent-material-id]]
       [:rootstock-taxon-id [:maybe rootstock-taxon-id]]
       [:location-id [:maybe location-id]]
-      [:propagated-on [:maybe propagated-on]]
-      [:succeeded-on [:maybe succeeded-on]]
+      [:propagated-on [:maybe validate.i/date]]
+      [:succeeded-on [:maybe validate.i/date]]
       [:quantity-started [:maybe quantity]]
       [:quantity-succeeded [:maybe quantity]]
       [:notes [:maybe notes]]])

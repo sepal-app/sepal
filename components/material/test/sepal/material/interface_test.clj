@@ -346,3 +346,12 @@
         ;; cascade with it, and until they are gone neither location can be
         ;; deleted -- which is this test's own point, seen from the other side.
         (mat.i/delete! db (:material/id mat))))))
+
+(deftest test-changed-at-is-a-utc-time
+  ;; Only an import writes changed_at, and the column is ordered as text, so a
+  ;; value in any other shape sorted wrongly against the column default's.
+  (let [refuses? (fn [v] (some #(= [:changed-at] (:in %))
+                               (:errors (m/explain mat.spec/CreateMaterialChange {:changed-at v}))))]
+    (is (not (refuses? "2011-02-11 06:00:00")))
+    (is (refuses? "2011-02-11T06:00:00Z"))
+    (is (refuses? "2011-02-11"))))

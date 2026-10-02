@@ -289,3 +289,20 @@
         ;; taxon_synonym.taxon_id is a real foreign key, so the surviving row
         ;; has to go before the fixture can delete the taxon it names.
         (synonym.i/delete-for-taxon! *db* other-id)))))
+
+(deftest test-a-synonym-is-found-by-its-own-spelling
+  (tf/testing "a name starting with a non-ASCII capital matches itself"
+    {[::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [taxon]}]
+      ;; SQLite's lower() folds ASCII only and Java's folds all of Unicode, so
+      ;; lowering the query in Java turned Ö into ö while the column kept Ö.
+      (let [row (synonym.i/add-synonym! *db* {:taxon-id (:taxon/id taxon)
+                                              :synonym-name "Ölandia borealis"})]
+        (try
+          (is (= ["Ölandia borealis"]
+                 (mapv :synonym/synonym-name (synonym.i/resolve {} *db* "Öland"))))
+          (is (= ["Ölandia borealis"]
+                 (mapv :synonym/synonym-name (synonym.i/resolve {} *db* "Ölandia BOREALIS")))
+              "and ASCII still folds either way")
+          (finally
+            (synonym.i/remove-synonym! *db* (:synonym/id row))))))))

@@ -1,6 +1,7 @@
 (ns sepal.app.routes.setup.regional
   (:require [clojure.string :as str]
             [failjure.core :as f]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.html :as html]
             [sepal.app.http-response :as http]
@@ -13,26 +14,12 @@
             [sepal.i18n.interface :refer [N_ tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.validation.interface :as validation.i]
-            [zodiac.core :as z])
-  (:import [java.time ZoneId ZonedDateTime]))
+            [zodiac.core :as z]))
 
 (def FormParams
   [:map {:closed true}
    form/AntiForgeryField
-   [:timezone [:string {:min 1 :error/message (N_ "Please select a timezone")}]]])
-
-(defn timezone-options
-  "Returns all canonical IANA timezone options with UTC offset labels."
-  []
-  (->> (ZoneId/getAvailableZoneIds)
-       (filter #(re-matches #"^[A-Z][a-z]+/[A-Za-z_/]+" %))
-       (remove #(str/starts-with? % "Etc/"))
-       sort
-       (mapv (fn [zone-id]
-               (let [zone (ZoneId/of zone-id)
-                     offset (.getOffset (ZonedDateTime/now zone))]
-                 {:value zone-id
-                  :label (format "(UTC%s) %s" offset zone-id)})))))
+   [:timezone [:fn {:error/message (N_ "Please select a timezone")} datetime/valid-timezone?]]])
 
 (defn timezone-select [& {:keys [value errors]}]
   (combobox/combobox
@@ -42,10 +29,10 @@
     ;; Four hundred names that never change, so they travel with the page and
     ;; the field filters them here. No request, and no minimum before it will
     ;; show you anything.
-    :items (for [{opt-value :value opt-label :label} (timezone-options)]
+    :items (for [{opt-value :value opt-label :label} (datetime/timezone-options)]
              {:id opt-value :text opt-label})
     :selected (when-let [match (first (filter #(= value (:value %))
-                                              (timezone-options)))]
+                                              (datetime/timezone-options)))]
                 {:id (:value match) :text (:label match)})))
 
 (defn regional-form [& {:keys [values errors]}]

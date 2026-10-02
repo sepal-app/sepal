@@ -95,7 +95,9 @@
       (let [db *db*
             user-id (:user/id user)]
         (try
-          (let [before (Instant/now)
+          (let [;; Stored to the millisecond, so a stored time can fall a few
+                ;; microseconds before an untruncated `before`.
+                before (.truncatedTo (Instant/now) java.time.temporal.ChronoUnit/MILLIS)
                 activity (activity.i/create! db
                                              {:type test-activity-type
                                               :created-at (Instant/now)
@@ -257,5 +259,62 @@
             (is (= 0 (activity.i/count-by-resource db
                                                    :resource-type :taxon
                                                    :resource-id 0))))
+          (finally
+            (jdbc.sql/delete! db :activity {:created_by user-id})))))))
+
+(defn- record! [db user-id created-at]
+  (activity.i/create! db {:type test-activity-type
+                          :created-at created-at
+                          :created-by user-id
+                          :resource-type :test
+                          :resource-id 4242
+                          :data {:test-id 1 :test-name "order"}}))
+
+(deftest test-created-at-sorts-as-time
+  (tf/testing "a record's activity comes back newest first"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            user-id (:user/id user)
+            listed #(mapv :activity/id (activity.i/get-by-resource db :resource-type :test :resource-id 4242))]
+        (try
+          (testing "half a second later is later, though written with fewer digits"
+            ;; Instant.toString drops trailing zero groups, so these were
+            ;; '...:00Z' and '...:00.500Z', and 'Z' sorts after '.'.
+            (let [earlier (record! db user-id (Instant/parse "2026-09-01T15:30:00Z"))
+                  later (record! db user-id (Instant/parse "2026-09-01T15:30:00.500Z"))]
+              (is (= [(:activity/id later) (:activity/id earlier)] (listed)))))
+          (jdbc.sql/delete! db :activity {:created_by user-id})
+
+          (testing "events in the same instant come back in the order they were written"
+            (let [now (Instant/parse "2026-09-01T15:30:00Z")
+                  first-written (record! db user-id now)
+                  second-written (record! db user-id now)]
+              (is (= [(:activity/id second-written) (:activity/id first-written)] (listed)))))
+
+          (testing "created_at is stored at a fixed width"
+            (is (= #{"2026-09-01T15:30:00.000Z"}
+                   (set (map (comp first vals)
+                             (jdbc.sql/query db ["select created_at from activity where created_by = ?"
+                                                 user-id]))))))
+          (finally
+            (jdbc.sql/delete! db :activity {:created_by user-id})))))))
+
+(deftest test-created-at-reads-the-column-default
+  (tf/testing "a row written with datetime('now') decodes"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            user-id (:user/id user)]
+        (try
+          (jdbc.sql/insert! db :activity {:type "test/activity"
+                                          :data "{\"test-id\":1,\"test-name\":\"import\"}"
+                                          :created_by user-id
+                                          :created_at "2006-10-11 09:33:25"
+                                          :resource_type "test"
+                                          :resource_id 4343})
+          (is (= [(Instant/parse "2006-10-11T09:33:25Z")]
+                 (mapv :activity/created-at
+                       (activity.i/get-by-resource db :resource-type :test :resource-id 4343))))
           (finally
             (jdbc.sql/delete! db :activity {:created_by user-id})))))))

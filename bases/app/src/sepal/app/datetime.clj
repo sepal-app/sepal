@@ -5,8 +5,9 @@
   (:require [clojure.string :as str]
             [sepal.i18n.interface :as i18n :refer [tr trn]]
             [sepal.settings.interface :as settings.i])
-  (:import [java.time Duration Instant LocalDate ZoneId]
+  (:import [java.time Duration Instant LocalDate ZoneId ZoneOffset ZonedDateTime]
            [java.time.format DateTimeFormatter FormatStyle]
+           [java.time.temporal ChronoUnit]
            [java.util Locale]))
 
 ;;; ---------------------------------------------------------------------------
@@ -17,16 +18,46 @@
   "Default timezone when organization timezone is not set."
   "UTC")
 
+(def ^:private zone-ids (set (ZoneId/getAvailableZoneIds)))
+
+(defn valid-timezone?
+  "Whether `timezone` names a zone the JDK knows."
+  [timezone]
+  (contains? zone-ids timezone))
+
+(defn timezone-options
+  "The zones a garden can choose from, each labelled with its offset now: UTC,
+  then every Region/City zone. Etc/ zones and legacy aliases are left out."
+  []
+  (->> zone-ids
+       (filter #(re-matches #"^[A-Z][a-z]+/[A-Za-z_/-]+" %))
+       (remove #(str/starts-with? % "Etc/"))
+       sort
+       (cons default-timezone)
+       (mapv (fn [zone-id]
+               (let [offset (.getOffset (ZonedDateTime/now (ZoneId/of zone-id)))]
+                 {:value zone-id
+                  ;; ZoneOffset/UTC prints as "Z".
+                  :label (format "(UTC%s) %s"
+                                 (if (= offset ZoneOffset/UTC) "+00:00" offset)
+                                 zone-id)})))))
+
 (defn get-timezone
-  "Get organization timezone from settings, defaulting to UTC."
+  "The organization's timezone. UTC when it is unset, and when what is stored
+  names no zone: a value saved before the setting was validated would
+  otherwise break every page that shows a time."
   [db]
-  (or (settings.i/get-value db "organization.timezone")
-      default-timezone))
+  (let [timezone (settings.i/get-value db "organization.timezone")]
+    (if (valid-timezone? timezone) timezone default-timezone)))
 
 (defn- ->zone-id
-  "Convert a timezone string to a ZoneId."
-  [timezone]
-  (ZoneId/of (or timezone default-timezone)))
+  "Convert a timezone string to a ZoneId. A missing timezone throws rather than
+  falling back to UTC: a caller that forgot to pass it showed a garden's times
+  hours off, with nothing to say they were wrong."
+  ^ZoneId [timezone]
+  (when (nil? timezone)
+    (throw (IllegalArgumentException. "timezone is required")))
+  (ZoneId/of timezone))
 
 (defn today
   "The garden's current date. A code template renders {year} and {day} from
@@ -38,10 +69,10 @@
 (defn sqlite-datetime->instant
   "Parse a SQLite datetime string as an Instant.
 
-  Sepal writes `datetime('now')` — UTC, '2026-09-01 15:30:00'. Bauble wrote
-  naive local times, some with fractional seconds — '2011-02-11 00:00:00.373275'.
-  Both parse as UTC: Sepal's are, and Bauble's carry no zone to respect.
-  Returns nil for anything unparseable rather than throwing."
+  Sepal writes `datetime('now')` — UTC, '2026-09-01 15:30:00' — and the
+  import loader stores only UTC in that shape, so every value parses as UTC.
+  A fractional part, '2011-02-11 00:00:00.373275', is dropped. Returns nil for
+  anything unparseable rather than throwing."
   [s]
   (when s
     (try
@@ -59,7 +90,8 @@
 ;; localized styles for it, since a translated pattern would keep English word
 ;; order: "MMMM d, yyyy 'at' h:mm a" is not how Spanish writes a date.
 (def ^:private english-formatters
-  {:datetime (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT)
+  {:datetime (-> (DateTimeFormatter/ofLocalizedDateTime FormatStyle/MEDIUM FormatStyle/SHORT)
+                 (.withLocale Locale/ENGLISH))
    :full (-> (DateTimeFormatter/ofPattern "MMMM d, yyyy 'at' h:mm a z")
              (.withLocale Locale/ENGLISH))
    :date (-> (DateTimeFormatter/ofPattern "MMM d, yyyy")
@@ -94,10 +126,15 @@
 
 (defn format-date
   "Format an ISO date string, '2026-03-14', as 'Mar 14, 2026'. A date carries
-  no time, so it takes no timezone."
+  no time, so it takes no timezone.
+
+  A stored value that is not a date, such as an import's '11/02/2011', comes
+  back as it is: one bad row must not take down every page that lists it."
   [iso-date]
   (when iso-date
-    (.format (LocalDate/parse iso-date) (formatter :date))))
+    (try
+      (.format (LocalDate/parse iso-date) (formatter :date))
+      (catch java.time.format.DateTimeParseException _ iso-date))))
 
 (defn format-day
   "A date written out in full: 'Monday, March 14, 2026'."
@@ -145,22 +182,30 @@
      (.format (formatter :time) (.atZone instant (->zone-id timezone)))]))
 
 (defn format-relative
-  "Format an Instant as a relative time string (e.g., '2 hours ago', 'yesterday')."
-  [^Instant instant]
-  (when instant
-    (let [now (Instant/now)
-          duration (Duration/between instant now)
-          minutes (.toMinutes duration)
-          hours (.toHours duration)
-          days (.toDays duration)]
-      (cond
-        (< minutes 1) (tr "just now")
-        (< minutes 60) (trn "%1 minute ago" "%1 minutes ago" minutes)
-        (< hours 24) (trn "%1 hour ago" "%1 hours ago" hours)
-        (< days 2) (tr "yesterday")
-        (< days 7) (trn "%1 day ago" "%1 days ago" days)
-        (< days 30) (trn "%1 week ago" "%1 weeks ago" (quot days 7))
-        :else (trn "%1 day ago" "%1 days ago" days)))))
+  "Format an Instant as a relative time string (e.g., '2 hours ago', 'yesterday').
+
+  Under a day it counts hours. Past that it counts the garden's calendar days,
+  so 'yesterday' agrees with the day heading the activity feed files it under:
+  at 7 AM, an event from 11 PM two days back is '2 days ago', not 'yesterday'."
+  ([instant timezone]
+   (format-relative instant timezone (Instant/now)))
+  ([^Instant instant timezone ^Instant now]
+   (when instant
+     (let [duration (Duration/between instant now)
+           minutes (.toMinutes duration)
+           hours (.toHours duration)
+           days (.between ChronoUnit/DAYS
+                          (local-date instant timezone)
+                          (local-date now timezone))]
+       (cond
+         (< minutes 1) (tr "just now")
+         (< minutes 60) (trn "%1 minute ago" "%1 minutes ago" minutes)
+         ;; A 25-hour day when the clocks go back keeps 24 hours on one date.
+         (or (< hours 24) (< days 1)) (trn "%1 hour ago" "%1 hours ago" hours)
+         (= days 1) (tr "yesterday")
+         (< days 7) (trn "%1 day ago" "%1 days ago" days)
+         (< days 30) (trn "%1 week ago" "%1 weeks ago" (quot days 7))
+         :else (trn "%1 day ago" "%1 days ago" days))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Hiccup Helpers (render <time> elements with server-side formatted content)
@@ -174,7 +219,7 @@
     [:time (cond-> {:datetime (str instant)
                     :title (format-datetime-full instant timezone)}
              class (assoc :class class))
-     (format-relative instant)]))
+     (format-relative instant timezone)]))
 
 (defn datetime
   "Render a <time> element with formatted datetime and full tooltip."

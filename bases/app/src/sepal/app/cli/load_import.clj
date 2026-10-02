@@ -394,6 +394,30 @@
    "note" :note
    "observation" :observation})
 
+(def ^:private ^java.time.format.DateTimeFormatter sqlite-datetime
+  "How SQLite's datetime('now') writes a time: UTC, '2006-10-11 09:33:25'."
+  (-> (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss")
+      (.withZone java.time.ZoneOffset/UTC)))
+
+(defn- stored-created-at
+  "`created-at` as the column holds it, or nil when it is not a UTC time.
+
+  Two shapes are read: the column's own, '2006-10-11 09:33:25', which is UTC,
+  and ISO-8601 naming its offset, '2006-10-11T09:33:25-06:00', which is
+  converted. A bare date or a naive local time is refused rather than stored
+  as written: the column is compared as text, and a value in another shape
+  sorts wrongly against every other row forever."
+  [created-at]
+  (when (string? created-at)
+    (try
+      (if (re-matches #"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?" created-at)
+        (let [seconds (subs created-at 0 19)]
+          ;; Parsed only to refuse a time the calendar lacks.
+          (java.time.LocalDateTime/parse (str/replace seconds " " "T"))
+          seconds)
+        (.format sqlite-datetime (.toInstant (java.time.OffsetDateTime/parse created-at))))
+      (catch java.time.format.DateTimeParseException _ nil))))
+
 (defn- restore-created-at!
   "Put the source's `created_at` back on the rows this run wrote.
 
@@ -404,15 +428,27 @@
   `updated_at` cannot be restored. The eleven trigger_*_updated_at triggers
   have no WHEN clause, so any update sets it to now -- including this one."
   [db state records-by-table]
-  (doseq [[table sql-table] timestamped
-          record (get records-by-table table)
-          :let [created-at (:created-at record)
-                sepal-id (get-in state [:ids table (str (:id record))])]
-          :when (and created-at sepal-id)]
-    (db.i/execute-one! db {:update sql-table
-                           :set {:created_at created-at}
-                           :where [:= :id sepal-id]}))
-  state)
+  (reduce (fn [state [table sql-table record]]
+            (let [created-at (:created-at record)
+                  sepal-id (get-in state [:ids table (str (:id record))])
+                  stored (stored-created-at created-at)]
+              (cond
+                (not (and created-at sepal-id)) state
+
+                stored
+                (do (db.i/execute-one! db {:update sql-table
+                                           :set {:created_at stored}
+                                           :where [:= :id sepal-id]})
+                    state)
+
+                :else
+                (fail state table (:id record)
+                      (format "created_at %s is not a UTC time: write '2006-10-11 09:33:25', or ISO-8601 with an offset"
+                              (pr-str created-at))))))
+          state
+          (for [[table sql-table] timestamped
+                record (get records-by-table table)]
+            [table sql-table record])))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Where each record came from

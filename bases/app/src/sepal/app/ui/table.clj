@@ -1,6 +1,7 @@
 (ns sepal.app.ui.table
   (:require [clojure.string :as str]
             [lambdaisland.uri :as uri]
+            [sepal.app.datetime :as datetime]
             [sepal.app.ui.icons.heroicons :as icon]
             [sepal.i18n.interface :refer [format-number tr]]))
 
@@ -26,6 +27,16 @@
   [{:keys [type priority]}]
   (cond-> [(str "spl-col--" (name (or type :text)))]
     (and priority (> priority 1)) (conj (str "spl-shed-" priority))))
+
+(defn- cell-content
+  "What a column shows for `row`. A :date column's ISO string is formatted for
+  the reader, so a column never shows 2026-03-14 where a panel says Mar 14,
+  2026."
+  [{:keys [cell type]} row]
+  (let [content (cell row)]
+    (if (and (= type :date) (string? content))
+      (datetime/format-date content)
+      content)))
 
 (defn next-page-url
   "The URL for the page after this one, or nil at the end of the list.
@@ -139,9 +150,9 @@
                 ;; HTML cannot know the viewport. display:none takes the
                 ;; inactive one out of the accessibility tree too, so nothing is
                 ;; announced twice and no aria-hidden is needed.
-                (list [:span {:class "spl-cell-wide"} ((:cell col) row)]
+                (list [:span {:class "spl-cell-wide"} (cell-content col row)]
                       [:div {:class "spl-cell-narrow"} (stacked row)])
-                ((:cell col) row))])]))
+                (cell-content col row))])]))
       (when paging?
         (if next-url
           (sentinel-row n)

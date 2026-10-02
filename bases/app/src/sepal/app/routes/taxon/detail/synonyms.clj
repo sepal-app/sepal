@@ -87,7 +87,7 @@
      (add-form :taxon taxon)
      (synonyms-table :taxon taxon :synonyms synonyms)]))
 
-(defn render [& {:keys [synonyms taxon panel-data]}]
+(defn render [& {:keys [synonyms taxon panel-data timezone]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
                            :content (page-content :synonyms synonyms
                                                   :taxon taxon)
@@ -99,7 +99,8 @@
                                             :notes (:notes panel-data)
                                             :note-count (:note-count panel-data)
                                             :activities (:activities panel-data)
-                                            :activity-count (:activity-count panel-data)))
+                                            :activity-count (:activity-count panel-data)
+                                            :timezone timezone))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)))
 
 (defn add! [db taxon-id created-by data]
@@ -116,7 +117,7 @@
     (synonym.activity/create! tx synonym.activity/deleted removed-by synonym)))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context]
+  (let [{:keys [db resource timezone]} context]
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)
@@ -130,7 +131,8 @@
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :synonyms synonyms
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context

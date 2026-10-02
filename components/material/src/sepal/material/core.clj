@@ -13,17 +13,15 @@
   "The next material code within `accession-id`. Material is numbered inside
   its accession, so the scan is scoped to that accession rather than to a
   prefix, and every accession starts again at one."
-  ([db template accession-id]
-   (next-code db template accession-id (LocalDate/now)))
-  ([db template accession-id ^LocalDate date]
-   (when-let [prefix (ct.i/scan-prefix template date)]
-     (->> (db.i/execute! db {:select [:code]
-                             :from [:material]
-                             :where [:and
-                                     [:= :accession_id accession-id]
-                                     [:like :code (str prefix "%")]]})
-          (map :material/code)
-          (#(ct.i/next-code template % date))))))
+  [db template accession-id ^LocalDate date]
+  (when-let [prefix (ct.i/scan-prefix template date)]
+    (->> (db.i/execute! db {:select [:code]
+                            :from [:material]
+                            :where [:and
+                                    [:= :accession_id accession-id]
+                                    [:like :code (str prefix "%")]]})
+         (map :material/code)
+         (#(ct.i/next-code template % date)))))
 
 (defn get-by-id [db id]
   (store.i/get-by-id db :material id spec/Material))

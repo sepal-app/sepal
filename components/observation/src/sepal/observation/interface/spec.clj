@@ -1,7 +1,8 @@
 (ns sepal.observation.interface.spec
   (:refer-clojure :exclude [type])
   (:require [camel-snake-kebab.core :as csk]
-            [malli.util :as mu]))
+            [malli.util :as mu]
+            [sepal.validation.interface :as validate.i]))
 
 (def id pos-int?)
 
@@ -46,9 +47,9 @@
    [:resource-id pos-int?]
    [:type type]
    [:value {:optional true} [:maybe value]]
-   [:observed-on local-date]
+   [:observed-on [:and :string validate.i/date]]
    [:observed-by {:optional true} [:maybe :string]]
-   [:next-check-on {:optional true} [:maybe local-date]]
+   [:next-check-on {:optional true} [:maybe validate.i/date]]
    [:note {:optional true} [:maybe :string]]
    [:created-by {:optional true} [:maybe pos-int?]]])
 
@@ -57,7 +58,7 @@
     [:map {:closed true}
      [:type type]
      [:value [:maybe value]]
-     [:observed-on local-date]
+     [:observed-on [:and :string validate.i/date]]
      [:observed-by [:maybe :string]]
-     [:next-check-on [:maybe local-date]]
+     [:next-check-on [:maybe validate.i/date]]
      [:note [:maybe :string]]]))

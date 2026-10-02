@@ -193,7 +193,7 @@
        :value))
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db material-separator]} context
+  (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -210,7 +210,7 @@
                           [:location :l] [:= :l.id :m.location_id]]}
 
         ;; Compile search query (adds WHERE clause)
-        stmt (search.i/compile-query :material ast base-stmt)
+        stmt (search.i/compile-query :material ast base-stmt {:timezone timezone})
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)

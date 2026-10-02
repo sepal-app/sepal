@@ -5,7 +5,9 @@
    - Map field names to SQL columns
    - Add necessary joins for related fields
    - Generate appropriate WHERE clauses based on field type"
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  (:import [java.time LocalDate ZoneId ZoneOffset]
+           [java.time.format DateTimeFormatter DateTimeParseException]))
 
 (defn- column->id-column
   "Derive the ID column from a column reference.
@@ -77,134 +79,173 @@
       (let [quoted (mapv #(str "\"" (str/replace % "\"" "\"\"") "\"") phrases)]
         (str/join " " (conj (vec (butlast quoted)) (str (last quoted) "*")))))))
 
+(def ^:private ^DateTimeFormatter sqlite-datetime
+  "How SQLite's datetime('now') writes a timestamp: UTC, '2026-03-14 15:30:00'."
+  (-> (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss")
+      (.withZone ZoneOffset/UTC)))
+
+(defn- timestamp-clause
+  "A timestamp column against a day. The day is the garden's, read in
+  `timezone`, and the column holds UTC, so the day becomes the UTC times it
+  starts and ends at: in Belize, March 13 runs from 06:00 UTC on the 13th to
+  06:00 UTC on the 14th."
+  [column op value timezone]
+  (when (nil? timezone)
+    (throw (IllegalArgumentException. "timezone is required to filter a timestamp")))
+  (if-let [^LocalDate day (try (LocalDate/parse value) (catch DateTimeParseException _ nil))]
+    (let [zone (ZoneId/of timezone)
+          start (.format sqlite-datetime (.atStartOfDay day zone))
+          end (.format sqlite-datetime (.atStartOfDay (.plusDays day 1) zone))]
+      (case op
+        ">" [:>= column end]
+        ">=" [:>= column start]
+        "<" [:< column start]
+        "<=" [:< column end]
+        [:and [:>= column start] [:< column end]]))
+    ;; Nothing rather than a text comparison: "2026" sorts before every
+    ;; timestamp in that year, so created:>2026 would match all of them.
+    [:= 1 0]))
+
 (defn field->clause
   "Convert a single filter to a HoneySQL WHERE clause.
 
    Arguments:
      filter    - Map with :field, :value/:values, :op, :negated
-     field-def - Field definition from search-config with :column, :type, etc."
-  [{:keys [value values op negated] :as parsed} {:keys [column type fts-table id-column filter-clause]}]
-  (let [clause (cond
-                 ;; The field says what its filter means, for one no single
-                 ;; column comparison can express.
-                 filter-clause
-                 (filter-clause parsed)
+     field-def - Field definition from search-config with :column, :type, etc.
+     opts      - The options compile-query was given. A :timestamp field needs
+                 its :timezone."
+  ([parsed field-def]
+   (field->clause parsed field-def nil))
+  ([{:keys [value values op negated] :as parsed} {:keys [column type fts-table id-column filter-clause]} opts]
+   (let [clause (cond
+                  ;; The field says what its filter means, for one no single
+                  ;; column comparison can express.
+                  filter-clause
+                  (filter-clause parsed)
 
-                 ;; Multi-value → IN clause (no operator support)
-                 ;; Enum values stored as strings in SQLite
-                 values
-                 [:in column values]
+                  ;; Several days, any of them. Before the IN branch, which
+                  ;; would compare day strings to timestamp text.
+                  (and values (= type :timestamp))
+                  (into [:or] (map #(timestamp-clause column nil % (:timezone opts))) values)
 
-                 ;; Date comparison with operator
-                 (and (= type :date) op)
-                 [(op->sql-op op) column value]
+                  ;; Multi-value → IN clause (no operator support)
+                  ;; Enum values stored as strings in SQLite
+                  values
+                  [:in column values]
 
-                 ;; Date without operator → exact match
-                 (= type :date)
-                 [:= column value]
+                  (= type :timestamp)
+                  (timestamp-clause column op value (:timezone opts))
 
-                 ;; Number comparison with operator
-                 (and (= type :number) op)
-                 [(op->sql-op op) column (parse-long value)]
+                  ;; Date comparison with operator
+                  (and (= type :date) op)
+                  [(op->sql-op op) column value]
 
-                 ;; Number without operator → exact match
-                 (= type :number)
-                 [:= column (parse-long value)]
+                  ;; Date without operator → exact match
+                  (= type :date)
+                  [:= column value]
 
-                 ;; FTS search - use subquery to correlate with joined table
-                 ;; Generates: id_column IN (SELECT rowid FROM fts_table WHERE fts_table MATCH 'value*')
-                 ;; The ID column is derived from the text column (e.g., :t.name -> :t.id)
-                 ;; Quoted, for the same reason terms->match quotes: a filter
-                 ;; value reaches MATCH just as directly as a bare term does,
-                 ;; so `taxon:sp.` is a 500 without this.
-                 ;; `=` on a full-text field asks for the column, not the
-                 ;; index. FTS5 splits on `.`, so an accession code like
-                 ;; `2022.0001` indexes as the tokens `2022` and `0001` and no
-                 ;; MATCH can name that one row. Handled here rather than by
-                 ;; moving the `=` branch above this one, which would also take
-                 ;; `:number`, `:id` and `:count` away from their own branches
-                 ;; and drop their parse-long and EXISTS handling.
-                 (and (= type :fts) (= op "="))
-                 [:= column value]
+                  ;; Number comparison with operator
+                  (and (= type :number) op)
+                  [(op->sql-op op) column (parse-long value)]
 
-                 (= type :fts)
-                 (when-let [match (terms->match [value])]
-                   [:in (or id-column (column->id-column column))
-                    {:select [:rowid]
-                     :from [fts-table]
-                     :where [:match fts-table match]}])
+                  ;; Number without operator → exact match
+                  (= type :number)
+                  [:= column (parse-long value)]
 
-                 ;; ID exact match
-                 (= type :id)
-                 [:= column (parse-long value)]
+                  ;; FTS search - use subquery to correlate with joined table
+                  ;; Generates: id_column IN (SELECT rowid FROM fts_table WHERE fts_table MATCH 'value*')
+                  ;; The ID column is derived from the text column (e.g., :t.name -> :t.id)
+                  ;; Quoted, for the same reason terms->match quotes: a filter
+                  ;; value reaches MATCH just as directly as a bare term does,
+                  ;; so `taxon:sp.` is a 500 without this.
+                  ;; `=` on a full-text field asks for the column, not the
+                  ;; index. FTS5 splits on `.`, so an accession code like
+                  ;; `2022.0001` indexes as the tokens `2022` and `0001` and no
+                  ;; MATCH can name that one row. Handled here rather than by
+                  ;; moving the `=` branch above this one, which would also take
+                  ;; `:number`, `:id` and `:count` away from their own branches
+                  ;; and drop their parse-long and EXISTS handling.
+                  (and (= type :fts) (= op "="))
+                  [:= column value]
 
-                 ;; Enum exact match (stored as strings in SQLite)
-                 (= type :enum)
-                 [:= column value]
+                  (= type :fts)
+                  (when-let [match (terms->match [value])]
+                    [:in (or id-column (column->id-column column))
+                     {:select [:rowid]
+                      :from [fts-table]
+                      :where [:match fts-table match]}])
 
-                 ;; Count field - generates EXISTS or COUNT subquery based on operator
-                 ;; Optimizes >0 to EXISTS and =0 to NOT EXISTS for performance
-                 (= type :count)
-                 (let [subquery-table fts-table  ; reusing fts-table key for the subquery table
-                       join-condition column]    ; column holds the join condition
-                   (cond
-                     ;; >0 optimization: use EXISTS (faster than COUNT)
-                     (and (= op ">") (= value "0"))
-                     [:exists {:select [1]
-                               :from [subquery-table]
-                               :where join-condition
-                               :limit 1}]
+                  ;; ID exact match
+                  (= type :id)
+                  [:= column (parse-long value)]
 
-                     ;; =0 optimization: use NOT EXISTS
-                     (and (or (nil? op) (= op "=")) (= value "0"))
-                     [:not [:exists {:select [1]
-                                     :from [subquery-table]
-                                     :where join-condition
-                                     :limit 1}]]
+                  ;; Enum exact match (stored as strings in SQLite)
+                  (= type :enum)
+                  [:= column value]
 
-                     ;; >=1 is same as >0, use EXISTS
-                     (and (= op ">=") (= value "1"))
-                     [:exists {:select [1]
-                               :from [subquery-table]
-                               :where join-condition
-                               :limit 1}]
+                  ;; Count field - generates EXISTS or COUNT subquery based on operator
+                  ;; Optimizes >0 to EXISTS and =0 to NOT EXISTS for performance
+                  (= type :count)
+                  (let [subquery-table fts-table  ; reusing fts-table key for the subquery table
+                        join-condition column]    ; column holds the join condition
+                    (cond
+                      ;; >0 optimization: use EXISTS (faster than COUNT)
+                      (and (= op ">") (= value "0"))
+                      [:exists {:select [1]
+                                :from [subquery-table]
+                                :where join-condition
+                                :limit 1}]
 
-                     ;; All other cases: use COUNT subquery
-                     :else
-                     [(op->sql-op (or op "="))
-                      {:select [[[:count :*]]]
-                       :from [subquery-table]
-                       :where join-condition}
-                      (parse-long value)]))
+                      ;; =0 optimization: use NOT EXISTS
+                      (and (or (nil? op) (= op "=")) (= value "0"))
+                      [:not [:exists {:select [1]
+                                      :from [subquery-table]
+                                      :where join-condition
+                                      :limit 1}]]
 
-                 ;; Boolean by value: private:true / private:false. The value
-                 ;; is the string the user typed, and anything that is neither
-                 ;; is compared to the column as it arrived: the column holds 1
-                 ;; or 0, so private:yes matches no row. That keeps a filter
-                 ;; narrowing. Dropping it instead would answer a question the
-                 ;; compiler could not read by returning every row, which is
-                 ;; the one failure mode a filter must not have.
-                 (= type :boolean)
-                 [:= column (if (nil? value)
-                              true
-                              (if-some [b (parse-boolean (str/lower-case value))]
-                                b
-                                value))]
+                      ;; >=1 is same as >0, use EXISTS
+                      (and (= op ">=") (= value "1"))
+                      [:exists {:select [1]
+                                :from [subquery-table]
+                                :where join-condition
+                                :limit 1}]
 
-                 ;; Flag with no value means true
-                 (nil? value)
-                 [:= column true]
+                      ;; All other cases: use COUNT subquery
+                      :else
+                      [(op->sql-op (or op "="))
+                       {:select [[[:count :*]]]
+                        :from [subquery-table]
+                        :where join-condition}
+                       (parse-long value)]))
 
-                 ;; Text with = operator → exact match
-                 (= op "=")
-                 [:= column value]
+                  ;; Boolean by value: private:true / private:false. The value
+                  ;; is the string the user typed, and anything that is neither
+                  ;; is compared to the column as it arrived: the column holds 1
+                  ;; or 0, so private:yes matches no row. That keeps a filter
+                  ;; narrowing. Dropping it instead would answer a question the
+                  ;; compiler could not read by returning every row, which is
+                  ;; the one failure mode a filter must not have.
+                  (= type :boolean)
+                  [:= column (if (nil? value)
+                               true
+                               (if-some [b (parse-boolean (str/lower-case value))]
+                                 b
+                                 value))]
 
-                 ;; Text contains (default)
-                 :else
-                 [:like column (str "%" value "%")])]
-    (if negated
-      [:not clause]
-      clause)))
+                  ;; Flag with no value means true
+                  (nil? value)
+                  [:= column true]
+
+                  ;; Text with = operator → exact match
+                  (= op "=")
+                  [:= column value]
+
+                  ;; Text contains (default)
+                  :else
+                  [:like column (str "%" value "%")])]
+     (if negated
+       [:not clause]
+       clause))))
 
 (defn- collect-joins
   "Gather unique joins from the given field definitions, preserving order.
@@ -327,7 +368,9 @@
   [fields {:keys [terms]}]
   (when (seq terms)
     (when-let [[_ {:keys [column]}] (primary-fts-field fields)]
-      (let [query (str/lower-case (str/join " " terms))
+      ;; Both sides through SQLite's lower(), which folds ASCII only: folding
+      ;; the query in Java turned Ö into ö while the column kept Ö.
+      (let [query [:lower (str/join " " terms)]
             value [:lower column]]
         [[[:case
            [:= value query] 0
@@ -335,7 +378,7 @@
            ;; A space in front of both, so the query has to start a word rather
            ;; than land mid-one: a curator typing an epithet wants Asimina
            ;; triloba above a name that merely contains the letters.
-           [:> [:instr [:|| " " value] (str " " query)] 0] 2
+           [:> [:instr [:|| " " value] [:|| " " query]] 0] 2
            :else 3]
           :asc]]))))
 
@@ -372,7 +415,7 @@
         filter-clauses (for [f filters
                              :let [field-def (get fields (keyword (:field f)))]
                              :when field-def]
-                         (field->clause f field-def))
+                         (field->clause f field-def opts))
 
         ;; Build FTS clause from terms
         term-clause (terms->clause terms fields opts)

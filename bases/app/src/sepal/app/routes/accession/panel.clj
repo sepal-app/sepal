@@ -6,6 +6,7 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.activity.interface :as activity.i]
             [sepal.app.authorization :as authz]
+            [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.form :as accession.form]
@@ -89,8 +90,8 @@
                      {:label (tr "Received as")
                       :value (accession.form/enum-label accession.spec/received-type-labels received-type)}
                      {:label (tr "Quantity received") :value quantity-received}
-                     {:label (tr "Date received") :value date-received}
-                     {:label (tr "Date accessioned") :value date-accessioned}]))
+                     {:label (tr "Date received") :value (datetime/format-date date-received)}
+                     {:label (tr "Date accessioned") :value (datetime/format-date date-accessioned)}]))
 
         ;; Statistics section
         (panel/collapsible-section

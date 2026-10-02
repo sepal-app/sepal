@@ -5,6 +5,7 @@
   angles -- what was grown from this plant, from this accession, on this bench
   -- and three copies would drift."
   (:require [clojure.string :as str]
+            [sepal.app.datetime :as datetime]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.propagation.shared :as shared]
@@ -72,4 +73,4 @@
           [:span {:class "spl-link"}
            (propagation-name propagation type-labels status-labels)]
           [:span {:class "text-text-soft"}
-           (or (:propagation/propagated-on propagation) "")]])])))
+           (or (datetime/format-date (:propagation/propagated-on propagation)) "")]])])))

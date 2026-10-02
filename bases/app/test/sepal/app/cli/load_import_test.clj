@@ -165,7 +165,7 @@
   database, and `import_record` is unique on (source_table, source_id) -- two
   tests loading `accession 30` is the same collision a second import of one
   input would be."
-  [dir & {:keys [suffix] :or {suffix "a"}}]
+  [dir & {:keys [suffix created-at] :or {suffix "a" created-at "2006-10-11 09:33:25"}}]
   (let [sid #(str % "-" suffix)
         taxon (sid "900")
         location (sid "10")
@@ -181,7 +181,7 @@
              "tag" [(rec tag {"name" (str "Fixture tag " suffix)})]
              "accession" [(-> (rec accession {"code" (str "2024.000" suffix)}
                                    {"taxon_id" (ref-to "taxon" taxon)})
-                              (assoc "created_at" "2006-10-11 09:33:25"))]
+                              (assoc "created_at" created-at))]
              "material" [(rec material {"code" "1" "quantity" 1
                                         "type" "plant" "status" "alive"}
                               {"accession_id" (ref-to "accession" accession)
@@ -754,3 +754,44 @@
             (jdbc.sql/delete! db :location {:code "ORDR-R3"})
             (jdbc.sql/delete! db :location {:code "ORDR"})
             (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-created-at-is-stored-as-utc
+  (tf/testing "a created_at that names its offset is converted, not stored as written"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*
+            dir (fs/create-temp-dir {:prefix "load-import-utc"})]
+        (try
+          (write-fixture! dir :suffix "u" :created-at "2006-10-11T09:33:25-06:00")
+          (is (zero? (li/load-import! db {:dir (str dir)
+                                          :actor (:user/email user)
+                                          :allow-nonempty true})))
+          (is (= "2006-10-11 15:33:25"
+                 (:accession/created-at
+                   (db.i/execute-one! db {:select [:created_at]
+                                          :from [:accession]
+                                          :where [:= :code "2024.000u"]}))))
+          (finally
+            (fs/delete-tree dir)
+            (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))
+
+(deftest test-an-unreadable-created-at-is-a-failure
+  (tf/testing "a created_at that is not a UTC time is reported, not stored"
+    {[::user.i/factory :key/user] {:db *db* :role :admin}}
+    (fn [{:keys [user]}]
+      (let [db *db*]
+        ;; A bare date has no time to store, and 11/10/2006 is not even a
+        ;; date everywhere. Stored as written, either sorted wrongly forever.
+        (doseq [[suffix created-at] [["v" "11/10/2006"] ["w" "2006-10-11"]]]
+          (let [dir (fs/create-temp-dir {:prefix "load-import-bad-time"})]
+            (try
+              (write-fixture! dir :suffix suffix :created-at created-at)
+              (let [out (with-out-str
+                          (li/load-import! db {:dir (str dir)
+                                               :actor (:user/email user)
+                                               :allow-nonempty true}))]
+                (is (re-find (re-pattern (str "accession 30-" suffix ": .*created_at")) out) out)
+                (is (re-find #"Rolled back" out)))
+              (finally
+                (fs/delete-tree dir)
+                (jdbc.sql/delete! db :activity {:created_by (:user/id user)})))))))))

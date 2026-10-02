@@ -340,3 +340,17 @@
           (is (some? (acc.i/get-by-id db id)))
           (acc.i/delete! db id)
           (is (nil? (acc.i/get-by-id db id))))))))
+
+(defn- refuses-date? [schema k value]
+  (boolean (some #(= [k] (:in %)) (:errors (m/explain schema {k value})))))
+
+(deftest test-accession-dates-must-be-real
+  ;; A date the form never sends, from an import or a crafted request, was
+  ;; stored and then broke every page that formats it.
+  (doseq [[schema k] [[acc.spec/CreateAccession :date-received]
+                      [acc.spec/CreateAccession :date-accessioned]
+                      [acc.spec/UpdateAccession :date-received]
+                      [acc.spec/UpdateAccession :date-accessioned]]
+          value ["2026-02-30" "11/02/2011" "2011-02-11 00:00:00"]]
+    (is (refuses-date? schema k value) (str k " " value)))
+  (is (not (refuses-date? acc.spec/CreateAccession :date-received "2026-02-28"))))

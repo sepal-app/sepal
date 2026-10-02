@@ -356,6 +356,12 @@ The `sepal.app.test` namespace provides HTTP testing utilities:
       (peri/request "/some/path")))
 ```
 
+To test formatting in another language, bind `i18n/*locale*` directly rather
+than using `i18n/with-locale`. `with-locale` binds no locale when that
+language's catalog is not loaded, and other tests reset the catalogs with
+`i18n/load-catalogs!`, so a test that relies on them passes or fails depending
+on what ran before it.
+
 ### Routes
 
 Routes are defined per-resource in `bases/app/src/sepal/app/routes/<resource>/`:
@@ -443,6 +449,20 @@ Use Chassis for HTML generation:
   [:div {:class (html/attr "flex" "gap-2")}
    [:span "Content"]])
 ```
+
+### Dates and times
+
+A timestamp is a UTC `Instant`, shown in the garden's timezone. A calendar
+date, such as `observed_on`, is an ISO `YYYY-MM-DD` string with no zone.
+
+- **Every timestamp helper in `sepal.app.datetime` needs the timezone.** A
+  handler reads it from `[::z/context :timezone]`, and a background job from
+  `datetime/get-timezone`. A nil timezone throws: a renderer that silently fell
+  back to UTC once showed eight pages' times hours off, and nothing failed.
+- **The garden's today is `(datetime/today timezone)`**, never `LocalDate/now`
+  or the server's clock.
+- **A calendar date is never converted.** Show it with `datetime/format-date`.
+  A table column with `:type :date` formats its ISO string for you.
 
 ## Importing
 

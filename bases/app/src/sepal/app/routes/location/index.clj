@@ -122,7 +122,7 @@
    [:exclude {:optional true} :int]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [page page-size q exclude]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -145,7 +145,7 @@
                                              (:filters ast)))
 
         ;; Compile search query (adds WHERE clause and joins)
-        stmt (cond-> (search.i/compile-query :location ast base-stmt)
+        stmt (cond-> (search.i/compile-query :location ast base-stmt {:timezone timezone})
                (or picker? (not asked-about-archived?))
                (update :where #(let [active [:= :l.status "active"]]
                                  (if % [:and % active] active)))

@@ -22,9 +22,10 @@ One JSON file per table, each a list of records with four possible keys:
 - **`id`** — the record's key in the source system. **Opaque text, never
   parsed**: `accession_note:1` and `species_synonym-3` are both real. Optional;
   two files carry none.
-- **`created_at`** — optional. Restored after the load, because no create spec
-  accepts a timestamp. `updated_at` is not supported: the `trigger_*_updated_at`
-  triggers have no `WHEN` clause, so any write sets it to now.
+- **`created_at`** — optional, and UTC. Restored after the load, because no
+  create spec accepts a timestamp. `updated_at` is not supported: the
+  `trigger_*_updated_at` triggers have no `WHEN` clause, so any write sets it to
+  now. See [Dates and times](#dates-and-times) for the format.
 - **`refs`** — references to resolve, **keyed by the field each one lands
   on**. Omitted when there are none; an absent reference is left out rather
   than written as null. A dot descends into `data`: `data.taxon_id` sets
@@ -34,6 +35,23 @@ One JSON file per table, each a list of records with four possible keys:
 
 Nothing else is permitted at the top level, and `data` must match the create
 spec exactly. A key with no column is a reported failure, not a dropped field.
+
+## Dates and times
+
+A time is UTC, written the way SQLite's `datetime('now')` writes it:
+`2006-10-11 09:33:25`. That is the one format every time field accepts: each
+record's `created_at`, `activity`'s `data.created_at`, and `material_change`'s
+`data.changed_at`.
+
+The two `created_at` fields also read ISO-8601 that names its offset, such as
+`2006-10-11T03:33:25-06:00`, and convert it. Anything else is refused and the
+record reported as a failure, including a bare date and a local time with no
+offset. A source system that recorded local times has to convert them to UTC,
+in the garden's zone, before writing them.
+
+A calendar date, such as `observed_on`, `date_received` or `propagated_on`, is
+`YYYY-MM-DD` and has no zone. A date the calendar does not have, such as
+`2026-02-30`, fails the create spec.
 
 ## References
 

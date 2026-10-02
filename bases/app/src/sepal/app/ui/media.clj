@@ -173,9 +173,9 @@
   [bytes]
   (when bytes
     (cond
-      (< bytes 1024) (str bytes " B")
-      (< bytes (* 1024 1024)) (format "%.0f KB" (/ bytes 1024.0))
-      :else (format "%.1f MB" (/ bytes 1024.0 1024.0)))))
+      (< bytes 1024) (tr "%1 B" (i18n/format-number bytes))
+      (< bytes (* 1024 1024)) (tr "%1 KB" (i18n/format-decimal (/ bytes 1024.0) 0))
+      :else (tr "%1 MB" (i18n/format-decimal (/ bytes 1024.0 1024.0) 1)))))
 
 (defn thumbnail-url
   "Generate a thumbnail URL for a media item."

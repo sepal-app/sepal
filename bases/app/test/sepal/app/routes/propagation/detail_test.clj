@@ -194,7 +194,7 @@
           (let [text (.text (page user (str "/propagation/" (:propagation/id prop) "/")))]
             (is (.contains text "Tissue culture · In progress"))
             (is (not (.contains text ":tissue_culture")))
-            (is (.contains text "2026-03-01"))
+            (is (.contains text "Mar 1, 2026") "the propagated date, formatted")
             (is (.contains text "20"))
             (is (.contains text "12")))
           (finally

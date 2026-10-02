@@ -5,9 +5,7 @@
             [sepal.contact.interface.search]
             [sepal.database.interface :as db.i]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 (def ^:private columns
   "Contact columns for export."
@@ -35,21 +33,19 @@
 (defn handler
   "Export contacts as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
         base-stmt {:select (mapv :column columns)
                    :from [[:contact :c]]}
 
-        stmt (-> (search.i/compile-query :contact ast base-stmt)
+        stmt (-> (search.i/compile-query :contact ast base-stmt {:timezone timezone})
                  (assoc :order-by [:c.name]))
         rows (db.i/execute! db stmt)
 
         csv-content (csv/rows->csv columns rows)
-        filename (format "contacts-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "contacts" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

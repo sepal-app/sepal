@@ -209,7 +209,7 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db material-separator]} context
+  (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -235,7 +235,7 @@
                    :left-join [[:material :m] [:= :m.id :p.parent_material_id]
                                [:location :l] [:= :l.id :p.location_id]]}
 
-        stmt (search.i/compile-query :propagation ast base-stmt)
+        stmt (search.i/compile-query :propagation ast base-stmt {:timezone timezone})
 
         total (db.i/count-bounded db stmt)
         rows (db.i/execute-bounded! db (assoc stmt

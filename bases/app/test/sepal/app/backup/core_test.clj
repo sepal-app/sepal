@@ -244,19 +244,56 @@
 
 (deftest test-get-next-backup-time
   (testing "returns nil for disabled frequency"
-    (is (nil? (backup/get-next-backup-time :disabled)))
-    (is (nil? (backup/get-next-backup-time nil))))
+    (is (nil? (backup/get-next-backup-time :disabled "UTC")))
+    (is (nil? (backup/get-next-backup-time nil "UTC"))))
 
   (testing "returns an Instant for valid frequencies"
-    (is (instance? Instant (backup/get-next-backup-time :daily)))
-    (is (instance? Instant (backup/get-next-backup-time :weekly)))
-    (is (instance? Instant (backup/get-next-backup-time :monthly))))
+    (is (instance? Instant (backup/get-next-backup-time :daily "UTC")))
+    (is (instance? Instant (backup/get-next-backup-time :weekly "UTC")))
+    (is (instance? Instant (backup/get-next-backup-time :monthly "UTC"))))
 
   (testing "next backup time is in the future"
     (let [now (Instant/now)]
-      (is (.isAfter (backup/get-next-backup-time :daily) now))
-      (is (.isAfter (backup/get-next-backup-time :weekly) now))
-      (is (.isAfter (backup/get-next-backup-time :monthly) now)))))
+      (is (.isAfter (backup/get-next-backup-time :daily "UTC") now))
+      (is (.isAfter (backup/get-next-backup-time :weekly "UTC") now))
+      (is (.isAfter (backup/get-next-backup-time :monthly "UTC") now)))))
+
+(deftest test-backups-run-at-2am-in-the-garden
+  ;; Saturday 5:00 PM in Belize, UTC-6, which UTC already calls 11 PM.
+  (let [now (Instant/parse "2026-10-03T23:00:00Z")]
+    (testing "daily runs at 2:00 AM the garden's time"
+      (is (= (Instant/parse "2026-10-04T08:00:00Z")
+             (backup/get-next-backup-time :daily "America/Belize" now))))
+    (testing "weekly runs on the garden's Sunday"
+      (is (= (Instant/parse "2026-10-04T08:00:00Z")
+             (backup/get-next-backup-time :weekly "America/Belize" now))))
+    (testing "monthly runs on the garden's 1st"
+      (is (= (Instant/parse "2026-11-01T08:00:00Z")
+             (backup/get-next-backup-time :monthly "America/Belize" now))))))
+
+(deftest test-a-daylight-saving-gap-moves-one-run-only
+  ;; New York skips 2:00 AM on March 8, 2026, so that run is at 3:00. The next
+  ;; must be back at 2:00, not stuck an hour late until the next restart.
+  (let [runs (take 2 (#'backup/backup-schedule :daily "America/New_York"
+                                               (Instant/parse "2026-03-07T12:00:00Z")))]
+    (is (= [(Instant/parse "2026-03-08T07:00:00Z")
+            (Instant/parse "2026-03-09T06:00:00Z")]
+           (mapv #(.toInstant ^java.time.ZonedDateTime %) runs)))))
+
+(deftest test-backup-names-are-in-utc
+  ;; Written and read in the server's zone, a name meant different times on
+  ;; different hosts, and the hour the clocks went back named two backups alike.
+  ;;
+  ;; This sets the JVM's default zone for its duration, which is safe only
+  ;; because Kaocha runs tests one at a time.
+  (let [default (java.util.TimeZone/getDefault)
+        instant (Instant/parse "2026-01-01T02:00:00Z")]
+    (try
+      (java.util.TimeZone/setDefault (java.util.TimeZone/getTimeZone "Pacific/Kiritimati"))
+      (is (= "2026-01-01T020000" (#'backup/format-timestamp instant)))
+      (is (= instant (#'backup/parse-backup-filename "sepal-backup-2026-01-01T020000.zip")))
+      (finally
+        (java.util.TimeZone/setDefault default)))))
 
 (deftest test-backup-task-stores-through-the-store
   (testing "the store chooses the directory and gets the result"

@@ -23,7 +23,7 @@
   (str "/accession/12/notes/" note-id "/"))
 
 (deftest test-note-list-renders-every-note
-  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn))]
+  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn :timezone "UTC"))]
     (is (some? (.selectFirst body "#notes-list")))
     (is (= 2 (.size (.select body "[data-note-id]"))))
     (testing "newest first, in the order given"
@@ -41,12 +41,12 @@
                                :note/body "<script>alert(1)</script>"
                                :note/created-at "2011-10-11 00:00:00"
                                :note/author-email nil}]
-                      :note-url-fn note-url-fn))]
+                      :note-url-fn note-url-fn :timezone "UTC"))]
     (is (nil? (.selectFirst body "script"))
         "A note body is plain text and must never render as markup")))
 
 (deftest test-each-note-carries-its-own-edit-form
-  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn))
+  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn :timezone "UTC"))
         form (.selectFirst body "[data-note-id=2] form")]
     (is (some? form))
     (is (= "/accession/12/notes/2/" (.attr form "hx-post")))
@@ -54,7 +54,7 @@
     (is (= "outerHTML" (.attr form "hx-swap")))))
 
 (deftest test-delete-targets-the-list
-  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn))
+  (let [body (parse (ui.notes/note-list :notes notes :note-url-fn note-url-fn :timezone "UTC"))
         button (.selectFirst body "[data-note-id=2] [hx-delete]")]
     (is (= "/accession/12/notes/2/" (.attr button "hx-delete")))
     (is (= "#notes-list" (.attr button "hx-target")))
@@ -66,7 +66,7 @@
 (deftest test-the-new-note-form-clears-itself-after-a-successful-post
   (let [body (parse (ui.notes/notes-body :notes notes
                                          :create-url "/accession/12/notes/"
-                                         :note-url-fn note-url-fn))
+                                         :note-url-fn note-url-fn :timezone "UTC"))
         form (.selectFirst body "form#note-form")
         handler (.attr form "hx-on::after-request")]
     (is (re-find #"this\.reset\(\)" handler)
@@ -78,14 +78,15 @@
         "A rejected post keeps the text where the curator can fix it")))
 
 (deftest test-empty-list-says-so
-  (let [body (parse (ui.notes/note-list :notes [] :note-url-fn note-url-fn))]
+  (let [body (parse (ui.notes/note-list :notes [] :note-url-fn note-url-fn :timezone "UTC"))]
     (is (zero? (.size (.select body "[data-note-id]"))))
     (is (some? (.selectFirst body "[data-notes-empty]")))))
 
 (deftest test-panel-section-is-read-only
   (let [body (parse (ui.notes/panel-section :notes notes
                                             :note-count 7
-                                            :more-url "/accession/12/notes/"))]
+                                            :more-url "/accession/12/notes/"
+                                            :timezone "UTC"))]
     (is (zero? (.size (.select body "form")))
         "The panel is the read-only view; nothing in it writes")
     (is (zero? (.size (.select body "button"))))

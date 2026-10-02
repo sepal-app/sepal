@@ -7,9 +7,7 @@
             [sepal.i18n.interface :refer [N_]]
             [sepal.material.interface.search]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 ;; =============================================================================
 ;; Column Definitions
@@ -71,7 +69,7 @@
 (defn handler
   "Export materials as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         decoded (params/decode Params query-params)
         q (:q decoded)
         include-taxon? (parse-bool (:include_taxon decoded))
@@ -104,16 +102,14 @@
                     include-taxon?
                     (update :join into [[:taxon :t] [:= :t.id :a.taxon_id]]))
 
-        stmt (-> (search.i/compile-query :material ast base-stmt)
+        stmt (-> (search.i/compile-query :material ast base-stmt {:timezone timezone})
                  (assoc :order-by [:m.code]))
         rows (let [rows (db.i/execute! db stmt)
                    paths (location-path/by-id db (keep :location/id rows))]
                (mapv #(assoc % :location/path (get paths (:location/id %))) rows))
 
         csv-content (csv/rows->csv cols rows)
-        filename (format "materials-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "materials" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

@@ -6,9 +6,7 @@
             [sepal.database.interface :as db.i]
             [sepal.observation.interface.search]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 (def ^:private columns
   "Observation columns, plus the polymorphic subject resolved through the
@@ -41,7 +39,7 @@
 (defn handler
   "Export observations as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db material-separator]} context
+  (let [{:keys [db material-separator timezone]} context
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
@@ -61,9 +59,7 @@
                (mapv #(assoc % :location/path (get paths (:location/id %))) rows))
 
         csv-content (csv/rows->csv columns rows)
-        filename (format "observations-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "observations" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

@@ -137,6 +137,15 @@
   (.format ^java.text.Format (java.text.NumberFormat/getIntegerInstance (java-locale))
            ^Object n))
 
+(defn format-decimal
+  "n with `digits` decimal places in *locale*: \"1.5\" in English, \"1,5\" in
+  Spanish."
+  [n digits]
+  (let [f (doto (java.text.NumberFormat/getNumberInstance (java-locale))
+            (.setMinimumFractionDigits digits)
+            (.setMaximumFractionDigits digits))]
+    (.format ^java.text.NumberFormat f (double n))))
+
 (defn fill
   "A translated string as a vector of its text and `parts`, with each %n
   replaced by the nth part. For a sentence that has markup inside it:

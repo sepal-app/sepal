@@ -41,7 +41,8 @@
 (deftest test-cells-render-through-the-cell-fn
   (let [body (parse)
         cells (mapv #(.text %) (.select body "tbody tr:not(.spl-end):not(.spl-sentinel) td"))]
-    (is (= ["2024.0117" "Quercus alba" "North Woodland" "2024-03-14"] cells))))
+    (is (= ["2024.0117" "Quercus alba" "North Woodland" "Mar 14, 2024"] cells)
+        "a :date cell is formatted for the reader")))
 
 (deftest test-column-type-becomes-a-class
   (testing "type drives width and face — identifier and date are mono"

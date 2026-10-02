@@ -112,6 +112,12 @@ msgstr[2] \"%1 plików\"
   (binding [i18n/*locale* "es"]
     (is (= "400.000" (i18n/format-number 400000)))))
 
+(deftest test-format-decimal
+  (is (= "1.5" (i18n/format-decimal 1.5 1)))
+  (is (= "2" (i18n/format-decimal 2.04 0)))
+  (binding [i18n/*locale* "es"]
+    (is (= "1,5" (i18n/format-decimal 1.5 1)) "a decimal comma where the language uses one")))
+
 (deftest test-fill
   (is (= [[:a "Quercus"] " — matches synonym " [:i "Q. robur"]]
          (i18n/fill "%1 — matches synonym %2" [:a "Quercus"] [:i "Q. robur"])))

@@ -6,9 +6,7 @@
             [sepal.location.interface :as location.i]
             [sepal.location.interface.search]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 (def ^:private columns
   "Location columns for export."
@@ -30,14 +28,14 @@
 (defn handler
   "Export locations as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [q]} (params/decode Params query-params)
         ast (search.i/parse q)
 
         base-stmt {:select (keep :column columns)
                    :from [[:location :l]]}
 
-        stmt (-> (search.i/compile-query :location ast base-stmt)
+        stmt (-> (search.i/compile-query :location ast base-stmt {:timezone timezone})
                  (assoc :order-by [:l.code]))
         rows (let [rows (db.i/execute! db stmt)
                    paths (location.i/paths db (map :location/id rows))]
@@ -46,9 +44,7 @@
                      rows))
 
         csv-content (csv/rows->csv columns rows)
-        filename (format "locations-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "locations" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

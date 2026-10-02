@@ -50,8 +50,11 @@
                                     [:t.name :taxon__name]]
                            :from [[:taxon_synonym :s]]
                            :join [[:taxon :t] [:= :t.id :s.taxon_id]]
+                           ;; lower() on both sides, not str/lower-case on the
+                           ;; query: SQLite folds ASCII only, so a query Java
+                           ;; had folded to ö never matched a stored Ö.
                            :where [:like [:lower :s.synonym_name]
-                                   (str "%" (str/lower-case query) "%")]
+                                   [:lower (str "%" query "%")]]
                            :order-by [[:s.synonym_name :asc]]
                            :limit 50})))
 

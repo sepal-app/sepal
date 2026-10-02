@@ -194,6 +194,32 @@
         (is (= 422 (:status response)))
         (is (empty? (observation.i/get-for-resource *db* :material (:material/id material))))))))
 
+(deftest test-post-with-an-impossible-date-names-the-field
+  (tf/testing "a date the calendar does not have is a field error, not a failed save"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [url (observations-url material)
+            sess (app.test/login (:user/email user) "testpassword123")]
+        (doseq [[field params] [["observed_on" {:observed_on "2026-02-30" :next_check_on ""}]
+                                ["next_check_on" {:observed_on "2026-02-27" :next_check_on "2026-02-30"}]]]
+          (let [{:keys [response] :as sess} (peri/request sess url)
+                token (test.i/response-anti-forgery-token response)
+                {:keys [response]} (peri/request sess url
+                                                 :request-method :post
+                                                 :params (merge {:__anti-forgery-token token
+                                                                 :type "general"
+                                                                 :value ""
+                                                                 :observed_by ""
+                                                                 :note ""}
+                                                                params))]
+            (is (= 422 (:status response)) field)
+            (is (= "must be a valid date (YYYY-MM-DD)"
+                   (some-> (Jsoup/parse ^String (:body response))
+                           (.selectFirst (str "#" field "-errors"))
+                           (.text)))
+                (str field ": " (:body response)))))
+        (is (empty? (observation.i/get-for-resource *db* :material (:material/id material))))))))
+
 (deftest test-post-with-a-past-next-check-on-is-accepted
   (tf/testing "a next_check_on in the past is how you backfill"
     (fixtures)

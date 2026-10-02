@@ -11,7 +11,6 @@
             [malli.core :as m]
             [malli.error :as me]
             [next.jdbc :as jdbc]
-            [pogonos.core :as mustache]
             [sepal.accession.interface :as accession.i]
             [sepal.app.backup.core :as backup]
             [sepal.app.backup.local :as backup.local]
@@ -19,7 +18,7 @@
             [sepal.app.routes.auth.routes :as auth.routes]
             [sepal.app.routes.setup.shared :as setup.shared]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :as i18n]
+            [sepal.i18n.interface :as i18n :refer [tr]]
             [sepal.mail.interface :as mail.i]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.material.interface :as material.i]
@@ -347,7 +346,8 @@
 ;; garden, so a per-garden default appearing here would be a change to how mail is
 ;; sent and not a detail.
 (def ^:private default-invitation-email-from "noreply@sepal.app")
-(def ^:private default-invitation-email-subject "You've been invited to Sepal")
+(defn- default-invitation-email-subject []
+  (tr "You've been invited to Sepal"))
 
 ;; Same reasoning as the invitation default above: one address for every
 ;; garden's backup notifications, not one derived per garden.
@@ -710,14 +710,22 @@
     (binding [z/*router* (router-factory)]
       (str base (z/url-for auth.routes/accept-invitation nil {:token token})))))
 
+(defn- owner-invitation-body [accept-url]
+  (str (str/join "\n\n"
+                 [(tr "Hello,")
+                  (tr "Your Sepal garden is ready. Sepal is a botanical collection management system.")
+                  (tr "To set your password and sign in, click the link below:")
+                  accept-url
+                  (tr "This link expires in 24 hours. If it does, use \"Forgot password\" on the sign-in page to get a new one.")
+                  (tr "If you weren't expecting this, you can safely ignore this email.")])
+       "\n"))
+
 (defn- send-owner-invitation-email
   [mail {:keys [to accept-url from subject]}]
-  (let [content (mustache/render-resource "app/email/owner-invitation.mustache"
-                                          {:accept-url accept-url})]
-    (mail.i/send-message mail {:from from
-                               :to to
-                               :subject subject
-                               :body content})))
+  (mail.i/send-message mail {:from from
+                             :to to
+                             :subject subject
+                             :body (owner-invitation-body accept-url)}))
 
 (defn invite-owner!
   "Create the owner of a managed garden and mail them a link to set their own
@@ -741,8 +749,11 @@
   provider misconfigured, a network blip — and throwing on the second call would
   leave that garden permanently unenterable, since the owner exists and no link
   ever arrived. An owner who has already activated is a different matter and does
-  throw."
-  [instance {:keys [email]}]
+  throw.
+
+  `language` is the mail's, such as \"es\". The owner has no account yet to say
+  which they read, so the host passes what it knows; English without one."
+  [instance {:keys [email language]}]
   (let [db (instance-db instance)
         mail (get-in instance [:process :mail])
         token-service (get-in instance [:system :sepal.token.interface/service])
@@ -770,13 +781,14 @@
       ;; used to leave a fully provisioned garden showing a wizard its owner cannot
       ;; act on — found in production.
       (setup.shared/complete-setup! db)
-      (send-owner-invitation-email mail
-                                   {:to email
-                                    :accept-url url
-                                    :from (or invitation-email-from
-                                              default-invitation-email-from)
-                                    :subject (or invitation-email-subject
-                                                 default-invitation-email-subject)})
+      (i18n/with-locale language
+        (send-owner-invitation-email mail
+                                     {:to email
+                                      :accept-url url
+                                      :from (or invitation-email-from
+                                                default-invitation-email-from)
+                                      :subject (or invitation-email-subject
+                                                   (default-invitation-email-subject))}))
       {:user-id (:user/id user) :accept-url url})))
 
 (defn complete-setup!

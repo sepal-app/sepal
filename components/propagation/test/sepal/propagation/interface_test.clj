@@ -202,3 +202,17 @@
     (is (= #{"active" "complete" "failed"}
            (set (map :propagation-status/name
                      (propagation.i/list-statuses db)))))))
+
+(defn- refuses-date? [schema k value]
+  (boolean (some #(= [k] (:in %)) (:errors (m/explain schema {k value})))))
+
+(deftest test-propagation-dates-must-be-real
+  ;; A date the form never sends, from an import or a crafted request, was
+  ;; stored and then broke every page that formats it.
+  (doseq [[schema k] [[prop.spec/CreatePropagation :propagated-on]
+                      [prop.spec/CreatePropagation :succeeded-on]
+                      [prop.spec/UpdatePropagation :propagated-on]
+                      [prop.spec/UpdatePropagation :succeeded-on]]
+          value ["2026-02-30" "11/02/2011" "2011-02-11 00:00:00"]]
+    (is (refuses-date? schema k value) (str k " " value)))
+  (is (not (refuses-date? prop.spec/CreatePropagation :propagated-on "2026-02-28"))))

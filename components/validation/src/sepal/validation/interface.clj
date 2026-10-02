@@ -57,16 +57,32 @@
       (catch Exception _
         ::invalid-date))))
 
+(defn- iso-date?
+  "A real calendar date written YYYY-MM-DD: '2024-02-30' has the shape but is
+  not one."
+  [s]
+  (and (string? s)
+       (re-matches #"^\d{4}-\d{2}-\d{2}$" s)
+       (try
+         (java.time.LocalDate/parse s)
+         true
+         (catch java.time.format.DateTimeParseException _ false))))
+
 (def date
   "Malli schema for ISO-8601 date strings (YYYY-MM-DD).
    Decodes form input with parse-date, rejects invalid dates.
-   Accepts nil (for optional fields) or valid date strings."
+   Accepts nil (for optional fields) or valid date strings.
+
+   The predicate parses the date itself rather than trusting the decoder, so
+   a component spec, which validates without the form decoder, refuses an
+   impossible date too."
   [:fn {:decode/form parse-date
-        :error/message (N_ "must be a valid date (YYYY-MM-DD)")}
-   #(or (nil? %)
-        (and (string? %)
-             (not= % ::invalid-date)
-             (re-matches #"^\d{4}-\d{2}-\d{2}$" %)))])
+        :error/message (N_ "must be a valid date (YYYY-MM-DD)")
+        ;; A :fn has no generator of its own, and the factories generate
+        ;; records from the specs that use this.
+        :gen/schema [:int {:min 0 :max 20000}]
+        :gen/fmap #(str (.plusDays (java.time.LocalDate/of 2000 1 1) %))}
+   #(or (nil? %) (iso-date? %))])
 
 (defn future-date-message
   "In the current locale, so call it when the error is built."

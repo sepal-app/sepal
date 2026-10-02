@@ -50,7 +50,7 @@
       [:div {:id "upload-success-forms"
              :class "hidden"}]]]))
 
-(defn render [& {:keys [below? page page-size media taxon panel-data]}]
+(defn render [& {:keys [below? page page-size media taxon panel-data timezone]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
                            :content (page-content :below? below?
                                                   :page page
@@ -65,7 +65,8 @@
                                             :notes (:notes panel-data)
                                             :note-count (:note-count panel-data)
                                             :activities (:activities panel-data)
-                                            :activity-count (:activity-count panel-data)))
+                                            :activity-count (:activity-count panel-data)
+                                            :timezone timezone))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)
                 :page-title-buttons (taxon.shared/actions
                                       :taxon taxon
@@ -78,7 +79,7 @@
    [:scope {:optional true} [:enum "below"]]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db material-separator resource]} context
+  (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size scope]} (params/decode Params query-params)
         below? (= "below" scope)
         offset (* page-size (- page 1))
@@ -111,4 +112,5 @@
                 :page 1
                 :page-size page-size
                 :taxon resource
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))

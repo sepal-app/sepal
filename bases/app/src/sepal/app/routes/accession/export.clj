@@ -10,9 +10,7 @@
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [N_]]
             [sepal.search.interface :as search.i]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 ;; =============================================================================
 ;; Column Definitions
@@ -88,7 +86,7 @@
 (defn handler
   "Export accessions as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         decoded (params/decode Params query-params)
         q (:q decoded)
         include-taxon? (parse-bool (:include_taxon decoded))
@@ -113,17 +111,14 @@
                     (assoc :left-join [[:collection :c] [:= :c.accession_id :a.id]]))
 
         ;; Compile search query and execute
-        stmt (-> (search.i/compile-query :accession ast base-stmt)
+        stmt (-> (search.i/compile-query :accession ast base-stmt {:timezone timezone})
                  (assoc :order-by [:a.code]))
         rows (db.i/execute! db stmt)
 
         ;; Generate CSV
         csv-content (csv/rows->csv cols rows)
 
-        ;; Filename includes date and time (colons replaced for filesystem safety)
-        filename (format "accessions-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "accessions" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

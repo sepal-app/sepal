@@ -1,6 +1,7 @@
 (ns sepal.app.csv-test
   (:require [clojure.test :refer [deftest is testing]]
-            [sepal.app.csv :as csv]))
+            [sepal.app.csv :as csv])
+  (:import [java.time Instant]))
 
 (deftest rows->csv-test
   (testing "basic conversion with headers"
@@ -53,3 +54,10 @@
           rows [{:name "Alice" :notes "said \"hello\""}]
           result (csv/rows->csv columns rows)]
       (is (= "name,notes\nAlice,\"said \"\"hello\"\"\"\n" result)))))
+
+(deftest export-filename-test
+  (testing "the name carries the garden's date and time, not the server's"
+    ;; Noon UTC is already 2 AM the next day on Kiritimati, at UTC+14.
+    (is (= "accessions-2026-03-14-020000.csv"
+           (csv/export-filename "accessions" "Pacific/Kiritimati"
+                                (Instant/parse "2026-03-13T12:00:00Z"))))))

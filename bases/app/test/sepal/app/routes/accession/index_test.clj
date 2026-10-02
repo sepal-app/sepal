@@ -1,11 +1,13 @@
 (ns sepal.app.routes.accession.index-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
   (:import [org.jsoup Jsoup]))
@@ -92,3 +94,24 @@
         (is (some? cell))
         (is (seq (.text (.selectFirst cell ".spl-cell-narrow")))
             "the identifier cell carries the phone-width summary")))))
+
+(deftest test-created-searches-the-gardens-day
+  (tf/testing "created:DAY matches what was created on that day in the garden"
+    (fixtures)
+    (fn [{:keys [user accession]}]
+      ;; 7:00 PM on March 13 in Belize, which UTC already calls the 14th.
+      (jdbc.sql/update! *db* :accession {:created_at "2026-03-14 01:00:00"}
+                        {:id (:accession/id accession)})
+      (settings.i/set-value! *db* "organization.timezone" "America/Belize")
+      (try
+        (let [sess (app.test/login (:user/email user) "testpassword123")
+              listed? (fn [q]
+                        (let [{:keys [response]} (peri/request sess "/accession/" :params {:q q})]
+                          (some? (.selectFirst (Jsoup/parse ^String (:body response))
+                                               (format "tr:contains(%s)" (:accession/code accession))))))]
+          (is (listed? "created:2026-03-13") "the garden's day")
+          (is (not (listed? "created:2026-03-14")) "not the UTC day")
+          (is (listed? "created:<=2026-03-13") "on or before includes the day itself")
+          (is (not (listed? "created:>2026-03-13")) "after excludes the day itself"))
+        (finally
+          (settings.i/set-value! *db* "organization.timezone" "UTC"))))))

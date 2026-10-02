@@ -2,7 +2,8 @@
   (:require [clojure.test :refer [deftest is testing]]
             [sepal.app.datetime :as datetime]
             [sepal.i18n.interface :as i18n])
-  (:import [java.time Instant]))
+  (:import [java.time Instant]
+           [java.util Locale]))
 
 (def test-instant
   "A fixed instant for testing: 2025-01-18T14:30:00Z"
@@ -16,8 +17,8 @@
     (is (not= (datetime/today "Pacific/Kiritimati")
               (datetime/today "Pacific/Midway"))))
 
-  (testing "an unset timezone falls back to UTC rather than throwing"
-    (is (some? (datetime/today nil)))))
+  (testing "an unset timezone throws rather than reading the date in UTC"
+    (is (thrown? IllegalArgumentException (datetime/today nil)))))
 
 (deftest format-datetime-test
   (testing "formats instant in UTC timezone"
@@ -34,8 +35,16 @@
   (testing "returns nil for nil instant"
     (is (nil? (datetime/format-datetime nil "UTC"))))
 
-  (testing "defaults to UTC for nil timezone"
-    (is (some? (datetime/format-datetime test-instant nil)))))
+  (testing "throws for a nil timezone rather than formatting in UTC"
+    ;; A caller that forgot :timezone showed a Belize garden times six hours
+    ;; ahead, with nothing to say they were wrong.
+    (is (thrown? IllegalArgumentException
+                 (datetime/format-datetime test-instant nil))))
+
+  (testing "English does not depend on the JVM's default locale"
+    ;; A formatter reads the default locale when it is built, at load, so
+    ;; changing the default here would prove nothing. Check what it holds.
+    (is (= Locale/ENGLISH (.getLocale (#'datetime/formatter :datetime))))))
 
 (deftest format-datetime-full-test
   (testing "formats with full date, time, and timezone"
@@ -59,34 +68,50 @@
 (deftest format-relative-test
   (testing "just now for very recent"
     (let [now (Instant/now)]
-      (is (= "just now" (datetime/format-relative now)))))
+      (is (= "just now" (datetime/format-relative now "UTC")))))
 
   (testing "minutes ago"
     (let [five-min-ago (.minusSeconds (Instant/now) (* 5 60))]
-      (is (= "5 minutes ago" (datetime/format-relative five-min-ago))))
+      (is (= "5 minutes ago" (datetime/format-relative five-min-ago "UTC"))))
     (let [one-min-ago (.minusSeconds (Instant/now) 90)]
-      (is (= "1 minute ago" (datetime/format-relative one-min-ago)))))
+      (is (= "1 minute ago" (datetime/format-relative one-min-ago "UTC")))))
 
   (testing "hours ago"
     (let [two-hours-ago (.minusSeconds (Instant/now) (* 2 60 60))]
-      (is (= "2 hours ago" (datetime/format-relative two-hours-ago))))
+      (is (= "2 hours ago" (datetime/format-relative two-hours-ago "UTC"))))
     (let [one-hour-ago (.minusSeconds (Instant/now) (* 1 60 60))]
-      (is (= "1 hour ago" (datetime/format-relative one-hour-ago)))))
+      (is (= "1 hour ago" (datetime/format-relative one-hour-ago "UTC")))))
 
   (testing "yesterday"
-    (let [yesterday (.minusSeconds (Instant/now) (* 30 60 60))]
-      (is (= "yesterday" (datetime/format-relative yesterday)))))
+    (let [now (Instant/parse "2025-01-18T14:30:00Z")
+          yesterday (.minusSeconds now (* 30 60 60))]
+      (is (= "yesterday" (datetime/format-relative yesterday "UTC" now)))))
 
   (testing "days ago"
     (let [three-days-ago (.minusSeconds (Instant/now) (* 3 24 60 60))]
-      (is (= "3 days ago" (datetime/format-relative three-days-ago)))))
+      (is (= "3 days ago" (datetime/format-relative three-days-ago "UTC")))))
 
   (testing "weeks ago"
     (let [two-weeks-ago (.minusSeconds (Instant/now) (* 14 24 60 60))]
-      (is (= "2 weeks ago" (datetime/format-relative two-weeks-ago)))))
+      (is (= "2 weeks ago" (datetime/format-relative two-weeks-ago "UTC")))))
 
   (testing "returns nil for nil instant"
-    (is (nil? (datetime/format-relative nil)))))
+    (is (nil? (datetime/format-relative nil "UTC")))))
+
+(deftest format-relative-follows-the-gardens-calendar
+  ;; Wednesday 7:00 AM in Belize, UTC-6 all year.
+  (let [now (Instant/parse "2026-09-30T13:00:00Z")]
+    (testing "a day before the garden's today is yesterday, though 25 hours ago"
+      ;; Tuesday 6:00 AM in Belize.
+      (is (= "yesterday" (datetime/format-relative
+                           (Instant/parse "2026-09-29T12:00:00Z") "America/Belize" now))))
+    (testing "two days back is not yesterday, though only 32 hours ago"
+      ;; Monday 11:00 PM in Belize, under a Monday heading in the feed.
+      (is (= "2 days ago" (datetime/format-relative
+                            (Instant/parse "2026-09-29T05:00:00Z") "America/Belize" now))))
+    (testing "under a day stays in hours, whichever day it was"
+      (is (= "8 hours ago" (datetime/format-relative
+                             (Instant/parse "2026-09-30T05:00:00Z") "America/Belize" now))))))
 
 (deftest relative-time-hiccup-test
   (testing "renders time element with relative content"
@@ -141,7 +166,11 @@
   (testing "an ISO date reads as a short month, day and year"
     (is (= "Mar 14, 2026" (datetime/format-date "2026-03-14"))))
   (testing "nil stays nil"
-    (is (nil? (datetime/format-date nil)))))
+    (is (nil? (datetime/format-date nil))))
+  (testing "a stored value that is not a date is shown as it is"
+    ;; Rather than throwing, which took down every page listing that record.
+    (is (= "11/02/2011" (datetime/format-date "11/02/2011")))
+    (is (= "2026-02-30" (datetime/format-date "2026-02-30")))))
 
 (deftest test-spanish-uses-spanish-formats
   (i18n/load-catalogs! {"es" (i18n/parse-catalog "es" "msgid \"\"
@@ -166,6 +195,23 @@ msgstr[1] \"hace %1 horas\"
         (is (not (re-find #"\bat\b" (datetime/format-datetime-full test-instant "UTC")))
             "no English word order carried into Spanish")
         (is (= "hace 2 horas" (datetime/format-relative
-                                (.minus (java.time.Instant/now) (java.time.Duration/ofHours 2)))))))
+                                (.minus (java.time.Instant/now) (java.time.Duration/ofHours 2))
+                                "UTC")))))
     (finally
       (i18n/load-catalogs! {}))))
+
+(deftest test-timezone-options
+  (let [values (mapv :value (datetime/timezone-options))]
+    (testing "UTC, the default, is offered, so a UTC garden sees it selected"
+      (is (= "UTC" (first values))))
+    (testing "zones whose names carry a hyphen are offered"
+      (is (some #{"America/Port-au-Prince"} values) "Haiti's only zone"))
+    (testing "an offset of zero reads +00:00, not Z"
+      (is (not-any? #(re-find #"UTCZ" (:label %)) (datetime/timezone-options))))))
+
+(deftest test-valid-timezone
+  (is (datetime/valid-timezone? "America/Belize"))
+  (is (datetime/valid-timezone? "UTC"))
+  (is (not (datetime/valid-timezone? "America/Belise")) "a misspelt zone")
+  (is (not (datetime/valid-timezone? "")))
+  (is (not (datetime/valid-timezone? nil))))

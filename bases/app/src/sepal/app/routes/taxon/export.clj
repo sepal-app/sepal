@@ -6,9 +6,7 @@
             [sepal.i18n.interface :refer [N_]]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface.search]
-            [zodiac.core :as z])
-  (:import [java.time LocalDateTime]
-           [java.time.format DateTimeFormatter]))
+            [zodiac.core :as z]))
 
 ;; =============================================================================
 ;; Column Definitions
@@ -54,7 +52,7 @@
 (defn handler
   "Export taxa as CSV."
   [& {:keys [::z/context query-params]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         decoded (params/decode Params query-params)
         q (:q decoded)
         include-parent? (parse-bool (:include_parent decoded))
@@ -74,9 +72,7 @@
         rows (db.i/execute! db stmt)
 
         csv-content (csv/rows->csv cols rows)
-        filename (format "taxa-%s.csv"
-                         (.format (LocalDateTime/now)
-                                  (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss")))]
+        filename (csv/export-filename "taxa" timezone)]
 
     {:status 200
      :headers {"Content-Type" "text/csv; charset=utf-8"

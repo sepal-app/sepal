@@ -3,6 +3,7 @@
             [clojure.tools.logging :as log]
             [dev.onionpancakes.chassis.core :as chassis]
             [sepal.app.authorization :as authz]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
@@ -234,7 +235,7 @@
   [handler]
   (fn [{:keys [::z/context] :as request}]
     (let [{:keys [db]} context
-          timezone (or (settings.i/get-value db "organization.timezone") "UTC")
+          timezone (datetime/get-timezone db)
           organization-name (->> ["organization.short_name" "organization.long_name"]
                                  (keep #(settings.i/get-value db %))
                                  (remove str/blank?)

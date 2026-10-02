@@ -7,6 +7,7 @@
   different moments."
   (:require [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
+            [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
@@ -83,9 +84,9 @@
           :title (tr "History")
           :children
           (panel/summary-section
-            :fields [{:label (tr "Propagated") :value propagated-on}
+            :fields [{:label (tr "Propagated") :value (datetime/format-date propagated-on)}
                      {:label (tr "Started") :value (some-> quantity-started str)}
-                     {:label (tr "Succeeded on") :value succeeded-on}
+                     {:label (tr "Succeeded on") :value (datetime/format-date succeeded-on)}
                      {:label (tr "Succeeded") :value (some-> quantity-succeeded str)}]))
 
         (let [notes (:propagation/notes propagation)]

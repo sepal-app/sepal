@@ -1,6 +1,7 @@
 (ns sepal.observation.interface-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
+            [malli.core :as m]
             [matcher-combinators.test :refer [match?]]
             [next.jdbc.sql :as next.jdbc.sql]
             [sepal.accession.interface :as accession.i]
@@ -13,6 +14,7 @@
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
             [sepal.observation.interface.search]
+            [sepal.observation.interface.spec :as observation.spec]
             [sepal.search.interface :as search.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
@@ -406,3 +408,19 @@
                       (= "flowering" (:observation-value/code %))
                       (= "Flowering" (:observation-value/label %)))
                 (observation.i/list-values *db*))))))
+
+(defn- refuses-date? [schema k value]
+  (boolean (some #(= [k] (:in %)) (:errors (m/explain schema {k value})))))
+
+(deftest test-observation-dates-must-be-real
+  ;; A date the form never sends, from an import or a crafted request, was
+  ;; stored and then broke every page that formats it.
+  (doseq [[schema k] [[observation.spec/CreateObservation :observed-on]
+                      [observation.spec/CreateObservation :next-check-on]
+                      [observation.spec/UpdateObservation :observed-on]
+                      [observation.spec/UpdateObservation :next-check-on]]
+          value ["2026-02-30" "11/02/2011" "2011-02-11 00:00:00"]]
+    (is (refuses-date? schema k value) (str k " " value)))
+  (is (not (refuses-date? observation.spec/CreateObservation :observed-on "2026-02-28")))
+  (is (refuses-date? observation.spec/CreateObservation :observed-on nil)
+      "an observation still needs its date"))

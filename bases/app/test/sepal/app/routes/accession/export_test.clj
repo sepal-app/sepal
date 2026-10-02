@@ -15,9 +15,11 @@
 
 (defn- call-handler
   "Call the export handler with given params."
-  [db params]
-  (export/handler ::z/context {:db db}
-                  :query-params params))
+  ([db params]
+   (call-handler db params "UTC"))
+  ([db params timezone]
+   (export/handler ::z/context {:db db :timezone timezone}
+                   :query-params params)))
 
 (deftest export-csv-test
   (tf/testing "exports accessions as CSV with correct headers and content"
@@ -101,3 +103,12 @@
             (str "no exported row carries code " (:accession/code acc)))
         (is (= "rooted_cutting" (get cells "accession_received_type")))
         (is (= "2" (get cells "accession_quantity_received")))))))
+
+(deftest export-filename-uses-the-gardens-date-test
+  ;; Kiritimati is UTC+14 and Midway UTC-11, 25 hours apart, so their dates
+  ;; never coincide. A name taken from the server's clock would be the same
+  ;; for both.
+  (doseq [zone ["Pacific/Kiritimati" "Pacific/Midway"]]
+    (is (str/includes? (get-in (call-handler *db* {:q ""} zone) [:headers "Content-Disposition"])
+                       (str "accessions-" (java.time.LocalDate/now (java.time.ZoneId/of zone))))
+        zone)))

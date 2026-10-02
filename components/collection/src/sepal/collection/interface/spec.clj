@@ -62,7 +62,7 @@
 (def CreateCollection
   [:map {:closed true}
    [:accession-id {:decode/store validate.i/coerce-int} accession-id]
-   [:collected-date {:optional true} collected-date]
+   [:collected-date {:optional true} [:maybe validate.i/date]]
    [:collector {:optional true} collector]
    [:collectors-code {:optional true} collectors-code]
    [:habitat {:optional true} habitat]
@@ -79,7 +79,7 @@
 (def UpdateCollection
   (mu/optional-keys
     [:map {:closed true}
-     [:collected-date collected-date]
+     [:collected-date [:maybe validate.i/date]]
      [:collector collector]
      [:collectors-code collectors-code]
      [:habitat habitat]

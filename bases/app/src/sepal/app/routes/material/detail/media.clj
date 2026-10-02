@@ -48,7 +48,7 @@
       [:div {:id "upload-success-forms"
              :class "hidden"}]]]))
 
-(defn render [& {:keys [accession page page-size media material taxon panel-data separator]}]
+(defn render [& {:keys [accession page page-size media material taxon panel-data separator timezone]}]
   (ui.page/page
     :content (pages.detail/page-content-with-panel
                :content (page-content :page page
@@ -67,7 +67,8 @@
                                 :observations (:observations panel-data)
                                 :observation-count (:observation-count panel-data)
                                 :activities (:activities panel-data)
-                                :activity-count (:activity-count panel-data)))
+                                :activity-count (:activity-count panel-data)
+                                :timezone timezone))
     :breadcrumbs (material.shared/breadcrumbs :accession accession
                                               :material material
                                               :separator separator
@@ -82,7 +83,7 @@
    [:page-size {:default 10} :int]])
 
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
-  (let [{:keys [db material-separator resource]} context
+  (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size]} (params/decode Params query-params)
         offset (* page-size (- page 1))
         limit page-size
@@ -113,4 +114,5 @@
                 :material resource
                 :separator material-separator
                 :taxon taxon
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))

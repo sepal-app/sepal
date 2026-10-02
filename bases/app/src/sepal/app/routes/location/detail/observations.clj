@@ -12,7 +12,7 @@
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.database.interface :as db.i]
             [sepal.error.interface :as error.i]
-            [sepal.i18n.interface :refer [tr trc]]
+            [sepal.i18n.interface :refer [N_ tr trc]]
             [sepal.location.interface :as location.i]
             [sepal.observation.interface :as observation.i]
             [sepal.observation.interface.activity :as observation.activity]
@@ -25,9 +25,12 @@
   [:map {:closed true}
    [:type [:string {:min 1}]]
    [:value {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:observed_on [:re #"^\d{4}-\d{2}-\d{2}$"]]
+   ;; Decoded first, so a date the calendar lacks is one error, not two, and
+   ;; a blank one is caught here rather than as a failed save.
+   [:observed_on [:and validation.i/date
+                  [:fn {:error/message (N_ "This field is required")} some?]]]
    [:observed_by {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:next_check_on {:decode/form validation.i/empty->nil} [:maybe :string]]
+   [:next_check_on {:decode/form validation.i/empty->nil} [:maybe validation.i/date]]
    [:note {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
 (defn- not-in-the-future
@@ -107,7 +110,7 @@
             (get paths resource-id)]
            " · " (some->> type-label (trc "observation_type"))
            (when value-label (str " · " (trc "observation_value" value-label)))
-           " · " observed-on
+           " · " (datetime/format-date observed-on)
            (when observer (str " · " observer))])]])))
 
 (defn page-content [& {:keys [location observations errors values db timezone]}]

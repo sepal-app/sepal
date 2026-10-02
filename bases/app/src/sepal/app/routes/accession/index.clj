@@ -4,6 +4,7 @@
             [sepal.accession.interface.search]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.authorization :as authz]
+            [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.export :as export]
@@ -50,7 +51,7 @@
   [row]
   (list (taxon-name/render (:taxon/name row))
         (when-let [received (:accession/date-received row)]
-          [:span {:class "spl-stacked-line"} received])))
+          [:span {:class "spl-stacked-line"} (datetime/format-date received)])))
 
 (defn table-columns []
   [{:name (tr "Code")
@@ -164,7 +165,7 @@
        :value))
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -179,7 +180,7 @@
                    :join [[:taxon :t] [:= :t.id :a.taxon_id]]}
 
         ;; Compile search query (adds WHERE clause)
-        stmt (search.i/compile-query :accession ast base-stmt)
+        stmt (search.i/compile-query :accession ast base-stmt {:timezone timezone})
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)

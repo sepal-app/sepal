@@ -33,7 +33,7 @@
                         :read-only read-only?
                         :values values)])))
 
-(defn render [& {:keys [errors taxon values panel-data]}]
+(defn render [& {:keys [errors taxon values panel-data timezone]}]
   (page/page :content (pages.detail/page-content-with-panel
                         :content (page-content :footer (ui.form/footer :buttons (taxon.form/footer-buttons))
                                                :errors errors
@@ -47,7 +47,8 @@
                                          :notes (:notes panel-data)
                                          :note-count (:note-count panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs (taxon.shared/breadcrumbs taxon)
              :page-title-buttons (taxon.shared/actions :taxon taxon)))
 
@@ -63,7 +64,7 @@
         taxon))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context]
+  (let [{:keys [db resource timezone]} context]
     (case request-method
       :post
       (f/attempt-all [data (validation.i/validate-form-values taxon.form/FormParams form-params)
@@ -92,4 +93,5 @@
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource
                 :values values
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))

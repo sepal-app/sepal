@@ -17,9 +17,9 @@
   (:import [java.io File]
            [java.nio.file Files]
            [java.security MessageDigest]
-           [java.time Instant LocalTime ZonedDateTime ZoneId]
+           [java.time DayOfWeek Instant LocalDate LocalTime ZonedDateTime ZoneId ZoneOffset]
            [java.time.format DateTimeFormatter]
-           [java.time.temporal ChronoUnit]
+           [java.time.temporal TemporalAdjusters]
            [java.util.zip CRC32 ZipEntry ZipOutputStream]))
 
 ;; -----------------------------------------------------------------------------
@@ -105,12 +105,18 @@
     (.write zos data)
     (.closeEntry zos)))
 
+(def ^:private ^DateTimeFormatter timestamp-formatter
+  "A backup name's timestamp, in UTC. The name carries no zone, and the hosted
+  store accepts exactly this shape, so UTC is what every name means: written in
+  the server's zone it meant different times on different hosts, and the hour
+  the clocks went back named two backups alike."
+  (-> (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HHmmss")
+      (.withZone ZoneOffset/UTC)))
+
 (defn- format-timestamp
   "Format an Instant as a filesystem-safe timestamp string."
   [^Instant instant]
-  (let [formatter (-> (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HHmmss")
-                      (.withZone (ZoneId/systemDefault)))]
-    (.format formatter instant)))
+  (.format timestamp-formatter instant))
 
 (defn- get-schema-version
   "Get the current database schema version."
@@ -183,12 +189,10 @@
    Returns nil if filename doesn't match expected pattern."
   [filename]
   (when-let [[_ timestamp] (re-matches #"sepal-backup-(\d{4}-\d{2}-\d{2}T\d{6})\.zip" filename)]
-    (let [formatter (-> (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HHmmss")
-                        (.withZone (ZoneId/systemDefault)))]
-      (try
-        (Instant/from (.parse formatter timestamp))
-        (catch Exception _
-          nil)))))
+    (try
+      (Instant/from (.parse timestamp-formatter timestamp))
+      (catch Exception _
+        nil))))
 
 (defn list-backups
   "List backup files in the backup directory.
@@ -279,39 +283,36 @@
 ;; Scheduler integration
 
 (defn- backup-schedule
-  "Generate a Chime schedule sequence for the given frequency."
-  [frequency]
-  (let [now (ZonedDateTime/now)
-        ;; Find next 2:00 AM
-        today-2am (-> now
-                      (.with (LocalTime/of 2 0 0))
-                      (.truncatedTo ChronoUnit/MINUTES))
-        next-2am (if (.isAfter now today-2am)
-                   (.plusDays today-2am 1)
-                   today-2am)]
-    (case frequency
-      :daily (iterate #(.plusDays ^ZonedDateTime % 1) next-2am)
-      :weekly (let [;; Find next Sunday at 2:00 AM
-                    days-until-sunday (mod (- 7 (.getValue (.getDayOfWeek next-2am))) 7)
-                    next-sunday (if (zero? days-until-sunday)
-                                  next-2am
-                                  (.plusDays next-2am days-until-sunday))]
-                (iterate #(.plusWeeks ^ZonedDateTime % 1) next-sunday))
-      :monthly (let [;; Find next 1st of month at 2:00 AM
-                     next-first (-> next-2am
-                                    (.withDayOfMonth 1))
-                     next-first (if (.isBefore next-first now)
-                                  (.plusMonths next-first 1)
-                                  next-first)]
-                 (iterate #(.plusMonths ^ZonedDateTime % 1) next-first))
-      nil)))
+  "Chime's schedule for `frequency`: 2:00 AM in the garden's `timezone`, every
+  day, every Sunday, or on the 1st of each month.
+
+  Each run is built from its own date rather than stepped on from the last
+  one, so a 2:00 AM that a daylight-saving gap skips runs at 3:00 that day and
+  the next is back at 2:00."
+  ([frequency timezone]
+   (backup-schedule frequency timezone (Instant/now)))
+  ([frequency timezone ^Instant now]
+   (let [zone (ZoneId/of timezone)
+         today (LocalDate/ofInstant now zone)
+         dates (case frequency
+                 :daily (iterate #(.plusDays ^LocalDate % 1) today)
+                 :weekly (iterate #(.plusWeeks ^LocalDate % 1)
+                                  (.with today (TemporalAdjusters/nextOrSame DayOfWeek/SUNDAY)))
+                 :monthly (iterate #(.plusMonths ^LocalDate % 1) (.withDayOfMonth today 1))
+                 nil)]
+     (->> dates
+          (map #(ZonedDateTime/of ^LocalDate % (LocalTime/of 2 0) zone))
+          (filter #(.isAfter (.toInstant ^ZonedDateTime %) now))))))
 
 (defn get-next-backup-time
-  "Calculate the next scheduled backup time for the given frequency.
-   Returns an Instant, or nil if frequency is nil (disabled)."
-  [frequency]
-  (when-let [schedule (backup-schedule frequency)]
-    (.toInstant ^ZonedDateTime (first schedule))))
+  "Calculate the next scheduled backup time for the given frequency, in the
+   garden's `timezone`. Returns an Instant, or nil if frequency is nil
+   (disabled)."
+  ([frequency timezone]
+   (get-next-backup-time frequency timezone (Instant/now)))
+  ([frequency timezone now]
+   (when-let [^ZonedDateTime run (first (backup-schedule frequency timezone now))]
+     (.toInstant run))))
 
 (defn- backup-task
   "Create a backup task function for the scheduler."
@@ -343,7 +344,7 @@
           (scheduler.i/schedule! scheduler
                                  :backup
                                  (map #(.toInstant ^ZonedDateTime %)
-                                      (backup-schedule frequency))
+                                      (backup-schedule frequency (datetime/get-timezone db)))
                                  (backup-task db mail email-from app-base-url store)))
         (do
           (log/info "Backup not configured, cancelling any existing job")

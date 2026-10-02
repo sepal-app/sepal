@@ -81,15 +81,13 @@
   The `like` narrows the scan in SQL and the shape match runs in Clojure,
   because SQLite's glob cannot express a bounded digit run. A prefix holding
   a LIKE wildcard only widens the scan; the shape match still decides."
-  ([db template]
-   (next-code db template (LocalDate/now)))
-  ([db template ^LocalDate date]
-   (when-let [prefix (ct.i/scan-prefix template date)]
-     (->> (db.i/execute! db {:select [:code]
-                             :from [:accession]
-                             :where [:like :code (str prefix "%")]})
-          (map :accession/code)
-          (#(ct.i/next-code template % date))))))
+  [db template ^LocalDate date]
+  (when-let [prefix (ct.i/scan-prefix template date)]
+    (->> (db.i/execute! db {:select [:code]
+                            :from [:accession]
+                            :where [:like :code (str prefix "%")]})
+         (map :accession/code)
+         (#(ct.i/next-code template % date)))))
 
 (create-ns 'sepal.accession.interface)
 (alias 'acc.i 'sepal.accession.interface)

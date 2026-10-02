@@ -760,7 +760,7 @@
                                               [:= :tax.id :acc.taxon_id]]]
                                       :left [[:taxon :parent]
                                              [:= :parent.id :tax.parent_id]]]
-                            :order-by [[:a.created_at :desc]]
+                            :order-by [[:a.created_at :desc] [:a.id :desc]]
                             :offset offset
                             :limit page-size})
          (mapv #(reduce-kv (fn [acc k v]

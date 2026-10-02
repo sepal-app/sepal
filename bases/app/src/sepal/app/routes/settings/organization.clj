@@ -1,32 +1,19 @@
 (ns sepal.app.routes.settings.organization
   (:require [clojure.string :as str]
             [failjure.core :as f]
+            [sepal.app.backup.core :as backup]
+            [sepal.app.datetime :as datetime]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.settings.layout :as layout]
             [sepal.app.routes.settings.routes :as settings.routes]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as form]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :refer [N_ tr]]
             [sepal.settings.interface :as settings.i]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
-            [zodiac.core :as z])
-  (:import [java.time ZoneId ZonedDateTime]))
-
-(defn timezone-options
-  "Returns all canonical IANA timezone options with UTC offset labels.
-   Filters to Region/City format and excludes Etc/ zones."
-  []
-  (->> (ZoneId/getAvailableZoneIds)
-       (filter #(re-matches #"^[A-Z][a-z]+/[A-Za-z_/]+" %))
-       (remove #(str/starts-with? % "Etc/"))
-       sort
-       (mapv (fn [zone-id]
-               (let [zone (ZoneId/of zone-id)
-                     offset (.getOffset (ZonedDateTime/now zone))]
-                 {:value zone-id
-                  :label (format "(UTC%s) %s" offset zone-id)})))))
+            [zodiac.core :as z]))
 
 (defn timezone-select
   "Render a searchable select for timezone selection."
@@ -38,10 +25,10 @@
     ;; Four hundred names that never change, so they travel with the page and
     ;; the field filters them here. No request, and no minimum before it will
     ;; show you anything.
-    :items (for [{opt-value :value opt-label :label} (timezone-options)]
+    :items (for [{opt-value :value opt-label :label} (datetime/timezone-options)]
              {:id opt-value :text opt-label})
     :selected (when-let [match (first (filter #(= value (:value %))
-                                              (timezone-options)))]
+                                              (datetime/timezone-options)))]
                 {:id (:value match) :text (:label match)})))
 
 (defn org-form [& {:keys [values errors]}]
@@ -133,7 +120,7 @@
    [:address_city {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:address_postal_code {:decode/form validation.i/empty->nil} [:maybe :string]]
    [:address_country {:decode/form validation.i/empty->nil} [:maybe :string]]
-   [:timezone [:string {:min 1}]]])
+   [:timezone [:fn {:error/message (N_ "Please select a timezone")} datetime/valid-timezone?]]])
 
 (def form-key->setting-key
   {:long_name "organization.long_name"
@@ -161,7 +148,7 @@
                 form-key->setting-key)))
 
 (defn handler [{:keys [::z/context flash form-params request-method viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db backup-store scheduler mail app-base-url backup-email-from]} context
         current-settings (settings.i/get-values db "organization")
         values (settings->form-values current-settings)]
     (case request-method
@@ -174,7 +161,12 @@
                                          (settings.activity/create! db
                                                                     settings.activity/updated
                                                                     (:user/id viewer)
-                                                                    {:changes new-settings})))]
+                                                                    {:changes new-settings})
+                                         ;; Backups run at 2 AM in this
+                                         ;; timezone, and the job's times are
+                                         ;; fixed when it is registered.
+                                         (backup/register-backup-job! scheduler db mail backup-email-from
+                                                                      app-base-url backup-store)))]
           (-> (http/see-other settings.routes/organization)
               (flash/success (tr "Organization settings updated successfully")))
           (f/when-failed [e]

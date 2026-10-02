@@ -124,7 +124,7 @@
    [:q :string]])
 
 (defn handler [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  (let [{:keys [db timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -136,7 +136,7 @@
                    :from [[:contact :c]]}
 
         ;; Compile search query (adds WHERE clause)
-        stmt (search.i/compile-query :contact ast base-stmt)
+        stmt (search.i/compile-query :contact ast base-stmt {:timezone timezone})
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)

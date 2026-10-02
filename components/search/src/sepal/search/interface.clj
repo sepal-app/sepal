@@ -28,7 +28,10 @@
    - :id       - Exact match with integer coercion
    - :boolean  - Boolean, asked for by value: private:true / private:false
    - :date     - Exact match, or a comparison when the query carries an
-                 operator: created:>=2024-01-01 / created:<2024-01-01
+                 operator: observed:>=2024-01-01 / observed:<2024-01-01
+   - :timestamp - The same queries against a UTC timestamp column, such as
+                 created_at. The day is the garden's, so `compile-query` needs
+                 its :timezone in `opts`.
 
    ## Bare words
 

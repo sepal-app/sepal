@@ -1,5 +1,6 @@
 (ns sepal.validation.interface-test
   (:require [clojure.test :refer [deftest is testing]]
+            [malli.core :as m]
             [malli.generator :as mg]
             [sepal.error.interface :as error.i]
             [sepal.validation.interface :as validation.i]))
@@ -47,7 +48,12 @@
   (testing "impossible date returns error"
     (let [schema [:map [:d [:maybe validation.i/date]]]
           result (validation.i/validate-form-values schema {:d "2024-02-30"})]
-      (is (error.i/error? result)))))
+      (is (error.i/error? result))))
+
+  (testing "an impossible date is refused without the form decoder too"
+    ;; A component spec validates with the store's transformer, not the form's.
+    (is (not (m/validate validation.i/date "2024-02-30")))
+    (is (m/validate validation.i/date "2024-02-29"))))
 
 ;; =============================================================================
 ;; email-re

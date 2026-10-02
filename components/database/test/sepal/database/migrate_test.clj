@@ -487,6 +487,40 @@
         (finally
           (fs/delete-tree dir))))))
 
+(deftest test-activity-created-at-migration
+  (testing "every created_at becomes fixed-width UTC that sorts as time"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-activity-created-at-migration"})]
+      (try
+        (let [db-path (floor-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})
+              _ (jdbc/execute! ds [(str "insert into \"user\" (email, password, role, status) "
+                                        "values ('a@b.invalid', 'x', 'admin', 'active')")])
+              user-id (-> (jdbc/execute-one! ds ["select id from \"user\" limit 1"]) :user/id)
+              ;; Every shape the column holds: Instant.toString at three
+              ;; precisions, and the column default's own.
+              written ["2026-09-01T15:30:00.123456Z"
+                       "2026-09-01T15:30:00Z"
+                       "2026-09-01T15:30:00.5Z"
+                       "2006-10-11 09:33:25"]]
+          (doseq [created-at written]
+            (jdbc/execute! ds [(str "insert into activity (type, data, created_by, created_at) "
+                                    "values ('settings/updated', '{}', ?, ?)")
+                               user-id created-at]))
+          (is (some #{"20261001120000"}
+                    (:applied (db.i/migrate! {:db-path db-path})))
+              "the migration actually ran")
+          (let [stored (mapv :activity/created_at
+                             (jdbc/execute! ds ["select created_at from activity order by id"]))]
+            (is (= ["2026-09-01T15:30:00.123Z"
+                    "2026-09-01T15:30:00.000Z"
+                    "2026-09-01T15:30:00.500Z"
+                    "2006-10-11T09:33:25.000Z"]
+                   stored))
+            (testing "an older build still reads every row"
+              (is (every? #(java.time.Instant/parse %) stored)))))
+        (finally
+          (fs/delete-tree dir))))))
+
 (deftest test-a-migration-waits-for-a-held-write-lock
   ;; The regression test for the 2026-09-16 outage. A fresh sqlite3 process
   ;; waits zero milliseconds for a lock, so a garden serving traffic held the

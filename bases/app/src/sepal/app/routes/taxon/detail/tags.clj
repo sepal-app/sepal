@@ -31,7 +31,7 @@
                                                         {:id (:taxon/id taxon)
                                                          :tag-id (:tag/id tag)})))))
 
-(defn render [& {:keys [taxon tags all-tags panel-data]}]
+(defn render [& {:keys [taxon tags all-tags panel-data timezone]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
                            :content (page-content :taxon taxon :tags tags :all-tags all-tags)
                            :panel-content (taxon.panel/panel-content
@@ -40,7 +40,8 @@
                                             :stats (:stats panel-data)
                                             :synonyms (:synonyms panel-data)
                                             :activities (:activities panel-data)
-                                            :activity-count (:activity-count panel-data)))
+                                            :activity-count (:activity-count panel-data)
+                                            :timezone timezone))
                 :breadcrumbs (taxon.shared/breadcrumbs taxon)))
 
 (defn resolve-or-create-tag!
@@ -83,7 +84,7 @@
       (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :taxon taxon-id))))
 
 (defn handler [{:keys [::z/context form-params request-method viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         id (:taxon/id resource)]
     (case request-method
       :post
@@ -97,7 +98,8 @@
             all-tags (tag.i/list-all db)
             panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :taxon resource :tags tags :all-tags all-tags
-                :panel-data panel-data)))))
+                :panel-data panel-data
+                :timezone timezone)))))
 
 (defn row-handler [{:keys [::z/context path-params viewer]}]
   (let [{:keys [db resource]} context

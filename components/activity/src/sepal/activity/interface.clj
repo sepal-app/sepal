@@ -3,6 +3,7 @@
   (:require [camel-snake-kebab.core :as csk]
             [camel-snake-kebab.extras :as cske]
             [clojure.data.json :as json]
+            [clojure.string :as str]
             [clojure.walk :as walk]
             [malli.core :as m]
             [malli.experimental.time :as met]
@@ -15,6 +16,27 @@
 
 (def id pos-int?)
 (def created-at :time/instant)
+
+(def ^:private ^java.time.format.DateTimeFormatter stored-created-at
+  "created_at as written: UTC to the millisecond, at a fixed width, so text
+  order is time order. Instant.toString drops trailing zero groups, and
+  '...:00Z' sorted after '...:00.500Z'. Still ISO-8601, so an older build's
+  Instant/parse reads it."
+  (-> (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+      (.withZone java.time.ZoneOffset/UTC)))
+
+(defn- encode-created-at [^java.time.Instant instant]
+  (.format stored-created-at instant))
+
+(defn- decode-created-at
+  "An Instant from created_at. Also reads SQLite's datetime('now'),
+  '2006-10-11 09:33:25', which the column default and an import write."
+  [s]
+  (if (string? s)
+    (if (str/includes? s "T")
+      (java.time.Instant/parse s)
+      (java.time.Instant/parse (str (str/replace s " " "T") "Z")))
+    s))
 (def created-by pos-int?)
 (def type :keyword)
 
@@ -39,9 +61,7 @@
     ;; just do that as an extra step in each of the resource activity create! functions,
     ;; e.g. see sepal.taxon.interface.activity/create!
     [:map-of :keyword :any]]
-   [:activity/created-at {:decode/store
-                          #(cond-> %
-                             (string? %) java.time.Instant/parse)} created-at]
+   [:activity/created-at {:decode/store decode-created-at} created-at]
    [:activity/created-by created-by]
    [:activity/resource-type {:decode/store #(some-> % keyword)
                              :encode/store #(some-> % name)}
@@ -60,10 +80,8 @@
                               (string? %) (->> (json/read-str)
                                                (mapv (partial cske/transform-keys csk/->kebab-case-keyword))))}
       data-schema]
-     [:created-at {:encode/store str
-                   :decode/store #(cond-> %
-                                    (string? %)
-                                    java.time.Instant/parse)}
+     [:created-at {:encode/store encode-created-at
+                   :decode/store decode-created-at}
       created-at]
      [:created-by created-by]
      ;; Optional because the create schema is closed and two types --
@@ -114,7 +132,7 @@
                           :from [[:activity :a]]
                           :join [[:user :u] [:= :u.id :a.created_by]]
                           :where (resource-match resource-type resource-id)
-                          :order-by [[:a.created_at :desc]]
+                          :order-by [[:a.created_at :desc] [:a.id :desc]]
                           :limit limit
                           :offset offset})
        (mapv (fn [row]

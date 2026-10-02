@@ -79,8 +79,8 @@
             {:keys [response]} (peri/request sess (str "/accession/" (:accession/id accession) "/"))
             body (Jsoup/parse ^String (:body response))]
         (is (= 200 (:status response)))
-        (is (= "2026-03-04" (summary-value body "Date received")))
-        (is (= "2026-03-05" (summary-value body "Date accessioned")))))))
+        (is (= "Mar 4, 2026" (summary-value body "Date received")))
+        (is (= "Mar 5, 2026" (summary-value body "Date accessioned")))))))
 
 (deftest test-the-panel-omits-the-receipt-dates-when-unset
   (tf/testing "an accession with no dates shows no empty rows"

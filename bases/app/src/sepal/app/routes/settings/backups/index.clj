@@ -11,7 +11,7 @@
             [sepal.app.ui.form :as form]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.table :as ui.table]
-            [sepal.i18n.interface :refer [tr]]
+            [sepal.i18n.interface :as i18n :refer [tr]]
             [sepal.settings.interface.activity :as settings.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -20,14 +20,15 @@
 ;; Helpers
 
 (defn- format-bytes
-  "Format bytes as human-readable string (KB, MB, GB)."
+  "Format bytes as human-readable string (KB, MB, GB), with the viewer's
+  decimal mark."
   [bytes]
   (cond
-    (nil? bytes) "0 B"
-    (< bytes 1024) (str bytes " B")
-    (< bytes (* 1024 1024)) (format "%.1f KB" (/ bytes 1024.0))
-    (< bytes (* 1024 1024 1024)) (format "%.1f MB" (/ bytes (* 1024.0 1024)))
-    :else (format "%.1f GB" (/ bytes (* 1024.0 1024 1024)))))
+    (nil? bytes) (tr "%1 B" 0)
+    (< bytes 1024) (tr "%1 B" (i18n/format-number bytes))
+    (< bytes (* 1024 1024)) (tr "%1 KB" (i18n/format-decimal (/ bytes 1024.0) 1))
+    (< bytes (* 1024 1024 1024)) (tr "%1 MB" (i18n/format-decimal (/ bytes (* 1024.0 1024)) 1))
+    :else (tr "%1 GB" (i18n/format-decimal (/ bytes (* 1024.0 1024 1024)) 1))))
 
 ;; -----------------------------------------------------------------------------
 ;; Form
@@ -62,7 +63,7 @@
 
 (defn- backup-form [& {:keys [config errors timezone]}]
   (let [next-backup (when (:frequency config)
-                      (backup/get-next-backup-time (:frequency config)))]
+                      (backup/get-next-backup-time (:frequency config) timezone))]
     (form/form
       {:method "post"
        :action (z/url-for settings.routes/backups)}
@@ -80,11 +81,11 @@
 
         (when next-backup
           [:p {:class "text-sm text-text-muted -mt-2"}
-           (tr "Next backup: ") (datetime/datetime next-backup timezone)])]
+           (i18n/fill (tr "Next backup: %1") (datetime/datetime next-backup timezone))])]
 
        (when (:last-run-at config)
          [:div {:class "text-sm text-text-muted"}
-          [:p (tr "Last backup: ") (datetime/datetime (:last-run-at config) timezone)]])]
+          [:p (i18n/fill (tr "Last backup: %1") (datetime/datetime (:last-run-at config) timezone))]])]
 
       [:div {:class "mt-4"}
        (layout/save-button (tr "Save changes"))])))

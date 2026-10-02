@@ -29,7 +29,7 @@
                        :errors errors
                        :values values)))
 
-(defn render [& {:keys [errors contact values panel-data]}]
+(defn render [& {:keys [errors contact values panel-data timezone]}]
   (page/page :page-title-buttons (ui.actions/menu
                                    :delete-url (z/url-for contact.routes/delete
                                                           {:id (:contact/id contact)}))
@@ -42,7 +42,8 @@
                                          :contact (:contact panel-data)
                                          :stats (:stats panel-data)
                                          :activities (:activities panel-data)
-                                         :activity-count (:activity-count panel-data)))
+                                         :activity-count (:activity-count panel-data)
+                                         :timezone timezone))
              :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
                            (:contact/name contact)]))
 
@@ -73,7 +74,7 @@
 
 (defn render-panel-page
   "Render the panel view as a full page for read-only users."
-  [& {:keys [contact panel-data]}]
+  [& {:keys [contact panel-data timezone]}]
   (page/page
     :breadcrumbs [[:a {:href (z/url-for contact.routes/index)} (tr "Contacts")]
                   (:contact/name contact)]
@@ -82,7 +83,8 @@
                 :contact (:contact panel-data)
                 :stats (:stats panel-data)
                 :activities (:activities panel-data)
-                :activity-count (:activity-count panel-data))]))
+                :activity-count (:activity-count panel-data)
+                :timezone timezone)]))
 
 (defn- form-values [resource]
   {:id (:contact/id resource)
@@ -101,14 +103,15 @@
    :notes (:contact/notes resource)})
 
 (defn get-handler [{:keys [::z/context viewer]}]
-  (let [{:keys [db resource]} context
+  (let [{:keys [db resource timezone]} context
         panel-data (contact.panel/fetch-panel-data db resource)]
     (if (authz/user-has-permission? viewer contact.perm/edit)
       (render :contact resource
               :values (form-values resource)
-              :panel-data panel-data)
+              :panel-data panel-data
+              :timezone timezone)
       ;; Readers see panel view as full page
-      (render-panel-page :contact resource :panel-data panel-data))))
+      (render-panel-page :contact resource :panel-data panel-data :timezone timezone))))
 
 (defn post-handler [{:keys [::z/context form-params viewer]}]
   (let [{:keys [db resource]} context

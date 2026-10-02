@@ -13,6 +13,7 @@
             [sepal.app.instance :as instance]
             [sepal.app.test.system :as system]
             [sepal.database.interface :as db.i]
+            [sepal.i18n.interface :as i18n]
             [sepal.mail.interface.protocols :as mail.p]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.test.interface :as test.i]
@@ -759,6 +760,24 @@
       (finally
         (instance/stop-process! process)
         (fs/delete-tree dir)))))
+
+(deftest test-owner-invitation-is-in-the-language-asked-for
+  (with-two-gardens
+    (fn [process a _b]
+      (i18n/load-catalogs! {"es" (i18n/parse-catalog "es" "msgid \"\"
+msgstr \"\"
+\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"
+
+msgid \"Your Sepal garden is ready. Sepal is a botanical collection management system.\"
+msgstr \"Tu jardín Sepal está listo.\"
+")})
+      (try
+        (instance/invite-owner! a {:email "owner@example.com" :language "es"})
+        (let [body (:body (last @(:sent (:mail process))))]
+          (is (str/includes? body "Tu jardín Sepal está listo."))
+          (is (str/includes? body "http") "the accept link is still there"))
+        (finally
+          (i18n/load-catalogs! {}))))))
 
 (deftest test-invite-owner
   (with-two-gardens

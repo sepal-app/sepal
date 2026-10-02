@@ -1,10 +1,20 @@
 (ns sepal.app.csv
   "CSV export utilities."
   (:require [clojure.data.csv :as csv])
-  (:import [java.time LocalDate]
+  (:import [java.time Instant LocalDate ZoneId]
            [java.time.format DateTimeFormatter DateTimeParseException]))
 
 (def ^:private date-formatter (DateTimeFormatter/ofPattern "yyyy-MM-dd"))
+
+(def ^:private ^DateTimeFormatter filename-formatter (DateTimeFormatter/ofPattern "yyyy-MM-dd-HHmmss"))
+
+(defn export-filename
+  "The download name for an export: `prefix`, then the garden's date and time
+  in `timezone`, as 'accessions-2026-03-14-153000.csv'."
+  ([prefix timezone]
+   (export-filename prefix timezone (Instant/now)))
+  ([prefix timezone ^Instant now]
+   (format "%s-%s.csv" prefix (.format filename-formatter (.atZone now (ZoneId/of timezone))))))
 
 (defn- format-date
   "Ensure date string is ISO-8601 formatted (YYYY-MM-DD).
