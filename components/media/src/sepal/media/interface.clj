@@ -5,6 +5,11 @@
 (defn get-by-id [db id]
   (core/get-by-id db id))
 
+(defn get-by-s3-key
+  "The media item stored at `key` in `bucket`, or nil."
+  [db bucket key]
+  (core/get-by-s3-key db bucket key))
+
 (defn get-link [db media-id]
   (core/get-link db media-id))
 

@@ -15,6 +15,13 @@
 (defn get-by-id [db id]
   (store.i/get-by-id db :media id spec/Media))
 
+(defn get-by-s3-key [db bucket key]
+  (some->> {:select :*
+            :from :media
+            :where [:and [:= :s3_bucket bucket] [:= :s3_key key]]}
+           (db.i/execute-one! db)
+           (store.i/coerce spec/Media)))
+
 (defn get-link [db media-id]
   (some->> {:select :*
             :from :media_link
@@ -147,6 +154,9 @@
 
 (defn factory [{:keys [db user] :as args}]
   (let [data (-> (mg/generate spec/CreateMedia)
+                 ;; A generated string can repeat, and a bucket holds one
+                 ;; media item per key.
+                 (assoc :s3-key (str (random-uuid)))
                  (assoc :created-by (:user/id user))
                  (merge (m/decode spec/CreateMedia args (mt/strip-extra-keys-transformer))))
         result (create! db data)]

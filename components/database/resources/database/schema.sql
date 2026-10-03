@@ -499,6 +499,7 @@ CREATE INDEX material_propagation_id_idx on material (propagation_id);
 CREATE INDEX accession_propagation_id_idx on accession (propagation_id);
 CREATE INDEX location_parent_id_idx ON location (parent_id);
 CREATE INDEX material_location_id_idx ON material (location_id);
+CREATE UNIQUE INDEX media_s3_bucket_s3_key_idx ON media (s3_bucket, s3_key);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -670,3 +671,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260926120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260927120000', '2026-09-27 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260930120000', '2026-09-30 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261001120000', '2026-10-01 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003120000', '2026-10-03 12:00:00');

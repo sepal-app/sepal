@@ -22,13 +22,21 @@
 
 (defn- uploaded-object
   "The object at `s3-key`, as S3 describes it. The browser names the key, so it
-  must be under this garden's prefix and S3 must hold an object there."
-  [{:keys [s3-client media-upload-bucket] :as context} s3-key]
-  (if (media.keys/own-key? context {:media/s3-bucket media-upload-bucket
-                                    :media/s3-key s3-key})
-    (or (aws-s3.i/head-object s3-client media-upload-bucket s3-key)
-        (error.i/error :not-found "No object was uploaded at this key"))
-    (error.i/error :forbidden "The key is not this garden's")))
+  must be under this garden's prefix, not already a media item's, and S3 must
+  hold an object there."
+  [{:keys [db s3-client media-upload-bucket] :as context} s3-key]
+  (cond
+    (not (media.keys/own-key? context {:media/s3-bucket media-upload-bucket
+                                       :media/s3-key s3-key}))
+    (error.i/error :forbidden "The key is not this garden's")
+
+    (media.i/get-by-s3-key db media-upload-bucket s3-key)
+    (error.i/error :conflict "The key is already a media item's")
+
+    :else
+    (f/attempt-all [object (f/try* (aws-s3.i/head-object s3-client media-upload-bucket s3-key))]
+      (or object
+          (error.i/error :not-found "No object was uploaded at this key")))))
 
 (defn- create-media
   [{:keys [::z/context form-params viewer]}]

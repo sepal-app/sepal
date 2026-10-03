@@ -34,10 +34,10 @@
     (f/attempt-all [data (validation.i/validate-form-values FormParams form-params)]
       (let [;; Lowercase so the header the browser sends matches the signature.
             content-type (s/lower-case (:contentType data))
-            s3-key (format "%s%s.%s"
-                           media-key-prefix
-                           (random-hex 20)
-                           (fs/extension (:filename data)))]
+            extension (fs/extension (:filename data))
+            s3-key (str media-key-prefix
+                        (random-hex 20)
+                        (when (seq extension) (str "." extension)))]
         (json/json-response
           {:url (aws-s3.i/presign-put-url media-upload-bucket
                                           s3-key

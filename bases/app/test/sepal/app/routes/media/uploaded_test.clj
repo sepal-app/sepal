@@ -1,6 +1,7 @@
 (ns sepal.app.routes.media.uploaded-test
   (:require [clojure.string :as str]
             [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.activity.interface :as activity.i]
@@ -9,6 +10,7 @@
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.aws-s3.interface :as aws-s3.i]
+            [sepal.media.interface :as media.i]
             [sepal.media.interface.activity :as media.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
@@ -89,6 +91,33 @@
         (is (= 422 (:status (upload! user {"filename" "pod.jpg" "s3Key" s3-key})))
             s3-key)
         (is (nil? (media-at s3-key)) s3-key)))))
+
+(deftest test-an-upload-is-refused-on-a-key-already-recorded
+  (tf/testing "a second media item on one object is refused, so deleting one cannot orphan the other"
+    {[::user.i/factory :key/user] {:db *db* :role :editor}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :s3-bucket bucket
+                                     :s3-key "media/pod.jpg"}}
+    (fn [{:keys [user media]}]
+      (is (= 422 (:status (upload! user {"filename" "pod.jpg" "s3Key" "media/pod.jpg"}))))
+      (is (= [(:media/id media)]
+             (map :media/id (jdbc.sql/find-by-keys *db* :media {:s3_key "media/pod.jpg"})))))))
+
+(deftest test-an-upload-is-refused-when-s3-fails
+  (tf/testing "an S3 error is answered as a failed upload, not a 500"
+    {[::user.i/factory :key/user] {:db *db* :role :editor}}
+    (fn [{:keys [user]}]
+      (let [response (with-redefs [aws-s3.i/head-object (fn [& _]
+                                                          (throw (ex-info "S3 is unreachable" {})))]
+                       (uploaded/handler ::z/context {:db *db*
+                                                      :s3-client ::s3-client
+                                                      :media-upload-bucket bucket
+                                                      :media-key-prefix "media/"}
+                                         :form-params {"filename" "pod.jpg" "s3Key" "media/pod.jpg"}
+                                         :viewer user))]
+        (is (= 422 (:status response)))
+        (is (nil? (media-at "media/pod.jpg")))))))
 
 (deftest test-recording-is-refused-when-uploads-are-off
   (tf/testing "with no S3 client the route answers 404 rather than recording"

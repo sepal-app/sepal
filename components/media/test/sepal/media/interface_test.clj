@@ -60,6 +60,28 @@
           (let [result (media.i/get-by-id db 999999)]
             (is (nil? result))))))))
 
+(deftest test-get-by-s3-key
+  (let [db *db*]
+    (tf/testing "get-by-s3-key"
+      {[::user.i/factory :key/user] {:db db}
+       [::media.i/factory :key/media] {:db db
+                                       :user (ig/ref :key/user)
+                                       :s3-bucket "test-bucket"
+                                       :s3-key "media/rose.jpg"}}
+      (fn [{:keys [user media]}]
+        (is (= (:media/id media)
+               (:media/id (media.i/get-by-s3-key db "test-bucket" "media/rose.jpg"))))
+        (is (nil? (media.i/get-by-s3-key db "other-bucket" "media/rose.jpg")))
+        (is (nil? (media.i/get-by-s3-key db "test-bucket" "media/other.jpg")))
+
+        (testing "a second media item on the same object is refused"
+          (is (thrown? Exception
+                       (media.i/create! db {:s3-bucket "test-bucket"
+                                            :s3-key "media/rose.jpg"
+                                            :size-in-bytes 1
+                                            :media-type "image/jpeg"
+                                            :created-by (:user/id user)}))))))))
+
 (deftest test-delete
   (let [db *db*]
     (tf/testing "delete!"

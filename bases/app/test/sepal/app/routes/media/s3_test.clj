@@ -63,6 +63,14 @@
       (finally
         (.close presigner)))))
 
+(deftest test-a-file-without-an-extension-gets-a-key-without-one
+  (let [presigner (test-presigner)]
+    (try
+      (let [response (sign presigner {"filename" "README" "contentType" "text/plain"})]
+        (is (re-matches #"media/[0-9a-f]+" (get (json/parse-str (:body response)) "key"))))
+      (finally
+        (.close presigner)))))
+
 (deftest test-signing-refuses-a-request-without-a-content-type
   (let [presigner (test-presigner)]
     (try
