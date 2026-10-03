@@ -13,6 +13,15 @@
     (let [name-id (second (re-find #"^(wfo-\d{10})" wfo-taxon-id))]
       (str "https://list.worldfloraonline.org/" name-id))))
 
+(defn powo-url
+  "Generate Plants of the World Online search URL for a taxon name."
+  [taxon-name]
+  (when taxon-name
+    (uri/uri-str {:scheme "https"
+                  :host "powo.science.kew.org"
+                  :path "/results"
+                  :query (uri/map->query-string {:q taxon-name})})))
+
 (defn iucn-redlist-url
   "Generate IUCN Red List search URL for a taxon name."
   [taxon-name]
@@ -35,7 +44,7 @@
 
 (defn taxonomic-links-section
   "Render external links section for taxonomic resources.
-   Uses the taxon name to generate search URLs for IUCN and CITES.
+   Uses the taxon name to generate search URLs for POWO, IUCN, and CITES.
 
    Options:
    - :taxon-name   - The taxon name for search URLs (required)
@@ -44,6 +53,9 @@
   (panel/external-links-section
     :links [{:label "WFO Plantlist"
              :href (wfo-plantlist-taxon-url wfo-taxon-id)
+             :icon (lucide/globe :class "w-4 h-4")}
+            {:label "Plants of the World Online"
+             :href (powo-url taxon-name)
              :icon (lucide/globe :class "w-4 h-4")}
             {:label "IUCN Red List"
              :href (iucn-redlist-url taxon-name)
