@@ -92,6 +92,9 @@
            (tr "Archive instead")])]]
       [:form {:method "post"
               :action action
+              ;; A second submit would reach the route after the record is
+              ;; gone and get a 404 in place of the redirect.
+              :onsubmit "this.querySelector('[type=submit]').disabled = true"
               :class "py-4 flex flex-col gap-2"}
        (ui.form/anti-forgery-field)
        [:p (tr "This cannot be undone. The record and everything belonging to it will be removed.")]

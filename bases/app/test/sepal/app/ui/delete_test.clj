@@ -22,6 +22,17 @@
     (is (re-find #"(?i)cannot be undone" (.text body))
         "A hard delete says so")))
 
+(deftest test-the-delete-submits-once
+  ;; A second POST arrives after the first has removed the record, and the
+  ;; resource loader answers it with a 404 the browser shows in place of the
+  ;; redirect.
+  (let [body (parse (ui.delete/dialog :action "/media/5/delete/"
+                                      :title "Delete media Seed pods?"
+                                      :blockers []))
+        form (.selectFirst body "form[method=post]")]
+    (is (re-find #"\[type=submit\].*\.disabled = true"
+                 (.attr form "onsubmit")))))
+
 (deftest test-a-blocked-record-offers-no-delete
   (let [body (parse (ui.delete/dialog
                       :action "/accession/12/delete/"
