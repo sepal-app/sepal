@@ -1,13 +1,11 @@
 (ns sepal.app.routes.location.detail.media
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.location.detail.shared :as location.shared]
             [sepal.app.routes.location.panel :as location.panel]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.media.link-info :as link-info]
-            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
@@ -30,12 +28,8 @@
      [:link {:rel "stylesheet"
              :href (html/static-url "app/routes/media/css/media.css")}]
      [:div {:id "media-page"}
-      (when (media.ui/uploads-enabled?)
-        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                           :signingUrl (z/url-for media.routes/s3)
-                                           :linkResourceType "location"
-                                           :linkResourceId (:location/id location)
-                                           :trigger "#upload-button"})}])
+      (media.ui/uploader :link-resource-type "location"
+                         :link-resource-id (:location/id location))
       ;; A location is where material is, not what it is, so its material's
       ;; media is opt-in rather than part of the location's own.
       (media.ui/media-list :context :record
@@ -47,9 +41,7 @@
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :location location
                                                            :current-page page
-                                                           :below? below?)))
-      [:div {:id "upload-success-forms"
-             :class "hidden"}]]]))
+                                                           :below? below?)))]]))
 
 (defn render [& {:keys [below? page page-size media location panel-data timezone]}]
   (ui.page/page :page-title-buttons (media.ui/upload-button)

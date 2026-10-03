@@ -4,87 +4,95 @@ import Dashboard from "@uppy/dashboard"
 import htmx from "htmx.org"
 
 export default (el, directive, { cleanup, evaluate }) => {
-    const { trigger, antiForgeryToken, signingUrl, linkResourceType, linkResourceId } =
-        evaluate(directive.expression)
-    const uppy = new Uppy({
-        logger: {
-            // debug: (...args) => console.log("DEBUG: ", ...args),
-            debug: (...args) => {},
-            warn: (...args) => console.log("WARN: ", ...args),
-            error: (...args) => console.log("ERROR: ", ...args),
-        },
-    })
+    const {
+        trigger,
+        antiForgeryToken,
+        signingUrl,
+        uploadedUrl,
+        linkResourceType,
+        linkResourceId,
+    } = evaluate(directive.expression)
+    const uppy = new Uppy()
         .use(Dashboard, {
             trigger: trigger,
-            showProgressDetails: true,
             proudlyDisplayPoweredByUppy: true,
         })
         .use(AwsS3, {
-            async getUploadParameters(file) {
-                const formId = CSS.escape(file.id.replace(/\//g, "_"))
-                const form = document.querySelector(
-                    `#upload-success-forms form#${formId}`,
-                )
-                if (!form) {
-                    throw `ERROR: Could not find form: ${formId}`
+            // The server presigns a single PUT per file, so there are no
+            // multipart requests to sign.
+            shouldUseMultipart: false,
+            // signRequest is passed only the key, so the key is the file id and
+            // the server answers with the key it chose.
+            generateObjectKey: (file) => file.id,
+            async signRequest({ method, key }) {
+                if (method !== "PUT") {
+                    throw new Error(`Cannot sign a ${method} request`)
                 }
-
-                const values = htmx.values(form)
-                return {
-                    method: values.s3Method,
-                    url: values.s3Url,
-                    fields: {}, // For presigned PUT uploads, this should be left empty.
-                    headers: {
-                        "content-type": values.contentType,
-                    },
+                const file = uppy.getFile(key)
+                const response = await fetch(signingUrl, {
+                    method: "POST",
+                    headers: { "X-CSRF-Token": antiForgeryToken },
+                    // An expired session redirects to the login page, which
+                    // is not a signature.
+                    redirect: "error",
+                    body: new URLSearchParams({
+                        filename: file.name ?? "",
+                        contentType: file.type || "application/octet-stream",
+                    }),
+                })
+                if (!response.ok) {
+                    throw new Error("Could not sign the upload")
                 }
+                return response.json()
             },
         })
-        .on("upload-success", (file) => {
-            const formId = file?.id.replace(/\//g, "_")
-            // trigger form that will post to /media/uploaded
-            htmx.trigger(`form#${formId}`, "submit", {})
-            // The empty page's first upload: the new tile lands in the list,
-            // so the empty state has outlived its use until the next reload.
-            document.getElementById("media-empty")?.remove()
-        })
 
-    uppy.addPreProcessor(async (fileIds) => {
-        const files = fileIds.map((id) => {
-            const f = uppy.getFile(id)
-            // Stringify each file object - backend expects JSON strings
-            return JSON.stringify({
-                filename: f.name,
-                contentType: f.type,
-                size: f.size,
-                id: id,
+    const recordParams = (s3Key: string, filename: string) => {
+        const params = new URLSearchParams({ s3Key, filename })
+        // Sent from a record's Media tab, to link the upload to the record.
+        if (linkResourceType) {
+            params.set("linkResourceType", linkResourceType)
+            params.set("linkResourceId", String(linkResourceId))
+        }
+        return params
+    }
+
+    // Record each uploaded file as a media item and add its tile to the list.
+    // One at a time, so the tiles land in order and a failure marks only its
+    // own file.
+    uppy.addPostProcessor(async (fileIDs) => {
+        for (const id of fileIDs) {
+            const file = uppy.getFile(id)
+            const key = file?.response?.body?.key
+            if (!file || file.error || !key) continue
+
+            uppy.emit("postprocess-progress", file, {
+                mode: "indeterminate",
+                message: "Saving",
             })
-        })
-
-        // avoid sending "undefined" for linkResourceType and linkResourceId
-        const values = linkResourceType
-            ? { files, linkResourceType, linkResourceId }
-            : { files }
-
-        // This will populate #upload-success-forms with forms that including
-        // inputs with the signing and when submitted will create the media
-        // items in the database
-        await htmx.ajax("POST", signingUrl, {
-            values,
-            target: "#upload-success-forms",
-            swap: "beforeend",
-            headers: {
-                "X-CSRF-Token": antiForgeryToken,
-            },
-        })
+            try {
+                const response = await fetch(uploadedUrl, {
+                    method: "POST",
+                    headers: { "X-CSRF-Token": antiForgeryToken },
+                    redirect: "error",
+                    body: recordParams(key, file.name ?? ""),
+                })
+                if (!response.ok) {
+                    throw new Error("Could not save the upload")
+                }
+                htmx.swap("#media-list", await response.text(), {
+                    swapStyle: "afterbegin",
+                })
+                // The empty page's first upload: the new tile is in the list,
+                // so the empty state has outlived its use until the next reload.
+                document.getElementById("media-empty")?.remove()
+            } catch (error) {
+                uppy.emit("upload-error", file, error as Error)
+            } finally {
+                uppy.emit("postprocess-complete", file)
+            }
+        }
     })
-
-    // The empty page's "Upload" button opens the same dashboard the title-bar
-    // button does; Uppy's Dashboard trigger takes one element, so the second
-    // trigger is bound by hand.
-    document
-        .getElementById("media-empty-upload")
-        ?.addEventListener("click", () => uppy.getPlugin("Dashboard").openModal())
 
     // The empty state is also a drop target. Uppy's own dashboard has one, but
     // dropping straight onto the page's empty state should behave the same way.

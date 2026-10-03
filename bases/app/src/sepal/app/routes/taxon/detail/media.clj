@@ -1,10 +1,8 @@
 (ns sepal.app.routes.taxon.detail.media
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.media.link-info :as link-info]
-            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.routes.taxon.detail.shared :as taxon.shared]
             [sepal.app.routes.taxon.panel :as taxon.panel]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -30,15 +28,8 @@
      [:link {:rel "stylesheet"
              :href (html/static-url "app/routes/media/css/media.css")}]
      [:div {:id "media-page"}
-    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-    ;; probably store the antiForgeryToken in a separate element and then that
-    ;; element can be updated with the when we get the signing urls
-      (when (media.ui/uploads-enabled?)
-        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                           :signingUrl (z/url-for media.routes/s3)
-                                           :linkResourceType "taxon"
-                                           :linkResourceId (:taxon/id taxon)
-                                           :trigger "#upload-button"})}])
+      (media.ui/uploader :link-resource-type "taxon"
+                         :link-resource-id (:taxon/id taxon))
       (media.ui/media-list :context :record
                            :filters (media.ui/scope-toggle :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
                                                            :below? below?
@@ -47,9 +38,7 @@
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :taxon taxon
                                                            :current-page page
-                                                           :below? below?)))
-      [:div {:id "upload-success-forms"
-             :class "hidden"}]]]))
+                                                           :below? below?)))]]))
 
 (defn render [& {:keys [below? page page-size media taxon panel-data timezone]}]
   (ui.page/page :content (pages.detail/page-content-with-panel

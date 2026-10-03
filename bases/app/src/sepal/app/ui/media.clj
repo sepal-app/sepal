@@ -1,6 +1,8 @@
 (ns sepal.app.ui.media
   (:require [lambdaisland.uri :as uri]
+            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
             [sepal.app.html :as html]
+            [sepal.app.json :as json]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
@@ -112,6 +114,10 @@
   upload lands a tile in the list."
   "media-empty")
 
+(def ^:private empty-upload-id
+  "The empty state's upload button."
+  "media-empty-upload")
+
 (defn media-list
   "The empty state, the grid and its loading indicator. The indicator is a
   sibling of the <ul>, not a member: the next page is appended into the <ul>
@@ -139,7 +145,7 @@
                   (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
                   (tr "Photographs of an accession, its material, or the plant in the ground show up here."))
           :actions (when uploads?
-                     [[:button {:id "media-empty-upload"
+                     [[:button {:id empty-upload-id
                                 :type "button"
                                 :class "spl-btn spl-btn--primary"}
                        (tr "Upload")]])))])
@@ -179,6 +185,20 @@
               :type "button"
               :class "spl-btn spl-btn--primary"}
      (tr "Upload")]))
+
+(defn uploader
+  "Mounts the uploader, or nil when uploads are off. On a record's Media tab,
+  `link-resource-type` and `link-resource-id` link each upload to the record.
+  Both upload buttons open it: the title bar's and the empty state's."
+  [& {:keys [link-resource-type link-resource-id]}]
+  (when (uploads-enabled?)
+    [:div {:x-media-uploader
+           (json/js (cond-> {:antiForgeryToken (force *anti-forgery-token*)
+                             :signingUrl (z/url-for media.routes/s3)
+                             :uploadedUrl (z/url-for media.routes/uploaded)
+                             :trigger (str "#upload-button, #" empty-upload-id)}
+                      link-resource-type (assoc :linkResourceType link-resource-type
+                                                :linkResourceId link-resource-id)))}]))
 
 (defn format-size
   "A byte count as KB or MB, the way a file browser shows it."

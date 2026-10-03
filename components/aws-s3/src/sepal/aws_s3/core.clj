@@ -12,7 +12,8 @@
            [software.amazon.awssdk.services.s3 S3Client]
            [software.amazon.awssdk.services.s3 S3Configuration]
            [software.amazon.awssdk.services.s3.model
-            GetObjectRequest ListObjectsV2Request PutObjectRequest DeleteObjectRequest]
+            GetObjectRequest HeadObjectRequest ListObjectsV2Request PutObjectRequest DeleteObjectRequest
+            S3Exception]
            [software.amazon.awssdk.services.s3.presigner S3Presigner]
            [software.amazon.awssdk.services.s3.presigner.model PutObjectPresignRequest]))
 
@@ -130,6 +131,22 @@
         stream (.getObject ^S3Client client ^GetObjectRequest req)]
     {:stream stream
      :content-length (.contentLength (.response stream))}))
+
+(defn head-object
+  "An object's length and content type, or nil when `bucket` has no object at
+  `key`."
+  [client bucket key]
+  (let [req (-> (HeadObjectRequest/builder)
+                (.bucket bucket)
+                (.key key)
+                (.build))]
+    (try
+      (let [resp (.headObject ^S3Client client ^HeadObjectRequest req)]
+        {:content-length (.contentLength resp)
+         :content-type (.contentType resp)})
+      (catch S3Exception e
+        (when-not (= 404 (.statusCode e))
+          (throw e))))))
 
 (defn get-object
   "Download an object from S3 to a local file.
