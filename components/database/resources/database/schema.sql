@@ -500,6 +500,90 @@ CREATE INDEX accession_propagation_id_idx on accession (propagation_id);
 CREATE INDEX location_parent_id_idx ON location (parent_id);
 CREATE INDEX material_location_id_idx ON material (location_id);
 CREATE UNIQUE INDEX media_s3_bucket_s3_key_idx ON media (s3_bucket, s3_key);
+CREATE VIEW media_fts_source AS
+SELECT md.id,
+       md.title,
+       md.description,
+       CASE ml.resource_type
+         WHEN 'accession' THEN a.code
+         WHEN 'material' THEN ma.code || ' ' || m.code
+         WHEN 'taxon' THEN t.name
+         WHEN 'location' THEN l.code || ' ' || l.name
+       END AS linked
+FROM media md
+LEFT JOIN media_link ml ON ml.media_id = md.id
+LEFT JOIN accession a ON ml.resource_type = 'accession' AND a.id = ml.resource_id
+LEFT JOIN material m ON ml.resource_type = 'material' AND m.id = ml.resource_id
+LEFT JOIN accession ma ON ma.id = m.accession_id
+LEFT JOIN taxon t ON ml.resource_type = 'taxon' AND t.id = ml.resource_id
+LEFT JOIN location l ON ml.resource_type = 'location' AND l.id = ml.resource_id;
+CREATE VIRTUAL TABLE media_fts USING fts5(title, description, linked);
+CREATE TRIGGER trigger_media_fts_insert AFTER INSERT ON media BEGIN
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source WHERE id = new.id;
+END;
+CREATE TRIGGER trigger_media_fts_update AFTER UPDATE OF title, description ON media BEGIN
+  DELETE FROM media_fts WHERE rowid = new.id;
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source WHERE id = new.id;
+END;
+CREATE TRIGGER trigger_media_fts_delete AFTER DELETE ON media BEGIN
+  DELETE FROM media_fts WHERE rowid = old.id;
+END;
+CREATE TRIGGER trigger_media_link_media_fts_insert AFTER INSERT ON media_link BEGIN
+  DELETE FROM media_fts WHERE rowid = new.media_id;
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source WHERE id = new.media_id;
+END;
+CREATE TRIGGER trigger_media_link_media_fts_update AFTER UPDATE ON media_link BEGIN
+  DELETE FROM media_fts WHERE rowid IN (old.media_id, new.media_id);
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (old.media_id, new.media_id);
+END;
+CREATE TRIGGER trigger_media_link_media_fts_delete AFTER DELETE ON media_link BEGIN
+  DELETE FROM media_fts WHERE rowid = old.media_id;
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source WHERE id = old.media_id;
+END;
+CREATE TRIGGER trigger_accession_media_fts_update AFTER UPDATE OF code ON accession BEGIN
+  DELETE FROM media_fts WHERE rowid IN (
+    SELECT media_id FROM media_link
+    WHERE (resource_type = 'accession' AND resource_id = new.id)
+       OR (resource_type = 'material'
+           AND resource_id IN (SELECT id FROM material WHERE accession_id = new.id)));
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (
+      SELECT media_id FROM media_link
+      WHERE (resource_type = 'accession' AND resource_id = new.id)
+         OR (resource_type = 'material'
+             AND resource_id IN (SELECT id FROM material WHERE accession_id = new.id)));
+END;
+CREATE TRIGGER trigger_material_media_fts_update AFTER UPDATE OF code, accession_id ON material BEGIN
+  DELETE FROM media_fts WHERE rowid IN (
+    SELECT media_id FROM media_link WHERE resource_type = 'material' AND resource_id = new.id);
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (
+      SELECT media_id FROM media_link WHERE resource_type = 'material' AND resource_id = new.id);
+END;
+CREATE TRIGGER trigger_taxon_media_fts_update AFTER UPDATE OF name ON taxon BEGIN
+  DELETE FROM media_fts WHERE rowid IN (
+    SELECT media_id FROM media_link WHERE resource_type = 'taxon' AND resource_id = new.id);
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (
+      SELECT media_id FROM media_link WHERE resource_type = 'taxon' AND resource_id = new.id);
+END;
+CREATE TRIGGER trigger_location_media_fts_update AFTER UPDATE OF code, name ON location BEGIN
+  DELETE FROM media_fts WHERE rowid IN (
+    SELECT media_id FROM media_link WHERE resource_type = 'location' AND resource_id = new.id);
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (
+      SELECT media_id FROM media_link WHERE resource_type = 'location' AND resource_id = new.id);
+END;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -672,3 +756,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260927120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20260930120000', '2026-09-30 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261001120000', '2026-10-01 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003120000', '2026-10-03 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003130000', '2026-10-03 13:00:00');

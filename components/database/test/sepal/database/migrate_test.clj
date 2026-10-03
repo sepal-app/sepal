@@ -521,6 +521,33 @@
         (finally
           (fs/delete-tree dir))))))
 
+(deftest test-media-fts-migration
+  (testing "existing media are indexed with their linked record's label"
+    (let [dir (fs/create-temp-dir {:prefix "sepal-media-fts-migration"})]
+      (try
+        (let [db-path (floor-db dir)
+              ds (jdbc/get-datasource {:jdbcUrl (str "jdbc:sqlite:" db-path)})]
+          (jdbc/execute! ds [(str "insert into \"user\" (email, password, role, status) "
+                                  "values ('a@b.invalid', 'x', 'admin', 'active')")])
+          (jdbc/execute! ds ["insert into location (code, name) values ('B12', 'Rose garden')"])
+          (jdbc/execute! ds [(str "insert into media (s3_bucket, s3_key, title, description, "
+                                  "size_in_bytes, media_type, created_by) values "
+                                  "('b', 'k1', 'oak.jpg', 'a big tree', 10, 'image/jpeg', 1), "
+                                  "('b', 'k2', 'plain.png', null, 5, 'image/png', 1)")])
+          (jdbc/execute! ds [(str "insert into media_link (media_id, resource_id, resource_type) "
+                                  "values (1, 1, 'location')")])
+          (is (some #{"20261003130000"}
+                    (:applied (db.i/migrate! {:db-path db-path})))
+              "the migration actually ran")
+          (is (= ["B12 Rose garden" nil]
+                 (query db-path "select linked from media_fts order by rowid")))
+          (is (= [1] (query db-path "select rowid from media_fts where media_fts match '\"rose\"*'"))
+              "a word of the label finds the item")
+          (is (= [1] (query db-path "select rowid from media_fts where media_fts match '\"tree\"*'"))
+              "and so does a word of the description"))
+        (finally
+          (fs/delete-tree dir))))))
+
 (deftest test-a-migration-waits-for-a-held-write-lock
   ;; The regression test for the 2026-09-16 outage. A fresh sqlite3 process
   ;; waits zero milliseconds for a lock, so a garden serving traffic held the

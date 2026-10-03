@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Sepal\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2026-10-01 15:47-0400\n"
+"PO-Revision-Date: 2026-10-03 13:11-0400\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -208,16 +208,16 @@ msgstr "Descartar"
 msgid "Nothing was saved. Check the highlighted fields."
 msgstr "No se ha guardado nada. Revise los campos resaltados."
 
-#: bases/app/src/sepal/app/instance.clj:350
+#: bases/app/src/sepal/app/instance.clj:355
 msgid "You've been invited to Sepal"
 msgstr "Ha sido invitado a Sepal"
 
-#: bases/app/src/sepal/app/instance.clj:715
+#: bases/app/src/sepal/app/instance.clj:725
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:108
 msgid "Hello,"
 msgstr "Hola,"
 
-#: bases/app/src/sepal/app/instance.clj:716
+#: bases/app/src/sepal/app/instance.clj:726
 msgid ""
 "Your Sepal garden is ready. Sepal is a botanical collection management "
 "system."
@@ -225,13 +225,13 @@ msgstr ""
 "Su jardín en Sepal está listo. Sepal es un sistema de gestión de colecciones "
 "botánicas."
 
-#: bases/app/src/sepal/app/instance.clj:717
+#: bases/app/src/sepal/app/instance.clj:727
 msgid "To set your password and sign in, click the link below:"
 msgstr ""
 "Para establecer su contraseña e iniciar sesión, haga clic en el siguiente "
 "enlace:"
 
-#: bases/app/src/sepal/app/instance.clj:719
+#: bases/app/src/sepal/app/instance.clj:729
 msgid ""
 "This link expires in 24 hours. If it does, use \"Forgot password\" on the "
 "sign-in page to get a new one."
@@ -239,7 +239,7 @@ msgstr ""
 "Este enlace caduca en 24 horas. Si caduca, use «¿Olvidó su contraseña?» en "
 "la página de inicio de sesión para obtener uno nuevo."
 
-#: bases/app/src/sepal/app/instance.clj:720
+#: bases/app/src/sepal/app/instance.clj:730
 msgid "If you weren't expecting this, you can safely ignore this email."
 msgstr ""
 "Si no esperaba este mensaje, puede ignorar este correo electrónico con "
@@ -422,7 +422,7 @@ msgstr "Accesión actualizada correctamente"
 msgid "Could not save the accession"
 msgstr "No se pudo guardar la accesión"
 
-#: bases/app/src/sepal/app/routes/accession/detail/media.clj:55
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:46
 msgid "Media linked to this accession's material"
 msgstr "Contenido multimedia vinculado al material de esta accesión"
 
@@ -832,7 +832,7 @@ msgstr "Nota sobre taxón"
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:111
-#: bases/app/src/sepal/app/routes/media/index.clj:45
+#: bases/app/src/sepal/app/routes/media/index.clj:86
 #: bases/app/src/sepal/app/ui/page.clj:174
 msgctxt "navigation"
 msgid "Media"
@@ -1441,6 +1441,7 @@ msgstr "Teléfono"
 #: bases/app/src/sepal/app/routes/propagation/index.clj:97
 #: bases/app/src/sepal/app/ui/observations.clj:41
 #: components/material/src/sepal/material/interface/search.clj:23
+#: components/media/src/sepal/media/interface/search.clj:40
 #: components/observation/src/sepal/observation/interface/search.clj:62
 #: components/propagation/src/sepal/propagation/interface/search.clj:24
 msgid "Type"
@@ -1579,7 +1580,7 @@ msgstr "Ubicación actualizada correctamente"
 msgid "Could not save the location"
 msgstr "No se pudo guardar la ubicación"
 
-#: bases/app/src/sepal/app/routes/location/detail/media.clj:45
+#: bases/app/src/sepal/app/routes/location/detail/media.clj:39
 msgid "Media linked to the material in this location"
 msgstr "Medios vinculados al material de esta ubicación"
 
@@ -1644,6 +1645,7 @@ msgstr "Cómo se llama este lugar y cómo se hace referencia a él."
 #: bases/app/src/sepal/app/routes/tag/index.clj:23
 #: bases/app/src/sepal/app/routes/tag/panel.clj:39
 #: components/location/src/sepal/location/interface/search.clj:23
+#: components/media/src/sepal/media/interface/search.clj:36
 msgid "Description"
 msgstr "Descripción"
 
@@ -1911,14 +1913,14 @@ msgstr "Recurso"
 #: bases/app/src/sepal/app/ui/archive.clj:69
 #: bases/app/src/sepal/app/ui/delete.clj:102
 #: bases/app/src/sepal/app/ui/export.clj:84
-#: bases/app/src/sepal/app/ui/form.clj:225
+#: bases/app/src/sepal/app/ui/form.clj:226
 #: bases/app/src/sepal/app/ui/notes.clj:81
 #: bases/app/src/sepal/app/ui/observations.clj:190
 msgid "Cancel"
 msgstr "Cancelar"
 
 #: bases/app/src/sepal/app/routes/media/detail/link_widget.clj:128
-#: bases/app/src/sepal/app/ui/form.clj:230
+#: bases/app/src/sepal/app/ui/form.clj:231
 #: bases/app/src/sepal/app/ui/notes.clj:82
 #: bases/app/src/sepal/app/ui/observations.clj:191
 msgid "Save"
@@ -1959,7 +1961,9 @@ msgid "What this image shows and where it was taken."
 msgstr "Qué muestra esta imagen y dónde se tomó."
 
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:85
+#: bases/app/src/sepal/app/routes/media/index.clj:27
 #: bases/app/src/sepal/app/routes/media/panel.clj:53
+#: components/media/src/sepal/media/interface/search.clj:31
 msgid "Title"
 msgstr "Título"
 
@@ -1967,6 +1971,27 @@ msgstr "Título"
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:97
 msgid "Download"
 msgstr "Descargar"
+
+#: bases/app/src/sepal/app/routes/media/index.clj:25
+msgid "Newest first"
+msgstr "Más recientes primero"
+
+#: bases/app/src/sepal/app/routes/media/index.clj:26
+msgid "Oldest first"
+msgstr "Más antiguos primero"
+
+#: bases/app/src/sepal/app/routes/media/index.clj:28
+msgid "Largest first"
+msgstr "Más grandes primero"
+
+#: bases/app/src/sepal/app/routes/media/index.clj:44
+msgid "Sort"
+msgstr "Ordenar"
+
+#. i18n: Keep "linked:none" in English; it is search syntax
+#: bases/app/src/sepal/app/routes/media/index.clj:72
+msgid "Search... (e.g., linked:none)"
+msgstr "Buscar... (p. ej., linked:none)"
 
 #: bases/app/src/sepal/app/routes/media/panel.clj:42
 msgid "Preview"
@@ -1978,6 +2003,7 @@ msgid "Size"
 msgstr "Tamaño"
 
 #: bases/app/src/sepal/app/routes/media/panel.clj:56
+#: components/media/src/sepal/media/interface/search.clj:44
 msgid "Uploaded"
 msgstr "Subido"
 
@@ -1987,6 +2013,7 @@ msgid "by %1"
 msgstr "por %1"
 
 #: bases/app/src/sepal/app/routes/media/panel.clj:66
+#: components/media/src/sepal/media/interface/search.clj:50
 msgid "Linked"
 msgstr "Enlazado"
 
@@ -1994,7 +2021,7 @@ msgstr "Enlazado"
 msgid "Not linked"
 msgstr "No enlazado"
 
-#: bases/app/src/sepal/app/routes/media/uploaded.clj:56
+#: bases/app/src/sepal/app/routes/media/uploaded.clj:76
 msgid "The upload could not be saved."
 msgstr "No se pudo guardar el archivo subido."
 
@@ -2275,17 +2302,17 @@ msgstr "Marcar como fallido"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:27
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:28
-#: bases/app/src/sepal/app/ui/media.clj:188
+#: bases/app/src/sepal/app/ui/media.clj:213
 msgid "%1 B"
 msgstr "%1 B"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:29
-#: bases/app/src/sepal/app/ui/media.clj:189
+#: bases/app/src/sepal/app/ui/media.clj:214
 msgid "%1 KB"
 msgstr "%1 KB"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:30
-#: bases/app/src/sepal/app/ui/media.clj:190
+#: bases/app/src/sepal/app/ui/media.clj:215
 msgid "%1 MB"
 msgstr "%1 MB"
 
@@ -3311,7 +3338,7 @@ msgstr "¿Eliminar el taxón %1?"
 msgid "Deleted taxon %1"
 msgstr "Taxón %1 eliminado"
 
-#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:45
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:36
 msgid "Media linked to the taxa, accessions and material below this taxon"
 msgstr ""
 "Archivos multimedia vinculados a los taxones, las accesiones y el material "
@@ -3710,39 +3737,39 @@ msgstr[1] "Exportando %1 resultados"
 msgid "Large export — this may take a moment"
 msgstr "Exportación grande — esto puede tardar un momento"
 
-#: bases/app/src/sepal/app/ui/form.clj:223
+#: bases/app/src/sepal/app/ui/form.clj:224
 msgid "Are you sure you want to lose your changes?"
 msgstr "¿Seguro que desea perder los cambios?"
 
-#: bases/app/src/sepal/app/ui/media.clj:48
+#: bases/app/src/sepal/app/ui/media.clj:51
 msgid "via %1"
 msgstr "vía %1"
 
-#: bases/app/src/sepal/app/ui/media.clj:68
+#: bases/app/src/sepal/app/ui/media.clj:71
 msgid "Loading more media"
 msgstr "Cargando más contenido multimedia"
 
-#: bases/app/src/sepal/app/ui/media.clj:71
+#: bases/app/src/sepal/app/ui/media.clj:74
 msgid "Small"
 msgstr "Pequeño"
 
-#: bases/app/src/sepal/app/ui/media.clj:71
+#: bases/app/src/sepal/app/ui/media.clj:74
 msgid "Medium"
 msgstr "Mediano"
 
-#: bases/app/src/sepal/app/ui/media.clj:71
+#: bases/app/src/sepal/app/ui/media.clj:74
 msgid "Large"
 msgstr "Grande"
 
-#: bases/app/src/sepal/app/ui/media.clj:88
+#: bases/app/src/sepal/app/ui/media.clj:91
 msgid "Thumbnail size"
 msgstr "Tamaño de las miniaturas"
 
-#: bases/app/src/sepal/app/ui/media.clj:137
+#: bases/app/src/sepal/app/ui/media.clj:148
 msgid "No media yet"
 msgstr "Todavía no hay contenido multimedia"
 
-#: bases/app/src/sepal/app/ui/media.clj:139
+#: bases/app/src/sepal/app/ui/media.clj:150
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here. Drag images here, or upload them."
@@ -3750,7 +3777,7 @@ msgstr ""
 "Las fotografías de una accesión, su material o la planta en el terreno "
 "aparecen aquí. Arrastre imágenes aquí o súbalas."
 
-#: bases/app/src/sepal/app/ui/media.clj:140
+#: bases/app/src/sepal/app/ui/media.clj:151
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here."
@@ -3758,12 +3785,12 @@ msgstr ""
 "Las fotografías de una accesión, su material o la planta en el terreno "
 "aparecen aquí."
 
-#: bases/app/src/sepal/app/ui/media.clj:145
-#: bases/app/src/sepal/app/ui/media.clj:181
+#: bases/app/src/sepal/app/ui/media.clj:156
+#: bases/app/src/sepal/app/ui/media.clj:192
 msgid "Upload"
 msgstr "Subir"
 
-#: bases/app/src/sepal/app/ui/media.clj:168
+#: bases/app/src/sepal/app/ui/media.clj:179
 msgid "Include related media"
 msgstr "Incluir contenido multimedia relacionado"
 
@@ -4041,6 +4068,7 @@ msgstr "Empiece a escribir una etiqueta existente, o escriba un nombre nuevo."
 #: components/contact/src/sepal/contact/interface/search.clj:45
 #: components/location/src/sepal/location/interface/search.clj:27
 #: components/material/src/sepal/material/interface/search.clj:32
+#: components/media/src/sepal/media/interface/search.clj:55
 #: components/observation/src/sepal/observation/interface/search.clj:96
 #: components/propagation/src/sepal/propagation/interface/search.clj:13
 #: components/taxon/src/sepal/taxon/interface/search.clj:28
