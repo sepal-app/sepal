@@ -4,15 +4,6 @@
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.resource-panel :as panel]))
 
-(defn wfo-plantlist-search-url
-  "Generate WFO Plantlist search URL for a taxon name."
-  [taxon-name]
-  (when taxon-name
-    (uri/uri-str {:scheme "https"
-                  :host "wfoplantlist.org"
-                  :path "/search"
-                  :query (uri/map->query-string {:query taxon-name})})))
-
 (defn wfo-plantlist-taxon-url
   "Generate a WFO URL for a WFO taxon ID. Uses the bare name ID
    (wfo-NNNNNNNNNN-YYYY-MM -> wfo-NNNNNNNNNN), which list.worldfloraonline.org
@@ -44,21 +35,19 @@
 
 (defn taxonomic-links-section
   "Render external links section for taxonomic resources.
-   Uses the taxon name to generate search URLs for WFO, IUCN, and CITES.
-   
+   Uses the taxon name to generate search URLs for IUCN and CITES.
+
    Options:
    - :taxon-name   - The taxon name for search URLs (required)
-   - :wfo-taxon-id - Optional WFO taxon ID for direct link instead of search"
+   - :wfo-taxon-id - Optional WFO taxon ID; the WFO link is omitted without it"
   [& {:keys [taxon-name wfo-taxon-id]}]
-  (let [wfo-url (or (wfo-plantlist-taxon-url wfo-taxon-id)
-                    (wfo-plantlist-search-url taxon-name))]
-    (panel/external-links-section
-      :links [{:label "WFO Plantlist"
-               :href wfo-url
-               :icon (lucide/globe :class "w-4 h-4")}
-              {:label "IUCN Red List"
-               :href (iucn-redlist-url taxon-name)
-               :icon (lucide/globe :class "w-4 h-4")}
-              {:label "CITES Checklist"
-               :href (cites-checklist-url taxon-name)
-               :icon (lucide/globe :class "w-4 h-4")}])))
+  (panel/external-links-section
+    :links [{:label "WFO Plantlist"
+             :href (wfo-plantlist-taxon-url wfo-taxon-id)
+             :icon (lucide/globe :class "w-4 h-4")}
+            {:label "IUCN Red List"
+             :href (iucn-redlist-url taxon-name)
+             :icon (lucide/globe :class "w-4 h-4")}
+            {:label "CITES Checklist"
+             :href (cites-checklist-url taxon-name)
+             :icon (lucide/globe :class "w-4 h-4")}]))

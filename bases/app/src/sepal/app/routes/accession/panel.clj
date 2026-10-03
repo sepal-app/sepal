@@ -123,7 +123,9 @@
         (panel/collapsible-section
           :title (tr "External Links")
           :children
-          (external-links/taxonomic-links-section :taxon-name sci-name))
+          (external-links/taxonomic-links-section
+            :taxon-name sci-name
+            :wfo-taxon-id (:taxon/wfo-taxon-id taxon)))
 
         ;; Propagations off this accession without a named plant, and the one
         ;; that produced the accession itself.

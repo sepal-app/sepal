@@ -157,7 +157,9 @@
         (panel/collapsible-section
           :title (tr "External Links")
           :children
-          (external-links/taxonomic-links-section :taxon-name sci-name))
+          (external-links/taxonomic-links-section
+            :taxon-name sci-name
+            :wfo-taxon-id (:taxon/wfo-taxon-id taxon)))
 
         ;; What this plant has been used to grow, and the propagation that
         ;; produced the plant itself.
