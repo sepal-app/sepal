@@ -535,12 +535,6 @@ CREATE TRIGGER trigger_media_link_media_fts_insert AFTER INSERT ON media_link BE
   INSERT INTO media_fts(rowid, title, description, linked)
     SELECT id, title, description, linked FROM media_fts_source WHERE id = new.media_id;
 END;
-CREATE TRIGGER trigger_media_link_media_fts_update AFTER UPDATE ON media_link BEGIN
-  DELETE FROM media_fts WHERE rowid IN (old.media_id, new.media_id);
-  INSERT INTO media_fts(rowid, title, description, linked)
-    SELECT id, title, description, linked FROM media_fts_source
-    WHERE id IN (old.media_id, new.media_id);
-END;
 CREATE TRIGGER trigger_media_link_media_fts_delete AFTER DELETE ON media_link BEGIN
   DELETE FROM media_fts WHERE rowid = old.media_id;
   INSERT INTO media_fts(rowid, title, description, linked)
@@ -583,6 +577,13 @@ CREATE TRIGGER trigger_location_media_fts_update AFTER UPDATE OF code, name ON l
     SELECT id, title, description, linked FROM media_fts_source
     WHERE id IN (
       SELECT media_id FROM media_link WHERE resource_type = 'location' AND resource_id = new.id);
+END;
+CREATE TRIGGER trigger_media_link_media_fts_update
+  AFTER UPDATE OF media_id, resource_type, resource_id ON media_link BEGIN
+  DELETE FROM media_fts WHERE rowid IN (old.media_id, new.media_id);
+  INSERT INTO media_fts(rowid, title, description, linked)
+    SELECT id, title, description, linked FROM media_fts_source
+    WHERE id IN (old.media_id, new.media_id);
 END;
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
@@ -757,3 +758,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20260930120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261001120000', '2026-10-01 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003120000', '2026-10-03 12:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003130000', '2026-10-03 13:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003140000', '2026-10-03 14:00:00');

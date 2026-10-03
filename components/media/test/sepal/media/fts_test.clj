@@ -114,4 +114,7 @@
         (jdbc.sql/update! *db* :accession {:private 1} {:id (:accession/id accession)})
         (is (= "sentinel" (linked media)) "accession.private isn't part of the label")
         (jdbc.sql/update! *db* :accession {:code "2099.7404"} {:id (:accession/id accession)})
-        (is (= "2099.7404" (linked media)) "accession.code is")))))
+        (is (= "2099.7404" (linked media)) "accession.code is")
+        (mark!)
+        (jdbc/execute! *db* ["update media_link set updated_at = '2001-01-01 00:00:00' where media_id = ?" id])
+        (is (= "sentinel" (linked media)) "media_link.updated_at isn't either")))))
