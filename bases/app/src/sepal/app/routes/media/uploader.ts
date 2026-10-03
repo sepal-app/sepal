@@ -16,24 +16,31 @@ export default (el, directive, { cleanup, evaluate }) => {
     })
         .use(Dashboard, {
             trigger: trigger,
-            showProgressDetails: true,
             proudlyDisplayPoweredByUppy: true,
         })
         .use(AwsS3, {
-            async getUploadParameters(file) {
-                const formId = CSS.escape(file.id.replace(/\//g, "_"))
+            // The server presigns a single PUT per file, so there are no
+            // multipart requests to sign.
+            shouldUseMultipart: false,
+            // signRequest is passed only the key, so the key is the file id
+            // that names the file's success form.
+            generateObjectKey: (file) => file.id,
+            async signRequest({ method, key }) {
+                const formId = CSS.escape(key.replace(/\//g, "_"))
                 const form = document.querySelector(
                     `#upload-success-forms form#${formId}`,
                 )
                 if (!form) {
-                    throw `ERROR: Could not find form: ${formId}`
+                    throw new Error(`Could not find form: ${formId}`)
                 }
 
                 const values = htmx.values(form)
+                if (method !== values.s3Method) {
+                    throw new Error(`Cannot sign a ${method} request`)
+                }
                 return {
-                    method: values.s3Method,
                     url: values.s3Url,
-                    fields: {}, // For presigned PUT uploads, this should be left empty.
+                    key: values.s3Key,
                     headers: {
                         "content-type": values.contentType,
                     },
