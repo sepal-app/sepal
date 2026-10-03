@@ -1,6 +1,8 @@
 (ns sepal.app.delete-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
+            [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as rs]
             [next.jdbc.sql :as jdbc.sql]
             [sepal.accession.interface :as accession.i]
             [sepal.activity.interface :as activity.i]
@@ -90,6 +92,11 @@
               "and its tag links")
           (is (nil? (media.i/get-link *db* (:media/id media)))
               "and its media links")
+          (is (nil? (:linked (jdbc/execute-one! *db*
+                                                ["select linked from media_fts where rowid = ?"
+                                                 (:media/id media)]
+                                                {:builder-fn rs/as-unqualified-maps})))
+              "and the label search finds it by")
           (is (some? (tag.i/get-by-id *db* (:tag/id tag)))
               "but not the tag itself")
           (is (some? (media.i/get-by-id *db* (:media/id media)))
