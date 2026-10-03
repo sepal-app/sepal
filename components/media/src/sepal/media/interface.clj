@@ -13,7 +13,15 @@
 (defn get-link [db media-id]
   (core/get-link db media-id))
 
-(defn get-linked [db resource-type resource-id & opts]
+(def sort-orders
+  "The orders a list of media can take, keyed :newest, :oldest, :title and
+  :largest, as ORDER BY clauses on the `md` alias."
+  core/sort-orders)
+
+(defn get-linked
+  "Media linked to a record. Options :scope, :order (a key of `sort-orders`),
+  :offset and :limit."
+  [db resource-type resource-id & opts]
   (core/get-linked db resource-type resource-id opts))
 
 (defn create! [db data]

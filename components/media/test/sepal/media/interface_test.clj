@@ -217,6 +217,35 @@
               (doseq [m all] (media.i/unlink! db (:media/id m)))
               (jdbc.sql/delete! db :taxon {:id (:taxon/id species)}))))))))
 
+(deftest test-get-linked-orders
+  (let [db *db*]
+    (tf/testing "newest, oldest, title and largest"
+      {[::user.i/factory :key/user] {:db db}
+       [::taxon.i/factory :key/taxon] {:db db}
+       [::media.i/factory :key/a] {:db db :user (ig/ref :key/user)
+                                   :title "b.jpg" :size-in-bytes 100}
+       [::media.i/factory :key/b] {:db db :user (ig/ref :key/user)
+                                   :title "a.jpg" :size-in-bytes 300}
+       [::media.i/factory :key/c] {:db db :user (ig/ref :key/user)
+                                   :title "c.jpg" :size-in-bytes 200}}
+      (fn [{:keys [taxon a b c]}]
+        (let [taxon-id (:taxon/id taxon)
+              titles (fn [& opts]
+                       (map :media/title (apply media.i/get-linked db "taxon" taxon-id opts)))]
+          (try
+            (doseq [[m created-at] [[a "2020-01-01 00:00:00"]
+                                    [b "2020-01-02 00:00:00"]
+                                    [c "2020-01-03 00:00:00"]]]
+              (jdbc.sql/update! db :media {:created_at created-at} {:id (:media/id m)})
+              (media.i/link! db (:media/id m) taxon-id :taxon))
+            (is (= ["c.jpg" "a.jpg" "b.jpg"] (titles)) "newest first by default")
+            (is (= ["c.jpg" "a.jpg" "b.jpg"] (titles :order :newest)))
+            (is (= ["b.jpg" "a.jpg" "c.jpg"] (titles :order :oldest)))
+            (is (= ["a.jpg" "b.jpg" "c.jpg"] (titles :order :title)))
+            (is (= ["a.jpg" "c.jpg" "b.jpg"] (titles :order :largest)))
+            (finally
+              (doseq [m [a b c]] (media.i/unlink! db (:media/id m))))))))))
+
 (deftest test-unlink-resource
   (let [db *db*]
     (tf/testing "unlink-resource!"

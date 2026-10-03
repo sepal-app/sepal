@@ -51,3 +51,31 @@
           (finally
             (media.i/unlink! *db* (:media/id on-taxon))
             (media.i/unlink! *db* (:media/id on-acc))))))))
+
+(deftest test-the-media-tab-sorts
+  (tf/testing "the tab honours ?sort, and its next page keeps the sort and scope"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :editor}
+     [::taxon.i/factory :key/taxon] {:db *db*}
+     [::media.i/factory :key/a] {:db *db* :user (ig/ref :key/user) :title "tab-b.jpg"}
+     [::media.i/factory :key/b] {:db *db* :user (ig/ref :key/user) :title "tab-a.jpg"}}
+    (fn [{:keys [user taxon a b]}]
+      (let [sess (app.test/login (:user/email user) password)
+            url (format "/taxon/%s/media/" (:taxon/id taxon))
+            body (fn [q] (-> (peri/request sess (str url q)) :response :body Jsoup/parse))
+            titles (fn [doc] (map #(.text %) (.select doc "#media-list > li p[title]")))]
+        (try
+          (media.i/link! *db* (:media/id a) (:taxon/id taxon) :taxon)
+          (media.i/link! *db* (:media/id b) (:taxon/id taxon) :taxon)
+          (let [doc (body "?sort=title")]
+            (is (= ["tab-a.jpg" "tab-b.jpg"] (titles doc)))
+            (is (= "title" (.attr (.selectFirst doc "select[name=sort] option[selected]") "value"))))
+          (let [next-url (-> (body "?sort=title&scope=below&page-size=1")
+                             (.selectFirst "#media-list > li[hx-get]")
+                             (.attr "hx-get"))]
+            (is (re-find #"sort=title" next-url))
+            (is (re-find #"scope=below" next-url)))
+          (is (= (titles (body "")) (titles (body "?sort=bogus")))
+              "an unknown sort is the default")
+          (finally
+            (media.i/unlink! *db* (:media/id a))
+            (media.i/unlink! *db* (:media/id b))))))))

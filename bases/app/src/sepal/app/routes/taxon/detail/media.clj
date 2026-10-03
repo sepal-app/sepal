@@ -13,13 +13,13 @@
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
-(defn next-page-url [& {:keys [taxon current-page below?]}]
+(defn next-page-url [& {:keys [taxon current-page below? order]}]
   (z/url-for taxon.routes/detail-media
              {:id (:taxon/id taxon)}
-             (cond-> {:page (+ 1 current-page)}
+             (cond-> {:page (+ 1 current-page) :sort (name order)}
                below? (assoc :scope "below"))))
 
-(defn page-content [& {:keys [below? media page page-size taxon]}]
+(defn page-content [& {:keys [below? order media page page-size taxon]}]
   (taxon.shared/page
     :taxon taxon
     :active taxon.shared/media-tab
@@ -31,18 +31,21 @@
       (media.ui/uploader :link-resource-type "taxon"
                          :link-resource-id (:taxon/id taxon))
       (media.ui/media-list :context :record
-                           :filters (media.ui/scope-toggle :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
-                                                           :below? below?
-                                                           :hint (tr "Media linked to the taxa, accessions and material below this taxon"))
+                           :filters (media.ui/tab-filters :action (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
+                                                          :below? below?
+                                                          :order order
+                                                          :hint (tr "Media linked to the taxa, accessions and material below this taxon"))
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :taxon taxon
                                                            :current-page page
-                                                           :below? below?)))]]))
+                                                           :below? below?
+                                                           :order order)))]]))
 
-(defn render [& {:keys [below? page page-size media taxon panel-data timezone]}]
+(defn render [& {:keys [below? order page page-size media taxon panel-data timezone]}]
   (ui.page/page :content (pages.detail/page-content-with-panel
                            :content (page-content :below? below?
+                                                  :order order
                                                   :page page
                                                   :page-size page-size
                                                   :media media
@@ -72,12 +75,14 @@
   (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size scope]} (params/decode Params query-params)
         below? (= "below" scope)
+        order (media.ui/sort-param query-params)
         offset (* page-size (- page 1))
         limit page-size
         media (->> (media.i/get-linked db
                                        "taxon"
                                        (:taxon/id resource)
                                        :scope (if below? :below :direct)
+                                       :order order
                                        :offset offset
                                        :limit limit)
                    (link-info/with-via db material-separator "taxon" (:taxon/id resource))
@@ -93,11 +98,13 @@
                                      :next-page-url (when (>= (count media) page-size)
                                                       (next-page-url :taxon resource
                                                                      :current-page page
-                                                                     :below? below?))
+                                                                     :below? below?
+                                                                     :order order))
                                      :page page)
           (html/render-partial))
       (let [panel-data (taxon.panel/fetch-panel-data context db resource)]
         (render :below? below?
+                :order order
                 :media media
                 :page 1
                 :page-size page-size

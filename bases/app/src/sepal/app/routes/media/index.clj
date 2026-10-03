@@ -7,24 +7,11 @@
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
-            [sepal.i18n.interface :refer [N_ tr trc]]
+            [sepal.i18n.interface :refer [tr trc]]
+            [sepal.media.interface :as media.i]
             [sepal.media.interface.search]
             [sepal.search.interface :as search.i]
             [zodiac.core :as z]))
-
-(def ^:private sort-orders
-  "Each ends on the id, so offset pages can't repeat or skip items that tie on
-  the column before it."
-  {:newest [[:md.created_at :desc] [:md.id :desc]]
-   :oldest [[:md.created_at :asc] [:md.id :asc]]
-   :title [[[:lower :md.title] :asc] [:md.id :asc]]
-   :largest [[:md.size_in_bytes :desc] [:md.id :desc]]})
-
-(def ^:private sort-options
-  [[:newest (N_ "Newest first")]
-   [:oldest (N_ "Oldest first")]
-   [:title (N_ "Title")]
-   [:largest (N_ "Largest first")]])
 
 (defn title-buttons []
   (media.ui/upload-button))
@@ -37,16 +24,6 @@
     (z/url-for media.routes/index nil
                (cond-> {:page (inc page) :sort (name order) :rows 1}
                  (seq q) (assoc :q q)))))
-
-(defn- sort-select [order]
-  [:label {:class "ml-4 flex items-center gap-2 text-sm"}
-   [:span (tr "Sort")]
-   [:select {:name "sort"
-             :class "spl-input spl-select"}
-    (for [[value label] sort-options]
-      [:option {:value (name value)
-                :selected (when (= value order) "selected")}
-       (tr label)])]])
 
 (defn page-content [& {:keys [media next-page-url page page-size q order total]}]
   (list
@@ -61,7 +38,7 @@
                        :fields (search.i/field-options :media)
                        ;; i18n: Keep "linked:none" in English; it is search syntax
                        :placeholder (tr "Search... (e.g., linked:none)")
-                       :filters (sort-select order)
+                       :filters [:div {:class "ml-4"} (media.ui/sort-select order)]
                        :page page
                        :page-size page-size
                        :total total)
@@ -81,14 +58,12 @@
   [:map
    [:page {:default 1} :int]
    [:page-size {:default 20} :int]
-   [:q :string]
-   [:sort {:default :newest} [:enum :newest :oldest :title :largest]]])
+   [:q :string]])
 
 (defn handler [& {:keys [::z/context query-params] :as _request}]
   (let [{:keys [db timezone]} context
-        {:keys [page page-size q] :as decoded} (params/decode Params query-params)
-        order (let [k (keyword (:sort decoded))]
-                (if (contains? sort-orders k) k :newest))
+        {:keys [page page-size q]} (params/decode Params query-params)
+        order (media.ui/sort-param query-params)
         stmt (search.i/compile-query :media
                                      (search.i/parse q)
                                      {:select [:md.*] :from [[:media :md]]}
@@ -97,7 +72,7 @@
         media (->> (db.i/execute-bounded! db (assoc stmt
                                                     :limit page-size
                                                     :offset (* page-size (dec page))
-                                                    :order-by (sort-orders order)))
+                                                    :order-by (media.i/sort-orders order)))
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))
         next-url (next-page-url :media media :page page :page-size page-size
                                 :q q :order order)]

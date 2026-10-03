@@ -412,7 +412,7 @@ msgstr ""
 msgid "Could not save the accession"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/accession/detail/media.clj:46
+#: bases/app/src/sepal/app/routes/accession/detail/media.clj:47
 msgid "Media linked to this accession's material"
 msgstr ""
 
@@ -816,7 +816,7 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:111
-#: bases/app/src/sepal/app/routes/media/index.clj:77
+#: bases/app/src/sepal/app/routes/media/index.clj:54
 #: bases/app/src/sepal/app/ui/page.clj:174
 msgctxt "navigation"
 msgid "Media"
@@ -1549,7 +1549,7 @@ msgstr ""
 msgid "Could not save the location"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/location/detail/media.clj:39
+#: bases/app/src/sepal/app/routes/location/detail/media.clj:40
 msgid "Media linked to the material in this location"
 msgstr ""
 
@@ -1876,7 +1876,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/media/detail/link_widget.clj:127
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:79
 #: bases/app/src/sepal/app/ui/archive.clj:69
-#: bases/app/src/sepal/app/ui/delete.clj:102
+#: bases/app/src/sepal/app/ui/delete.clj:105
 #: bases/app/src/sepal/app/ui/export.clj:84
 #: bases/app/src/sepal/app/ui/form.clj:226
 #: bases/app/src/sepal/app/ui/notes.clj:81
@@ -1913,7 +1913,7 @@ msgstr ""
 #: bases/app/src/sepal/app/ui/archive.clj:59
 #: bases/app/src/sepal/app/ui/archive.clj:74
 #: bases/app/src/sepal/app/ui/delete.clj:88
-#: bases/app/src/sepal/app/ui/delete.clj:107
+#: bases/app/src/sepal/app/ui/delete.clj:110
 msgid "Close"
 msgstr ""
 
@@ -1926,8 +1926,8 @@ msgid "What this image shows and where it was taken."
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:85
-#: bases/app/src/sepal/app/routes/media/index.clj:26
 #: bases/app/src/sepal/app/routes/media/panel.clj:53
+#: bases/app/src/sepal/app/ui/media.clj:164
 #: components/media/src/sepal/media/interface/search.clj:31
 msgid "Title"
 msgstr ""
@@ -1937,24 +1937,8 @@ msgstr ""
 msgid "Download"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/media/index.clj:24
-msgid "Newest first"
-msgstr ""
-
-#: bases/app/src/sepal/app/routes/media/index.clj:25
-msgid "Oldest first"
-msgstr ""
-
-#: bases/app/src/sepal/app/routes/media/index.clj:27
-msgid "Largest first"
-msgstr ""
-
-#: bases/app/src/sepal/app/routes/media/index.clj:43
-msgid "Sort"
-msgstr ""
-
 #. i18n: Keep "linked:none" in English; it is search syntax
-#: bases/app/src/sepal/app/routes/media/index.clj:63
+#: bases/app/src/sepal/app/routes/media/index.clj:40
 msgid "Search... (e.g., linked:none)"
 msgstr ""
 
@@ -2252,17 +2236,17 @@ msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:27
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:28
-#: bases/app/src/sepal/app/ui/media.clj:211
+#: bases/app/src/sepal/app/ui/media.clj:248
 msgid "%1 B"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:29
-#: bases/app/src/sepal/app/ui/media.clj:212
+#: bases/app/src/sepal/app/ui/media.clj:249
 msgid "%1 KB"
 msgstr ""
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:30
-#: bases/app/src/sepal/app/ui/media.clj:213
+#: bases/app/src/sepal/app/ui/media.clj:250
 msgid "%1 MB"
 msgstr ""
 
@@ -3212,7 +3196,7 @@ msgstr ""
 msgid "Deleted taxon %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:36
+#: bases/app/src/sepal/app/routes/taxon/detail/media.clj:37
 msgid "Media linked to the taxa, accessions and material below this taxon"
 msgstr ""
 
@@ -3374,7 +3358,7 @@ msgstr ""
 #: bases/app/src/sepal/app/routes/taxon/form.clj:360
 #: bases/app/src/sepal/app/ui/delete.clj:30
 #: bases/app/src/sepal/app/ui/delete.clj:56
-#: bases/app/src/sepal/app/ui/delete.clj:105
+#: bases/app/src/sepal/app/ui/delete.clj:108
 msgid "Delete"
 msgstr ""
 
@@ -3560,7 +3544,7 @@ msgstr ""
 msgid "Archive instead"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/delete.clj:97
+#: bases/app/src/sepal/app/ui/delete.clj:100
 msgid ""
 "This cannot be undone. The record and everything belonging to it will be "
 "removed."
@@ -3589,52 +3573,69 @@ msgstr ""
 msgid "Are you sure you want to lose your changes?"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:51
+#: bases/app/src/sepal/app/ui/media.clj:54
 msgid "via %1"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:71
+#: bases/app/src/sepal/app/ui/media.clj:74
 msgid "Loading more media"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:74
+#: bases/app/src/sepal/app/ui/media.clj:77
 msgid "Small"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:74
+#: bases/app/src/sepal/app/ui/media.clj:77
 msgid "Medium"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:74
+#: bases/app/src/sepal/app/ui/media.clj:77
 msgid "Large"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:91
+#: bases/app/src/sepal/app/ui/media.clj:94
 msgid "Thumbnail size"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:146
+#: bases/app/src/sepal/app/ui/media.clj:149
 msgid "No media yet"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:148
+#: bases/app/src/sepal/app/ui/media.clj:151
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here. Drag images here, or upload them."
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:149
+#: bases/app/src/sepal/app/ui/media.clj:152
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here."
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:154
-#: bases/app/src/sepal/app/ui/media.clj:190
+#: bases/app/src/sepal/app/ui/media.clj:157
+#: bases/app/src/sepal/app/ui/media.clj:227
 msgid "Upload"
 msgstr ""
 
-#: bases/app/src/sepal/app/ui/media.clj:177
+#: bases/app/src/sepal/app/ui/media.clj:162
+msgid "Newest first"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:163
+msgid "Oldest first"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:165
+msgid "Largest first"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:181
+#: bases/app/src/sepal/app/ui/media.clj:183
+msgid "Sort"
+msgstr ""
+
+#: bases/app/src/sepal/app/ui/media.clj:213
 msgid "Include related media"
 msgstr ""
 

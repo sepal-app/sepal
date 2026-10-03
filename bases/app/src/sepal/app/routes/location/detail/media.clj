@@ -13,13 +13,13 @@
             [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
-(defn next-page-url [& {:keys [location current-page below?]}]
+(defn next-page-url [& {:keys [location current-page below? order]}]
   (z/url-for location.routes/detail-media
              {:id (:location/id location)}
-             (cond-> {:page (+ 1 current-page)}
+             (cond-> {:page (+ 1 current-page) :sort (name order)}
                below? (assoc :scope "below"))))
 
-(defn page-content [& {:keys [below? media page page-size location]}]
+(defn page-content [& {:keys [below? order media page page-size location]}]
   (location.shared/page
     :location location
     :active location.shared/media-tab
@@ -33,20 +33,23 @@
       ;; A location is where material is, not what it is, so its material's
       ;; media is opt-in rather than part of the location's own.
       (media.ui/media-list :context :record
-                           :filters (media.ui/scope-toggle :action (z/url-for location.routes/detail-media
-                                                                              {:id (:location/id location)})
-                                                           :below? below?
-                                                           :hint (tr "Media linked to the material in this location"))
+                           :filters (media.ui/tab-filters :action (z/url-for location.routes/detail-media
+                                                                             {:id (:location/id location)})
+                                                          :below? below?
+                                                          :order order
+                                                          :hint (tr "Media linked to the material in this location"))
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :location location
                                                            :current-page page
-                                                           :below? below?)))]]))
+                                                           :below? below?
+                                                           :order order)))]]))
 
-(defn render [& {:keys [below? page page-size media location panel-data timezone]}]
+(defn render [& {:keys [below? order page page-size media location panel-data timezone]}]
   (ui.page/page :page-title-buttons (media.ui/upload-button)
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :below? below?
+                                                  :order order
                                                   :page page
                                                   :page-size page-size
                                                   :media media
@@ -72,10 +75,12 @@
   (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size scope]} (params/decode Params query-params)
         below? (= "below" scope)
+        order (media.ui/sort-param query-params)
         media (->> (media.i/get-linked db
                                        "location"
                                        (:location/id resource)
                                        :scope (if below? :below :direct)
+                                       :order order
                                        :offset (* page-size (- page 1))
                                        :limit page-size)
                    (link-info/with-via db material-separator "location" (:location/id resource))
@@ -85,9 +90,11 @@
                                      :next-page-url (when (>= (count media) page-size)
                                                       (next-page-url :location resource
                                                                      :current-page page
-                                                                     :below? below?)))
+                                                                     :below? below?
+                                                                     :order order)))
           (html/render-partial))
       (render :below? below?
+              :order order
               :media media
               :page 1
               :page-size page-size

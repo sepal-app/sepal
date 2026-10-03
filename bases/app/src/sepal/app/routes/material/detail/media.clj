@@ -13,12 +13,12 @@
             [sepal.taxon.interface :as taxon.i]
             [zodiac.core :as z]))
 
-(defn next-page-url [& {:keys [material current-page]}]
+(defn next-page-url [& {:keys [material current-page order]}]
   (z/url-for material.routes/detail-media
              {:id (:material/id material)}
-             {:page (+ 1 current-page)}))
+             {:page (+ 1 current-page) :sort (name order)}))
 
-(defn page-content [& {:keys [media page page-size material accession taxon separator]}]
+(defn page-content [& {:keys [order media page page-size material accession taxon separator]}]
   (material.shared/page
     :material material
     :accession accession
@@ -33,15 +33,20 @@
       (media.ui/uploader :link-resource-type "material"
                          :link-resource-id (:material/id material))
       (media.ui/media-list :context :record
+                           :filters (media.ui/tab-filters :action (z/url-for material.routes/detail-media
+                                                                             {:id (:material/id material)})
+                                                          :order order)
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :material material
-                                                           :current-page page)))]]))
+                                                           :current-page page
+                                                           :order order)))]]))
 
-(defn render [& {:keys [accession page page-size media material taxon panel-data separator timezone]}]
+(defn render [& {:keys [accession order page page-size media material taxon panel-data separator timezone]}]
   (ui.page/page
     :content (pages.detail/page-content-with-panel
-               :content (page-content :page page
+               :content (page-content :order order
+                                      :page page
                                       :page-size page-size
                                       :media media
                                       :material material
@@ -75,6 +80,7 @@
 (defn handler [{:keys [::z/context htmx-boosted? htmx-request? query-params]}]
   (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size]} (params/decode Params query-params)
+        order (media.ui/sort-param query-params)
         offset (* page-size (- page 1))
         limit page-size
         accession (accession.i/get-by-id db (:material/accession-id resource))
@@ -82,6 +88,7 @@
         media (->> (media.i/get-linked db
                                        "material"
                                        (:material/id resource)
+                                       :order order
                                        :offset offset
                                        :limit limit)
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))]
@@ -93,11 +100,13 @@
       (-> (media.ui/media-list-items :media media
                                      :next-page-url (when (>= (count media) page-size)
                                                       (next-page-url :material resource
-                                                                     :current-page page))
+                                                                     :current-page page
+                                                                     :order order))
                                      :page page)
           (html/render-partial))
       (let [panel-data (material.panel/fetch-panel-data db resource)]
         (render :accession accession
+                :order order
                 :media media
                 :page 1
                 :page-size page-size

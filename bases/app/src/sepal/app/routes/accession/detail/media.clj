@@ -22,13 +22,13 @@
           :delete-url (z/url-for accession.routes/delete
                                  {:id (:accession/id accession)}))))
 
-(defn next-page-url [& {:keys [accession current-page below?]}]
+(defn next-page-url [& {:keys [accession current-page below? order]}]
   (z/url-for accession.routes/detail-media
              {:id (:accession/id accession)}
-             (cond-> {:page (+ 1 current-page)}
+             (cond-> {:page (+ 1 current-page) :sort (name order)}
                below? (assoc :scope "below"))))
 
-(defn page-content [& {:keys [below? media page page-size accession taxon]}]
+(defn page-content [& {:keys [below? order media page page-size accession taxon]}]
   (accession.shared/page
     :accession accession
     :taxon taxon
@@ -41,21 +41,24 @@
       (media.ui/uploader :link-resource-type "accession"
                          :link-resource-id (:accession/id accession))
       (media.ui/media-list :context :record
-                           :filters (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
-                                                           :below? below?
-                                                           :hint (tr "Media linked to this accession's material"))
+                           :filters (media.ui/tab-filters :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
+                                                          :below? below?
+                                                          :order order
+                                                          :hint (tr "Media linked to this accession's material"))
                            :media media
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :accession accession
                                                            :current-page page
-                                                           :below? below?)))]]))
+                                                           :below? below?
+                                                           :order order)))]]))
 
-(defn render [& {:keys [below? page page-size media accession taxon panel-data timezone]}]
+(defn render [& {:keys [below? order page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (accession.shared/actions
                                       :accession accession
                                       :primary (media.ui/upload-button))
                 :content (pages.detail/page-content-with-panel
                            :content (page-content :below? below?
+                                                  :order order
                                                   :page page
                                                   :page-size page-size
                                                   :media media
@@ -85,6 +88,7 @@
   (let [{:keys [db material-separator resource timezone]} context
         {:keys [page page-size scope]} (params/decode Params query-params)
         below? (= "below" scope)
+        order (media.ui/sort-param query-params)
         offset (* page-size (- page 1))
         limit page-size
         taxon (taxon.i/get-by-id db (:accession/taxon-id resource))
@@ -92,6 +96,7 @@
                                        "accession"
                                        (:accession/id resource)
                                        :scope (if below? :below :direct)
+                                       :order order
                                        :offset offset
                                        :limit limit)
                    (link-info/with-via db material-separator "accession" (:accession/id resource))
@@ -105,11 +110,13 @@
                                      :next-page-url (when (>= (count media) page-size)
                                                       (next-page-url :accession resource
                                                                      :current-page page
-                                                                     :below? below?))
+                                                                     :below? below?
+                                                                     :order order))
                                      :page page)
           (html/render-partial))
       (let [panel-data (accession.panel/fetch-panel-data db resource)]
         (render :below? below?
+                :order order
                 :media media
                 :page 1
                 :page-size page-size

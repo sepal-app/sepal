@@ -69,11 +69,21 @@
 
         direct))))
 
+(def sort-orders
+  "The orders a list of media can take, as ORDER BY clauses on the `md` alias.
+  Each ends on the id, so offset pages can't repeat or skip items that tie on
+  the column before it."
+  {:newest [[:md.created_at :desc] [:md.id :desc]]
+   :oldest [[:md.created_at :asc] [:md.id :asc]]
+   :title [[[:lower :md.title] :asc] [:md.id :asc]]
+   :largest [[:md.size_in_bytes :desc] [:md.id :desc]]})
+
 (defn get-linked
-  "Media linked to a record, newest first, each carrying the link it came
-  through as :media/link. See `scope-clause` for :scope."
+  "Media linked to a record, each carrying the link it came through as
+  :media/link. :order is a key of `sort-orders`, newest first when absent. See
+  `scope-clause` for :scope."
   [db resource-type resource-id opts]
-  (let [{:keys [scope] :as opts-map} (apply hash-map opts)
+  (let [{:keys [scope order] :as opts-map} (apply hash-map opts)
         descendant-cte (when (and (= scope :below) (= resource-type "taxon"))
                          {:with-recursive
                           [[[:descendant {:columns [:id]}]
@@ -82,15 +92,15 @@
                                          {:select [:t.id] :from [[:taxon :t]]
                                           :join [:descendant [:= :t.parent_id :descendant.id]]}]}]]})]
     (some->> (merge descendant-cte
-                    {:select [:m.*
+                    {:select [:md.*
                               [:ml.resource_type :link_resource_type]
                               [:ml.resource_id :link_resource_id]]
-                     :from [[:media :m]]
+                     :from [[:media :md]]
                      :join [[:media_link :ml]
-                            [:= :ml.media_id :m.id]]
+                            [:= :ml.media_id :md.id]]
                      :where (scope-clause resource-type resource-id scope)
-                     :order-by [[:m.created_at :desc] [:m.id :desc]]}
-                    (dissoc opts-map :scope))
+                     :order-by (sort-orders (or order :newest))}
+                    (dissoc opts-map :scope :order))
              (db.i/execute! db)
              (mapv (fn [row]
                      (assoc (store.i/coerce spec/Media row)

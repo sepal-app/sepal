@@ -6,8 +6,11 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.pages.list :as pages.list]
+            [sepal.app.ui.tooltip :as tooltip]
             [sepal.i18n.interface :as i18n :refer [N_ tr]]
+            [sepal.media.interface :as media.i]
             [zodiac.core :as z]))
 
 (def sentinel-id
@@ -155,26 +158,60 @@
    (media-grid :media media :next-page-url next-page-url :context context)
    (loading-indicator)])
 
-(defn scope-toggle
-  "A checkbox that widens a Media tab from media linked to this record to media
-  linked below it too. A GET form, so the choice is in the URL; boosted like the
-  tabs, so changing it swaps the content column."
-  [& {:keys [action below? hint]}]
+(def ^:private sort-options
+  [[:newest (N_ "Newest first")]
+   [:oldest (N_ "Oldest first")]
+   [:title (N_ "Title")]
+   [:largest (N_ "Largest first")]])
+
+(defn sort-param
+  "The `sort` query parameter as a key of `media.i/sort-orders`, :newest when
+  it is missing or unknown."
+  [query-params]
+  (let [k (keyword (get query-params "sort"))]
+    (if (contains? media.i/sort-orders k) k :newest)))
+
+(defn sort-select
+  "The order of a media list. An icon stands in for the label: the select names
+  itself for a screen reader, and the icon's tooltip names it for everyone
+  else. `submit?` submits the enclosing form on change."
+  [order & {:keys [submit?]}]
+  [:label {:class "flex items-center gap-2 text-sm"}
+   (tooltip/wrap [:span {:class "flex text-text-soft"} (lucide/arrow-up-down)]
+                 (tr "Sort"))
+   [:select (cond-> {:name "sort"
+                     :aria-label (tr "Sort")
+                     :class "spl-input spl-select"}
+              submit? (assoc :onchange "this.form.requestSubmit()"))
+    (for [[value label] sort-options]
+      [:option {:value (name value)
+                :selected (when (= value order) "selected")}
+       (tr label)])]])
+
+(defn tab-filters
+  "A Media tab's checkbox that widens it from media linked to this record to
+  media linked below it too, when there is a `hint` for it, and its sort. A GET
+  form, so the choices are in the URL; boosted like the tabs, so changing
+  either swaps the content column."
+  [& {:keys [action order below? hint]}]
   [:form {:method "get"
           :action action
+          :class "flex items-center gap-4"
           :hx-boost "true"
           :hx-select ".spl-content"
           :hx-target ".spl-content"
           :hx-swap "outerHTML"}
-   [:label {:class "flex items-center gap-2 text-sm cursor-pointer"
-            :title hint}
-    [:input (cond-> {:type "checkbox"
-                     :class "spl-checkbox"
-                     :name "scope"
-                     :value "below"
-                     :onchange "this.form.requestSubmit()"}
-              below? (assoc :checked true))]
-    [:span (tr "Include related media")]]])
+   (when hint
+     [:label {:class "flex items-center gap-2 text-sm cursor-pointer"
+              :title hint}
+      [:input (cond-> {:type "checkbox"
+                       :class "spl-checkbox"
+                       :name "scope"
+                       :value "below"
+                       :onchange "this.form.requestSubmit()"}
+                below? (assoc :checked true))]
+      [:span (tr "Include related media")]])
+   (sort-select order :submit? true)])
 
 (defn upload-button
   "Opens the uploader. The id is what `x-media-uploader` binds its trigger to,

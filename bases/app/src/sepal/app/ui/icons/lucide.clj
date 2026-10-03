@@ -450,3 +450,20 @@
    [:path {:d "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"}]
    [:line {:x1 "10" :x2 "10" :y1 "11" :y2 "17"}]
    [:line {:x1 "14" :x2 "14" :y1 "11" :y2 "17"}]])
+
+(defn arrow-up-down
+  "Arrow up-down icon from Lucide. Sort."
+  [& {:keys [size] :or {size 16}}]
+  [:svg {:xmlns "http://www.w3.org/2000/svg"
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width "2"
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :width size
+         :height size}
+   [:path {:d "m21 16-4 4-4-4"}]
+   [:path {:d "M17 20V4"}]
+   [:path {:d "m3 8 4-4 4 4"}]
+   [:path {:d "M7 4v16"}]])
