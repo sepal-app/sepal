@@ -27,6 +27,12 @@
   [client bucket key]
   (core/get-object-stream client bucket key))
 
+(defn head-object
+  "An object's length and content type, as {:content-length :content-type}, or
+   nil when `bucket` has no object at `key`."
+  [client bucket key]
+  (core/head-object client bucket key))
+
 (defn get-object
   "Download an object from S3 to a local file.
    Returns the destination path on success."

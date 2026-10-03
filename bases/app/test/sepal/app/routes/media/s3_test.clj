@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
             [peridot.core :as peri]
+            [sepal.app.json :as json]
             [sepal.app.routes.media.s3 :as s3]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
@@ -13,9 +14,6 @@
             [zodiac.core :as z]))
 
 (use-fixtures :once default-system-fixture)
-
-(def ^:private file
-  "{\"filename\":\"rose.jpg\",\"contentType\":\"image/jpeg\",\"size\":1,\"id\":\"uppy-rose\"}")
 
 (deftest test-signing-is-refused-when-uploads-are-off
   (tf/testing "with no presigner the route answers 404 rather than signing"
@@ -30,26 +28,44 @@
                                              :request-method :post
                                              :headers {"hx-request" "true"
                                                        "x-csrf-token" token}
-                                             :params {:files file})]
+                                             :params {:filename "rose.jpg"
+                                                      :contentType "image/jpeg"})]
         (is (= 404 (:status response)))))))
 
-(deftest test-signing-uses-the-configured-presigner
+(defn- test-presigner []
   ;; Presigning is local computation, so placeholder credentials sign a URL
   ;; without any network.
-  (let [presigner (ig/init-key ::aws-s3.i/s3-presigner
-                               {:region "auto"
-                                :endpoint-override "https://example.r2.cloudflarestorage.com"
-                                :credentials-provider (ig/init-key ::aws-s3.i/credentials-provider
-                                                                   {:access-key-id "test-key"
-                                                                    :secret-access-key "test-secret"})})]
+  (ig/init-key ::aws-s3.i/s3-presigner
+               {:region "auto"
+                :endpoint-override "https://example.r2.cloudflarestorage.com"
+                :credentials-provider (ig/init-key ::aws-s3.i/credentials-provider
+                                                   {:access-key-id "test-key"
+                                                    :secret-access-key "test-secret"})}))
+
+(defn- sign [presigner form-params]
+  (s3/handler ::z/context {:s3-presigner presigner
+                           :media-upload-bucket "media-bucket"
+                           :media-key-prefix "media/"}
+              :form-params form-params))
+
+(deftest test-signing-answers-what-uppy-signs-with
+  (let [presigner (test-presigner)]
     (try
-      (let [response (with-redefs [z/url-for (constantly "/media/uploaded")]
-                       (s3/handler ::z/context {:s3-presigner presigner
-                                                :media-upload-bucket "media-bucket"
-                                                :media-key-prefix "media/"}
-                                   :form-params {"files" file}))]
+      (let [response (sign presigner {"filename" "rose.JPG" "contentType" "Image/JPEG"})
+            {:strs [url key headers]} (json/parse-str (:body response))]
         (is (= 200 (:status response)))
-        (is (str/includes? (:body response) "media-bucket"))
-        (is (str/includes? (:body response) "X-Amz-Signature")))
+        (is (str/includes? url "media-bucket"))
+        (is (str/includes? url "X-Amz-Signature"))
+        (is (re-matches #"media/[0-9a-f]+\.JPG" key) "the server chooses the key, under the garden's prefix")
+        (is (str/includes? url key) "the URL is signed for that key")
+        (is (= {"content-type" "image/jpeg"} headers)
+            "the browser sends the lowercased type the URL was signed with"))
+      (finally
+        (.close presigner)))))
+
+(deftest test-signing-refuses-a-request-without-a-content-type
+  (let [presigner (test-presigner)]
+    (try
+      (is (= 422 (:status (sign presigner {"filename" "rose.jpg"}))))
       (finally
         (.close presigner)))))

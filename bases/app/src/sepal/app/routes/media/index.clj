@@ -1,6 +1,5 @@
 (ns sepal.app.routes.media.index
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
@@ -24,19 +23,11 @@
    [:link {:rel "stylesheet"
            :href (html/static-url "app/routes/media/css/media.css")}]
    [:div {:id "media-page"}
-    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-    ;; probably store the antiForgeryToken in a separate element and then that
-    ;; element can be updated with the when we get the signing urls
-    (when (media.ui/uploads-enabled?)
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :trigger "#upload-button"})}])
+    (media.ui/uploader)
     (media.ui/media-list :media media
                          :next-page-url (when (>= (count media) page-size)
                                           (next-page-url :current-page page))
-                         :page page)
-    [:div {:id "upload-success-forms"
-           :class "hidden"}]]])
+                         :page page)]])
 
 (defn render [& {:keys [page page-size media]}]
   (ui.page/page :content (page-content :page page

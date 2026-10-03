@@ -1,13 +1,11 @@
 (ns sepal.app.routes.accession.detail.media
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.html :as html]
+  (:require [sepal.app.html :as html]
             [sepal.app.json :as json]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.media.link-info :as link-info]
-            [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.delete :as ui.delete]
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
@@ -40,15 +38,8 @@
      [:link {:rel "stylesheet"
              :href (html/static-url "app/routes/media/css/media.css")}]
      [:div {:id "media-page"}
-    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-    ;; probably store the antiForgeryToken in a separate element and then that
-    ;; element can be updated with the when we get the signing urls
-      (when (media.ui/uploads-enabled?)
-        [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                           :signingUrl (z/url-for media.routes/s3)
-                                           :linkResourceType "accession"
-                                           :linkResourceId (:accession/id accession)
-                                           :trigger "#upload-button"})}])
+      (media.ui/uploader :link-resource-type "accession"
+                         :link-resource-id (:accession/id accession))
       (media.ui/media-list :context :record
                            :filters (media.ui/scope-toggle :action (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
                                                            :below? below?
@@ -57,9 +48,7 @@
                            :next-page-url (when (>= (count media) page-size)
                                             (next-page-url :accession accession
                                                            :current-page page
-                                                           :below? below?)))
-      [:div {:id "upload-success-forms"
-             :class "hidden"}]]]))
+                                                           :below? below?)))]]))
 
 (defn render [& {:keys [below? page page-size media accession taxon panel-data timezone]}]
   (ui.page/page :page-title-buttons (accession.shared/actions
