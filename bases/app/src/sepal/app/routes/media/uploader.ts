@@ -12,9 +12,11 @@ export default (el, directive, { cleanup, evaluate }) => {
         linkResourceType,
         linkResourceId,
     } = evaluate(directive.expression)
+    // No `trigger` option: Dashboard binds it to the elements present when it
+    // installs, and a search swaps the empty state's button for a new one. The
+    // click listener below finds the trigger when the click happens instead.
     const uppy = new Uppy()
         .use(Dashboard, {
-            trigger: trigger,
             proudlyDisplayPoweredByUppy: true,
         })
         .use(AwsS3, {
@@ -94,41 +96,57 @@ export default (el, directive, { cleanup, evaluate }) => {
         }
     })
 
+    const openDashboard = () => uppy.getPlugin("Dashboard").openModal()
+
+    const onClick = (e: MouseEvent) => {
+        if ((e.target as Element | null)?.closest?.(trigger)) {
+            openDashboard()
+        }
+    }
+    document.addEventListener("click", onClick)
+
     // The empty state is also a drop target. Uppy's own dashboard has one, but
     // dropping straight onto the page's empty state should behave the same way.
-    const dropTarget = document.querySelector(
-        "[data-media-drop-target]",
-    ) as HTMLElement | null
-    if (dropTarget) {
-        const addFiles = (files: FileList) =>
-            uppy.addFiles(
-                Array.from(files).map((f) => ({
-                    name: f.name,
-                    type: f.type,
-                    size: f.size,
-                    data: f,
-                })),
-            )
-        const onDragOver = (e: DragEvent) => {
-            e.preventDefault()
-            dropTarget.classList.add("spl-drop-active")
-        }
-        const onDragLeave = () => dropTarget.classList.remove("spl-drop-active")
-        const onDrop = (e: DragEvent) => {
-            e.preventDefault()
-            dropTarget.classList.remove("spl-drop-active")
-            if (e.dataTransfer?.files?.length) {
-                addFiles(e.dataTransfer.files)
-                uppy.getPlugin("Dashboard").openModal()
-            }
-        }
-        dropTarget.addEventListener("dragover", onDragOver)
-        dropTarget.addEventListener("dragleave", onDragLeave)
-        dropTarget.addEventListener("drop", onDrop)
-        cleanup(() => {
-            dropTarget.removeEventListener("dragover", onDragOver)
-            dropTarget.removeEventListener("dragleave", onDragLeave)
-            dropTarget.removeEventListener("drop", onDrop)
-        })
+    // Delegated from the document for the same reason as the click: the empty
+    // state is inside the list a search replaces.
+    const dropTargetOf = (e: Event) =>
+        (e.target as Element | null)?.closest?.(
+            "[data-media-drop-target]",
+        ) as HTMLElement | null
+    const addFiles = (files: FileList) =>
+        uppy.addFiles(
+            Array.from(files).map((f) => ({
+                name: f.name,
+                type: f.type,
+                size: f.size,
+                data: f,
+            })),
+        )
+    const onDragOver = (e: DragEvent) => {
+        const dropTarget = dropTargetOf(e)
+        if (!dropTarget) return
+        e.preventDefault()
+        dropTarget.classList.add("spl-drop-active")
     }
+    const onDragLeave = (e: DragEvent) =>
+        dropTargetOf(e)?.classList.remove("spl-drop-active")
+    const onDrop = (e: DragEvent) => {
+        const dropTarget = dropTargetOf(e)
+        if (!dropTarget) return
+        e.preventDefault()
+        dropTarget.classList.remove("spl-drop-active")
+        if (e.dataTransfer?.files?.length) {
+            addFiles(e.dataTransfer.files)
+            openDashboard()
+        }
+    }
+    document.addEventListener("dragover", onDragOver)
+    document.addEventListener("dragleave", onDragLeave)
+    document.addEventListener("drop", onDrop)
+    cleanup(() => {
+        document.removeEventListener("click", onClick)
+        document.removeEventListener("dragover", onDragOver)
+        document.removeEventListener("dragleave", onDragLeave)
+        document.removeEventListener("drop", onDrop)
+    })
 }
