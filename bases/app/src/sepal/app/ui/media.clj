@@ -6,6 +6,7 @@
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
+            [sepal.app.ui.pages.list :as pages.list]
             [sepal.i18n.interface :as i18n :refer [N_ tr]]
             [zodiac.core :as z]))
 
@@ -124,8 +125,10 @@
   with `beforeend`, so anything inside it would be left stranded between
   pages. The grid renders even when empty, because an upload prepends its new
   tile into `#media-list` — a list that only appears once there is media has
-  nothing to prepend into."
-  [& {:keys [media next-page-url context filters] :or {context :list}}]
+  nothing to prepend into.
+
+  :searching? swaps the first-upload empty state for \"Nothing matched\"."
+  [& {:keys [media next-page-url context filters searching?] :or {context :list}}]
   [:div {:x-data (size-state context)}
    ;; `filters` shows even with nothing to show: widening the scope may be what
    ;; finds media.
@@ -135,20 +138,22 @@
       (when (seq media)
         (size-control))])
    (when (zero? (count media))
-     [:div {:id empty-state-id
-            :data-media-drop-target "true"}
-      (let [uploads? (uploads-enabled?)]
-        (ui.empty/empty-state
-          :icon (heroicons/outline-photo :size 48)
-          :title (tr "No media yet")
-          :body (if uploads?
-                  (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
-                  (tr "Photographs of an accession, its material, or the plant in the ground show up here."))
-          :actions (when uploads?
-                     [[:button {:id empty-upload-id
-                                :type "button"
-                                :class "spl-btn spl-btn--primary"}
-                       (tr "Upload")]])))])
+     (if searching?
+       (pages.list/empty-list :searching? true)
+       [:div {:id empty-state-id
+              :data-media-drop-target "true"}
+        (let [uploads? (uploads-enabled?)]
+          (ui.empty/empty-state
+            :icon (heroicons/outline-photo :size 48)
+            :title (tr "No media yet")
+            :body (if uploads?
+                    (tr "Photographs of an accession, its material, or the plant in the ground show up here. Drag images here, or upload them.")
+                    (tr "Photographs of an accession, its material, or the plant in the ground show up here."))
+            :actions (when uploads?
+                       [[:button {:id empty-upload-id
+                                  :type "button"
+                                  :class "spl-btn spl-btn--primary"}
+                         (tr "Upload")]])))]))
    (media-grid :media media :next-page-url next-page-url :context context)
    (loading-indicator)])
 
