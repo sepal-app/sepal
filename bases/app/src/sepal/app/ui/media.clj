@@ -130,13 +130,11 @@
   :searching? swaps the first-upload empty state for \"Nothing matched\"."
   [& {:keys [media next-page-url context filters searching?] :or {context :list}}]
   [:div {:x-data (size-state context)}
-   ;; `filters` shows even with nothing to show: widening the scope may be what
-   ;; finds media.
-   (when (or filters (seq media))
-     [:div {:class "spl-media-toolbar"}
-      [:div filters]
-      (when (seq media)
-        (size-control))])
+   ;; Rendered even when the grid is empty: widening the scope may be what finds
+   ;; media, and the CSS shows the size control once an upload adds a tile.
+   [:div {:class "spl-media-toolbar"}
+    [:div filters]
+    (size-control)]
    (when (zero? (count media))
      (if searching?
        (pages.list/empty-list :searching? true)

@@ -1660,6 +1660,14 @@
   margin-bottom: 12px;
 }
 
+/* An empty grid hides the size control, and the whole row when it has no
+ * filters either. The upload's first tile makes the list non-empty, which
+ * brings them back without a reload. */
+:has(> #media-list:empty) > .spl-media-toolbar .spl-segmented,
+:has(> #media-list:empty) > .spl-media-toolbar:has(> div:first-child:empty) {
+  display: none;
+}
+
 /* A row of mutually exclusive buttons, the pressed one tinted. */
 .spl-segmented {
   display: inline-flex;

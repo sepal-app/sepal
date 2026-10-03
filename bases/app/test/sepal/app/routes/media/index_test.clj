@@ -31,6 +31,10 @@
             "the empty state carries an id the uploader removes after the first upload")
         (is (re-find #"id=\"media-empty-upload\"" body)
             "the empty state carries its own upload button")
+        (is (re-find #"<ul id=\"media-list\"[^>]*></ul>" body)
+            "the empty grid has no whitespace, so CSS's :empty matches it")
+        (is (re-find #"aria-label=\"Thumbnail size\"" body)
+            "the size control is on the page for the first upload's tile to reveal")
         (is (re-find #"No media yet" body))))))
 
 (deftest test-index-with-media-hides-empty-state
