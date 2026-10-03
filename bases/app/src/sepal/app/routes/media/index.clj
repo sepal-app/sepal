@@ -5,6 +5,7 @@
             [sepal.app.ui.media :as media.ui]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
+            [sepal.app.ui.table :as table]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [N_ tr trc]]
             [sepal.media.interface.search]
@@ -100,11 +101,15 @@
                    (mapv #(assoc % :thumbnail-url (media.ui/thumbnail-url (:media/id %)))))
         next-url (next-page-url :media media :page page :page-size page-size
                                 :q q :order order)]
-    ;; Infinite scroll asks for the next page's tiles alone. Every other
-    ;; request, including the toolbar's search, gets the page.
+    ;; Infinite scroll asks for the next page's tiles alone, with the toolbar's
+    ;; count out of band. Every other request, including the toolbar's search,
+    ;; gets the page.
     (if (some? (get query-params "rows"))
-      (html/render-partial (media.ui/media-list-items :media media
-                                                      :next-page-url next-url))
+      (html/render-partial (list (media.ui/media-list-items :media media
+                                                            :next-page-url next-url)
+                                 (table/row-count :loaded (min (* page page-size) total)
+                                                  :total total
+                                                  :oob? true)))
       (render :media media
               :next-page-url next-url
               :page page

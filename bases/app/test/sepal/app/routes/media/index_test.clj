@@ -184,3 +184,14 @@
         (is (re-find #"uploadedUrl" body) "the uploader is media.ui/uploader's")
         (is (= 1 (count (re-seq #"x-media-uploader" body))))
         (is (< -1 uploader-at container-at) "and comes before the list container")))))
+
+(deftest test-the-count-follows-the-scroll
+  (tf/testing "each page of tiles updates the toolbar's count out of band"
+    (sort-records)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            rows (-> (peri/request sess "/media/"
+                                   :params {"q" "srt" "page-size" "1" "page" "2" "rows" "1"})
+                     :response :body)]
+        (is (re-find #"hx-swap-oob=\"true\"" rows))
+        (is (re-find #"2 of 3" rows))))))
