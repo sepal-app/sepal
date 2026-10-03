@@ -14,12 +14,13 @@
                   :query (uri/map->query-string {:query taxon-name})})))
 
 (defn wfo-plantlist-taxon-url
-  "Generate WFO Plantlist direct URL for a WFO taxon ID.
-   Extracts the name ID from the full taxon ID (wfo-NNNNNNNNNN-YYYY-MM -> wfo-NNNNNNNNNN)."
+  "Generate a WFO URL for a WFO taxon ID. Uses the bare name ID
+   (wfo-NNNNNNNNNN-YYYY-MM -> wfo-NNNNNNNNNN), which list.worldfloraonline.org
+   redirects to the current Plant List record."
   [wfo-taxon-id]
   (when wfo-taxon-id
     (let [name-id (second (re-find #"^(wfo-\d{10})" wfo-taxon-id))]
-      (str "https://wfoplantlist.org/taxon/" name-id))))
+      (str "https://list.worldfloraonline.org/" name-id))))
 
 (defn iucn-redlist-url
   "Generate IUCN Red List search URL for a taxon name."
