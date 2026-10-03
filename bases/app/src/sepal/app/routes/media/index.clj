@@ -1,7 +1,5 @@
 (ns sepal.app.routes.media.index
-  (:require [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [sepal.app.html :as html]
-            [sepal.app.json :as json]
+  (:require [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.media.routes :as media.routes]
             [sepal.app.ui.media :as media.ui]
@@ -55,15 +53,7 @@
             :href (html/static-url "app/routes/media/css/media.css")}]
     ;; Outside the list container, which a search replaces, so the uploader is
     ;; set up once per page load.
-    ;; TODO: This won't work b/c its reusing the anti forgery token. We should
-    ;; probably store the antiForgeryToken in a separate element and then that
-    ;; element can be updated with the when we get the signing urls
-    (when (media.ui/uploads-enabled?)
-      [:div {:x-media-uploader (json/js {:antiForgeryToken (force *anti-forgery-token*)
-                                         :signingUrl (z/url-for media.routes/s3)
-                                         :trigger "#upload-button"})}])
-    [:div {:id "upload-success-forms"
-           :class "hidden"}]
+    (media.ui/uploader)
     (pages.list/page-content
       :table-actions (pages.list/toolbar
                        :q q

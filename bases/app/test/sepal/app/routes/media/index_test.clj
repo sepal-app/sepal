@@ -171,3 +171,16 @@
                      :response :body)]
         (is (re-find #"Nothing matched" body))
         (is (not (re-find #"id=\"media-empty\"" body)))))))
+
+(deftest test-the-uploader-sits-outside-the-list
+  (tf/testing "the shared uploader mounts once, where a search can't replace it"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (with-redefs [media.ui/uploads-enabled? (constantly true)]
+                   (-> (peri/request sess "/media/") :response :body))
+            uploader-at (.indexOf ^String body "x-media-uploader")
+            container-at (.indexOf ^String body "id=\"list-container\"")]
+        (is (re-find #"uploadedUrl" body) "the uploader is media.ui/uploader's")
+        (is (= 1 (count (re-seq #"x-media-uploader" body))))
+        (is (< -1 uploader-at container-at) "and comes before the list container")))))
