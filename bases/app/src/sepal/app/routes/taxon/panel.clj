@@ -193,8 +193,6 @@
         ;; External links section
         (panel/collapsible-section
           :title (tr "External Links")
-          :disabled? (not wfo-taxon-id)
-          :empty-label (tr "no WFO ID")
           :children
           (external-links/taxonomic-links-section
             :taxon-name name

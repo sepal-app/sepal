@@ -726,7 +726,7 @@ msgstr "Estadísticas"
 
 #: bases/app/src/sepal/app/routes/accession/panel.clj:101
 #: bases/app/src/sepal/app/routes/accession/panel.clj:113
-#: bases/app/src/sepal/app/routes/accession/panel.clj:143
+#: bases/app/src/sepal/app/routes/accession/panel.clj:145
 #: bases/app/src/sepal/app/routes/contact/panel.clj:60
 #: bases/app/src/sepal/app/routes/contact/panel.clj:76
 #: bases/app/src/sepal/app/routes/contact/panel.clj:88
@@ -734,7 +734,7 @@ msgstr "Estadísticas"
 #: bases/app/src/sepal/app/routes/location/panel.clj:89
 #: bases/app/src/sepal/app/routes/location/panel.clj:158
 #: bases/app/src/sepal/app/routes/material/panel.clj:148
-#: bases/app/src/sepal/app/routes/material/panel.clj:177
+#: bases/app/src/sepal/app/routes/material/panel.clj:179
 #: bases/app/src/sepal/app/routes/media/panel.clj:80
 #: bases/app/src/sepal/app/routes/tag/panel.clj:47
 #: bases/app/src/sepal/app/routes/tag/panel.clj:64
@@ -742,7 +742,7 @@ msgstr "Estadísticas"
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:147
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:174
 #: bases/app/src/sepal/app/routes/taxon/panel.clj:184
-#: bases/app/src/sepal/app/routes/taxon/panel.clj:208
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:206
 #: bases/app/src/sepal/app/ui/propagations.clj:62
 msgctxt "empty section"
 msgid "none"
@@ -764,18 +764,18 @@ msgstr "Material"
 msgid "External Links"
 msgstr "Enlaces externos"
 
-#: bases/app/src/sepal/app/routes/accession/panel.clj:136
+#: bases/app/src/sepal/app/routes/accession/panel.clj:138
 msgid "nothing grown from this accession"
 msgstr "Nada cultivado a partir de esta accesión"
 
-#: bases/app/src/sepal/app/routes/accession/panel.clj:140
+#: bases/app/src/sepal/app/routes/accession/panel.clj:142
 #: bases/app/src/sepal/app/routes/activity/index.clj:673
 #: bases/app/src/sepal/app/routes/contact/panel.clj:85
 #: bases/app/src/sepal/app/routes/location/panel.clj:155
-#: bases/app/src/sepal/app/routes/material/panel.clj:174
+#: bases/app/src/sepal/app/routes/material/panel.clj:176
 #: bases/app/src/sepal/app/routes/media/panel.clj:77
 #: bases/app/src/sepal/app/routes/tag/panel.clj:61
-#: bases/app/src/sepal/app/routes/taxon/panel.clj:205
+#: bases/app/src/sepal/app/routes/taxon/panel.clj:203
 #: bases/app/src/sepal/app/ui/page.clj:158
 msgid "Activity"
 msgstr "Actividad"
@@ -832,7 +832,7 @@ msgstr "Nota sobre taxón"
 
 #: bases/app/src/sepal/app/routes/activity/index.clj:257
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:111
-#: bases/app/src/sepal/app/routes/media/index.clj:86
+#: bases/app/src/sepal/app/routes/media/index.clj:77
 #: bases/app/src/sepal/app/ui/page.clj:174
 msgctxt "navigation"
 msgid "Media"
@@ -1864,7 +1864,7 @@ msgstr "sin cambios registrados"
 msgid "Show all (%1)"
 msgstr "Mostrar todo (%1)"
 
-#: bases/app/src/sepal/app/routes/material/panel.clj:170
+#: bases/app/src/sepal/app/routes/material/panel.clj:172
 msgid "nothing grown from this plant"
 msgstr "nada cultivado a partir de esta planta"
 
@@ -1961,7 +1961,7 @@ msgid "What this image shows and where it was taken."
 msgstr "Qué muestra esta imagen y dónde se tomó."
 
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:85
-#: bases/app/src/sepal/app/routes/media/index.clj:27
+#: bases/app/src/sepal/app/routes/media/index.clj:26
 #: bases/app/src/sepal/app/routes/media/panel.clj:53
 #: components/media/src/sepal/media/interface/search.clj:31
 msgid "Title"
@@ -1972,24 +1972,24 @@ msgstr "Título"
 msgid "Download"
 msgstr "Descargar"
 
-#: bases/app/src/sepal/app/routes/media/index.clj:25
+#: bases/app/src/sepal/app/routes/media/index.clj:24
 msgid "Newest first"
 msgstr "Más recientes primero"
 
-#: bases/app/src/sepal/app/routes/media/index.clj:26
+#: bases/app/src/sepal/app/routes/media/index.clj:25
 msgid "Oldest first"
 msgstr "Más antiguos primero"
 
-#: bases/app/src/sepal/app/routes/media/index.clj:28
+#: bases/app/src/sepal/app/routes/media/index.clj:27
 msgid "Largest first"
 msgstr "Más grandes primero"
 
-#: bases/app/src/sepal/app/routes/media/index.clj:44
+#: bases/app/src/sepal/app/routes/media/index.clj:43
 msgid "Sort"
 msgstr "Ordenar"
 
 #. i18n: Keep "linked:none" in English; it is search syntax
-#: bases/app/src/sepal/app/routes/media/index.clj:72
+#: bases/app/src/sepal/app/routes/media/index.clj:63
 msgid "Search... (e.g., linked:none)"
 msgstr "Buscar... (p. ej., linked:none)"
 
@@ -2302,17 +2302,17 @@ msgstr "Marcar como fallido"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:27
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:28
-#: bases/app/src/sepal/app/ui/media.clj:213
+#: bases/app/src/sepal/app/ui/media.clj:211
 msgid "%1 B"
 msgstr "%1 B"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:29
-#: bases/app/src/sepal/app/ui/media.clj:214
+#: bases/app/src/sepal/app/ui/media.clj:212
 msgid "%1 KB"
 msgstr "%1 KB"
 
 #: bases/app/src/sepal/app/routes/settings/backups/index.clj:30
-#: bases/app/src/sepal/app/ui/media.clj:215
+#: bases/app/src/sepal/app/ui/media.clj:213
 msgid "%1 MB"
 msgstr "%1 MB"
 
@@ -3575,10 +3575,6 @@ msgstr "coincide con el sinónimo %1"
 msgid "WFO ID"
 msgstr "ID de WFO"
 
-#: bases/app/src/sepal/app/routes/taxon/panel.clj:197
-msgid "no WFO ID"
-msgstr "sin ID de WFO"
-
 #: bases/app/src/sepal/app/server.clj:127
 msgid ""
 "Something went wrong, and it has been logged. Try again, or reload the page."
@@ -3765,11 +3761,11 @@ msgstr "Grande"
 msgid "Thumbnail size"
 msgstr "Tamaño de las miniaturas"
 
-#: bases/app/src/sepal/app/ui/media.clj:148
+#: bases/app/src/sepal/app/ui/media.clj:146
 msgid "No media yet"
 msgstr "Todavía no hay contenido multimedia"
 
-#: bases/app/src/sepal/app/ui/media.clj:150
+#: bases/app/src/sepal/app/ui/media.clj:148
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here. Drag images here, or upload them."
@@ -3777,7 +3773,7 @@ msgstr ""
 "Las fotografías de una accesión, su material o la planta en el terreno "
 "aparecen aquí. Arrastre imágenes aquí o súbalas."
 
-#: bases/app/src/sepal/app/ui/media.clj:151
+#: bases/app/src/sepal/app/ui/media.clj:149
 msgid ""
 "Photographs of an accession, its material, or the plant in the ground show "
 "up here."
@@ -3785,12 +3781,12 @@ msgstr ""
 "Las fotografías de una accesión, su material o la planta en el terreno "
 "aparecen aquí."
 
-#: bases/app/src/sepal/app/ui/media.clj:156
-#: bases/app/src/sepal/app/ui/media.clj:192
+#: bases/app/src/sepal/app/ui/media.clj:154
+#: bases/app/src/sepal/app/ui/media.clj:190
 msgid "Upload"
 msgstr "Subir"
 
-#: bases/app/src/sepal/app/ui/media.clj:179
+#: bases/app/src/sepal/app/ui/media.clj:177
 msgid "Include related media"
 msgstr "Incluir contenido multimedia relacionado"
 
@@ -4897,6 +4893,9 @@ msgstr "Semilla"
 msgctxt "propagation_type"
 msgid "Tissue culture"
 msgstr "Cultivo de tejidos"
+
+#~ msgid "no WFO ID"
+#~ msgstr "sin ID de WFO"
 
 #~ msgid "Error: Could not link resource"
 #~ msgstr "Error: no se pudo enlazar el recurso"
