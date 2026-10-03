@@ -186,6 +186,11 @@
   ^bytes [master-secret slug]
   (derive-secret master-secret slug "cookie" 16))
 
+(def ^:private session-max-age-seconds
+  "Counted from login. The cookie store rewrites the cookie only when the session
+  changes, so the lifetime does not extend with use."
+  (* 7 24 60 60))
+
 (defn- token-secret
   "64 hex characters. sepal.token requires a string of at least 16."
   [master-secret slug]
@@ -417,6 +422,11 @@
                            (ig/ref :sepal.app.server/zodiac-assets)]
                     hot-reload (conj (ig/ref :sepal.app.server/zodiac-hot-reload)))
       :cookie-secret (cookie-key (:master-secret process) slug)
+      ;; Replaces zodiac's defaults rather than merging, so HttpOnly and
+      ;; SameSite are restated here.
+      :cookie-attrs {:http-only true
+                     :same-site :lax
+                     :max-age session-max-age-seconds}
       :start-server? (boolean start-server?)
       :reload-per-request? (boolean reload-per-request?)
       :jetty {:host (or jetty-host "0.0.0.0") :port (or jetty-port 3000)}

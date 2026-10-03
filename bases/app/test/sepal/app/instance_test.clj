@@ -1262,6 +1262,14 @@ msgstr \"Tu jardín Sepal está listo.\"
               (is (not (str/includes? header "HttpOnly")))
               (is (str/includes? header "brooklyn.sepal.app"))))
 
+          (testing "a successful login sets the session cookie for seven days"
+            (let [response (:response (login (instance/handler garden) "admin@example.com" "a-password"))
+                  header (set-cookie-named response "ring-session")]
+              (is (some? header) "ring-session should be set")
+              (is (str/includes? header "Max-Age=604800"))
+              (is (str/includes? header "HttpOnly"))
+              (is (str/includes? header "SameSite=Lax"))))
+
           (testing "a garden already in the cookie is moved to the front, not added twice"
             (let [existing (java.net.URLEncoder/encode "[\"queens.sepal.app\",\"brooklyn.sepal.app\"]" "UTF-8")
                   {:keys [response] :as session} (-> (peri/session (instance/handler garden))
