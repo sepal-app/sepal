@@ -1,16 +1,16 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/data.csv {:mvn/version "1.1.0"}
-        failjure/failjure {:mvn/version "2.3.62"}
-        babashka/fs {:mvn/version "0.5.30"}
-        hato/hato {:mvn/version "1.0.0"}
+ :deps {babashka/fs {:mvn/version "0.5.34"}
         com.github.brettatoms/zodiac {:mvn/version "1.0.119"}
         com.github.brettatoms/zodiac-assets {:mvn/version "0.6.59"}
-        com.github.brettatoms/zodiac-hot-reload {:mvn/version "0.1.5"}
         com.github.brettatoms/zodiac-headers {:mvn/version "0.1.2"}
+        com.github.brettatoms/zodiac-hot-reload {:mvn/version "0.1.5"}
         com.github.brettatoms/zodiac-sql {:mvn/version "0.3.27"}
-        com.taoensso/nippy {:mvn/version "3.6.0"}
+        com.taoensso/nippy {:mvn/version "3.9.0"}
+        failjure/failjure {:mvn/version "2.3.70"}
+        hato/hato {:mvn/version "1.0.0"}
         lambdaisland/uri {:mvn/version "1.19.155"}
-        org.clojure/data.json {:mvn/version "2.4.0"}
-        metosin/ring-http-response {:mvn/version "0.9.4"}}
+        metosin/ring-http-response {:mvn/version "0.9.5"}
+        org.clojure/data.csv {:mvn/version "1.1.1"}
+        org.clojure/data.json {:mvn/version "2.5.2"}}
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {}}}}
