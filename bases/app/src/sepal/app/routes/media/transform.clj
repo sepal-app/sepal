@@ -110,7 +110,7 @@
           (http/not-found))
       (f/attempt-all
         [data (validation.i/validate-form-values Params query-params)]
-        (let [{:keys [s3-client media-upload-bucket media-transform-service]} context
+        (let [{:keys [s3-client media-upload-bucket media-transform-service preview-failures]} context
               {:keys [cache-ds cache-dir max-cache-size-bytes]} media-transform-service
               {:keys [w h fit q fmt dl]} data
               {:media/keys [s3-key media-type size-in-bytes]} resource
@@ -135,6 +135,9 @@
             (> (or size-in-bytes 0) media-transform.i/max-source-bytes)
             (placeholder/response resource w h)
 
+            (contains? @preview-failures (:media/id resource))
+            (placeholder/response resource w h)
+
             :else
             ;; The original is downloaded only on a cache miss.
             (let [temp-file (volatile! nil)
@@ -152,10 +155,13 @@
                     (media-transform.i/evict-lru! cache-ds cache-dir max-cache-size-bytes))
                   (serve-file (io/file path) dl))
                 ;; Over the pixel cap, or not readable as the image it claims
-                ;; to be.
+                ;; to be. Only a file that downloaded is remembered: a failed
+                ;; download may succeed next time, and a failed decode won't.
                 (catch Exception e
                   (log/warn e "Serving a placeholder for media that would not preview"
                             {:media-id (:media/id resource) :s3-key s3-key})
+                  (when @temp-file
+                    (swap! preview-failures conj (:media/id resource)))
                   (placeholder/response resource w h))
                 (finally
                   (some-> ^File @temp-file .delete))))))

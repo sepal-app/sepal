@@ -367,6 +367,9 @@
 (defmethod ig/init-key ::setup-job [_ _]
   (atom setup.shared/initial-job-state))
 
+(defmethod ig/init-key ::preview-failures [_ _]
+  (atom #{}))
+
 (defn- resolve-backup-store
   "The injected store, or the local one over :backup-dir when the caller omits
   it — what every self-hosted install runs."
@@ -392,6 +395,11 @@
      ;; because the import is per garden. No halt-key!: an atom holds no
      ;; resource.
      ::setup-job {}
+
+     ;; Media ids whose original wouldn't decode, so the transform route serves
+     ;; the placeholder without downloading them again. Kept until the garden
+     ;; restarts.
+     ::preview-failures {}
 
      :sepal.media-transform.interface/service
    ;; Per instance, not shared: cache-key is SHA-256 over a per-database row id,
@@ -437,6 +445,7 @@
                         :app-base-url (base-url opts)
                         :schema-version schema-version
                         :setup-job (ig/ref ::setup-job)
+                        :preview-failures (ig/ref ::preview-failures)
                         ;; Where the setup wizard puts the synonym reference it
                         ;; downloads. One file per machine, so it comes from the
                         ;; process rather than from these instance opts.

@@ -8,10 +8,11 @@
             [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [peridot.core :as peri]
+            [sepal.app.instance :as instance]
             [sepal.app.routes.media.transform :as transform]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
-            [sepal.app.test.system :refer [*app* *db* default-system-fixture]]
+            [sepal.app.test.system :refer [*app* *db* *system* default-system-fixture]]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.error.interface :as error.i]
             [sepal.media-transform.interface :as media-transform.i]
@@ -83,6 +84,7 @@
                      :s3-client nil
                      :media-transform-service {:cache-ds cache-ds
                                                :cache-dir cache-dir}
+                     :preview-failures (atom #{})
                      :resource media}
             ;; The download step is S3's; the route's own job starts at the
             ;; downloaded file.
@@ -113,6 +115,7 @@
                                            (str (File. cache-dir "cache.db")))
                                :cache-dir cache-dir
                                :max-cache-size-bytes (* 10 1024 1024)}
+     :preview-failures (atom #{})
      :resource media}))
 
 (deftest test-a-cached-transform-does-not-download-the-original
@@ -239,6 +242,57 @@
                                        :query-params {"w" "500" "h" "500"}))]
         (is (placeholder? resp))
         (is (str/includes? (str (:body resp)) ">PSD<"))))))
+
+(deftest test-a-file-that-will-not-decode-is-not-downloaded-again
+  (tf/testing "the garden remembers a decode failure until it restarts"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/vnd.adobe.photoshop"
+                                     :s3-key "media/broken-again.psd"
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
+    (fn [{:keys [media]}]
+      (let [downloads (atom 0)
+            context (transform-context media)
+            request #(transform/handler ::z/context context
+                                        :query-params {"w" "500" "h" "500"})]
+        (with-redefs-fn {#'transform/download-from-s3
+                         (fn [& _]
+                           (swap! downloads inc)
+                           (doto (File/createTempFile "sepal-junk-" ".psd")
+                             (spit "not a psd")))}
+          (fn []
+            (is (placeholder? (request)))
+            (is (placeholder? (request)))
+            (is (= 1 @downloads) "the second request doesn't download it again")))))))
+
+(deftest test-a-failed-download-is-tried-again
+  (tf/testing "S3 failing may be temporary, so it isn't remembered"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/vnd.adobe.photoshop"
+                                     :s3-key "media/unreachable.psd"
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
+    (fn [{:keys [media]}]
+      (let [downloads (atom 0)
+            context (transform-context media)
+            request #(transform/handler ::z/context context
+                                        :query-params {"w" "500" "h" "500"})]
+        (with-redefs-fn {#'transform/download-from-s3
+                         (fn [& _]
+                           (swap! downloads inc)
+                           (throw (ex-info "S3 is unreachable" {})))}
+          (fn []
+            (is (placeholder? (request)))
+            (is (placeholder? (request)))
+            (is (= 2 @downloads))
+            (is (empty? @(:preview-failures context)))))))))
+
+(deftest test-each-garden-has-its-own-failures
+  (is (instance? clojure.lang.Atom (get *system* ::instance/preview-failures))))
 
 (deftest test-a-psd-is-previewed-as-jpeg
   (tf/testing "a PSD's preview is a JPEG the browser can show"
