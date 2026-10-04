@@ -3,7 +3,8 @@
    
    Note: Full integration tests require S3 and would be expensive.
    These tests focus on the image service functionality."
-  (:require [clojure.string :as str]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [integrant.core :as ig]
             [peridot.core :as peri]
@@ -25,15 +26,6 @@
            [javax.imageio ImageIO]))
 
 (use-fixtures :once default-system-fixture)
-
-(deftest test-image-content-type-detection
-  (testing "image-content-type? correctly identifies images"
-    (is (true? (media-transform.i/image-content-type? "image/jpeg")))
-    (is (true? (media-transform.i/image-content-type? "image/png")))
-    (is (true? (media-transform.i/image-content-type? "image/gif")))
-    (is (false? (media-transform.i/image-content-type? "application/pdf")))
-    (is (false? (media-transform.i/image-content-type? "text/plain")))
-    (is (false? (media-transform.i/image-content-type? nil)))))
 
 (deftest test-transform-route-requires-auth
   (tf/testing "transform route requires authentication"
@@ -174,3 +166,111 @@
         (is (= "image/png" (get-in resp [:headers "Content-Type"])))
         (is (= (str (alength bytes)) (get-in resp [:headers "Content-Length"])))
         (is (= "not really a png" (slurp (:body resp))))))))
+
+(defn- no-download [& _]
+  (throw (ex-info "the original should not be downloaded" {})))
+
+(defn- placeholder? [resp]
+  (and (= 200 (:status resp))
+       (= "image/svg+xml" (get-in resp [:headers "Content-Type"]))))
+
+(def ^:private image-icon-mark
+  "The circle only `file-image` has; plain `file` is the page alone."
+  "<circle")
+
+(deftest test-a-type-with-no-preview-gets-a-placeholder
+  (tf/testing "a PDF tile is a file icon named by its extension, not a broken image"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "application/pdf"
+                                     :s3-key "media/notes.pdf"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [resp (with-redefs-fn {#'transform/download-from-s3 no-download}
+                   #(transform/handler ::z/context (transform-context media)
+                                       :query-params {"w" "500" "h" "500" "fit" "crop"}))
+            body (str (:body resp))]
+        (is (placeholder? resp))
+        (is (str/includes? body ">PDF<"))
+        (is (not (str/includes? body image-icon-mark)) "a PDF is not drawn as an image")
+        (is (not (str/includes? (get-in resp [:headers "Cache-Control"]) "immutable"))
+            "a later improvement to previews reaches it")))))
+
+(deftest test-a-file-over-the-size-cap-is-not-downloaded
+  (tf/testing "an oversized PSD gets the image placeholder without going to S3"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/vnd.adobe.photoshop"
+                                     :s3-key "media/huge.psd"
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes (inc media-transform.i/max-source-bytes)}}
+    (fn [{:keys [media]}]
+      (let [resp (with-redefs-fn {#'transform/download-from-s3 no-download}
+                   #(transform/handler ::z/context (transform-context media)
+                                       :query-params {"w" "500" "h" "500"}))
+            body (str (:body resp))]
+        (is (placeholder? resp))
+        (is (str/includes? body ">PSD<"))
+        (is (str/includes? body image-icon-mark))))))
+
+(defn- copy-to-temp [^java.io.File f ext]
+  (let [tmp (File/createTempFile "sepal-src-" (str "." ext))]
+    (io/copy f tmp)
+    tmp))
+
+(deftest test-a-file-that-will-not-decode-gets-a-placeholder
+  (tf/testing "a PSD with nothing readable in it"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/vnd.adobe.photoshop"
+                                     :s3-key "media/broken.psd"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [junk (File/createTempFile "sepal-junk-" ".psd")
+            _ (spit junk "not a psd")
+            resp (with-redefs-fn {#'transform/download-from-s3 (fn [& _] junk)}
+                   #(transform/handler ::z/context (transform-context media)
+                                       :query-params {"w" "500" "h" "500"}))]
+        (is (placeholder? resp))
+        (is (str/includes? (str (:body resp)) ">PSD<"))))))
+
+(deftest test-a-psd-is-previewed-as-jpeg
+  (tf/testing "a PSD's preview is a JPEG the browser can show"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "image/vnd.adobe.photoshop"
+                                     :s3-key "media/layered.psd"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [fixture (io/file (io/resource "sepal/media_transform/fixtures/rgb.psd"))
+            resp (with-redefs-fn {#'transform/download-from-s3
+                                  (fn [& _] (copy-to-temp fixture "psd"))}
+                   #(transform/handler ::z/context (transform-context media)
+                                       :query-params {"w" "32" "h" "32"}))]
+        (is (= 200 (:status resp)))
+        (is (= "image/jpeg" (get-in resp [:headers "Content-Type"])))
+        (is (= 32 (.getWidth (ImageIO/read ^File (:body resp)))))))))
+
+(deftest test-a-file-with-no-preview-still-downloads
+  (tf/testing "Download serves the original whatever its type"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123"}
+     [::media.i/factory :key/media] {:db *db*
+                                     :user (ig/ref :key/user)
+                                     :media-type "application/pdf"
+                                     :s3-key "media/notes.pdf"
+                                     :s3-bucket "sepal-test-media"}}
+    (fn [{:keys [media]}]
+      (let [bytes (.getBytes "%PDF-1.7")
+            resp (with-redefs-fn {#'s3.i/get-object-stream
+                                  (fn [_client _bucket _key]
+                                    {:stream (ByteArrayInputStream. bytes)
+                                     :content-length (alength bytes)})}
+                   #(transform/handler ::z/context (transform-context media)
+                                       :query-params {"dl" "notes.pdf"}))]
+        (is (= 200 (:status resp)))
+        (is (= "application/pdf" (get-in resp [:headers "Content-Type"])))
+        (is (= "%PDF-1.7" (slurp (:body resp))))))))

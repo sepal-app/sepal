@@ -6,6 +6,7 @@
             [ring.util.http-response :as http]
             [ring.util.response :as response]
             [sepal.app.routes.media.keys :as media.keys]
+            [sepal.app.routes.media.placeholder :as placeholder]
             [sepal.aws-s3.interface :as s3.i]
             [sepal.media-transform.interface :as media-transform.i]
             [sepal.validation.interface :as validation.i]
@@ -76,15 +77,6 @@
         (cond-> content-length (response/header "Content-Length" (str content-length)))
         (with-headers download-filename))))
 
-(defn- serve-icon
-  "Serve a file-type icon for non-image media."
-  [_content-type]
-  ;; TODO: Add actual icon files and serve them based on content-type
-  ;; For now, return a simple placeholder response
-  (-> (response/response "")
-      (response/status 404)
-      (response/content-type "text/plain")))
-
 (def Params
   "Transform parameters, decoded from the string-keyed query map the way every
   other list route decodes its params. This used to destructure keyword keys
@@ -121,47 +113,52 @@
         (let [{:keys [s3-client media-upload-bucket media-transform-service]} context
               {:keys [cache-ds cache-dir max-cache-size-bytes]} media-transform-service
               {:keys [w h fit q fmt dl]} data
-              s3-key (:media/s3-key resource)]
-          (if-not (media-transform.i/image-content-type? (:media/media-type resource))
-            ;; Non-image - serve icon placeholder
-            (serve-icon (:media/media-type resource))
-            (let [width w
-                  height h
-                  quality q
-                  fit-kw (when fit (keyword fit))
-                  format-kw (when fmt (keyword fmt))
+              {:media/keys [s3-key media-type size-in-bytes]} resource
+              fit-kw (when fit (keyword fit))
+              format-kw (when fmt (keyword fmt))
+              ;; Build transform opts (only include non-nil values)
+              opts (cond-> {}
+                     w (assoc :width w)
+                     h (assoc :height h)
+                     fit-kw (assoc :fit fit-kw)
+                     q (assoc :quality q)
+                     format-kw (assoc :format format-kw))]
+          (cond
+            ;; The original, as a download or as is, whatever its type.
+            (not (or w h format-kw q))
+            (serve-original s3-client media-upload-bucket s3-key media-type dl)
 
-                  ;; Build transform opts (only include non-nil values)
-                  opts (cond-> {}
-                         width (assoc :width width)
-                         height (assoc :height height)
-                         fit-kw (assoc :fit fit-kw)
-                         quality (assoc :quality quality)
-                         format-kw (assoc :format format-kw))
+            (not (media-transform.i/previewable? media-type s3-key))
+            (placeholder/response resource w h)
 
-                  ;; Check if we need to transform or just serve original
-                  needs-transform? (or width height format-kw quality)]
-              (if needs-transform?
-                ;; The original is downloaded only on a cache miss.
-                (let [temp-file (volatile! nil)
-                      fetch (fn []
-                              (vreset! temp-file
-                                       (download-from-s3 s3-client media-upload-bucket s3-key)))
-                      {:keys [path hit?]}
-                      (try
-                        (media-transform.i/get-or-transform cache-ds cache-dir
-                                                            (:media/id resource)
-                                                            (or (file-extension s3-key) "jpg")
-                                                            fetch
-                                                            opts)
-                        (finally
-                          (some-> ^File @temp-file .delete)))]
+            ;; Checked against the stored size, so it costs no download.
+            (> (or size-in-bytes 0) media-transform.i/max-source-bytes)
+            (placeholder/response resource w h)
+
+            :else
+            ;; The original is downloaded only on a cache miss.
+            (let [temp-file (volatile! nil)
+                  fetch (fn []
+                          (vreset! temp-file
+                                   (download-from-s3 s3-client media-upload-bucket s3-key)))]
+              (try
+                (let [{:keys [path hit?]}
+                      (media-transform.i/get-or-transform cache-ds cache-dir
+                                                          (:media/id resource)
+                                                          (or (file-extension s3-key) "jpg")
+                                                          fetch
+                                                          opts)]
                   (when (and (not hit?) max-cache-size-bytes)
                     (media-transform.i/evict-lru! cache-ds cache-dir max-cache-size-bytes))
                   (serve-file (io/file path) dl))
-
-                (serve-original s3-client media-upload-bucket s3-key
-                                (:media/media-type resource) dl)))))
+                ;; Over the pixel cap, or not readable as the image it claims
+                ;; to be.
+                (catch Exception e
+                  (log/warn e "Serving a placeholder for media that would not preview"
+                            {:media-id (:media/id resource) :s3-key s3-key})
+                  (placeholder/response resource w h))
+                (finally
+                  (some-> ^File @temp-file .delete))))))
         (f/when-failed [e]
           (log/warn e "Rejecting a transform request with invalid parameters")
           (http/bad-request "Invalid transform parameters"))))))

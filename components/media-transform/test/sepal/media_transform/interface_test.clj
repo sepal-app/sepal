@@ -1,7 +1,9 @@
 (ns sepal.media-transform.interface-test
   (:require [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.test :refer [deftest is testing use-fixtures]]
             [sepal.media-transform.cache :as cache]
+            [sepal.media-transform.core :as core]
             [sepal.media-transform.interface :as media-transform.i])
   (:import [java.awt.image BufferedImage]
            [java.nio.file Files]
@@ -140,10 +142,80 @@
         (is (some? (cache/get-entry *cache-ds* (cache/cache-key 4 {:width 500 :height 100})))
             "it stops once the cache fits, so the newest entry is kept")))))
 
-(deftest test-image-content-type
-  (testing "image-content-type? correctly identifies image types"
-    (is (true? (media-transform.i/image-content-type? "image/jpeg")))
-    (is (true? (media-transform.i/image-content-type? "image/png")))
-    (is (true? (media-transform.i/image-content-type? "image/gif")))
-    (is (false? (media-transform.i/image-content-type? "application/pdf")))
-    (is (false? (media-transform.i/image-content-type? "text/plain")))))
+(deftest test-previewable
+  (testing "by media type"
+    (is (true? (media-transform.i/previewable? "image/jpeg" "media/a.jpg")))
+    (is (true? (media-transform.i/previewable? "image/png" "media/a.png")))
+    (is (true? (media-transform.i/previewable? "image/gif" "media/a.gif")))
+    (is (true? (media-transform.i/previewable? "image/vnd.adobe.photoshop" "media/a.psd")))
+    (is (true? (media-transform.i/previewable? "image/tiff" "media/a.tif"))))
+  (testing "by extension, since browsers disagree on a PSD's type"
+    (is (true? (media-transform.i/previewable? "application/octet-stream" "media/a.PSD")))
+    (is (true? (media-transform.i/previewable? "" "media/a.tiff"))))
+  (testing "anything else"
+    (is (false? (media-transform.i/previewable? "application/pdf" "media/a.pdf")))
+    (is (false? (media-transform.i/previewable? "image/heic" "media/a.heic")))
+    (is (false? (media-transform.i/previewable? "text/plain" "media/a.txt")))
+    (is (false? (media-transform.i/previewable? nil nil)))))
+
+(defn- fixture [name]
+  (io/file (io/resource (str "sepal/media_transform/fixtures/" name))))
+
+(defn- format-name [^java.io.File f]
+  (with-open [iis (ImageIO/createImageInputStream f)]
+    (.getFormatName ^javax.imageio.ImageReader (.next (ImageIO/getImageReaders iis)))))
+
+(deftest test-psd-and-tiff-are-served-as-jpeg
+  (doseq [[name ext] [["rgb.psd" "psd"] ["alpha.psd" "psd"] ["rgb.tif" "tif"] ["cmyk.tif" "tif"]]]
+    (testing name
+      (let [{:keys [path]} (media-transform.i/get-or-transform *cache-ds* *temp-dir* name ext
+                                                               (constantly (fixture name))
+                                                               {:width 32 :height 32})
+            out (io/file path)]
+        (is (str/ends-with? path ".jpg") "a browser can't show the original's format")
+        (is (.exists out))
+        (is (= "JPEG" (format-name out)))
+        (let [img (ImageIO/read out)]
+          (is (= [32 24] [(.getWidth img) (.getHeight img)])))))))
+
+(deftest test-transparency-is-flattened-onto-white
+  (let [{:keys [path]} (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 "psd"
+                                                           (constantly (fixture "alpha.psd"))
+                                                           {:width 64 :height 48})
+        img (ImageIO/read (io/file path))
+        corner (java.awt.Color. (.getRGB img 1 1))
+        middle (java.awt.Color. (.getRGB img 32 24))]
+    (is (every? #(> % 240) [(.getRed corner) (.getGreen corner) (.getBlue corner)])
+        "the transparent corner is white, not black")
+    (is (> (.getRed middle) 150) "the opaque red square is still red")
+    (is (< (.getGreen middle) 80))))
+
+(deftest test-cmyk-keeps-its-colour
+  (let [{:keys [path]} (media-transform.i/get-or-transform *cache-ds* *temp-dir* 1 "tif"
+                                                           (constantly (fixture "cmyk.tif"))
+                                                           {:width 64 :height 48})
+        c (java.awt.Color. (.getRGB (ImageIO/read (io/file path)) 32 24))]
+    (is (> (.getGreen c) (+ 60 (.getRed c))) "green, not inverted or grey")
+    (is (> (.getGreen c) (+ 60 (.getBlue c))))))
+
+(deftest test-an-image-over-the-pixel-cap-is-not-decoded
+  (let [source (create-test-image (io/file *temp-dir* "big.jpg") 400 300)]
+    (with-redefs [core/max-pixels (* 399 300)]
+      (is (thrown-with-msg? clojure.lang.ExceptionInfo #"too many pixels"
+                            (media-transform.i/transform source (io/file *temp-dir* "out.jpg")
+                                                         {:width 100 :height 100}))))
+    (with-redefs [core/max-pixels (* 400 300)]
+      (is (some? (media-transform.i/transform source (io/file *temp-dir* "out.jpg")
+                                              {:width 100 :height 100}))
+          "at the cap is fine"))))
+
+(deftest test-a-large-image-is-scaled-exactly
+  (testing "a source read at reduced resolution still comes out at the requested size"
+    (let [source (create-test-image (io/file *temp-dir* "large.jpg") 3000 2000)
+          target (io/file *temp-dir* "small.jpg")]
+      (media-transform.i/transform source target {:width 120 :height 120 :fit :crop})
+      (let [img (ImageIO/read target)]
+        (is (= [120 120] [(.getWidth img) (.getHeight img)])))
+      (media-transform.i/transform source target {:width 120 :height 120})
+      (let [img (ImageIO/read target)]
+        (is (= [120 80] [(.getWidth img) (.getHeight img)]))))))

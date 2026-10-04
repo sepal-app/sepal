@@ -41,7 +41,9 @@
    - cache-ds     - Cache database datasource
    - cache-dir    - Cache directory path
    - media-id     - Media ID
-   - source-ext   - The original's extension, used when :format is :original
+   - source-ext   - The original's extension. With :format :original the
+                    output keeps it when a browser can show it, and is JPEG
+                    otherwise.
    - fetch-source - (fn []) returning a path to the original. Called only on a
                     miss, so a hit costs no download.
    - opts         - Transform options (same as transform)
@@ -49,8 +51,7 @@
    Returns {:path \"...\" :hit? true/false}"
   [cache-ds cache-dir media-id source-ext fetch-source opts]
   (let [hash (cache/cache-key media-id opts)
-        out-format (or (:format opts) :original)
-        ext (if (= out-format :original) source-ext (name out-format))
+        ext (core/output-extension source-ext (:format opts))
         cached-path (cache/cache-path cache-dir hash ext)]
     (if (and (.exists (io/file cached-path))
              (cache/get-entry cache-ds hash))
@@ -71,10 +72,15 @@
   [cache-ds cache-dir max-size-bytes]
   (cache/evict-lru! cache-ds cache-dir max-size-bytes))
 
-(defn image-content-type?
-  "Returns true if the content type is a supported image format."
-  [content-type]
-  (core/image-content-type? content-type))
+(def max-source-bytes
+  "The largest original that is downloaded to make a preview."
+  core/max-source-bytes)
+
+(defn previewable?
+  "Whether a preview can be made of a file of `media-type` stored at `path`,
+  judged by either."
+  [media-type path]
+  (core/previewable? media-type path))
 
 (defn init-cache-db!
   "Initialize the cache database. Returns datasource."
