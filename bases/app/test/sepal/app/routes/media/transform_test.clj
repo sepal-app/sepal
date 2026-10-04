@@ -70,7 +70,8 @@
                                      :user (ig/ref :key/user)
                                      :media-type "image/png"
                                      :s3-key "media/source.png"
-                                     :s3-bucket "sepal-test-media"}}
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
     (fn [{:keys [media]}]
       (let [src (File/createTempFile "sepal-src-" ".png")
             _ (ImageIO/write (BufferedImage. 600 900 BufferedImage/TYPE_INT_RGB)
@@ -122,7 +123,8 @@
                                      :user (ig/ref :key/user)
                                      :media-type "image/png"
                                      :s3-key "media/cached.png"
-                                     :s3-bucket "sepal-test-media"}}
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
     (fn [{:keys [media]}]
       (let [downloads (atom 0)
             context (transform-context media)
@@ -227,7 +229,8 @@
                                      :user (ig/ref :key/user)
                                      :media-type "image/vnd.adobe.photoshop"
                                      :s3-key "media/broken.psd"
-                                     :s3-bucket "sepal-test-media"}}
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
     (fn [{:keys [media]}]
       (let [junk (File/createTempFile "sepal-junk-" ".psd")
             _ (spit junk "not a psd")
@@ -244,7 +247,8 @@
                                      :user (ig/ref :key/user)
                                      :media-type "image/vnd.adobe.photoshop"
                                      :s3-key "media/layered.psd"
-                                     :s3-bucket "sepal-test-media"}}
+                                     :s3-bucket "sepal-test-media"
+                                     :size-in-bytes 1000}}
     (fn [{:keys [media]}]
       (let [fixture (io/file (io/resource "sepal/media_transform/fixtures/rgb.psd"))
             resp (with-redefs-fn {#'transform/download-from-s3
