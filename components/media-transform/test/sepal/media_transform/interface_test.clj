@@ -219,3 +219,64 @@
       (media-transform.i/transform source target {:width 120 :height 120})
       (let [img (ImageIO/read target)]
         (is (= [120 80] [(.getWidth img) (.getHeight img)]))))))
+
+(defn- with-exif-orientation
+  "Write `f`'s JPEG back with an EXIF APP1 segment holding only `orientation`,
+  placed after the JFIF segment the way a camera's file has it."
+  [f orientation]
+  (let [jpeg (Files/readAllBytes (.toPath (io/file f)))
+        app0-end (+ 4 (bit-or (bit-shift-left (bit-and (aget jpeg 4) 0xff) 8)
+                              (bit-and (aget jpeg 5) 0xff)))
+        app1 (byte-array (map unchecked-byte
+                              [0xFF 0xE1 0 34
+                               0x45 0x78 0x69 0x66 0 0 ; Exif
+                               0x4D 0x4D 0 0x2A 0 0 0 8 ; big-endian TIFF header
+                               0 1 ; one IFD entry
+                               0x01 0x12 0 3 0 0 0 1 0 orientation 0 0
+                               0 0 0 0]))]
+    (with-open [out (io/output-stream f)]
+      (.write out jpeg 0 app0-end)
+      (.write out app1)
+      (.write out jpeg app0-end (- (alength jpeg) app0-end)))
+    f))
+
+(defn- half-and-half
+  "A 40x20 JPEG, red on the left and blue on the right."
+  [path]
+  (let [img (BufferedImage. 40 20 BufferedImage/TYPE_INT_RGB)
+        g (.createGraphics img)]
+    (.setColor g java.awt.Color/RED)
+    (.fillRect g 0 0 20 20)
+    (.setColor g java.awt.Color/BLUE)
+    (.fillRect g 20 0 20 20)
+    (.dispose g)
+    (ImageIO/write img "jpg" (io/file path))
+    (io/file path)))
+
+(defn- colour-at [^BufferedImage img x y]
+  (let [c (java.awt.Color. (.getRGB img x y))]
+    (if (> (.getRed c) (.getBlue c)) :red :blue)))
+
+(deftest test-exif-orientation-is-applied
+  (doseq [[orientation [w h] corners]
+          [[nil [40 20] {:top-left :red :bottom-right :blue}]
+           [1 [40 20] {:top-left :red :bottom-right :blue}]
+           [3 [40 20] {:top-left :blue :bottom-right :red}]
+           [6 [20 40] {:top-left :red :bottom-right :blue}]
+           [8 [20 40] {:top-left :blue :bottom-right :red}]]]
+    (testing (str "orientation " (or orientation "absent"))
+      (let [source (cond-> (half-and-half (io/file *temp-dir* "source.jpg"))
+                     orientation (with-exif-orientation orientation))
+            target (io/file *temp-dir* "out.jpg")]
+        (media-transform.i/transform source target {:width 40 :height 40})
+        (let [img (ImageIO/read target)]
+          (is (= [w h] [(.getWidth img) (.getHeight img)]))
+          (is (= corners {:top-left (colour-at img 3 3)
+                          :bottom-right (colour-at img (- w 4) (- h 4))})))))))
+
+(deftest test-a-turned-image-is-subsampled-for-the-turned-box
+  (testing "a quarter turn swaps which side the box constrains"
+    (let [source (with-exif-orientation (create-test-image (io/file *temp-dir* "wide.jpg") 4000 1000) 6)
+          img (#'core/read-image source 1000 100)]
+      (is (= [1000 4000] [(.getWidth img) (.getHeight img)])
+          "shown 1000 wide, a 1000x100 crop needs every column, so nothing is skipped"))))
