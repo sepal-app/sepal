@@ -152,7 +152,10 @@
             :class "spl-toolbar"
             :method "get"
             :hx-get " "
-            :hx-trigger "keyup delay:200ms,change"
+            ;; `submit` routes Enter and requestSubmit() through htmx, so the
+            ;; request carries HX-Trigger and keeps the sort.
+            :hx-trigger "keyup delay:200ms,change,submit"
+            :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"
@@ -212,7 +215,10 @@
             :class "spl-toolbar"
             :method "get"
             :hx-get " "
-            :hx-trigger "keyup delay:200ms,change"
+            ;; `submit` routes Enter and requestSubmit() through htmx, so the
+            ;; request carries HX-Trigger and keeps the sort.
+            :hx-trigger "keyup delay:200ms,change,submit"
+            :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"
