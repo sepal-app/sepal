@@ -1,8 +1,9 @@
 (ns sepal.app.routes.material.index
-  (:require [lambdaisland.uri :as uri]
-            [sepal.accession.interface :as accession.i]
+  (:require [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
@@ -47,7 +48,7 @@
         (when-let [loc (:location/code row)]
           (str " \u00b7 " loc))))
 
-(defn table-columns [& {:keys [separator]}]
+(defn table-columns [& {:keys [separator timezone]}]
   ;; One identifier, not two. A material's code is issued within its accession,
   ;; so `2026.0001.01` is how a garden writes the whole thing down — and a
   ;; separate Accession column only repeated the prefix. The accession stays one
@@ -55,35 +56,59 @@
   ;; Linking the two halves separately was the other option and was rejected —
   ;; the second half is a couple of characters wide and nowhere near a tap
   ;; target.
-  [{:name (tr "Code")
-    :type :identifier-compound
-    :priority 1
-    :stacked stacked-summary
-    :cell (fn [row] [:a {:href (z/url-for material.routes/detail
-                                          {:id (:material/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (ct.i/full-code separator (:accession/code row) (:material/code row))])}
-   {:name (tr "Taxon")
-    :type :name
-    :priority 2
-    :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
-                                          {:id (:taxon/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (taxon-name/render (:taxon/name row))])}
-   {:name (tr "Location")
-    :type :text
-    :priority 3
-    :cell (fn [row] [:a {:href (z/url-for location.routes/detail
-                                          {:id (:location/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (:location/code row)])}
-   {:name (tr "Status")
-    :type :text
-    :priority 4
-    :cell (fn [row] (some-> (:material/status row) keyword material.spec/status-labels tr))}])
+  (into
+    [{:name (tr "Code")
+      :key :code
+      :type :identifier-compound
+      :priority 1
+      :sort [:a.code :m.code]
+      :stacked stacked-summary
+      :cell (fn [row] [:a {:href (z/url-for material.routes/detail
+                                            {:id (:material/id row)})
+                           :class "spl-link"
+                           :x-on:click.stop ""}
+                       (ct.i/full-code separator (:accession/code row) (:material/code row))])}
+     {:name (tr "Taxon")
+      :key :taxon
+      :type :name
+      :priority 2
+      :sort [:t.name]
+      :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
+                                            {:id (:taxon/id row)})
+                           :class "spl-link"
+                           :x-on:click.stop ""}
+                       (taxon-name/render (:taxon/name row))])}
+     {:name (tr "Location")
+      :key :location
+      :type :text
+      :priority 3
+      :sort [:l.code]
+      :cell (fn [row] [:a {:href (z/url-for location.routes/detail
+                                            {:id (:location/id row)})
+                           :class "spl-link"
+                           :x-on:click.stop ""}
+                       (:location/code row)])}
+     {:name (tr "Type")
+      :key :type
+      :type :text
+      :priority 3
+      :sort [:m.type]
+      :cell #(some-> (:material/type %) keyword material.spec/type-labels tr)}
+     {:name (tr "Quantity")
+      :key :quantity
+      :type :number
+      :priority 3
+      :sort [:m.quantity]
+      :cell :material/quantity}
+     {:name (tr "Status")
+      :key :status
+      :type :text
+      :priority 4
+      :sort [:m.status]
+      :cell (fn [row] (some-> (:material/status row) keyword material.spec/status-labels tr))}]
+    (table/timestamp-columns :created [:m.created_at :material/created-at]
+                             :updated [:m.updated_at :material/updated-at]
+                             :timezone timezone)))
 
 (def living-term "status:alive")
 
@@ -103,31 +128,31 @@
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page page-size href separator total]}]
-  (table/rows-only :columns (table-columns :separator separator)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page
+                           :page-size page-size
+                           :total total})))
 
-(defn table [& {:keys [rows page href page-size separator total search-query]}]
+(defn table [& {:keys [rows page href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns :separator separator)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No material yet")
-                                :body (tr "Material is what an accession became in the garden — a plant in a bed, a seed lot in store.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for material.routes/new)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No material yet")
+                                        :body (tr "Material is what an accession became in the garden — a plant in a bed, a seed lot in store.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for material.routes/new))}))))
 
-(defn render [& {:keys [accession field-options viewer href page page-size rows search-query separator taxon total]}]
+(defn render [& {:keys [accession field-options viewer href page page-size rows search-query table-opts taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -135,9 +160,9 @@
                                 :page page
                                 :page-size page-size
                                 :rows rows
-                                :separator separator
                                 :total total
-                                :search-query search-query)
+                                :search-query search-query
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -192,7 +217,7 @@
        first
        :value))
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -214,16 +239,23 @@
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
+        view (list-view/resolve request :material
+                                (table-columns :separator material-separator :timezone timezone))
         ;; m.id last and always: this list is read a page at a time by offset,
         ;; and an order that leaves any two rows tied lets SQLite return them
         ;; in either order per page — the same row on two pages and another on
         ;; none. There was no ordering here at all, so the de facto order was
         ;; rowid; naming it keeps that and makes it total.
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :material ast)
-                                                                [[:m.id :asc]])))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :material ast)
+                                                               :default [[:m.id :asc]]
+                                                               :tiebreak [:m.id :asc]}))))
+        table-opts (list-view/table-opts view uri q)
 
         ;; Fetch entities for breadcrumbs if filtering by ID
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
@@ -258,24 +290,22 @@
         (index-rows :rows rows
                     :page page
                     :page-size page-size
-                    :separator material-separator
                     :total total
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
-      (render :viewer viewer
-              :accession accession
-              :field-options (search.i/field-options :material)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page page
-              :page-size page-size
-              :search-query q
-              :separator material-separator
-              :taxon taxon
-              :total total))))
+      (list-view/respond
+        view
+        (render :viewer viewer
+                :accession accession
+                :field-options (search.i/field-options :material)
+                :href (list-view/href view uri q :page page)
+                :rows rows
+                :page page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :taxon taxon
+                :total total)
+        uri q))))

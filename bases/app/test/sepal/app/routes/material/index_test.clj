@@ -56,3 +56,49 @@
         (is (.contains (.text (.selectFirst (fetch sess "/material/" "q" "status:dormant") row))
                        "Dormant"))
         (is (nil? (.selectFirst (fetch sess "/material/" "q" "status:alive") row)))))))
+
+(def sortable-keys
+  ["code" "taxon" "location" "type" "quantity" "status" "created" "updated"])
+
+(deftest test-every-sort-answers
+  (tf/testing "every sortable column, both ways, is valid SQL"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)]
+        (doseq [k sortable-keys dir ["asc" "desc"]]
+          (is (= 200 (:status (:response (peri/request sess "/material/" :params {:sort k :dir dir}))))
+              (str k " " dir)))))))
+
+(deftest test-type-and-quantity-show-by-default
+  (tf/testing "two new default columns"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/material/")))
+            headers (set (map #(.text %) (.select body "thead th")))]
+        (is (contains? headers "Type"))
+        (is (contains? headers "Quantity"))))))
+
+(deftest test-sort-by-quantity
+  (tf/testing "quantity, largest first"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/material/"
+                                                               :params {:sort "quantity" :dir "desc"})))]
+        (is (= "descending" (.attr (.selectFirst body "th[aria-sort]") "aria-sort")))))))
+
+(deftest test-next-page-keeps-the-sort
+  (tf/testing "the prefetch row asks for the next page with the same sort"
+    (assoc (fixtures)
+           [::material.i/factory :key/second] {:db *db*
+                                               :accession (ig/ref :key/accession)
+                                               :location (ig/ref :key/location)
+                                               :data {:status :dormant :quantity 2}})
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/material/"
+                                                               :params {:sort "quantity" :dir "desc" :page-size 1})))
+            prefetch (.selectFirst body "tr.spl-prefetch")]
+        (is (some? prefetch))
+        (is (re-find #"sort=quantity" (.attr prefetch "hx-get")))))))
