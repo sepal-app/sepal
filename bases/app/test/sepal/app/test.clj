@@ -27,6 +27,15 @@
   [response]
   (Jsoup/parse (:body response)))
 
+(defn first-cells
+  "Each data row's first cell, as text, in order. Takes the wide form when the
+  cell also carries a phone summary."
+  [body]
+  (vec (for [tr (.select body "tbody > tr:not(.spl-prefetch):not(.spl-sentinel):not(.spl-end)")
+             :let [td (.selectFirst tr "td")
+                   wide (.selectFirst td ".spl-cell-wide")]]
+         (.text (or wide td)))))
+
 (defn banner-text
   "Get the text content of the flash banner from a response.
    Returns nil if no banner is found."
