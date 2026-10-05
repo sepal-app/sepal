@@ -9,6 +9,11 @@
 
 (def list-container-id "list-container")
 
+(def toolbar-id
+  "The toolbar form's id. htmx sends it as HX-Trigger, which is how a list
+  handler knows a request is a refined search that may keep its sort."
+  "list-toolbar")
+
 (defn filter-badge
   "A single filter badge with label, value, and clear button.
 
@@ -143,7 +148,8 @@
   [& {:keys [table-actions content]}]
   [:div {:class "spl-list-page"}
    [:div {:class "spl-list-body"}
-    [:form {:class "spl-toolbar"
+    [:form {:id toolbar-id
+            :class "spl-toolbar"
             :method "get"
             :hx-get " "
             :hx-trigger "keyup delay:200ms,change"
@@ -202,7 +208,8 @@
    ;; table starts immediately beneath. This is the shape the workbench mockup
    ;; has: chrome, then data.
    [:div {:class "spl-list-body"}
-    [:form {:class "spl-toolbar"
+    [:form {:id toolbar-id
+            :class "spl-toolbar"
             :method "get"
             :hx-get " "
             :hx-trigger "keyup delay:200ms,change"
