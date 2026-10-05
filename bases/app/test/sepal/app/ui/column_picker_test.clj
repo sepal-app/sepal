@@ -12,11 +12,11 @@
 
 (defn- parse []
   (Jsoup/parseBodyFragment
-   (binding [*anti-forgery-token* "token"]
-     (chassis/html (column-picker/picker :list-key :accession
-                                         :columns columns
-                                         :visible-keys #{:code :provenance}
-                                         :action "/lists/accession/columns")))))
+    (binding [*anti-forgery-token* "token"]
+      (chassis/html (column-picker/picker :list-key :accession
+                                          :columns columns
+                                          :visible-keys #{:code :provenance}
+                                          :action "/lists/accession/columns")))))
 
 (deftest test-button-opens-the-popover
   (let [body (parse)

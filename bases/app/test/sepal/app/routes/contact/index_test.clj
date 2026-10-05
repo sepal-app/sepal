@@ -37,7 +37,7 @@
       (try
         (let [sess (app.test/login (:user/email user) password)
               names (app.test/first-cells (app.test/parse-body (:response (peri/request sess "/contact/"
-                                                                                         :params {:sort "name" :dir "asc"}))))]
+                                                                                        :params {:sort "name" :dir "asc"}))))]
           (is (contains? (set names) "alpha"))
           (is (< (.indexOf names "alpha") (.indexOf names "Beta"))))
         (finally

@@ -12,34 +12,34 @@
 
 (defn- table-columns [timezone]
   (into
-   [{:name (tr "Name")
-     :key :name
-     :type :name
-     :priority 1
-     :sort [[:lower :t.name]]
-     :stacked (fn [tag]
-                [:span {:class "spl-stacked-line"}
-                 (:tag/description tag)
-                 " · "
-                 (trn "%1 link" "%1 links" (or (:tag/link-count tag) 0))])
-     :cell (fn [tag]
-             [:a {:class "spl-link"
-                  :href (z/url-for tag.routes/detail {:id (:tag/id tag)})}
-              (:tag/name tag)])}
-    {:name (tr "Description") :key :description :type :text :priority 2
-     :sort [[:lower :t.description]] :cell :tag/description}
-    {:name (tr "Links") :key :links :type :number :priority 2
-     :sort [:tag__link_count] :cell :tag/link-count}]
-   (ui.table/timestamp-columns :created [:t.created_at :tag/created-at]
-                               :updated [:t.updated_at :tag/updated-at]
-                               :timezone timezone)))
+    [{:name (tr "Name")
+      :key :name
+      :type :name
+      :priority 1
+      :sort [[:lower :t.name]]
+      :stacked (fn [tag]
+                 [:span {:class "spl-stacked-line"}
+                  (:tag/description tag)
+                  " · "
+                  (trn "%1 link" "%1 links" (or (:tag/link-count tag) 0))])
+      :cell (fn [tag]
+              [:a {:class "spl-link"
+                   :href (z/url-for tag.routes/detail {:id (:tag/id tag)})}
+               (:tag/name tag)])}
+     {:name (tr "Description") :key :description :type :text :priority 2
+      :sort [[:lower :t.description]] :cell :tag/description}
+     {:name (tr "Links") :key :links :type :number :priority 2
+      :sort [:tag__link_count] :cell :tag/link-count}]
+    (ui.table/timestamp-columns :created [:t.created_at :tag/created-at]
+                                :updated [:t.updated_at :tag/updated-at]
+                                :timezone timezone)))
 
 (defn- table [tags table-opts]
   (ui.table/table (merge table-opts
                          {:rows tags
                           :empty-state (ui.empty/empty-state
-                                        :title (tr "No tags yet")
-                                        :body (tr "Ad-hoc groupings a curator can filter a list by later."))})))
+                                         :title (tr "No tags yet")
+                                         :body (tr "Ad-hoc groupings a curator can filter a list by later."))})))
 
 (defn render [& {:keys [tags table-opts]}]
   (ui.page/page :content [:div {:id pages.list/list-container-id}

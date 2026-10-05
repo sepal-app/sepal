@@ -82,9 +82,9 @@
       :priority 3
       :hidden? true
       :query #(list-query/add-select % [{:select [[[:count :*]]]
-                              :from [[:accession :ac]]
-                              :where [:= :ac.taxon_id :t.id]}
-                             :taxon__accession_count])
+                                         :from [[:accession :ac]]
+                                         :where [:= :ac.taxon_id :t.id]}
+                                        :taxon__accession_count])
       :sort [:taxon__accession_count]
       :cell :taxon/accession-count}]
     ;; Created and Updated are not sortable on the taxa list, so they select
