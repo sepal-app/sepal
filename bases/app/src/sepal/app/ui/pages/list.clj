@@ -153,8 +153,10 @@
             :method "get"
             :hx-get " "
             ;; `submit` routes Enter and requestSubmit() through htmx, so the
-            ;; request carries HX-Trigger and keeps the sort.
-            :hx-trigger "keyup delay:200ms,change,submit"
+            ;; request carries HX-Trigger and keeps the sort. The search box
+            ;; is excluded from `change`: it fires on blur, so clicking a
+            ;; sort header would send an unsorted request after the sort.
+            :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
             :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
@@ -216,8 +218,10 @@
             :method "get"
             :hx-get " "
             ;; `submit` routes Enter and requestSubmit() through htmx, so the
-            ;; request carries HX-Trigger and keeps the sort.
-            :hx-trigger "keyup delay:200ms,change,submit"
+            ;; request carries HX-Trigger and keeps the sort. The search box
+            ;; is excluded from `change`: it fires on blur, so clicking a
+            ;; sort header would send an unsorted request after the sort.
+            :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
             :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)

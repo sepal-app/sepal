@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is testing]]
             [ring.middleware.anti-forgery :as anti-forgery]
             [sepal.app.list-view :as list-view]
+            [sepal.app.ui.pages.list :as pages.list]
             [zodiac.core :as z]))
 
 (def columns
@@ -63,6 +64,8 @@
         (is (not (:min-width? opts)))
         (is (= "/accession/?sort=provenance&dir=asc&q=quer"
                (:href ((:sort-link opts) (second columns)))))
+        (is (= (str "#" pages.list/toolbar-id ":replace") (:hx-sync ((:sort-link opts) (second columns))))
+            "a header click and a toolbar request share one sync slot")
         (is (some? (:picker opts)))))))
 
 (deftest test-respond-pushes-a-carried-sort

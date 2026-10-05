@@ -57,7 +57,8 @@
            :hx-target container
            :hx-select container
            :hx-swap "outerHTML"
-           :hx-push-url "true"})))))
+           :hx-push-url "true"
+           :hx-sync (str "#" pages.list/toolbar-id ":replace")})))))
 
 (defn table-opts
   "Options for table/table and table/rows-only."
