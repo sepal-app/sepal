@@ -313,3 +313,56 @@
   (testing "a column with no stacked function adds no narrow element"
     (let [out (chassis/html (table/table :columns columns :rows rows))]
       (is (not (.contains out "spl-cell-narrow"))))))
+
+(def sortable-columns
+  [{:name "Code" :key :code :type :identifier :priority 1 :cell :code :sort [:a.code]}
+   {:name "Taxon" :key :taxon :type :name :priority 1 :cell :taxon}
+   {:name "Location" :key :location :type :text :priority 2 :cell :location :sort [:l.name]}
+   {:name "Received" :key :received :type :date :priority 3 :cell :received :sort [:a.date_received]}])
+
+(defn- parse-opts [opts]
+  (Jsoup/parseBodyFragment
+    (chassis/html (table/table (merge {:columns sortable-columns :rows rows} opts)))))
+
+(deftest test-sortable-headers-link
+  (let [body (parse-opts {:sort-link (fn [col] (when (:sort col) {:href (str "?sort=" (name (:key col)))}))})]
+    (is (= "?sort=code" (.attr (.selectFirst body "th:nth-child(1) a.spl-th-sort") "href")))
+    (is (nil? (.selectFirst body "th:nth-child(2) a")) "an unsortable header stays text")))
+
+(deftest test-sorted-header-is-marked
+  (let [body (parse-opts {:sort {:column (last sortable-columns) :dir :desc}
+                          :sort-link (fn [col] (when (:sort col) {:href "#"}))})
+        th (.selectFirst body "th:nth-child(4)")]
+    (is (= "descending" (.attr th "aria-sort")))
+    (is (some? (.selectFirst th ".spl-th-arrow")))
+    (is (not (.hasAttr (.selectFirst body "th:nth-child(1)") "aria-sort")))))
+
+(deftest test-picker-cell
+  (let [body (Jsoup/parseBodyFragment
+               (chassis/html (table/table :columns sortable-columns :rows rows
+                                          :picker [:button "v"]
+                                          :href "/x/" :page 1 :page-size 25 :total 1)))]
+    (is (some? (.selectFirst body "thead th.spl-col--picker button")))
+    (is (= 5 (.size (.select body "tbody tr:first-child td"))) "a trailing cell per row")
+    (is (= "5" (.attr (.selectFirst body "tr.spl-end td") "colspan"))
+        "the end row spans the picker column too")))
+
+(deftest test-shed-switch
+  (is (some? (.selectFirst (parse-opts {}) "th.spl-shed-3")))
+  (is (nil? (.selectFirst (parse-opts {:shed? false}) "[class*=spl-shed]"))))
+
+(deftest test-min-width
+  (is (= (+ 120 160 160 120) (table/min-width sortable-columns false)))
+  (is (= (+ 120 160 160 120 36) (table/min-width sortable-columns true)))
+  (is (= "min-width: 596px"
+         (.attr (.selectFirst (parse-opts {:min-width? true :picker [:span]}) "table") "style"))))
+
+(deftest test-timestamp-columns
+  (let [[created updated] (table/timestamp-columns :created [:a.created_at :accession/created-at]
+                                                   :updated [:a.updated_at :accession/updated-at]
+                                                   :timezone "America/Belize")]
+    (is (= [:created :updated] [(:key created) (:key updated)]))
+    (is (every? :hidden? [created updated]))
+    (is (= [:a.created_at] (:sort created)))
+    (is (= "2026-03-13" ((:cell created) {:accession/created-at "2026-03-14 01:00:00"}))
+        "the garden's day, as an ISO date the :date type formats")))

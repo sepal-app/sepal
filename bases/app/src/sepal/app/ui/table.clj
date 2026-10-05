@@ -23,10 +23,11 @@
 (defn- column-classes
   "A column's type drives its width and face; its priority drives when it is
    hidden as the viewport narrows. Priority 1 never sheds and carries no shed
-   class, so `spl-shed-1` never appears in the markup."
-  [{:keys [type priority]}]
+   class, so `spl-shed-1` never appears in the markup. A user who has chosen
+   their columns gets no shedding at all."
+  [{:keys [type priority]} shed?]
   (cond-> [(str "spl-col--" (name (or type :text)))]
-    (and priority (> priority 1)) (conj (str "spl-shed-" priority))))
+    (and shed? priority (> priority 1)) (conj (str "spl-shed-" priority))))
 
 (defn- cell-content
   "What a column shows for `row`. A :date column's ISO string is formatted for
@@ -130,8 +131,8 @@
   `paging?` rather than a test of `next-url`: the end marker belongs at the
   bottom of a list that pages and has run out, and nowhere at all on a list
   that never paged. Those are different facts and only one of them is `nil`."
-  [& {:keys [columns rows row-attrs next-url paging?]}]
-  (let [n (count columns)
+  [& {:keys [columns rows row-attrs next-url paging? picker? shed?] :or {shed? true}}]
+  (let [n (cond-> (count columns) picker? inc)
         ;; Clamped, so a short final response still prefetches from near its top
         ;; rather than not at all.
         prefetch-idx (when next-url
@@ -143,7 +144,7 @@
             (prefetch-row next-url n))
           [:tr (when row-attrs (row-attrs row))
            (for [col columns]
-             [:td (cond-> {:class (column-classes col)}
+             [:td (cond-> {:class (column-classes col shed?)}
                     (:attrs col) (merge ((:attrs col) row)))
               (if-let [stacked (:stacked col)]
                 ;; Both forms are emitted and CSS shows one: server-rendered
@@ -152,11 +153,68 @@
                 ;; announced twice and no aria-hidden is needed.
                 (list [:span {:class "spl-cell-wide"} (cell-content col row)]
                       [:div {:class "spl-cell-narrow"} (stacked row)])
-                (cell-content col row))])]))
+                (cell-content col row))])
+           (when picker?
+             [:td {:class "spl-col--picker"}])]))
       (when paging?
         (if next-url
           (sentinel-row n)
           (end-of-list n))))))
+
+(def ^:private column-widths
+  "Fixed widths by type, matching components.css."
+  {:identifier 120
+   :identifier-compound 136
+   :date 120
+   :datetime 152
+   :number 80
+   :actions 112})
+
+(def ^:private unsized-min-width
+  "What a :name or :text column gets once the table can scroll sideways."
+  160)
+
+(def ^:private picker-width 36)
+
+(defn min-width
+  "The narrowest a table of `columns` can be before its cells clip. A table
+  of chosen columns is at least this wide and scrolls sideways instead."
+  [columns picker?]
+  (+ (reduce + (map #(get column-widths (or (:type %) :text) unsized-min-width) columns))
+     (if picker? picker-width 0)))
+
+(defn timestamp-columns
+  "Created and Updated, hidden until chosen. `created` and `updated` are
+  [sql-column row-key] pairs. A UTC timestamp shows as the garden's day."
+  [& {:keys [created updated timezone]}]
+  (for [[k label [column row-key]] [[:created (tr "Created") created]
+                                    [:updated (tr "Updated") updated]]]
+    {:name label
+     :key k
+     :type :date
+     :priority 3
+     :hidden? true
+     :sort [column]
+     :cell (fn [row]
+             (some-> (get row row-key)
+                     datetime/sqlite-datetime->instant
+                     (datetime/local-date timezone)
+                     str))}))
+
+(defn- sort-arrow [dir]
+  [:span {:class "spl-th-arrow" :aria-hidden "true"}
+   (if (= :desc dir) "↓" "↑")])
+
+(defn- header-cell [col {:keys [sort sort-link shed?]}]
+  (let [dir (when (= (:key col) (get-in sort [:column :key])) (:dir sort))
+        link (when sort-link (sort-link col))]
+    [:th (cond-> {:scope "col" :class (column-classes col shed?)}
+           dir (assoc :aria-sort (if (= :desc dir) "descending" "ascending")))
+     (if link
+       [:a (merge {:class "spl-th-sort"} link)
+        (:name col)
+        (when dir (sort-arrow dir))]
+       (:name col))]))
 
 (defn table
   "A table component.
@@ -203,23 +261,36 @@
   href, page, page-size, total: the paging state. Given all four the table
   loads the next page as the reader nears the bottom; given none it renders a
   single fixed list. Derived here rather than by each caller, so every list
-  agrees on when there is a next page and where its trigger sits."
-  [& {:keys [columns rows row-attrs href page page-size total empty-state]}]
+  agrees on when there is a next page and where its trigger sits.
+
+  sort, sort-link: the current sort, and (fn [column] attrs) for a header
+  link. A column whose sort-link returns nil keeps a plain header.
+
+  picker: hiccup for a trailing header cell holding the column picker.
+
+  shed?: false for a user who chose their columns. They see those columns at
+  every width, and min-width? makes the table scroll sideways instead."
+  [& {:keys [columns rows row-attrs href page page-size total empty-state
+             sort sort-link picker shed? min-width?]
+      :or {shed? true}}]
   (if (and empty-state (empty? rows))
     ;; In place of the table, not inside it. A header row over nothing, with
     ;; "END OF LIST" underneath, reads as a list that failed to load.
     empty-state
-    [:table {:class "spl-table"}
+    [:table (cond-> {:class "spl-table"}
+              min-width? (assoc :style (str "min-width: " (min-width columns (some? picker)) "px")))
      [:thead
       [:tr
        (for [col columns]
-         [:th {:scope "col"
-               :class (column-classes col)}
-          (:name col)])]]
+         (header-cell col {:sort sort :sort-link sort-link :shed? shed?}))
+       (when picker
+         [:th {:scope "col" :class "spl-col--picker"} picker])]]
      [:tbody (when (and href page page-size total) {:id rows-container-id})
       (body-rows :columns columns
                  :rows rows
                  :row-attrs row-attrs
+                 :picker? (some? picker)
+                 :shed? shed?
                  :paging? (boolean (and href page page-size total))
                  :next-url (next-page-url :href href
                                           :page page
@@ -252,11 +323,14 @@
   htmx wraps a partial response in a <template> before parsing it, so a <p> at
   the top level survives beside the <tr>s rather than being foster-parented out
   of a table."
-  [& {:keys [columns rows row-attrs href page page-size total]}]
+  [& {:keys [columns rows row-attrs href page page-size total picker shed?]
+      :or {shed? true}}]
   (list
     (body-rows :columns columns
                :rows rows
                :row-attrs row-attrs
+               :picker? (some? picker)
+               :shed? shed?
                :paging? true
                :next-url (next-page-url :href href
                                         :page page

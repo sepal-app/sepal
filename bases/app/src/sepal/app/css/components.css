@@ -1071,6 +1071,23 @@
  * comes from the cell's own markup, not from the column. Four callers used
  * this type for a while against no rule at all. */
 .spl-col--name { width: auto; }
+
+/* The header cell holding the column picker. */
+.spl-col--picker { width: 36px; }
+.spl-table th.spl-col--picker,
+.spl-table td.spl-col--picker { padding: 0; text-align: center; }
+
+/* A sortable header is a link that reads as a header until hovered. */
+.spl-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+.spl-th-sort:hover,
+.spl-th-sort:focus-visible { color: var(--color-text); }
+.spl-th-arrow { font-family: var(--font-sans); }
 .spl-table td.spl-col--text { color: var(--color-text-muted); }
 
 /* The wide form's own wrapper, present so a narrow screen's CSS has something
@@ -1103,8 +1120,9 @@
   flex: 1;
   min-height: 0;
 }
-/* Rows scroll here; the header does not. */
-.spl-table-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+/* Rows scroll here; the header does not. A table of chosen columns can be
+ * wider than the screen and scrolls sideways inside the card. */
+.spl-table-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: auto; }
 
 /* The header sticks to the top of the scroll region, so the column a value
  * belongs to stays readable however far down the list you are. */
