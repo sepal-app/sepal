@@ -998,6 +998,11 @@
   table-layout: fixed;
   border-collapse: collapse;
 }
+/* A user's chosen columns set --spl-table-min, so a wide set scrolls sideways.
+ * Not below 640px, where the table collapses to a single column. */
+@media (min-width: 640px) {
+  .spl-table { min-width: var(--spl-table-min); }
+}
 .spl-table th {
   font: 500 10px/1.4 var(--font-mono);
   letter-spacing: .08em;

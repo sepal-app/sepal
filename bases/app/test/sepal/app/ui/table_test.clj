@@ -354,8 +354,9 @@
 (deftest test-min-width
   (is (= (+ 120 160 160 120) (table/min-width sortable-columns false)))
   (is (= (+ 120 160 160 120 36) (table/min-width sortable-columns true)))
-  (is (= "min-width: 596px"
-         (.attr (.selectFirst (parse-opts {:min-width? true :picker [:span]}) "table") "style"))))
+  (is (= "--spl-table-min: 596px"
+         (.attr (.selectFirst (parse-opts {:min-width? true :picker [:span]}) "table") "style"))
+      "a custom property, which the stylesheet applies only from 640px"))
 
 (deftest test-timestamp-columns
   (let [[created updated] (table/timestamp-columns :created [:a.created_at :accession/created-at]

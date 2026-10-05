@@ -278,7 +278,7 @@
     ;; "END OF LIST" underneath, reads as a list that failed to load.
     empty-state
     [:table (cond-> {:class "spl-table"}
-              min-width? (assoc :style (str "min-width: " (min-width columns (some? picker)) "px")))
+              min-width? (assoc :style (str "--spl-table-min: " (min-width columns (some? picker)) "px")))
      [:thead
       [:tr
        (for [col columns]
