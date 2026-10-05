@@ -1,10 +1,14 @@
 (ns sepal.app.routes.location.index-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [integrant.core :as ig]
             [peridot.core :as peri]
+            [sepal.accession.interface :as accession.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
             [sepal.location.interface :as location.i]
+            [sepal.material.interface :as material.i]
+            [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
 (use-fixtures :once default-system-fixture)
@@ -56,3 +60,20 @@
             body (app.test/parse-body (:response (peri/request sess "/location/")))
             headers (set (map #(.text %) (.select body "thead th")))]
         (is (contains? headers "Material"))))))
+
+(deftest test-joining-filter-with-material-column
+  (tf/testing "a filter that joins, with the material column visible and sorted"
+    (assoc (fixtures)
+           [::taxon.i/factory :key/taxon] {:db *db*}
+           [::accession.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+           [::material.i/factory :key/material] {:db *db*
+                                                 :accession (ig/ref :key/accession)
+                                                 :location (ig/ref :key/location)
+                                                 :data {:type :seed}})
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :location {:material true})
+      (let [sess (app.test/login (:user/email user) password)
+            response (:response (peri/request sess "/location/" :params {:q "material.type:seed" :sort "material" :dir "asc"}))]
+        (is (= 200 (:status response)))
+        (is (some #(.startsWith ^String % "Material")
+                  (map #(.text %) (.select (app.test/parse-body response) "thead th"))))))))

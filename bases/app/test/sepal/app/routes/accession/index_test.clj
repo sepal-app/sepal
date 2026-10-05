@@ -7,6 +7,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.contact.interface :as contact.i]
             [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
@@ -180,3 +181,22 @@
                                          "hx-trigger" "list-toolbar"
                                          "hx-current-url" "http://localhost/accession/?q=quer&sort=received&dir=desc"})]
         (is (re-find #"sort=received" (get-in response [:headers "HX-Push-Url"])))))))
+
+(deftest test-joining-filter-with-supplier-column
+  (tf/testing "a filter that joins, with the supplier column visible and sorted"
+    (fixtures)
+    (fn [{:keys [user taxon]}]
+      (user.i/set-list-columns! *db* (:user/id user) :accession {:supplier true})
+      (let [contact-id (:contact/id (contact.i/create! *db* {:name "Zorbax"}))
+            acc (accession.i/create! *db* {:code "ZZ.1"
+                                           :taxon-id (:taxon/id taxon)
+                                           :supplier-contact-id contact-id})]
+        (try
+          (let [sess (app.test/login (:user/email user) "testpassword123")
+                response (get-page sess {:q "supplier:Zorbax" :sort "supplier" :dir "asc"})]
+            (is (= 200 (:status response)))
+            (is (some #(.startsWith ^String % "Supplier")
+                      (map #(.text %) (.select (app.test/parse-body response) "thead th")))))
+          (finally
+            (jdbc.sql/delete! *db* :accession {:id (:accession/id acc)})
+            (jdbc.sql/delete! *db* :contact {:id contact-id})))))))

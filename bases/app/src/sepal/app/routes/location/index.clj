@@ -37,9 +37,6 @@
   [l]
   (table/summary (:location/code l) (:location/description l)))
 
-(defn- add-select [stmt & exprs]
-  (update stmt :select (fnil into []) exprs))
-
 (defn table-columns [timezone]
   (into
     [{:name (tr "Name")
@@ -85,7 +82,7 @@
       :type :number
       :priority 3
       :hidden? true
-      :query #(add-select % [{:select [[[:count :*]]]
+      :query #(list-query/add-select % [{:select [[[:count :*]]]
                               :from [[:material :lm]]
                               :where [:= :lm.location_id :l.id]}
                              :location__material_count])

@@ -32,9 +32,6 @@
   [t]
   (table/summary (:taxon/rank t) (:taxon/author t)))
 
-(defn- add-select [stmt & exprs]
-  (update stmt :select (fnil into []) exprs))
-
 (defn table-columns [timezone]
   (into
     [{:name (tr "Name")
@@ -84,7 +81,7 @@
       :type :number
       :priority 3
       :hidden? true
-      :query #(add-select % [{:select [[[:count :*]]]
+      :query #(list-query/add-select % [{:select [[[:count :*]]]
                               :from [[:accession :ac]]
                               :where [:= :ac.taxon_id :t.id]}
                              :taxon__accession_count])
@@ -98,7 +95,7 @@
                           :updated [:t.updated_at :taxon__updated_at])]
              (-> column
                  (dissoc :sort)
-                 (assoc :query (fn [stmt] (add-select stmt select))))))
+                 (assoc :query (fn [stmt] (list-query/add-select stmt select))))))
          (table/timestamp-columns :created [:t.created_at :taxon/created-at]
                                   :updated [:t.updated_at :taxon/updated-at]
                                   :timezone timezone))))

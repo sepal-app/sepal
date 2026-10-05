@@ -56,8 +56,8 @@
 
 (defn- supplier-query [stmt]
   (-> stmt
-      (update :left-join (fnil into []) [[:contact :sc] [:= :sc.id :a.supplier_contact_id]])
-      (update :select conj [:sc.name :accession__supplier_name])))
+      (list-query/add-left-join [:contact :sc] [:= :sc.id :a.supplier_contact_id])
+      (list-query/add-select [:sc.name :accession__supplier_name])))
 
 (defn table-columns [timezone]
   (into

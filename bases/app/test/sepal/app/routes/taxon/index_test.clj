@@ -6,9 +6,12 @@
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.accession.interface :as acc.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.location.interface :as loc.i]
+            [sepal.material.interface :as material.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
@@ -531,3 +534,19 @@
             prefetch (.selectFirst body "tr.spl-prefetch")]
         (is (some? prefetch))
         (is (re-find #"sort=author" (.attr prefetch "hx-get")))))))
+
+(deftest test-joining-filter-with-accessions-column
+  (tf/testing "a filter that joins, with the accessions column visible and sorted"
+    (assoc (user-fixture)
+           [::acc.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+           [::loc.i/factory :key/location] {:db *db*}
+           [::material.i/factory :key/material] {:db *db*
+                                                 :location (ig/ref :key/location)
+                                                 :accession (ig/ref :key/accession)
+                                                 :data {:type :seed}})
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :taxon {:accessions true})
+      (let [sess (app.test/login (:user/email user) password)
+            response (:response (peri/request sess "/taxon/" :params {:q "material.type:seed" :sort "accessions" :dir "asc"}))]
+        (is (= 200 (:status response)))
+        (is (some #(.startsWith ^String % "Accessions") (map #(.text %) (.select (app.test/parse-body response) "thead th"))))))))

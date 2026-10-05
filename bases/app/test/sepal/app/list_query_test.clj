@@ -35,3 +35,21 @@
     (is (= ["SELECT * FROM accession AS a ORDER BY LOWER(sc.name) DESC NULLS LAST, a.id ASC"]
            (sql/format (assoc base :order-by (list-query/order-by {:column supplier :dir :desc} opts))))
         "SQLite accepts what this renders")))
+
+(deftest test-add-select
+  (is (= [:a [:b :c]] (:select (list-query/add-select {:select [:a]} [:b :c]))))
+  (is (= [[:b :c]] (:select (list-query/add-select {} [:b :c]))) "no select yet")
+  (let [s (list-query/add-select {:select-distinct [:a]} [:b :c])]
+    (is (= [:a [:b :c]] (:select-distinct s)) "a search join made it select-distinct")
+    (is (not (contains? s :select)))))
+
+(deftest test-add-left-join
+  (let [j [[:taxon :rt] [:= :rt.id :p.rootstock_taxon_id]]]
+    (is (= j (:left-join (list-query/add-left-join {} [:taxon :rt] [:= :rt.id :p.rootstock_taxon_id]))))
+    (testing "skipped when the alias is already joined"
+      (let [in-join {:join j}
+            in-left {:left-join j}]
+        (is (= in-join (list-query/add-left-join in-join [:taxon :rt] [:= :rt.id :p.rootstock_taxon_id])))
+        (is (= in-left (list-query/add-left-join in-left [:taxon :rt] [:= :rt.id :p.rootstock_taxon_id])))))
+    (testing "another alias is added"
+      (is (= 4 (count (:left-join (list-query/add-left-join {:left-join j} [:contact :sc] [:= 1 1]))))))))

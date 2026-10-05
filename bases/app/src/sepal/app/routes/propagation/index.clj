@@ -85,8 +85,8 @@
 
 (defn- rootstock-query [stmt]
   (-> stmt
-      (update :left-join (fnil into []) [[:taxon :rt] [:= :rt.id :p.rootstock_taxon_id]])
-      (update :select conj [:rt.name :propagation__rootstock_name])))
+      (list-query/add-left-join [:taxon :rt] [:= :rt.id :p.rootstock_taxon_id])
+      (list-query/add-select [:rt.name :propagation__rootstock_name])))
 
 (defn table-columns [& {:keys [type-labels status-labels separator timezone]}]
   (into
@@ -140,10 +140,10 @@
               (let [succeeded (:propagation/quantity-succeeded row)]
                 (list
                   (when (and (some? succeeded) (not (has-product? row)))
-                  ;; A success count with nothing recorded as its result is a
-                  ;; to-do, not an error: something struck and nobody wrote
-                  ;; down where it went. This is the only place the count is
-                  ;; compared against anything.
+                    ;; A success count with nothing recorded as its result is a
+                    ;; to-do, not an error: something struck and nobody wrote
+                    ;; down where it went. This is the only place the count is
+                    ;; compared against anything.
                     (tooltip/wrap
                       (lucide/triangle-alert :class "w-4 h-4 text-danger")
                       (tr "No product recorded for this batch")
@@ -159,7 +159,7 @@
                 [:a {:href (z/url-for location.routes/detail {:id location-id})
                      :class "spl-link"
                      :x-on:click.stop ""}
-                 (:location/path row)]))},
+                 (:location/path row)]))}
      {:name (tr "Succeeded on")
       :key :succeeded-on
       :type :date

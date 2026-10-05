@@ -167,3 +167,21 @@
           (finally
             (doseq [p ps]
               (jdbc.sql/delete! *db* :propagation {:id (:propagation/id p)}))))))))
+
+(deftest test-joining-filter-with-rootstock-column
+  (tf/testing "a rootstock filter, with the rootstock column visible and sorted"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (user.i/set-list-columns! *db* (:user/id user) :propagation {:rootstock true})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            root (taxon.i/create! *db* {:name "Zorbax" :rank :species})
+            prop (propagation.i/create! *db* {:type :cutting
+                                              :parent-accession-id (:accession/id acc-a)
+                                              :rootstock-taxon-id (:taxon/id root)})]
+        (try
+          (let [response (:response (peri/request sess "/propagation/" :params {:q "rootstock:Zorbax" :sort "rootstock" :dir "asc"}))]
+            (is (= 200 (:status response)))
+            (is (some #(.startsWith ^String % "Rootstock") (map #(.text %) (.select (app.test/parse-body response) "thead th")))))
+          (finally
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id prop)})
+            (jdbc.sql/delete! *db* :taxon {:id (:taxon/id root)})))))))
