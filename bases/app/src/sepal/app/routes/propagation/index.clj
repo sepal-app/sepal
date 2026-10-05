@@ -151,7 +151,7 @@
                   (when (some? succeeded) (str succeeded)))))}
      {:name (tr "Location")
       :key :location
-      :sort [:l.name]
+      :sort [[:lower :l.name]]
       :type :text
       :priority 7
       :cell (fn [row]
