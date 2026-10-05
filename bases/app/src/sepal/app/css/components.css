@@ -1301,9 +1301,36 @@
   }
 }
 
-/* Responsive shedding, by column priority. */
-@media (max-width: 1023px) { .spl-shed-3 { display: none; } }
-@media (max-width: 767px)  { .spl-shed-2 { display: none; } }
+/* Responsive shedding, by column priority.
+ *
+ * A shed column collapses to zero width rather than display:none. The paging
+ * rows (prefetch, sentinel, end of list) span every column, and under fixed
+ * layout a colspan wider than the visible header cells adds an empty column
+ * on the right. visibility:hidden keeps the cells out of the accessibility
+ * tree and their links out of the tab order, as display:none did.
+ *
+ * Nothing below 640px: the single-cell layout there hides every cell but the
+ * first. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .spl-table th.spl-shed-3,
+  .spl-table td.spl-shed-3 {
+    width: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+}
+@media (min-width: 640px) and (max-width: 767px) {
+  .spl-table th.spl-shed-2,
+  .spl-table td.spl-shed-2 {
+    width: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+}
 
 /* Below 640px the table keeps its element and its semantics but collapses to a
  * single column whose cell stacks the row's content. A one-column table is
