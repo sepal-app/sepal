@@ -71,3 +71,31 @@
                              (is (match? {:id ["should be a positive int"]}
                                          (-> exd :data :explain me/humanize))))
                            (user.i/create! db data)))))))
+
+(deftest test-set-list-columns!
+  (tf/testing "list column choices are stored per list"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [id (:user/id user)
+            read #(:user/list-columns (user.i/get-by-id *db* id))]
+        (is (nil? (read)) "no choice made")
+
+        (user.i/set-list-columns! *db* id :accession {:provenance false :supplier true})
+        (is (= {:accession {:provenance false :supplier true}} (read)))
+
+        (user.i/set-list-columns! *db* id :taxon {:author false})
+        (is (= {:accession {:provenance false :supplier true}
+                :taxon {:author false}}
+               (read))
+            "saving one list leaves the others alone")
+
+        (user.i/set-list-columns! *db* id :accession nil)
+        (is (= {:taxon {:author false}} (read)) "reset removes only that list")))))
+
+(deftest test-list-columns-rejects-invalid-json
+  (tf/testing "the column only holds JSON"
+    {[::user.i/factory :key/user] {:db *db*}}
+    (fn [{:keys [user]}]
+      (is (thrown? Exception
+                   (jdbc.sql/update! *db* :user {:list_columns "not json"}
+                                     {:id (:user/id user)}))))))

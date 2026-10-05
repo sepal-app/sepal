@@ -58,3 +58,9 @@
 
 (defmethod ig/init-key ::factory [_ args]
   (core/factory args))
+
+(defn set-list-columns!
+  "Save a user's column choices for one list: a map of column key to boolean,
+  or nil to go back to the list's defaults."
+  [db id list-key overrides]
+  (core/set-list-columns! db id list-key overrides))

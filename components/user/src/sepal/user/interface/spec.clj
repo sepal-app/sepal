@@ -1,5 +1,6 @@
 (ns sepal.user.interface.spec
-  (:require [clojure.string :as str]
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]
             [sepal.i18n.interface :refer [N_]]
             [sepal.validation.interface :refer [email-re]]))
 
@@ -41,16 +42,27 @@
    :active (N_ "Active")
    :archived (N_ "Archived")})
 
+(defn- decode-list-columns
+  "The stored JSON, with keyword keys for the list and column names."
+  [v]
+  (if (string? v)
+    (json/read-str v :key-fn keyword)
+    v))
+
+(def list-columns
+  [:maybe [:map-of :keyword [:map-of :keyword :boolean]]])
+
 (def User
   ;; Be explicit about which columns to select to avoid selecting the password by default
-  [:map {:store/columns [:id :email :full-name :role :status :language]}
+  [:map {:store/columns [:id :email :full-name :role :status :language :list-columns]}
    [:user/id id]
    [:user/email email]
    [:user/full-name {:optional true} [:maybe :string]]
    [:user/role role]
    [:user/status status]
    ;; A catalog locale such as "es". nil follows the browser.
-   [:user/language {:optional true} [:maybe :string]]])
+   [:user/language {:optional true} [:maybe :string]]
+   [:user/list-columns {:optional true :decode/store decode-list-columns} list-columns]])
 
 (def CreateUser
   [:map
