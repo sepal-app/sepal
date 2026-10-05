@@ -39,3 +39,16 @@
   (let [form (.selectFirst (parse) "form")]
     (is (= "/lists/accession/columns" (.attr form "hx-post")))
     (is (some? (.selectFirst form "button[name=reset]")))))
+
+(deftest test-ids-carry-the-list-key
+  (let [body (parse)]
+    (is (= "column-picker-accession-col-provenance"
+           (.attr (.selectFirst body "input[name=shown][value=provenance]") "id"))
+        "so a column's checkbox can't share an id with a list's panel")
+    (is (some? (.selectFirst body "label[for=column-picker-accession-col-provenance]")))))
+
+(deftest test-popover-is-a-labelled-dialog
+  (let [body (parse)
+        panel (.selectFirst body "[popover]")]
+    (is (= "dialog" (.attr panel "role")))
+    (is (= "Columns" (.text (.getElementById body (.attr panel "aria-labelledby")))))))
