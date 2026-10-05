@@ -321,3 +321,43 @@
         (is (contains? (row-ids (fetch sess "/observation/" "q" (str "due:<=" today))) id))
         (doseq [o [settled follow-up]]
           (observation.i/delete! *db* (:observation/id o)))))))
+
+(def sortable-keys ["type" "observed" "due" "value" "created" "updated"])
+
+(deftest test-every-sort-answers
+  (tf/testing "every sortable column, both ways, is valid SQL"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)]
+        (doseq [k sortable-keys dir ["asc" "desc"]]
+          (is (= 200 (:status (:response (peri/request sess "/observation/" :params {:sort k :dir dir}))))
+              (str k " " dir)))))))
+
+(deftest test-subject-and-observer-are-not-sortable
+  (tf/testing "two computed columns keep plain headers"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/observation/")))]
+        (is (nil? (.selectFirst body "th:contains(Subject) a")))
+        (is (nil? (.selectFirst body "th:contains(Observer) a")))))))
+
+(deftest test-next-page-keeps-the-sort
+  (tf/testing "the prefetch row asks for the next page with the same sort"
+    (fixtures)
+    (fn [{:keys [user material]}]
+      (let [observations (doall
+                           (for [d ["2026-01-01" "2026-01-02"]]
+                             (create! :resource-type :material
+                                      :resource-id (:material/id material)
+                                      :user user
+                                      :type "general"
+                                      :observed-on d)))
+            sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/observation/"
+                                                               :params {:sort "observed" :dir "desc" :page-size 1})))
+            prefetch (.selectFirst body "tr.spl-prefetch")]
+        (is (some? prefetch))
+        (is (re-find #"sort=observed" (.attr prefetch "hx-get")))
+        (doseq [o observations]
+          (observation.i/delete! *db* (:observation/id o)))))))

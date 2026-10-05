@@ -1,8 +1,9 @@
 (ns sepal.app.routes.observation.index
-  (:require [lambdaisland.uri :as uri]
-            [sepal.app.authorization :as authz]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
@@ -59,57 +60,59 @@
        (when-let [value-label (:observation/value-label row)]
          (str ": " (trc "observation_value" value-label)))))
 
-(defn table-columns [viewer separator]
-  [{:name (tr "Subject")
-    :type :text
-    :priority 1
-    :stacked (fn [row] (table/summary (subject-label row separator) (type-summary row)))
-    :cell (fn [row]
-            [:a {:href (subject-href row viewer)
-                 :class "spl-link"}
-             (subject-label row separator)])}
-   {:name (tr "Type")
-    :type :text
-    :priority 2
-    :cell type-summary}
-   {:name (tr "Observed")
-    :type :date
-    :priority 3
-    :cell :observation/observed-on}
-   {:name (tr "Due")
-    :type :date
-    :priority 4
-    :cell :observation/next-check-on}
-   {:name (tr "Observer")
-    :type :text
-    :priority 5
-    :cell observation.i/observer}])
+(defn table-columns [viewer separator timezone]
+  (into
+    [{:name (tr "Subject")
+      :key :subject
+      :type :text
+      :priority 1
+      :stacked (fn [row] (table/summary (subject-label row separator) (type-summary row)))
+      :cell (fn [row]
+              [:a {:href (subject-href row viewer)
+                   :class "spl-link"}
+               (subject-label row separator)])}
+     {:name (tr "Type") :key :type :type :text :priority 2
+      :sort [:o.type] :cell type-summary}
+     {:name (tr "Observed") :key :observed :type :date :priority 3
+      :sort [:o.observed_on] :cell :observation/observed-on}
+     {:name (tr "Due") :key :due :type :date :priority 4
+      :sort [:o.next_check_on] :cell :observation/next-check-on}
+     {:name (tr "Observer") :key :observer :type :text :priority 5
+      :cell observation.i/observer}
+     {:name (tr "Value") :key :value :type :text :priority 3 :hidden? true
+      :sort [:o.value]
+      :cell #(some->> (:observation/value-label %) (trc "observation_value"))}
+     {:name (tr "Note") :key :note :type :text :priority 3 :hidden? true
+      :cell :observation/note}]
+    (table/timestamp-columns :created [:o.created_at :observation/created-at]
+                             :updated [:o.updated_at :observation/updated-at]
+                             :timezone timezone)))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page page-size href separator total viewer]}]
-  (table/rows-only :columns (table-columns viewer separator)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page
+                           :page-size page-size
+                           :total total})))
 
-(defn table [& {:keys [rows page href page-size separator total search-query viewer]}]
+(defn table [& {:keys [rows page href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns viewer separator)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No observations yet")
-                                :body (tr "What a curator saw, dated and filed against the material or location it was about.")
-                                :searching? (seq search-query)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No observations yet")
+                                        :body (tr "What a curator saw, dated and filed against the material or location it was about.")
+                                        :searching? (seq search-query))}))))
 
 (defn overdue-term
   "The overdue filter term the index's own checkbox applies: `overdue:<today>`,
@@ -134,7 +137,7 @@
               :x-on:click.prevent "toggle()"}]
      [:span (tr "Only overdue observations")]]))
 
-(defn render [& {:keys [href page page-size rows search-query separator total today viewer]}]
+(defn render [& {:keys [href page page-size rows search-query table-opts total today]}]
   (ui.page/page
     :content (pages.list/page-content
                :content [:div
@@ -144,8 +147,7 @@
                                 :rows rows
                                 :total total
                                 :search-query search-query
-                                :separator separator
-                                :viewer viewer)
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -191,7 +193,7 @@
              :left [[:location :l]
                     [:and [:= :o.resource_type "location"] [:= :l.id :o.resource_id]]]]})
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -201,20 +203,26 @@
                                      {:material-separator material-separator})
 
         total (db.i/count-bounded db stmt)
+        view (list-view/resolve request :observation (table-columns viewer material-separator timezone))
         ;; Newest observed first, the same order the subject's own Observations
         ;; tab reads in; id breaks a tie observed_on cannot, the same reasoning
         ;; material and location's own indexes give for their tiebreakers.
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :observation ast)
-                                                                [[:o.observed_on :desc] [:o.id :desc]])))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :observation ast)
+                                                               :default [[:o.observed_on :desc] [:o.id :desc]]
+                                                               :tiebreak [:o.id :asc]}))))
         ;; A location subject reads as its path, from one query for the page.
         rows (let [location-id #(when (= "location" (:observation/resource-type %))
                                   (:observation/resource-id %))
                    paths (location-path/by-id db (keep location-id rows))]
                (mapv #(assoc % :location/path (get paths (location-id %))) rows))
-        today (str (datetime/today timezone))]
+        today (str (datetime/today timezone))
+        table-opts (list-view/table-opts view uri q)]
 
     (cond
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
@@ -224,23 +232,19 @@
         (index-rows :rows rows
                     :page page
                     :page-size page-size
-                    :separator material-separator
                     :total total
-                    :viewer viewer
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
-      (render :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page page
-              :page-size page-size
-              :search-query q
-              :separator material-separator
-              :total total
-              :today today
-              :viewer viewer))))
+      (list-view/respond
+        view
+        (render :href (list-view/href view uri q :page page)
+                :rows rows
+                :page page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :total total
+                :today today)
+        uri q))))
