@@ -588,6 +588,7 @@ CREATE TRIGGER trigger_media_link_media_fts_update
 END;
 CREATE INDEX taxon_author_lower_idx ON taxon (lower(author));
 CREATE INDEX taxon_rank_idx ON taxon (rank);
+CREATE INDEX accession_taxon_id_idx ON accession (taxon_id);
 INSERT INTO accession_received_type VALUES('air_layer');
 INSERT INTO accession_received_type VALUES('balled_and_burlapped');
 INSERT INTO accession_received_type VALUES('bare_root_plant');
@@ -763,3 +764,4 @@ INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003120000', '20
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003130000', '2026-10-03 13:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261003140000', '2026-10-03 14:00:00');
 INSERT INTO "schema_version" (version, applied_at) VALUES ('20261005120000', '2026-10-05 12:00:00');
+INSERT INTO "schema_version" (version, applied_at) VALUES ('20261006120000', '2026-10-06 12:00:00');
