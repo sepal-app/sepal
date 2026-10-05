@@ -4,9 +4,10 @@
   There is no separate nursery screen: `status:active` is applied by default
   when the query says nothing about status, so the page opens as the worklist
   and the same URL with `status:*` answers the whole history."
-  (:require [lambdaisland.uri :as uri]
-            [sepal.app.authorization :as authz]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
@@ -17,6 +18,7 @@
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.app.ui.table :as table]
+            [sepal.app.ui.taxon-name :as taxon-name]
             [sepal.app.ui.tooltip :as tooltip]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [tr]]
@@ -81,98 +83,131 @@
     [:span {:class (html/attr "spl-badge" (get colors status "spl-badge--neutral"))}
      label]))
 
-(defn table-columns [& {:keys [type-labels status-labels separator]}]
-  [{:name (tr "Parent")
-    :type :identifier
-    :priority 1
-    :stacked (fn [row]
-               (table/summary (parent-label row separator)
-                              (get type-labels (:propagation/type row))
-                              (get status-labels (:propagation/status row))))
-    :cell (fn [row]
-            [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id row)})
-                 :class "spl-link"
-                 :x-on:click.stop ""}
-             (parent-label row separator)])}
-   {:name (tr "Type")
-    :type :text
-    :priority 2
-    :cell (fn [row] (get type-labels (:propagation/type row) (:propagation/type row)))}
-   {:name (tr "Status")
-    :type :text
-    :priority 3
-    :cell (fn [row]
-            (status-badge (:propagation/status row)
-                          (get status-labels (:propagation/status row)
-                               (:propagation/status row))))}
-   {:name (tr "Propagated")
-    :type :date
-    :priority 4
-    :cell :propagation/propagated-on}
-   {:name (tr "Started")
-    :type :number
-    :priority 5
-    :cell :propagation/quantity-started}
-   {:name (tr "Succeeded")
-    :type :number
-    :priority 6
-    :cell (fn [row]
-            (let [succeeded (:propagation/quantity-succeeded row)]
-              (list
-                (when (and (some? succeeded) (not (has-product? row)))
+(defn- rootstock-query [stmt]
+  (-> stmt
+      (update :left-join (fnil into []) [[:taxon :rt] [:= :rt.id :p.rootstock_taxon_id]])
+      (update :select conj [:rt.name :propagation__rootstock_name])))
+
+(defn table-columns [& {:keys [type-labels status-labels separator timezone]}]
+  (into
+    [{:name (tr "Parent")
+      :key :parent
+      :sort [:a.code :m.code]
+      :type :identifier
+      :priority 1
+      :stacked (fn [row]
+                 (table/summary (parent-label row separator)
+                                (get type-labels (:propagation/type row))
+                                (get status-labels (:propagation/status row))))
+      :cell (fn [row]
+              [:a {:href (z/url-for propagation.routes/detail {:id (:propagation/id row)})
+                   :class "spl-link"
+                   :x-on:click.stop ""}
+               (parent-label row separator)])}
+     {:name (tr "Type")
+      :key :type
+      :sort [:p.type]
+      :type :text
+      :priority 2
+      :cell (fn [row] (get type-labels (:propagation/type row) (:propagation/type row)))}
+     {:name (tr "Status")
+      :key :status
+      :sort [:p.status]
+      :type :text
+      :priority 3
+      :cell (fn [row]
+              (status-badge (:propagation/status row)
+                            (get status-labels (:propagation/status row)
+                                 (:propagation/status row))))}
+     {:name (tr "Propagated")
+      :key :propagated
+      :sort [:p.propagated_on]
+      :type :date
+      :priority 4
+      :cell :propagation/propagated-on}
+     {:name (tr "Started")
+      :key :started
+      :sort [:p.quantity_started]
+      :type :number
+      :priority 5
+      :cell :propagation/quantity-started}
+     {:name (tr "Succeeded")
+      :key :succeeded
+      :sort [:p.quantity_succeeded]
+      :type :number
+      :priority 6
+      :cell (fn [row]
+              (let [succeeded (:propagation/quantity-succeeded row)]
+                (list
+                  (when (and (some? succeeded) (not (has-product? row)))
                   ;; A success count with nothing recorded as its result is a
                   ;; to-do, not an error: something struck and nobody wrote
                   ;; down where it went. This is the only place the count is
                   ;; compared against anything.
-                  (tooltip/wrap
-                    (lucide/triangle-alert :class "w-4 h-4 text-danger")
-                    (tr "No product recorded for this batch")
-                    :side "left"))
-                (when (some? succeeded) (str succeeded)))))}
-   {:name (tr "Location")
-    :type :text
-    :priority 7
-    :cell (fn [row]
-            (when-let [location-id (:propagation/location-id row)]
-              [:a {:href (z/url-for location.routes/detail {:id location-id})
-                   :class "spl-link"
-                   :x-on:click.stop ""}
-               (:location/path row)]))}])
+                    (tooltip/wrap
+                      (lucide/triangle-alert :class "w-4 h-4 text-danger")
+                      (tr "No product recorded for this batch")
+                      :side "left"))
+                  (when (some? succeeded) (str succeeded)))))}
+     {:name (tr "Location")
+      :key :location
+      :sort [:l.name]
+      :type :text
+      :priority 7
+      :cell (fn [row]
+              (when-let [location-id (:propagation/location-id row)]
+                [:a {:href (z/url-for location.routes/detail {:id location-id})
+                     :class "spl-link"
+                     :x-on:click.stop ""}
+                 (:location/path row)]))},
+     {:name (tr "Succeeded on")
+      :key :succeeded-on
+      :type :date
+      :priority 3
+      :hidden? true
+      :sort [:p.succeeded_on]
+      :cell :propagation/succeeded-on}
+     {:name (tr "Rootstock")
+      :key :rootstock
+      :type :name
+      :priority 3
+      :hidden? true
+      :query rootstock-query
+      :sort [:rt.name]
+      :cell #(some-> (:propagation/rootstock-name %) taxon-name/render)}]
+    (table/timestamp-columns :created [:p.created_at :propagation/created-at]
+                             :updated [:p.updated_at :propagation/updated-at]
+                             :timezone timezone)))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page-num page-size href total type-labels status-labels separator]}]
-  (table/rows-only :columns (table-columns :type-labels type-labels
-                                           :status-labels status-labels
-                                           :separator separator)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page-num
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page-num page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page-num
+                           :page-size page-size
+                           :total total})))
 
-(defn table [& {:keys [rows page-num href page-size total search-query
-                       type-labels status-labels separator]}]
+(defn table [& {:keys [rows page-num href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns :type-labels type-labels
-                                         :status-labels status-labels
-                                         :separator separator)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page-num
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No propagations yet")
-                                :body (tr "What the garden has grown itself, and what came out of it.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for propagation.routes/new)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page-num
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No propagations yet")
+                                        :body (tr "What the garden has grown itself, and what came out of it.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for propagation.routes/new))}))))
 
 (defn render [& {:keys [field-options href page-num page-size rows search-query
-                        total type-labels status-labels separator viewer]}]
+                        table-opts total viewer]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -182,9 +217,7 @@
                                 :rows rows
                                 :total total
                                 :search-query search-query
-                                :type-labels type-labels
-                                :status-labels status-labels
-                                :separator separator)
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -208,7 +241,7 @@
    [:page-size {:default default-page-size} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db material-separator timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -238,16 +271,25 @@
         stmt (search.i/compile-query :propagation ast base-stmt {:timezone timezone})
 
         total (db.i/count-bounded db stmt)
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :propagation ast)
-                                                                [[:p.propagated_on :desc]
-                                                                 [:p.id :desc]])))
+        type-labels (shared/type-labels db)
+        status-labels (shared/status-labels db)
+        view (list-view/resolve request :propagation
+                                (table-columns :type-labels type-labels
+                                               :status-labels status-labels
+                                               :separator material-separator
+                                               :timezone timezone))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :propagation ast)
+                                                               :default [[:p.propagated_on :desc] [:p.id :desc]]
+                                                               :tiebreak [:p.id :asc]}))))
         rows (let [paths (location-path/by-id db (keep :propagation/location-id rows))]
                (mapv #(assoc % :location/path (get paths (:propagation/location-id %))) rows))
-        type-labels (shared/type-labels db)
-        status-labels (shared/status-labels db)]
+        table-opts (list-view/table-opts view uri q)]
 
     (if (some? (get query-params "rows"))
       ;; Infinite scroll: the sentinel asks for the next page's rows alone and
@@ -257,23 +299,17 @@
                     :page-num page
                     :page-size page-size
                     :total total
-                    :type-labels type-labels
-                    :status-labels status-labels
-                    :separator material-separator
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
-      (render :field-options (search.i/field-options :propagation)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page-num page
-              :page-size page-size
-              :search-query q
-              :total total
-              :type-labels type-labels
-              :status-labels status-labels
-              :separator material-separator
-              :viewer viewer))))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
+      (list-view/respond
+        view
+        (render :field-options (search.i/field-options :propagation)
+                :href (list-view/href view uri q :page page)
+                :rows rows
+                :page-num page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :total total
+                :viewer viewer)
+        uri q))))
