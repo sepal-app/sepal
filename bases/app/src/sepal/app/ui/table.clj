@@ -128,7 +128,8 @@
             :class "spl-checkbox"
             :aria-label (tr "Select all loaded rows")
             :x-bind:checked "allLoaded()"
-            :x-bind:indeterminate "selected.length > 0 && !allLoaded()"
+            ;; A DOM property with no attribute, so x-bind cannot set it.
+            :x-effect "$el.indeterminate = selected.length > 0 && !allLoaded()"
             :x-on:click "toggleAll()"}]])
 
 (defn- select-cell [{:keys [id label]} row]

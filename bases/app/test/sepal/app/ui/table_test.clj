@@ -377,6 +377,10 @@
                                           :href "/x/" :page 1 :page-size 25 :total 1)))
         row-box (.selectFirst body "tbody tr:first-child td:first-child input[type=checkbox]")]
     (is (some? (.selectFirst body "thead th.spl-col--select:first-child input[type=checkbox]")))
+    (let [all-box (.selectFirst body "thead th.spl-col--select input")]
+      (is (= "$el.indeterminate = selected.length > 0 && !allLoaded()" (.attr all-box "x-effect"))
+          "indeterminate is a DOM property, so x-bind would only set an ignored attribute")
+      (is (not (.hasAttr all-box "x-bind:indeterminate"))))
     (is (= "2024.0117" (.attr row-box "value")))
     (is (= "selected" (.attr row-box "x-model")))
     (is (= "Select 2024.0117" (.attr row-box "aria-label")))
