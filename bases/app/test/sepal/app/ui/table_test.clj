@@ -367,3 +367,26 @@
     (is (= [:a.created_at] (:sort created)))
     (is (= "2026-03-13" ((:cell created) {:accession/created-at "2026-03-14 01:00:00"}))
         "the garden's day, as an ISO date the :date type formats")))
+
+(def select-opt {:id :code :label #(str "Select " (:code %))})
+
+(deftest test-select-column
+  (let [body (Jsoup/parseBodyFragment
+               (chassis/html (table/table :columns columns :rows rows
+                                          :select select-opt
+                                          :href "/x/" :page 1 :page-size 25 :total 1)))
+        row-box (.selectFirst body "tbody tr:first-child td:first-child input[type=checkbox]")]
+    (is (some? (.selectFirst body "thead th.spl-col--select:first-child input[type=checkbox]")))
+    (is (= "2024.0117" (.attr row-box "value")))
+    (is (= "selected" (.attr row-box "x-model")))
+    (is (= "Select 2024.0117" (.attr row-box "aria-label")))
+    (is (.hasAttr row-box "data-select-row"))
+    (is (.hasAttr (.selectFirst body "tbody td.spl-col--select") "x-on:click.stop")
+        "a click on the box doesn't open the panel")
+    (is (= "5" (.attr (.selectFirst body "tr.spl-end td") "colspan")))))
+
+(deftest test-no-select-column-by-default
+  (is (nil? (.selectFirst (parse) ".spl-col--select"))))
+
+(deftest test-min-width-with-select
+  (is (= (+ (table/min-width columns false) 40) (table/min-width columns false true))))

@@ -1082,6 +1082,24 @@
 .spl-table th.spl-col--picker,
 .spl-table td.spl-col--picker { padding: 0; text-align: center; }
 
+/* The checkbox column a list shows when rows can be acted on together. */
+.spl-col--select { width: 40px; }
+.spl-table th.spl-col--select,
+.spl-table td.spl-col--select { padding: 0; text-align: center; }
+/* The whole cell toggles the box, not only the 16px square. */
+.spl-select-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+/* Replaces the toolbar while rows are selected. */
+.spl-bulk-bar { gap: 8px; }
+.spl-bulk-count { font-weight: 600; white-space: nowrap; }
+.spl-bulk-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+
 /* A sortable header is a link that reads as a header until hovered. */
 .spl-th-sort {
   display: inline-flex;
@@ -1369,8 +1387,9 @@
   /* Keep the FIRST cell, whatever its type. Keying this on
      .spl-col--identifier hid every cell in any table without an identifier
      column — the Taxa list is Name/Author/Rank/Parent, and rendered blank. */
-  .spl-table td:not(:first-child) { display: none; }
-  .spl-table td:first-child {
+  .spl-table td:not(:first-child):not(.spl-col--select + td) { display: none; }
+  .spl-table td:first-child,
+  .spl-table td.spl-col--select + td {
     width: auto;
     padding: 10px 12px;
     white-space: normal;
@@ -1379,7 +1398,8 @@
     overflow: visible;
     overflow-wrap: anywhere;
   }
-  .spl-table td:first-child .spl-cell-narrow {
+  .spl-table td:first-child .spl-cell-narrow,
+  .spl-table td.spl-col--select + td .spl-cell-narrow {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1389,6 +1409,26 @@
     font-size: 13px;
     color: var(--color-text);
   }
+  /* After the first-child rule, at the same specificity, so it wins. */
+  .spl-table td.spl-col--select {
+    width: 44px;
+    padding: 0 0 0 4px;
+    vertical-align: top;
+  }
+}
+
+@media (max-width: 639px) {
+  .spl-bulk-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    flex-wrap: wrap;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -10px 30px -14px rgb(18 33 30 / .4);
+  }
+  /* Room under the last row, so the bar never covers it. */
+  .spl-list-body--selecting .spl-table-scroll { padding-bottom: 96px; }
 }
 
 /* ── Activity changelog ────────────────────────────────────────────────────

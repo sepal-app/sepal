@@ -122,6 +122,26 @@
   [:tr {:class "spl-end"}
    [:td {:colspan column-count} (tr "End of list")]])
 
+(defn- select-header []
+  [:th {:scope "col" :class "spl-col--select"}
+   [:input {:type "checkbox"
+            :class "spl-checkbox"
+            :aria-label (tr "Select all loaded rows")
+            :x-bind:checked "allLoaded()"
+            :x-bind:indeterminate "selected.length > 0 && !allLoaded()"
+            :x-on:click "toggleAll()"}]])
+
+(defn- select-cell [{:keys [id label]} row]
+  ;; .stop: the row's own click opens the panel.
+  [:td {:class "spl-col--select" :x-on:click.stop ""}
+   [:label {:class "spl-select-hit"}
+    [:input {:type "checkbox"
+             :class "spl-checkbox"
+             :value (str (id row))
+             :data-select-row ""
+             :x-model "selected"
+             :aria-label (label row)}]]])
+
 (defn- body-rows
   "The <tr>s, and the paging chrome when there is paging.
 
@@ -131,8 +151,8 @@
   `paging?` rather than a test of `next-url`: the end marker belongs at the
   bottom of a list that pages and has run out, and nowhere at all on a list
   that never paged. Those are different facts and only one of them is `nil`."
-  [& {:keys [columns rows row-attrs next-url paging? picker? shed?] :or {shed? true}}]
-  (let [n (cond-> (count columns) picker? inc)
+  [& {:keys [columns rows row-attrs next-url paging? picker? select shed?] :or {shed? true}}]
+  (let [n (cond-> (count columns) picker? inc select inc)
         ;; Clamped, so a short final response still prefetches from near its top
         ;; rather than not at all.
         prefetch-idx (when next-url
@@ -143,6 +163,7 @@
           (when (= i prefetch-idx)
             (prefetch-row next-url n))
           [:tr (when row-attrs (row-attrs row))
+           (when select (select-cell select row))
            (for [col columns]
              [:td (cond-> {:class (column-classes col shed?)}
                     (:attrs col) (merge ((:attrs col) row)))
@@ -176,12 +197,16 @@
 
 (def ^:private picker-width 36)
 
+(def ^:private select-width 40)
+
 (defn min-width
   "The narrowest a table of `columns` can be before its cells clip. A table
   of chosen columns is at least this wide and scrolls sideways instead."
-  [columns picker?]
-  (+ (reduce + (map #(get column-widths (or (:type %) :text) unsized-min-width) columns))
-     (if picker? picker-width 0)))
+  ([columns picker?] (min-width columns picker? false))
+  ([columns picker? select?]
+   (+ (reduce + (map #(get column-widths (or (:type %) :text) unsized-min-width) columns))
+      (if picker? picker-width 0)
+      (if select? select-width 0))))
 
 (defn timestamp-columns
   "Created and Updated, hidden until chosen. `created` and `updated` are
@@ -268,19 +293,24 @@
 
   picker: hiccup for a trailing header cell holding the column picker.
 
+  select: {:id (fn [row] …) :label (fn [row] …)} for a leading checkbox
+  column. :id is the checkbox's value and :label its accessible name. The
+  boxes bind to the `listSelection` Alpine component around the table.
+
   shed?: false for a user who chose their columns. They see those columns at
   every width, and min-width? makes the table scroll sideways instead."
   [& {:keys [columns rows row-attrs href page page-size total empty-state
-             sort sort-link picker shed? min-width?]
+             sort sort-link picker select shed? min-width?]
       :or {shed? true}}]
   (if (and empty-state (empty? rows))
     ;; In place of the table, not inside it. A header row over nothing, with
     ;; "END OF LIST" underneath, reads as a list that failed to load.
     empty-state
     [:table (cond-> {:class "spl-table"}
-              min-width? (assoc :style (str "--spl-table-min: " (min-width columns (some? picker)) "px")))
+              min-width? (assoc :style (str "--spl-table-min: " (min-width columns (some? picker) (some? select)) "px")))
      [:thead
       [:tr
+       (when select (select-header))
        (for [col columns]
          (header-cell col {:sort sort :sort-link sort-link :shed? shed?}))
        (when picker
@@ -290,6 +320,7 @@
                  :rows rows
                  :row-attrs row-attrs
                  :picker? (some? picker)
+                 :select select
                  :shed? shed?
                  :paging? (boolean (and href page page-size total))
                  :next-url (next-page-url :href href
@@ -323,13 +354,14 @@
   htmx wraps a partial response in a <template> before parsing it, so a <p> at
   the top level survives beside the <tr>s rather than being foster-parented out
   of a table."
-  [& {:keys [columns rows row-attrs href page page-size total picker shed?]
+  [& {:keys [columns rows row-attrs href page page-size total picker select shed?]
       :or {shed? true}}]
   (list
     (body-rows :columns columns
                :rows rows
                :row-attrs row-attrs
                :picker? (some? picker)
+               :select select
                :shed? shed?
                :paging? true
                :next-url (next-page-url :href href

@@ -11,6 +11,7 @@ import FormState from "~/js/form-state"
 import { queryBuilder, accessionsOnlyFilter, termFilter } from "~/js/query-builder"
 import { columnPicker } from "~/js/column-picker"
 import { quantityStatus } from "~/js/quantity-status"
+import { listSelection } from "~/js/list-selection"
 import { defineCombobox } from "~/js/record-combobox-element"
 
 window.Alpine = Alpine
@@ -32,6 +33,7 @@ document.addEventListener("alpine:init", () => {
     Alpine.data("queryBuilder", queryBuilder)
     Alpine.data("columnPicker", columnPicker)
     Alpine.data("quantityStatus", quantityStatus)
+    Alpine.data("listSelection", listSelection)
     Alpine.data("accessionsOnlyFilter", accessionsOnlyFilter)
     Alpine.data("termFilter", termFilter)
 

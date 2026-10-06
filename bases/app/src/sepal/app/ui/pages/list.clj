@@ -1,5 +1,6 @@
 (ns sepal.app.ui.pages.list
-  (:require [sepal.app.ui.empty :as ui.empty]
+  (:require [sepal.app.ui.bulk :as ui.bulk]
+            [sepal.app.ui.empty :as ui.empty]
             [sepal.app.ui.icons.heroicons :as heroicons]
             [sepal.app.ui.icons.lucide :as lucide]
             [sepal.app.ui.query-builder :as query-builder]
@@ -193,8 +194,11 @@
 
    Options:
    - :table-actions - Action buttons/forms above table
-   - :content       - Main table content"
-  [& {:keys [table-actions content]}]
+   - :content       - Main table content
+   - :bulk          - The action bar and its dialogs. Given it, the list body
+                      holds the row selection and the bar replaces the toolbar
+                      while rows are selected"
+  [& {:keys [table-actions content bulk]}]
   ;; Classed and stretched: as a bare block div this sized to its content and
   ;; broke the height chain from the viewport down to the scrolling rows, which
   ;; is what stopped infinite scroll from ever firing.
@@ -212,22 +216,26 @@
    ;; filters and export sit on the same surface as the breadcrumbs, and the
    ;; table starts immediately beneath. This is the shape the workbench mockup
    ;; has: chrome, then data.
-   [:div {:class "spl-list-body"}
-    [:form {:id toolbar-id
-            :class "spl-toolbar"
-            :method "get"
-            :hx-get " "
-            ;; `submit` routes Enter and requestSubmit() through htmx, so the
-            ;; request carries HX-Trigger and keeps the sort. The search box
-            ;; is excluded from `change`: it fires on blur, so clicking a
-            ;; sort header would send an unsorted request after the sort.
-            :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
-            :hx-sync "this:replace"
-            :hx-select (str "#" list-container-id)
-            :hx-target (str "#" list-container-id)
-            :hx-push-url "true"
-            :hx-swap "outerHTML"
-            :x-on:htmx:before-request (str "selectedId = null; document.getElementById('" panel-container-id "').innerHTML = ''")}
+   [:div (cond-> {:class "spl-list-body"}
+           bulk (merge (ui.bulk/scope-attrs :toolbar-id toolbar-id
+                                            :list-container-id list-container-id)))
+    bulk
+    [:form (cond-> {:id toolbar-id
+                    :class "spl-toolbar"
+                    :method "get"
+                    :hx-get " "
+                    ;; `submit` routes Enter and requestSubmit() through htmx, so the
+                    ;; request carries HX-Trigger and keeps the sort. The search box
+                    ;; is excluded from `change`: it fires on blur, so clicking a
+                    ;; sort header would send an unsorted request after the sort.
+                    :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
+                    :hx-sync "this:replace"
+                    :hx-select (str "#" list-container-id)
+                    :hx-target (str "#" list-container-id)
+                    :hx-push-url "true"
+                    :hx-swap "outerHTML"
+                    :x-on:htmx:before-request (str "selectedId = null; document.getElementById('" panel-container-id "').innerHTML = ''")}
+             bulk (assoc :x-show "selected.length === 0"))
      table-actions]
     ;; Table and panel in same row, outside the form
     [:div {:class "spl-panes"}
