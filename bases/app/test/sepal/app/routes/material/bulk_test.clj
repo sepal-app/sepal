@@ -11,6 +11,7 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
+            [sepal.observation.interface :as observation.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.test.interface :as test.i]
             [sepal.user.interface :as user.i]))
@@ -150,3 +151,32 @@
         (is (re-find #"Choose a location" (:body response)))
         (is (= (:location/id location)
                (:material/location-id (material.i/get-by-id *db* (:material/id four)))))))))
+
+(def ^:private observation-form
+  "What the dialog submits: every field, the optional ones blank."
+  {:type "general" :value "" :observed_on "2026-10-01"
+   :observed_by "" :next_check_on "" :note ""})
+
+(deftest test-bulk-observation
+  (tf/testing "one observation per material"
+    (two-materials)
+    (fn [{:keys [user one four]}]
+      (let [ids [(:material/id one) (:material/id four)]
+            response (post user "/material/bulk/observation/"
+                           (assoc observation-form :ids (mapv str ids)))]
+        (is (= 200 (:status response)))
+        (doseq [id ids]
+          (is (= 1 (count (observation.i/get-for-resource *db* :material id))))
+          (observation.i/delete-for-resource! *db* :material id))
+        (cleanup! user)))))
+
+(deftest test-bulk-observation-in-the-future
+  (tf/testing "a future date is refused for the whole action"
+    (two-materials)
+    (fn [{:keys [user four]}]
+      (let [response (post user "/material/bulk/observation/"
+                           (assoc observation-form :ids [(str (:material/id four))]
+                                  :observed_on "2999-01-01"))]
+        (is (= 422 (:status response)))
+        (is (re-find #"observed_on-bulk-observation-errors" (:body response)))
+        (is (empty? (observation.i/get-for-resource *db* :material (:material/id four))))))))

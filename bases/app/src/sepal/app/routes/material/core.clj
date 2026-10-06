@@ -53,6 +53,11 @@
      :permission material.perm/edit
      :conflicting true
      :post #'bulk/move-handler}]
+   ["/bulk/observation/"
+    {:name routes/bulk-observation
+     :permission observation.perm/create
+     :conflicting true
+     :post #'bulk/observation-handler}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail

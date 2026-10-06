@@ -67,7 +67,7 @@
                                         :x-bind:selected "opt.value === value"
                                         :x-text "opt.label"}]]])]]))
 
-(defn- fields
+(defn fields
   "Every field an observation carries, shared by the create form and each
   item's inline edit form. `values` without a `:type` gets the first type,
   which is the option the select shows, and without an `:observed_on` gets

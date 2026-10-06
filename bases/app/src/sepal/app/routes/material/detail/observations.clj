@@ -30,7 +30,7 @@
    [:next_check_on {:decode/form validation.i/empty->nil} [:maybe validation.i/date]]
    [:note {:decode/form validation.i/empty->nil} [:maybe :string]]])
 
-(defn- not-in-the-future
+(defn not-in-the-future
   "An observation records what you saw, so it cannot be dated ahead. A
   next_check_on in the past is fine -- that is how you backfill. `today` is
   the garden's date, so a garden ahead of the server can record today."
@@ -38,7 +38,7 @@
   (when (validation.i/future-date? observed-on today)
     (error.i/error ::future-observed-on (validation.i/future-date-message))))
 
-(defn- future-date-error
+(defn future-date-error
   "The OOB error swap for a rejected observed_on.
 
   `id-suffix` has to match the field's own id: the create form's
@@ -53,7 +53,7 @@
     {(keyword (str "observed_on" (when id-suffix (str "-" id-suffix))))
      [(validation.i/future-date-message)]}))
 
-(defn- value-options-by-type
+(defn value-options-by-type
   "Every observation_value, grouped by type and shaped for the Value field's
   Alpine data: `{type -> [{:value code :label label}]}`."
   [db]
@@ -121,7 +121,7 @@
                                               :separator separator
                                               :taxon taxon)))
 
-(defn- observation-data [id data created-by]
+(defn observation-data [id data created-by]
   {:resource-type resource-type
    :resource-id id
    :type (:type data)

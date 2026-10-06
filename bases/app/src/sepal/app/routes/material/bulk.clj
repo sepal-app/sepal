@@ -1,20 +1,27 @@
 (ns sepal.app.routes.material.bulk
   "Acting on many materials at once from the material list."
   (:require [failjure.core :as f]
+            [malli.util :as mu]
             [sepal.app.bulk :as bulk]
+            [sepal.app.datetime :as datetime]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.detail.observations :as observations]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.bulk :as ui.bulk]
             [sepal.app.ui.combobox :as combobox]
             [sepal.app.ui.form :as ui.form]
+            [sepal.app.ui.observations :as ui.observations]
             [sepal.database.interface :as db.i]
+            [sepal.error.interface :as error.i]
             [sepal.i18n.interface :refer [tr trc trn]]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.material.interface.activity :as material.activity]
             [sepal.material.interface.spec :as material.spec]
+            [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
 
@@ -153,14 +160,56 @@
                             (for [{:material-change-reason/keys [code label]} reasons]
                               [:option {:value code} (trc "material_change_reason" label)])])]))
 
+(def ObservationParams
+  (mu/assoc observations/FormParams :ids bulk/Ids))
+
+(def ^:private observation-suffix "bulk-observation")
+
+(defn- observe! [db user-id ids data]
+  (db.i/with-transaction [tx db]
+    (doseq [id ids]
+      (let [observation (observation.i/create! tx (observations/observation-data id data user-id))]
+        (observation.activity/create! tx observation.activity/created user-id observation)))
+    (count ids)))
+
+(defn observation-handler [{:keys [::z/context form-params viewer]}]
+  (let [{:keys [db timezone]} context]
+    (f/attempt-all [_ids (bulk/check-ids form-params)
+                    data (validation.i/validate-form-values ObservationParams form-params)
+                    _future (observations/not-in-the-future (:observed_on data)
+                                                            (str (datetime/today timezone)))
+                    _all (bulk/require-all db :material (:ids data))
+                    n (f/try* (observe! db (:user/id viewer) (:ids data) (dissoc data :ids)))]
+      (bulk/applied (trn "Added an observation to %1 material."
+                         "Added an observation to %1 materials." n n))
+      (f/when-failed [e]
+        (if (error.i/error? e :sepal.app.routes.material.detail.observations/future-observed-on)
+          (observations/future-date-error observation-suffix)
+          (http/not-saved e (tr "No observations were added.") :id-suffix observation-suffix))))))
+
+(defn- observation-dialog [db today]
+  (ui.bulk/dialog
+    :id "bulk-material-observation"
+    :title (tr "Add observation")
+    :action (z/url-for material.routes/bulk-observation)
+    :confirm-one (tr "Add to %1 material")
+    :confirm-other (tr "Add to %1 materials")
+    :body (ui.observations/fields :id-suffix observation-suffix
+                                  :type-options (observation.i/list-types db)
+                                  :value-options-by-type (observations/value-options-by-type db)
+                                  :today today)))
+
 (defn action-bar
   "The bar and dialogs the material list shows to someone who can edit."
-  [& {:keys [reasons]}]
+  [& {:keys [db reasons today]}]
   (list
     (ui.bulk/action-bar
       :actions (list (ui.bulk/action-button :label (tr "Change status")
                                             :dialog-id "bulk-material-status")
                      (ui.bulk/action-button :label (tr "Move")
-                                            :dialog-id "bulk-material-move")))
+                                            :dialog-id "bulk-material-move")
+                     (ui.bulk/action-button :label (tr "Add observation")
+                                            :dialog-id "bulk-material-observation")))
     (status-dialog reasons)
-    (move-dialog reasons)))
+    (move-dialog reasons)
+    (observation-dialog db today)))

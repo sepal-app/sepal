@@ -13,6 +13,7 @@
 (def export ::export)
 (def bulk-status ::bulk-status)
 (def bulk-move ::bulk-move)
+(def bulk-observation ::bulk-observation)
 
 (def panel ::panel)
 (def history ::history)
