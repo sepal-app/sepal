@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.form
   (:require [sepal.app.codes :as codes]
+            [sepal.app.json :as json]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.ui.accession-combobox :as accession-combobox]
@@ -120,13 +121,18 @@
            :title (tr "Holding")
            :hint (tr "How much there is, and what condition it is in.")
            :children
-           [[:div {:class "spl-form-pair"}
+           [[:div {:class "spl-form-pair"
+                    :x-data (str "quantityStatus("
+                                 (json/js (sort (map name material.spec/living-statuses)))
+                                 ")")}
              (form/field :label (tr "Quantity")
                          :name "quantity"
                          :errors (:quantity errors)
                          :input [:input {:autocomplete "off"
                                          :class "spl-input w-full"
                                          :id "quantity"
+                                         :x-ref "quantity"
+                                         :x-bind:readonly "locked"
                                          :name "quantity"
                                          :type "number"
                                          :min 0
@@ -139,6 +145,8 @@
                                           :class "spl-input spl-select"
                                           :autocomplete "off"
                                           :id "status"
+                                          :x-ref "status"
+                                          :x-on:change "sync()"
                                           :required true
                                           :value (:status values)}
                                  [(for [status statuses]

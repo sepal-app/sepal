@@ -307,3 +307,18 @@
           (is (= 422 (:status response)))
           (is (not (str/includes? (str (:body response)) "page-region")))
           (is (str/includes? (str (:body response)) "Could not save the material")))))))
+
+(deftest test-quantity-follows-status-markup
+  (tf/testing "the Holding pair is wired to quantityStatus with the living statuses"
+    (in-place-fixtures)
+    (fn [{:keys [user material]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            {:keys [response]} (peri/request sess (format "/material/%s/general/" (:material/id material)))
+            doc (Jsoup/parse ^String (:body response))
+            pair (.selectFirst doc "[x-data^=quantityStatus]")]
+        (is (some? pair))
+        (is (re-find #"alive" (.attr pair "x-data")))
+        (is (not (re-find #"dead" (.attr pair "x-data"))))
+        (is (= "quantity" (.attr (.selectFirst pair "#quantity") "x-ref")))
+        (is (= "status" (.attr (.selectFirst pair "#status") "x-ref")))
+        (is (= "locked" (.attr (.selectFirst pair "#quantity") "x-bind:readonly")))))))
