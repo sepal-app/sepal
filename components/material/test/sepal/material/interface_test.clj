@@ -355,3 +355,23 @@
     (is (not (refuses? "2011-02-11 06:00:00")))
     (is (refuses? "2011-02-11T06:00:00Z"))
     (is (refuses? "2011-02-11"))))
+
+(deftest test-living-statuses
+  (is (every? mat.spec/living? [:alive :dormant :unknown]))
+  (is (not-any? mat.spec/living? [:dead :transferred :other]))
+  (is (= (set (rest mat.spec/status))
+         (into mat.spec/living-statuses (keys mat.spec/default-reasons)))
+      "every status is either living or has a default reason"))
+
+(deftest test-get-by-ids
+  (let [db *db*]
+    (tf/testing "material.i/get-by-ids"
+      {[::taxon.i/factory :key/taxon] {:db db}
+       [::acc.i/factory :key/acc] {:db db :taxon (ig/ref :key/taxon)}
+       [::loc.i/factory :key/loc] {:db db}
+       [::mat.i/factory :key/a] {:db db :accession (ig/ref :key/acc) :location (ig/ref :key/loc)}
+       [::mat.i/factory :key/b] {:db db :accession (ig/ref :key/acc) :location (ig/ref :key/loc)}}
+      (fn [{:keys [a b]}]
+        (is (= #{(:material/id a) (:material/id b)}
+               (set (map :material/id (mat.i/get-by-ids db [(:material/id a) (:material/id b) 999999])))))
+        (is (= [] (mat.i/get-by-ids db [])))))))

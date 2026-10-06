@@ -26,6 +26,12 @@
 (defn get-by-id [db id]
   (store.i/get-by-id db :material id spec/Material))
 
+(defn get-by-ids [db ids]
+  (if (empty? ids)
+    []
+    (->> (db.i/execute! db {:select :* :from :material :where [:in :id ids]})
+         (mapv #(store.i/coerce spec/Material %)))))
+
 (defn create! [db data]
   (store.i/create! db :material data spec/CreateMaterial spec/Material))
 
@@ -187,7 +193,7 @@
                       (assoc :location-id (:location/id location)))
         ;; The schema CHECK forbids a positive quantity on a non-current lot
         ;; (dead, transferred, other), which the generator otherwise produces.
-        generated (if (contains? #{:alive :dormant :unknown} (:status generated))
+        generated (if (spec/living? (:status generated))
                     generated
                     (assoc generated :quantity 0))
         result (create! db (merge generated data))]

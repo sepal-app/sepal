@@ -14,6 +14,20 @@
                 :encode/store #(if (true? %) 1 0)}])
 (def quantity nat-int?)
 (def status [:enum :alive :dead :dormant :transferred :other :unknown])
+
+(def living-statuses
+  "Statuses that may hold plants. The others require quantity 0, as the
+  material table's CHECK does."
+  #{:alive :dormant :unknown})
+
+(defn living? [status]
+  (contains? living-statuses status))
+
+(def default-reasons
+  "The change reason a non-living status suggests."
+  {:dead "dead"
+   :transferred "transferred"
+   :other "other"})
 (def type [:enum :plant :seed :vegetative :tissue :other])
 
 (def status-labels

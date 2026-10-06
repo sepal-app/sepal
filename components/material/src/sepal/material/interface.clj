@@ -5,6 +5,9 @@
 (defn get-by-id [db id]
   (core/get-by-id db id))
 
+(defn get-by-ids [db ids]
+  (core/get-by-ids db ids))
+
 (defn create! [db data]
   (core/create! db data))
 
