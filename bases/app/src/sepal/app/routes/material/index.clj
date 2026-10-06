@@ -7,6 +7,7 @@
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
+            [sepal.app.routes.material.bulk :as material.bulk]
             [sepal.app.routes.material.export :as export]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -20,6 +21,7 @@
             [sepal.code-template.interface :as ct.i]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [tr trc]]
+            [sepal.material.interface :as material.i]
             [sepal.material.interface.permission :as material.perm]
             [sepal.material.interface.search]
             [sepal.material.interface.spec :as material.spec]
@@ -152,7 +154,7 @@
                                         :searching? (seq search-query)
                                         :create-href (z/url-for material.routes/new))}))))
 
-(defn render [& {:keys [accession field-options viewer href page page-size rows search-query table-opts taxon total]}]
+(defn render [& {:keys [accession bulk field-options viewer href page page-size rows search-query table-opts taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -177,7 +179,8 @@
                                 :page page
                                 :page-size page-size
                                 :total total
-                                :actions (ui.export/export-button)))
+                                :actions (ui.export/export-button))
+               :bulk bulk)
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
                                [:a {:href (z/url-for taxon.routes/detail {:id (:taxon/id taxon)})
@@ -255,7 +258,12 @@
                                                               {:relevance (search.i/relevance-order :material ast)
                                                                :default [[:m.id :asc]]
                                                                :tiebreak [:m.id :asc]}))))
-        table-opts (list-view/table-opts view uri q)
+        bulk? (authz/user-has-permission? viewer material.perm/edit)
+        table-opts (cond-> (list-view/table-opts view uri q)
+                     bulk? (assoc :select {:id :material/id
+                                           :label #(tr "Select %1" (ct.i/full-code material-separator
+                                                                                   (:accession/code %)
+                                                                                   (:material/code %)))}))
 
         ;; Fetch entities for breadcrumbs if filtering by ID
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
@@ -299,6 +307,7 @@
         view
         (render :viewer viewer
                 :accession accession
+                :bulk (when bulk? (material.bulk/action-bar :reasons (material.i/list-reasons db)))
                 :field-options (search.i/field-options :material)
                 :href (list-view/href view uri q :page page)
                 :rows rows

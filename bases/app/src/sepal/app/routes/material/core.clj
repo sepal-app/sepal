@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.material.bulk :as bulk]
             [sepal.app.routes.material.create :as create]
             [sepal.app.routes.material.delete :as delete]
             [sepal.app.routes.material.detail :as detail]
@@ -42,6 +43,11 @@
      :permission material.perm/create
      :handler #'create/handler
      :conflicting true}]
+   ["/bulk/status/"
+    {:name routes/bulk-status
+     :permission material.perm/edit
+     :conflicting true
+     :post #'bulk/status-handler}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail
