@@ -9,6 +9,14 @@ type QuantityStatus = {
     sync(): void
 }
 
+// Only a real change fires `input`: the form counts any input as an edit, so
+// locking a quantity that is already 0 on load would mark it dirty.
+function write(input: HTMLInputElement, value: string) {
+    if (input.value === value) return
+    input.value = value
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+}
+
 export function quantityStatus(living: string[]) {
     return {
         locked: false,
@@ -29,12 +37,10 @@ export function quantityStatus(living: string[]) {
             const isLiving = living.includes(this.$refs.status.value)
             if (!isLiving && !this.locked) {
                 this.kept = quantity.value
-                quantity.value = "0"
-                quantity.dispatchEvent(new Event("input", { bubbles: true }))
+                write(quantity, "0")
                 this.locked = true
             } else if (isLiving && this.locked) {
-                quantity.value = this.kept
-                quantity.dispatchEvent(new Event("input", { bubbles: true }))
+                write(quantity, this.kept)
                 this.locked = false
             }
         },

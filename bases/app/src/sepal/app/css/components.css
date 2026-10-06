@@ -1427,8 +1427,9 @@
     border-top: 1px solid var(--color-border);
     box-shadow: 0 -10px 30px -14px rgb(18 33 30 / .4);
   }
-  /* Room under the last row, so the bar never covers it. */
-  .spl-list-body--selecting .spl-table-scroll { padding-bottom: 96px; }
+  /* Room under the last row, so the bar never covers it, even wrapped to
+   * three lines on a 320px screen. */
+  .spl-list-body--selecting .spl-table-scroll { padding-bottom: 160px; }
 }
 
 /* ── Activity changelog ────────────────────────────────────────────────────

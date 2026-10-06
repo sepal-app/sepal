@@ -141,6 +141,12 @@
             (pw/wait-for-selector ".spl-bulk-bar")
             (let [{:keys [y height]} (pw/bounding-box ".spl-bulk-bar")]
               (is (<= 790 (+ y height) 800)))
+            ;; The End of list row also sits under the last data row, so check
+            ;; the room reserved for the bar on its own.
+            (let [{:keys [height]} (pw/bounding-box ".spl-bulk-bar")
+                  reserved (pw/evaluate "parseFloat(getComputedStyle(document.querySelector('.spl-table-scroll')).paddingBottom)")]
+              (is (<= height reserved)
+                  (str "bar height " height " vs reserved " reserved)))
             (scroll-to-end!)
             (let [bar-top (:y (pw/bounding-box ".spl-bulk-bar"))
                   {:keys [y height]} (pw/bounding-box "#table-rows tr:has(input[data-select-row]) >> nth=-1")]
