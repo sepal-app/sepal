@@ -5,6 +5,7 @@
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
+            [sepal.app.routes.taxon.bulk :as taxon.bulk]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.combobox :as ui.combobox]
@@ -192,7 +193,7 @@
               "That synonym matches more than %1 taxa. Showing the first %1 — narrow the search to see the rest."
               synonym.i/max-synonym-taxon-ids)]]))
 
-(defn render [& {:keys [field-options viewer href page page-size parent rows search-query table-opts total synonym-matches synonym-notice]}]
+(defn render [& {:keys [bulk field-options viewer href page page-size parent rows search-query table-opts total synonym-matches synonym-notice]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -218,7 +219,8 @@
                                 :page page
                                 :page-size page-size
                                 :total total
-                                :actions (ui.export/export-button)))
+                                :actions (ui.export/export-button))
+               :bulk bulk)
 
     :breadcrumbs (if parent
                    [[:a {:href (z/url-for taxon.routes/index)} (tr "Taxa")]
@@ -336,7 +338,10 @@
                                                                           :default [[:t.name :asc]]
                                                                           :tiebreak [:t.id :asc]}))))
                        #(db.i/count-bounded db count-stmt))
-        table-opts (list-view/table-opts view uri q)]
+        bulk? (authz/user-has-permission? viewer taxon.perm/edit)
+        table-opts (cond-> (list-view/table-opts view uri q)
+                     bulk? (assoc :select {:id :taxon/id
+                                           :label #(tr "Select %1" (:taxon/name %))}))]
 
     (cond
       ;; The combobox asks for its rows as markup, so a scientific name keeps
@@ -417,6 +422,7 @@
         (list-view/respond
           view
           (render :viewer viewer
+                  :bulk (when bulk? (taxon.bulk/action-bar))
                   :field-options (search.i/field-options :taxon)
                   :href (list-view/href view uri q :page page)
                   :parent (some->> (:filters ast)

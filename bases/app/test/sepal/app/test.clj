@@ -28,11 +28,11 @@
   (Jsoup/parse (:body response)))
 
 (defn first-cells
-  "Each data row's first cell, as text, in order. Takes the wide form when the
-  cell also carries a phone summary."
+  "Each data row's first cell, as text, in order, past any selection checkbox.
+  Takes the wide form when the cell also carries a phone summary."
   [body]
   (vec (for [tr (.select body "tbody > tr:not(.spl-prefetch):not(.spl-sentinel):not(.spl-end)")
-             :let [td (.selectFirst tr "td")
+             :let [td (.selectFirst tr "td:not(.spl-col--select)")
                    wide (.selectFirst td ".spl-cell-wide")]]
          (.text (or wide td)))))
 

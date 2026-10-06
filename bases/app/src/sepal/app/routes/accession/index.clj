@@ -8,6 +8,7 @@
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
+            [sepal.app.routes.accession.bulk :as accession.bulk]
             [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.form :as accession.form]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -152,7 +153,7 @@
                                         :create-href (z/url-for accession.routes/new)
                                         :create-label (tr "New accession"))}))))
 
-(defn render [& {:keys [field-options viewer href page page-size rows search-query table-opts taxon total]}]
+(defn render [& {:keys [bulk field-options viewer href page page-size rows search-query table-opts taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -177,7 +178,8 @@
                                 :page page
                                 :page-size page-size
                                 :total total
-                                :actions (ui.export/export-button)))
+                                :actions (ui.export/export-button))
+               :bulk bulk)
     :breadcrumbs (cond-> []
                    taxon (conj [:a {:href (z/url-for taxon.routes/index)}
                                 (tr "Taxa")]
@@ -242,7 +244,10 @@
                                                               {:relevance (search.i/relevance-order :accession ast)
                                                                :default [[:a.code :asc]]
                                                                :tiebreak [:a.id :asc]}))))
-        table-opts (list-view/table-opts view uri q)
+        bulk? (authz/user-has-permission? viewer accession.perm/edit)
+        table-opts (cond-> (list-view/table-opts view uri q)
+                     bulk? (assoc :select {:id :accession/id
+                                           :label #(tr "Select %1" (:accession/code %))}))
 
         ;; Fetch taxon for breadcrumb if filtering by taxon.id
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
@@ -282,6 +287,7 @@
       (list-view/respond
         view
         (render :viewer viewer
+                :bulk (when bulk? (accession.bulk/action-bar))
                 :field-options (search.i/field-options :accession)
                 :href (list-view/href view uri q :page page)
                 :rows rows

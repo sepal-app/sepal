@@ -13,6 +13,8 @@
 (def detail-tags ::detail-tags)
 (def detail-tag ::detail-tag)
 (def export ::export)
+(def bulk-tags ::bulk-tags)
+(def bulk-tags-remove ::bulk-tags-remove)
 (def delete ::delete)
 (def detail-collection-delete ::detail-collection-delete)
 

@@ -2,6 +2,7 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.accession.interface.permission :as accession.perm]
             [sepal.app.middleware :as middleware]
+            [sepal.app.routes.accession.bulk :as bulk]
             [sepal.app.routes.accession.create :as create]
             [sepal.app.routes.accession.delete :as delete]
             [sepal.app.routes.accession.detail :as detail]
@@ -50,6 +51,17 @@
      :permission accession.perm/create
      :handler #'create/handler
      :conflicting true}]
+   ["/bulk/tags/"
+    {:name routes/bulk-tags
+     :permission accession.perm/edit
+     :conflicting true
+     :post #'bulk/tags-add-handler}]
+   ["/bulk/tags/remove/"
+    {:name routes/bulk-tags-remove
+     :permission accession.perm/edit
+     :conflicting true
+     :get #'bulk/tags-remove-form-handler
+     :post #'bulk/tags-remove-handler}]
    ["/:id" {:middleware [[middleware/resource-loader accession-loader]]
             :parameters {:path {:id nat-int?}}
             :conflicting true}

@@ -14,6 +14,8 @@
 (def bulk-status ::bulk-status)
 (def bulk-move ::bulk-move)
 (def bulk-observation ::bulk-observation)
+(def bulk-tags ::bulk-tags)
+(def bulk-tags-remove ::bulk-tags-remove)
 
 (def panel ::panel)
 (def history ::history)

@@ -6,6 +6,7 @@
             [sepal.app.datetime :as datetime]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
+            [sepal.app.routes.bulk-tags :as bulk-tags]
             [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.routes.material.detail.observations :as observations]
             [sepal.app.routes.material.routes :as material.routes]
@@ -199,6 +200,10 @@
                                   :value-options-by-type (observations/value-options-by-type db)
                                   :today today)))
 
+(defn tags-add-handler [request] (bulk-tags/add-tag request :material))
+(defn tags-remove-form-handler [request] (bulk-tags/remove-form request :material))
+(defn tags-remove-handler [request] (bulk-tags/remove-tag request :material))
+
 (defn action-bar
   "The bar and dialogs the material list shows to someone who can edit."
   [& {:keys [db reasons today]}]
@@ -209,7 +214,15 @@
                      (ui.bulk/action-button :label (tr "Move")
                                             :dialog-id "bulk-material-move")
                      (ui.bulk/action-button :label (tr "Add observation")
-                                            :dialog-id "bulk-material-observation")))
+                                            :dialog-id "bulk-material-observation")
+                     (ui.bulk/action-button :label (tr "Add tag")
+                                            :dialog-id "bulk-material-tag-add")
+                     (bulk-tags/remove-button :form-url (z/url-for material.routes/bulk-tags-remove)
+                                              :dialog-id "bulk-material-tag-remove")))
     (status-dialog reasons)
     (move-dialog reasons)
-    (observation-dialog db today)))
+    (observation-dialog db today)
+    (bulk-tags/add-dialog :id "bulk-material-tag-add"
+                          :action (z/url-for material.routes/bulk-tags))
+    (bulk-tags/remove-dialog :id "bulk-material-tag-remove"
+                             :action (z/url-for material.routes/bulk-tags-remove))))

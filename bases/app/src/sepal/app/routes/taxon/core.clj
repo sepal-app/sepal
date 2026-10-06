@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.core
   (:require [sepal.app.middleware :as middleware]
+            [sepal.app.routes.taxon.bulk :as bulk]
             [sepal.app.routes.taxon.create :as create]
             [sepal.app.routes.taxon.delete :as delete]
             [sepal.app.routes.taxon.detail :as detail]
@@ -47,6 +48,15 @@
              :get #'create/get-handler
              :post #'create/post-handler
              :conflicting true}]
+   ["/bulk/tags/" {:name routes/bulk-tags
+                   :permission taxon.perm/edit
+                   :conflicting true
+                   :post #'bulk/tags-add-handler}]
+   ["/bulk/tags/remove/" {:name routes/bulk-tags-remove
+                          :permission taxon.perm/edit
+                          :conflicting true
+                          :get #'bulk/tags-remove-form-handler
+                          :post #'bulk/tags-remove-handler}]
    ["/:id" {:middleware [[middleware/resource-loader taxon-loader]]
             :parameters {:path {:id nat-int?}}
             :conflicting true}

@@ -58,6 +58,17 @@
      :permission observation.perm/create
      :conflicting true
      :post #'bulk/observation-handler}]
+   ["/bulk/tags/"
+    {:name routes/bulk-tags
+     :permission material.perm/edit
+     :conflicting true
+     :post #'bulk/tags-add-handler}]
+   ["/bulk/tags/remove/"
+    {:name routes/bulk-tags-remove
+     :permission material.perm/edit
+     :conflicting true
+     :get #'bulk/tags-remove-form-handler
+     :post #'bulk/tags-remove-handler}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail
