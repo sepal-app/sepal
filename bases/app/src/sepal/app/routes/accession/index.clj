@@ -1,11 +1,12 @@
 (ns sepal.app.routes.accession.index
-  (:require [lambdaisland.uri :as uri]
-            [sepal.accession.interface.permission :as accession.perm]
+  (:require [sepal.accession.interface.permission :as accession.perm]
             [sepal.accession.interface.search]
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.export :as export]
             [sepal.app.routes.accession.form :as accession.form]
@@ -53,59 +54,105 @@
         (when-let [received (:accession/date-received row)]
           [:span {:class "spl-stacked-line"} (datetime/format-date received)])))
 
-(defn table-columns []
-  [{:name (tr "Code")
-    :type :identifier
-    :priority 1
-    :stacked stacked-summary
-    :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
-                                          {:id (:accession/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (:accession/code row)])}
-   {:name (tr "Taxon")
-    :type :name
-    :priority 1
-    :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
-                                          {:id (:taxon/id row)})
-                         :class "spl-link"
-                         :x-on:click.stop ""}
-                     (taxon-name/render (:taxon/name row))])}
-   {:name (tr "Provenance")
-    :type :text
-    :priority 3
-    :cell provenance-label}
-   {:name (tr "Received")
-    :type :date
-    :priority 2
-    :cell :accession/date-received}])
+(defn- supplier-query [stmt]
+  (-> stmt
+      (list-query/add-left-join [:contact :sc] [:= :sc.id :a.supplier_contact_id])
+      (list-query/add-select [:sc.name :accession__supplier_name])))
 
-(defn index-rows [& {:keys [rows page page-size href total]}]
-  (table/rows-only :columns (table-columns)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page
-                   :page-size page-size
-                   :total total))
+(defn table-columns [timezone]
+  (into
+    [{:name (tr "Code")
+      :key :code
+      :type :identifier
+      :priority 1
+      :sort [:a.code]
+      :stacked stacked-summary
+      :cell (fn [row] [:a {:href (z/url-for accession.routes/detail
+                                            {:id (:accession/id row)})
+                           :class "spl-link"
+                           :x-on:click.stop ""}
+                       (:accession/code row)])}
+     {:name (tr "Taxon")
+      :key :taxon
+      :type :name
+      :priority 1
+      :sort [:t.name]
+      :cell (fn [row] [:a {:href (z/url-for taxon.routes/detail
+                                            {:id (:taxon/id row)})
+                           :class "spl-link"
+                           :x-on:click.stop ""}
+                       (taxon-name/render (:taxon/name row))])}
+     {:name (tr "Provenance")
+      :key :provenance
+      :type :text
+      :priority 3
+      :sort [:a.provenance_type]
+      :cell provenance-label}
+     {:name (tr "Received")
+      :key :received
+      :type :date
+      :priority 2
+      :sort [:a.date_received]
+      :cell :accession/date-received}
+     {:name (tr "Supplier")
+      :key :supplier
+      :type :text
+      :priority 3
+      :hidden? true
+      :query supplier-query
+      :sort [[:lower :sc.name]]
+      :cell :accession/supplier-name}
+     {:name (tr "Accessioned")
+      :key :accessioned
+      :type :date
+      :priority 3
+      :hidden? true
+      :sort [:a.date_accessioned]
+      :cell :accession/date-accessioned}
+     {:name (tr "Received as")
+      :key :received-as
+      :type :text
+      :priority 3
+      :hidden? true
+      :sort [:a.received_type]
+      :cell #(some-> (:accession/received-type %) keyword accession.spec/received-type-labels tr)}
+     {:name (tr "Quantity received")
+      :key :quantity-received
+      :type :number
+      :priority 3
+      :hidden? true
+      :sort [:a.quantity_received]
+      :cell :accession/quantity-received}]
+    (table/timestamp-columns :created [:a.created_at :accession/created-at]
+                             :updated [:a.updated_at :accession/updated-at]
+                             :timezone timezone)))
 
-(defn table [& {:keys [rows page href page-size total search-query]}]
+(defn index-rows [& {:keys [rows page page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page
+                           :page-size page-size
+                           :total total})))
+
+(defn table [& {:keys [rows page href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No accessions yet")
-                                :body (tr "An accession is a batch of plant material acquired at one time from one source.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for accession.routes/new)
-                                :create-label (tr "New accession")))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No accessions yet")
+                                        :body (tr "An accession is a batch of plant material acquired at one time from one source.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for accession.routes/new)
+                                        :create-label (tr "New accession"))}))))
 
-(defn render [& {:keys [field-options viewer href page page-size rows search-query taxon total]}]
+(defn render [& {:keys [field-options viewer href page page-size rows search-query table-opts taxon total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -114,7 +161,8 @@
                                 :page-size page-size
                                 :rows rows
                                 :total total
-                                :search-query search-query)
+                                :search-query search-query
+                                :table-opts table-opts)
                          ;; Export modal (hidden until triggered)
                          (ui.export/export-modal
                            :total total
@@ -164,7 +212,7 @@
        first
        :value))
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db timezone]} context
         {:keys [page page-size] :as decoded-params} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -184,11 +232,17 @@
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :accession ast)
-                                                                [[:a.code :asc]])))
+        view (list-view/resolve request :accession (table-columns timezone))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :accession ast)
+                                                               :default [[:a.code :asc]]
+                                                               :tiebreak [:a.id :asc]}))))
+        table-opts (list-view/table-opts view uri q)
 
         ;; Fetch taxon for breadcrumb if filtering by taxon.id
         taxon-id (some-> (extract-filter-value ast "taxon.id") parse-long)
@@ -221,20 +275,20 @@
                     :page page
                     :page-size page-size
                     :total total
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
-      (render :viewer viewer
-              :field-options (search.i/field-options :accession)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page page
-              :page-size page-size
-              :search-query q
-              :taxon taxon
-              :total total))))
+      (list-view/respond
+        view
+        (render :viewer viewer
+                :field-options (search.i/field-options :accession)
+                :href (list-view/href view uri q :page page)
+                :rows rows
+                :page page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :taxon taxon
+                :total total)
+        uri q))))

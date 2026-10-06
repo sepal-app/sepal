@@ -1,7 +1,8 @@
 (ns sepal.app.routes.contact.index
-  (:require [lambdaisland.uri :as uri]
-            [sepal.app.authorization :as authz]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.contact.export :as export]
             [sepal.app.routes.contact.routes :as contact.routes]
@@ -14,6 +15,7 @@
             [sepal.contact.interface.name :as contact.name]
             [sepal.contact.interface.permission :as contact.perm]
             [sepal.contact.interface.search]
+            [sepal.contact.interface.spec :as contact.spec]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [tr]]
             [sepal.search.interface :as search.i]
@@ -35,61 +37,68 @@
   [l]
   (table/summary (:contact/business l) (:contact/email l)))
 
-(defn table-columns []
-  [{:name (tr "Name")
-    :type :text
-    :priority 1
-    :stacked stacked-summary
-    :cell (fn [l] [:a {:href (z/url-for contact.routes/detail
-                                        {:id (:contact/id l)})
-                       :class "spl-link"
-                       :x-on:click.stop ""}
-                   (:contact/name l)])}
-   {:name (tr "Business")
-    :type :text
-    :priority 2
-    :cell :contact/business}
-   {:name (tr "Email")
-    :type :text
-    :priority 2
-    :cell :contact/email}
-   {:name (tr "City")
-    :type :text
-    :priority 3
-    :cell :contact/city}
-   {:name (tr "Phone")
-    :type :text
-    :priority 3
-    :cell :contact/phone}])
+(defn table-columns [timezone]
+  (into
+    [{:name (tr "Name")
+      :key :name
+      :type :text
+      :priority 1
+      :sort [[:lower :c.name]]
+      :stacked stacked-summary
+      :cell (fn [l] [:a {:href (z/url-for contact.routes/detail
+                                          {:id (:contact/id l)})
+                         :class "spl-link"
+                         :x-on:click.stop ""}
+                     (:contact/name l)])}
+     {:name (tr "Business") :key :business :type :text :priority 2
+      :sort [[:lower :c.business]] :cell :contact/business}
+     {:name (tr "Email") :key :email :type :text :priority 2
+      :sort [[:lower :c.email]] :cell :contact/email}
+     {:name (tr "City") :key :city :type :text :priority 3
+      :sort [[:lower :c.city]] :cell :contact/city}
+     {:name (tr "Phone") :key :phone :type :text :priority 3
+      :sort [:c.phone] :cell :contact/phone}
+     {:name (tr "Type") :key :type :type :text :priority 3 :hidden? true
+      :sort [:c.type]
+      :cell #(some-> (:contact/type %) keyword contact.spec/type-labels tr)}
+     {:name (tr "Country") :key :country :type :text :priority 3 :hidden? true
+      :sort [[:lower :c.country]] :cell :contact/country}
+     {:name (tr "Province") :key :province :type :text :priority 3 :hidden? true
+      :sort [[:lower :c.province]] :cell :contact/province}
+     {:name (tr "Postal code") :key :postal-code :type :text :priority 3 :hidden? true
+      :sort [:c.postal_code] :cell :contact/postal-code}]
+    (table/timestamp-columns :created [:c.created_at :contact/created-at]
+                             :updated [:c.updated_at :contact/updated-at]
+                             :timezone timezone)))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page-num page-size href total]}]
-  (table/rows-only :columns (table-columns)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page-num
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page-num page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page-num
+                           :page-size page-size
+                           :total total})))
 
-(defn table [& {:keys [rows page-num href page-size total search-query]}]
+(defn table [& {:keys [rows page-num href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page-num
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No contacts yet")
-                                :body (tr "The nurseries, gardens and collectors your material comes from.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for contact.routes/new)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page-num
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No contacts yet")
+                                        :body (tr "The nurseries, gardens and collectors your material comes from.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for contact.routes/new))}))))
 
-(defn render [& {:keys [field-options viewer href page-num page-size rows search-query total]}]
+(defn render [& {:keys [field-options viewer href page-num page-size rows search-query table-opts total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -98,7 +107,8 @@
                                 :page-size page-size
                                 :rows rows
                                 :total total
-                                :search-query search-query)
+                                :search-query search-query
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -123,7 +133,7 @@
    [:page-size {:default default-page-size} :int]
    [:q :string]])
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -140,11 +150,17 @@
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :contact ast)
-                                                                [[:c.name :asc]])))]
+        view (list-view/resolve request :contact (table-columns timezone))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :contact ast)
+                                                               :default [[:c.name :asc]]
+                                                               :tiebreak [:c.id :asc]}))))
+        table-opts (list-view/table-opts view uri q)]
 
     (cond
       ;; The combobox asks for its rows as markup, so what an option looks
@@ -168,19 +184,19 @@
                     :page-num page
                     :page-size page-size
                     :total total
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
-      (render :viewer viewer
-              :field-options (search.i/field-options :contact)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page-num page
-              :page-size page-size
-              :search-query q
-              :total total))))
+      (list-view/respond
+        view
+        (render :viewer viewer
+                :field-options (search.i/field-options :contact)
+                :href (list-view/href view uri q :page page)
+                :rows rows
+                :page-num page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :total total)
+        uri q))))

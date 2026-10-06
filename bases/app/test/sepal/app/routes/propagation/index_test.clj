@@ -114,3 +114,74 @@
                                         (:propagation/id prop) "/']"))))
           (finally
             (jdbc.sql/delete! *db* :propagation {:id (:propagation/id prop)})))))))
+
+(def sortable-keys
+  ["parent" "type" "status" "propagated" "started" "succeeded" "location"
+   "succeeded-on" "rootstock" "created" "updated"])
+
+(deftest test-every-sort-answers
+  (tf/testing "every sortable column, both ways, is valid SQL"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")]
+        (doseq [k sortable-keys dir ["asc" "desc"]]
+          (is (= 200 (:status (:response (peri/request sess "/propagation/" :params {:sort k :dir dir}))))
+              (str k " " dir)))))))
+
+(deftest test-status-default-survives-a-sort
+  (tf/testing "a sort doesn't widen the nursery default"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            done (propagation.i/create! *db* {:type :seed
+                                              :parent-accession-id (:accession/id acc-a)
+                                              :status :complete
+                                              :propagated-on "2026-05-01"})
+            active (propagation.i/create! *db* {:type :cutting
+                                                :parent-accession-id (:accession/id acc-a)
+                                                :propagated-on "2026-03-01"})]
+        (try
+          (let [body (app.test/parse-body (:response (peri/request sess "/propagation/"
+                                                                   :params {:sort "propagated" :dir "desc"})))]
+            (is (seq (.select body "tbody .spl-badge--info")) "the active batch is listed")
+            (is (empty? (.select body "tbody .spl-badge--ok")) "no complete batches"))
+          (finally
+            (doseq [p [done active]]
+              (jdbc.sql/delete! *db* :propagation {:id (:propagation/id p)}))))))))
+
+(deftest test-next-page-keeps-the-sort
+  (tf/testing "the prefetch row asks for the next page with the same sort"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            ps (doall (for [d ["2026-03-01" "2026-04-01"]]
+                        (propagation.i/create! *db* {:type :cutting
+                                                     :parent-accession-id (:accession/id acc-a)
+                                                     :propagated-on d})))]
+        (try
+          (let [body (app.test/parse-body (:response (peri/request sess "/propagation/"
+                                                                   :params {:sort "propagated" :dir "desc" :page-size 1})))
+                prefetch (.selectFirst body "tr.spl-prefetch")]
+            (is (some? prefetch))
+            (is (re-find #"sort=propagated" (.attr prefetch "hx-get"))))
+          (finally
+            (doseq [p ps]
+              (jdbc.sql/delete! *db* :propagation {:id (:propagation/id p)}))))))))
+
+(deftest test-joining-filter-with-rootstock-column
+  (tf/testing "a rootstock filter, with the rootstock column visible and sorted"
+    (fixtures)
+    (fn [{:keys [user acc-a]}]
+      (user.i/set-list-columns! *db* (:user/id user) :propagation {:rootstock true})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            root (taxon.i/create! *db* {:name "Zorbax" :rank :species})
+            prop (propagation.i/create! *db* {:type :cutting
+                                              :parent-accession-id (:accession/id acc-a)
+                                              :rootstock-taxon-id (:taxon/id root)})]
+        (try
+          (let [response (:response (peri/request sess "/propagation/" :params {:q "rootstock:Zorbax" :sort "rootstock" :dir "asc"}))]
+            (is (= 200 (:status response)))
+            (is (some #(.startsWith ^String % "Rootstock") (map #(.text %) (.select (app.test/parse-body response) "thead th")))))
+          (finally
+            (jdbc.sql/delete! *db* :propagation {:id (:propagation/id prop)})
+            (jdbc.sql/delete! *db* :taxon {:id (:taxon/id root)})))))))

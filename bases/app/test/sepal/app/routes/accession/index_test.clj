@@ -7,6 +7,7 @@
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.contact.interface :as contact.i]
             [sepal.settings.interface :as settings.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
@@ -115,3 +116,87 @@
           (is (not (listed? "created:>2026-03-13")) "after excludes the day itself"))
         (finally
           (settings.i/set-value! *db* "organization.timezone" "UTC"))))))
+
+(defn- get-page [sess params & {:keys [headers]}]
+  (let [sess (reduce-kv peri/header sess (or headers {}))
+        {:keys [response]} (peri/request sess "/accession/" :params params)]
+    response))
+
+(def sortable-keys
+  ["code" "taxon" "provenance" "received" "supplier" "accessioned"
+   "received-as" "quantity-received" "created" "updated"])
+
+(deftest test-every-sort-answers
+  (tf/testing "every sortable column, both ways, is valid SQL"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")]
+        (doseq [k sortable-keys dir ["asc" "desc"]]
+          (is (= 200 (:status (get-page sess {:sort k :dir dir}))) (str k " " dir)))))))
+
+(deftest test-sort-orders-rows
+  (tf/testing "received, newest first, nulls last"
+    (assoc (fixtures)
+           [::accession.i/factory :key/newer] {:db *db* :taxon (ig/ref :key/taxon)}
+           [::accession.i/factory :key/undated] {:db *db* :taxon (ig/ref :key/taxon)})
+    (fn [{:keys [user accession newer undated]}]
+      (jdbc.sql/update! *db* :accession {:date_received "2020-01-01"} {:id (:accession/id accession)})
+      (jdbc.sql/update! *db* :accession {:date_received "2024-01-01"} {:id (:accession/id newer)})
+      (jdbc.sql/update! *db* :accession {:date_received nil} {:id (:accession/id undated)})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            codes (app.test/first-cells (app.test/parse-body (get-page sess {:sort "received" :dir "desc"})))
+            expected (mapv :accession/code [newer accession undated])]
+        (is (= expected (filterv (set expected) codes)))))))
+
+(deftest test-sorted-header-and-next-page
+  (tf/testing "the sorted header is marked and paging keeps the sort"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (app.test/parse-body (get-page sess {:sort "received" :dir "desc" :page-size 1}))]
+        (is (= "descending" (.attr (.selectFirst body "th[aria-sort]") "aria-sort")))
+        (when-let [prefetch (.selectFirst body "tr.spl-prefetch")]
+          (is (re-find #"sort=received" (.attr prefetch "hx-get"))))))))
+
+(deftest test-chosen-columns
+  (tf/testing "a saved choice shows an extra column and turns shedding off"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :accession {:supplier true :provenance false})
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            body (app.test/parse-body (get-page sess {}))
+            headers (mapv #(.text %) (.select body "thead th:not(.spl-col--picker)"))]
+        (is (some #{"Supplier"} headers))
+        (is (not (some #{"Provenance"} headers)))
+        (is (nil? (.selectFirst body "[class*=spl-shed]")))
+        (is (some? (.selectFirst body "thead th.spl-col--picker button")))))))
+
+(deftest test-toolbar-refinement-keeps-the-sort
+  (tf/testing "typing more keeps the sort and pushes it"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            response (get-page sess {:q "querc"}
+                               :headers {"hx-request" "true"
+                                         "hx-trigger" "list-toolbar"
+                                         "hx-current-url" "http://localhost/accession/?q=quer&sort=received&dir=desc"})]
+        (is (re-find #"sort=received" (get-in response [:headers "HX-Push-Url"])))))))
+
+(deftest test-joining-filter-with-supplier-column
+  (tf/testing "a filter that joins, with the supplier column visible and sorted"
+    (fixtures)
+    (fn [{:keys [user taxon]}]
+      (user.i/set-list-columns! *db* (:user/id user) :accession {:supplier true})
+      (let [contact-id (:contact/id (contact.i/create! *db* {:name "Zorbax"}))
+            acc (accession.i/create! *db* {:code "ZZ.1"
+                                           :taxon-id (:taxon/id taxon)
+                                           :supplier-contact-id contact-id})]
+        (try
+          (let [sess (app.test/login (:user/email user) "testpassword123")
+                response (get-page sess {:q "supplier:Zorbax" :sort "supplier" :dir "asc"})]
+            (is (= 200 (:status response)))
+            (is (some #(.startsWith ^String % "Supplier")
+                      (map #(.text %) (.select (app.test/parse-body response) "thead th")))))
+          (finally
+            (jdbc.sql/delete! *db* :accession {:id (:accession/id acc)})
+            (jdbc.sql/delete! *db* :contact {:id contact-id})))))))

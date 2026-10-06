@@ -22,13 +22,14 @@
            (store.i/coerce spec/Tag)))
 
 (defn list-all
-  "Every tag with its link count, including a tag with none."
-  [db]
+  "Every tag with its link count, including a tag with none. `order-by` is
+  HoneySQL order-by terms; the default is by name."
+  [db & {:keys [order-by]}]
   (db.i/execute! db {:select [:t.* [[:count :tl.id] :tag__link_count]]
                      :from [[:tag :t]]
                      :left-join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
                      :group-by [:t.id]
-                     :order-by [[:t.name :asc]]}))
+                     :order-by (or order-by [[:t.name :asc]])}))
 
 (defn create! [db data]
   (store.i/create! db :tag data spec/CreateTag spec/Tag))

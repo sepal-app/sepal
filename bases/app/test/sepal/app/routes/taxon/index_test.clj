@@ -6,9 +6,12 @@
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
+            [sepal.accession.interface :as acc.i]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.location.interface :as loc.i]
+            [sepal.material.interface :as material.i]
             [sepal.synonym.interface :as synonym.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i])
@@ -471,3 +474,79 @@
           (finally
             (jdbc.sql/delete! *db* :taxon {:id (:taxon/id child)})
             (jdbc.sql/delete! *db* :taxon {:id (:taxon/id stray)})))))))
+
+(def sortable-keys
+  ["name" "author" "rank" "parent" "accessions"])
+
+(defn- user-fixture []
+  {[::user.i/factory :key/user] {:db *db* :password password :role :admin}
+   [::taxon.i/factory :key/taxon] {:db *db*}})
+
+(deftest test-every-sort-answers
+  (tf/testing "every sortable column, both ways, is valid SQL"
+    (user-fixture)
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)]
+        (doseq [k sortable-keys dir ["asc" "desc"]]
+          (is (= 200 (:status (:response (peri/request sess "/taxon/" :params {:sort k :dir dir}))))
+              (str k " " dir)))))))
+
+(deftest test-accession-count-column
+  (tf/testing "the count column shows when chosen"
+    (user-fixture)
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :taxon {:accessions true})
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/taxon/")))]
+        (is (some #{"Accessions"} (map #(.text %) (.select body "thead th"))))))))
+
+(deftest test-unsortable-columns-have-no-link
+  (tf/testing "WFO ID, Created and Updated show, and their headers carry no sort link"
+    (user-fixture)
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :taxon {:wfo-id true :created true :updated true})
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/taxon/")))
+            headers (into {} (for [th (.select body "thead th")] [(.text th) th]))]
+        (doseq [h ["WFO ID" "Created" "Updated"]]
+          (is (some? (get headers h)) (str h " is shown"))
+          (is (nil? (.selectFirst (get headers h) "a")) (str h " has no link")))))))
+
+(deftest test-options-ignore-the-sort
+  (tf/testing "a combobox on a sorted page gets rank order"
+    (user-fixture)
+    (fn [{:keys [user]}]
+      (let [sess (-> (app.test/login (:user/email user) password)
+                     (peri/header "hx-request" "true")
+                     (peri/header "hx-current-url" "http://localhost/taxon/?sort=author&dir=desc"))
+            {:keys [response]} (peri/request sess "/taxon/" :params {:options "" :q "a"})]
+        (is (= 200 (:status response)))))))
+
+(deftest test-next-page-keeps-the-sort
+  (tf/testing "the prefetch row asks for the next page with the same sort"
+    {[::user.i/factory :key/user] {:db *db* :password password :role :admin}
+     [::taxon.i/factory :key/a] {:db *db*}
+     [::taxon.i/factory :key/b] {:db *db*}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) password)
+            body (app.test/parse-body (:response (peri/request sess "/taxon/"
+                                                               :params {:sort "author" :dir "asc" :page-size 1})))
+            prefetch (.selectFirst body "tr.spl-prefetch")]
+        (is (some? prefetch))
+        (is (re-find #"sort=author" (.attr prefetch "hx-get")))))))
+
+(deftest test-joining-filter-with-accessions-column
+  (tf/testing "a filter that joins, with the accessions column visible and sorted"
+    (assoc (user-fixture)
+           [::acc.i/factory :key/accession] {:db *db* :taxon (ig/ref :key/taxon)}
+           [::loc.i/factory :key/location] {:db *db*}
+           [::material.i/factory :key/material] {:db *db*
+                                                 :location (ig/ref :key/location)
+                                                 :accession (ig/ref :key/accession)
+                                                 :data {:type :seed}})
+    (fn [{:keys [user]}]
+      (user.i/set-list-columns! *db* (:user/id user) :taxon {:accessions true})
+      (let [sess (app.test/login (:user/email user) password)
+            response (:response (peri/request sess "/taxon/" :params {:q "material.type:seed" :sort "accessions" :dir "asc"}))]
+        (is (= 200 (:status response)))
+        (is (some #(.startsWith ^String % "Accessions") (map #(.text %) (.select (app.test/parse-body response) "thead th"))))))))

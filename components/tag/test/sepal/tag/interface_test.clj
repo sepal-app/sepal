@@ -82,6 +82,17 @@
         (tag.i/delete! *db* (:tag/id tagged))
         (tag.i/delete! *db* (:tag/id untagged))))))
 
+(deftest test-list-all-order
+  (tf/testing "list-all takes its order as a parameter"
+    {}
+    (fn [_]
+      (let [z (tag.i/create! *db* {:name "zeta"})
+            a (tag.i/create! *db* {:name "Alpha"})]
+        (let [names (mapv :tag/name (tag.i/list-all *db* :order-by [[[:lower :t.name] :desc-nulls-last] [:t.id :asc]]))]
+          (is (< (.indexOf names "zeta") (.indexOf names "Alpha"))))
+        (tag.i/delete! *db* (:tag/id z))
+        (tag.i/delete! *db* (:tag/id a))))))
+
 (deftest test-factory
   (tf/testing "::tag.i/factory"
     {[::tag.i/factory :key/tag] {:db *db*}}

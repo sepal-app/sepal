@@ -1,8 +1,9 @@
 (ns sepal.app.routes.taxon.index
   (:require [clojure.string :as str]
-            [lambdaisland.uri :as uri]
             [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.taxon.export :as export]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -31,35 +32,73 @@
   [t]
   (table/summary (:taxon/rank t) (:taxon/author t)))
 
-(defn table-columns []
-  [{:name (tr "Name")
-    :type :name
-    :priority 1
-    :stacked stacked-summary
-    :cell (fn [t]
-            [:a {:href (z/url-for taxon.routes/detail
-                                  {:id (:taxon/id t)})
-                 :class "spl-link"
-                 :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
-             (taxon-name/render (:taxon/name t))])}
-   {:name (tr "Author")
-    :type :text
-    :priority 2
-    :cell :taxon/author}
-   {:name (tr "Rank")
-    :type :text
-    :priority 3
-    :cell #(some-> % :taxon/rank keyword taxon.spec/rank-labels tr)}
-   {:name (tr "Parent")
-    :type :name
-    :priority 3
-    :cell (fn [t]
-            (when (:taxon/parent-id t)
+(defn table-columns [timezone]
+  (into
+    [{:name (tr "Name")
+      :key :name
+      :type :name
+      :priority 1
+      :sort [:t.name]
+      :stacked stacked-summary
+      :cell (fn [t]
               [:a {:href (z/url-for taxon.routes/detail
-                                    {:id (:taxon/parent-id t)})
+                                    {:id (:taxon/id t)})
                    :class "spl-link"
-                   :x-on:click.stop ""} ; Stop propagation
-               (:taxon/parent-name t)]))}])
+                   :x-on:click.stop ""} ; Stop propagation so row click doesn't fire
+               (taxon-name/render (:taxon/name t))])}
+     {:name (tr "Author")
+      :key :author
+      :type :text
+      :priority 2
+      :sort [[:lower :t.author]]
+      :cell :taxon/author}
+     {:name (tr "Rank")
+      :key :rank
+      :type :text
+      :priority 3
+      :sort [:t.rank]
+      :cell #(some-> % :taxon/rank keyword taxon.spec/rank-labels tr)}
+     {:name (tr "Parent")
+      :key :parent
+      :type :name
+      :priority 3
+      :sort [:p.name]
+      :cell (fn [t]
+              (when (:taxon/parent-id t)
+                [:a {:href (z/url-for taxon.routes/detail
+                                      {:id (:taxon/parent-id t)})
+                     :class "spl-link"
+                     :x-on:click.stop ""} ; Stop propagation
+                 (:taxon/parent-name t)]))}
+     {:name (tr "WFO ID")
+      :key :wfo-id
+      :type :text
+      :priority 3
+      :hidden? true
+      :cell :taxon/wfo-taxon-id}
+     {:name (tr "Accessions")
+      :key :accessions
+      :type :number
+      :priority 3
+      :hidden? true
+      :query #(list-query/add-select % [{:select [[[:count :*]]]
+                                         :from [[:accession :ac]]
+                                         :where [:= :ac.taxon_id :t.id]}
+                                        :taxon__accession_count])
+      :sort [:taxon__accession_count]
+      :cell :taxon/accession-count}]
+    ;; Created and Updated are not sortable on the taxa list, so they select
+    ;; their own data.
+    (map (fn [column]
+           (let [select (case (:key column)
+                          :created [:t.created_at :taxon__created_at]
+                          :updated [:t.updated_at :taxon__updated_at])]
+             (-> column
+                 (dissoc :sort)
+                 (assoc :query (fn [stmt] (list-query/add-select stmt select))))))
+         (table/timestamp-columns :created [:t.created_at :taxon/created-at]
+                                  :updated [:t.updated_at :taxon/updated-at]
+                                  :timezone timezone))))
 
 (defn- row-attrs [row]
   (let [id (:taxon/id row)]
@@ -69,14 +108,14 @@
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page page-size href total]}]
-  (table/rows-only :columns (table-columns)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page
+                           :page-size page-size
+                           :total total})))
 
 (def ^:private synonym-block-limit 5)
 
@@ -106,20 +145,20 @@
         (when (pos? extra)
           [:li (trn "and %1 more" "and %1 more" extra)])]])))
 
-(defn table [& {:keys [rows page href page-size total search-query]}]
+(defn table [& {:keys [rows page href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No taxa yet")
-                                :body (tr "The taxonomy behind your collection. Import the World Flora Online list from Settings, or add a name by hand.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for taxon.routes/new)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No taxa yet")
+                                        :body (tr "The taxonomy behind your collection. Import the World Flora Online list from Settings, or add a name by hand.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for taxon.routes/new))}))))
 (defn- accessions-only-checkbox
   "Checkbox that toggles `accessions:>0` filter in the search query.
    Uses Alpine.js component from js/query-builder.ts"
@@ -153,7 +192,7 @@
               "That synonym matches more than %1 taxa. Showing the first %1 — narrow the search to see the rest."
               synonym.i/max-synonym-taxon-ids)]]))
 
-(defn render [& {:keys [field-options viewer href page page-size parent rows search-query total synonym-matches synonym-notice]}]
+(defn render [& {:keys [field-options viewer href page page-size parent rows search-query table-opts total synonym-matches synonym-notice]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -164,7 +203,8 @@
                                 :page-size page-size
                                 :rows rows
                                 :total total
-                                :search-query search-query)
+                                :search-query search-query
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -197,8 +237,8 @@
    [:q :string]])
 
 (defn handler
-  [& {:keys [::z/context query-params uri viewer]}]
-  (let [{:keys [db]} context
+  [& {:keys [::z/context query-params uri viewer] :as request}]
+  (let [{:keys [db timezone]} context
         {:keys [page page-size q]} (params/decode Params query-params)
         offset (* page-size (- page 1))
 
@@ -281,14 +321,22 @@
                                                            :from [[:taxon :t]]})
                        (narrow-to-synonyms))
 
-        ;; Execute queries in parallel
+        view (list-view/resolve request :taxon (table-columns timezone))
+
+        ;; Execute queries in parallel. Column queries apply to the row query
+        ;; only; the count never needs them.
         [rows total] (pcalls
-                       #(db.i/execute-bounded! db (assoc stmt
-                                                         :limit page-size
-                                                         :offset offset
-                                                         :order-by (concat (search.i/relevance-order :taxon ast)
-                                                                           [[:t.name :asc]])))
-                       #(db.i/count-bounded db count-stmt))]
+                       #(db.i/execute-bounded! db (-> stmt
+                                                      (list-query/with-columns (:columns view) (:sort view))
+                                                      (assoc :limit page-size
+                                                             :offset offset
+                                                             :order-by (list-query/order-by
+                                                                         (:sort view)
+                                                                         {:relevance (search.i/relevance-order :taxon ast)
+                                                                          :default [[:t.name :asc]]
+                                                                          :tiebreak [:t.id :asc]}))))
+                       #(db.i/count-bounded db count-stmt))
+        table-opts (list-view/table-opts view uri q)]
 
     (cond
       ;; The combobox asks for its rows as markup, so a scientific name keeps
@@ -347,9 +395,8 @@
                     :page page
                     :page-size page-size
                     :total total
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
       (let [synonym-matches (synonym.i/resolve context db synonym-q)
@@ -367,22 +414,23 @@
                                               {:seen (conj seen id) :out (conj out hit)})))
                                         {:seen #{} :out []}
                                         synonym-matches))]
-        (render :viewer viewer
-                :field-options (search.i/field-options :taxon)
-                :href (uri/uri-str {:path uri
-                                    :query (uri/map->query-string
-                                             (cond-> {:page page}
-                                               (seq q) (assoc :q q)))})
-                :parent (some->> (:filters ast)
-                                 (filter #(= "parent.id" (:field %)))
-                                 first
-                                 :value
-                                 parse-long
-                                 (taxon.i/get-by-id db))
-                :rows rows
-                :page page
-                :page-size page-size
-                :search-query q
-                :total total
-                :synonym-matches block-matches
-                :synonym-notice (render-synonym-notice synonym-hit))))))
+        (list-view/respond
+          view
+          (render :viewer viewer
+                  :field-options (search.i/field-options :taxon)
+                  :href (list-view/href view uri q :page page)
+                  :parent (some->> (:filters ast)
+                                   (filter #(= "parent.id" (:field %)))
+                                   first
+                                   :value
+                                   parse-long
+                                   (taxon.i/get-by-id db))
+                  :rows rows
+                  :page page
+                  :page-size page-size
+                  :search-query q
+                  :table-opts table-opts
+                  :total total
+                  :synonym-matches block-matches
+                  :synonym-notice (render-synonym-notice synonym-hit))
+          uri q)))))

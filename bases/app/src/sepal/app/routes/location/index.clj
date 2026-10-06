@@ -1,7 +1,8 @@
 (ns sepal.app.routes.location.index
-  (:require [lambdaisland.uri :as uri]
-            [sepal.app.authorization :as authz]
+  (:require [sepal.app.authorization :as authz]
             [sepal.app.html :as html]
+            [sepal.app.list-query :as list-query]
+            [sepal.app.list-view :as list-view]
             [sepal.app.params :as params]
             [sepal.app.routes.location.export :as export]
             [sepal.app.routes.location.routes :as location.routes]
@@ -36,57 +37,89 @@
   [l]
   (table/summary (:location/code l) (:location/description l)))
 
-(defn table-columns []
-  [{:name (tr "Name")
-    :type :text
-    :priority 1
-    :stacked stacked-summary
-    :cell (fn [l] [:a {:href (z/url-for location.routes/detail
-                                        {:id (:location/id l)})
-                       :class "spl-link"
-                       :x-on:click.stop ""}
-                   (:location/name l)])}
-   {:name (tr "Code")
-    :type :identifier
-    :priority 2
-    :cell :location/code}
-   {:name (trc "location" "Parent")
-    :type :text
-    :priority 4
-    :cell (fn [l] (some-> (:location/parent-path l) seq location-path/markup))}
-   {:name (tr "Description")
-    :type :text
-    :priority 3
-    :cell :location/description}])
+(defn table-columns [timezone]
+  (into
+    [{:name (tr "Name")
+      :key :name
+      :type :text
+      :priority 1
+      :sort [[:lower :l.name]]
+      :stacked stacked-summary
+      :cell (fn [l] [:a {:href (z/url-for location.routes/detail
+                                          {:id (:location/id l)})
+                         :class "spl-link"
+                         :x-on:click.stop ""}
+                     (:location/name l)])}
+     {:name (tr "Code")
+      :key :code
+      :type :identifier
+      :priority 2
+      :sort [:l.code]
+      :cell :location/code}
+     {:name (trc "location" "Parent")
+      :key :parent
+      :type :text
+      :priority 4
+      :cell (fn [l] (some-> (:location/parent-path l) seq location-path/markup))}
+     {:name (tr "Description")
+      :key :description
+      :type :text
+      :priority 3
+      :sort [[:lower :l.description]]
+      :cell :location/description}
+     {:name (tr "Status")
+      :key :status
+      :type :text
+      :priority 3
+      :hidden? true
+      :sort [:l.status]
+      :cell #(case (:location/status %)
+               "active" (tr "Active")
+               "archived" (tr "Archived")
+               (:location/status %))}
+     {:name (trc "navigation" "Material")
+      :key :material
+      :type :number
+      :priority 3
+      :hidden? true
+      :query #(list-query/add-select % [{:select [[[:count :*]]]
+                                         :from [[:material :lm]]
+                                         :where [:= :lm.location_id :l.id]}
+                                        :location__material_count])
+      :sort [:location__material_count]
+      :cell :location/material-count}]
+    (table/timestamp-columns :created [:l.created_at :location/created-at]
+                             :updated [:l.updated_at :location/updated-at]
+                             :timezone timezone)))
 
 (defn index-rows
   "The <tr>s alone, for an infinite-scroll response. Same renderer as the
   initial load, so an appended row is built like one already present."
-  [& {:keys [rows page-num page-size href total]}]
-  (table/rows-only :columns (table-columns)
-                   :rows rows
-                   :row-attrs row-attrs
-                   :href href
-                   :page page-num
-                   :page-size page-size
-                   :total total))
+  [& {:keys [rows page-num page-size href total table-opts]}]
+  (table/rows-only (merge table-opts
+                          {:rows rows
+                           :row-attrs row-attrs
+                           :href href
+                           :page page-num
+                           :page-size page-size
+                           :total total})))
 
-(defn table [& {:keys [rows page-num href page-size total search-query]}]
+(defn table [& {:keys [rows page-num href page-size total search-query table-opts]}]
   (pages.list/card-table
-    (table/table :columns (table-columns)
-                 :rows rows
-                 :row-attrs row-attrs
-                 :href href
-                 :page page-num
-                 :page-size page-size
-                 :total total
-                 :empty-state (pages.list/empty-list
-                                :title (tr "No locations yet")
-                                :body (tr "The beds, houses and stores that material lives in.")
-                                :searching? (seq search-query)
-                                :create-href (z/url-for location.routes/new)))))
+    (table/table (merge table-opts
+                        {:rows rows
+                         :row-attrs row-attrs
+                         :href href
+                         :page page-num
+                         :page-size page-size
+                         :total total
+                         :empty-state (pages.list/empty-list
+                                        :title (tr "No locations yet")
+                                        :body (tr "The beds, houses and stores that material lives in.")
+                                        :searching? (seq search-query)
+                                        :create-href (z/url-for location.routes/new))}))))
 
-(defn render [& {:keys [field-options viewer href page-num page-size rows search-query total]}]
+(defn render [& {:keys [field-options viewer href page-num page-size rows search-query table-opts total]}]
   (ui.page/page
     :content (pages.list/page-content-with-panel
                :content [:div
@@ -95,7 +128,8 @@
                                 :page-size page-size
                                 :rows rows
                                 :total total
-                                :search-query search-query)
+                                :search-query search-query
+                                :table-opts table-opts)
                          (ui.export/export-modal
                            :total total
                            :search-query search-query
@@ -121,7 +155,7 @@
    [:q :string]
    [:exclude {:optional true} :int]])
 
-(defn handler [& {:keys [::z/context query-params uri viewer]}]
+(defn handler [& {:keys [::z/context query-params uri viewer] :as request}]
   (let [{:keys [db timezone]} context
         {:keys [page page-size q exclude]} (params/decode Params query-params)
         offset (* page-size (- page 1))
@@ -158,16 +192,22 @@
 
         ;; Execute queries
         total (db.i/count-bounded db stmt)
-        rows (db.i/execute-bounded! db (assoc stmt
-                                              :limit page-size
-                                              :offset offset
-                                              :order-by (concat (search.i/relevance-order :location ast)
-                                                                [[:l.name :asc]])))
+        view (list-view/resolve request :location (table-columns timezone))
+        rows (db.i/execute-bounded! db (-> stmt
+                                           (list-query/with-columns (:columns view) (:sort view))
+                                           (assoc :limit page-size
+                                                  :offset offset
+                                                  :order-by (list-query/order-by
+                                                              (:sort view)
+                                                              {:relevance (search.i/relevance-order :location ast)
+                                                               :default [[:l.name :asc]]
+                                                               :tiebreak [:l.id :asc]}))))
         ;; Each row's ancestors, from one query for the page: the list's
         ;; Parent column and the picker's meta line both show them.
         rows (let [paths (location.i/paths db (map :location/id rows))]
                (mapv #(assoc % :location/parent-path (butlast (get paths (:location/id %))))
-                     rows))]
+                     rows))
+        table-opts (list-view/table-opts view uri q)]
 
     (cond
       ;; The combobox asks for its rows as markup, so what an option looks like
@@ -200,19 +240,19 @@
                     :page-num page
                     :page-size page-size
                     :total total
-                    :href (uri/uri-str {:path uri
-                                        :query (uri/map->query-string
-                                                 (cond-> {} (seq q) (assoc :q q)))})))
+                    :table-opts table-opts
+                    :href (list-view/href view uri q)))
 
       :else
-      (render :viewer viewer
-              :field-options (search.i/field-options :location)
-              :href (uri/uri-str {:path uri
-                                  :query (uri/map->query-string
-                                           (cond-> {:page page}
-                                             (seq q) (assoc :q q)))})
-              :rows rows
-              :page-num page
-              :page-size page-size
-              :search-query q
-              :total total))))
+      (list-view/respond
+        view
+        (render :viewer viewer
+                :field-options (search.i/field-options :location)
+                :href (list-view/href view uri q :page page)
+                :rows rows
+                :page-num page
+                :page-size page-size
+                :search-query q
+                :table-opts table-opts
+                :total total)
+        uri q))))

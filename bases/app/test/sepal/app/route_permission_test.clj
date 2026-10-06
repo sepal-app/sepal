@@ -56,9 +56,9 @@
   (is (empty? (groups-with-permission (server/routes)))))
 
 (def ^:private reader-writable
-  "The routes a reader may send more than a GET: their own profile and
-  password."
-  #{"/settings/profile" "/settings/security"})
+  "The routes a reader may send more than a GET: their own profile,
+  password and list columns."
+  #{"/lists/:list/columns" "/settings/profile" "/settings/security"})
 
 (deftest routes-open-to-readers-answer-only-get
   ;; The mutating-request test below reads its expectations from the declared

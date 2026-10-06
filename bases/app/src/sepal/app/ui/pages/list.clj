@@ -9,6 +9,11 @@
 
 (def list-container-id "list-container")
 
+(def toolbar-id
+  "The toolbar form's id. htmx sends it as HX-Trigger, which is how a list
+  handler knows a request is a refined search that may keep its sort."
+  "list-toolbar")
+
 (defn filter-badge
   "A single filter badge with label, value, and clear button.
 
@@ -143,10 +148,16 @@
   [& {:keys [table-actions content]}]
   [:div {:class "spl-list-page"}
    [:div {:class "spl-list-body"}
-    [:form {:class "spl-toolbar"
+    [:form {:id toolbar-id
+            :class "spl-toolbar"
             :method "get"
             :hx-get " "
-            :hx-trigger "keyup delay:200ms,change"
+            ;; `submit` routes Enter and requestSubmit() through htmx, so the
+            ;; request carries HX-Trigger and keeps the sort. The search box
+            ;; is excluded from `change`: it fires on blur, so clicking a
+            ;; sort header would send an unsorted request after the sort.
+            :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
+            :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"
@@ -202,10 +213,16 @@
    ;; table starts immediately beneath. This is the shape the workbench mockup
    ;; has: chrome, then data.
    [:div {:class "spl-list-body"}
-    [:form {:class "spl-toolbar"
+    [:form {:id toolbar-id
+            :class "spl-toolbar"
             :method "get"
             :hx-get " "
-            :hx-trigger "keyup delay:200ms,change"
+            ;; `submit` routes Enter and requestSubmit() through htmx, so the
+            ;; request carries HX-Trigger and keeps the sort. The search box
+            ;; is excluded from `change`: it fires on blur, so clicking a
+            ;; sort header would send an unsorted request after the sort.
+            :hx-trigger "keyup delay:200ms,change[target.type!='search'],submit"
+            :hx-sync "this:replace"
             :hx-select (str "#" list-container-id)
             :hx-target (str "#" list-container-id)
             :hx-push-url "true"

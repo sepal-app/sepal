@@ -1,5 +1,6 @@
 (ns sepal.user.core
-  (:require [clojure.string :as str]
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]
             [integrant.core :as ig]
             [malli.core :as m]
             [malli.experimental.time.generator]
@@ -151,3 +152,19 @@
   (when data
     (let [{:keys [db]} (meta data)]
       (jdbc.sql/delete! db :user {:id (:user/id data)}))))
+
+(defn set-list-columns!
+  "Save one list's column choices, or remove them when `overrides` is nil.
+  Updates that list's entry in place, so a save from one tab doesn't undo a
+  change to another list made in a second."
+  [db id list-key overrides]
+  (let [path (str "$." (name list-key))]
+    (db.i/execute-one! db
+                       {:update :user
+                        :set {:list_columns
+                              (if overrides
+                                [:json_set [:coalesce :list_columns "{}"]
+                                 path
+                                 [:json (json/write-str overrides)]]
+                                [:json_remove :list_columns path])}
+                        :where [:= :id id]})))

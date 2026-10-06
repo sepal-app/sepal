@@ -82,6 +82,14 @@
                   "input"
                   (java.util.HashMap.)))
 
+(defn type-text
+  "Type `text` at the end of the field one key at a time, so keyup listeners
+  fire as they do for a person typing. `fill` fires only `input`."
+  [selector text]
+  (let [locator (.locator *page* selector)]
+    (.press locator "End")
+    (.pressSequentially locator text)))
+
 (defn select-option
   "Select option(s) in a dropdown by value"
   [selector value]

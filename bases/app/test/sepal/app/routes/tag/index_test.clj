@@ -154,3 +154,17 @@
               "and so must its link"))
         (tag.i/delete! *db* tag-id)
         (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))
+
+(deftest test-tags-sort-and-pick
+  (tf/testing "the tag list sorts by its headers and has a picker"
+    {[::user.i/factory :key/user] {:db *db* :password "testpassword123" :role :editor}}
+    (fn [{:keys [user]}]
+      (let [sess (app.test/login (:user/email user) "testpassword123")
+            tag (tag.i/create! *db* {:name "Fruit"})]
+        (doseq [k ["name" "description" "links" "created" "updated"] dir ["asc" "desc"]]
+          (is (= 200 (:status (:response (peri/request sess "/tag/" :params {:sort k :dir dir}))))
+              (str k " " dir)))
+        (let [body (app.test/parse-body (:response (peri/request sess "/tag/")))]
+          (is (some? (.selectFirst body "#list-container table")))
+          (is (some? (.selectFirst body "th.spl-col--picker button"))))
+        (tag.i/delete! *db* (:tag/id tag))))))
