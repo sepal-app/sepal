@@ -119,6 +119,19 @@
                              [:= :tl.resource_id resource-id]]
                      :order-by [[:t.name :asc]]}))
 
+(defn get-for-resources
+  "Tags on any of `ids`, each once, alphabetical."
+  [db resource-type ids]
+  (if (empty? ids)
+    []
+    (db.i/execute! db {:select-distinct [:t.*]
+                       :from [[:tag :t]]
+                       :join [[:tag_link :tl] [:= :tl.tag_id :t.id]]
+                       :where [:and
+                               [:= :tl.resource_type (name resource-type)]
+                               [:in :tl.resource_id ids]]
+                       :order-by [[:t.name :asc]]})))
+
 (defn get-tagged
   "Every link row for one tag. The tag panel counts these by resource type."
   [db tag-id]

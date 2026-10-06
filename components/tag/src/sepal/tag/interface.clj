@@ -23,6 +23,7 @@
   (core/delete-for-resource! db resource-type resource-id))
 
 (defn get-for-resource [db resource-type resource-id] (core/get-for-resource db resource-type resource-id))
+(defn get-for-resources [db resource-type ids] (core/get-for-resources db resource-type ids))
 (defn get-tagged [db tag-id] (core/get-tagged db tag-id))
 
 (defmethod ig/init-key ::factory [_ args]

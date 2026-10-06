@@ -4,6 +4,7 @@
             [sepal.app.routes.accession.detail.shared :as accession.shared]
             [sepal.app.routes.accession.panel :as accession.panel]
             [sepal.app.routes.accession.routes :as accession.routes]
+            [sepal.app.tag-links :as tag-links]
             [sepal.app.ui.page :as ui.page]
             [sepal.app.ui.pages.detail :as pages.detail]
             [sepal.app.ui.tag :as tag.ui]
@@ -11,7 +12,6 @@
             [sepal.error.interface :as error.i]
             [sepal.i18n.interface :refer [tr]]
             [sepal.tag.interface :as tag.i]
-            [sepal.tag.interface.activity :as tag.activity]
             [sepal.taxon.interface :as taxon.i]
             [sepal.validation.interface :as validation.i]
             [zodiac.core :as z]))
@@ -50,44 +50,17 @@
                                             :timezone timezone))
                 :breadcrumbs (accession.shared/breadcrumbs taxon accession)))
 
-(defn resolve-or-create-tag!
-  "The one text field handles both 'pick an existing tag' and 'make a new
-  one': a name that matches (case-insensitively, via tag.name's own
-  collation) links the existing row; a name that matches nothing creates it.
-  This is a lookup-then-maybe-create, not a get-or-create query, because
-  `tag!`'s own unique-constraint swallow (core.clj) already makes the create
-  path idempotent under a race -- a second create attempt on the same name
-  fails its own unique constraint and that failure surfaces as a normal
-  validation error, which is an acceptable, rare race to leave uncaught here."
-  [db name created-by]
-  (or (tag.i/get-by-name db name)
-      (let [created (tag.i/create! db {:name name})]
-        (when-not (error.i/error? created)
-          (tag.activity/create! db tag.activity/created created-by created))
-        created)))
-
 (defn add! [db accession-id created-by data]
   (db.i/with-transaction [tx db]
-    (let [tag (resolve-or-create-tag! tx (:tag-name data) created-by)]
+    (let [tag (tag-links/resolve-or-create! tx (:tag-name data) created-by)]
       (if (error.i/error? tag)
         tag
-        (let [linked? (tag.i/tag! tx (:tag/id tag) accession-id :accession)]
-          (if (error.i/error? linked?)
-            linked?
-            (do
-              ;; tag! returns false when the link already existed (a true
-              ;; no-op) -- only a real state change gets an activity event.
-              (when linked?
-                (tag.activity/create-link! tx tag.activity/linked created-by tag :accession accession-id))
-              tag)))))))
+        (let [linked? (tag-links/link! tx tag :accession accession-id created-by)]
+          (if (error.i/error? linked?) linked? tag))))))
 
 (defn remove! [db accession-id removed-by tag]
   (db.i/with-transaction [tx db]
-    ;; untag! returns false when there was no such link to remove (a stale
-    ;; id, a double-DELETE) -- only a real state change gets an activity
-    ;; event.
-    (when (tag.i/untag! tx (:tag/id tag) accession-id :accession)
-      (tag.activity/create-link! tx tag.activity/unlinked removed-by tag :accession accession-id))))
+    (tag-links/unlink! tx tag :accession accession-id removed-by)))
 
 (defn- page
   "The tab, as its GET renders it. Every write answers with it, so the panel

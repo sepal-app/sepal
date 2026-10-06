@@ -114,3 +114,17 @@
             "Only this resource's links")
         (is (some? (tag.i/get-by-id *db* tag-id))
             "The tag itself survives; only the link goes")))))
+
+(deftest test-get-for-resources
+  (let [db *db*
+        a (tag.i/create! db {:name "Bed 4 labels"})
+        b (tag.i/create! db {:name "Aroids"})
+        c (tag.i/create! db {:name "Unused"})]
+    (tag.i/tag! db (:tag/id a) 1001 :material)
+    (tag.i/tag! db (:tag/id a) 1002 :material)
+    (tag.i/tag! db (:tag/id b) 1002 :material)
+    (tag.i/tag! db (:tag/id c) 1001 :accession)
+    (is (= ["Aroids" "Bed 4 labels"]
+           (mapv :tag/name (tag.i/get-for-resources db :material [1001 1002 1003]))))
+    (is (= [] (tag.i/get-for-resources db :material [])))
+    (doseq [t [a b c]] (tag.i/delete! db (:tag/id t)))))
