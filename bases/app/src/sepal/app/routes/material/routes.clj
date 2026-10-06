@@ -12,6 +12,7 @@
 (def detail-tag ::detail-tag)
 (def export ::export)
 (def bulk-status ::bulk-status)
+(def bulk-move ::bulk-move)
 
 (def panel ::panel)
 (def history ::history)

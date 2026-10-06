@@ -48,6 +48,11 @@
      :permission material.perm/edit
      :conflicting true
      :post #'bulk/status-handler}]
+   ["/bulk/move/"
+    {:name routes/bulk-move
+     :permission material.perm/edit
+     :conflicting true
+     :post #'bulk/move-handler}]
    ["/:id" {:middleware [[middleware/resource-loader material-loader]]
             :conflicting true}
     ["/" {:name routes/detail

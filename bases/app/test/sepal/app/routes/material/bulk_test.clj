@@ -117,3 +117,36 @@
       (let [response (post user "/material/bulk/status/" {:status "dormant"})]
         (is (= 422 (:status response)))
         (is (re-find #"Select at least one row" (:body response)))))))
+
+(deftest test-bulk-move
+  (tf/testing "moving writes one change per moved row and skips rows already there"
+    (assoc (two-materials) [::location.i/factory :key/bed] {:db *db*})
+    (fn [{:keys [user one four bed location]}]
+      (material.i/update! *db* (:material/id one) {:location-id (:location/id bed)})
+      (let [before (count (material.i/list-by-material-id *db* (:material/id one)))
+            response (post user "/material/bulk/move/"
+                           {:ids [(str (:material/id one)) (str (:material/id four))]
+                            :location-id (str (:location/id bed))})]
+        (is (= 200 (:status response)))
+        (is (re-find #"1 was already there" (:body response)))
+        (is (= before (count (material.i/list-by-material-id *db* (:material/id one))))
+            "no new change for the row already in the bed")
+        (is (= [[(:location/id location) (:location/id bed) 0]]
+               (map (juxt :material-change/from-location-id :material-change/to-location-id
+                          :material-change/quantity)
+                    (material.i/list-by-material-id *db* (:material/id four)))))
+        ;; The change rows hold both locations; delete the materials first.
+        (material.i/delete! *db* (:material/id one))
+        (material.i/delete! *db* (:material/id four))
+        (cleanup! user)))))
+
+(deftest test-move-to-a-missing-location
+  (tf/testing "an unknown location is refused and nothing moves"
+    (two-materials)
+    (fn [{:keys [user four location]}]
+      (let [response (post user "/material/bulk/move/"
+                           {:ids [(str (:material/id four))] :location-id "999999"})]
+        (is (= 422 (:status response)))
+        (is (re-find #"Choose a location" (:body response)))
+        (is (= (:location/id location)
+               (:material/location-id (material.i/get-by-id *db* (:material/id four)))))))))
