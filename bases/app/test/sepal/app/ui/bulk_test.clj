@@ -25,7 +25,9 @@
     (is (= "none" (.attr form "hx-swap")))
     (is (re-find #"X-CSRF-Token" (.attr form "hx-headers")))
     (is (some? (.selectFirst form "template[x-for] input[type=hidden][name=ids]")))
-    (is (some? (.selectFirst form "button[type=submit][x-text]")))))
+    (is (some? (.selectFirst form "button[type=submit][x-text]")))
+    (is (some? (.selectFirst body "dialog#bulk-status .spl-bulk-error[role=alert]"))
+        "a slot for a failure's message, which the backdrop would hide in the banner")))
 
 (deftest test-action-bar
   (let [body (parse (ui.bulk/action-bar :actions [:button "Move"]))]

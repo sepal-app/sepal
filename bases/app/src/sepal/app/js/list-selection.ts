@@ -4,12 +4,28 @@ type ListSelection = {
     selected: string[]
     loaded: number
     $root: HTMLElement
+    $nextTick(callback: () => void): Promise<void>
     clear(): void
     allLoaded(): boolean
     countLoaded(): void
 }
 
 const rowBoxes = "input[data-select-row]"
+
+// Each bulk dialog has a slot for a failure's message, which the server
+// swaps in; ui.bulk/dialog renders it.
+const errorSlot = ".spl-bulk-error"
+
+// Back to how the page rendered it: no values, no errors.
+function resetDialog(dialog: HTMLDialogElement) {
+    dialog.querySelectorAll("form").forEach((form) => form.reset())
+    dialog.querySelectorAll(`ul.spl-error, ${errorSlot}`).forEach((el) => {
+        el.replaceChildren()
+    })
+    dialog.querySelectorAll("[aria-invalid]").forEach((el) => {
+        el.removeAttribute("aria-invalid")
+    })
+}
 
 export function listSelection(toolbarId: string) {
     return {
@@ -37,15 +53,28 @@ export function listSelection(toolbarId: string) {
                 (el) => el.value,
             )
         },
-        // A bulk action succeeded: close its dialog and reload the list
-        // through the toolbar, which keeps the search and the sort.
+        // Without the message an earlier failure left in it.
+        openDialog(this: ListSelection, id: string) {
+            const dialog = document.getElementById(id)
+            if (!(dialog instanceof HTMLDialogElement)) return
+            dialog.querySelectorAll(errorSlot).forEach((el) => el.replaceChildren())
+            dialog.showModal()
+        },
+        // A bulk action succeeded: close its dialog, empty every dialog for
+        // the next selection, and reload the list through the toolbar, which
+        // keeps the search and the sort. Focus goes to the search, since the
+        // button that opened the dialog is hidden with the bar.
         applied(this: ListSelection) {
-            this.$root
-                .querySelectorAll<HTMLDialogElement>("dialog[open]")
-                .forEach((d) => d.close())
+            const dialogs = this.$root.querySelectorAll<HTMLDialogElement>("dialog")
+            dialogs.forEach((d) => d.close())
+            dialogs.forEach(resetDialog)
             this.clear()
             const toolbar = document.getElementById(toolbarId)
-            if (toolbar instanceof HTMLFormElement) toolbar.requestSubmit()
+            if (!(toolbar instanceof HTMLFormElement)) return
+            toolbar.requestSubmit()
+            this.$nextTick(() => {
+                toolbar.querySelector<HTMLInputElement>("input[name=q]")?.focus()
+            })
         },
     }
 }

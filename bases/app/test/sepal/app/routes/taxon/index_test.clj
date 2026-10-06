@@ -550,3 +550,29 @@
             response (:response (peri/request sess "/taxon/" :params {:q "material.type:seed" :sort "accessions" :dir "asc"}))]
         (is (= 200 (:status response)))
         (is (some #(.startsWith ^String % "Accessions") (map #(.text %) (.select (app.test/parse-body response) "thead th"))))))))
+
+(defn- rows-partial
+  "The infinite-scroll response. Its <tr>s are parsed inside a table, where
+  they belong."
+  [sess]
+  (let [{:keys [response]} (peri/request sess "/taxon/" :params {:rows "1"})]
+    (Jsoup/parse (str "<table><tbody>" (:body response) "</tbody></table>"))))
+
+(deftest test-only-an-editor-can-select-rows
+  (tf/testing "the select column and bulk bar are an editor's; a reader sees neither"
+    {[::user.i/factory :key/editor] {:db *db* :password password :role :editor}
+     [::user.i/factory :key/reader] {:db *db* :password password :role :reader}
+     [::taxon.i/factory :key/taxon] {:db *db*}}
+    (fn [{:keys [editor reader]}]
+      (let [as-reader (app.test/login (:user/email reader) password)
+            as-editor (app.test/login (:user/email editor) password)
+            reader-page (app.test/parse-body (:response (peri/request as-reader "/taxon/")))
+            editor-page (app.test/parse-body (:response (peri/request as-editor "/taxon/")))]
+        (is (some? (.selectFirst reader-page "tr.spl-row")) "the reader sees the rows")
+        (is (nil? (.selectFirst reader-page "td.spl-col--select")))
+        (is (nil? (.selectFirst reader-page ".spl-bulk-bar")))
+        (is (nil? (.selectFirst (rows-partial as-reader) "td.spl-col--select")))
+        (is (some? (.selectFirst editor-page "tr.spl-row td.spl-col--select input[data-select-row]")))
+        (is (some? (.selectFirst editor-page ".spl-bulk-bar")))
+        (is (some? (.selectFirst (rows-partial as-editor)
+                                 "tr.spl-row td.spl-col--select input[data-select-row]")))))))

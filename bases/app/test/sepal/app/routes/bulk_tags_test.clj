@@ -110,3 +110,37 @@
       (let [response (send! (session user) :get "/accession/bulk/tags/remove/" {})]
         (is (= 422 (:status response)))
         (is (re-find #"Select at least one row" (:body response)))))))
+
+(deftest test-remove-form-refuses-rows-without-tags
+  (tf/testing "the Remove dialog doesn't open on rows that carry no tag"
+    (three-accessions)
+    (fn [{:keys [user a b]}]
+      (let [response (send! (session user) :get "/accession/bulk/tags/remove/"
+                            {:ids [(str (:accession/id a)) (str (:accession/id b))]})]
+        (is (= 422 (:status response)))
+        (is (re-find #"None of the selected rows has a tag" (:body response)))
+        (is (not (re-find #"<select" (:body response))))))))
+
+(defn- throw-on-call
+  "`f`, except that call number `n` throws."
+  [f n]
+  (let [calls (atom 0)]
+    (fn [& args]
+      (if (= n (swap! calls inc))
+        (throw (ex-info "write failed" {}))
+        (apply f args)))))
+
+(deftest test-add-is-all-or-nothing
+  (tf/testing "a write that fails on the second row leaves the first untagged"
+    (three-accessions)
+    (fn [{:keys [user a b]}]
+      (let [ids [(:accession/id a) (:accession/id b)]
+            response (with-redefs [tag.activity/create-link! (throw-on-call tag.activity/create-link! 2)]
+                       (send! (session user) :post "/accession/bulk/tags/"
+                              {:ids (map str ids) :tag-name "Half done"}))]
+        (is (= 422 (:status response)))
+        (is (re-find #"No tags were added" (:body response)))
+        (is (nil? (tag.i/get-by-name *db* "Half done")) "the new tag rolled back too")
+        (is (empty? (tag.i/get-for-resources *db* :accession ids)))
+        (is (empty? (linked-events ids)))
+        (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})))))

@@ -310,6 +310,9 @@
   border-radius: var(--radius-control);
   box-shadow: 0 12px 28px -14px rgb(18 33 30 / .35);
 }
+/* In a dialog the list takes room in the flow, so the dialog's box grows or
+ * scrolls to show it. Positioned, it would be clipped by the box's overflow. */
+.spl-modal .spl-combobox-options { position: static; margin-top: 4px; }
 /* A row carries more than one string: a picker is where two similar records
  * are told apart, so there is room for a code beside a name, a rank beside a
  * scientific one, an icon. A row that passes plain text still works — the body
@@ -1099,6 +1102,10 @@
 .spl-bulk-bar { gap: 8px; }
 .spl-bulk-count { font-weight: 600; white-space: nowrap; }
 .spl-bulk-actions { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+/* Why a bulk action failed, inside its dialog: the banner is under the
+ * dialog's backdrop. */
+.spl-bulk-error { margin: 0; font-size: 13px; color: var(--color-danger); }
+.spl-bulk-error:empty { display: none; }
 
 /* A sortable header is a link that reads as a header until hovered. */
 .spl-th-sort {
@@ -1384,9 +1391,10 @@
      table. With one column per row there is nothing left for fixed layout to
      buy. */
   .spl-table { table-layout: auto; }
-  /* Keep the FIRST cell, whatever its type. Keying this on
-     .spl-col--identifier hid every cell in any table without an identifier
-     column — the Taxa list is Name/Author/Rank/Parent, and rendered blank. */
+  /* Keep the FIRST cell, whatever its type, and the cell after a select cell.
+     Keying this on .spl-col--identifier hid every cell in any table without an
+     identifier column — the Taxa list is Name/Author/Rank/Parent, and rendered
+     blank. */
   .spl-table td:not(:first-child):not(.spl-col--select + td) { display: none; }
   .spl-table td:first-child,
   .spl-table td.spl-col--select + td {

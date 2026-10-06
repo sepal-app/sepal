@@ -180,3 +180,27 @@
         (is (= 422 (:status response)))
         (is (re-find #"observed_on-bulk-observation-errors" (:body response)))
         (is (empty? (observation.i/get-for-resource *db* :material (:material/id four))))))))
+
+(deftest test-status-is-all-or-nothing
+  (tf/testing "an event write that fails on the second material changes neither"
+    (two-materials)
+    (fn [{:keys [user one four]}]
+      (let [ids [(:material/id one) (:material/id four)]
+            calls (atom 0)
+            create! material.activity/create!
+            response (with-redefs [material.activity/create!
+                                   (fn [& args]
+                                     (if (= 2 (swap! calls inc))
+                                       (throw (ex-info "write failed" {}))
+                                       (apply create! args)))]
+                       (post user "/material/bulk/status/"
+                             {:ids (mapv str ids) :status "dead" :reason "dead"}))]
+        (is (= 422 (:status response)))
+        (is (re-find #"innerHTML:\.spl-bulk-error[^>]*>Nothing was changed" (:body response))
+            "the message shows in the dialog")
+        (doseq [id ids]
+          (is (= {:material/status :alive}
+                 (select-keys (material.i/get-by-id *db* id) [:material/status])))
+          (is (empty? (material.i/list-by-material-id *db* id)))
+          (is (empty? (activity.i/get-by-resource *db* :resource-type :material :resource-id id))))
+        (cleanup! user)))))

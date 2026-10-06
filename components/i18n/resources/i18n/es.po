@@ -57,13 +57,13 @@ msgstr "Error: %1"
 msgid "Please check the server logs for more details."
 msgstr "Consulte los registros del servidor para obtener más información."
 
-#: bases/app/src/sepal/app/bulk.clj:30
+#: bases/app/src/sepal/app/bulk.clj:44
 msgid "Select at least one row, and no more than %1."
 msgid_plural "Select at least one row, and no more than %1."
 msgstr[0] "Seleccione al menos una fila y no más de %1."
 msgstr[1] "Seleccione al menos una fila y no más de %1."
 
-#: bases/app/src/sepal/app/bulk.clj:37
+#: bases/app/src/sepal/app/bulk.clj:51
 msgid ""
 "Some of the selected records no longer exist. Reload the list and try again."
 msgstr ""
@@ -271,7 +271,7 @@ msgid "You don't have permission to access this page."
 msgstr "No tiene permiso para acceder a esta página."
 
 #: bases/app/src/sepal/app/routes/accession/bulk.clj:18
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:103
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:104
 #: bases/app/src/sepal/app/routes/material/bulk.clj:218
 #: bases/app/src/sepal/app/routes/taxon/bulk.clj:18
 msgid "Add tag"
@@ -1422,12 +1422,12 @@ msgstr[0] "%1 no la tenía."
 msgstr[1] "%1 no la tenían."
 
 #: bases/app/src/sepal/app/routes/bulk_tags.clj:76
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:98
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:99
 msgid "No tags were removed."
 msgstr "No se eliminó ninguna etiqueta."
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:81
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:109
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:80
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:110
 #: bases/app/src/sepal/app/routes/tag/form.clj:19
 #: bases/app/src/sepal/app/ui/tag.clj:49
 #: components/accession/src/sepal/accession/interface/search.clj:94
@@ -1436,28 +1436,28 @@ msgstr "No se eliminó ninguna etiqueta."
 msgid "Tag"
 msgstr "Etiqueta"
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:87
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:96
 msgid "None of the selected rows has a tag."
 msgstr "Ninguna de las filas seleccionadas tiene etiqueta."
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:105
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:106
 msgid "Tag %1 row"
 msgstr "Etiquetar %1 fila"
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:106
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:107
 msgid "Tag %1 rows"
 msgstr "Etiquetar %1 filas"
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:115
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:131
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:116
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:132
 msgid "Remove tag"
 msgstr "Eliminar etiqueta"
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:117
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:118
 msgid "Remove from %1 row"
 msgstr "Eliminar de %1 fila"
 
-#: bases/app/src/sepal/app/routes/bulk_tags.clj:118
+#: bases/app/src/sepal/app/routes/bulk_tags.clj:119
 msgid "Remove from %1 rows"
 msgstr "Eliminar de %1 filas"
 
@@ -2141,7 +2141,7 @@ msgstr "Recurso"
 #: bases/app/src/sepal/app/routes/media/detail/link_widget.clj:127
 #: bases/app/src/sepal/app/routes/settings/users/invite.clj:79
 #: bases/app/src/sepal/app/ui/archive.clj:69
-#: bases/app/src/sepal/app/ui/bulk.clj:65
+#: bases/app/src/sepal/app/ui/bulk.clj:66
 #: bases/app/src/sepal/app/ui/delete.clj:105
 #: bases/app/src/sepal/app/ui/export.clj:84
 #: bases/app/src/sepal/app/ui/form.clj:226
@@ -2178,7 +2178,7 @@ msgstr "Sin título"
 #: bases/app/src/sepal/app/routes/media/detail/shared.clj:56
 #: bases/app/src/sepal/app/ui/archive.clj:59
 #: bases/app/src/sepal/app/ui/archive.clj:74
-#: bases/app/src/sepal/app/ui/bulk.clj:71
+#: bases/app/src/sepal/app/ui/bulk.clj:72
 #: bases/app/src/sepal/app/ui/delete.clj:88
 #: bases/app/src/sepal/app/ui/delete.clj:110
 msgid "Close"
@@ -3895,7 +3895,7 @@ msgstr[1] "%1 seleccionadas"
 
 #: bases/app/src/sepal/app/ui/bulk.clj:40
 msgid "Clear"
-msgstr "Borrar"
+msgstr "Deseleccionar"
 
 #: bases/app/src/sepal/app/ui/column_picker.clj:33
 #: bases/app/src/sepal/app/ui/column_picker.clj:45

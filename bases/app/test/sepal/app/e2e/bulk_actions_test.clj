@@ -7,6 +7,7 @@
             [sepal.app.test.email :as test.email]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
+            [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
             [sepal.user.interface :as user.i]))
 
@@ -23,6 +24,28 @@
   data rows have no checkbox, so tr:nth-child would miscount."
   [n]
   (str ":nth-match(td.spl-col--select label, " n ")"))
+
+(defn- row-id
+  "The material id in the nth data row, from 1."
+  [n]
+  (parse-long (pw/evaluate (str "document.querySelectorAll('input[data-select-row]')[" (dec n) "].value"))))
+
+(defn- pick-location!
+  "Choose `code`, which matches one location, in the Move dialog's location
+  picker with the mouse, after checking the option is on top at its centre
+  and so not clipped by the dialog."
+  [code]
+  (let [option (str "#location-id-listbox [role=option]:has-text(\"" code "\")")]
+    (pw/fill "#location-id-input" code)
+    ;; Until the list narrows, `code` may be an option further down a longer one.
+    (pw/wait-for-hidden "#location-id-listbox [role=option] >> nth=1" 5000)
+    (pw/wait-for-selector option 5000)
+    (let [{:keys [x y width height]} (pw/bounding-box option)
+          hit (pw/evaluate (format "document.elementFromPoint(%s, %s)?.closest('[role=option]')?.textContent ?? ''"
+                                   (+ x (/ width 2)) (+ y (/ height 2))))]
+      (is (re-find (re-pattern code) hit) (str "the " code " option is visible where it is drawn")))
+    (pw/click option)
+    (is (= code (pw/evaluate "document.getElementById('location-id-input').value.split(' ')[0]")))))
 
 (defn- checked-count []
   (pw/evaluate "document.querySelectorAll('input[data-select-row]:checked').length"))
@@ -42,6 +65,11 @@
             password "TestPassword123!"
             taxon (taxon.i/create! db {:name "Quercus alba" :rank "species"})
             bed (location.i/create! db {:code "BED4" :name "Bed 4"})
+            bed5 (location.i/create! db {:code "BED5" :name "Bed 5"})
+            gone (location.i/create! db {:code "GONE" :name "Gone"})
+            ;; Enough beds to fill the picker's list to its full height.
+            _ (doseq [i (range 10 20)]
+                (location.i/create! db {:code (str "BED" i) :name (str "Bed " i)}))
             ;; More than a page, so infinite scroll has something to append.
             material-ids (vec (for [i (range 30)]
                                 (let [acc (acc.i/create! db {:code (format "E2E.%04d" i)
@@ -110,6 +138,80 @@
             (pw/wait-for-selector ".spl-banner:has-text(\"Changed 2 materials\")" 10000)
             (pw/wait-for-hidden ".spl-bulk-bar" 5000)
             (is (= 2 (count (filter dead? material-ids)))))
+
+          (testing "after an action the dialog is reset and focus is on the search"
+            (pw/wait-for-selector "#list-toolbar" 5000)
+            (is (= "q" (pw/evaluate "document.activeElement.id")))
+            (is (= "alive" (pw/evaluate "document.getElementById('status-bulk-status').value")))
+            (is (= "" (pw/evaluate "document.getElementById('reason-bulk-status').value"))))
+
+          (testing "a failure shows in the open dialog, and is gone when it reopens"
+            (pw/wait-for-load-state :networkidle)
+            (pw/click (row-box 3))
+            (pw/click ".spl-bulk-bar button:has-text(\"Move\")")
+            (pw/wait-for-selector "#bulk-material-move[open]" 5000)
+            (pick-location! "GONE")
+            (location.i/delete! db (:location/id gone))
+            (pw/click "#bulk-material-move button[type=submit]")
+            (pw/wait-for-selector "#bulk-material-move .spl-bulk-error:has-text(\"Choose a location.\")" 5000)
+            (is (pw/visible? "#bulk-material-move .spl-bulk-error"))
+            (is (= "alert" (pw/evaluate "document.querySelector('#bulk-material-move .spl-bulk-error').getAttribute('role')")))
+            (is (pw/visible? "#bulk-material-move[open]") "the dialog stays open")
+            (pw/click "#bulk-material-move button:has-text(\"Cancel\")")
+            (pw/click ".spl-bulk-bar button:has-text(\"Move\")")
+            (pw/wait-for-selector "#bulk-material-move[open]" 5000)
+            (is (= "" (pw/evaluate "document.querySelector('#bulk-material-move .spl-bulk-error').textContent"))))
+
+          (testing "the location list isn't clipped by the dialog"
+            (pw/fill "#location-id-input" "BED")
+            (pw/wait-for-selector "#location-id-listbox [role=option]:has-text(\"BED19\")" 5000)
+            (let [{:keys [x y width height]} (pw/bounding-box "#location-id-listbox")]
+              (is (true? (pw/evaluate (format "!!document.elementFromPoint(%s, %s)?.closest('#location-id-listbox')"
+                                              (+ x (/ width 2)) (+ y height -6))))
+                  "the bottom of the list is on top where it is drawn")))
+
+          (testing "move one material"
+            (let [id (row-id 3)]
+              (pick-location! "BED5")
+              (pw/click "#bulk-material-move button[type=submit]")
+              (pw/wait-for-selector ".spl-banner:has-text(\"Moved 1 material\")" 10000)
+              (pw/wait-for-hidden ".spl-bulk-bar" 5000)
+              (is (= (:location/id bed5) (:material/location-id (material.i/get-by-id db id))))
+              (is (= "" (pw/evaluate "document.getElementById('location-id-input').value"))
+                  "the picker is empty for the next selection")))
+
+          (testing "add a tag to two materials, then remove it"
+            (pw/wait-for-load-state :networkidle)
+            (let [ids [(row-id 1) (row-id 2)]]
+              (pw/click (row-box 1))
+              (pw/click (row-box 2))
+              (pw/click ".spl-bulk-bar button:has-text(\"Add tag\")")
+              (pw/wait-for-selector "#bulk-material-tag-add[open]" 5000)
+              (pw/fill "#tag-name-bulk-tag-add" "E2E tag")
+              (pw/click "#bulk-material-tag-add button[type=submit]")
+              (pw/wait-for-selector ".spl-banner:has-text(\"Tagged 2 records\")" 10000)
+              (pw/wait-for-hidden ".spl-bulk-bar" 5000)
+              (is (= ["E2E tag"] (map :tag/name (tag.i/get-for-resources db :material ids))))
+
+              (pw/wait-for-load-state :networkidle)
+              (pw/click (row-box 1))
+              (pw/click (row-box 2))
+              (pw/click ".spl-bulk-bar button:has-text(\"Remove tag\")")
+              (pw/wait-for-selector "#bulk-material-tag-remove[open]" 5000)
+              (is (= ["E2E tag"]
+                     (pw/evaluate "Array.from(document.querySelectorAll('#tag-id-bulk-tag-remove option'), o => o.textContent)")))
+              (pw/click "#bulk-material-tag-remove button[type=submit]")
+              (pw/wait-for-selector ".spl-banner:has-text(\"Removed the tag from 2 records\")" 10000)
+              (pw/wait-for-hidden ".spl-bulk-bar" 5000)
+              (is (empty? (tag.i/get-for-resources db :material ids)))))
+
+          (testing "Remove tag on untagged rows says so and opens nothing"
+            (pw/wait-for-load-state :networkidle)
+            (pw/click (row-box 1))
+            (pw/click ".spl-bulk-bar button:has-text(\"Remove tag\")")
+            (pw/wait-for-selector ".spl-banner:has-text(\"None of the selected rows has a tag.\")" 5000)
+            (is (not (pw/visible? "#bulk-material-tag-remove[open]")))
+            (pw/click ".spl-bulk-bar button:has-text(\"Clear\")"))
 
           (testing "a dead material's form loads with quantity held at 0, and clean"
             (let [id (first (filter dead? material-ids))]

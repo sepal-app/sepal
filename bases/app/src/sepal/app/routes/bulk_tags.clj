@@ -36,7 +36,7 @@
 
 (defn- link-all! [db user-id resource-type ids tag-name]
   (db.i/with-transaction [tx db]
-    (let [tag (throw-on-error (tag-links/resolve-or-create! tx tag-name user-id))
+    (let [tag (tag-links/resolve-or-create! tx tag-name user-id)
           linked (count (filter #(true? (throw-on-error (tag-links/link! tx tag resource-type % user-id))) ids))]
       {:changed linked :skipped (- (count ids) linked)})))
 
@@ -57,7 +57,7 @@
                       (trn "%1 already had it." "%1 already had it." skipped skipped)
                       skipped))
       (f/when-failed [e]
-        (http/not-saved e (tr "No tags were added.") :id-suffix add-suffix)))))
+        (bulk/not-applied e (tr "No tags were added.") :id-suffix add-suffix)))))
 
 (defn remove-tag [{:keys [::z/context form-params viewer]} resource-type]
   (let [{:keys [db]} context]
@@ -73,29 +73,30 @@
                       (trn "%1 didn't have it." "%1 didn't have it." skipped skipped)
                       skipped))
       (f/when-failed [e]
-        (http/not-saved e (tr "No tags were removed.") :id-suffix remove-suffix)))))
+        (bulk/not-applied e (tr "No tags were removed.") :id-suffix remove-suffix)))))
 
 (defn- tag-choices [tags]
   (let [control-id (str "tag-id-" remove-suffix)]
-    (if (seq tags)
-      (ui.form/field :label (tr "Tag")
-                     :name control-id
-                     :input [:select {:name "tag-id" :id control-id
-                                      :class "spl-input spl-select w-full" :required true}
-                             (for [{:tag/keys [id name]} tags]
-                               [:option {:value id} name])])
-      [:p (tr "None of the selected rows has a tag.")])))
+    (ui.form/field :label (tr "Tag")
+                   :name control-id
+                   :input [:select {:name "tag-id" :id control-id
+                                    :class "spl-input spl-select w-full" :required true}
+                           (for [{:tag/keys [id name]} tags]
+                             [:option {:value id} name])])))
 
 (defn remove-form
   "The Remove tag dialog's body for the ids in the query: a choice of the
-  tags any of them carry."
+  tags any of them carry. Refused when none carries one, so the dialog stays
+  shut."
   [{:keys [::z/context query-params]} resource-type]
   (let [{:keys [db]} context]
     (f/attempt-all [_ids (bulk/check-ids query-params)
-                    {:keys [ids]} (validation.i/validate-form-values [:map [:ids bulk/Ids]] query-params)]
-      (html/render-partial (tag-choices (tag.i/get-for-resources db resource-type ids)))
+                    {:keys [ids]} (validation.i/validate-form-values [:map [:ids bulk/Ids]] query-params)
+                    tags (or (not-empty (tag.i/get-for-resources db resource-type ids))
+                             (bulk/refused (tr "None of the selected rows has a tag.")))]
+      (html/render-partial (tag-choices tags))
       (f/when-failed [e]
-        (http/not-saved e (tr "No tags were removed.") :id-suffix remove-suffix)))))
+        (bulk/not-applied e (tr "No tags were removed.") :id-suffix remove-suffix)))))
 
 (defn add-dialog [& {:keys [id action]}]
   (ui.bulk/dialog
@@ -126,6 +127,6 @@
   [:form {:hx-get form-url
           :hx-target (str "#" dialog-id "-body")
           :hx-swap "innerHTML"
-          :x-on:htmx:after-request (str "if ($event.detail.xhr.status === 200) document.getElementById('" dialog-id "').showModal()")}
+          :x-on:htmx:after-request (str "if ($event.detail.xhr.status === 200) openDialog('" dialog-id "')")}
    (ui.bulk/ids-inputs)
    [:button {:type "submit" :class "spl-btn spl-btn--sm"} (tr "Remove tag")]])

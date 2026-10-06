@@ -65,7 +65,7 @@
                       (trn "%1 already had that status." "%1 already had that status." skipped skipped)
                       skipped))
       (f/when-failed [e]
-        (http/not-saved e (tr "Nothing was changed.") :id-suffix status-suffix)))))
+        (bulk/not-applied e (tr "Nothing was changed.") :id-suffix status-suffix)))))
 
 (defn- status-dialog [reasons]
   (ui.bulk/dialog
@@ -137,7 +137,7 @@
                       (trn "%1 was already there." "%1 were already there." skipped skipped)
                       skipped))
       (f/when-failed [e]
-        (http/not-saved e (tr "Nothing was moved.") :id-suffix move-suffix)))))
+        (bulk/not-applied e (tr "Nothing was moved.") :id-suffix move-suffix)))))
 
 (defn- move-dialog [reasons]
   (ui.bulk/dialog
@@ -186,7 +186,7 @@
       (f/when-failed [e]
         (if (error.i/error? e :sepal.app.routes.material.detail.observations/future-observed-on)
           (observations/future-date-error observation-suffix)
-          (http/not-saved e (tr "No observations were added.") :id-suffix observation-suffix))))))
+          (bulk/not-applied e (tr "No observations were added.") :id-suffix observation-suffix))))))
 
 (defn- observation-dialog [db today]
   (ui.bulk/dialog

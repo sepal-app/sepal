@@ -3,7 +3,8 @@
             [failjure.core :as f]
             [sepal.app.bulk :as bulk]
             [sepal.app.http-response :as http]
-            [sepal.validation.interface :as validation.i]))
+            [sepal.validation.interface :as validation.i])
+  (:import [org.jsoup Jsoup]))
 
 (def Params [:map {:closed true} [:ids bulk/Ids]])
 
@@ -27,10 +28,31 @@
              :category "error"}]
            (get-in response [:flash :messages])))))
 
+(defn- error-slot-swap
+  "The out-of-band element that fills the dialogs' error slots."
+  [response]
+  (.selectFirst (Jsoup/parseBodyFragment (:body response))
+                "[hx-swap-oob=\"innerHTML:.spl-bulk-error\"]"))
+
 (deftest test-refused
   (let [response (http/failure-response (bulk/refused "Nope.") {:status 500})]
     (is (= 422 (:status response)))
-    (is (= "Nope." (get-in response [:flash :messages 0 :text])))))
+    (is (= "Nope." (get-in response [:flash :messages 0 :text])))
+    (is (= "Nope." (some-> (error-slot-swap response) .text))
+        "the message also goes to the dialog, whose backdrop covers the banner")))
+
+(deftest test-not-applied
+  (testing "an unexpected failure shows its message in the banner and the dialog"
+    (let [response (bulk/not-applied (ex-info "boom" {}) "Nothing was changed.")]
+      (is (= 422 (:status response)))
+      (is (= "Nothing was changed." (get-in response [:flash :messages 0 :text])))
+      (is (= "Nothing was changed." (some-> (error-slot-swap response) .text)))))
+  (testing "a field error goes to its field, not the slot"
+    (let [response (bulk/not-applied (http/field-errors {:reason ["Choose one."]})
+                                     "Nothing was changed." :id-suffix "bulk-status")]
+      (is (= 422 (:status response)))
+      (is (re-find #"reason-bulk-status-errors" (:body response)))
+      (is (nil? (error-slot-swap response))))))
 
 (deftest test-applied
   (let [response (bulk/applied "Changed 3 materials.")]

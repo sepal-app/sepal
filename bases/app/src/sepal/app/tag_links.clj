@@ -1,19 +1,16 @@
 (ns sepal.app.tag-links
   "Linking a tag to a record and unlinking it, with the activity event. The
   Tags tabs and the bulk routes both write through here."
-  (:require [sepal.error.interface :as error.i]
-            [sepal.tag.interface :as tag.i]
+  (:require [sepal.tag.interface :as tag.i]
             [sepal.tag.interface.activity :as tag.activity]))
 
 (defn resolve-or-create!
   "The tag named `tag-name`, matched case-insensitively, or a new one. A race
-  on the same new name fails the unique constraint and comes back as an error
-  value."
+  on the same new name fails the unique constraint, and `tag.i/create!` throws."
   [db tag-name created-by]
   (or (tag.i/get-by-name db tag-name)
       (let [created (tag.i/create! db {:name tag-name})]
-        (when-not (error.i/error? created)
-          (tag.activity/create! db tag.activity/created created-by created))
+        (tag.activity/create! db tag.activity/created created-by created)
         created)))
 
 (defn link!

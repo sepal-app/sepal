@@ -200,3 +200,28 @@
           (finally
             (jdbc.sql/delete! *db* :accession {:id (:accession/id acc)})
             (jdbc.sql/delete! *db* :contact {:id contact-id})))))))
+
+(defn- rows-partial
+  "The infinite-scroll response. Its <tr>s are parsed inside a table, where
+  they belong."
+  [sess]
+  (let [{:keys [response]} (peri/request sess "/accession/" :params {:rows "1"})]
+    (Jsoup/parse (str "<table><tbody>" (:body response) "</tbody></table>"))))
+
+(deftest test-only-an-editor-can-select-rows
+  (tf/testing "the select column and bulk bar are an editor's; a reader sees neither"
+    (assoc (fixtures)
+           [::user.i/factory :key/reader] {:db *db* :password "testpassword123" :role :reader})
+    (fn [{:keys [user reader]}]
+      (let [reader-page (list-page reader)
+            editor-page (list-page user)
+            as-reader (app.test/login (:user/email reader) "testpassword123")
+            as-editor (app.test/login (:user/email user) "testpassword123")]
+        (is (some? (.selectFirst reader-page "tr.spl-row")) "the reader sees the rows")
+        (is (nil? (.selectFirst reader-page "td.spl-col--select")))
+        (is (nil? (.selectFirst reader-page ".spl-bulk-bar")))
+        (is (nil? (.selectFirst (rows-partial as-reader) "td.spl-col--select")))
+        (is (some? (.selectFirst editor-page "tr.spl-row td.spl-col--select input[data-select-row]")))
+        (is (some? (.selectFirst editor-page ".spl-bulk-bar")))
+        (is (some? (.selectFirst (rows-partial as-editor)
+                                 "tr.spl-row td.spl-col--select input[data-select-row]")))))))

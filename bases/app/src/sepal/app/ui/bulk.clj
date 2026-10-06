@@ -42,7 +42,7 @@
 (defn action-button [& {:keys [label dialog-id]}]
   [:button {:type "button"
             :class "spl-btn spl-btn--sm"
-            :x-on:click (str "document.getElementById('" dialog-id "').showModal()")}
+            :x-on:click (str "openDialog('" dialog-id "')")}
    label])
 
 (defn ids-inputs []
@@ -58,6 +58,7 @@
                    :hx-headers (json/js {"X-CSRF-Token" *anti-forgery-token*})}
                   (ids-inputs)
                   [:div {:class "py-4"} body]
+                  [:p {:class "spl-bulk-error" :role "alert"}]
                   [:div {:class "spl-modal-actions"}
                    [:button {:type "button"
                              :class "spl-btn"
