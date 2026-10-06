@@ -122,9 +122,9 @@
            :hint (tr "How much there is, and what condition it is in.")
            :children
            [[:div {:class "spl-form-pair"
-                    :x-data (str "quantityStatus("
-                                 (json/js (sort (map name material.spec/living-statuses)))
-                                 ")")}
+                   :x-data (str "quantityStatus("
+                                (json/js (sort (map name material.spec/living-statuses)))
+                                ")")}
              (form/field :label (tr "Quantity")
                          :name "quantity"
                          :errors (:quantity errors)
