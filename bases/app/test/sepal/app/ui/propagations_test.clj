@@ -5,9 +5,11 @@
             [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
+            [sepal.app.globals :as g]
             [sepal.app.test :as app.test]
             [sepal.app.test.fixtures :as tf]
             [sepal.app.test.system :refer [*db* default-system-fixture]]
+            [sepal.app.ui.propagations :as ui.propagations]
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.propagation.interface :as propagation.i]
@@ -114,3 +116,7 @@
               "the lineage is still walkable through the parent accession")
           (finally
             (clean-up! user [(:propagation/id prop)])))))))
+
+(deftest test-panel-section-is-absent-when-propagation-is-off
+  (binding [g/*disabled-features* #{:propagation}]
+    (is (nil? (ui.propagations/panel-section :propagations [] :type-labels {} :status-labels {})))))

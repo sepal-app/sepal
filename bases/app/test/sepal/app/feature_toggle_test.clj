@@ -150,3 +150,12 @@
             (is (nil? (.selectFirst (body (get-page sess (str "/material/" (:material/id mat) "/general/")))
                                     "a[href*='/propagation/new/']"))
                 "no Add a propagation")))))))
+
+(deftest test-material-panel-omits-observations
+  (tf/testing "the material panel has no Observations section with Observations off"
+    (fixtures)
+    (fn [{:keys [user mat]}]
+      (let [panel #(.text (body (get-page (session user) (str "/material/" (:material/id mat) "/panel/"))))]
+        (is (re-find #"Observations" (panel)))
+        (app.test/with-features-off *db* [:observations]
+          #(is (not (re-find #"Observations" (panel)))))))))
