@@ -4,6 +4,7 @@
             [dev.onionpancakes.chassis.core :as chassis]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.flash :as flash]
             [sepal.app.globals :as g]
             [sepal.app.http-response :as http]
@@ -227,6 +228,7 @@
    - :organization-name - What the garden calls itself, or nil
    - :material-separator - What joins an accession and material code in a
      material's full code. Nil or \"\" is none
+   - :disabled-features - The set of features the garden has turned off
 
    The short name first: it is what a garden picks to be called in passing,
    which is what a browser tab and an email subject want. Nil rather than a
@@ -240,14 +242,17 @@
                                  (keep #(settings.i/get-value db %))
                                  (remove str/blank?)
                                  (first))
-          material-separator (settings.i/get-value db "codes.material_separator")]
+          material-separator (settings.i/get-value db "codes.material_separator")
+          disabled-features (features/disabled db)]
       ;; Bound as well as assoc'd: z/*request* is bound before this runs, so a
       ;; renderer reading the context there would not see either of these.
-      (binding [g/*organization-name* organization-name]
+      (binding [g/*organization-name* organization-name
+                g/*disabled-features* disabled-features]
         (-> request
             (assoc-in [::z/context :timezone] timezone)
             (assoc-in [::z/context :organization-name] organization-name)
             (assoc-in [::z/context :material-separator] material-separator)
+            (assoc-in [::z/context :disabled-features] disabled-features)
             handler)))))
 
 (defn- setup-excluded-path?
