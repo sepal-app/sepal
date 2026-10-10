@@ -15,13 +15,13 @@
 (defn- label-and-help [feature]
   (case feature
     :observations [(tr "Observations")
-                   (tr "The Observations section, the Observations tabs on material and locations, and the overdue count on Activity.")]
+                   (tr "The Observations section and the Observations tabs on material and locations. Also the Observations section on the material panel, bulk Add observation on the material list, and the overdue count on Activity.")]
     :propagation [(trc "navigation" "Propagation")
-                  (tr "The Propagation section, and propagations on the accession, material and location panels.")]
+                  (tr "The Propagation section, propagations on the accession, material and location panels, and Add a propagation in the action menus. An accession or material a propagation was taken from cannot be deleted while Propagation is off.")]
     :media [(trc "navigation" "Media")
-            (tr "The Media section, and the Media tabs on taxa, accessions, material and locations.")]
+            (tr "The Media section and the Media tabs on taxa, accessions, material and locations.")]
     :tags [(tr "Tags")
-           (tr "The Tags section, the Tags tabs, and adding or removing tags on lists.")]))
+           (tr "The Tags section, the Tags tabs, and adding or removing tags on lists. The accession and taxon lists lose row selection, since tags are their only bulk action there.")]))
 
 (defn- feature-checkbox
   "A bare wrapping label, like the strict checkboxes on the Codes page."
@@ -46,7 +46,7 @@
     (form/anti-forgery-field)
     (form/section
       :title (tr "Sections")
-      :hint (tr "Turn off a section your garden does not use. Its records are kept, and a record linked from Activity opens read-only. A record that another record depends on cannot be deleted while its section is off.")
+      :hint (tr "Turn off a section your garden does not use. Its records are kept, and a record linked from Activity opens read-only.")
       :children (for [feature features/all]
                   (feature-checkbox feature (not (contains? disabled feature)))))
     [:div {:class "mt-4"}

@@ -3,7 +3,6 @@
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
             [sepal.app.features :as features]
-
             [sepal.app.html :as html]
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
