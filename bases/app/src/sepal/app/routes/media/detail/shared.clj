@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [lambdaisland.uri :as uri]
             [ring.util.codec :as codec]
+            [sepal.app.features :as features]
             [sepal.app.routes.media.detail.link-widget :as link-widget]
             [sepal.app.routes.media.panel :as media.panel]
             [sepal.app.routes.media.routes :as media.routes]
@@ -108,7 +109,9 @@
 
 (defn- render [& {:keys [media link panel-data editor? timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for media.routes/index)} (trc "navigation" "Media")]
+    :breadcrumbs [(if (features/enabled? :media)
+                    [:a {:href (z/url-for media.routes/index)} (trc "navigation" "Media")]
+                    (trc "navigation" "Media"))
                   (display-name media)]
     :page-title-buttons (actions media editor?)
     :content (pages.detail/page-content-with-panel

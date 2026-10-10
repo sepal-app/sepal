@@ -1,5 +1,6 @@
 (ns sepal.app.ui.page
   (:require [clojure.string :as str]
+            [sepal.app.features :as features]
             [sepal.app.flash :as flash]
             [sepal.app.globals :as g]
             [sepal.app.html :as html]
@@ -164,15 +165,15 @@
    {:label (trc "navigation" "Material") :href (z/url-for material.routes/index)
     :icon (lucide/sprout)}
    {:label (trc "navigation" "Propagation") :href (z/url-for propagation.routes/index)
-    :icon (lucide/bean)}
+    :icon (lucide/bean) :feature :propagation}
    {:label (tr "Locations") :href (z/url-for location.routes/index)
     :icon (lucide/map-pin)}
    {:label (tr "Observations") :href (z/url-for observation.routes/index)
-    :icon (lucide/eye)}
+    :icon (lucide/eye) :feature :observations}
    {:label (tr "Tags") :href (z/url-for tag.routes/index)
-    :icon (lucide/tag)}
+    :icon (lucide/tag) :feature :tags}
    {:label (trc "navigation" "Media") :href (z/url-for media.routes/index)
-    :icon (lucide/image)}
+    :icon (lucide/image) :feature :media}
    {:label (tr "Contacts") :href (z/url-for contact.routes/index)
     :icon (lucide/contact-round)}])
 
@@ -181,10 +182,11 @@
   ;; while writing the response — by which point require-viewer's binding has
   ;; unwound and g/*uri* reads nil. Closing over the value is what makes this
   ;; independent of when rendering happens.
-  (let [uri g/*uri*]
+  (let [uri g/*uri*
+        items (filterv #(features/enabled? (:feature %)) (sections))]
     [:nav {:class "spl-rail" :aria-label (tr "Sections")}
      [:ul {:class "spl-nav-list"}
-      (for [{:keys [label href icon]} (sections)]
+      (for [{:keys [label href icon]} items]
         (sidebar-item :label label
                       :href href
                       :icon icon

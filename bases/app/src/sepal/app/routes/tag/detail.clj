@@ -1,6 +1,7 @@
 (ns sepal.app.routes.tag.detail
   (:require [failjure.core :as f]
             [sepal.app.authorization :as authz]
+            [sepal.app.features :as features]
             [sepal.app.http-response :as http]
             [sepal.app.routes.tag.form :as tag.form]
             [sepal.app.routes.tag.panel :as tag.panel]
@@ -47,7 +48,10 @@
                                          :activities (:activities panel-data)
                                          :activity-count (:activity-count panel-data)
                                          :timezone timezone))
-             :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} (tr "Tags")] (:tag/name tag)]))
+             :breadcrumbs [(if (features/enabled? :tags)
+                             [:a {:href (z/url-for tag.routes/index)} (tr "Tags")]
+                             (tr "Tags"))
+                           (:tag/name tag)]))
 
 (def ^:private name-taken-message
   (N_ "A tag with this name already exists."))
@@ -79,7 +83,10 @@
   "Render the panel view as a full page for read-only users."
   [& {:keys [tag panel-data timezone]}]
   (page/page
-    :breadcrumbs [[:a {:href (z/url-for tag.routes/index)} (tr "Tags")] (:tag/name tag)]
+    :breadcrumbs [(if (features/enabled? :tags)
+                    [:a {:href (z/url-for tag.routes/index)} (tr "Tags")]
+                    (tr "Tags"))
+                  (:tag/name tag)]
     :content [:div {:class "spl-reader-page"}
               (tag.panel/panel-content
                 :tag (:tag panel-data)

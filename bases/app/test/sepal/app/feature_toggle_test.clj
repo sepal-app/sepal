@@ -109,3 +109,23 @@
             (let [response (get-page sess (str "/tag/" (:tag/id tag) "/"))]
               (is (= 200 (:status response)))
               (is (some? (.selectFirst (body response) ".spl-reader-page"))))))))))
+
+(deftest test-sidenav-omits-turned-off-sections
+  (tf/testing "each turned-off section leaves the rail; the rest stay"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (app.test/with-features-off *db* [:observations :propagation :media :tags]
+        (fn []
+          (let [rail (.selectFirst (body (get-page (session user) "/activity")) "nav.spl-rail")]
+            (doseq [href ["/observation/" "/propagation/" "/media/" "/tag/"]]
+              (is (nil? (.selectFirst rail (str "a[href='" href "']"))) href))
+            (is (some? (.selectFirst rail "a[href='/material/']")))))))))
+
+(deftest test-read-only-page-has-no-link-to-the-list
+  (tf/testing "the breadcrumb names the section without linking to its 404"
+    (fixtures)
+    (fn [{:keys [user prop]}]
+      (app.test/with-features-off *db* [:propagation]
+        (fn []
+          (let [page (body (get-page (session user) (str "/propagation/" (:propagation/id prop) "/")))]
+            (is (nil? (.selectFirst page ".spl-crumbs a[href='/propagation/']")))))))))
