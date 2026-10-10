@@ -241,7 +241,11 @@
 
 (deftest test-a-bare-word-searches-the-subjects-codes
   (tf/testing "free text matches accession codes, full material codes and locations"
-    (fixtures)
+    ;; Fixed codes: a generated material code can occur inside a generated
+    ;; accession code, and the accession code is matched as a substring.
+    (-> (fixtures)
+        (assoc-in [[::accession.i/factory :key/accession] :data] {:code "ZQ2026"})
+        (assoc-in [[::material.i/factory :key/material] :data] {:code "7"}))
     (fn [{:keys [user material accession location]}]
       (let [on-material (create! :resource-type :material
                                  :resource-id (:material/id material)
