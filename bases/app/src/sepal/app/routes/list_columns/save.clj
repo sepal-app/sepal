@@ -3,6 +3,7 @@
   (:require [clojure.data.json :as json]
             [clojure.string :as str]
             [lambdaisland.uri :as uri]
+            [sepal.app.features :as features]
             [sepal.app.list-columns :as list-columns]
             [sepal.app.ui.pages.list :as pages.list]
             [sepal.user.interface :as user.i]
@@ -44,6 +45,9 @@
         reset? (some? (get form-params "reset"))]
     (cond
       (not (contains? list-columns/lists list-key))
+      {:status 404 :body ""}
+
+      (not (features/list-enabled? list-key))
       {:status 404 :body ""}
 
       (not (list-columns/valid-keys? (concat offered shown)))

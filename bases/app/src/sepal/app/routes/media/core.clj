@@ -16,6 +16,7 @@
 
 (defn routes []
   [""
+   {:feature :media}
    ["/" {:name media.routes/index
          :permission media.perm/view
          :get #'index/handler}]
@@ -32,6 +33,7 @@
     ["/"
      {:name media.routes/detail
       :permission media.perm/view
+      :feature-read-only? true
       :get #'detail/get-handler
       :post {:permission media.perm/edit
              :handler #'detail/post-handler}}]
@@ -45,7 +47,9 @@
                :delete #'link/delete-handler}]
     ["/panel/" {:name media.routes/panel
                 :permission media.perm/view
+                :feature-read-only? true
                 :get #'panel/handler}]
     ["/transform" {:name media.routes/transform
                    :permission media.perm/view
+                   :feature-read-only? true
                    :get #'transform/handler}]]])

@@ -55,16 +55,19 @@
      :post #'bulk/move-handler}]
    ["/bulk/observation/"
     {:name routes/bulk-observation
+     :feature :observations
      :permission observation.perm/create
      :conflicting true
      :post #'bulk/observation-handler}]
    ["/bulk/tags/"
     {:name routes/bulk-tags
+     :feature :tags
      :permission material.perm/edit
      :conflicting true
      :post #'bulk/tags-add-handler}]
    ["/bulk/tags/remove/"
     {:name routes/bulk-tags-remove
+     :feature :tags
      :permission material.perm/edit
      :conflicting true
      :get #'bulk/tags-remove-form-handler
@@ -80,26 +83,31 @@
                   :get #'detail-general/get-handler
                   :post #'detail-general/post-handler}]
     ["/media/" {:name routes/detail-media
+                :feature :media
                 :permission material.perm/edit
                 :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/" {:name routes/detail-observations
+                       :feature :observations
                        :permission material.perm/edit
                        :permission-redirect routes/detail
                        :get #'detail-observations/get-handler
                        :post {:permission observation.perm/create
                               :handler #'detail-observations/create-handler}}]
     ["/observations/:observation-id/" {:name routes/detail-observation
+                                       :feature :observations
                                        :post {:permission observation.perm/edit
                                               :handler #'detail-observations/update-handler}
                                        :delete {:permission observation.perm/delete
                                                 :handler #'detail-observations/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
+               :feature :tags
                :permission material.perm/edit
                :permission-redirect routes/detail
                :get #'detail-tags/get-handler
                :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
+                       :feature :tags
                        :permission material.perm/edit
                        :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]

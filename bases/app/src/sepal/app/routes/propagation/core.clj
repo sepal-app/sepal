@@ -18,6 +18,7 @@
 
 (defn routes []
   [""
+   {:feature :propagation}
    ["/"
     {:name routes/index
      :permission propagation.perm/view
@@ -41,11 +42,13 @@
             :conflicting true}
     ["/" {:name routes/detail
           :permission propagation.perm/view
+          :feature-read-only? true
           :get #'detail/get-handler
           :post {:permission propagation.perm/edit
                  :handler #'detail/post-handler}}]
     ["/panel/" {:name routes/panel
                 :permission propagation.perm/view
+                :feature-read-only? true
                 :get #'panel/handler}]
     ["/status/" {:name routes/status
                  :permission propagation.perm/edit

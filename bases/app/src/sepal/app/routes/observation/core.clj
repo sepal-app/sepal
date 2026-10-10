@@ -6,6 +6,7 @@
 
 (defn routes []
   [""
+   {:feature :observations}
    ["/"
     {:name routes/index
      :permission observation.perm/view
