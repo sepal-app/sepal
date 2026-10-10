@@ -168,6 +168,22 @@
                   (fn [handler]
                     (require-viewer (check handler))))))})
 
+(def require-feature
+  "Middleware compiled from the :feature in each route's data. When the garden
+   has turned that feature off the route answers 404, except a GET or HEAD of a
+   route marked :feature-read-only?, which keeps the feature's records reachable
+   from activity. :feature may sit on a group, since everything in a feature's
+   section belongs to it."
+  {:name ::require-feature
+   :compile (fn [{:keys [feature feature-read-only?]} _opts]
+              (when feature
+                (fn [handler]
+                  (fn [{:keys [request-method] :as request}]
+                    (if (or (features/enabled? feature)
+                            (and feature-read-only? (#{:get :head} request-method)))
+                      (handler request)
+                      (http/not-found))))))})
+
 (defn- html-response?
   "Returns true if response has text/html content type."
   [response]

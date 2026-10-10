@@ -40,6 +40,7 @@
                     middleware/wrap-org-settings
                     middleware/wrap-flash-messages
                     middleware/wrap-setup-required
+                    middleware/require-feature
                     middleware/require-access]}
    ;; Auth routes (inlined so they're under the root middleware)
    ["/login" {:name auth.routes/login

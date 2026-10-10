@@ -3,6 +3,7 @@
             [clojure.test :refer [deftest is testing]]
             [sepal.app.authorization :as authz]
             [sepal.app.flash :as flash]
+            [sepal.app.globals :as g]
             [sepal.app.middleware :as middleware]
             [sepal.i18n.interface :as i18n]))
 
@@ -162,3 +163,20 @@
         (is (= {:status 204} (handler {:headers {}})))))
     (finally
       (i18n/load-catalogs! {}))))
+
+(deftest require-feature-test
+  (let [compile (:compile middleware/require-feature)
+        wrap (fn [data] ((compile data nil) ok-handler))]
+    (testing "a route that names no feature is not wrapped"
+      (is (nil? (compile {} nil))))
+    (testing "a route of a feature that is on answers"
+      (is (= 200 (:status ((wrap {:feature :propagation}) {:request-method :post})))))
+    (binding [g/*disabled-features* #{:propagation}]
+      (testing "a route of a feature that is off answers 404"
+        (is (= 404 (:status ((wrap {:feature :propagation}) {:request-method :get})))))
+      (testing "a read-only route still answers a GET"
+        (is (= 200 (:status ((wrap {:feature :propagation :feature-read-only? true})
+                             {:request-method :get})))))
+      (testing "but not a write"
+        (is (= 404 (:status ((wrap {:feature :propagation :feature-read-only? true})
+                             {:request-method :post}))))))))
