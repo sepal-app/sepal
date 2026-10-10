@@ -2,6 +2,7 @@
   "What a garden sees with each feature turned off."
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [integrant.core :as ig]
+            [next.jdbc.sql :as jdbc.sql]
             [peridot.core :as peri]
             [sepal.accession.interface :as accession.i]
             [sepal.app.test :as app.test]
@@ -10,6 +11,8 @@
             [sepal.location.interface :as location.i]
             [sepal.material.interface :as material.i]
             [sepal.media.interface :as media.i]
+            [sepal.observation.interface :as observation.i]
+            [sepal.observation.interface.activity :as observation.activity]
             [sepal.propagation.interface :as propagation.i]
             [sepal.tag.interface :as tag.i]
             [sepal.taxon.interface :as taxon.i]
@@ -175,3 +178,26 @@
             (is (nil? (.selectFirst material "#bulk-material-tag-remove")))
             (is (nil? (.selectFirst (body (get-page sess "/accession/")) ".spl-bulk-bar")))
             (is (nil? (.selectFirst (body (get-page sess "/taxon/")) ".spl-bulk-bar")))))))))
+
+(deftest test-observation-events-link-to-the-record
+  (tf/testing "with Observations off, an observation event links to the material, not its tab"
+    (fixtures)
+    (fn [{:keys [user mat]}]
+      (let [id (:material/id mat)
+            observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id id
+                                                     :type "general"
+                                                     :observed-on "2026-01-01"
+                                                     :note "flowering"
+                                                     :created-by (:user/id user)})]
+        (try
+          (observation.activity/create! *db* observation.activity/created (:user/id user) observation)
+          (app.test/with-features-off *db* [:observations]
+            (fn []
+              (let [page (body (get-page (session user) "/activity"))]
+                (is (some? (.selectFirst page (str "a[href='/material/" id "/']"))))
+                (is (nil? (.selectFirst page (str "a[href='/material/" id "/observations/']"))))
+                (is (nil? (.selectFirst page "[data-overdue-count]"))))))
+          (finally
+            (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+            (observation.i/delete! *db* (:observation/id observation))))))))

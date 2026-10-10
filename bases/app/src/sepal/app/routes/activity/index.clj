@@ -9,6 +9,7 @@
             [sepal.app.authorization :as authz]
             [sepal.app.cli.activity :as import.activity]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.html :as html]
             [sepal.app.params :as params]
             [sepal.app.routes.accession.routes :as accession.routes]
@@ -185,21 +186,23 @@
 
 (defn- observation-data
   "An observation event is filed against the material or location it was made
-  on, so the chip names that record and links to its observations."
+  on, so the chip names that record and links to its observations, or to the
+  record itself when Observations is turned off."
   [activity]
-  (let [{:keys [accession location material material-separator]} activity]
+  (let [{:keys [accession location material material-separator]} activity
+        observations? (features/enabled? :observations)]
     (cond
       material
       {:resource-type :observation
        :resource-name (ct.i/full-code material-separator (:accession/code accession) (:material/code material))
-       :resource-url (z/url-for material.routes/detail-observations
+       :resource-url (z/url-for (if observations? material.routes/detail-observations material.routes/detail)
                                 {:id (:material/id material)})
        :context (tr "Observation on material")}
 
       location
       {:resource-type :observation
        :resource-name (:location/name location)
-       :resource-url (z/url-for location.routes/detail-observations
+       :resource-url (z/url-for (if observations? location.routes/detail-observations location.routes/detail)
                                 {:id (:location/id location)})
        :context (tr "Observation on location")})))
 
@@ -806,7 +809,9 @@
                       :timezone timezone
                       :viewer viewer)
       (render :activity activity
-              :overdue-count (observation.i/count-due db today)
+              :overdue-count (if (features/enabled? :observations)
+                               (observation.i/count-due db today)
+                               0)
               :page page
               :page-size page-size
               :timezone timezone
