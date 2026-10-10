@@ -1,6 +1,7 @@
 (ns sepal.app.authorization
   "Role-based authorization. Permissions defined as data for easy checking."
   (:require [sepal.accession.interface.permission :as accession.perm]
+            [sepal.app.features :as features]
             [sepal.contact.interface.permission :as contact.perm]
             [sepal.location.interface.permission :as location.perm]
             [sepal.material.interface.permission :as material.perm]
@@ -80,10 +81,12 @@
   (contains? (get permissions role) permission))
 
 (defn user-has-permission?
-  "Check if a user has a specific permission based on their role."
+  "Check if a user has a specific permission based on their role. Nobody holds
+  a permission that belongs to a feature the garden has turned off."
   [user permission]
   (when-let [role (:user/role user)]
-    (has-permission? role permission)))
+    (and (has-permission? role permission)
+         (not (features/withheld? permission)))))
 
 ;; Convenience predicates
 
