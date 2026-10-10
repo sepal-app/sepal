@@ -159,3 +159,19 @@
         (is (re-find #"Observations" (panel)))
         (app.test/with-features-off *db* [:observations]
           #(is (not (re-find #"Observations" (panel)))))))))
+
+(deftest test-lists-omit-turned-off-bulk-actions
+  (tf/testing "material keeps status and move; accessions and taxa lose selection with Tags off"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (app.test/with-features-off *db* [:observations :tags]
+        (fn []
+          (let [sess (session user)
+                material (body (get-page sess "/material/"))]
+            (is (some? (.selectFirst material "#bulk-material-status")))
+            (is (some? (.selectFirst material "#bulk-material-move")))
+            (is (nil? (.selectFirst material "#bulk-material-observation")))
+            (is (nil? (.selectFirst material "#bulk-material-tag-add")))
+            (is (nil? (.selectFirst material "#bulk-material-tag-remove")))
+            (is (nil? (.selectFirst (body (get-page sess "/accession/")) ".spl-bulk-bar")))
+            (is (nil? (.selectFirst (body (get-page sess "/taxon/")) ".spl-bulk-bar")))))))))

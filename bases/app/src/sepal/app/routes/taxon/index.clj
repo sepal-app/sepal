@@ -1,6 +1,8 @@
 (ns sepal.app.routes.taxon.index
   (:require [clojure.string :as str]
             [sepal.app.authorization :as authz]
+            [sepal.app.features :as features]
+
             [sepal.app.html :as html]
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
@@ -338,7 +340,9 @@
                                                                           :default [[:t.name :asc]]
                                                                           :tiebreak [:t.id :asc]}))))
                        #(db.i/count-bounded db count-stmt))
-        bulk? (authz/user-has-permission? viewer taxon.perm/edit)
+        ;; Tags are this list's only bulk action.
+        bulk? (and (authz/user-has-permission? viewer taxon.perm/edit)
+                   (features/enabled? :tags))
         table-opts (cond-> (list-view/table-opts view uri q)
                      bulk? (assoc :select {:id :taxon/id
                                            :label #(tr "Select %1" (:taxon/name %))}))]
@@ -423,7 +427,7 @@
           view
           (render :viewer viewer
                   :bulk (when bulk? (taxon.bulk/action-bar))
-                  :field-options (search.i/field-options :taxon)
+                  :field-options (features/field-options :taxon)
                   :href (list-view/href view uri q :page page)
                   :parent (some->> (:filters ast)
                                    (filter #(= "parent.id" (:field %)))
