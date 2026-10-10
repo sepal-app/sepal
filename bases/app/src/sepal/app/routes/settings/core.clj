@@ -4,6 +4,7 @@
             [sepal.app.routes.settings.backups.download :as backups.download]
             [sepal.app.routes.settings.backups.index :as backups.index]
             [sepal.app.routes.settings.codes :as codes]
+            [sepal.app.routes.settings.features :as features]
             [sepal.app.routes.settings.organization :as organization]
             [sepal.app.routes.settings.profile :as profile]
             [sepal.app.routes.settings.routes :as settings.routes]
@@ -35,6 +36,10 @@
               :permission authz/organization-edit
               :get #'codes/handler
               :post #'codes/handler}]
+   ["/features" {:name settings.routes/features
+                 :permission authz/organization-edit
+                 :get #'features/get-handler
+                 :post #'features/post-handler}]
    ["/backups"
     ["" {:name settings.routes/backups
          :permission authz/organization-edit
