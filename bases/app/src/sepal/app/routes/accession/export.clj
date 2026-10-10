@@ -6,6 +6,7 @@
    always submitted (HTML checkboxes alone only submit when checked)."
   (:require [sepal.accession.interface.search]
             [sepal.app.csv :as csv]
+            [sepal.app.features :as features]
             [sepal.app.params :as params]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [N_]]
@@ -93,7 +94,7 @@
         include-collection? (parse-bool (:include_collection decoded))
 
         ;; Parse search query
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; Select columns based on options
         cols (cond-> base-columns

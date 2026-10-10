@@ -229,7 +229,7 @@
 
         ;; Normalize legacy params into search query
         q (normalize-query decoded-params)
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; Base statement with joins needed for display columns
         ;; (taxon name, accession code, location code are shown in table)

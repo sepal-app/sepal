@@ -56,8 +56,19 @@
   [list-key]
   (enabled? (get list-features list-key)))
 
+(def ^:private search-fields
+  "Search fields that read a feature's data, by feature."
+  {:tags #{"tag"}})
+
+(defn- disabled-field? [field]
+  (some #(contains? (search-fields %) field) g/*disabled-features*))
+
 (defn field-options
-  "A list's search fields, without the tag field when Tags is off."
+  "A list's search fields, without those of features that are off."
   [resource-type]
-  (cond->> (search.i/field-options resource-type)
-    (not (enabled? :tags)) (remove #(= "tag" (:key %)))))
+  (remove #(disabled-field? (:key %)) (search.i/field-options resource-type)))
+
+(defn parse-search
+  "search.i/parse, with the filters of features that are off dropped."
+  [q]
+  (update (search.i/parse q) :filters #(vec (remove (comp disabled-field? :field) %))))

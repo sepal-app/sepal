@@ -246,7 +246,7 @@
         offset (* page-size (- page 1))
 
         ;; Parse search query
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; The free-text half of the query, and the only part a synonym search
         ;; has any use for. `q` itself carries filter syntax -- ticking "Only

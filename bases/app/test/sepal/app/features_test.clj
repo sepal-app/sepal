@@ -47,3 +47,11 @@
   (is (some #(= "tag" (:key %)) (features/field-options :material)))
   (binding [g/*disabled-features* #{:tags}]
     (is (not-any? #(= "tag" (:key %)) (features/field-options :material)))))
+
+(deftest test-parse-search
+  (is (= [{:field "tag" :value "label" :negated false}]
+         (:filters (features/parse-search "tag:label"))))
+  (binding [g/*disabled-features* #{:tags}]
+    (let [ast (features/parse-search "tag:label -tag:old status:alive quercus")]
+      (is (= ["status"] (map :field (:filters ast))) "tag filters are dropped, negated ones too")
+      (is (= ["quercus"] (:terms ast)) "free text is kept"))))

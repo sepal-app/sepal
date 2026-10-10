@@ -219,3 +219,12 @@
             #(is (nil? (overdue))))
           (finally
             (observation.i/delete! *db* (:observation/id observation))))))))
+
+(deftest test-tag-filter-is-ignored-with-tags-off
+  (tf/testing "a tag: term filters with Tags on and is ignored with it off"
+    (fixtures)
+    (fn [{:keys [user]}]
+      (let [rows #(app.test/first-cells (body (get-page (session user) "/material/?q=tag:no-such-tag")))]
+        (is (empty? (rows)))
+        (app.test/with-features-off *db* [:tags]
+          #(is (seq (rows))))))))

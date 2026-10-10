@@ -1,6 +1,7 @@
 (ns sepal.app.routes.material.export
   "CSV export handler for materials."
   (:require [sepal.app.csv :as csv]
+            [sepal.app.features :as features]
             [sepal.app.params :as params]
             [sepal.app.ui.location-path :as location-path]
             [sepal.database.interface :as db.i]
@@ -75,7 +76,7 @@
         include-taxon? (parse-bool (:include_taxon decoded))
         include-accession? (parse-bool (:include_accession decoded))
 
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; Build columns based on options
         cols (-> (cond-> base-columns
