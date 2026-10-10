@@ -196,8 +196,26 @@
             (fn []
               (let [page (body (get-page (session user) "/activity"))]
                 (is (some? (.selectFirst page (str "a[href='/material/" id "/']"))))
-                (is (nil? (.selectFirst page (str "a[href='/material/" id "/observations/']"))))
-                (is (nil? (.selectFirst page "[data-overdue-count]"))))))
+                (is (nil? (.selectFirst page (str "a[href='/material/" id "/observations/']")))))))
           (finally
             (jdbc.sql/delete! *db* :activity {:created_by (:user/id user)})
+            (observation.i/delete! *db* (:observation/id observation))))))))
+
+(deftest test-overdue-observations-follow-the-toggle
+  (tf/testing "the overdue count on the Activity page shows with Observations on and not off"
+    (fixtures)
+    (fn [{:keys [user mat]}]
+      (let [observation (observation.i/create! *db* {:resource-type :material
+                                                     :resource-id (:material/id mat)
+                                                     :type "general"
+                                                     :observed-on "2020-01-01"
+                                                     :next-check-on "2020-02-01"
+                                                     :note "recheck"
+                                                     :created-by (:user/id user)})
+            overdue #(.selectFirst (body (get-page (session user) "/activity")) "[data-overdue-count]")]
+        (try
+          (is (some? (overdue)))
+          (app.test/with-features-off *db* [:observations]
+            #(is (nil? (overdue))))
+          (finally
             (observation.i/delete! *db* (:observation/id observation))))))))
