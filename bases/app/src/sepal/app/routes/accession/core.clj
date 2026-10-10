@@ -53,11 +53,13 @@
      :conflicting true}]
    ["/bulk/tags/"
     {:name routes/bulk-tags
+     :feature :tags
      :permission accession.perm/edit
      :conflicting true
      :post #'bulk/tags-add-handler}]
    ["/bulk/tags/remove/"
     {:name routes/bulk-tags-remove
+     :feature :tags
      :permission accession.perm/edit
      :conflicting true
      :get #'bulk/tags-remove-form-handler
@@ -84,6 +86,7 @@
                             :get #'detail-collection-delete/handler
                             :post #'detail-collection-delete/handler}]
     ["/media/" {:name routes/detail-media
+                :feature :media
                 :permission accession.perm/edit
                 :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
@@ -99,11 +102,13 @@
                          :delete {:permission note.perm/delete
                                   :handler #'detail-notes/delete-handler}}]
     ["/tags/" {:name routes/detail-tags
+               :feature :tags
                :permission accession.perm/edit
                :permission-redirect routes/detail
                :get #'detail-tags/get-handler
                :post #'detail-tags/post-handler}]
     ["/tags/:tag-id/" {:name routes/detail-tag
+                       :feature :tags
                        :permission accession.perm/edit
                        :permission-redirect routes/detail
                        :delete #'detail-tags/row-handler}]

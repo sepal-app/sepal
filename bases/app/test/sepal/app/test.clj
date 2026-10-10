@@ -1,6 +1,7 @@
 (ns sepal.app.test
   (:require [clojure.string :as str]
             [peridot.core :as peri]
+            [sepal.app.features :as features]
             [sepal.app.test.system :refer [*app*]]
             [sepal.settings.interface :as settings.i]
             [sepal.test.interface :as test.i])
@@ -79,3 +80,15 @@
        (nil? (get-in response [:headers "HX-Redirect"]))
        (= "form-saved" (get-in response [:headers "HX-Trigger-After-Settle"]))
        (str/includes? (str (:body response)) "id=\"page-region\"")))
+
+(defn with-features-off
+  "Call `f` with `features` turned off, then turn them back on. Settings
+  outlive a test and a namespace shares one database."
+  [db features f]
+  (try
+    (settings.i/set-values! db (into {} (for [feature features]
+                                          [(features/setting-key feature) "off"])))
+    (f)
+    (finally
+      (doseq [feature features]
+        (settings.i/delete! db (features/setting-key feature))))))

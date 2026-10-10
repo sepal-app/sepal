@@ -124,3 +124,13 @@
           (format "%s:%s renders a <select> with no spl-select class" file line))
       (is (str/includes? text "spl-input")
           (format "%s:%s renders a <select> with no spl-input class" file line)))))
+
+(deftest test-edited-style-leaves-checkboxes-alone
+  (testing "the edited tint is a background shorthand, which wipes the forms
+            plugin's tick, so a ticked box looked unticked until saved"
+    (let [selectors (re-seq #"[^{}]*\.spl-input--edited[^{}]*\{"
+                            (slurp "bases/app/src/sepal/app/css/components.css"))]
+      (is (seq selectors))
+      (doseq [s selectors]
+        (is (and (str/includes? s "checkbox") (str/includes? s "radio"))
+            (str "excludes neither checkboxes nor radios: " (str/trim s)))))))

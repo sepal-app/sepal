@@ -1,6 +1,7 @@
 (ns sepal.app.routes.taxon.export
   "CSV export handler for taxa."
   (:require [sepal.app.csv :as csv]
+            [sepal.app.features :as features]
             [sepal.app.params :as params]
             [sepal.database.interface :as db.i]
             [sepal.i18n.interface :refer [N_]]
@@ -57,7 +58,7 @@
         q (:q decoded)
         include-parent? (parse-bool (:include_parent decoded))
 
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         cols (cond-> base-columns
                include-parent? (into parent-columns))

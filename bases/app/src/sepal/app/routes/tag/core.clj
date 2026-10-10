@@ -15,11 +15,13 @@
 
 (defn routes []
   [""
+   {:feature :tags}
    ["/" {:name routes/index
          :permission tag.perm/view :get #'index/handler}]
    ["/:id" {:middleware [[middleware/resource-loader tag-loader]]}
     ["/" {:name routes/detail
           :permission tag.perm/view
+          :feature-read-only? true
           :get #'detail/get-handler
           :post {:permission tag.perm/edit
                  :handler #'detail/post-handler}}]

@@ -1,7 +1,10 @@
 (ns sepal.app.authorization-test
   (:require [clojure.test :refer [deftest is testing]]
             [sepal.accession.interface.permission :as accession.perm]
-            [sepal.app.authorization :as authz]))
+            [sepal.app.authorization :as authz]
+            [sepal.app.globals :as g]
+            [sepal.propagation.interface.permission :as propagation.perm]
+            [sepal.tag.interface.permission :as tag.perm]))
 
 (deftest has-permission?-test
   (testing "admin has all permissions"
@@ -73,3 +76,17 @@
 
   (testing "reader cannot edit"
     (is (not (authz/can-edit? {:user/role :reader})))))
+
+(deftest user-has-permission?-with-a-feature-off-test
+  (let [admin {:user/role :admin}]
+    (binding [g/*disabled-features* #{:propagation}]
+      (testing "nobody holds a disabled feature's writes, an admin included"
+        (is (not (authz/user-has-permission? admin propagation.perm/create)))
+        (is (not (authz/user-has-permission? admin propagation.perm/edit)))
+        (is (not (authz/user-has-permission? admin propagation.perm/delete))))
+      (testing "its view stays, so its records render read-only"
+        (is (authz/user-has-permission? admin propagation.perm/view)))
+      (testing "other features are untouched"
+        (is (authz/user-has-permission? admin tag.perm/edit)))
+      (testing "the role table itself is unchanged"
+        (is (authz/has-permission? :admin propagation.perm/edit))))))

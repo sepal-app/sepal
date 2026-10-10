@@ -19,3 +19,8 @@
 ;; middleware adds to is not the one a renderer would see. nil when the garden
 ;; has not named itself, so a caller leaves the part out.
 (def ^:dynamic *organization-name* nil)
+
+;; The features the garden has turned off, as sepal.app.features keys. Bound in
+;; wrap-org-settings for the same reason as *organization-name*. Empty outside
+;; a request, so every feature is on there.
+(def ^:dynamic *disabled-features* #{})

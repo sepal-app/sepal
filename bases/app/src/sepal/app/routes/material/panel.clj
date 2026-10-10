@@ -5,6 +5,7 @@
             [sepal.activity.interface :as activity.i]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.html :as html]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.location.routes :as location.routes]
@@ -141,17 +142,18 @@
         (history-section material history timezone)
 
         ;; Observations section
-        (panel/collapsible-section
-          :title (tr "Observations")
-          :count observation-count
-          :disabled? (zero? (or observation-count 0))
-          :empty-label (trc "empty section" "none")
-          :default-open? false
-          :children
-          (ui.observations/panel-section
-            :observations observations
-            :observation-count observation-count
-            :more-url (z/url-for material.routes/detail-observations {:id (:material/id material)})))
+        (when (features/enabled? :observations)
+          (panel/collapsible-section
+            :title (tr "Observations")
+            :count observation-count
+            :disabled? (zero? (or observation-count 0))
+            :empty-label (trc "empty section" "none")
+            :default-open? false
+            :children
+            (ui.observations/panel-section
+              :observations observations
+              :observation-count observation-count
+              :more-url (z/url-for material.routes/detail-observations {:id (:material/id material)}))))
 
         ;; External links section
         (panel/collapsible-section

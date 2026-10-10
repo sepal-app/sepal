@@ -47,16 +47,19 @@
                   :get #'detail-general/get-handler
                   :post #'detail-general/post-handler}]
     ["/observations/" {:name routes/detail-observations
+                       :feature :observations
                        :permission location.perm/edit
                        :permission-redirect routes/detail
                        :get #'detail-observations/get-handler
                        :post {:permission observation.perm/create
                               :handler #'detail-observations/create-handler}}]
     ["/media/" {:name routes/detail-media
+                :feature :media
                 :permission location.perm/edit
                 :permission-redirect routes/detail
                 :handler #'detail-media/handler}]
     ["/observations/:observation-id/" {:name routes/detail-observation
+                                       :feature :observations
                                        :post {:permission observation.perm/edit
                                               :handler #'detail-observations/update-handler}
                                        :delete {:permission observation.perm/delete

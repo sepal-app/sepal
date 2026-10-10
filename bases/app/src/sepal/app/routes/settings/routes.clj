@@ -5,6 +5,7 @@
 (def security :settings/security)
 (def organization :settings/organization)
 (def codes :settings/codes)
+(def features :settings/features)
 (def backups :settings/backups)
 (def backup-download :settings/backup-download)
 

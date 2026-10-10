@@ -4,6 +4,7 @@
             [sepal.accession.interface.spec :as accession.spec]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.html :as html]
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
@@ -221,7 +222,7 @@
 
         ;; Normalize legacy params into search query
         q (normalize-query decoded-params)
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; Base statement with joins needed for display columns
         ;; (taxon name is shown in table)
@@ -244,7 +245,9 @@
                                                               {:relevance (search.i/relevance-order :accession ast)
                                                                :default [[:a.code :asc]]
                                                                :tiebreak [:a.id :asc]}))))
-        bulk? (authz/user-has-permission? viewer accession.perm/edit)
+        ;; Tags are this list's only bulk action.
+        bulk? (and (authz/user-has-permission? viewer accession.perm/edit)
+                   (features/enabled? :tags))
         table-opts (cond-> (list-view/table-opts view uri q)
                      bulk? (assoc :select {:id :accession/id
                                            :label #(tr "Select %1" (:accession/code %))}))
@@ -288,7 +291,7 @@
         view
         (render :viewer viewer
                 :bulk (when bulk? (accession.bulk/action-bar))
-                :field-options (search.i/field-options :accession)
+                :field-options (features/field-options :accession)
                 :href (list-view/href view uri q :page page)
                 :rows rows
                 :page page

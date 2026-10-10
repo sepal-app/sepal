@@ -6,6 +6,7 @@
   -- and three copies would drift."
   (:require [clojure.string :as str]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.propagation.shared :as shared]
@@ -51,26 +52,29 @@
   - :type-labels     name -> label for the method vocabulary
   - :status-labels   name -> label for the status vocabulary
   - :title           section heading
-  - :empty-label     what an empty section says"
+  - :empty-label     what an empty section says
+
+  Nil when the garden has turned Propagation off."
   [& {:keys [propagations origin origin-parent type-labels status-labels
              title empty-label]
       :or {title (trc "navigation" "Propagation")}}]
-  (panel/collapsible-section
-    :title title
-    :count (count propagations)
-    :disabled? (and (empty? propagations) (nil? origin))
-    :empty-label (or empty-label (trc "empty section" "none"))
-    :children
-    (list
-      (when origin
-        (origin-line origin origin-parent type-labels))
-      [:div {:class "space-y-0"}
-       (for [propagation propagations]
-         ^{:key (:propagation/id propagation)}
-         [:a {:href (z/url-for propagation.routes/detail
-                               {:id (:propagation/id propagation)})
-              :class "flex items-center justify-between text-sm hover:bg-surface-alt -mx-2 px-2 py-1.5 rounded transition-colors"}
-          [:span {:class "spl-link"}
-           (propagation-name propagation type-labels status-labels)]
-          [:span {:class "text-text-soft"}
-           (or (datetime/format-date (:propagation/propagated-on propagation)) "")]])])))
+  (when (features/enabled? :propagation)
+    (panel/collapsible-section
+      :title title
+      :count (count propagations)
+      :disabled? (and (empty? propagations) (nil? origin))
+      :empty-label (or empty-label (trc "empty section" "none"))
+      :children
+      (list
+        (when origin
+          (origin-line origin origin-parent type-labels))
+        [:div {:class "space-y-0"}
+         (for [propagation propagations]
+           ^{:key (:propagation/id propagation)}
+           [:a {:href (z/url-for propagation.routes/detail
+                                 {:id (:propagation/id propagation)})
+                :class "flex items-center justify-between text-sm hover:bg-surface-alt -mx-2 px-2 py-1.5 rounded transition-colors"}
+            [:span {:class "spl-link"}
+             (propagation-name propagation type-labels status-labels)]
+            [:span {:class "text-text-soft"}
+             (or (datetime/format-date (:propagation/propagated-on propagation)) "")]])]))))

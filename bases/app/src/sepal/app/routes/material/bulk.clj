@@ -4,6 +4,7 @@
             [malli.util :as mu]
             [sepal.app.bulk :as bulk]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.http-response :as http]
             [sepal.app.json :as json]
             [sepal.app.routes.bulk-tags :as bulk-tags]
@@ -207,22 +208,30 @@
 (defn action-bar
   "The bar and dialogs the material list shows to someone who can edit."
   [& {:keys [db reasons today]}]
-  (list
-    (ui.bulk/action-bar
-      :actions (list (ui.bulk/action-button :label (tr "Change status")
-                                            :dialog-id "bulk-material-status")
-                     (ui.bulk/action-button :label (tr "Move")
-                                            :dialog-id "bulk-material-move")
-                     (ui.bulk/action-button :label (tr "Add observation")
-                                            :dialog-id "bulk-material-observation")
-                     (ui.bulk/action-button :label (tr "Add tag")
-                                            :dialog-id "bulk-material-tag-add")
-                     (bulk-tags/remove-button :form-url (z/url-for material.routes/bulk-tags-remove)
-                                              :dialog-id "bulk-material-tag-remove")))
-    (status-dialog reasons)
-    (move-dialog reasons)
-    (observation-dialog db today)
-    (bulk-tags/add-dialog :id "bulk-material-tag-add"
-                          :action (z/url-for material.routes/bulk-tags))
-    (bulk-tags/remove-dialog :id "bulk-material-tag-remove"
-                             :action (z/url-for material.routes/bulk-tags-remove))))
+  (let [observations? (features/enabled? :observations)
+        tags? (features/enabled? :tags)]
+    (list
+      (ui.bulk/action-bar
+        :actions (list (ui.bulk/action-button :label (tr "Change status")
+                                              :dialog-id "bulk-material-status")
+                       (ui.bulk/action-button :label (tr "Move")
+                                              :dialog-id "bulk-material-move")
+                       (when observations?
+                         (ui.bulk/action-button :label (tr "Add observation")
+                                                :dialog-id "bulk-material-observation"))
+                       (when tags?
+                         (ui.bulk/action-button :label (tr "Add tag")
+                                                :dialog-id "bulk-material-tag-add"))
+                       (when tags?
+                         (bulk-tags/remove-button :form-url (z/url-for material.routes/bulk-tags-remove)
+                                                  :dialog-id "bulk-material-tag-remove"))))
+      (status-dialog reasons)
+      (move-dialog reasons)
+      (when observations?
+        (observation-dialog db today))
+      (when tags?
+        (bulk-tags/add-dialog :id "bulk-material-tag-add"
+                              :action (z/url-for material.routes/bulk-tags)))
+      (when tags?
+        (bulk-tags/remove-dialog :id "bulk-material-tag-remove"
+                                 :action (z/url-for material.routes/bulk-tags-remove))))))

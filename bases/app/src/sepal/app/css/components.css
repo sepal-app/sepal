@@ -102,8 +102,9 @@
  * knew it was dirty; this says which parts of it a Save is about to write.
  * Brand tint rather than a border change, so it reads at a glance down a
  * column of fields and does not compete with the invalid state below — which
- * comes after this rule and so wins on a field that is both. */
-.spl-input--edited {
+ * comes after this rule and so wins on a field that is both. Not on a
+ * checkbox or radio: the shorthand would wipe the forms plugin's tick. */
+.spl-input--edited:not([type="checkbox"], [type="radio"]) {
   background: var(--color-brand-tint);
   border-color: var(--color-brand);
 }

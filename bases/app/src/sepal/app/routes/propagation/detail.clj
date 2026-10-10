@@ -2,6 +2,7 @@
   (:require [failjure.core :as f]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.flash :as flash]
             [sepal.app.http-response :as http]
             [sepal.app.routes.propagation.create :as propagation.create]
@@ -24,7 +25,9 @@
             [zodiac.core :as z]))
 
 (defn- breadcrumbs [panel-data]
-  [[:a {:href (z/url-for propagation.routes/index)} (tr "Propagation")]
+  [(if (features/enabled? :propagation)
+     [:a {:href (z/url-for propagation.routes/index)} (tr "Propagation")]
+     (tr "Propagation"))
    (shared/parent-name (:parent panel-data) (:parent-material panel-data) (:separator panel-data))])
 
 (defn- panel [panel-data & {:keys [actions]}]

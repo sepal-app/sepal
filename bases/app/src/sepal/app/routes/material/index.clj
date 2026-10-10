@@ -2,6 +2,7 @@
   (:require [sepal.accession.interface :as accession.i]
             [sepal.app.authorization :as authz]
             [sepal.app.datetime :as datetime]
+            [sepal.app.features :as features]
             [sepal.app.html :as html]
             [sepal.app.list-query :as list-query]
             [sepal.app.list-view :as list-view]
@@ -228,7 +229,7 @@
 
         ;; Normalize legacy params into search query
         q (normalize-query decoded-params)
-        ast (search.i/parse q)
+        ast (features/parse-search q)
 
         ;; Base statement with joins needed for display columns
         ;; (taxon name, accession code, location code are shown in table)
@@ -311,7 +312,7 @@
                 :bulk (when bulk? (material.bulk/action-bar :db db
                                                             :reasons (material.i/list-reasons db)
                                                             :today (str (datetime/today timezone))))
-                :field-options (search.i/field-options :material)
+                :field-options (features/field-options :material)
                 :href (list-view/href view uri q :page page)
                 :rows rows
                 :page page
