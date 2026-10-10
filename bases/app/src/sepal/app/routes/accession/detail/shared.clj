@@ -1,5 +1,6 @@
 (ns sepal.app.routes.accession.detail.shared
-  (:require [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.features :as features]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -31,23 +32,27 @@
                (= :wild (:accession/provenance-type accession)))))
 
 (defn items [& {:keys [accession active collection-available?]}]
-  [(ui.tabs/item (tr "General")
-                 {:href (z/url-for accession.routes/detail-general {:id (:accession/id accession)})
-                  :active (= active general-tab)})
-   (ui.tabs/item (tr "Collection")
-                 (if collection-available?
-                   {:href (z/url-for accession.routes/detail-collection {:id (:accession/id accession)})
-                    :active (= active collection-tab)}
-                   {:disabled collection-disabled-reason}))
-   (ui.tabs/item (tr "Media")
-                 {:href (z/url-for accession.routes/detail-media {:id (:accession/id accession)})
-                  :active (= active media-tab)})
-   (ui.tabs/item (tr "Notes")
-                 {:href (z/url-for accession.routes/detail-notes {:id (:accession/id accession)})
-                  :active (= active notes-tab)})
-   (ui.tabs/item (tr "Tags")
-                 {:href (z/url-for accession.routes/detail-tags {:id (:accession/id accession)})
-                  :active (= active tags-tab)})])
+  (let [id (:accession/id accession)]
+    (cond-> [(ui.tabs/item (tr "General")
+                           {:href (z/url-for accession.routes/detail-general {:id id})
+                            :active (= active general-tab)})
+             (ui.tabs/item (tr "Collection")
+                           (if collection-available?
+                             {:href (z/url-for accession.routes/detail-collection {:id id})
+                              :active (= active collection-tab)}
+                             {:disabled collection-disabled-reason}))]
+      (features/enabled? :media)
+      (conj (ui.tabs/item (tr "Media")
+                          {:href (z/url-for accession.routes/detail-media {:id id})
+                           :active (= active media-tab)}))
+      true
+      (conj (ui.tabs/item (tr "Notes")
+                          {:href (z/url-for accession.routes/detail-notes {:id id})
+                           :active (= active notes-tab)}))
+      (features/enabled? :tags)
+      (conj (ui.tabs/item (tr "Tags")
+                          {:href (z/url-for accession.routes/detail-tags {:id id})
+                           :active (= active tags-tab)})))))
 
 (defn tabs
   ([accession active]
@@ -93,8 +98,9 @@
   (let [id (:accession/id accession)]
     (ui.actions/menu
       :primary primary
-      :items [{:label (tr "Add material")
-               :href (z/url-for material.routes/new nil {:accession-id id})}
-              {:label (tr "Add a propagation")
-               :href (z/url-for propagation.routes/new nil {:parent-accession-id id})}]
+      :items (cond-> [{:label (tr "Add material")
+                       :href (z/url-for material.routes/new nil {:accession-id id})}]
+               (features/enabled? :propagation)
+               (conj {:label (tr "Add a propagation")
+                      :href (z/url-for propagation.routes/new nil {:parent-accession-id id})}))
       :delete-url (z/url-for accession.routes/delete {:id id}))))

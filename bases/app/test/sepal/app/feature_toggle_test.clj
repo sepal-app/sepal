@@ -129,3 +129,24 @@
         (fn []
           (let [page (body (get-page (session user) (str "/propagation/" (:propagation/id prop) "/")))]
             (is (nil? (.selectFirst page ".spl-crumbs a[href='/propagation/']")))))))))
+
+(deftest test-record-tabs-and-actions-omit-turned-off-features
+  (tf/testing "a record keeps the tabs and actions of the features that are on"
+    (fixtures)
+    (fn [{:keys [user mat acc taxon loc]}]
+      (app.test/with-features-off *db* [:observations :propagation :media :tags]
+        (fn []
+          (let [sess (session user)
+                tabs (fn [path] (.selectFirst (body (get-page sess path)) "nav.spl-tabs"))
+                material (tabs (str "/material/" (:material/id mat) "/general/"))
+                accession (tabs (str "/accession/" (:accession/id acc) "/general/"))
+                taxon-tabs (tabs (str "/taxon/" (:taxon/id taxon) "/name/"))
+                location (tabs (str "/location/" (:location/id loc) "/general/"))]
+            (doseq [[label nav] [["material" material] ["accession" accession]
+                                 ["taxon" taxon-tabs] ["location" location]]
+                    suffix ["/media/" "/observations/" "/tags/"]]
+              (is (nil? (.selectFirst nav (str "a[href$='" suffix "']"))) (str label suffix)))
+            (is (some? (.selectFirst accession "a[href$='/notes/']")) "Notes stays")
+            (is (nil? (.selectFirst (body (get-page sess (str "/material/" (:material/id mat) "/general/")))
+                                    "a[href*='/propagation/new/']"))
+                "no Add a propagation")))))))

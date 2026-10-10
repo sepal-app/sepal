@@ -1,5 +1,6 @@
 (ns sepal.app.routes.material.detail.shared
-  (:require [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.features :as features]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.material.routes :as material.routes]
             [sepal.app.routes.propagation.routes :as propagation.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
@@ -17,18 +18,22 @@
 (def tags-tab ::tags)
 
 (defn- tab-items [& {:keys [active material]}]
-  [(ui.tabs/item (tr "General")
-                 {:href (z/url-for material.routes/detail-general {:id (:material/id material)})
-                  :active (= active general-tab)})
-   (ui.tabs/item (tr "Media")
-                 {:href (z/url-for material.routes/detail-media {:id (:material/id material)})
-                  :active (= active media-tab)})
-   (ui.tabs/item (tr "Observations")
-                 {:href (z/url-for material.routes/detail-observations {:id (:material/id material)})
-                  :active (= active observations-tab)})
-   (ui.tabs/item (tr "Tags")
-                 {:href (z/url-for material.routes/detail-tags {:id (:material/id material)})
-                  :active (= active tags-tab)})])
+  (let [id (:material/id material)]
+    (cond-> [(ui.tabs/item (tr "General")
+                           {:href (z/url-for material.routes/detail-general {:id id})
+                            :active (= active general-tab)})]
+      (features/enabled? :media)
+      (conj (ui.tabs/item (tr "Media")
+                          {:href (z/url-for material.routes/detail-media {:id id})
+                           :active (= active media-tab)}))
+      (features/enabled? :observations)
+      (conj (ui.tabs/item (tr "Observations")
+                          {:href (z/url-for material.routes/detail-observations {:id id})
+                           :active (= active observations-tab)}))
+      (features/enabled? :tags)
+      (conj (ui.tabs/item (tr "Tags")
+                          {:href (z/url-for material.routes/detail-tags {:id id})
+                           :active (= active tags-tab)})))))
 
 (defn tabs [material active]
   (ui.tabs/tabs {:label (tr "Material sections")
@@ -69,7 +74,9 @@
   [& {:keys [material primary]}]
   (ui.actions/menu
     :primary primary
-    :items [{:label (tr "Add a propagation")
-             :href (z/url-for propagation.routes/new nil
-                              {:parent-material-id (:material/id material)})}]
+    :items (cond-> []
+             (features/enabled? :propagation)
+             (conj {:label (tr "Add a propagation")
+                    :href (z/url-for propagation.routes/new nil
+                                     {:parent-material-id (:material/id material)})}))
     :delete-url (z/url-for material.routes/delete {:id (:material/id material)})))

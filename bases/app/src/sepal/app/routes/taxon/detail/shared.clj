@@ -1,5 +1,6 @@
 (ns sepal.app.routes.taxon.detail.shared
-  (:require [sepal.app.routes.accession.routes :as accession.routes]
+  (:require [sepal.app.features :as features]
+            [sepal.app.routes.accession.routes :as accession.routes]
             [sepal.app.routes.taxon.routes :as taxon.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
@@ -15,21 +16,25 @@
 (def tags-tab ::tags)
 
 (defn items [& {:keys [active taxon]}]
-  [(ui.tabs/item (tr "Name")
-                 {:href (z/url-for taxon.routes/detail-name {:id (:taxon/id taxon)})
-                  :active (= active name-tab)})
-   (ui.tabs/item (tr "Media")
-                 {:href (z/url-for taxon.routes/detail-media {:id (:taxon/id taxon)})
-                  :active (= active media-tab)})
-   (ui.tabs/item (tr "Synonyms")
-                 {:href (z/url-for taxon.routes/detail-synonyms {:id (:taxon/id taxon)})
-                  :active (= active synonyms-tab)})
-   (ui.tabs/item (tr "Notes")
-                 {:href (z/url-for taxon.routes/detail-notes {:id (:taxon/id taxon)})
-                  :active (= active notes-tab)})
-   (ui.tabs/item (tr "Tags")
-                 {:href (z/url-for taxon.routes/detail-tags {:id (:taxon/id taxon)})
-                  :active (= active tags-tab)})])
+  (let [id (:taxon/id taxon)]
+    (cond-> [(ui.tabs/item (tr "Name")
+                           {:href (z/url-for taxon.routes/detail-name {:id id})
+                            :active (= active name-tab)})]
+      (features/enabled? :media)
+      (conj (ui.tabs/item (tr "Media")
+                          {:href (z/url-for taxon.routes/detail-media {:id id})
+                           :active (= active media-tab)}))
+      true
+      (conj (ui.tabs/item (tr "Synonyms")
+                          {:href (z/url-for taxon.routes/detail-synonyms {:id id})
+                           :active (= active synonyms-tab)})
+            (ui.tabs/item (tr "Notes")
+                          {:href (z/url-for taxon.routes/detail-notes {:id id})
+                           :active (= active notes-tab)}))
+      (features/enabled? :tags)
+      (conj (ui.tabs/item (tr "Tags")
+                          {:href (z/url-for taxon.routes/detail-tags {:id id})
+                           :active (= active tags-tab)})))))
 
 (defn tabs [taxon active]
   (ui.tabs/tabs {:label (tr "Taxon sections")

@@ -1,5 +1,6 @@
 (ns sepal.app.routes.location.detail.shared
-  (:require [sepal.app.routes.location.routes :as location.routes]
+  (:require [sepal.app.features :as features]
+            [sepal.app.routes.location.routes :as location.routes]
             [sepal.app.ui.actions :as ui.actions]
             [sepal.app.ui.pages.record :as pages.record]
             [sepal.app.ui.tabs :as ui.tabs]
@@ -11,15 +12,18 @@
 (def media-tab ::media)
 
 (defn- tab-items [& {:keys [active location]}]
-  [(ui.tabs/item (tr "General")
-                 {:href (z/url-for location.routes/detail-general {:id (:location/id location)})
-                  :active (= active general-tab)})
-   (ui.tabs/item (tr "Observations")
-                 {:href (z/url-for location.routes/detail-observations {:id (:location/id location)})
-                  :active (= active observations-tab)})
-   (ui.tabs/item (tr "Media")
-                 {:href (z/url-for location.routes/detail-media {:id (:location/id location)})
-                  :active (= active media-tab)})])
+  (let [id (:location/id location)]
+    (cond-> [(ui.tabs/item (tr "General")
+                           {:href (z/url-for location.routes/detail-general {:id id})
+                            :active (= active general-tab)})]
+      (features/enabled? :observations)
+      (conj (ui.tabs/item (tr "Observations")
+                          {:href (z/url-for location.routes/detail-observations {:id id})
+                           :active (= active observations-tab)}))
+      (features/enabled? :media)
+      (conj (ui.tabs/item (tr "Media")
+                          {:href (z/url-for location.routes/detail-media {:id id})
+                           :active (= active media-tab)})))))
 
 (defn tabs [location active]
   (ui.tabs/tabs {:label (tr "Location sections")
